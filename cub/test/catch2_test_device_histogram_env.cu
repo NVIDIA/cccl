@@ -1896,6 +1896,27 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE(sm100_policy.dynamic_smem.even_2ch_max_bins == 28544);
   STATIC_REQUIRE(sm100_policy.dynamic_smem.even_3ch_max_bins == 19029);
   STATIC_REQUIRE(sm100_policy.dynamic_smem.even_4ch_max_bins == 8192);
+  STATIC_REQUIRE(sm100_policy.gmem.threads_per_block == 768);
+  STATIC_REQUIRE(sm100_policy.gmem.items_per_thread == 12);
+  STATIC_REQUIRE(sm100_policy.static_smem.kernel == sm100_policy.gmem);
+
+  constexpr auto sm100_range_u64_policy =
+    cub::detail::histogram::policy_selector_from_types<long long, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  STATIC_REQUIRE(sm100_range_u64_policy.gmem.threads_per_block == 768);
+  STATIC_REQUIRE(sm100_range_u64_policy.gmem.items_per_thread == 6);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.kernel.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.kernel.items_per_thread == 8);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.min_blocks_per_sm == 3);
+
+  constexpr auto sm100_multi_range_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
+      cuda::compute_capability{10, 0});
+  STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 1024);
+  STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.kernel.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.kernel.items_per_thread == 5);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.min_blocks_per_sm == 3);
 
   STATIC_REQUIRE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57088, 4, 1));
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57089, 4, 1));
@@ -1909,24 +1930,9 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<true>(sm100_policy, 19030, 4, 3));
 
   using max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 1, 1, true>::MaxPolicy;
-  const auto legacy_sm100_policy =
-    cub::detail::histogram::policy_selector_from_max_policy<max_policy_t>{}(cuda::compute_capability{10, 0});
-  REQUIRE(legacy_sm100_policy == sm100_policy);
-
-  using range_max_policy_t =
-    typename cub::detail::histogram::policy_hub<long long, unsigned int, 1, 1, false>::MaxPolicy;
-  const auto legacy_range_policy =
-    cub::detail::histogram::policy_selector_from_max_policy<range_max_policy_t>{}(cuda::compute_capability{10, 0});
-  constexpr auto range_policy =
-    cub::detail::histogram::policy_selector_from_types<long long, unsigned int, 1, 1, false>{}(
-      cuda::compute_capability{10, 0});
-  REQUIRE(legacy_range_policy == range_policy);
-
-  using multi_max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 4, 3, false>::MaxPolicy;
-  const auto legacy_multi_policy =
-    cub::detail::histogram::policy_selector_from_max_policy<multi_max_policy_t>{}(cuda::compute_capability{10, 0});
-  constexpr auto multi_policy = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
-    cuda::compute_capability{10, 0});
-  REQUIRE(legacy_multi_policy == multi_policy);
+  const auto legacy_policy =
+    cub::detail::histogram::policy_selector_from_hub<max_policy_t>{}(cuda::compute_capability{10, 0});
+  REQUIRE(legacy_policy.static_smem.max_privatized_smem_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(legacy_policy.dynamic_smem.max_privatized_smem_bytes == 0);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
