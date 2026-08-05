@@ -187,16 +187,6 @@ function Get-CudaComputeWheel {
     return Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
 }
 
-function Get-CudaCcclWheel {
-    <#
-    .SYNOPSIS
-        Returns the cuda-cccl metapackage wheel from the coordinated local
-        wheelhouse.
-    #>
-    $wheelhouse = Get-CcclPythonWheelhouse
-    return Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
-}
-
 function Get-OnePathMatch {
     <#
     .SYNOPSIS
@@ -264,4 +254,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CcclPythonWheelhouse, Get-CudaComputeWheel, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CcclPythonWheelhouse, Get-CudaComputeWheel, Get-OnePathMatch

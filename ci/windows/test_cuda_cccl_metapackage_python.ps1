@@ -43,8 +43,15 @@ try {
     Invoke-Checked {
         & $python -m pip install --constraint $constraintFile `
             --find-links $wheelhouse `
-            "${cudaCcclWheel}[minimal-$ctkFlavor$cudaMajor]"
+            $cudaCcclWheel
     } "Failed to install cuda-cccl metapackage"
+    # Resolve the forwarded extra separately. pip releases before 26.2 can
+    # assert when one solve combines a direct-URL constraint for the base
+    # project with a second requirement for that project's extra.
+    Invoke-Checked {
+        & $python -m pip install --find-links $wheelhouse `
+            "${cudaCcclWheel}[minimal-$ctkFlavor$cudaMajor]"
+    } "Failed to install cuda-cccl metapackage extra"
 }
 finally {
     Remove-Item -LiteralPath $constraintFile -Force

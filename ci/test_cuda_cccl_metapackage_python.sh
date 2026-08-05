@@ -50,6 +50,11 @@ printf 'cuda-compute @ %s\n' "${cuda_compute_wheel_uri}" > "${constraints_file}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --constraint "${constraints_file}" \
   --find-links "${wheelhouse_dir}" \
+  "${CUDA_CCCL_WHEEL_PATH}"
+# Resolve the forwarded extra separately. pip releases before 26.2 can assert
+# when one solve combines a direct-URL constraint for the base project with a
+# second requirement for that project's extra.
+python -m pip install --find-links "${wheelhouse_dir}" \
   "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
 python -m pip check
 python - "${CUDA_COMPUTE_WHEEL_PATH}" <<'PY'
