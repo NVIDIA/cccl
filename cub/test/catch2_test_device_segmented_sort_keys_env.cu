@@ -495,7 +495,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
   {
     return {
       cub::SegmentedSortRadixSortPolicy{

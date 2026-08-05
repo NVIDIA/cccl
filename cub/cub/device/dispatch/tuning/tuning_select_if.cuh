@@ -106,12 +106,14 @@ struct SelectPolicy
   SelectLookbackPolicy lookback; //!< The policy for the selection algorithm based on decoupled-lookback. Only used when
                                  //!< @p algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -194,13 +196,13 @@ struct PartitionPolicy
   PartitionLookbackPolicy lookback; //!< The policy for the partition algorithm based on decoupled-lookback. Only used
                                     //!< when algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

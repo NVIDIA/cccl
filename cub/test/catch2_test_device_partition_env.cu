@@ -287,7 +287,7 @@ struct less_than_5_t
 template <unsigned int BlockThreads>
 struct partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
     return {cub::PartitionAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
@@ -302,7 +302,7 @@ struct partition_policy_selector
 template <unsigned int BlockThreads>
 struct three_way_partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
   {
     return {cub::ThreeWayPartitionAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
