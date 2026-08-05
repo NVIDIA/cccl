@@ -404,7 +404,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
         *__env_it,
         (*__local_scratch)[__idx].__all_samples,
         __h_recvcounts,
-        __h_cap_displs,
+        __h_cap_displs.first(__h_recvcounts.size()),
         __cmp,
         &__probes);
     }
