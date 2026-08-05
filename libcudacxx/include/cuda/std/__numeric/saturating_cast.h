@@ -382,10 +382,12 @@ _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To> _CCCL_AND __cccl_is_integer_v<_From>)
 [[nodiscard]] _CCCL_API constexpr _To saturating_cast(_From __x) noexcept
 {
+#if !_CCCL_TILE_COMPILATION()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__saturating_cast_impl_device<_To>(__x, 0); }))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::saturating_overflow_cast<_To>(__x).value;
 }
 

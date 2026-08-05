@@ -58,17 +58,17 @@ struct recursive_range
     using difference_type  = cuda::std::ptrdiff_t;
     using reference        = recursive_range;
 
-    TEST_FUNC reference operator*() const;
+    TEST_HOST_DEVICE_FUNC reference operator*() const;
 
-    TEST_FUNC iterator& operator++();
-    TEST_FUNC iterator operator++(int);
+    TEST_HOST_DEVICE_FUNC iterator& operator++();
+    TEST_HOST_DEVICE_FUNC iterator operator++(int);
 
-    TEST_FUNC friend bool operator==(const iterator&, const iterator&);
-    TEST_FUNC friend bool operator!=(const iterator&, const iterator&);
+    TEST_HOST_DEVICE_FUNC friend bool operator==(const iterator&, const iterator&);
+    TEST_HOST_DEVICE_FUNC friend bool operator!=(const iterator&, const iterator&);
   };
 
-  TEST_FUNC iterator begin();
-  TEST_FUNC iterator end();
+  TEST_HOST_DEVICE_FUNC iterator begin();
+  TEST_HOST_DEVICE_FUNC iterator end();
 };
 
 static_assert(cuda::std::ranges::input_range<recursive_range>, "format_kind requires an input range");
@@ -111,8 +111,8 @@ static_assert(cuda::std::format_kind<std::valarray<int>> == cuda::std::range_for
 struct no_specialization : cuda::std::ranges::view_base
 {
   using key_type = void;
-  TEST_FUNC int* begin() const;
-  TEST_FUNC int* end() const;
+  TEST_HOST_DEVICE_FUNC int* begin() const;
+  TEST_HOST_DEVICE_FUNC int* end() const;
 };
 static_assert(cuda::std::format_kind<no_specialization> == cuda::std::range_format::set);
 
@@ -120,8 +120,8 @@ static_assert(cuda::std::format_kind<no_specialization> == cuda::std::range_form
 struct specialized : cuda::std::ranges::view_base
 {
   using key_type = void;
-  TEST_FUNC int* begin() const;
-  TEST_FUNC int* end() const;
+  TEST_HOST_DEVICE_FUNC int* begin() const;
+  TEST_HOST_DEVICE_FUNC int* end() const;
 };
 
 template <>

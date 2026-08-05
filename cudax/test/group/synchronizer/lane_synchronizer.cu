@@ -40,9 +40,8 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
     const cudax::group_by mapping{2};
     const Synchronizer synchronizer{};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
-    const auto synchronizer_instance =
-      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
+    const auto mapping_result        = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+    const auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping_result);
 
     // Test do_sync(...).
     static_assert(

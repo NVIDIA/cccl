@@ -154,7 +154,7 @@ template <int _Base, class _Tp, class _CharT, class _OutIt>
     return ::cuda::std::__fmt_write(__first, __last, ::cuda::std::move(__out_it), __specs);
   }
   return ::cuda::std::__fmt_write_transformed(
-    __first, __last, ::cuda::std::move(__out_it), __specs, ::cuda::std::__fmt_hex_to_upper);
+    __first, __last, ::cuda::std::move(__out_it), __specs, ::cuda::std::__fmt_hex_to_upper{});
 }
 
 template <class _Tp, class _CharT, class _OutIt>

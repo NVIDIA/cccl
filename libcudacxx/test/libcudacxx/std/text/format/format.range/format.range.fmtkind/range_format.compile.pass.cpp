@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <cuda/std/format>
 
 // enum class range_format {

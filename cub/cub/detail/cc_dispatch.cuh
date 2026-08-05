@@ -78,7 +78,7 @@ struct lowest_cc_resolver<::cuda::std::integer_sequence<int, CudaCcs...>, Policy
 template <typename Tp, Tp P>
 struct policy_constant
 {
-  _CCCL_API constexpr auto operator()() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr auto operator()() const noexcept
   {
     return P;
   }
