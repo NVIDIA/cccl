@@ -855,6 +855,18 @@ public:
   }
 };
 
+template <typename PolicyHub>
+struct max_policy_from_hub
+{
+  using type = typename PolicyHub::MaxPolicy;
+};
+
+template <>
+struct max_policy_from_hub<void>
+{
+  using type = void;
+};
+
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           typename SampleIteratorT,
@@ -1430,12 +1442,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    * @param stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ false>,
-              PolicyHub>::MaxPolicy,
-            bool IsByteSample>
+  template <typename MaxPolicyT = typename detail::histogram::max_policy_from_hub<PolicyHub>::type, bool IsByteSample>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1450,16 +1457,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
+    [[maybe_unused]] ::cuda::std::_If<::cuda::std::is_void_v<MaxPolicyT>, ::cuda::std::nullptr_t, MaxPolicyT>
+      max_policy = {})
   {
-    using default_policy_hub =
-      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
-    static constexpr bool uses_default_policy =
-      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
-    using policy_selector_t = ::cuda::std::_If<
-      uses_default_policy,
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+    static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
+    using policy_selector_t                   = ::cuda::std::_If<
+                        uses_default_policy,
+                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
+                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1524,12 +1529,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
    */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ true>,
-              PolicyHub>::MaxPolicy,
-            bool IsByteSample>
+  template <typename MaxPolicyT = typename detail::histogram::max_policy_from_hub<PolicyHub>::type, bool IsByteSample>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1545,16 +1545,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
+    [[maybe_unused]] ::cuda::std::_If<::cuda::std::is_void_v<MaxPolicyT>, ::cuda::std::nullptr_t, MaxPolicyT>
+      max_policy = {})
   {
-    using default_policy_hub =
-      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
-    static constexpr bool uses_default_policy =
-      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
-    using policy_selector_t = ::cuda::std::_If<
-      uses_default_policy,
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+    static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
+    using policy_selector_t                   = ::cuda::std::_If<
+                        uses_default_policy,
+                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
+                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
