@@ -191,14 +191,7 @@ C2H_TEST("device_default_nccl_memory_pool enables peer access", "[multi_gpu][ncc
 
   auto& pool = cudax::device_default_nccl_memory_pool(device);
 
-  const auto peers = device.peers();
-
-  if (peers.empty())
-  {
-    SKIP("Device has no peers");
-  }
-
-  for (auto peer : peers)
+  for (auto peer : device.peers())
   {
     INFO("peer: " << peer.get());
     REQUIRE(pool.is_accessible_from(peer));
@@ -225,7 +218,6 @@ C2H_TEST("device_default_nccl_memory_pool allocates", "[multi_gpu][nccl]")
     REQUIRE(ptr != nullptr);
 
     nccl_pool.deallocate(stream, ptr, size);
-    stream.sync();
     //! [device_default_nccl_memory_pool_allocate]
   }
 
@@ -240,7 +232,6 @@ C2H_TEST("device_default_nccl_memory_pool allocates", "[multi_gpu][nccl]")
     require_device_resident(ptr, device);
 
     pool.deallocate(stream, ptr, size);
-    stream.sync();
   }
 }
 
@@ -315,7 +306,6 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
       REQUIRE(range >= size);
 
       pool.deallocate(stream, ptr, size);
-      stream.sync();
     }
   }
 
@@ -345,7 +335,6 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
     }));
 
     pool.deallocate(stream, ptr, granularity);
-    stream.sync();
   }
 }
 
@@ -475,51 +464,46 @@ MULTI_GPU_TEST("device_default_nccl_memory_pool window registered buffers work i
   // results when a collective reads and writes it. Both the source and the destination must be
   // registered, so each gets its own window. Rank r contributes r+1 to every element, so the sum
   // is the n-th triangular number.
-  using value_type = cuda::std::int32_t;
-
-  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
+  const cuda::std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(cuda::std::int32_t);
 
   auto streams = nccl_test_util::make_streams();
   auto comms   = this->communicators();
 
-  std::vector<cuda::device_buffer<value_type>> send;
-  std::vector<cuda::device_buffer<value_type>> recv;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> send;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> recv;
 
-  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  for (cuda::std::size_t i = 0; i < cuda::devices.size(); ++i)
   {
     auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
 
-    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<value_type>(i + 1)));
-    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{-1}));
+    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<cuda::std::int32_t>(i + 1)));
+    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, cuda::std::int32_t{-1}));
   }
 
   auto send_windows = register_windows(comms, send, NCCL_WIN_COLL_SYMMETRIC);
   auto recv_windows = register_windows(comms, recv, NCCL_WIN_COLL_SYMMETRIC);
 
   {
-    auto g = comms.front().group_guard();
+    auto&& g = comms.front().group_guard();
 
-    for (std::size_t i = 0; i < comms.size(); ++i)
+    for (cuda::std::size_t i = 0; i < comms.size(); ++i)
     {
       comms[i].all_reduce(g, send[i].data(), recv[i].data(), count, ::cuda::std::plus<>{}, streams[i]);
     }
   }
 
-  for (auto& stream : streams)
+  const auto n   = static_cast<cuda::std::int32_t>(cuda::devices.size());
+  const auto sum = static_cast<cuda::std::int32_t>(n * (n + 1) / 2);
+
   {
-    stream.sync();
-  }
+    auto host_pool = cuda::mr::legacy_pinned_memory_resource{};
 
-  const auto n   = static_cast<value_type>(cuda::devices.size());
-  const auto sum = static_cast<value_type>(n * (n + 1) / 2);
+    for (auto& buf : recv)
+    {
+      const auto expected = cuda::make_buffer(buf.stream(), host_pool, buf.size(), sum);
 
-  for (auto& buf : recv)
-  {
-    auto host_pool      = cuda::mr::legacy_pinned_memory_resource{};
-    const auto expected = cuda::make_buffer(buf.stream(), host_pool, buf.size(), sum);
-    const auto actual   = cuda::make_buffer(buf.stream(), host_pool, buf);
-
-    REQUIRE_THAT(actual, Equals(expected));
+      REQUIRE_THAT(buf, Equals(expected));
+    }
   }
 
   deregister_windows(comms, send_windows);
@@ -531,59 +515,54 @@ MULTI_GPU_TEST("device_default_nccl_memory_pool supports sub-allocated windows",
   // The documentation permits registering one large buffer and sub-dividing it, provided every
   // rank uses the same offset from the head address. Register the whole block, then run the
   // collective on the second half of it.
-  using value_type = cuda::std::int32_t;
-
-  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
-  const std::size_t half  = count / 2;
+  const cuda::std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(cuda::std::int32_t);
+  const cuda::std::size_t half  = count / 2;
 
   REQUIRE(half != 0);
 
   auto streams = nccl_test_util::make_streams();
   auto comms   = this->communicators();
 
-  std::vector<cuda::device_buffer<value_type>> send;
-  std::vector<cuda::device_buffer<value_type>> recv;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> send;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> recv;
 
-  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  for (cuda::std::size_t i = 0; i < cuda::devices.size(); ++i)
   {
     auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
 
-    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<value_type>(i + 1)));
-    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{-1}));
+    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<cuda::std::int32_t>(i + 1)));
+    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, cuda::std::int32_t{-1}));
   }
 
   auto send_windows = register_windows(comms, send, NCCL_WIN_COLL_SYMMETRIC);
   auto recv_windows = register_windows(comms, recv, NCCL_WIN_COLL_SYMMETRIC);
 
   {
-    auto g = comms.front().group_guard();
+    auto&& g = comms.front().group_guard();
 
-    for (std::size_t i = 0; i < comms.size(); ++i)
+    for (cuda::std::size_t i = 0; i < comms.size(); ++i)
     {
       comms[i].all_reduce(g, send[i].data() + half, recv[i].data() + half, half, ::cuda::std::plus<>{}, streams[i]);
     }
   }
 
-  for (auto& stream : streams)
-  {
-    stream.sync();
-  }
-
-  const auto n   = static_cast<value_type>(cuda::devices.size());
-  const auto sum = static_cast<value_type>(n * (n + 1) / 2);
+  const auto n   = static_cast<cuda::std::int32_t>(cuda::devices.size());
+  const auto sum = n * (n + 1) / 2;
 
   // The untouched first half must still hold the fill value, the reduced second half the sum.
-  std::vector<value_type> expected_values(count, value_type{-1});
+  std::vector<cuda::std::int32_t> expected_values(count, cuda::std::int32_t{-1});
 
-  std::fill(expected_values.begin() + half, expected_values.end(), sum);
+  std::fill(expected_values.begin() + static_cast<std::ptrdiff_t>(half), expected_values.end(), sum);
 
-  for (auto& buf : recv)
   {
-    auto host_pool      = cuda::mr::legacy_pinned_memory_resource{};
-    const auto expected = cuda::make_buffer<value_type>(buf.stream(), host_pool, expected_values);
-    const auto actual   = cuda::make_buffer(buf.stream(), host_pool, buf);
+    auto host_pool = cuda::mr::legacy_pinned_memory_resource{};
 
-    REQUIRE_THAT(actual, Equals(expected));
+    for (auto& buf : recv)
+    {
+      const auto expected = cuda::make_buffer<cuda::std::int32_t>(buf.stream(), host_pool, expected_values);
+
+      REQUIRE_THAT(buf, Equals(expected));
+    }
   }
 
   deregister_windows(comms, send_windows);
