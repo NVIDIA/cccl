@@ -574,7 +574,12 @@ hostjit::CompilerConfig CubCall::make_jit_config(
     //   cccl_include_path = .../cuda/compute/_cccl/include
     //   HostJIT headers   = .../cuda/compute/_cccl/hostjit/cuda_minimal
     //   Clang headers     = .../cuda/compute/_cccl/clang
-    const auto package_root    = std::filesystem::path(cccl_include_path).parent_path();
+    auto include_path = std::filesystem::path{cccl_include_path}.lexically_normal();
+    if (!include_path.has_filename())
+    {
+      include_path = include_path.parent_path();
+    }
+    const auto package_root    = include_path.parent_path();
     const auto runtime_wrapper = std::filesystem::path("hostjit") / "cuda_minimal" / "__clang_cuda_runtime_wrapper.h";
     const auto configured_runtime_wrapper = std::filesystem::path(jit_config.hostjit_include_path) / runtime_wrapper;
     const auto packaged_runtime_wrapper   = package_root / runtime_wrapper;
