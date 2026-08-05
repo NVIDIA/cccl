@@ -30,8 +30,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -39,7 +38,7 @@ template <int ThreadsPerBlock,
           bool RleCompress,
           bool WorkStealing,
           int VecSize = 4>
-struct legacy_agent_histogram_policy
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHistogramPolicy
 {
   static constexpr int BLOCK_THREADS     = ThreadsPerBlock;
   static constexpr int PIXELS_PER_THREAD = PixelsPerThread;
@@ -50,25 +49,6 @@ struct legacy_agent_histogram_policy
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
 };
-} // namespace detail
-
-//! Deprecated [Since 3.5]
-template <int ThreadsPerBlock,
-          int PixelsPerThread,
-          BlockLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadModifier,
-          bool RleCompress,
-          bool WorkStealing,
-          int VecSize = 4>
-using AgentHistogramPolicy
-  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::legacy_agent_histogram_policy<
-    ThreadsPerBlock,
-    PixelsPerThread,
-    LoadAlgorithm,
-    LoadModifier,
-    RleCompress,
-    WorkStealing,
-    VecSize>;
 
 namespace detail::histogram
 {
