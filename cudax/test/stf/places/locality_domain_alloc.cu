@@ -58,12 +58,14 @@ int main()
 
 #if _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
     // With the native backend, the allocation must report the requested
-    // domain ordinal (unless localization is disabled via the environment,
-    // in which case it must report "not localized", i.e. -1).
+    // domain ordinal (unless localization is disabled, or the fake topology
+    // override is active, in which case it must report "not localized",
+    // i.e. -1).
     int ordinal = -2;
     cuda_safe_call(cuPointerGetAttribute(
       &ordinal, CU_POINTER_ATTRIBUTE_LOCALITY_DOMAIN_ORDINAL, reinterpret_cast<CUdeviceptr>(ptr)));
-    if (std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr)
+    if (std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr
+        || std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS") != nullptr)
     {
       EXPECT(ordinal == -1);
     }

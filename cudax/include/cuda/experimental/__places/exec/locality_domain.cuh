@@ -43,6 +43,19 @@
  * domain. Defining `CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK` selects the
  * fallback even on recent toolkits (useful to test that path).
  *
+ * Fake topology override (runtime)
+ * --------------------------------
+ * `CUDASTF_FAKE_LOCALITY_DOMAINS=N` forces N domains per device, backed by an
+ * even green-context SM split with plain device memory -- i.e. execution
+ * partitioning WITHOUT locality-domain memory placement. It is resolved at
+ * runtime, independently of the compile-time backend, so it works on any
+ * green-context-capable toolkit (CUDA 12.4+), INCLUDING on top of the native
+ * backend, where it serves as the "SM confinement only, no localized memory"
+ * ablation control. It deliberately reuses `green_context_helper` and
+ * `exec_place::green_ctx` / `data_place::green_ctx` rather than duplicating
+ * green-context plumbing, so places built under the override are ordinary
+ * green-context places.
+ *
  * Addressing model: a locality-domain place is identified by a
  * (device ordinal, domain ordinal) pair that is just an identity token.
  * Construction of a data place performs no existence check, so any pair is
@@ -66,10 +79,12 @@
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
+#include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+#include <algorithm>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -91,14 +106,15 @@ namespace cuda::experimental::places
 #if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
 
 /**
- * @brief Number of locality domains exposed by a device.
+ * @brief Number of locality domains reported by the hardware backend.
  *
  * Queries `CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`. Returns 0 when the
- * query cannot be performed (no driver support, invalid device, ...): a zero
- * count means locality-domain placement is unusable on this device and
- * callers are expected to fall back to regular device places.
+ * query cannot be performed (no driver support, invalid device, ...). The
+ * public `locality_domain_count()` below consults the
+ * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first and only then falls back to
+ * this hardware path.
  */
-inline unsigned int locality_domain_count(int dev_id)
+inline unsigned int locality_domain_backend_count(int dev_id)
 {
   if (cuInit(0) != CUDA_SUCCESS)
   {
@@ -286,13 +302,14 @@ private:
 #else // ^^^ _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE ^^^ / vvv whole-device fallback vvv
 
 /**
- * @brief Number of locality domains exposed by a device (fallback).
+ * @brief Number of locality domains reported by the backend (fallback).
  *
  * Without the CUDA 13.4 locality-domain APIs every valid device reports a
  * single domain, so code written against this API keeps working with
- * whole-device semantics.
+ * whole-device semantics. The public `locality_domain_count()` below consults
+ * the `CUDASTF_FAKE_LOCALITY_DOMAINS` override first.
  */
-inline unsigned int locality_domain_count(int dev_id)
+inline unsigned int locality_domain_backend_count(int dev_id)
 {
   int count = 0;
   if (cudaGetDeviceCount(&count) != cudaSuccess || dev_id < 0 || dev_id >= count)
@@ -303,6 +320,141 @@ inline unsigned int locality_domain_count(int dev_id)
 }
 
 #endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+//============================================================================//
+// Fake topology override (runtime, backend-independent).
+//
+// CUDASTF_FAKE_LOCALITY_DOMAINS=N forces N domains backed by green contexts
+// (an even SM split) with plain device memory. See the file-level comment.
+//============================================================================//
+
+/**
+ * @brief Number of fake domains requested via CUDASTF_FAKE_LOCALITY_DOMAINS
+ * (0 = override off).
+ *
+ * Parsed once. An unset, non-numeric, or non-positive value disables the
+ * override (the compile-time backend is used instead).
+ */
+inline int locality_domain_fake_count()
+{
+  static const int n = [] {
+    const char* s = ::std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS");
+    if (s == nullptr)
+    {
+      return 0;
+    }
+    const int v = ::std::atoi(s);
+    if (v > 0)
+    {
+      fprintf(stderr, "places: FAKE locality-domain topology (%d green-context domains per device)\n", v);
+    }
+    return v > 0 ? v : 0;
+  }();
+  return n;
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 4)
+
+/**
+ * @brief Process-wide cache of even-split green contexts for the fake
+ * topology override.
+ *
+ * One `green_context_helper` per device, built lazily with
+ * sm_count = total_SM / N so the device splits into about N green contexts.
+ * The helper owns the underlying green contexts and stream pools; it is kept
+ * alive for the process so the views (and their shared stream pools) handed
+ * out to places stay valid.
+ */
+class locality_domain_fake_green_cache
+{
+public:
+  static locality_domain_fake_green_cache& instance()
+  {
+    static locality_domain_fake_green_cache inst;
+    return inst;
+  }
+
+  green_context_helper& get(int dev_id)
+  {
+    ::std::lock_guard<::std::mutex> lock(mtx_);
+    auto it = helpers_.find(dev_id);
+    if (it == helpers_.end())
+    {
+      const unsigned int n = static_cast<unsigned int>(locality_domain_fake_count());
+      _CCCL_ASSERT(n > 0, "fake green cache used with CUDASTF_FAKE_LOCALITY_DOMAINS unset");
+
+      // cuDevSmResourceSplitByCount rounds the requested group size UP to the
+      // device's SM group granularity, so a naive total/N request can round
+      // past the budget and yield fewer than N groups. Probe the granularity
+      // (a result-less split-by-count creates no contexts) and round total/N
+      // DOWN to it instead.
+      CUdevice device = cuda_try<cuDeviceGet>(dev_id);
+      CUdevResource input;
+      CUcontext primary_ctx = cuda_try<cuDevicePrimaryCtxRetain>(device);
+      cuda_try(cuCtxGetDevResource(primary_ctx, &input, CU_DEV_RESOURCE_TYPE_SM));
+      cuda_try(cuDevicePrimaryCtxRelease(device));
+
+      unsigned int finest_groups = 0;
+      cuda_try(cuDevSmResourceSplitByCount(nullptr, &finest_groups, &input, nullptr, 0, 1));
+      const unsigned int total_sm    = input.sm.smCount;
+      const unsigned int granularity = (finest_groups > 0) ? ::std::max(1u, total_sm / finest_groups) : 1u;
+
+      unsigned int sm_per = ::std::max(1u, total_sm / n);
+      sm_per              = ::std::max(granularity, sm_per - (sm_per % granularity));
+
+      it = helpers_.emplace(dev_id, ::std::make_shared<green_context_helper>(static_cast<int>(sm_per), dev_id)).first;
+    }
+    return *it->second;
+  }
+
+private:
+  locality_domain_fake_green_cache()                                                   = default;
+  locality_domain_fake_green_cache(const locality_domain_fake_green_cache&)            = delete;
+  locality_domain_fake_green_cache& operator=(const locality_domain_fake_green_cache&) = delete;
+
+  ::std::map<int, ::std::shared_ptr<green_context_helper>> helpers_;
+  ::std::mutex mtx_;
+};
+
+/**
+ * @brief Fake domain count for a device: min(requested N, groups produced).
+ *
+ * An even split can emit a remainder group, so the helper may report slightly
+ * more than N contexts; clamp to N so callers see at most the requested count.
+ */
+inline unsigned int locality_domain_fake_get_count(int dev_id)
+{
+  const int n       = locality_domain_fake_count();
+  const size_t made = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
+  return static_cast<unsigned int>(::std::min<size_t>(made, static_cast<size_t>(n)));
+}
+
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+/**
+ * @brief Number of locality domains exposed by a device.
+ *
+ * Consults the `CUDASTF_FAKE_LOCALITY_DOMAINS` override first (any valid
+ * device is enough for the green-context fake topology), otherwise the
+ * compile-time backend. Returns 0 when locality-domain placement is unusable
+ * on this device (no driver support, invalid device, ...): callers are
+ * expected to fall back to regular device places.
+ */
+inline unsigned int locality_domain_count(int dev_id)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  if (locality_domain_fake_count() > 0)
+  {
+    int ndevs = 0;
+    if (cudaGetDeviceCount(&ndevs) != cudaSuccess || dev_id < 0 || dev_id >= ndevs)
+    {
+      return 0;
+    }
+    return locality_domain_fake_get_count(dev_id);
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+  return locality_domain_backend_count(dev_id);
+}
 
 /**
  * @brief Data place pinned to one locality domain of a device.
@@ -539,6 +691,16 @@ private:
  */
 inline data_place data_place::locality_domain(const locality_domain_view& view)
 {
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  if (locality_domain_fake_count() > 0)
+  {
+    // Fake topology: green-context data place (plain device memory)
+    green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
+    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(locality_domain_fake_get_count(view.devid)),
+                 "fake locality domain ordinal out of range");
+    return data_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)));
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
   return data_place(::std::make_shared<locality_domain_data_place_impl>(view));
 }
 
@@ -556,9 +718,23 @@ inline data_place data_place::locality_domain(int dev_id, int domain_id)
  * (process-wide, cached) `CUcontext`, so places built repeatedly for the same
  * domain compare equal. With the fallback backend, the place runs on the
  * whole device.
+ *
+ * Under the `CUDASTF_FAKE_LOCALITY_DOMAINS` override the place is an even-split
+ * green-context place (`use_green_ctx_data_place = true`, so the affine data
+ * place matches the one handed out by `data_place::locality_domain`).
  */
 inline exec_place exec_place::locality_domain(const locality_domain_view& view)
 {
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  if (locality_domain_fake_count() > 0)
+  {
+    green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
+    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(locality_domain_fake_get_count(view.devid)),
+                 "fake locality domain ordinal out of range");
+    return exec_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)),
+                                 /*use_green_ctx_data_place=*/true);
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 #if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
   const auto& entry = locality_domain_ctx_cache::instance().get(view.devid, view.domain_id);
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(
