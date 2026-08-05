@@ -154,6 +154,8 @@ template <class _Tp, const auto& _Array, ::cuda::std::size_t... _Is>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Builds a @c __constant_seq from a reference to a @c constexpr array, keeping the array's element type.
+//!
+//! @return A @c __constant_seq whose element type is the array's element type and whose values are its elements.
 template <const auto& _Array>
 [[nodiscard]] _CCCL_API constexpr auto __make_constant_seq() noexcept
 {
@@ -167,6 +169,8 @@ template <const auto& _Array>
 //!
 //! The source array element type must be structural; the target element type @c _Tp may be non-structural (e.g.
 //! @c __half), since each element is cast at use time rather than stored as a non-type template parameter.
+//!
+//! @return A @c __constant_seq with element type @c _Tp and the array's elements as its values.
 template <class _Tp, const auto& _Array>
 [[nodiscard]] _CCCL_API constexpr auto __make_constant_seq() noexcept
 {

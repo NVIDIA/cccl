@@ -40,15 +40,15 @@ struct non_constexpr_value
   non_constexpr_value() = default;
 
   // Intentionally not constexpr.
-  _CCCL_HOST_DEVICE non_constexpr_value(int __v)
+  TEST_FUNC non_constexpr_value(int __v)
       : __payload(__v)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(non_constexpr_value __lhs, non_constexpr_value __rhs)
+  TEST_FUNC friend bool operator==(non_constexpr_value __lhs, non_constexpr_value __rhs)
   {
     return __lhs.__payload == __rhs.__payload;
   }
-  _CCCL_HOST_DEVICE friend bool operator<(non_constexpr_value __lhs, non_constexpr_value __rhs)
+  TEST_FUNC friend bool operator<(non_constexpr_value __lhs, non_constexpr_value __rhs)
   {
     return __lhs.__payload < __rhs.__payload;
   }
@@ -59,8 +59,22 @@ struct non_constexpr_value
 constexpr int __seq_src[]{5, 1, 9};
 constexpr int __make_src[]{10, 30, 20};
 
+// Detect whether a traits specialization exposes the static bound members. They must exist only when the bound can be
+// constant-evaluated, so an element type without a constexpr converting constructor has to omit them entirely rather
+// than expose a bound computed some other way.
+template <class Traits, class = void>
+inline constexpr bool has_static_lowest = false;
+template <class Traits>
+inline constexpr bool has_static_lowest<Traits, cuda::std::void_t<decltype(Traits::lowest)>> = true;
+
+template <class Traits, class = void>
+inline constexpr bool has_static_highest = false;
+template <class Traits>
+inline constexpr bool has_static_highest<Traits, cuda::std::void_t<decltype(Traits::highest)>> = true;
+
+// Both helpers below are instantiated only with element types that have no constexpr converting constructor.
 template <class _Tp>
-_CCCL_HOST_DEVICE void test_single_value()
+TEST_FUNC void test_single_value()
 {
   using C      = cuda::args::constant<128, _Tp>;
   using traits = cuda::args::__traits<C>;
@@ -71,6 +85,10 @@ _CCCL_HOST_DEVICE void test_single_value()
   static_assert(cuda::std::is_same_v<typename traits::value_type, _Tp>);
   static_assert(cuda::std::is_same_v<typename traits::element_type, _Tp>);
 
+  // The static bound members must be absent: `_Tp{128}` is not a constant expression.
+  static_assert(!has_static_lowest<traits>);
+  static_assert(!has_static_highest<traits>);
+
   // The value and the free-function bounds are produced at run time (no constexpr ctor required).
   assert(cuda::args::__unwrap(C{}) == _Tp(128));
   assert(cuda::args::__lowest_(C{}) == _Tp(128));
@@ -78,7 +96,7 @@ _CCCL_HOST_DEVICE void test_single_value()
 }
 
 template <class _Tp>
-_CCCL_HOST_DEVICE void test_sequence()
+TEST_FUNC void test_sequence()
 {
   using S      = cuda::args::__constant_seq<_Tp, 4, 8, 2>;
   using traits = cuda::args::__traits<S>;
@@ -88,6 +106,15 @@ _CCCL_HOST_DEVICE void test_sequence()
   static_assert(!traits::is_deferred);
   static_assert(cuda::std::is_same_v<typename traits::value_type, cuda::std::array<_Tp, 3>>);
   static_assert(cuda::std::is_same_v<typename traits::element_type, _Tp>);
+
+  // The static bound members must be absent: reducing the sequence casts each element to `_Tp`, which is not a
+  // constant expression here.
+  static_assert(!has_static_lowest<traits>);
+  static_assert(!has_static_highest<traits>);
+
+  // `__make_constant_seq` produces the same shape, so its traits must drop the bounds too.
+  static_assert(!has_static_lowest<cuda::args::__traits<decltype(cuda::args::__make_constant_seq<_Tp, __seq_src>())>>);
+  static_assert(!has_static_highest<cuda::args::__traits<decltype(cuda::args::__make_constant_seq<_Tp, __seq_src>())>>);
 
   const auto __arr = cuda::args::__unwrap(S{});
   assert(__arr[0] == _Tp(4));
@@ -116,6 +143,10 @@ TEST_FUNC void test()
     static_assert(cuda::args::__unwrap(S{}) == cuda::std::array<int, 3>{3, 1, 2});
     static_assert(cuda::args::__traits<S>::lowest == 1);
     static_assert(cuda::args::__traits<S>::highest == 3);
+    // Counterpart to the absence checks in the helpers above: the detector must see the members when they do exist,
+    // otherwise those checks would hold vacuously.
+    static_assert(has_static_lowest<cuda::args::__traits<S>>);
+    static_assert(has_static_highest<cuda::args::__traits<S>>);
     static_assert(cuda::args::__lowest_(S{}) == 1);
     static_assert(cuda::args::__highest_(S{}) == 3);
   }
