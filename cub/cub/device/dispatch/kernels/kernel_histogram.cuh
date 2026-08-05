@@ -704,7 +704,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), PrivatizationMode{}).threads_per_block),
+__launch_bounds__(int(current_policy<PolicySelector>().kernel(PrivatizationMode{}).threads_per_block),
                   int(is_privatized_static_smem_v<PrivatizationMode>
                         ? current_policy<PolicySelector>().static_smem.min_blocks_per_sm
                         : 0))
@@ -722,21 +722,8 @@ __launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), Privatizat
     const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
-  static constexpr auto sweep         = kernel_config(hp, PrivatizationMode{});
-
-  // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT = agent_histogram_policy<
-    sweep.threads_per_block,
-    sweep.items_per_thread,
-    sweep.load_algorithm,
-    sweep.load_modifier,
-    sweep.rle_compress,
-    sweep.work_stealing,
-    sweep.vec_size,
-    is_privatized_static_smem_v<PrivatizationMode> ? hp.static_smem.max_privatized_smem_bytes : 0>;
   using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
+    AgentHistogram<PolicySelector,
                    PrivatizationMode,
                    NumChannels,
                    NumActiveChannels,
@@ -805,19 +792,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.kernel.threa
     const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp          = current_policy<PolicySelector>();
-  static constexpr HistogramKernelConfig sweep = hp.dynamic_smem.kernel;
-
-  using AgentHistogramPolicyT =
-    agent_histogram_policy<sweep.threads_per_block,
-                           sweep.items_per_thread,
-                           sweep.load_algorithm,
-                           sweep.load_modifier,
-                           sweep.rle_compress,
-                           sweep.work_stealing,
-                           sweep.vec_size>;
   using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
+    AgentHistogram<PolicySelector,
                    HistogramPrivatizedDynamicSmem,
                    NumChannels,
                    NumActiveChannels,
@@ -958,7 +934,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), PrivatizationMode{}).threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().kernel(PrivatizationMode{}).threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -973,9 +949,6 @@ __launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), Privatizat
     const int tiles_per_row,
     const GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
-  static constexpr auto sweep         = kernel_config(hp, PrivatizationMode{});
-
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
   if constexpr (IsEven)
@@ -1002,18 +975,8 @@ __launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), Privatizat
     }
   }
 
-  // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT = agent_histogram_policy<
-    sweep.threads_per_block,
-    sweep.items_per_thread,
-    sweep.load_algorithm,
-    sweep.load_modifier,
-    sweep.rle_compress,
-    sweep.work_stealing,
-    sweep.vec_size,
-    is_privatized_static_smem_v<PrivatizationMode> ? hp.static_smem.max_privatized_smem_bytes : 0>;
   using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
+    AgentHistogram<PolicySelector,
                    PrivatizationMode,
                    NumChannels,
                    NumActiveChannels,

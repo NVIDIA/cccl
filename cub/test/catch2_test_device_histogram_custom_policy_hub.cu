@@ -20,16 +20,37 @@ using namespace cub;
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
-  // simplified from Policy500 of the CUB histogram tunings
-  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
+  struct Policy500 : cub::detail::chained_policy<500, Policy500, Policy500>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false>;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 0;
+  };
+
+  struct Policy900 : cub::detail::chained_policy<900, Policy900, Policy500>
+  {
+    using AgentHistogramPolicyT = AgentHistogramPolicy<256, 8, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, false, false>;
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
+
+  using MaxPolicy = Policy900;
 };
 
 CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]", CUB_SMALL)
 {
+  using custom_max_policy_t = typename my_policy_hub<unsigned char, int, 1, 1, true>::MaxPolicy;
+  const auto custom_sm75_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t>{}(cuda::compute_capability{7, 5});
+  const auto custom_sm90_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t>{}(cuda::compute_capability{9, 0});
+  REQUIRE(custom_sm75_policy.gmem.threads_per_block == 384);
+  REQUIRE(custom_sm75_policy.gmem.items_per_thread == 16);
+  REQUIRE(custom_sm90_policy.gmem.threads_per_block == 256);
+  REQUIRE(custom_sm90_policy.gmem.items_per_thread == 8);
+  REQUIRE(custom_sm75_policy.static_smem.max_privatized_smem_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(custom_sm90_policy.dynamic_smem.max_privatized_smem_bytes == 0);
+  REQUIRE(custom_sm75_policy.init_kernel_pdl_trigger_max_bins == 0);
+  REQUIRE(custom_sm90_policy.init_kernel_pdl_trigger_max_bins == 2048);
+
   using sample_t                                     = cuda::std::uint8_t;
   using counter_t                                    = int;
   using level_t                                      = int;
