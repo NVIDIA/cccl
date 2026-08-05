@@ -790,15 +790,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy(int)
-  -> decltype(typename ActivePolicy::GmemPolicy{}, HistogramPolicy{})
-{
-  return convert_chained_policy<ActivePolicy>();
-}
-
-// TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy(long) -> HistogramPolicy
+_CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
 {
   using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
   const auto kernel_config = HistogramKernelConfig{
@@ -814,7 +806,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy(long) -> HistogramPolicy
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename MaxPolicy>
-struct policy_selector_from_max_policy
+struct policy_selector_from_hub
 {
 private:
   struct dispatch_t
@@ -824,7 +816,7 @@ private:
     template <typename ActivePolicy>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
-      policy = convert_policy<ActivePolicy>(0);
+      policy = convert_legacy_policy<ActivePolicy>();
       return cudaSuccess;
     }
   };
@@ -839,7 +831,7 @@ public:
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
-                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(0); }));
+                      ({ return convert_legacy_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
 };
 
@@ -1440,6 +1432,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
+    using default_policy_hub =
+      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+    static constexpr bool uses_default_policy =
+      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
+    using policy_selector_t = ::cuda::std::_If<
+      uses_default_policy,
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
+      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1452,7 +1452,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
       row_stride_samples,
       stream,
       is_byte_sample,
-      detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
+      policy_selector_t{},
       kernel_source,
       launcher_factory);
   }
@@ -1527,6 +1527,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
+    using default_policy_hub =
+      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+    static constexpr bool uses_default_policy =
+      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
+    using policy_selector_t = ::cuda::std::_If<
+      uses_default_policy,
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
+      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1540,7 +1548,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
       row_stride_samples,
       stream,
       is_byte_sample,
-      detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
+      policy_selector_t{},
       kernel_source,
       launcher_factory);
   }
