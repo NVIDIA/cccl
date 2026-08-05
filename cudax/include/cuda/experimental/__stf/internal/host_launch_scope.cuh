@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <memory>
 #include <type_traits>
@@ -327,15 +328,19 @@ public:
       user_data_dtor_    = nullptr;
 
       auto callback = [](void* raw) {
-        auto* w = static_cast<decltype(resolved.get())>(raw);
-        SCOPE(exit)
-        {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        // The CUDA runtime calls this back, so an exception thrown by the user code must not
+        // leave it.
+        on_throw(::std::abort) << [raw] {
+          auto* w = static_cast<decltype(resolved.get())>(raw);
+          SCOPE(exit)
           {
-            delete w;
-          }
+            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+          w->first(w->second);
         };
-        w->first(w->second);
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -375,30 +380,32 @@ public:
       auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
-        SCOPE(exit)
-        {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        on_throw(::std::abort) << [untyped_wrapper] {
+          auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
+          SCOPE(exit)
           {
-            delete w;
+            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+
+          constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
+          constexpr bool fun_invocable_task_non_void_deps =
+            reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
+
+          static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                        "Incorrect lambda function signature in host_launch.");
+
+          if constexpr (fun_invocable_task_deps)
+          {
+            ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+          }
+          else if constexpr (fun_invocable_task_non_void_deps)
+          {
+            ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
           }
         };
-
-        constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
-        constexpr bool fun_invocable_task_non_void_deps =
-          reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
-
-        static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
-                      "Incorrect lambda function signature in host_launch.");
-
-        if constexpr (fun_invocable_task_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
-        }
-        else if constexpr (fun_invocable_task_non_void_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
-        }
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)

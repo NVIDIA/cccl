@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
 TEST_FUNC constexpr void test()
 {
@@ -89,6 +90,7 @@ public:
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();

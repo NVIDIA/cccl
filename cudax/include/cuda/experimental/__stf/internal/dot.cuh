@@ -36,10 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
@@ -541,18 +544,31 @@ public:
     }
   }
 
+  //! @brief Records task timing metadata without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time_ms The task duration in milliseconds.
+  //! @param[in] device The device that executed the task, or `-1` if unspecified.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
+  void add_vertex_timing(const task_type& t,
+                         float time_ms,
+                         [[maybe_unused]] int device            = -1,
+                         const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    ::std::scoped_lock guard(mtx);
+    // Timing metadata is diagnostic only; allocation or locking failures must
+    // not interfere with task teardown.
+    on_throw(notify, loc) << [&] {
+      ::std::scoped_lock guard(mtx);
 
-    if (!tracing_enabled)
-    {
-      return;
-    }
+      if (!tracing_enabled)
+      {
+        return;
+      }
 
-    // Save timing information for this task
-    metadata[t.get_unique_id()].timing = time_ms;
+      // Save timing information for this task
+      metadata[t.get_unique_id()].timing = time_ms;
+    };
   }
 
   // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
