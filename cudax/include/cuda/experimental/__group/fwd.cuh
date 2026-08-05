@@ -66,7 +66,7 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
 class group;
 
 // mappings

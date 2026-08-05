@@ -82,6 +82,7 @@ class Configuration(object):
         self.use_clang_verify = False
         self.long_tests = None
         self.execute_external = False
+        self.test_executable_mode = "normal"
 
     def get_lit_conf(self, name, default=None):
         val = self.lit_config.params.get(name, None)
@@ -272,6 +273,7 @@ class Configuration(object):
 
     def configure(self):
         self.configure_executor()
+        self.configure_test_executable_mode()
         self.configure_target_info()
         self.configure_cxx()
         self.configure_triple()
@@ -330,7 +332,18 @@ class Configuration(object):
             self.execute_external,
             self.executor,
             exec_env=self.exec_env,
+            test_executable_mode=self.test_executable_mode,
         )
+
+    def configure_test_executable_mode(self):
+        mode = self.get_lit_conf("test_executable_mode", "normal")
+        if mode not in ("normal", "build", "replay"):
+            self.lit_config.fatal(
+                "parameter 'test_executable_mode' should be normal, build, or replay"
+            )
+        self.test_executable_mode = mode
+        if mode != "normal":
+            self.lit_config.note("Using test executable mode: %s" % mode)
 
     def configure_executor(self):
         exec_str = self.get_lit_conf("executor", "None")
@@ -600,7 +613,11 @@ class Configuration(object):
         self.execute_external = not use_lit_shell
 
     def configure_no_execute(self):
-        if isinstance(self.executor, NoopExecutor):
+        # Build mode must compile runtime-only tests for the replay job.
+        if (
+            isinstance(self.executor, NoopExecutor)
+            and self.test_executable_mode != "build"
+        ):
             self.config.available_features.add("no_execute")
 
     def configure_ccache(self):
