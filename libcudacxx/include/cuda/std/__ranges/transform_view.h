@@ -167,18 +167,21 @@ public:
       return ::cuda::std::move(__current_);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
       noexcept(noexcept(::cuda::std::invoke(*__parent_->__func_, *__current_)))
     {
       return ::cuda::std::invoke(*__parent_->__func_, *__current_);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API constexpr __iterator& operator++()
     {
       ++__current_;
       return *this;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES((!forward_range<_Base2>) )
     _CCCL_API constexpr void operator++(int)
@@ -186,6 +189,7 @@ public:
       ++__current_;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(forward_range<_Base2>)
     _CCCL_API constexpr __iterator operator++(int)
@@ -195,6 +199,7 @@ public:
       return __tmp;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(bidirectional_range<_Base2>)
     _CCCL_API constexpr __iterator& operator--()
@@ -203,6 +208,7 @@ public:
       return *this;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(bidirectional_range<_Base2>)
     _CCCL_API constexpr __iterator operator--(int)
@@ -212,6 +218,7 @@ public:
       return __tmp;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
     _CCCL_API constexpr __iterator& operator+=(difference_type __n)
@@ -220,6 +227,7 @@ public:
       return *this;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
     _CCCL_API constexpr __iterator& operator-=(difference_type __n)
@@ -228,6 +236,7 @@ public:
       return *this;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
@@ -236,6 +245,7 @@ public:
       return ::cuda::std::invoke(*__parent_->__func_, __current_[__n]);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
@@ -243,6 +253,7 @@ public:
       return __x.__current_ == __y.__current_;
     }
 #if _CCCL_STD_VER <= 2017
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<iterator_t<_Base2>>)
@@ -251,6 +262,7 @@ public:
     }
 #endif // _CCCL_STD_VER <= 2017
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator<(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
@@ -258,6 +270,7 @@ public:
       return __x.__current_ < __y.__current_;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator>(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
@@ -265,6 +278,7 @@ public:
       return __x.__current_ > __y.__current_;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator<=(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
@@ -272,6 +286,7 @@ public:
       return __x.__current_ <= __y.__current_;
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator>=(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(bool)(random_access_range<_Base2>)
@@ -280,6 +295,7 @@ public:
     }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2> _CCCL_AND three_way_comparable<iterator_t<_Base>>)
     [[nodiscard]] _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
@@ -288,6 +304,7 @@ public:
     }
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator+(__iterator __i, difference_type __n)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
@@ -295,6 +312,7 @@ public:
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator+(difference_type __n, __iterator __i)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
@@ -302,6 +320,7 @@ public:
       return __iterator{*__i.__parent_, __i.__current_ + __n};
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator-(__iterator __i, difference_type __n)
       _CCCL_TRAILING_REQUIRES(__iterator)(random_access_range<_Base2>)
@@ -309,6 +328,7 @@ public:
       return __iterator{*__i.__parent_, __i.__current_ - __n};
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Base2 = _Base>
     [[nodiscard]] _CCCL_API friend constexpr auto operator-(const __iterator& __x, const __iterator& __y)
       _CCCL_TRAILING_REQUIRES(difference_type)(sized_sentinel_for<iterator_t<_Base2>, iterator_t<_Base2>>)

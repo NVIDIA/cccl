@@ -234,13 +234,13 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
-  _CCCL_API constexpr subrange(_Range&& __range)
+  _CCCL_API constexpr subrange(_Range&& __range) // NOLINT(bugprone-forwarding-reference-overload)
       : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
-  _CCCL_API constexpr subrange(_Range&& __range)
+  _CCCL_API constexpr subrange(_Range&& __range) // NOLINT(bugprone-forwarding-reference-overload)
       : subrange(__range, ::cuda::std::ranges::__size_cpo{}(__range))
   {}
 
