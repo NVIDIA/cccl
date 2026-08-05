@@ -514,6 +514,60 @@ class parallel_for_scope
    * @return A tuple containing the result of `dep.instance(t)` for each dependency,
    *         with `std::ignore` in positions where the result type is `void_interface&`.
    */
+  //! Resolve one instance onto this place's member of a replicated data
+  //! place: each shard reads the ordinary instance living at member(r),
+  //! straight from the place-keyed instance table. The tuple's dep copy may
+  //! still hold the DEFERRED form (acquire materialized and wrote back into
+  //! the task's dep vector, not this copy), so the member place is resolved
+  //! against the launch's own execution place in that case.
+  template <typename Inst, typename Dep>
+  void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
+  {
+    const data_place& dp = dep.get_dplace();
+    if (dp.is_invalid() || !dp.is_replicated())
+    {
+      return;
+    }
+    const data_place member =
+      ::cuda::experimental::places::replicated_is_deferred(dp)
+        ? e_place.get_place(place_index).affine_data_place()
+        : dp.member(dp.instance_of(place_index));
+    auto data = dep.get_data();
+    inst      = data.template instance<Inst>(data.find_instance_id(member));
+  }
+
+  //! Walk (dep index J, instance index K) in lockstep: deps_tup_t filters
+  //! void_interface dependencies out of the instances tuple, so the two
+  //! tuples are NOT aligned index-for-index -- a token dep advances J only.
+  template <size_t J, size_t K>
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index)
+  {
+    if constexpr (J < sizeof...(deps_ops_t))
+    {
+      using dep_t = ::std::tuple_element_t<J, ::std::tuple<deps_ops_t...>>;
+      if constexpr (::std::is_same_v<typename dep_t::dep_type, void_interface>)
+      {
+        rebase_replicated_impl<J + 1, K>(instances, place_index);
+      }
+      else
+      {
+        rebase_replicated_one(::std::get<K>(instances), ::std::get<J>(deps), place_index);
+        rebase_replicated_impl<J + 1, K + 1>(instances, place_index);
+      }
+    }
+  }
+
+  //! Each shard of a grid dispatch reads its own member instance of any dep
+  //! placed at a replicated data place (place 0 uses the instance as fetched)
+  void rebase_replicated_instances(deps_tup_t& instances, size_t place_index)
+  {
+    if (place_index == 0)
+    {
+      return;
+    }
+    rebase_replicated_impl<0, 0>(instances, place_index);
+  }
+
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
   {
     return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
@@ -1036,6 +1090,7 @@ public:
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
+    rebase_replicated_instances(arg_instances, place_index);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
