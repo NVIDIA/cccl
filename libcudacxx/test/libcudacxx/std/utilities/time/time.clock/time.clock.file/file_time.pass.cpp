@@ -8,6 +8,9 @@
 
 // UNSUPPORTED: c++17
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // <cuda/std/chrono>
 
 // file_time

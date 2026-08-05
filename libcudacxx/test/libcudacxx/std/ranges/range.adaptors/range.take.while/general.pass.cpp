@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // Some basic examples of how take_while_view might be used in the wild. This is a general
 // collection of sample algorithms and functions that try to mock general usage of
@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class Range, class Expected>
-TEST_FUNC constexpr bool equal(Range&& range, Expected&& expected)
+TEST_HOST_DEVICE_FUNC constexpr bool equal(Range&& range, Expected&& expected)
 {
   auto irange    = range.begin();
   auto iexpected = cuda::std::begin(expected);

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <cuda/std/iterator>
 
 // reverse_iterator
@@ -153,14 +150,14 @@ int main(int, char**)
   }
 #endif // defined(_LIBCUDACXX_HAS_LIST)
 
-#if !TEST_COMPILER(NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF)
+#if !TEST_COMPILER(NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF) && !_CCCL_TILE_COMPILATION()
   {
     using RI         = cuda::std::reverse_iterator<const C*>;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
     static_assert(it1->get() == gC[0].get());
   }
-#endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF
+#endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF && !_CCCL_TILE_COMPILATION()
   {
     unused(gC);
   }
