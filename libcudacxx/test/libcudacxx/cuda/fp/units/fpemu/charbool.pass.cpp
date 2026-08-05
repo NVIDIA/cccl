@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
