@@ -10,7 +10,7 @@ import os
 import subprocess
 import tempfile
 import warnings
-from typing import Callable, List
+from typing import Callable
 
 try:
     from cuda.core import Device as CudaDevice
@@ -215,18 +215,6 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
             cccl_it.state = state_
         else:
             cccl_it.state = make_pointer_object(state_, input_it)
-
-
-@functools.lru_cache()
-def get_includes() -> List[str]:
-    def as_option(p):
-        if p is None:
-            return ""
-        return f"-I{p}"
-
-    paths = get_include_paths().as_tuple()
-    opts = [as_option(path) for path in paths]
-    return opts
 
 
 def _check_compile_result(cubin: bytes):
