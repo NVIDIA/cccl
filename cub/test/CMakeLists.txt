@@ -18,6 +18,21 @@ cccl_get_nvtx()
 cccl_get_rapids_test()
 rapids_test_init()
 
+# GCC 7 does not ship <filesystem> (it arrived in GCC 8), which the
+# rapids-cmake resource-spec detector includes. Shadow the header with a
+# minimal local shim on that compiler. Remove when GCC 7 support ends.
+if (
+  TARGET generate_ctest_json
+  AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0
+)
+  target_include_directories(
+    generate_ctest_json
+    BEFORE
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc7_filesystem_shim"
+  )
+endif()
+
 set(CCCL_TEST_GPU_PERCENT_SMALL 15)
 set(CCCL_TEST_GPU_PERCENT_LARGE 100)
 
