@@ -37,23 +37,36 @@ struct bench_policy_selector
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    constexpr auto sweep = cub::HistogramKernelConfig{
+    return {
       TUNE_THREADS,
       TUNE_ITEMS,
       TUNE_VEC_SIZE,
       load_algorithm,
       TUNE_LOAD_MODIFIER,
       TUNE_RLE_COMPRESS,
-      TUNE_WORK_STEALING};
-    return {sweep,
-            {sweep, TUNE_STATIC_SMEM_MAX_BYTES, TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM},
-            {sweep,
-             TUNE_DYNAMIC_SMEM_MAX_BYTES,
-             TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS,
-             TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS,
-             TUNE_DYNAMIC_SMEM_EVEN_3CH_MAX_BINS,
-             TUNE_DYNAMIC_SMEM_EVEN_4CH_MAX_BINS},
-            TUNE_INIT_KERNEL_PDL_TRIGGER_MAX_BINS};
+      TUNE_WORK_STEALING,
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_VEC_SIZE,
+      load_algorithm,
+      TUNE_LOAD_MODIFIER,
+      TUNE_RLE_COMPRESS,
+      TUNE_WORK_STEALING,
+      TUNE_STATIC_SMEM_MAX_BYTES,
+      TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM,
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_VEC_SIZE,
+      load_algorithm,
+      TUNE_LOAD_MODIFIER,
+      TUNE_RLE_COMPRESS,
+      TUNE_WORK_STEALING,
+      TUNE_DYNAMIC_SMEM_MAX_BYTES,
+      TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS,
+      TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS,
+      TUNE_DYNAMIC_SMEM_EVEN_3CH_MAX_BINS,
+      TUNE_DYNAMIC_SMEM_EVEN_4CH_MAX_BINS,
+      TUNE_INIT_KERNEL_PDL_TRIGGER_MAX_BINS};
   }
 };
 #endif // !TUNE_BASE
