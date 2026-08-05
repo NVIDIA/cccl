@@ -13,9 +13,19 @@ cmake_path(GET _c_parallel_dir PARENT_PATH _c_dir) # c
 cmake_path(GET _c_dir PARENT_PATH _cccl_root) # cccl
 set(_hostjit_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
+if (NOT DEFINED CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT)
+  set(CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT "cuda/cccl/headers")
+endif()
+
 set(LIBNVCC_CPM_CMAKE_PATH "${_cccl_root}/cmake/CPM.cmake")
-set(LIBNVCC_HEADER_INSTALL_DESTINATION "cuda/cccl/headers/libnvcc")
-set(LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION "cuda/cccl/headers/clang")
+set(
+  LIBNVCC_HEADER_INSTALL_DESTINATION
+  "${CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT}/libnvcc"
+)
+set(
+  LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION
+  "${CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT}/clang"
+)
 if (CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY)
   set(
     LIBNVCC_LIBRARY_OUTPUT_DIRECTORY
@@ -61,13 +71,22 @@ target_include_directories(
 
 target_compile_definitions(
   cccl.c.parallel.v2.hostjit_lib
-  PRIVATE
-    CCCL_C_EXPERIMENTAL=1
-    CCCL_SOURCE_DIR="${_cccl_root}"
-    HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+  PRIVATE CCCL_C_EXPERIMENTAL=1
 )
 
-if (DEFINED CLANG_HEADERS_DIR)
+if (NOT CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS)
+  target_compile_definitions(
+    cccl.c.parallel.v2.hostjit_lib
+    PRIVATE
+      CCCL_SOURCE_DIR="${_cccl_root}"
+      HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+  )
+endif()
+
+if (
+  DEFINED CLANG_HEADERS_DIR
+  AND NOT CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS
+)
   target_compile_definitions(
     cccl.c.parallel.v2.hostjit_lib
     PRIVATE CLANG_HEADERS_DIR="${CLANG_HEADERS_DIR}"
@@ -106,7 +125,7 @@ set(_hostjit_cuda_minimal_dir "${_hostjit_include_dir}/hostjit/cuda_minimal")
 file(GLOB _hostjit_cuda_minimal_headers "${_hostjit_cuda_minimal_dir}/*.h")
 install(
   FILES ${_hostjit_cuda_minimal_headers}
-  DESTINATION "cuda/cccl/headers/hostjit/cuda_minimal"
+  DESTINATION "${CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT}/hostjit/cuda_minimal"
 )
 
 # Hostjit's stub headers (minimal C++ standard library stubs for device compilation)
@@ -114,7 +133,8 @@ install(
 # are also installed alongside the top-level stubs.
 install(
   DIRECTORY "${_hostjit_cuda_minimal_dir}/stubs/"
-  DESTINATION "cuda/cccl/headers/hostjit/cuda_minimal/stubs"
+  DESTINATION
+    "${CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT}/hostjit/cuda_minimal/stubs"
 )
 
 # On Windows with multi-config generators (Visual Studio), exclude hostjit

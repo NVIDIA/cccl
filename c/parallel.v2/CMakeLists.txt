@@ -30,6 +30,11 @@ if (NOT COMMAND cccl_configure_target)
 endif()
 
 option(CCCL_C_Parallel_V2_ENABLE_TESTING "Build cccl.c.parallel.v2 tests." OFF)
+option(
+  CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS
+  "Resolve HostJIT resource paths at runtime instead of embedding build-tree defaults."
+  OFF
+)
 
 set(
   CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY

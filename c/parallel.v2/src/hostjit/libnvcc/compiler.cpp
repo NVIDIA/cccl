@@ -132,6 +132,17 @@ struct CompilerOptions
   bool keep_artifacts    = false;
 };
 
+static void appendClangResourceDir(std::vector<std::string>& args)
+{
+#ifdef CLANG_RESOURCE_DIR
+  args.push_back("-resource-dir");
+  args.push_back(CLANG_RESOURCE_DIR);
+#endif
+  // Runtime-path wheels package a flat Clang header directory and pass it via
+  // -internal-isystem. That directory is not a Clang resource root (which
+  // requires an include/ child), so there is no runtime fallback here.
+}
+
 struct CompilationResult
 {
   bool success = false;
@@ -555,6 +566,26 @@ static bool validateOptions(const CompilerOptions& options, std::string* error_m
     return false;
   }
 
+  if (options.hostjit_include_path.empty() || !pathExists(options.hostjit_include_path))
+  {
+    if (error_message)
+    {
+      *error_message = "HostJIT include path not found. Please pass --hostjit-include-path or set "
+                       "HOSTJIT_INCLUDE_PATH.";
+    }
+    return false;
+  }
+
+  if (options.clang_headers_path.empty() || !pathExists(options.clang_headers_path))
+  {
+    if (error_message)
+    {
+      *error_message = "Clang headers path not found. Please pass --clang-headers-path or set "
+                       "HOSTJIT_CLANG_PATH.";
+    }
+    return false;
+  }
+
   for (const auto& include_path : options.include_paths)
   {
     if (!pathExists(include_path))
@@ -909,8 +940,6 @@ public:
     std::string temp_dir    = std::filesystem::path(output_ptx).parent_path().string();
     std::string source_file = temp_dir + "/" + input_file;
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
     // PTX version floor is 7.8. Some generated device code uses features
     // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
     // even on sm_75/sm_80.
@@ -956,13 +985,11 @@ public:
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
     arg_strings.push_back("-target-feature");
     arg_strings.push_back("+ptx" + std::to_string(ptx_version));
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
+    appendClangResourceDir(arg_strings);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
     arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
+    arg_strings.push_back(config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
@@ -1310,10 +1337,8 @@ public:
       return result;
     }
 
-    std::string input_file   = input_name.empty() ? std::string("input.cu") : input_name;
-    std::string source_file  = temp_dir + "/" + input_file;
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
+    std::string input_file  = input_name.empty() ? std::string("input.cu") : input_name;
+    std::string source_file = temp_dir + "/" + input_file;
     // PTX version floor is 7.8. Some generated device code uses features
     // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
     // even on sm_75/sm_80.
@@ -1359,13 +1384,11 @@ public:
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
     arg_strings.push_back("-target-feature");
     arg_strings.push_back("+ptx" + std::to_string(ptx_version));
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
+    appendClangResourceDir(arg_strings);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
     arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
+    arg_strings.push_back(config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
@@ -1482,8 +1505,6 @@ public:
     std::string temp_dir    = std::filesystem::path(output_obj).parent_path().string();
     std::string source_file = temp_dir + "/host_" + input_file;
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
     arg_strings.push_back("-triple");
@@ -1516,13 +1537,11 @@ public:
     arg_strings.push_back("pic");
     arg_strings.push_back("-pic-level");
     arg_strings.push_back("2");
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
+    appendClangResourceDir(arg_strings);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
     arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
+    arg_strings.push_back(config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
@@ -1912,7 +1931,6 @@ public:
 
     initialize_llvm();
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
     std::vector<std::string> arg_strings;
     arg_strings.push_back(pch_source_path);
 
@@ -1991,13 +2009,11 @@ public:
       return false;
     }
 
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
+    appendClangResourceDir(arg_strings);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
     arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
+    arg_strings.push_back(config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
