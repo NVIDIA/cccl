@@ -12,6 +12,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -637,8 +638,9 @@ void* stf_data_place_allocate_nd(
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
-  dim4 dims;
-  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  // The layouts are static_asserted identical above; bit_cast avoids the
+  // -Wclass-memaccess warning that memcpy onto the non-trivial dim4 triggers.
+  const dim4 dims = ::std::bit_cast<dim4>(*data_dims);
   try
   {
     return from_opaque(h)->allocate_nd(dims, elemsize, stream);
@@ -817,6 +819,10 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
       const auto dst_end   = dst_begin + copy_sz;
       _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
                    "stf_ctx_wait destination buffer must not overlap the logical data range");
+      // The range bounds are only consumed by the assertion, which compiles
+      // out in release builds.
+      (void) src_end;
+      (void) dst_end;
       ::std::memcpy(dst, data.data_handle(), copy_sz);
     };
 
