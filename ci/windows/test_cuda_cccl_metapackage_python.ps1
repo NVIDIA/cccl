@@ -18,25 +18,57 @@ $cudaMajor = Get-CudaMajor
 $ctkFlavor = Get-CtkExtraFlavor $CtkMode
 Set-CtkPin $CtkMode
 
-$cudaCcclWheel = Get-CudaCcclWheel
-$cudaComputeWheel = Get-CudaComputeWheel
-$wheelhouse = Split-Path -Parent $cudaCcclWheel
+$wheelhouse = Get-CcclPythonWheelhouse
+$cudaCcclWheel = Get-OnePathMatch `
+    -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
+$cudaComputeWheel = Get-OnePathMatch `
+    -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
 
-# Pass both coordinated wheels as explicit local requirements so an
-# equal-version index candidate cannot replace cuda-compute. The metapackage
-# extra still supplies compute's selected dependencies, with index access left
-# available for those third-party packages.
-Invoke-Checked {
-    & $python -m pip install --find-links $wheelhouse `
-        $cudaComputeWheel `
-        "${cudaCcclWheel}[minimal-$ctkFlavor$cudaMajor]"
-} "Failed to install cuda-cccl metapackage"
+# Constrain cuda-compute to the coordinated local wheel without making it a
+# direct install requirement. This proves the metapackage resolves compute
+# transitively while preventing an equal-version index candidate from winning;
+# index access remains available for third-party dependencies.
+$cudaComputeWheelUri = & $python -c `
+    'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' `
+    $cudaComputeWheel
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to create cuda-compute wheel URI (exit code $LASTEXITCODE)"
+}
+$constraintFile = [System.IO.Path]::GetTempFileName()
+try {
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText(
+        $constraintFile, "cuda-compute @ $cudaComputeWheelUri`n", $utf8NoBom
+    )
+    Invoke-Checked {
+        & $python -m pip install --constraint $constraintFile `
+            --find-links $wheelhouse `
+            "${cudaCcclWheel}[minimal-$ctkFlavor$cudaMajor]"
+    } "Failed to install cuda-cccl metapackage"
+}
+finally {
+    Remove-Item -LiteralPath $constraintFile -Force
+}
 Invoke-Checked { & $python -m pip check } "Installed cuda-cccl environment is inconsistent"
 $verifyMetapackage = @'
 import importlib.metadata
 import importlib.util
+import json
+import sys
+from pathlib import Path
 
 import cuda.compute
+
+compute_distribution = importlib.metadata.distribution("cuda-compute")
+direct_url_text = compute_distribution.read_text("direct_url.json")
+if direct_url_text is None:
+    raise RuntimeError("cuda-compute is missing direct_url.json provenance")
+compute_url = json.loads(direct_url_text)["url"]
+expected_compute_url = Path(sys.argv[1]).resolve().as_uri()
+if compute_url != expected_compute_url:
+    raise RuntimeError(
+        f"cuda-compute came from {compute_url}, expected {expected_compute_url}"
+    )
 
 metapackage_version = importlib.metadata.version("cuda-cccl")
 compute_version = importlib.metadata.version("cuda-compute")
@@ -48,5 +80,5 @@ if importlib.util.find_spec("cuda.cccl") is not None:
     raise RuntimeError("cuda-cccl must not install a cuda.cccl module")
 '@
 Invoke-Checked {
-    $verifyMetapackage | & $python -
+    $verifyMetapackage | & $python - $cudaComputeWheel
 } "cuda-cccl dependency or module-ownership check failed"

@@ -20,10 +20,10 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Pass both coordinated wheels as explicit local requirements so an
-# equal-version index candidate cannot replace cuda-compute. The metapackage
-# extra still supplies compute's selected dependencies, with index access left
-# available for those third-party packages.
+# Constrain cuda-compute to the coordinated local wheel without making it a
+# direct install requirement. This proves the metapackage resolves compute
+# transitively while preventing an equal-version index candidate from winning;
+# index access remains available for third-party dependencies.
 wheelhouse_dir="${repo_root}/wheelhouse"
 mapfile -t cuda_cccl_wheels < <(
   find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_cccl-*.whl' -print | sort
@@ -41,16 +41,36 @@ if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
 fi
 CUDA_CCCL_WHEEL_PATH="${cuda_cccl_wheels[0]}"
 CUDA_COMPUTE_WHEEL_PATH="${cuda_compute_wheels[0]}"
+cuda_compute_wheel_uri=$(python -c \
+  'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' \
+  "${CUDA_COMPUTE_WHEEL_PATH}")
+constraints_file=$(mktemp)
+trap 'rm -f "${constraints_file}"' EXIT
+printf 'cuda-compute @ %s\n' "${cuda_compute_wheel_uri}" > "${constraints_file}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install --find-links "${wheelhouse_dir}" \
-  "${CUDA_COMPUTE_WHEEL_PATH}" \
+python -m pip install --constraint "${constraints_file}" \
+  --find-links "${wheelhouse_dir}" \
   "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
 python -m pip check
-python - <<'PY'
+python - "${CUDA_COMPUTE_WHEEL_PATH}" <<'PY'
 import importlib.metadata
 import importlib.util
+import json
+import sys
+from pathlib import Path
 
 import cuda.compute
+
+compute_distribution = importlib.metadata.distribution("cuda-compute")
+direct_url_text = compute_distribution.read_text("direct_url.json")
+if direct_url_text is None:
+    raise RuntimeError("cuda-compute is missing direct_url.json provenance")
+compute_url = json.loads(direct_url_text)["url"]
+expected_compute_url = Path(sys.argv[1]).resolve().as_uri()
+if compute_url != expected_compute_url:
+    raise RuntimeError(
+        f"cuda-compute came from {compute_url}, expected {expected_compute_url}"
+    )
 
 metapackage_version = importlib.metadata.version("cuda-cccl")
 compute_version = importlib.metadata.version("cuda-compute")

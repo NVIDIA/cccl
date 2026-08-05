@@ -409,10 +409,33 @@ jobs:
             echo "Expected one cuda-compute wheel; found ${#compute_wheels[@]}." >&2
             exit 1
           fi
+          compute_wheel_uri=$(python -c \
+            'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' \
+            "${compute_wheels[0]}")
+          constraints_file=$(mktemp)
+          trap 'rm -f "${constraints_file}"' EXIT
+          printf 'cuda-compute @ %s\n' "${compute_wheel_uri}" > "${constraints_file}"
           pip install \
+            --constraint "${constraints_file}" \
             --find-links "$(dirname "${meta_wheels[0]}")" \
-            "${compute_wheels[0]}" \
             "${meta_wheels[0]}[cu13]"
+          python - "${compute_wheels[0]}" <<'PY'
+          import importlib.metadata
+          import json
+          import sys
+          from pathlib import Path
+
+          distribution = importlib.metadata.distribution("cuda-compute")
+          direct_url_text = distribution.read_text("direct_url.json")
+          if direct_url_text is None:
+              raise RuntimeError("cuda-compute is missing direct_url.json provenance")
+          compute_url = json.loads(direct_url_text)["url"]
+          expected_url = Path(sys.argv[1]).resolve().as_uri()
+          if compute_url != expected_url:
+              raise RuntimeError(
+                  f"cuda-compute came from {compute_url}, expected {expected_url}"
+              )
+          PY
 
       - name: Test CPU-only import
         if: steps.check-wheel.outputs.skip != 'true'
