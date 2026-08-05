@@ -254,8 +254,8 @@ public:
       init_device(dev_id);
       it = devices_.find(dev_id);
     }
-    _CCCL_ASSERT(domain_id >= 0 && domain_id < static_cast<int>(it->second.size()),
-                 "locality domain ordinal out of range");
+    EXPECT(domain_id >= 0 && domain_id < static_cast<int>(it->second.size()),
+           "locality domain ordinal out of range");
     return it->second[domain_id];
   }
 
@@ -714,8 +714,8 @@ inline data_place data_place::locality_domain(const locality_domain_view& view)
     // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
     const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
-    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
-                 "fake locality domain ordinal out of range");
+    EXPECT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
+           "fake locality domain ordinal out of range");
     (void) fake_n;
     return data_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)));
   }
@@ -751,8 +751,8 @@ inline exec_place exec_place::locality_domain(const locality_domain_view& view)
     // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
     const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
-    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
-                 "fake locality domain ordinal out of range");
+    EXPECT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
+           "fake locality domain ordinal out of range");
     (void) fake_n;
     return exec_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)),
                                  /*use_green_ctx_data_place=*/true);
@@ -828,7 +828,7 @@ public:
 
   locality_domain_view get_view(size_t id) const
   {
-    _CCCL_ASSERT(id < count_, "locality domain ordinal out of range");
+    EXPECT(id < count_, "locality domain ordinal out of range");
     return locality_domain_view(devid_, static_cast<int>(id));
   }
 
