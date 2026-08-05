@@ -254,8 +254,11 @@ public:
       init_device(dev_id);
       it = devices_.find(dev_id);
     }
-    EXPECT(domain_id >= 0 && domain_id < static_cast<int>(it->second.size()),
-           "locality domain ordinal out of range");
+    EXPECT((domain_id >= 0 && domain_id < static_cast<int>(it->second.size())),
+           "Invalid locality domain ordinal ",
+           domain_id,
+           " on device ",
+           dev_id);
     return it->second[domain_id];
   }
 
@@ -266,7 +269,7 @@ private:
 
     int num_domains = 0;
     cuda_try(cuDeviceGetAttribute(&num_domains, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, device));
-    _CCCL_ASSERT(num_domains > 0, "device reports no locality domains");
+    EXPECT(num_domains > 0, "Device ", dev_id, " reports no locality domains.");
 
     CUdevResource sm_resource;
     cuda_try(cuDeviceGetDevResource(device, &sm_resource, CU_DEV_RESOURCE_TYPE_SM));
@@ -714,9 +717,11 @@ inline data_place data_place::locality_domain(const locality_domain_view& view)
     // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
     const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
-    EXPECT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
-           "fake locality domain ordinal out of range");
-    (void) fake_n;
+    EXPECT((view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n)),
+           "Invalid fake locality domain ordinal ",
+           view.domain_id,
+           " on device ",
+           view.devid);
     return data_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)));
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -751,9 +756,11 @@ inline exec_place exec_place::locality_domain(const locality_domain_view& view)
     // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
     const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
-    EXPECT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
-           "fake locality domain ordinal out of range");
-    (void) fake_n;
+    EXPECT((view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n)),
+           "Invalid fake locality domain ordinal ",
+           view.domain_id,
+           " on device ",
+           view.devid);
     return exec_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)),
                                  /*use_green_ctx_data_place=*/true);
   }
@@ -789,7 +796,7 @@ inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_
 inline exec_place make_locality_domain_grid(int dev_id)
 {
   const unsigned int num_domains = locality_domain_count(dev_id);
-  _CCCL_ASSERT(num_domains > 0, "no locality domains available on this device");
+  EXPECT(num_domains > 0, "No locality domains available on device ", dev_id, ".");
 
   ::std::vector<exec_place> domains;
   domains.reserve(num_domains);
@@ -828,7 +835,7 @@ public:
 
   locality_domain_view get_view(size_t id) const
   {
-    EXPECT(id < count_, "locality domain ordinal out of range");
+    EXPECT(id < count_, "Invalid locality domain ordinal ", id, " on device ", devid_);
     return locality_domain_view(devid_, static_cast<int>(id));
   }
 

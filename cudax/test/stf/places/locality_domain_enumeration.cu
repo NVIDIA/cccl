@@ -58,6 +58,20 @@ int main()
       EXPECT(v.domain_id == static_cast<int>(i));
       EXPECT(v == locality_domain_view(d, static_cast<int>(i)));
     }
+
+    // Out-of-range ordinals are rejected on every build type (the check is
+    // an EXPECT, not an assertion that compiles out in release builds)
+    bool threw = false;
+    try
+    {
+      auto v = helper.get_view(helper.get_count());
+      (void) v;
+    }
+    catch (...)
+    {
+      threw = true;
+    }
+    EXPECT(threw);
   }
 
   // Out-of-range device ordinals must report zero domains, not fail

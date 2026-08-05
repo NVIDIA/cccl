@@ -89,6 +89,26 @@ int main()
     }
   }
 
+#if _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
+  // ==== Out-of-range ordinals are rejected at use, on every build type ====
+  //
+  // (Native backend only: the whole-device fallback deliberately treats the
+  // ordinal as a pure label and does not validate it.)
+  {
+    bool threw = false;
+    try
+    {
+      exec_place p_bad = exec_place::locality_domain(dev, static_cast<int>(ndomains) + 7);
+      (void) p_bad;
+    }
+    catch (...)
+    {
+      threw = true;
+    }
+    EXPECT(threw);
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
+
   // ==== Activation restores the previous execution state ====
 
   cuda_safe_call(cudaSetDevice(dev));
