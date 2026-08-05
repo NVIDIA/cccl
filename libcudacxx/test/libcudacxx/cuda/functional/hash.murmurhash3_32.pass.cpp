@@ -23,6 +23,7 @@ struct test_murmurhash3_32
     murmurhash3_32_test(static_cast<char>(0), 1364076727u, 0);
     murmurhash3_32_test(static_cast<char>(42), 338914844u, 0);
     murmurhash3_32_test(static_cast<char>(0), 3712240066u, 42);
+    murmurhash3_32_test(static_cast<cuda::std::uint16_t>(42), 2959774506u, 0);
     murmurhash3_32_test(static_cast<cuda::std::int32_t>(0), 593689054u, 0);
     murmurhash3_32_test(static_cast<cuda::std::int32_t>(0), 933211791u, 42);
     murmurhash3_32_test(static_cast<cuda::std::int32_t>(42), 3160117731u, 0);

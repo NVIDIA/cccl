@@ -141,16 +141,17 @@ private:
     if constexpr (_Holder::__tail_size > 0)
     {
       ::cuda::std::uint32_t __k1 = 0;
+      const auto* __tail         = __holder.__bytes_;
       switch (__holder.__tail_size)
       {
         case 3:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[2]) << 16;
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__tail[2]) << 16;
           [[fallthrough]];
         case 2:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[1]) << 8;
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__tail[1]) << 8;
           [[fallthrough]];
         case 1:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[0]);
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__tail[0]);
           __k1 *= __c1;
           __k1 = ::cuda::std::rotl(__k1, 15);
           __k1 *= __c2;
