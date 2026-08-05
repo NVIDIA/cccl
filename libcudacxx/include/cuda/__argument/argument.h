@@ -890,24 +890,19 @@ template <class _ElementType, auto _Value, class _Tp>
 struct __constant_traits_bounds<_ElementType, _Value, _Tp, false>
 {};
 
-// True iff the lower and upper bounds of a typed constant sequence can be constant-evaluated. This is the case unless
-// the element type cannot form a constexpr value (e.g. the extended floating-point types), since then the element
-// casts performed while reducing the sequence are not constant expressions.
-template <class _Void, class _ElementType, auto... _Values>
-inline constexpr bool __constant_seq_has_static_bounds_impl_v = false;
-
-template <class _ElementType, auto... _Values>
-inline constexpr bool __constant_seq_has_static_bounds_impl_v<
-  ::cuda::std::void_t<
-    ::cuda::std::bool_constant<(static_cast<void>(__constant_seq_compute_lowest<_ElementType, _Values...>()),
-                                static_cast<void>(__constant_seq_compute_highest<_ElementType, _Values...>()),
-                                true)>>,
-  _ElementType,
-  _Values...> = true;
-
+// True iff the lower and upper bounds of a typed constant sequence can be constant-evaluated. Reducing the sequence
+// casts every non-type template parameter to the element type, so this holds exactly when each of those casts is a
+// constant expression; element types that cannot form a constexpr value (e.g. the extended floating-point types) drop
+// out. An empty sequence takes its bounds from @c numeric_limits, which the @c __traits_impl primary template already
+// relies on being constexpr for any supported element type.
+//
+// The per-element casts are checked through @c __constant_has_static_bounds_v instead of by probing a call to
+// @c __constant_seq_compute_lowest: MSVC 14.29 does not propagate a non-constant expression out of a called constexpr
+// function during template-argument substitution, so such a probe wrongly reports @c true there. Keeping the cast in
+// the immediate context, as the single-value gate already does, is what that compiler evaluates correctly.
 template <class _ElementType, auto... _Values>
 inline constexpr bool __constant_seq_has_static_bounds_v =
-  __constant_seq_has_static_bounds_impl_v<void, _ElementType, _Values...>;
+  (__constant_has_static_bounds_v<_ElementType, _Values> && ...);
 
 // Static bound members for typed constant-sequence traits. As with @c __constant_traits_bounds, element types that
 // cannot form a @c static @c constexpr bound (e.g. the extended floating-point types) do not expose @c lowest /
