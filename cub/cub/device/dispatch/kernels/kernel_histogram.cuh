@@ -704,14 +704,10 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(
-  int(kernel_config<
-        is_privatized_static_smem_v<PrivatizationMode> ? privatization_tier::static_smem : privatization_tier::gmem>(
-        current_policy<PolicySelector>())
-        .threads_per_block),
-  int(is_privatized_static_smem_v<PrivatizationMode>
-        ? current_policy<PolicySelector>().static_smem.min_blocks_per_sm
-        : 0))
+__launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), PrivatizationMode{}).threads_per_block),
+                  int(is_privatized_static_smem_v<PrivatizationMode>
+                        ? current_policy<PolicySelector>().static_smem.min_blocks_per_sm
+                        : 0))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -727,8 +723,7 @@ __launch_bounds__(
     GridQueue<int> tile_queue)
 {
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
-  static constexpr auto sweep         = kernel_config<
-            is_privatized_static_smem_v<PrivatizationMode> ? privatization_tier::static_smem : privatization_tier::gmem>(hp);
+  static constexpr auto sweep         = kernel_config(hp, PrivatizationMode{});
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
@@ -963,10 +958,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(kernel_config<is_privatized_static_smem_v<PrivatizationMode> ? privatization_tier::static_smem
-                                                                                   : privatization_tier::gmem>(
-                        current_policy<PolicySelector>())
-                        .threads_per_block))
+__launch_bounds__(int(kernel_config(current_policy<PolicySelector>(), PrivatizationMode{}).threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -982,8 +974,7 @@ __launch_bounds__(int(kernel_config<is_privatized_static_smem_v<PrivatizationMod
     const GridQueue<int> tile_queue)
 {
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
-  static constexpr auto sweep         = kernel_config<
-            is_privatized_static_smem_v<PrivatizationMode> ? privatization_tier::static_smem : privatization_tier::gmem>(hp);
+  static constexpr auto sweep         = kernel_config(hp, PrivatizationMode{});
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];

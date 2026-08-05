@@ -276,12 +276,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  constexpr auto tier =
-    is_privatized_dynamic_smem_v<PrivatizationMode> ? privatization_tier::dynamic_smem
-    : is_privatized_static_smem_v<PrivatizationMode>
-      ? privatization_tier::static_smem
-      : privatization_tier::gmem;
-  const HistogramKernelConfig sweep = kernel_config<tier>(active_policy);
+  const HistogramKernelConfig sweep = kernel_config(active_policy, PrivatizationMode{});
   const int threads_per_block       = sweep.threads_per_block;
   const int items_per_thread        = sweep.items_per_thread;
 
