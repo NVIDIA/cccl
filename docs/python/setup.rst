@@ -27,8 +27,24 @@ The easiest way to install ``cuda-cccl`` is using pip:
 
    pip install cuda-cccl[cu13]  # or cuda-cccl[cu12]
 
-This will install ``cuda-cccl`` along with all required dependencies, including
-the ``cuda-toolkit`` pip packages for the chosen CUDA major version.
+``cuda-cccl`` is a module-free metapackage. It installs ``cuda-compute``, which
+provides the ``cuda.compute`` API and privately carries the CCCL headers it
+needs, along with the ``cuda-toolkit`` pip packages for the chosen CUDA major
+version.
+
+To install only the implementation package, use the corresponding extra
+directly:
+
+.. code-block:: bash
+
+   pip install cuda-compute[cu13]  # or cuda-compute[cu12]
+
+.. important::
+
+   When upgrading once from a former monolithic ``cuda-cccl`` release, first
+   run ``python -m pip uninstall -y cuda-cccl``, then install the new
+   metapackage. This avoids pip uninstalling files that moved to
+   ``cuda-compute``. Later upgrades use the normal upgrade flow.
 
 If you already have a CUDA toolkit installed on your system (e.g., via the
 NVIDIA runfile, package manager, or Conda) and do not want pip to install it,
@@ -68,13 +84,16 @@ This will install the CCCL Python libraries and their dependencies from the cond
 Install from Source
 ~~~~~~~~~~~~~~~~~~~
 
-For development or to access the latest features:
+For development or to access the latest ``cuda.compute`` features:
 
 .. code-block:: bash
 
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl/python/cuda_cccl
    pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+
+The editable build reads libcudacxx, CUB, and Thrust headers from the canonical
+repository directories. It does not copy them into ``python/cuda_cccl``.
 
 The test extras do not install CuPy. To also run the CuPy-based
 ``cuda.compute`` examples, install CuPy separately, for example
@@ -84,7 +103,7 @@ The test extras do not install CuPy. To also run the CuPy-based
 Development Setup
 ~~~~~~~~~~~~~~~~~~
 
-For contributing to cuda-cccl or advanced development:
+For contributing to ``cuda.compute`` or advanced development:
 
 .. code-block:: bash
 

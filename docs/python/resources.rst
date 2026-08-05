@@ -30,7 +30,7 @@ We welcome contributions! Please see the
 for instructions on how to set up a development environment and submit a pull request.
 
 Once you have a development environment set up, see :doc:`setup` for instructions
-on how to install `cuda.cccl` in development mode.
+on how to install ``cuda-compute`` in development mode.
 
 License
 -------

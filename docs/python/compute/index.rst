@@ -420,7 +420,7 @@ to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
 Blobs are versioned and self-describing, but they are not a long-term storage
-format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
+format: compatibility across ``cuda-compute`` versions is not guaranteed, and
 loading a blob produced by a different version may be rejected with a clear
 error. Persist the inputs needed to rebuild (or re-serialize) rather than
 relying on old blobs surviving an upgrade.
