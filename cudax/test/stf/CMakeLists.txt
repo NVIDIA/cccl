@@ -80,6 +80,7 @@ set(
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
   places/replicated_data_place.cu
+  places/replicated_frozen_import.cu
   places/cute_parallel_for.cu
   places/managed.cu
   places/managed_from_user.cu
