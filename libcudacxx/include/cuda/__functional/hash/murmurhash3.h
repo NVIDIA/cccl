@@ -97,13 +97,13 @@ private:
 
 public:
   //! @brief Constructs a MurmurHash3 32-bit hash function with the given seed.
-  //! @param[in] __seed A custom number to randomize the resulting hash value
+  //! @param __seed A custom number to randomize the resulting hash value
   _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
-  //! @param[in] __key The input argument to hash
+  //! @param __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
@@ -114,7 +114,7 @@ public:
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @tparam _Extent The extent type
-  //! @param[in] __keys span of keys to hash
+  //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
@@ -141,19 +141,21 @@ private:
     if constexpr (_Holder::__tail_size > 0)
     {
       ::cuda::std::uint32_t __k1 = 0;
-      if constexpr (_Holder::__tail_size >= 3)
+      switch (__holder.__tail_size)
       {
-        __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[2]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 2)
-      {
-        __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[1]) << 8;
-      }
-      __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[0]);
-      __k1 *= __c1;
-      __k1 = ::cuda::std::rotl(__k1, 15);
-      __k1 *= __c2;
-      __h1 ^= __k1;
+        case 3:
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[2]) << 16;
+          [[fallthrough]];
+        case 2:
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[1]) << 8;
+          [[fallthrough]];
+        case 1:
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[0]);
+          __k1 *= __c1;
+          __k1 = ::cuda::std::rotl(__k1, 15);
+          __k1 *= __c2;
+          __h1 ^= __k1;
+      };
     }
 
     //----------
@@ -219,8 +221,6 @@ template <typename _Key>
 struct __murmurhash3_x86_128
 {
 private:
-  using __result_type _CCCL_NODEBUG_ALIAS = __uint128_t;
-
   static constexpr ::cuda::std::uint32_t __c1 = 0x239b961b;
   static constexpr ::cuda::std::uint32_t __c2 = 0xab0e9789;
   static constexpr ::cuda::std::uint32_t __c3 = 0x38b34ae5;
@@ -280,15 +280,15 @@ private:
 
 public:
   //! @brief Constructs a MurmurHash3 x86 128-bit hash function with the given seed.
-  //! @param[in] __seed A custom number to randomize the resulting hash value
+  //! @param __seed A custom number to randomize the resulting hash value
   _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a 128-bit hash value for its argument.
-  //! @param[in] __key The input argument to hash
+  //! @param __key The input argument to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
@@ -297,17 +297,17 @@ public:
 
   //! @brief Returns a 128-bit hash value for its argument.
   //! @tparam _Extent The extent type
-  //! @param[in] __keys span of keys to hash
+  //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint32_t{sizeof(_Holder)};
@@ -325,79 +325,72 @@ private:
       ::cuda::std::uint32_t __k4 = 0;
 
       const auto __tail = __holder.__bytes_;
-      if constexpr (_Holder::__tail_size >= 15)
+      switch (__size % __chunk_size)
       {
-        __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[14]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 14)
-      {
-        __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[13]) << 8;
-      }
-      if constexpr (_Holder::__tail_size >= 13)
-      {
-        __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[12]);
-        __k4 *= __c4;
-        __k4 = ::cuda::std::rotl(__k4, 18);
-        __k4 *= __c1;
-        __h[3] ^= __k4;
-      }
-      if constexpr (_Holder::__tail_size >= 12)
-      {
-        __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[11]) << 24;
-      }
-      if constexpr (_Holder::__tail_size >= 11)
-      {
-        __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[10]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 10)
-      {
-        __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[9]) << 8;
-      }
-      if constexpr (_Holder::__tail_size >= 9)
-      {
-        __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[8]);
-        __k3 *= __c3;
-        __k3 = ::cuda::std::rotl(__k3, 17);
-        __k3 *= __c4;
-        __h[2] ^= __k3;
-      }
-      if constexpr (_Holder::__tail_size >= 8)
-      {
-        __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[7]) << 24;
-      }
-      if constexpr (_Holder::__tail_size >= 7)
-      {
-        __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[6]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 6)
-      {
-        __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[5]) << 8;
-      }
-      if constexpr (_Holder::__tail_size >= 5)
-      {
-        __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[4]);
-        __k2 *= __c2;
-        __k2 = ::cuda::std::rotl(__k2, 16);
-        __k2 *= __c3;
-        __h[1] ^= __k2;
-      }
-      if constexpr (_Holder::__tail_size >= 4)
-      {
-        __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[3]) << 24;
-      }
-      if constexpr (_Holder::__tail_size >= 3)
-      {
-        __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[2]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 2)
-      {
-        __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[1]) << 8;
-      }
-      __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[0]);
-      __k1 *= __c1;
-      __k1 = ::cuda::std::rotl(__k1, 15);
-      __k1 *= __c2;
-      __h[0] ^= __k1;
+        case 15:
+          __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[14]) << 16;
+          [[fallthrough]];
+        case 14:
+          __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[13]) << 8;
+          [[fallthrough]];
+        case 13:
+          __k4 ^= static_cast<::cuda::std::uint32_t>(__tail[12]) << 0;
+          __k4 *= __c4;
+          __k4 = ::cuda::std::rotl(__k4, 18);
+          __k4 *= __c1;
+          __h[3] ^= __k4;
+          [[fallthrough]];
+
+        case 12:
+          __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[11]) << 24;
+          [[fallthrough]];
+        case 11:
+          __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[10]) << 16;
+          [[fallthrough]];
+        case 10:
+          __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[9]) << 8;
+          [[fallthrough]];
+        case 9:
+          __k3 ^= static_cast<::cuda::std::uint32_t>(__tail[8]) << 0;
+          __k3 *= __c3;
+          __k3 = ::cuda::std::rotl(__k3, 17);
+          __k3 *= __c4;
+          __h[2] ^= __k3;
+          [[fallthrough]];
+
+        case 8:
+          __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[7]) << 24;
+          [[fallthrough]];
+        case 7:
+          __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[6]) << 16;
+          [[fallthrough]];
+        case 6:
+          __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[5]) << 8;
+          [[fallthrough]];
+        case 5:
+          __k2 ^= static_cast<::cuda::std::uint32_t>(__tail[4]) << 0;
+          __k2 *= __c2;
+          __k2 = ::cuda::std::rotl(__k2, 16);
+          __k2 *= __c3;
+          __h[1] ^= __k2;
+          [[fallthrough]];
+
+        case 4:
+          __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[3]) << 24;
+          [[fallthrough]];
+        case 3:
+          __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[2]) << 16;
+          [[fallthrough]];
+        case 2:
+          __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[1]) << 8;
+          [[fallthrough]];
+        case 1:
+          __k1 ^= static_cast<::cuda::std::uint32_t>(__tail[0]) << 0;
+          __k1 *= __c1;
+          __k1 = ::cuda::std::rotl(__k1, 15);
+          __k1 *= __c2;
+          __h[0] ^= __k1;
+      };
     }
 
     // finalization
@@ -425,10 +418,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return ::cuda::std::bit_cast<__result_type>(__h);
+    return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -584,7 +577,7 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return ::cuda::std::bit_cast<__result_type>(__h);
+    return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
 private:
@@ -595,8 +588,6 @@ template <typename _Key>
 struct __murmurhash3_x64_128
 {
 private:
-  using __result_type _CCCL_NODEBUG_ALIAS = __uint128_t;
-
   static constexpr ::cuda::std::uint64_t __c1 = 0x87c37b91114253d5ull;
   static constexpr ::cuda::std::uint64_t __c2 = 0x4cf5ad432745937full;
 
@@ -634,15 +625,15 @@ private:
 
 public:
   //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
-  //! @param[in] __seed A custom number to randomize the resulting hash value
+  //! @param __seed A custom number to randomize the resulting hash value
   _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a 128-bit hash value for its argument.
-  //! @param[in] __key The input argument to hash
+  //! @param __key The input argument to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
@@ -651,17 +642,17 @@ public:
 
   //! @brief Returns a 128-bit hash value for its argument.
   //! @tparam _Extent The extent type
-  //! @param[in] __keys span of keys to hash
+  //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
@@ -677,71 +668,61 @@ private:
       ::cuda::std::uint64_t __k2 = 0;
 
       const auto __tail = __holder.__bytes_;
-      if constexpr (_Holder::__tail_size >= 15)
+      switch (__size % __chunk_size)
       {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[14]) << 48;
+        case 15:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[14]) << 48;
+          [[fallthrough]];
+        case 14:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[13]) << 40;
+          [[fallthrough]];
+        case 13:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[12]) << 32;
+          [[fallthrough]];
+        case 12:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[11]) << 24;
+          [[fallthrough]];
+        case 11:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[10]) << 16;
+          [[fallthrough]];
+        case 10:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[9]) << 8;
+          [[fallthrough]];
+        case 9:
+          __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[8]) << 0;
+          __k2 *= __c2;
+          __k2 = ::cuda::std::rotl(__k2, 33);
+          __k2 *= __c1;
+          __h[1] ^= __k2;
+          [[fallthrough]];
+        case 8:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[7]) << 56;
+          [[fallthrough]];
+        case 7:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[6]) << 48;
+          [[fallthrough]];
+        case 6:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[5]) << 40;
+          [[fallthrough]];
+        case 5:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[4]) << 32;
+          [[fallthrough]];
+        case 4:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[3]) << 24;
+          [[fallthrough]];
+        case 3:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[2]) << 16;
+          [[fallthrough]];
+        case 2:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[1]) << 8;
+          [[fallthrough]];
+        case 1:
+          __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[0]) << 0;
+          __k1 *= __c1;
+          __k1 = ::cuda::std::rotl(__k1, 31);
+          __k1 *= __c2;
+          __h[0] ^= __k1;
       }
-      if constexpr (_Holder::__tail_size >= 14)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[13]) << 40;
-      }
-      if constexpr (_Holder::__tail_size >= 13)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[12]) << 32;
-      }
-      if constexpr (_Holder::__tail_size >= 12)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[11]) << 24;
-      }
-      if constexpr (_Holder::__tail_size >= 11)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[10]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 10)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[9]) << 8;
-      }
-      if constexpr (_Holder::__tail_size >= 9)
-      {
-        __k2 ^= static_cast<::cuda::std::uint64_t>(__tail[8]);
-        __k2 *= __c2;
-        __k2 = ::cuda::std::rotl(__k2, 33);
-        __k2 *= __c1;
-        __h[1] ^= __k2;
-      }
-      if constexpr (_Holder::__tail_size >= 8)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[7]) << 56;
-      }
-      if constexpr (_Holder::__tail_size >= 7)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[6]) << 48;
-      }
-      if constexpr (_Holder::__tail_size >= 6)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[5]) << 40;
-      }
-      if constexpr (_Holder::__tail_size >= 5)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[4]) << 32;
-      }
-      if constexpr (_Holder::__tail_size >= 4)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[3]) << 24;
-      }
-      if constexpr (_Holder::__tail_size >= 3)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[2]) << 16;
-      }
-      if constexpr (_Holder::__tail_size >= 2)
-      {
-        __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[1]) << 8;
-      }
-      __k1 ^= static_cast<::cuda::std::uint64_t>(__tail[0]);
-      __k1 *= __c1;
-      __k1 = ::cuda::std::rotl(__k1, 31);
-      __k1 *= __c2;
-      __h[0] ^= __k1;
     }
 
     // finalization
@@ -757,10 +738,10 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return ::cuda::std::bit_cast<__result_type>(__h);
+    return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -870,7 +851,7 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return ::cuda::std::bit_cast<__result_type>(__h);
+    return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
 private:

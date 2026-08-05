@@ -33,8 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! @tparam _Tp The type of the chunk to load (must be 4 or 8 bytes)
 //! @tparam _Extent The index type
-//! @param[in] __bytes Pointer to the byte array
-//! @param[in] __index The index of the chunk to load
+//! @param __bytes Pointer to the byte array
+//! @param __index The index of the chunk to load
 //! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp __load_chunk(const ::cuda::std::byte* const __bytes, _Extent __index) noexcept

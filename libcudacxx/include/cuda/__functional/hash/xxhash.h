@@ -115,13 +115,13 @@ private:
 
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
-  //! @param[in] __seed A custom number to randomize the resulting hash value
+  //! @param __seed A custom number to randomize the resulting hash value
   _CCCL_HOST_DEVICE_API constexpr __xxhash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
-  //! @param[in] __key The input argument to hash
+  //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
@@ -134,7 +134,7 @@ public:
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @tparam _Extent The extent type
-  //! @param[in] __keys span of keys to hash
+  //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
@@ -147,7 +147,7 @@ private:
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //!
   //! @tparam _Holder The byte holder type
-  //! @param[in] __holder The input argument to hash in form of a byte holder
+  //! @param __holder The input argument to hash in form of a byte holder
   //! @return The resulting hash value
   template <class _Holder>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
@@ -203,7 +203,7 @@ private:
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //!
-  //! @param[in] __keys The span of keys to hash
+  //! @param __keys The span of keys to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
   __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
@@ -325,14 +325,14 @@ private:
 public:
   //! @brief Constructs a XXH64 hash function with the given `seed`.
   //!
-  //! @param[in] __seed A custom number to randomize the resulting hash value
+  //! @param __seed A custom number to randomize the resulting hash value
   _CCCL_HOST_DEVICE_API constexpr __xxhash_64(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `result_type`.
   //!
-  //! @param[in] __key The input argument to hash
+  //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
   {
@@ -351,7 +351,7 @@ public:
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
   //!
   //! @tparam _Extent The extent type
-  //! @param[in] __keys span of keys to hash
+  //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
@@ -363,7 +363,7 @@ public:
 private:
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
   //!
-  //! @param[in] __keys The span of keys to hash
+  //! @param __keys The span of keys to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
