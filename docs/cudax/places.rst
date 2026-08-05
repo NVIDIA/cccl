@@ -37,6 +37,8 @@ The following factory methods create the most common execution places:
 - ``exec_place::cuda_context(ctx, devid)`` -- an externally-owned CUDA driver
   context; the device ordinal is derived from the context when ``devid`` is
   omitted
+- ``exec_place::locality_domain(devid, domain)`` -- one locality domain of a
+  device (see :ref:`places-locality-domains`)
 
 When an execution place is activated, it sets the appropriate CUDA context
 (e.g. calls ``cudaSetDevice``). Each execution place also has an *affine*
@@ -60,6 +62,8 @@ following factory methods are available:
 - ``data_place::managed()`` -- CUDA managed (unified) memory
 - ``data_place::affine()`` -- the data place naturally associated with the
   current execution place
+- ``data_place::locality_domain(devid, domain)`` -- memory localized to one
+  locality domain of a device (see :ref:`places-locality-domains`)
 
 The *affine* data place is the default: when no data place is specified,
 data is placed in the memory that is local to the execution place. For
@@ -114,6 +118,89 @@ place using an ``std::unordered_map`` keyed by ``exec_place``:
      }
      return h;
    }
+
+.. _places-locality-domains:
+
+Locality domain places (CUDA 13.4+)
+-----------------------------------
+
+Some devices partition their multiprocessors and memory into *locality
+domains* (see the ``CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`` device
+attribute). Compute throughput and memory bandwidth are higher within a
+domain than across domains, so pinning both execution and data to the same
+domain can improve locality. Locality domain places expose this capability:
+
+- ``locality_domain_count(devid)`` -- number of domains the device exposes
+  (``0`` when locality-domain placement is unusable on this device, see below)
+- ``exec_place::locality_domain(devid, domain)`` -- an execution place whose
+  SMs all belong to the requested domain (a green context built from an
+  SM split by locality domain)
+- ``data_place::locality_domain(devid, domain)`` -- a data place whose
+  allocations are localized to the requested domain (stream-ordered memory
+  pools and VMM physical handles)
+- ``make_locality_domain_grid(devid)`` -- a grid with one execution place per
+  domain of the device
+- ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
+  ``green_context_helper``; hands out ``locality_domain_view`` identity
+  tokens accepted by both factories
+
+``exec_place::locality_domain(d, i)`` and ``data_place::locality_domain(d, i)``
+share the same domain ordinal and are therefore co-located: the execution
+place's affine data place is the matching locality-domain data place.
+
+.. code:: cpp
+
+    const int dev = 0;
+    const unsigned int n = locality_domain_count(dev);
+    if (n == 0) {
+        // Locality-domain placement is unusable here: fall back to
+        // regular device places.
+    }
+
+    // One task per domain (with CUDASTF)
+    for (unsigned int i = 0; i < n; i++) {
+        ctx.task(exec_place::locality_domain(dev, i), lX.rw())
+            ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
+    }
+
+    // Or distribute a parallel_for over all domains at once
+    auto grid = make_locality_domain_grid(dev);
+    ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
+        ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
+
+Like ``data_place::device(id)``, a locality-domain place is identified by a
+``(device, domain)`` pair that acts as an identity token: construction of a
+data place performs no existence check, and the ordinals are validated
+lazily when the place is actually used. Places for distinct domains hash and
+compare as distinct values, so they can be used as container keys.
+
+**Behavior on older toolkits (before CUDA 13.4):**
+
+The same API compiles and runs, with whole-device semantics: every valid
+device reports a single locality domain (``locality_domain_count() == 1``),
+data places allocate plain device memory, and execution places activate the
+whole device. The domain ordinal is still carried through hashing,
+comparison and ``to_string()``, so distinct ordinals remain distinguishable
+as labels. This lets code name a locality domain precisely even when the
+underlying implementation is the whole device, and keeps a single code path
+across toolkits. On a CUDA 13.4+ toolkit, a count of ``0`` means the driver
+or device cannot answer the locality-domain query; check the count before
+building places.
+
+**Environment variables:**
+
+- ``CUDASTF_DISABLE_LOCALIZED_MEMORY`` -- locality-domain data places hand
+  out plain device memory instead of domain-localized memory, while
+  execution still runs on per-domain SM partitions. This is an A/B knob to
+  measure the effect of memory localization independently of execution
+  confinement.
+- ``CUDASTF_FAKE_LOCALITY_DOMAINS=N`` -- forces ``N`` domains per device,
+  backed by an even green-context SM split (granularity-aware) with plain
+  device memory, on any green-context-capable toolkit (CUDA 12.4+). This is
+  the converse ablation control -- SM confinement without memory
+  localization -- and also lets locality-domain code paths be exercised on
+  devices with a single domain. The reported count adapts to the split the
+  device can provide and is at most ``N``.
 
 .. _places-activate:
 
