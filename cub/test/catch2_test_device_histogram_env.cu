@@ -1990,5 +1990,11 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<true>(sm100_policy, 28545, 4, 2));
   STATIC_REQUIRE(cub::detail::histogram::should_use_dynamic_smem<true>(sm100_policy, 19029, 4, 3));
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<true>(sm100_policy, 19030, 4, 3));
+
+  using max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 1, 1, true>::MaxPolicy;
+  const auto legacy_policy =
+    cub::detail::histogram::policy_selector_from_hub<max_policy_t>{}(cuda::compute_capability{10, 0});
+  REQUIRE(legacy_policy.static_smem_max_privatized_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(legacy_policy.dynamic_smem_max_privatized_bytes == 0);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
