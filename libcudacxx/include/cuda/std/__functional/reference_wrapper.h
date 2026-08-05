@@ -112,16 +112,13 @@ void ref(const _Tp&&) = delete;
 template <class _Tp>
 void cref(const _Tp&&) = delete;
 
-// P2655R3: common_reference_t of reference_wrapper<T> and T& is a reference type
+// [refwrap.common.ref]
 template <class _Rp, class _Tp, class _RpQual, class _TpQual>
 _CCCL_CONCEPT __ref_wrap_common_reference_exists_with = _CCCL_REQUIRES_EXPR((_Rp, _Tp, _RpQual, _TpQual), )(
   requires(__is_cuda_std_reference_wrapper_v<_Rp>),
   typename(common_reference_t<typename _Rp::type&, _TpQual>),
   requires(convertible_to<_RpQual, common_reference_t<typename _Rp::type&, _TpQual>>));
 
-// The mirrored exists_with conditions are mutually exclusive, so at most one of the two
-// specializations is viable for any argument list; when both arguments are
-// reference_wrappers both conditions are false and the primary template is used instead.
 template <class _Rp, class _Tp, template <class> class _RpQual, template <class> class _TpQual>
 struct basic_common_reference<
   _Rp,
