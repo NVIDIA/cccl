@@ -79,6 +79,8 @@ set(
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/replicated_data_place.cu
+  places/replicated_frozen_import.cu
   places/cute_parallel_for.cu
   places/managed.cu
   places/managed_from_user.cu
@@ -100,6 +102,7 @@ set(
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/composite_conditional.cu
   stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu

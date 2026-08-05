@@ -836,7 +836,7 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stre
 template <typename KeyT, typename ValueT, int ThreadsPerBlock>
 struct segmented_radix_sort_block_size_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedRadixSortPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedRadixSortPolicy
   {
     using default_selector_t = cub::detail::segmented_radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy              = default_selector_t{}(cc);

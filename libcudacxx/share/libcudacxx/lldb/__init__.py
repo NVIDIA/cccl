@@ -9,6 +9,7 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import atomic
 import buffer
 import complex
 import event
@@ -22,6 +23,7 @@ import lldb
 _CATEGORY = "cccl"
 _FORMATTERS = (
     memory_resource,
+    atomic,
     buffer,
     std_array,
     complex,

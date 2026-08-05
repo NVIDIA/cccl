@@ -1143,7 +1143,7 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
   {
     using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy                            = default_selector_t{}(cc);
