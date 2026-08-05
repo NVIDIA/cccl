@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.bit], shl
@@ -25,7 +28,7 @@ template <typename T>
 struct shift_input_values_gen
 {
   template <typename I>
-  TEST_FUNC constexpr T operator()(I) const
+  TEST_HOST_DEVICE_FUNC constexpr T operator()(I) const
   {
     if constexpr (cuda::std::is_signed_v<T>)
     {
@@ -42,7 +45,7 @@ template <typename T>
 struct shift_count_values_gen
 {
   template <typename I>
-  TEST_FUNC constexpr T operator()(I) const
+  TEST_HOST_DEVICE_FUNC constexpr T operator()(I) const
   {
     constexpr int digits   = cuda::std::numeric_limits<cuda::std::make_unsigned_t<T>>::digits;
     constexpr int values[] = {-1, 0, digits, digits + 1};
@@ -53,7 +56,7 @@ struct shift_count_values_gen
 template <typename T, int N>
 struct test_shl_vec
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using vec_t     = simd::basic_vec<T, simd::fixed_size<N>>;
     using shift_vec = simd::rebind_t<cuda::std::make_signed_t<T>, vec_t>;
@@ -75,7 +78,7 @@ struct test_shl_vec
 template <typename T, int N>
 struct test_shl_scalar
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using vec_t = simd::basic_vec<T, simd::fixed_size<N>>;
     vec_t vec(shift_input_values_gen<T>{});
@@ -114,7 +117,7 @@ struct has_simd_shl_scalar<V, S, cuda::std::void_t<decltype(simd::shl(cuda::std:
     : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
 {
   using int32_vec4  = simd::basic_vec<int32_t, simd::fixed_size<4>>;
   using uint32_vec4 = simd::basic_vec<uint32_t, simd::fixed_size<4>>;
@@ -134,7 +137,7 @@ TEST_FUNC constexpr void test_constraints()
   static_assert(!has_simd_shl_scalar<float_vec4, int>::value);
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   _SIMD_BIT_TEST_SIGNED_TYPES(test_shl_vec)
   _SIMD_BIT_TEST_UNSIGNED_TYPES(test_shl_vec)
