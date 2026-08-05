@@ -418,18 +418,37 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    const auto sweep = cub::HistogramKernelConfig{
-      128, cc > cuda::compute_capability{9, 0} ? 16 : 7, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, false, false};
+    const int items_per_thread = cc > cuda::compute_capability{9, 0} ? 16 : 7;
     return {
-      .gmem        = sweep,
-      .static_smem = {.kernel = sweep, .max_privatized_smem_bytes = 256 * sizeof(unsigned int), .min_blocks_per_sm = 0},
-      .dynamic_smem                     = {.kernel                    = sweep,
-                                           .max_privatized_smem_bytes = 0,
-                                           .range_max_bins            = 0,
-                                           .even_2ch_max_bins         = 0,
-                                           .even_3ch_max_bins         = 0,
-                                           .even_4ch_max_bins         = 0},
-      .init_kernel_pdl_trigger_max_bins = 2048};
+      .gmem_threads_per_block            = 128,
+      .gmem_items_per_thread             = items_per_thread,
+      .gmem_vec_size                     = 4,
+      .gmem_load_algorithm               = cub::BLOCK_LOAD_DIRECT,
+      .gmem_load_modifier                = cub::LOAD_LDG,
+      .gmem_rle_compress                 = false,
+      .gmem_work_stealing                = false,
+      .static_smem_threads_per_block     = 128,
+      .static_smem_items_per_thread      = items_per_thread,
+      .static_smem_vec_size              = 4,
+      .static_smem_load_algorithm        = cub::BLOCK_LOAD_DIRECT,
+      .static_smem_load_modifier         = cub::LOAD_LDG,
+      .static_smem_rle_compress          = false,
+      .static_smem_work_stealing         = false,
+      .static_smem_max_privatized_bytes  = 256 * sizeof(unsigned int),
+      .static_smem_min_blocks_per_sm     = 0,
+      .dynamic_smem_threads_per_block    = 128,
+      .dynamic_smem_items_per_thread     = items_per_thread,
+      .dynamic_smem_vec_size             = 4,
+      .dynamic_smem_load_algorithm       = cub::BLOCK_LOAD_DIRECT,
+      .dynamic_smem_load_modifier        = cub::LOAD_LDG,
+      .dynamic_smem_rle_compress         = false,
+      .dynamic_smem_work_stealing        = false,
+      .dynamic_smem_max_privatized_bytes = 0,
+      .dynamic_smem_range_max_bins       = 0,
+      .dynamic_smem_even_2ch_max_bins    = 0,
+      .dynamic_smem_even_3ch_max_bins    = 0,
+      .dynamic_smem_even_4ch_max_bins    = 0,
+      .init_kernel_pdl_trigger_max_bins  = 2048};
   }
 };
 // example-end histogram-even-policy-selector
