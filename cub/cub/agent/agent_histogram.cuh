@@ -21,6 +21,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
@@ -30,18 +31,15 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-//! Parameterizable tuning policy type for AgentHistogram
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
           bool WorkStealing,
-          int VecSize                   = 4,
-          int PrivatizedStaticSmemBytes = 0>
-struct agent_histogram_policy
+          int VecSize = 4>
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHistogramPolicy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
@@ -54,9 +52,6 @@ struct agent_histogram_policy
   /// Whether to dequeue tiles from a global work queue
   static constexpr bool IS_WORK_STEALING = WorkStealing;
 
-  /// Maximum compile-time-sized shared-memory allocation for privatized bins
-  static constexpr int PRIVATIZED_STATIC_SMEM_BYTES = PrivatizedStaticSmemBytes;
-
   /// Vector size for samples loading (1, 2, 4)
   static constexpr int VEC_SIZE = VecSize;
   static_assert(VEC_SIZE == 1 || VEC_SIZE == 2 || VEC_SIZE == 4);
@@ -67,18 +62,6 @@ struct agent_histogram_policy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
-} // namespace detail
-
-//! Deprecated [Since 3.5]
-template <int ThreadsPerBlock,
-          int PixelsPerThread,
-          BlockLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadModifier,
-          bool RleCompress,
-          bool WorkStealing,
-          int VecSize = 4>
-using AgentHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::
-  agent_histogram_policy<ThreadsPerBlock, PixelsPerThread, LoadAlgorithm, LoadModifier, RleCompress, WorkStealing, VecSize>;
 
 namespace detail::histogram
 {
@@ -123,8 +106,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //! @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
 //! in device-wide histogram .
 //!
-//! @tparam AgentHistogramPolicyT
-//!   Parameterized AgentHistogramPolicy tuning policy type
+//! @tparam PolicySelector
+//!   Selector that returns the active HistogramPolicy.
 //!
 //! @tparam PrivatizationMode
 //!   Storage mode for the privatized histogram.
@@ -154,7 +137,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!
 //! @tparam OutputCounterT
 //!   Integer type for final output histogram bins. May be wider than `CounterT`.
-template <typename AgentHistogramPolicyT,
+template <typename PolicySelector,
           typename PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
@@ -173,21 +156,22 @@ struct AgentHistogram
   static constexpr bool uses_static_smem  = is_privatized_static_smem_v<PrivatizationMode>;
   static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
   static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
+  static constexpr auto policy            = current_policy<PolicySelector>();
+  static constexpr auto sweep             = policy.kernel(PrivatizationMode{});
   static constexpr int privatized_static_smem_bins =
-    uses_static_smem ? AgentHistogramPolicyT::PRIVATIZED_STATIC_SMEM_BYTES / int{sizeof(CounterT)} / NumActiveChannels
-                     : 0;
+    uses_static_smem ? policy.static_smem.max_privatized_smem_bytes / int{sizeof(CounterT)} / NumActiveChannels : 0;
   static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
                 "Static-SMEM privatization requires room for at least one bin");
-  static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
-  static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
-  static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
+  static constexpr int vec_size                    = sweep.vec_size;
+  static constexpr int threads_per_block           = sweep.threads_per_block;
+  static constexpr int pixels_per_thread           = sweep.items_per_thread;
   static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
   static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
-  static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
-  static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
-  static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
+  static constexpr bool is_rle_compress            = sweep.rle_compress;
+  static constexpr bool is_work_stealing           = sweep.work_stealing;
+  static constexpr CacheLoadModifier load_modifier = sweep.load_modifier;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -202,11 +186,9 @@ struct AgentHistogram
                      SampleIteratorT>;
   using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
   using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
-  using BlockLoadSampleT =
-    BlockLoad<SampleT, threads_per_block, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadPixelT =
-    BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadSampleT      = BlockLoad<SampleT, threads_per_block, samples_per_thread, sweep.load_algorithm>;
+  using BlockLoadPixelT       = BlockLoad<PixelT, threads_per_block, pixels_per_thread, sweep.load_algorithm>;
+  using BlockLoadVecT         = BlockLoad<VecT, threads_per_block, vecs_per_thread, sweep.load_algorithm>;
 
   struct _TempStorage
   {
@@ -429,7 +411,7 @@ struct AgentHistogram
     bool is_valid[pixels_per_thread];
 
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-    MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
+    MarkValid<IsFullTile, sweep.load_algorithm == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     AccumulatePixels(samples, is_valid, ::cuda::std::bool_constant<is_rle_compress>{});
   }

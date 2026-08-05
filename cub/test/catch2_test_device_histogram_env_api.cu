@@ -418,7 +418,7 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    const auto sweep = cub::HistogramKernelConfig{
+    const auto sweep = cub::HistogramPolicy::Kernel{
       128, cc > cuda::compute_capability{9, 0} ? 16 : 7, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, false, false};
     return {
       .gmem        = sweep,
