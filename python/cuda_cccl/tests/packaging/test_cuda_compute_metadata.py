@@ -26,6 +26,7 @@ def test_wheel_owns_only_cuda_compute_and_keeps_headers_out_of_source() -> None:
 
     packages = metadata["tool"]["scikit-build"]["wheel"]["packages"]
     assert packages == {"cuda/compute": "cuda/compute"}
+    assert (PROJECT_ROOT / "cuda/compute/py.typed").is_file()
     assert not any(path.is_file() for path in (PROJECT_ROOT / "cuda/cccl").rglob("*"))
     private_headers = PROJECT_ROOT / "cuda" / "compute" / "_cccl"
     assert not private_headers.exists()
