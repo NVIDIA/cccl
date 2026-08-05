@@ -2,7 +2,7 @@
 
 # ThreadSanitizer variant of the minimal free-threaded cuda.compute lane.
 #
-# Installs the TSan-instrumented cuda_cccl wheel (produced by the `python_tsan`
+# Installs the TSan-instrumented cuda-compute wheel (produced by the `python_tsan`
 # build, which compiles c.parallel v1 host code with -fsanitize=thread) and runs
 # the free-threaded stress tests + the pytest-run-parallel sweep under the TSan
 # runtime. A real data race in c.parallel (e.g. build-owned state mutated at
@@ -39,7 +39,7 @@ cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',
 # Setup Python environment
 setup_python_env "${py_version}"
 
-# Fetch or build the TSan-instrumented cuda_cccl wheel. Under project
+# Fetch or build the TSan-instrumented cuda-compute wheel. Under project
 # `python_tsan`, get_wheel_artifact_name.sh resolves to the distinct `-tsan`
 # artifact, so this never grabs an uninstrumented wheel.
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
@@ -53,8 +53,17 @@ fi
 
 # minimal-cu* extra intentionally avoids numba/numba-cuda (which re-enable the
 # GIL). pytest-run-parallel drives the concurrent sweep.
-CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
+mapfile -t cuda_compute_wheels < <(
+  find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_compute-*.whl' -print | sort
+)
+if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one cuda-compute wheel in ${wheelhouse_dir}; found ${#cuda_compute_wheels[@]}." >&2
+  exit 1
+fi
+CUDA_COMPUTE_WHEEL_PATH="${cuda_compute_wheels[0]}"
+python -m pip install --find-links "${wheelhouse_dir}" \
+  "${CUDA_COMPUTE_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
+python -m pip check
 python -m pip install pytest pytest-xdist pytest-run-parallel
 
 # The instrumented .so links libtsan but keeps it external (auditwheel --exclude),

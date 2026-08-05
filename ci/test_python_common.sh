@@ -16,8 +16,8 @@ function run_tests {
   python -m venv "${TEMP_VENV_DIR}"
   # shellcheck disable=SC1091
   . "${TEMP_VENV_DIR}/bin/activate"
-  echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
-  run_command "⚙️  Pip install ${module}" pip install -c /tmp/cuda-cccl_constraints.txt ".[test]"
+  echo 'cuda-compute @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-compute_constraints.txt
+  run_command "⚙️  Pip install ${module}" pip install -c /tmp/cuda-compute_constraints.txt ".[test]"
   begin_group "⚙️ ${module} site-packages"
   pip freeze
   end_group "⚙️ ${module} site-packages"

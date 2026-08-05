@@ -1,0 +1,3 @@
+libcudacxx/include/cuda/std/version
+cub/cub/version.cuh
+thrust/thrust/version.h

@@ -24,10 +24,27 @@ Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 
-$wheelPath = Get-CudaCcclWheel
+$wheelPath = Get-CudaComputeWheel
+$wheelhouse = Split-Path -Parent $wheelPath
 
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl test extra"
+Invoke-Checked {
+    & $python -m pip install --find-links $wheelhouse "$wheelPath[test-$ctkFlavor$cudaMajor]"
+} "Failed to install cuda-compute test extra"
+Invoke-Checked { & $python -m pip check } "Installed cuda-compute environment is inconsistent"
+$verifyNoMetapackage = @'
+import importlib.metadata
+
+try:
+    importlib.metadata.distribution("cuda-cccl")
+except importlib.metadata.PackageNotFoundError:
+    pass
+else:
+    raise RuntimeError("direct cuda-compute install must not install cuda-cccl")
+'@
+Invoke-Checked {
+    $verifyNoMetapackage | & $python -
+} "Direct cuda-compute install unexpectedly installed cuda-cccl"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

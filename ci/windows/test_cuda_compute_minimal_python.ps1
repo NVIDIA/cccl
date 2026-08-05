@@ -24,12 +24,16 @@ Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 
-$wheelPath = Get-CudaCcclWheel
+$wheelPath = Get-CudaComputeWheel
+$wheelhouse = Split-Path -Parent $wheelPath
 
-# Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
+# Install cuda-compute with the minimal CUDA extra. This intentionally avoids the
 # full cu* extras because those pull in numba/numba-cuda.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked { & $python -m pip install "$wheelPath[minimal-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl minimal extra"
+Invoke-Checked {
+    & $python -m pip install --find-links $wheelhouse "$wheelPath[minimal-$ctkFlavor$cudaMajor]"
+} "Failed to install cuda-compute minimal extra"
+Invoke-Checked { & $python -m pip check } "Installed cuda-compute environment is inconsistent"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

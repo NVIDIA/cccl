@@ -24,12 +24,16 @@ Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 
-${wheelPath} = Get-CudaCcclWheel
+${wheelPath} = Get-CudaComputeWheel
+$wheelhouse = Split-Path -Parent $wheelPath
 
 # pytest-benchmark is for the host-benchmark smoke test below.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
 # CuPy is required by the cuda.compute examples and is not part of the test extras
-Invoke-Checked { & $python -m pip install "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
+Invoke-Checked {
+    & $python -m pip install --find-links $wheelhouse "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x"
+} "Failed to install cuda-compute test extra / cupy"
+Invoke-Checked { & $python -m pip check } "Installed cuda-compute environment is inconsistent"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

@@ -31,7 +31,7 @@ else
   action_mounts=()
 fi
 
-# cuda_cccl must be built in a container that can produce manylinux wheels,
+# cuda-compute must be built in a container that can produce manylinux wheels,
 # and has the CUDA toolkit installed. We use the rapidsai/ci-wheel image for this.
 # We build separate wheels using separate containers for each CUDA version,
 # then merge them into a single wheel.
@@ -59,6 +59,10 @@ readonly cuda12_image
 readonly cuda13_image
 
 mkdir -p wheelhouse
+# CI mounts a Docker volume at wheelhouse, so preserve the mountpoint and clear
+# only its contents. The intermediate directories are ordinary checkout paths.
+find wheelhouse -mindepth 1 -delete
+rm -rf wheelhouse_merged wheelhouse_final
 
 # Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
 # identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
@@ -72,9 +76,18 @@ mkdir -p ./.ccache ./.cpm-cache
 host_ccache_dir="${HOST_WORKSPACE:?}/.ccache"
 host_cpm_cache_dir="${HOST_WORKSPACE:?}/.cpm-cache"
 
+# Resolve the reproducible archive timestamp before entering Docker. Git
+# worktrees use an absolute .git indirection that is not available inside the
+# source-only bind mount.
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git -C "${ci_dir}/.." show -s --format=%ct HEAD)}"
+
 for ctk in 12 13; do
   image="cuda${ctk}_image"
   image="${!image}"
+  build_cuda_cccl_metapackage=0
+  if [[ "$ctk" == 12 ]]; then
+    build_cuda_cccl_metapackage=1
+  fi
   echo "::group::⚒️ Building CUDA $ctk wheel on $image"
   (
     set -x
@@ -91,6 +104,8 @@ for ctk in 12 13; do
         --env "JOB_ID=${JOB_ID:-}" \
         --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
         --env "CCCL_C_PARALLEL_SANITIZE_THREAD=${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" \
+        --env "BUILD_CUDA_CCCL_METAPACKAGE=${build_cuda_cccl_metapackage}" \
+        --env "SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}" \
         --env "CCACHE_DIR=/root/.ccache" \
         --env "CPM_SOURCE_CACHE=/root/.cpm-cache" \
         "$image" \
@@ -143,8 +158,8 @@ if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 # Install auditwheel and repair the merged wheel
-python -m pip install patchelf auditwheel
-for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
+python -m pip install patchelf auditwheel twine
+for wheel in wheelhouse_merged/cuda_compute-*.whl; do
     echo "Repairing merged wheel: $wheel"
     python -m auditwheel repair \
         --exclude 'libnvrtc.so.12' \
@@ -159,17 +174,17 @@ for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
         --wheel-dir wheelhouse_final
 done
 
-# Clean up intermediate files and move only the final merged wheel to wheelhouse
-rm -rf wheelhouse/*  # Clean existing wheelhouse
-mkdir -p wheelhouse
+# Remove the CUDA-major intermediates while preserving the universal
+# cuda-cccl metapackage built by the CUDA 12 producer.
+find wheelhouse -maxdepth 1 -name 'cuda_compute-*.cu*.whl' -delete
 
 # Move only the final repaired merged wheel
-if ls wheelhouse_final/cuda_cccl-*.whl 1> /dev/null 2>&1; then
-    mv wheelhouse_final/cuda_cccl-*.whl wheelhouse/
+if ls wheelhouse_final/cuda_compute-*.whl 1> /dev/null 2>&1; then
+    mv wheelhouse_final/cuda_compute-*.whl wheelhouse/
     echo "Final merged wheel moved to wheelhouse"
 else
     echo "No final repaired wheel found, moving unrepaired merged wheel"
-    mv wheelhouse_merged/cuda_cccl-*.whl wheelhouse/
+    mv wheelhouse_merged/cuda_compute-*.whl wheelhouse/
 fi
 
 # Clean up temporary directories
@@ -177,6 +192,52 @@ rm -rf wheelhouse_merged wheelhouse_final
 
 echo "Final wheels in wheelhouse:"
 ls -la wheelhouse/
+
+# Catch missing or stale artifacts before any test consumer downloads them.
+mapfile -t cuda_compute_wheels < <(
+  find wheelhouse -maxdepth 1 -type f -name 'cuda_compute-*.whl' -print | sort
+)
+mapfile -t cuda_cccl_wheels < <(
+  find wheelhouse -maxdepth 1 -type f -name 'cuda_cccl-*-py3-none-any.whl' -print | sort
+)
+if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one final cuda-compute wheel; found ${#cuda_compute_wheels[@]}." >&2
+  exit 1
+fi
+if [[ "${#cuda_cccl_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one universal cuda-cccl wheel; found ${#cuda_cccl_wheels[@]}." >&2
+  exit 1
+fi
+python -m twine check wheelhouse/*.whl
+
+# Native JIT templates and generated sources must remain relocatable. Reject
+# paths from either the inner manylinux build mount or this outer checkout.
+python - "$(pwd -P)" wheelhouse/*.whl <<'PY'
+import sys
+import zipfile
+from pathlib import Path
+
+checkout_roots = {"/workspace", str(Path(sys.argv[1]).resolve())}
+needles = {
+    variant.encode()
+    for root in checkout_roots
+    for variant in (root, root.replace("/", "\\"))
+    if len(root) > 1
+}
+violations = []
+for wheel_arg in sys.argv[2:]:
+    wheel = Path(wheel_arg)
+    with zipfile.ZipFile(wheel) as archive:
+        for member in archive.infolist():
+            payload = archive.read(member)
+            if any(needle in payload for needle in needles):
+                violations.append(f"{wheel.name}:{member.filename}")
+if violations:
+    raise SystemExit(
+        "wheel payload contains absolute checkout/build paths: "
+        + ", ".join(violations)
+    )
+PY
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name="$(ci/util/workflow/get_wheel_artifact_name.sh)"

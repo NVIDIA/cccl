@@ -64,7 +64,7 @@ Python benchmarks live under `python/cuda_cccl/benchmarks/` and use `cuda.bench`
 For Python benchmarks, `compare_paths.sh`:
 
 1. Creates isolated virtual environments for base and test trees.
-2. Installs `cuda-cccl[bench-cuXX]` (editable, from each worktree), which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
+2. Installs `cuda-compute[bench-cuXX]` (editable, from each worktree), which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
 3. Runs matching benchmark scripts in each venv.
 4. Compares results using `nvbench-compare` (installed with `cuda-bench`).
 
