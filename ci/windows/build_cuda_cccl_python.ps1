@@ -453,7 +453,7 @@ if violations:
 '@
     $checkoutRoots = @("$RepoRoot", "$($env:CONTAINER_WORKSPACE)") -join ";;"
     Invoke-Checked {
-        & $PythonExe -c $absolutePathCheck $checkoutRoots @releaseWheels
+        $absolutePathCheck | & $PythonExe - $checkoutRoots @releaseWheels
     } 'Wheel payload contains absolute checkout/build paths'
 }
 
