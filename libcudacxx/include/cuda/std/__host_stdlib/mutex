@@ -22,7 +22,7 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <mutex>
+#  include <mutex> // IWYU pragma: export
 #endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___HOST_STDLIB_MUTEX

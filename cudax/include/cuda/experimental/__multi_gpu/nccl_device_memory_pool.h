@@ -83,7 +83,11 @@ private:
 
     __pool.enable_access_from(__device.peers());
 
-    ::cuda::std::__construct_at(&__storage_.__pool_, __pool.release());
+    ::cuda::std::__construct_at(&__storage_.__pool_, __pool.get());
+    // Only after we have "transferred" ownership to the ref is it safe to release. Technically
+    // we could release in the construct_at() call as well since the ref doesn't actually own
+    // anything and won't clean up anyway.
+    static_cast<void>(__pool.release());
   }
 
 #if _CCCL_HOSTED()
@@ -134,7 +138,7 @@ device_default_nccl_memory_pool(::cuda::device_ref __device)
   static ::cuda::std::unique_ptr<__default_nccl_device_memory_pool[]> __pools_{
     ::new __default_nccl_device_memory_pool[::cuda::__physical_devices_count()]};
 
-  return __pools_[__device.get()].__get(__device);
+  return __pools_[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
 }
 } // namespace cuda::experimental
 
