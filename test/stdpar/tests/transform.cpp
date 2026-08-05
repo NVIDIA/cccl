@@ -24,7 +24,7 @@ int main()
 {
   constexpr std::size_t num_items = 1 << 16;
   std::vector<int> values(num_items);
-  std::vector<int> offsets(num_items, 5);
+  const std::vector<int> offsets(num_items, 5);
   std::vector<int> output(num_items, 0);
   std::iota(values.begin(), values.end(), 0);
 
