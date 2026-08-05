@@ -14,16 +14,18 @@
  * @brief The CUDASTF_FAKE_LOCALITY_DOMAINS topology override
  *
  * Sets the environment variable before any locality-domain query, then
- * checks that the requested number of green-context-backed domains is
- * reported (clamped, never hardcoded), that exec/data places built under the
- * override are consistent green-context places with plain (non-localized)
- * device memory, and that tasks and grids over the fake domains run
- * correctly.
+ * checks that exactly the requested number of green-context-backed domains
+ * is reported (the override is strict; if this device cannot provide the
+ * requested topology the query throws and the test waives), that exec/data
+ * places built under the override are consistent green-context places with
+ * plain (non-localized) device memory, and that tasks and grids over the
+ * fake domains run correctly.
  */
 
 #include <cuda/experimental/stf.cuh>
 
 #include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
@@ -49,9 +51,9 @@ int main()
 #else // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 4) vvv
   const int requested = 2;
 #  if _CCCL_COMPILER(MSVC)
-  _putenv_s("CUDASTF_FAKE_LOCALITY_DOMAINS", "2");
+  EXPECT(_putenv_s("CUDASTF_FAKE_LOCALITY_DOMAINS", "2") == 0);
 #  else // ^^^ MSVC ^^^ / vvv POSIX vvv
-  setenv("CUDASTF_FAKE_LOCALITY_DOMAINS", "2", 1);
+  EXPECT(setenv("CUDASTF_FAKE_LOCALITY_DOMAINS", "2", 1) == 0);
 #  endif // !MSVC
 
   const int dev = 0;
@@ -63,12 +65,20 @@ int main()
     return 0;
   }
 
-  // The override must take precedence over the compile-time backend. The
-  // count adapts to the split the device can actually provide: at most the
-  // requested number, at least one.
-  const unsigned int ndomains = locality_domain_count(dev);
-  EXPECT(ndomains >= 1);
-  EXPECT(ndomains <= static_cast<unsigned int>(requested));
+  // The override must take precedence over the compile-time backend, and it
+  // is strict: it reports exactly the requested count, or throws when the
+  // device cannot provide that many domains.
+  unsigned int ndomains = 0;
+  try
+  {
+    ndomains = locality_domain_count(dev);
+  }
+  catch (const ::std::runtime_error& e)
+  {
+    fprintf(stderr, "Requested fake topology not achievable on this device (%s): test waived.\n", e.what());
+    return 0;
+  }
+  EXPECT(ndomains == static_cast<unsigned int>(requested));
 
   // Invalid device ordinals still report zero domains under the override
   EXPECT(locality_domain_count(-1) == 0);
@@ -111,16 +121,10 @@ int main()
     cuda_safe_call(cudaStreamSynchronize(stream));
   }
 
-  // Distinct fake domains are distinct places
-  if (ndomains >= 2)
-  {
-    EXPECT(exec_place::locality_domain(dev, 0) != exec_place::locality_domain(dev, 1));
-    EXPECT(data_place::locality_domain(dev, 0) != data_place::locality_domain(dev, 1));
-  }
-  else
-  {
-    fprintf(stderr, "Even split produced a single group: cross-domain identity checks waived.\n");
-  }
+  // Distinct fake domains are distinct places (the strict override guarantees
+  // that both requested domains exist)
+  EXPECT(exec_place::locality_domain(dev, 0) != exec_place::locality_domain(dev, 1));
+  EXPECT(data_place::locality_domain(dev, 0) != data_place::locality_domain(dev, 1));
 
   cuda_safe_call(cudaStreamDestroy(stream));
 

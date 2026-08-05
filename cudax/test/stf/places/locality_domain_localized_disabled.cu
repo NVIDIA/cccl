@@ -41,9 +41,9 @@ __global__ void scale(double a, slice<double> x)
 int main()
 {
 #if _CCCL_COMPILER(MSVC)
-  _putenv_s("CUDASTF_DISABLE_LOCALIZED_MEMORY", "1");
+  EXPECT(_putenv_s("CUDASTF_DISABLE_LOCALIZED_MEMORY", "1") == 0);
 #else // ^^^ MSVC ^^^ / vvv POSIX vvv
-  setenv("CUDASTF_DISABLE_LOCALIZED_MEMORY", "1", 1);
+  EXPECT(setenv("CUDASTF_DISABLE_LOCALIZED_MEMORY", "1", 1) == 0);
 #endif // !MSVC
 
   const int dev               = 0;

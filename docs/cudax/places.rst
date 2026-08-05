@@ -152,10 +152,9 @@ place's affine data place is the matching locality-domain data place.
 
     const int dev = 0;
     const unsigned int n = locality_domain_count(dev);
-    if (n == 0) {
-        // Locality-domain placement is unusable here: fall back to
-        // regular device places.
-    }
+    // A count of 0 would mean locality-domain placement is unusable on this
+    // device; this example assumes a capable device.
+    assert(n > 0);
 
     // One task per domain (with CUDASTF)
     for (unsigned int i = 0; i < n; i++) {
@@ -199,8 +198,10 @@ building places.
   device memory, on any green-context-capable toolkit (CUDA 12.4+). This is
   the converse ablation control -- SM confinement without memory
   localization -- and also lets locality-domain code paths be exercised on
-  devices with a single domain. The reported count adapts to the split the
-  device can provide and is at most ``N``.
+  devices with a single domain. The override is strict: when the device
+  cannot provide ``N`` domains (SM budget, group granularity, or no
+  green-context support at runtime), locality-domain queries and factories
+  throw instead of silently reporting a smaller topology.
 
 .. _places-activate:
 

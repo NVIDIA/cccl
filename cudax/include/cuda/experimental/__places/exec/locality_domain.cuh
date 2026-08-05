@@ -54,7 +54,10 @@
  * ablation control. It deliberately reuses `green_context_helper` and
  * `exec_place::green_ctx` / `data_place::green_ctx` rather than duplicating
  * green-context plumbing, so places built under the override are ordinary
- * green-context places.
+ * green-context places. The override is strict: if the device cannot provide
+ * the requested number of domains (SM budget, group granularity, or no
+ * green-context support at runtime), locality-domain queries and factories
+ * throw rather than silently reporting a smaller topology.
  *
  * Addressing model: a locality-domain place is identified by a
  * (device ordinal, domain ordinal) pair that is just an identity token.
@@ -89,6 +92,8 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -417,16 +422,26 @@ private:
 };
 
 /**
- * @brief Fake domain count for a device: min(requested N, groups produced).
+ * @brief Fake domain count for a device: exactly the requested N, strictly.
  *
- * An even split can emit a remainder group, so the helper may report slightly
- * more than N contexts; clamp to N so callers see at most the requested count.
+ * The override is strict: when the even split cannot produce the requested
+ * number of groups (SM budget or group granularity), this throws instead of
+ * silently reporting fewer domains, which would be misleading for an
+ * explicitly requested topology. An even split can emit extra groups (e.g. a
+ * remainder); callers still see exactly N.
  */
 inline unsigned int locality_domain_fake_get_count(int dev_id)
 {
-  const int n       = locality_domain_fake_count();
-  const size_t made = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
-  return static_cast<unsigned int>(::std::min<size_t>(made, static_cast<size_t>(n)));
+  const unsigned int n = static_cast<unsigned int>(locality_domain_fake_count());
+  const size_t made    = locality_domain_fake_green_cache::instance().get(dev_id).get_count();
+  if (made < static_cast<size_t>(n))
+  {
+    throw ::std::runtime_error(
+      "CUDASTF_FAKE_LOCALITY_DOMAINS=" + ::std::to_string(n) + " cannot be fulfilled on device "
+      + ::std::to_string(dev_id) + ": the SM budget/granularity yields only " + ::std::to_string(made)
+      + " green-context domain(s); reduce the requested count or unset the variable.");
+  }
+  return n;
 }
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -694,10 +709,14 @@ inline data_place data_place::locality_domain(const locality_domain_view& view)
 #if _CCCL_CTK_AT_LEAST(12, 4)
   if (locality_domain_fake_count() > 0)
   {
-    // Fake topology: green-context data place (plain device memory)
+    // Fake topology: green-context data place (plain device memory). The
+    // count query is strict and throws when the requested topology cannot be
+    // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
-    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(locality_domain_fake_get_count(view.devid)),
+    const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
+    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
                  "fake locality domain ordinal out of range");
+    (void) fake_n;
     return data_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)));
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -728,9 +747,13 @@ inline exec_place exec_place::locality_domain(const locality_domain_view& view)
 #if _CCCL_CTK_AT_LEAST(12, 4)
   if (locality_domain_fake_count() > 0)
   {
+    // Strict count query: throws when the requested topology cannot be
+    // fulfilled, on every build type.
     green_context_helper& helper = locality_domain_fake_green_cache::instance().get(view.devid);
-    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(locality_domain_fake_get_count(view.devid)),
+    const unsigned int fake_n    = locality_domain_fake_get_count(view.devid);
+    _CCCL_ASSERT(view.domain_id >= 0 && view.domain_id < static_cast<int>(fake_n),
                  "fake locality domain ordinal out of range");
+    (void) fake_n;
     return exec_place::green_ctx(helper.get_view(static_cast<size_t>(view.domain_id)),
                                  /*use_green_ctx_data_place=*/true);
   }

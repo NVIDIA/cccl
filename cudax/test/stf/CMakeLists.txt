@@ -86,6 +86,7 @@ set(
   places/locality_domain_enumeration.cu
   places/locality_domain_exec.cu
   places/locality_domain_fake.cu
+  places/locality_domain_fake_unfulfillable.cu
   places/locality_domain_grid.cu
   places/locality_domain_helper.cu
   places/locality_domain_localized_disabled.cu
