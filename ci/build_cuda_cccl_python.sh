@@ -186,11 +186,23 @@ rm -rf wheelhouse_merged wheelhouse_final
 
 echo "Final wheels in wheelhouse:"
 ls -la wheelhouse/
-python -m twine check wheelhouse/*.whl
 
 # Catch missing or stale artifacts before any test consumer downloads them.
-test "$(find wheelhouse -maxdepth 1 -name 'cuda_compute-*.whl' | wc -l)" -eq 1
-test "$(find wheelhouse -maxdepth 1 -name 'cuda_cccl-*-py3-none-any.whl' | wc -l)" -eq 1
+mapfile -t cuda_compute_wheels < <(
+  find wheelhouse -maxdepth 1 -type f -name 'cuda_compute-*.whl' -print | sort
+)
+mapfile -t cuda_cccl_wheels < <(
+  find wheelhouse -maxdepth 1 -type f -name 'cuda_cccl-*-py3-none-any.whl' -print | sort
+)
+if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one final cuda-compute wheel; found ${#cuda_compute_wheels[@]}." >&2
+  exit 1
+fi
+if [[ "${#cuda_cccl_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one universal cuda-cccl wheel; found ${#cuda_cccl_wheels[@]}." >&2
+  exit 1
+fi
+python -m twine check wheelhouse/*.whl
 
 # Native JIT templates and generated sources must remain relocatable. Reject
 # paths from either the inner manylinux build mount or this outer checkout.

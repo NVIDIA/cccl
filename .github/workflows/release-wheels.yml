@@ -14,7 +14,6 @@
 # limitations under the License.
 
 name: "Release: Upload Wheels to PyPi"
-description: "Manually triggered release workflow for one Python distribution."
 
 on:
   workflow_dispatch:

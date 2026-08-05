@@ -31,7 +31,14 @@ fi
 # Install cuda-compute with the minimal CUDA extra. This intentionally avoids the
 # full cu*/sysctk* extras because those pull in numba/numba-cuda. The flavor is
 # "cu" (pip toolkit) or "sysctk" (system toolkit) per the -ctk-mode arg.
-CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
+mapfile -t cuda_compute_wheels < <(
+  find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_compute-*.whl' -print | sort
+)
+if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one cuda-compute wheel in ${wheelhouse_dir}; found ${#cuda_compute_wheels[@]}." >&2
+  exit 1
+fi
+CUDA_COMPUTE_WHEEL_PATH="${cuda_compute_wheels[0]}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${wheelhouse_dir}" \
   "${CUDA_COMPUTE_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"

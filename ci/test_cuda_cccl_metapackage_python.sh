@@ -23,8 +23,22 @@ fi
 # Install both coordinated wheels from explicit paths. Index access remains
 # available for the selected CUDA extra's third-party dependencies.
 wheelhouse_dir="${repo_root}/wheelhouse"
-CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
-CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
+mapfile -t cuda_cccl_wheels < <(
+  find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_cccl-*.whl' -print | sort
+)
+mapfile -t cuda_compute_wheels < <(
+  find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_compute-*.whl' -print | sort
+)
+if [[ "${#cuda_cccl_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one cuda-cccl wheel in ${wheelhouse_dir}; found ${#cuda_cccl_wheels[@]}." >&2
+  exit 1
+fi
+if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
+  echo "Expected exactly one cuda-compute wheel in ${wheelhouse_dir}; found ${#cuda_compute_wheels[@]}." >&2
+  exit 1
+fi
+CUDA_CCCL_WHEEL_PATH="${cuda_cccl_wheels[0]}"
+CUDA_COMPUTE_WHEEL_PATH="${cuda_compute_wheels[0]}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${wheelhouse_dir}" \
   "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]" \

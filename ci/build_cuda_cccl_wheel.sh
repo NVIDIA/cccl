@@ -54,7 +54,9 @@ echo "Done setting up python env"
 # Keep archive timestamps deterministic across the CUDA-major producers. The
 # projects carry their release versions in their own pyproject.toml files.
 export SOURCE_DATE_EPOCH
-SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+SOURCE_DATE_EPOCH="$(
+  git -c safe.directory=/workspace -C /workspace show -s --format=%ct HEAD
+)"
 mkdir -p /workspace/wheelhouse
 
 # Determine CUDA version from nvcc

@@ -38,7 +38,13 @@ else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
 
-cccl_repo_version="$(git -C "${cccl_repo}" describe --match 'v[0-9]*' "${cccl_sha}"| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+if ! cccl_repo_version="$(
+  git -C "${cccl_repo}" describe --match 'v[0-9]*' "${cccl_sha}" \
+    | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'
+)"; then
+  echo "ERROR: no v<major>.<minor>.<patch> tag is reachable from ${cccl_sha}." >&2
+  exit 1
+fi
 readonly cccl_repo_version
 
 # Define CCCL_VERSION to override the version used by rapids-cmake to patch CCCL.
