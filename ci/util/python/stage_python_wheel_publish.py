@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import email
 import hashlib
+import json
 import re
 import shutil
 import sys
@@ -66,6 +67,14 @@ def _logical_contents(wheel: Path) -> dict[str, str]:
             name: hashlib.sha256(archive.read(name)).hexdigest()
             for name in sorted(archive.namelist())
         }
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _release_artifacts(source: Path) -> list[Path]:
@@ -194,6 +203,44 @@ def exact_dependency_version(
     return exact_versions[0]
 
 
+def verify_index_wheels(wheelhouse: Path, index_metadata: Path) -> None:
+    with index_metadata.open(encoding="utf-8") as stream:
+        metadata = json.load(stream)
+    if not isinstance(metadata, dict):
+        raise RuntimeError("Index metadata is not a JSON object")
+    urls = metadata.get("urls")
+    if not isinstance(urls, list):
+        raise RuntimeError("Index metadata does not contain a wheel URL list")
+
+    published: dict[str, str] = {}
+    for entry in urls:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("packagetype") != "bdist_wheel" or entry.get("yanked", False):
+            continue
+        filename = entry.get("filename")
+        digests = entry.get("digests")
+        digest = digests.get("sha256") if isinstance(digests, dict) else None
+        if not isinstance(filename, str) or not isinstance(digest, str):
+            raise RuntimeError("Published wheel is missing its filename or SHA-256")
+        if filename in published and published[filename] != digest:
+            raise RuntimeError(f"Index contains conflicting digests for {filename}")
+        published[filename] = digest
+
+    wheels = sorted(wheelhouse.glob("*.whl"))
+    if not wheels:
+        raise RuntimeError(f"No wheels found in {wheelhouse}")
+    for wheel in wheels:
+        expected = _sha256(wheel)
+        actual = published.get(wheel.name)
+        if actual is None:
+            raise RuntimeError(f"Published index is missing {wheel.name}")
+        if actual != expected:
+            raise RuntimeError(
+                f"Published SHA-256 for {wheel.name} is {actual}, expected {expected}"
+            )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -215,6 +262,12 @@ def main() -> int:
     dependency_parser.add_argument("distribution", choices=sorted(_DISTRIBUTIONS))
     dependency_parser.add_argument("dependency", choices=sorted(_DISTRIBUTIONS))
 
+    verify_parser = subparsers.add_parser(
+        "verify-index", help="verify staged wheels against Python index metadata"
+    )
+    verify_parser.add_argument("wheelhouse", type=Path)
+    verify_parser.add_argument("index_metadata", type=Path)
+
     args = parser.parse_args()
     try:
         if args.command == "tag":
@@ -226,7 +279,7 @@ def main() -> int:
                 args.distribution,
                 args.version,
             )
-        else:
+        elif args.command == "dependency-version":
             print(
                 exact_dependency_version(
                     args.wheelhouse,
@@ -234,7 +287,9 @@ def main() -> int:
                     args.dependency,
                 )
             )
-    except (OSError, RuntimeError, zipfile.BadZipFile) as error:
+        else:
+            verify_index_wheels(args.wheelhouse, args.index_metadata)
+    except (json.JSONDecodeError, OSError, RuntimeError, zipfile.BadZipFile) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 0

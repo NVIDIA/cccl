@@ -147,23 +147,8 @@ jobs:
                 and (.urls | any(.packagetype == "bdist_wheel"
                   and ((.yanked // false) | not)))' \
               "${dependency_json}" >/dev/null
-            find dependency-dist -maxdepth 1 -type f -name '*.whl' -printf '%f\n' \
-              | LC_ALL=C sort > expected-dependency-wheels.txt
-            jq -r '.urls[]
-              | select(.packagetype == "bdist_wheel"
-                and ((.yanked // false) | not))
-              | .filename' "${dependency_json}" \
-              | LC_ALL=C sort > published-dependency-wheels.txt
-            if ! comm -23 expected-dependency-wheels.txt \
-              published-dependency-wheels.txt \
-              > missing-dependency-wheels.txt; then
-              exit 1
-            fi
-            if [[ -s missing-dependency-wheels.txt ]]; then
-              echo "Published cuda-compute ${dependency_version} is incomplete:" >&2
-              sed 's/^/  missing /' missing-dependency-wheels.txt >&2
-              exit 1
-            fi
+            python ci/util/python/stage_python_wheel_publish.py verify-index \
+              dependency-dist "${dependency_json}"
           fi
 
           ls -lh publish-dist/

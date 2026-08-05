@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import zipfile
 from pathlib import Path
 from types import ModuleType
@@ -178,3 +180,32 @@ def test_rejects_other_versions_and_non_public_tags(tmp_path: Path) -> None:
         stager.stage_wheels(tmp_path, tmp_path / "publish", "cuda-compute", "1.2.0")
     with pytest.raises(RuntimeError, match="canonical public PEP 440"):
         stager.release_tag("cuda-compute", "1.2.0+local")
+
+
+def test_verifies_published_wheel_digests(tmp_path: Path) -> None:
+    stager = _load_stager()
+    wheelhouse = tmp_path / "wheels"
+    wheel = wheelhouse / "cuda_compute-1.2.0-py3-none-any.whl"
+    _write_wheel(wheel, "cuda-compute", "1.2.0")
+    digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+    metadata = tmp_path / "index.json"
+    metadata.write_text(
+        json.dumps(
+            {
+                "urls": [
+                    {
+                        "filename": wheel.name,
+                        "packagetype": "bdist_wheel",
+                        "yanked": False,
+                        "digests": {"sha256": digest},
+                    }
+                ]
+            }
+        )
+    )
+
+    stager.verify_index_wheels(wheelhouse, metadata)
+
+    metadata.write_text(metadata.read_text().replace(digest, "0" * 64))
+    with pytest.raises(RuntimeError, match="Published SHA-256"):
+        stager.verify_index_wheels(wheelhouse, metadata)
