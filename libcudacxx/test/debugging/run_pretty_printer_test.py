@@ -22,7 +22,8 @@ else:
     from enum import Enum
 
     class StrEnum(str, Enum):
-        pass
+        __str__ = str.__str__
+        __format__ = str.__format__
 
 
 _MARKER_EDGE = "=" * 15
