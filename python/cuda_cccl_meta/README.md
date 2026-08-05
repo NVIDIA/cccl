@@ -9,8 +9,8 @@ Install the aggregate package from PyPI with the CUDA extra matching your
 environment:
 
 ```bash
-pip install cuda-cccl[cu13]  # CUDA 13.x with a pip-installed toolkit
-pip install cuda-cccl[cu12]  # CUDA 12.x with a pip-installed toolkit
+pip install "cuda-cccl[cu13]"  # CUDA 13.x with a pip-installed toolkit
+pip install "cuda-cccl[cu12]"  # CUDA 12.x with a pip-installed toolkit
 ```
 
 The `sysctk12`, `sysctk13`, `minimal-*`, `test-*`, and `bench-*` extras are

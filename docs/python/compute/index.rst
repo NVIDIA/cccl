@@ -308,7 +308,7 @@ Free-threaded Python
 
    .. code-block:: bash
 
-      pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+      pip install "cuda-cccl[minimal-cu13]"  # or minimal-cu12
 
    The full ``cu12`` and ``cu13`` extras and Python-callable operators that
    require Numba CUDA are not currently
@@ -538,8 +538,8 @@ minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA d
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]      # or minimal-cu12  (pip-installed cuda-toolkit)
-   pip install cuda-cccl[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA toolkit)
+   pip install "cuda-cccl[minimal-cu13]"      # or minimal-cu12  (pip-installed cuda-toolkit)
+   pip install "cuda-cccl[minimal-sysctk13]"  # or minimal-sysctk12  (system CUDA toolkit)
 
 
 

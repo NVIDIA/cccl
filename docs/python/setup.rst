@@ -25,7 +25,7 @@ The easiest way to install ``cuda-cccl`` is using pip:
 
 .. code-block:: bash
 
-   pip install cuda-cccl[cu13]  # or cuda-cccl[cu12]
+   pip install "cuda-cccl[cu13]"  # or "cuda-cccl[cu12]"
 
 ``cuda-cccl`` is a module-free metapackage. It installs ``cuda-compute``, which
 provides the ``cuda.compute`` API and privately carries the CCCL headers it
@@ -37,7 +37,7 @@ directly:
 
 .. code-block:: bash
 
-   pip install cuda-compute[cu13]  # or cuda-compute[cu12]
+   pip install "cuda-compute[cu13]"  # or "cuda-compute[cu12]"
 
 .. important::
 
@@ -52,7 +52,7 @@ use the ``sysctk`` variants instead:
 
 .. code-block:: bash
 
-   pip install cuda-cccl[sysctk13]  # or cuda-cccl[sysctk12]
+   pip install "cuda-cccl[sysctk13]"  # or "cuda-cccl[sysctk12]"
 
 These install the same dependencies except ``cuda-toolkit``; it is your
 responsibility to ensure a compatible CUDA toolkit is on ``PATH`` and
@@ -63,8 +63,8 @@ For a minimal install without Numba (useful when you supply your own
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
-   pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
+   pip install "cuda-cccl[minimal-cu13]"      # pip-installed CUDA toolkit
+   pip install "cuda-cccl[minimal-sysctk13]"  # system CUDA toolkit
 
 Free-threaded Python support is currently validated with the ``minimal-cu12``
 and ``minimal-cu13`` extras. The full ``cu12`` and ``cu13`` extras depend on
@@ -90,7 +90,7 @@ For development or to access the latest ``cuda.compute`` features:
 
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl/python/cuda_cccl
-   pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+   pip install -e ".[test-cu13]"  # or ".[test-cu12]", ".[test-sysctk13]", ".[test-sysctk12]"
 
 The editable build reads libcudacxx, CUB, and Thrust headers from the canonical
 repository directories. It does not copy them into ``python/cuda_cccl``.
@@ -112,7 +112,7 @@ For contributing to ``cuda.compute`` or advanced development:
    cd cccl/python/cuda_cccl
 
    # Install in development mode with test dependencies
-   pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+   pip install -e ".[test-cu13]"  # or ".[test-cu12]", ".[test-sysctk13]", ".[test-sysctk12]"
 
    # Run tests to verify everything works
    pytest tests/

@@ -215,7 +215,7 @@ needs as private package data. `cuda-cccl` is a module-free metapackage.
 From PyPI:
 
 ```bash
-pip install cuda-cccl[cu13] # or [cu12] for CTK 12.X
+pip install "cuda-cccl[cu13]" # or "cuda-cccl[cu12]" for CTK 12.X
 ```
 
 From conda-forge:
@@ -229,7 +229,7 @@ From source:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl/python/cuda_cccl
-pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
+pip install -e ".[test-cu13]" # or ".[test-cu12]" for CTK 12.X
 ```
 
 Editable installs resolve headers directly from the canonical checkout and do
