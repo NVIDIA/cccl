@@ -37,7 +37,7 @@ struct bench_policy_selector
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    constexpr auto sweep = cub::HistogramKernelConfig{
+    constexpr auto sweep = cub::HistogramPolicy::Kernel{
       TUNE_THREADS,
       TUNE_ITEMS,
       TUNE_VEC_SIZE,
