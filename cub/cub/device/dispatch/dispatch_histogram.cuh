@@ -281,9 +281,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     : is_privatized_static_smem_v<PrivatizationMode>
       ? privatization_tier::static_smem
       : privatization_tier::gmem;
-  const HistogramSweepPolicy sweep = sweep_policy<tier>(active_policy);
-  const int threads_per_block      = sweep.threads_per_block;
-  const int items_per_thread       = sweep.items_per_thread;
+  const HistogramKernelConfig sweep = kernel_config<tier>(active_policy);
+  const int threads_per_block       = sweep.threads_per_block;
+  const int items_per_thread        = sweep.items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
@@ -805,8 +805,8 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy(int)
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy(long) -> HistogramPolicy
 {
-  using sweep             = typename ActivePolicy::AgentHistogramPolicyT;
-  const auto sweep_policy = HistogramSweepPolicy{
+  using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
+  const auto kernel_config = HistogramKernelConfig{
     sweep::BLOCK_THREADS,
     sweep::PIXELS_PER_THREAD,
     sweep::VEC_SIZE,
@@ -814,7 +814,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy(long) -> HistogramPolicy
     sweep::LOAD_MODIFIER,
     sweep::IS_RLE_COMPRESS,
     sweep::IS_WORK_STEALING};
-  return {sweep_policy, {sweep_policy, 257 * sizeof(unsigned int), 0}, {sweep_policy, 0, 0, 0, 0, 0}, 0};
+  return {kernel_config, {kernel_config, 256 * sizeof(unsigned int), 0}, {kernel_config, 0, 0, 0, 0, 0}, 0};
 }
 
 // TODO(bgruber): drop in CCCL 4.0

@@ -1627,8 +1627,8 @@ struct histogram_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     constexpr auto sweep =
-      cub::HistogramSweepPolicy{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, {sweep, 257 * sizeof(unsigned int), 0}, {sweep, 0, 0, 0, 0, 0}, 0};
+      cub::HistogramKernelConfig{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {sweep, {sweep, 256 * sizeof(unsigned int), 0}, {sweep, 0, 0, 0, 0, 0}, 0};
   }
 };
 
@@ -1645,8 +1645,8 @@ struct mixed_counter_histogram_tuning
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     constexpr auto sweep =
-      cub::HistogramSweepPolicy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, {sweep, 513 * sizeof(unsigned int), 0}, {sweep, 228352, 2048, 28544, 19029, 8192}, 0};
+      cub::HistogramKernelConfig{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {sweep, {sweep, 512 * sizeof(unsigned int), 0}, {sweep, 228352, 2048, 28544, 19029, 8192}, 0};
   }
 };
 
@@ -1821,7 +1821,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
                     .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
                     .rle_compress      = false,
                     .work_stealing     = false},
-    .static_smem = {.sweep                     = {.threads_per_block = 96,
+    .static_smem = {.kernel                    = {.threads_per_block = 96,
                                                   .items_per_thread  = 3,
                                                   .vec_size          = 4,
                                                   .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
@@ -1831,7 +1831,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
                     .max_privatized_smem_bytes = 2052,
                     .min_blocks_per_sm         = 2},
     .dynamic_smem =
-      {.sweep                     = {.threads_per_block = 128,
+      {.kernel                    = {.threads_per_block = 128,
                                      .items_per_thread  = 7,
                                      .vec_size          = 4,
                                      .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
@@ -1862,10 +1862,11 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     == "HistogramPolicy { .gmem = { .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
        ", .work_stealing = 0 }"
-       ", .static_smem = { .sweep = { .threads_per_block = 96, .items_per_thread = 3, .vec_size = 4"
+       ", .static_smem = { .kernel = { .threads_per_block = 96, .items_per_thread = 3, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
        ", .work_stealing = 0 }"
-       ", .max_privatized_smem_bytes = 2052, .min_blocks_per_sm = 2 }, .dynamic_smem = { .sweep = { .threads_per_block "
+       ", .max_privatized_smem_bytes = 2052, .min_blocks_per_sm = 2 }, .dynamic_smem = { .kernel = { "
+       ".threads_per_block "
        "= 128"
        ", .items_per_thread = 7, .vec_size = 4, .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG"
        ", .rle_compress = 0, .work_stealing = 0 }, .max_privatized_smem_bytes = 12345"
@@ -1885,7 +1886,7 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
 
   STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm90_policy, 4, 1) == 256);
   STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm100_policy, 4, 1) == 512);
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm100_policy, 4, 4) == 127);
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm100_policy, 4, 4) == 128);
   STATIC_REQUIRE(sm90_policy.dynamic_smem.max_privatized_smem_bytes == 0);
   STATIC_REQUIRE(sm100_policy.dynamic_smem.max_privatized_smem_bytes == 228352);
   STATIC_REQUIRE(sm100_wide_counter_policy.dynamic_smem.max_privatized_smem_bytes == 0);
