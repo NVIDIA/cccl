@@ -5,8 +5,14 @@
 import os
 from pathlib import Path
 
+import numpy as np
+import pytest
+from _utils.device_array import DeviceArray
+
 import cuda.compute as compute
 import cuda.compute._build_info as build_info
+
+pytestmark = pytest.mark.no_numba
 
 
 def _create_hostjit_bundle(package_dir: Path) -> Path:
@@ -52,3 +58,28 @@ def test_configure_hostjit_paths_preserves_explicit_configuration(
 
     assert os.environ["HOSTJIT_CLANG_PATH"] == "/custom/clang"
     assert os.environ["HOSTJIT_INCLUDE_PATH"] == "/custom/hostjit"
+
+
+@pytest.mark.skipif(
+    not build_info.USING_V2 or build_info.BUILD_STATE != "wheel",
+    reason="requires an installed cuda-compute wheel using the v2 HostJIT backend",
+)
+def test_v2_c_api_derives_runtime_paths_from_private_headers(monkeypatch) -> None:
+    monkeypatch.delenv("HOSTJIT_CLANG_PATH", raising=False)
+    monkeypatch.delenv("HOSTJIT_INCLUDE_PATH", raising=False)
+    compute.clear_all_caches()
+
+    h_input = np.arange(1, 8, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+    h_init = np.array([3], dtype=np.int32)
+
+    compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=h_input.size,
+        op=compute.OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    assert d_output.copy_to_host()[0] == np.sum(h_input, initial=h_init[0])

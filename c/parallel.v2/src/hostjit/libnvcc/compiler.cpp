@@ -138,6 +138,9 @@ static void appendClangResourceDir(std::vector<std::string>& args)
   args.push_back("-resource-dir");
   args.push_back(CLANG_RESOURCE_DIR);
 #endif
+  // Runtime-path wheels package a flat Clang header directory and pass it via
+  // -internal-isystem. That directory is not a Clang resource root (which
+  // requires an include/ child), so there is no runtime fallback here.
 }
 
 struct CompilationResult

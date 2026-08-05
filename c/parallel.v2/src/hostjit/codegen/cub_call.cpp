@@ -569,18 +569,30 @@ hostjit::CompilerConfig CubCall::make_jit_config(
   if (cccl_include_path && cccl_include_path[0] != '\0')
   {
     jit_config.cccl_include_path = cccl_include_path;
-    // When CCCL headers are pip-installed, the hostjit cuda_minimal headers
-    // are installed alongside them under the parent directory:
-    //   cccl_include_path = .../cuda/cccl/headers/include/
-    //   hostjit headers  = .../cuda/cccl/headers/hostjit/cuda_minimal/
-    // So derive hostjit_include_path as the parent of cccl_include_path.
+    // cuda-compute wheels install CCCL, HostJIT, and Clang headers under one
+    // private root:
+    //   cccl_include_path = .../cuda/compute/_cccl/include
+    //   HostJIT headers   = .../cuda/compute/_cccl/hostjit/cuda_minimal
+    //   Clang headers     = .../cuda/compute/_cccl/clang
+    const auto package_root = std::filesystem::path(cccl_include_path).parent_path();
+    const auto hostjit_dir  = package_root / "hostjit" / "cuda_minimal";
     if (jit_config.hostjit_include_path.empty()
         || !std::filesystem::exists(jit_config.hostjit_include_path + "/hostjit/cuda_minimal"))
     {
-      auto parent = std::filesystem::path(cccl_include_path).parent_path().string();
-      if (std::filesystem::exists(parent + "/hostjit/cuda_minimal"))
+      if (std::filesystem::exists(hostjit_dir))
       {
-        jit_config.hostjit_include_path = parent;
+        jit_config.hostjit_include_path = package_root.string();
+      }
+    }
+
+    const auto clang_header = package_root / "clang" / "__clang_cuda_math_forward_declares.h";
+    if (jit_config.clang_headers_path.empty()
+        || !std::filesystem::exists(
+          std::filesystem::path(jit_config.clang_headers_path) / "__clang_cuda_math_forward_declares.h"))
+    {
+      if (std::filesystem::exists(clang_header))
+      {
+        jit_config.clang_headers_path = clang_header.parent_path().string();
       }
     }
   }
