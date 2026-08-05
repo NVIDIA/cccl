@@ -111,6 +111,7 @@ inline constexpr bool __noexcept_movable_storable<_T1, _T2, true> =
 
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
   _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const noexcept(__noexcept_unqualified_iter_swap<_T1, _T2>)
@@ -125,6 +126,7 @@ struct __fn
     ::cuda::std::ranges::__swap_cpo{}(*::cuda::std::forward<_T1>(__x), *::cuda::std::forward<_T2>(__y));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__movable_storable<_T2, _T1>)
   _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const noexcept(__noexcept_movable_storable<_T1, _T2>)

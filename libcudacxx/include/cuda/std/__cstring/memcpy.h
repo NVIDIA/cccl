@@ -44,7 +44,7 @@ using ::memcpy;
 // The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace
 // qualification. Function templates have lower precedence than non-template functions for overload resolution.
 template <int = 0>
-_CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
+_CCCL_HOST_DEVICE_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: destination range is invalid");
