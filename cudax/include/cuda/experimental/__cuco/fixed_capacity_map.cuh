@@ -485,7 +485,7 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param[in] __stream CUDA stream used to get the number of elements
+  //! @param __stream CUDA stream used to get the number of elements
   //!
   //! @return The number of elements in the map
   [[nodiscard]] _CCCL_HOST_API size_type size(::cuda::stream_ref __stream) const

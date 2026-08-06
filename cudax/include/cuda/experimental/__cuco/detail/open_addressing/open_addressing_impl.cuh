@@ -413,7 +413,7 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param[in] __stream CUDA stream used to get the number of elements
+  //! @param __stream CUDA stream used to get the number of elements
   //!
   //! @return The number of elements in the container
   [[nodiscard]] _CCCL_HOST_API __size_type size(::cuda::stream_ref __stream) const
