@@ -160,10 +160,9 @@ function(libcudacxx_add_pretty_printer_test)
     NO_CLANG_TIDY
     SOURCES ${pretty_printer_SOURCES}
   )
-  target_compile_options(
-    ${target_name}
-    PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g> $<$<COMPILE_LANGUAGE:CUDA>:-O0>
-  )
+  # Explicitly set max optimization, the printers should work even when everything is
+  # compiled out.
+  target_compile_options(${target_name} PRIVATE -O3)
   target_link_libraries(${target_name} PRIVATE libcudacxx.compiler_interface)
 
   foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
@@ -193,7 +192,9 @@ function(libcudacxx_add_pretty_printer_test)
       ${pretty_printer_CASES}
       # gersemi: on
     )
-    set_tests_properties(${test_name} PROPERTIES TIMEOUT 60)
+    # Set an aggressive timeout because pretty printers should not be slow. If they are,
+    # then it's a problem with the printer and/or it is doing too much
+    set_tests_properties(${test_name} PROPERTIES TIMEOUT 10)
   endforeach()
 endfunction()
 
