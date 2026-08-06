@@ -36,6 +36,12 @@
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(make_unsigned)
 
+// __make_unsigned in clang doesn't work with sccache-dist
+// see: https://github.com/llvm/llvm-project/issues/206201
+#if _CCCL_COMPILER(CLANG) && defined(__PREPROCESS_ONLY__)
+#  undef _CCCL_BUILTIN_MAKE_UNSIGNED
+#endif
+
 // __make_unsigned doesn't work with clang < 20 or clang + nvcc
 #if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
 #  undef _CCCL_BUILTIN_MAKE_UNSIGNED

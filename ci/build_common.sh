@@ -154,9 +154,39 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-N_CPUS="$(nproc --all --ignore=1)"
+N_CPUS="$(grep -cP 'processor\s+:' /proc/cpuinfo)"
+N_CPUS_MINUS_1="$((N_CPUS > 1 ? N_CPUS - 1 : 1))"
 readonly N_CPUS
-readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
+readonly N_CPUS_MINUS_1
+declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=$N_CPUS_MINUS_1}"
+
+# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# concurrent preprocessor calls we think we can do without OOM'ing the machine
+if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+    # * 1.5Mb for the shell launched by ninja
+    # * 6MiB for each sccache client process
+    # * round up to 10MiB
+    mem_per_job="$((10 * 1024))"
+    # Assume preprocessor invocations take ~300Mb or so
+    mem_for_preprocessing="$((N_CPUS * 300 * 1024))"
+    # It's usually around 400-600MiB, but be conservative
+    # and assume the sccache daemon will use 1GiB of RAM
+    mem_for_sccache_daemon="$((1 * 1024 * 1024))"
+    # Available memory (in KB), for more details see free(1).
+    mem_available="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
+    # Stay under 95% for CI
+    mem_available="$((mem_available * 95 / 100))"
+    # Total job count is available memory after accounting for `nproc` concurrent preprocessor
+    # calls divided by the amount of memory required to invoke the sccache thin client process
+    PARALLEL_LEVEL="$(((mem_available - mem_for_sccache_daemon - mem_for_preprocessing) / mem_per_job))"
+fi
+
+if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+    PARALLEL_LEVEL="$N_CPUS_MINUS_1"
+fi
+
+export PARALLEL_LEVEL
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
@@ -187,7 +217,7 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS_MINUS_1 ? N_CPUS_MINUS_1 : PARALLEL_LEVEL))"
 export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
@@ -220,6 +250,7 @@ print_environment_details() {
       CUDACXX \
       CUDAHOSTCXX \
       NVCC_VERSION \
+      PARALLEL_LEVEL \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_CI_COMMAND_TIMEOUT \
