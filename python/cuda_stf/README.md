@@ -107,6 +107,19 @@ part = stf.cute_partition.from_spec((K,), (("blocked", 0),), (P, Q), replicate_o
 (End-to-end shaped-grid execution from Python arrives with the grid-reshape
 bindings; the descriptor, `placement_evaluate` and the C/C++ layers handle
 it today.) In general:
+
+**Pointer model.** Sharding and replication differ in one fundamental way:
+a localized allocation keeps the single-base-pointer illusion because page
+translation is many-to-one (one VA range, pages physically striped), while
+replication is one-to-many per page, which no single translation can
+express. Consumers therefore fall into three tiers: *naive* code (loaders,
+plain torch kernels) uses the one canonical pointer -- always correct, no
+locality win; *STF tasks* still see a plain tensor, rebased to their
+shard's replica at dispatch (replicas are layout-homogeneous, so only the
+base differs); *placement-aware* code detects `ReplicatedMeta` via
+`get_meta` and obtains per-replica bases with freeze + `get(member)`. This
+is also why direct allocation on a replicated place is rejected: "give me
+the pointer" has no answer when there are several.
 `placement_evaluate` reports the per-member copies
 (`stats.replication_factor`, `stats.resident_bytes`), and a composite data
 place built from such a partition is itself replicated (read-only) — through
