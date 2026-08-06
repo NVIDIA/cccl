@@ -410,6 +410,9 @@ public:
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
@@ -418,6 +421,9 @@ public:
 
   /**
    * @brief Allocate memory at this data place (raw allocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
@@ -432,6 +438,9 @@ public:
    * composite places use the geometry to back each block of the allocation on
    * the place that owns it according to the partitioner. Extents follow the
    * dimension-0-fastest convention of dim4::get_index().
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    *
    * @throws std::invalid_argument if the product of the extents and elemsize
    * overflows size_t or exceeds PTRDIFF_MAX
@@ -460,6 +469,9 @@ public:
 
   /**
    * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {
