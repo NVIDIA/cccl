@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/thread/thread_load.cuh>
@@ -56,7 +57,14 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
           static_cast<int>(threads_per_block),
           reinterpret_cast<long long>(stream),
           static_cast<int>(active_policy.items_per_thread));
-#endif
+#else // CUB_DEBUG_LOG
+  log("Invoking detail::for_each::dynamic_kernel<<<%d, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      static_cast<int>(num_tiles),
+      static_cast<int>(threads_per_block),
+      reinterpret_cast<long long>(stream),
+      static_cast<int>(active_policy.items_per_thread));
+#endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -91,7 +99,14 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
           static_cast<int>(threads_per_block),
           reinterpret_cast<long long>(stream),
           static_cast<int>(items_per_thread));
-#endif
+#else // CUB_DEBUG_LOG
+  log("Invoking detail::for_each::static_kernel<<<%d, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      static_cast<int>(num_tiles),
+      static_cast<int>(threads_per_block),
+      reinterpret_cast<long long>(stream),
+      static_cast<int>(items_per_thread));
+#endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -135,6 +150,8 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceFor", cc, policy_selector(cc));
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {

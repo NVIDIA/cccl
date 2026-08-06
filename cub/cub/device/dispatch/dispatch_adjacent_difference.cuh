@@ -16,6 +16,7 @@
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
@@ -211,6 +212,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
                 init_grid_size,
                 init_block_size,
                 reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
+        detail::log("Invoking DeviceAdjacentDifferenceInitKernel"
+                    "<<<%d, %d, 0, %lld>>>()\n",
+                    init_grid_size,
+                    init_block_size,
+                    reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
         error = CubDebug(
@@ -240,6 +247,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
               num_tiles,
               AdjacentDifferencePolicyT::BLOCK_THREADS,
               reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
+      detail::log("Invoking DeviceAdjacentDifferenceDifferenceKernel"
+                  "<<<%d, %d, 0, %lld>>>()\n",
+                  num_tiles,
+                  AdjacentDifferencePolicyT::BLOCK_THREADS,
+                  reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
       using KernelPolicySelector = detail::adjacent_difference::policy_selector_from_hub<PolicyHub>;
@@ -363,6 +376,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceAdjacentDifference", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
@@ -408,6 +423,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             init_grid_size,
             init_block_size,
             reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
+    log("Invoking DeviceAdjacentDifferenceInitKernel"
+        "<<<%d, %d, 0, %lld>>>()\n",
+        init_grid_size,
+        init_block_size,
+        reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
@@ -434,6 +455,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           num_tiles,
           active_policy.threads_per_block,
           reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
+  log("Invoking DeviceAdjacentDifferenceDifferenceKernel"
+      "<<<%d, %d, 0, %lld>>>()\n",
+      num_tiles,
+      active_policy.threads_per_block,
+      reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
