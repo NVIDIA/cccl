@@ -110,6 +110,7 @@ class BufferSyntheticProvider:
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.host_copy = lldb.SBValue()
+        self.stop_id: int | None = None
         self.clear()
         self.update()
 
@@ -132,6 +133,7 @@ class BufferSyntheticProvider:
             if address:
                 self._evaluate(f"(void)free((void*){address:#x})")
         self.host_copy = lldb.SBValue()
+        self.stop_id = None
         self.size = 0
         self.data_address = 0
         self.value_type = lldb.SBType()
@@ -161,7 +163,20 @@ class BufferSyntheticProvider:
             return False
         return True
 
+    def _current_stop_id(self) -> int | None:
+        process = self.value.GetProcess()
+        return process.GetStopID() if process.IsValid() else None
+
     def update(self) -> bool:
+        # LLDB calls update() before every read of a synthetic value, so one
+        # print causes hundreds of calls. Copy the device memory only when the
+        # process has stopped again since the last copy. Anything that changes
+        # target memory must resume and re-stop the process, which includes a
+        # cudaMemcpy the user runs at this breakpoint, so this cannot report
+        # stale data.
+        if self.stop_id is not None and self._current_stop_id() == self.stop_id:
+            return True
+
         self.clear()
 
         info = _buffer_info(self.value)
@@ -173,6 +188,9 @@ class BufferSyntheticProvider:
         self.value_type = info.value_type
         self.value_size = self.value_type.GetByteSize()
         self._copy_to_host()
+        # The copy itself runs inferior calls that advance the stop ID, so
+        # record the value the next update() will see.
+        self.stop_id = self._current_stop_id()
         return True
 
     def num_children(self) -> int:
