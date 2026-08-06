@@ -429,7 +429,7 @@ struct common_input_iterator
 {
   Base it_;
 
-  using value_type       = int;
+  using value_type       = cuda::std::iter_value_t<Base>;
   using difference_type  = cuda::std::intptr_t;
   using iterator_concept = cuda::std::input_iterator_tag;
 
@@ -467,6 +467,9 @@ struct common_input_iterator
   {
     return i.it_;
   }
+
+  template <class T>
+  void operator,(T const&) = delete;
 };
 
 template <class It>

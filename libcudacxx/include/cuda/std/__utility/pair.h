@@ -609,7 +609,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     swap(this->second, __p.second);
   }
 
-#if _CCCL_STD_VER >= 2023
   _CCCL_API constexpr void swap(const pair& __p) const
     noexcept(is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>)
   {
@@ -617,7 +616,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
-#endif // _CCCL_STD_VER >= 2023
 
 #if _CCCL_HOSTED()
   _CCCL_HOST_API constexpr operator ::std::pair<_T1, _T2>() const
