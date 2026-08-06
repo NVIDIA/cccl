@@ -2227,6 +2227,41 @@ UNITTEST("blocked on one grid axis, replicated on the other")
   EXPECT(!dp_full.member(0).is_composite());
 };
 
+UNITTEST("replication over multiple grid axes composes as the product")
+{
+  // 3-D grid (2, 2, 2): blocked over axis 0, one copy per (axis 1, axis 2)
+  // coordinate -- factor 4, mixed radix over both replicated axes
+  const dim4 true_dims(8);
+  const dim4 grid_dims(2, 2, 2);
+  const auto part = make_partition_descriptor(
+    true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims, /*replicated_axes=*/0x6);
+
+  EXPECT(part.replicated_axes_mask() == 0x6u);
+  EXPECT(part.replication_factor() == 4);
+
+  ::std::vector<exec_place> places(8, exec_place::device(0));
+  const data_place dp = make_composite_data_place(make_grid(mv(places), grid_dims), part);
+  EXPECT(dp.is_replicated());
+  EXPECT(dp.instance_count() == 4);
+
+  // Linear place i = (x, y, z) with x fastest; the instance index is the
+  // mixed-radix rank of the replicated coordinates: y + 2 * z
+  for (size_t i = 0; i < 8; i++)
+  {
+    const size_t y = (i / 2) % 2;
+    const size_t z = i / 4;
+    EXPECT(dp.instance_of(i) == y + 2 * z);
+  }
+
+  // Every instance stripes the whole tensor over its two-place fiber
+  for (size_t r = 0; r < 4; r++)
+  {
+    const data_place m = dp.member(r);
+    EXPECT(m.is_composite());
+    EXPECT(m.instance_count() == 1);
+  }
+};
+
 UNITTEST("make_partition pads uneven blocked dimensions")
 {
   // (4, 5) tensor blocked over 2 places along dimension 1: chunk = 3, so the
