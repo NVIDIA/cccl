@@ -33,3 +33,5 @@ foreach (arch IN LISTS atomic_codegen_cuda_archs)
     COMPILE_DEFINITIONS _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1
   )
 endforeach()
+
+add_subdirectory(sass)
