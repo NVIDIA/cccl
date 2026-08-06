@@ -34,7 +34,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // fpmp arithmetic and conversions. The calls fpemu can capture are the fp64 ones
 // (__dadd_rn, __dadd_rz, __dsub_rn, __dmul_rn) and the __double2* converters, since
@@ -58,7 +58,7 @@ TEST_HOST_DEVICE_FUNC void check_fpmp()
 
   // Round-off sensitive: 2^-30 added to 1 survives in the low word, which native
   // single precision could not hold. A wrong add would collapse this to 1.
-  if constexpr (::cuda::std::is_same_v<T, fp32mp2>)
+  if constexpr (::cuda::std::is_same_v<T, cudax::fp32mp2>)
   {
     const T eps(1.0 / 1073741824.0); // 2^-30
     assert(static_cast<double>((T(1.0) + eps) - T(1.0)) == 1.0 / 1073741824.0);
@@ -84,25 +84,25 @@ TEST_HOST_DEVICE_FUNC void check_fpemu()
   const double dy = 2.3456;
   const double dz = 3.4567;
 
-  fp64emu ex = dx;
-  fp64emu ey = dy;
-  fp64emu ez = dz;
+  cudax::fp64emu ex = dx;
+  cudax::fp64emu ey = dy;
+  cudax::fp64emu ez = dz;
 
   // Unqualified, so these resolve to cuda::experimental::__dadd_rn and friends.
   // Division is left out because __ddiv_rn is not one of the names that can capture
   // an fpmp call. Note that nvc++ 26.3 cannot compile these fpemu paths at all: it
   // hits "Unhandled builtin function" on the __umul64hi in cuda::mul_hi and in
   // fpemu's __mul_128, which reaches fma and div alike.
-  static_assert(::cuda::std::is_same_v<decltype(__dadd_rn(ex, ey)), fp64emu>);
-  static_assert(::cuda::std::is_same_v<decltype(__dmul_rn(ex, ey)), fp64emu>);
-  static_assert(::cuda::std::is_same_v<decltype(__fma_rn(ex, ey, ez)), fp64emu>);
+  static_assert(::cuda::std::is_same_v<decltype(cudax::__dadd_rn(ex, ey)), cudax::fp64emu>);
+  static_assert(::cuda::std::is_same_v<decltype(cudax::__dmul_rn(ex, ey)), cudax::fp64emu>);
+  static_assert(::cuda::std::is_same_v<decltype(cudax::__fma_rn(ex, ey, ez)), cudax::fp64emu>);
 
   const double tol = 1e-10;
 
-  assert(::cuda::std::fabs(static_cast<double>(__dadd_rn(ex, ey)) - (dx + dy)) <= tol);
-  assert(::cuda::std::fabs(static_cast<double>(__dsub_rn(ex, ey)) - (dx - dy)) <= tol);
-  assert(::cuda::std::fabs(static_cast<double>(__dmul_rn(ex, ey)) - (dx * dy)) <= tol);
-  assert(::cuda::std::fabs(static_cast<double>(__fma_rn(ex, ey, ez)) - (dx * dy + dz)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(cudax::__dadd_rn(ex, ey)) - (dx + dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(cudax::__dsub_rn(ex, ey)) - (dx - dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(cudax::__dmul_rn(ex, ey)) - (dx * dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(cudax::__fma_rn(ex, ey, ez)) - (dx * dy + dz)) <= tol);
 }
 
 // Values crossing between the two libraries, so both are live in one expression.
@@ -111,22 +111,22 @@ TEST_HOST_DEVICE_FUNC void check_mixed()
   const double dx = 6.25;
   const double dy = 1.5;
 
-  const fp64emu emu_sum = fp64emu(dx) + fp64emu(dy);
-  const fp64mp2 mp_sum  = fp64mp2(dx) + fp64mp2(dy);
+  const cudax::fp64emu emu_sum = cudax::fp64emu(dx) + cudax::fp64emu(dy);
+  const cudax::fp64mp2 mp_sum  = cudax::fp64mp2(dx) + cudax::fp64mp2(dy);
 
   assert(static_cast<double>(emu_sum) == dx + dy);
   assert(static_cast<double>(mp_sum) == dx + dy);
   assert(static_cast<double>(mp_sum) == static_cast<double>(emu_sum));
 
   // Feed an fpemu result into fpmp and back.
-  const fp64mp2 round_trip = fp64mp2(static_cast<double>(emu_sum)) * fp64mp2(2.0);
+  const cudax::fp64mp2 round_trip = cudax::fp64mp2(static_cast<double>(emu_sum)) * cudax::fp64mp2(2.0);
   assert(static_cast<double>(round_trip) == 2.0 * (dx + dy));
 }
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  check_fpmp<fp32mp2>();
-  check_fpmp<fp64mp2>();
+  check_fpmp<cudax::fp32mp2>();
+  check_fpmp<cudax::fp64mp2>();
   check_fpemu();
   check_mixed();
 }

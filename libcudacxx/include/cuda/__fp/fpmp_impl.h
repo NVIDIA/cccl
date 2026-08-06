@@ -278,23 +278,9 @@ namespace cuda::experimental
 #  endif
 #endif
 
-/*
-// fp128 math functions fallback to system implementation enabling
-//
-// Per-pass, unlike the two macros above: it selects function *bodies*, not declarations.
-// The device pass takes the quad path only where fp128 arithmetic is device-callable, since
-// those bodies go through __fpmp2_to_quad; the host pass of a CUDA compilation stays on the
-// double path, as before, so that a .cu file does not silently acquire a libquadmath
-// dependency its host-only counterpart never had.
-*/
-#ifndef _CCCL_FPMP_FP128_MATH_FALLBACK
-#  if (_CCCL_FPMP_FP128_ENABLE == 1) \
-    && (!_CCCL_CUDA_COMPILATION() || (_CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_FP128_DEVICE_OPS == 1)))
-#    define _CCCL_FPMP_FP128_MATH_FALLBACK 1
-#  else
-#    define _CCCL_FPMP_FP128_MATH_FALLBACK 0
-#  endif
-#endif
+// The third fp128 knob, _CCCL_FPMP_FP128_MATH_FALLBACK, selects the bodies of the fp64mp2
+// math functions rather than anything in the class, so it lives with them in
+// <cuda/__fp/fpmp_math_impl.h> and is derived from the two macros above.
 
 /*
 // Internal 128-bit floating-point type definition
