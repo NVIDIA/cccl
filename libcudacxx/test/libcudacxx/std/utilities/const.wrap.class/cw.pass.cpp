@@ -54,8 +54,7 @@ TEST_FUNC constexpr bool test()
 #  if !_CCCL_COMPILER(GCC, <, 13)
     // struct constant
     constexpr S s{13};
-    decltype(auto) cw_val = cuda::std::__cw<s>;
-    static_assert(cuda::std::same_as<const cuda::std::__constant_wrapper<s>, decltype(cw_val)>);
+    cuda::std::same_as<const cuda::std::__constant_wrapper<s>> decltype(auto) cw_val = cuda::std::__cw<s>;
     static_assert(cw_val == s);
 #  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
