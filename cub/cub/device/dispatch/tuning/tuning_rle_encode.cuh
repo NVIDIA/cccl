@@ -94,9 +94,7 @@ namespace detail
   return "<unknown RleAlgorithm>";
 }
 } // namespace detail
-#endif // _CCCL_HOSTED()
 
-#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
 {
   return os << CUB_NS_QUALIFIER::detail::to_string(algo);
@@ -211,7 +209,7 @@ struct RleEncodePolicy
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
-    return lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead && lhs.algorithm == rhs.algorithm;
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead;
   }
 
   [[nodiscard]] _CCCL_API friend constexpr bool

@@ -79,7 +79,7 @@ struct RingCursorT
 // Nan: we could use u32 layouts [ready_bit:1][open_len:15][run_count:16], but we choose to use u64 to
 // 1. w << 32 is free (u64 is already split into 2 registers), so we save a bit of time (theoretically)
 // 2. to use the same layout as warpspeed scan
-constexpr unsigned tile_published = 1u;
+constexpr ::cuda::std::uint32_t tile_published = 1u;
 
 struct TilePartialStateT
 {
@@ -87,23 +87,24 @@ struct TilePartialStateT
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned published_tag() const
   {
-    return (unsigned) (dword >> 32);
+    return static_cast<unsigned>(dword >> 32);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE int run_count() const
   {
-    return (int) (dword & 0xffffu);
+    return static_cast<int>(dword & 0xffffu);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE int open_len() const
   {
-    return (int) ((dword >> 16) & 0xffffu);
+    return static_cast<int>((dword >> 16) & 0xffffu);
   }
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT pack(int run_count, int open_len)
   {
-    return {((::cuda::std::uint64_t) tile_published << 32) | ((::cuda::std::uint64_t) (unsigned) open_len << 16)
-            | (::cuda::std::uint64_t) (unsigned) run_count};
+    return {(static_cast<::cuda::std::uint64_t>(tile_published) << 32)
+            | (static_cast<::cuda::std::uint64_t>(static_cast<unsigned>(open_len)) << 16)
+            | static_cast<::cuda::std::uint64_t>(static_cast<unsigned>(run_count))};
   }
 };
 
@@ -134,17 +135,18 @@ struct PrefixT<OffT, false>
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {((::cuda::std::uint64_t) (unsigned) open_len << 32) | (unsigned) run_count};
+    return {(static_cast<::cuda::std::uint64_t>(static_cast<unsigned>(open_len)) << 32)
+            | static_cast<unsigned>(run_count)};
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
   {
-    return (OffT) (unsigned) (dword & 0xffffffffull);
+    return static_cast<OffT>(static_cast<unsigned>(dword & 0xffffffffull));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT open_len() const
   {
-    return (OffT) (unsigned) (dword >> 32);
+    return static_cast<OffT>(static_cast<unsigned>(dword >> 32));
   }
 };
 
@@ -156,17 +158,17 @@ struct alignas(16) PrefixT<OffT, true>
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {(::cuda::std::uint64_t) run_count, (::cuda::std::uint64_t) open_len};
+    return {static_cast<::cuda::std::uint64_t>(run_count), static_cast<::cuda::std::uint64_t>(open_len)};
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
   {
-    return (OffT) packed_run_count;
+    return static_cast<OffT>(packed_run_count);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT open_len() const
   {
-    return (OffT) packed_open_len;
+    return static_cast<OffT>(packed_open_len);
   }
 };
 
@@ -205,7 +207,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
     bit_position += 2;
     flag_mask >>= 2;
   }
-  if (rank >= (int) (flag_mask & 1u))
+  if (rank >= static_cast<int>(flag_mask & 1u))
   {
     bit_position += 1;
   }
@@ -254,14 +256,17 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
     else
     {
       // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-      const unsigned nbytes     = (unsigned) (((size_t) tile_len + (first_tile ? 0 : slot_pad)) * sizeof(KeyT));
+      const unsigned nbytes =
+        static_cast<unsigned>((static_cast<size_t>(tile_len) + (first_tile ? 0 : slot_pad)) * sizeof(KeyT));
       const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
       ptx::cp_async_bulk_ignore_oob(
         ptx::space_shared,
         ptx::space_global,
         slot + (first_tile ? slot_pad : 0),
-        (const KeyT*) ((const char*) (d_keys + (size_t) tile_id * tile_size - (first_tile ? 0 : slot_pad)) - base_skip),
+        reinterpret_cast<const KeyT*>(
+          reinterpret_cast<const char*>(d_keys + static_cast<size_t>(tile_id) * tile_size - (first_tile ? 0 : slot_pad))
+          - base_skip),
         span_bytes,
         first_tile ? base_skip : 0u,
         last_tile ? (span_bytes - base_skip - nbytes) : 0u,
@@ -277,7 +282,7 @@ clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_g
   int nxt = num_tiles; // if no more work was cancellable
   if (lane_id == 0)
   {
-    wait_parity(&clc_bar, (unsigned) (pipeline_gen & 1));
+    wait_parity(&clc_bar, static_cast<unsigned>(pipeline_gen & 1));
     // try_cancel wrote clc_resp via the async proxy
     ptx::fence_proxy_async(ptx::space_shared);
     const uint4 resp_snapshot = clc_resp;
@@ -378,8 +383,9 @@ stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, in
     int run_index          = runs_before_word; // run-order slot for this word's next head
     while (pending_heads)
     {
-      const int head_offset = __ffs(pending_heads) - 1; // offset (0..31) of the next head within the word
-      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = (short) (word_pos + head_offset);
+      const int head_offset = __ffs(static_cast<int>(pending_heads)) - 1; // offset (0..31) of the next head within the
+                                                                          // word
+      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = static_cast<short>(word_pos + head_offset);
       ++run_index;
       pending_heads &= (pending_heads - 1); // clear the lowest set bit
     }
@@ -540,9 +546,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     // dense_mode is true if window_run_count > 128
     dense_mode = window_run_count > (window_size << 7);
     // combine last_seen_prefix with the window_size aggregate
-    const OffT new_run_count = last_seen_prefix_run_count + window_run_count;
-    const OffT new_open_length =
-      (window_run_count > 0) ? (OffT) window_open_length : (last_seen_prefix_open_length + window_open_length);
+    const OffT new_run_count     = last_seen_prefix_run_count + window_run_count;
+    const OffT new_open_length   = (window_run_count > 0) ? static_cast<OffT>(window_open_length)
+                                                          : (last_seen_prefix_open_length + window_open_length);
     last_seen_prefix_run_count   = new_run_count;
     last_seen_prefix_open_length = new_open_length;
     last_seen_tile_id += window_size;
@@ -625,7 +631,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
                 "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
-  static_assert(policy.buf_per_lane() * ((int) sizeof(KeyT) + 4) <= 64,
+  static_assert(policy.buf_per_lane() * (static_cast<int>(sizeof(KeyT)) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
   static_assert(::cuda::std::is_integral_v<OffT> && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
                 "OffT must be an integer type wide enough for one tile");
@@ -639,15 +645,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   const int staging_threshold  = keys_staged ? flag_staging_threshold : 0;
   constexpr int warp_tile_size = policy.warp_tile_size();
   constexpr int tile_size      = policy.tile_size();
-  constexpr int slot_pad       = policy.slot_pad((int) sizeof(KeyT));
-  constexpr int slot_stride    = policy.slot_stride((int) sizeof(KeyT), (int) alignof(KeyT));
+  constexpr int slot_pad       = policy.slot_pad(static_cast<int>(sizeof(KeyT)));
+  constexpr int slot_stride    = policy.slot_stride(static_cast<int>(sizeof(KeyT)), static_cast<int>(alignof(KeyT)));
   using PrefixT                = rle::encode::PrefixT<OffT>;
   // [key_ring_stages][tile_size] input keys
   // [key_ring_stages][tile_size] int16 staged head positions
   extern __shared__ char smem_raw[];
-  KeyT* const tile_buf = (KeyT*) smem_raw;
+  KeyT* const tile_buf = reinterpret_cast<KeyT*>(smem_raw);
   // when keys are not staged, the positions ring sits at the base
-  short* const pos_buf = (short*) (tile_buf + (keys_staged ? (size_t) key_ring_stages * slot_stride : 0));
+  short* const pos_buf =
+    reinterpret_cast<short*>(tile_buf + (keys_staged ? static_cast<size_t>(key_ring_stages) * slot_stride : 0));
   __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
                                                    // try_cancel)
   __shared__ int warp_run_counts[max_key_ring_stages][compute_warps]; // per compute warp run counts
@@ -682,12 +689,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       <= RleLookaheadPolicy::static_smem_budget,
     "static shared memory exceeds the budget assumed by the floor launch guarantee");
 
-  const int thr_id         = threadIdx.x;
-  const int lane_id        = thr_id & 31;
-  const int blk_id         = blockIdx.x;
-  const unsigned base_skip = (alignof(KeyT) < 16) ? ((unsigned) (size_t) d_keys & 15u) : 0u;
-  const int skip_elems     = (int) (base_skip / sizeof(KeyT));
-  if (thr_id == 0)
+  const int tid     = threadIdx.x;
+  const int lane_id = tid & 31;
+  const int bid     = blockIdx.x;
+  const unsigned base_skip =
+    (alignof(KeyT) < 16) ? (static_cast<unsigned>(reinterpret_cast<size_t>(d_keys)) & 15u) : 0u;
+  const int skip_elems = static_cast<int>(base_skip / sizeof(KeyT));
+  if (tid == 0)
   {
     for (int slot_id = 0; slot_id < max_key_ring_stages; ++slot_id)
     {
@@ -726,7 +734,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       if (squad == squadLoad)
       {
         // CLC tile assignment: gen0 tile = this CTA's launch id (blockIdx.x)
-        int tile_id = blk_id;
+        int tile_id = bid;
         if (lane_id == 0)
         {
           // 16 is the try_cancel byte tx
@@ -758,9 +766,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // over-fetch one 16B chunk to the left, so that we get last tiles last key
           // tile 0 has no predecessor and skips the over-fetch
           const bool first_tile = (tile_id == 0);
-          const int tile_len    = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
+          const int tile_len =
+            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           load_tile_keys<tile_size, slot_pad>(
-            tile_buf + (size_t) slot_id * slot_stride,
+            tile_buf + static_cast<size_t>(slot_id) * slot_stride,
             d_keys,
             tile_id,
             tile_len,
@@ -798,20 +807,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             break;
           }
           // slot is ready!
-          const int tile_len  = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
+          const int tile_len =
+            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
-          short* const pos_dst = pos_buf + (size_t) (pos_ring.slot) * tile_size;
+          short* const pos_dst = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           unsigned my_flags;
           if (keys_staged)
           {
-            const KeyT* key_buf = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+            const KeyT* key_buf = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
             my_flags            = compute_head_flags<items_per_thread, false>(
               key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
           }
           else
           {
             // vvv regressed case: we load compute flags straight from global vvv
-            const KeyT* key_buf = d_keys + (size_t) tile_id * tile_size;
+            const KeyT* key_buf = d_keys + static_cast<size_t>(tile_id) * tile_size;
             my_flags =
               compute_head_flags<items_per_thread, true>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
             // ^^^ regressed case ^^^
@@ -960,7 +970,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           // staged positions
-          const short* run_positions      = pos_buf + (size_t) (pos_ring.slot) * tile_size;
+          const short* run_positions      = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
           const int warp_tile_run_count   = __shfl_sync(full_mask, lane_warp_tile_run_count, warp_tile_id);
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
@@ -976,7 +986,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
-            const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+            const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
 #  pragma unroll
             for (int it = 0; it < buf_per_lane; ++it)
             {
@@ -1040,18 +1050,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int warp_tile_offset              = warp_tile_id * warp_tile_size;
           if (keys_staged)
           {
-            const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+            const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
 #  pragma unroll 2
             for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-              const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
-              d_unique[global_run_idx]  = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
+              const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
+              d_unique[global_run_idx] = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
               if (run_idx + 1 < warp_tile_run_count)
               {
                 // within-warp delta (next head - this head); the last run is fixed separately
                 const int run_length =
-                  (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+                  static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]) - head_pos;
                 d_counts[global_run_idx] = run_length;
               }
             }
@@ -1059,17 +1069,17 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           else
           {
             // vvv regressed case vvv
-            const KeyT* tile_keys = d_keys + (size_t) tile_id * tile_size;
+            const KeyT* tile_keys = d_keys + static_cast<size_t>(tile_id) * tile_size;
 #  pragma unroll 2
             for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-              const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
-              d_unique[global_run_idx]  = tile_keys[head_pos];
+              const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
+              d_unique[global_run_idx] = tile_keys[head_pos];
               if (run_idx + 1 < warp_tile_run_count)
               {
                 const int run_length =
-                  (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+                  static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]) - head_pos;
                 d_counts[global_run_idx] = run_length;
               }
             }
@@ -1104,7 +1114,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
-          const int tile_len      = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
+          const int tile_len =
+            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           const bool is_last_tile = (tile_id == num_tiles - 1);
           // same scan as the store warps (lane i = warp-tile i)
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
