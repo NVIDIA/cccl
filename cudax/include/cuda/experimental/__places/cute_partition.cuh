@@ -341,6 +341,17 @@ public:
     ::cuda::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
     ::cuda::std::copy(local_leaves.begin(), local_leaves.end(), local_leaves_.begin());
 
+    // Replication over an extent-1 axis is a no-op: normalize it away so a
+    // degenerate mask does not leave a single-instance place claiming to be
+    // replicated (rejecting direct allocation and writes for no reason).
+    for (size_t a = 0; a < 4; a++)
+    {
+      if ((replicated_axes_mask_ & (1u << a)) && grid_dims_.get(a) == 1)
+      {
+        replicated_axes_mask_ &= ~(1u << a);
+      }
+    }
+
     validate();
 
     // Precompute the decode order: all leaves sorted by decreasing stride.
@@ -2225,6 +2236,21 @@ UNITTEST("blocked on one grid axis, replicated on the other")
   EXPECT(dp_full.instance_count() == 4);
   EXPECT(dp_full.member(0).is_device());
   EXPECT(!dp_full.member(0).is_composite());
+};
+
+UNITTEST("replication over extent-1 axes normalizes away")
+{
+  // A no-op declaration must not leave a single-instance place claiming to
+  // be replicated: it would reject direct allocation and writes for nothing
+  const auto part = make_partition_descriptor(
+    dim4(8), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2, 1), /*replicated_axes=*/0x2);
+  EXPECT(part.replicated_axes_mask() == 0u);
+  EXPECT(part.replication_factor() == 1);
+
+  ::std::vector<exec_place> places(2, exec_place::device(0));
+  const data_place dp = make_composite_data_place(make_grid(mv(places), dim4(2, 1)), part);
+  EXPECT(!dp.is_replicated());
+  EXPECT(dp.instance_count() == 1);
 };
 
 UNITTEST("replication over multiple grid axes composes as the product")
