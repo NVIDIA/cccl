@@ -400,6 +400,9 @@ public:
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {

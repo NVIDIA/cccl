@@ -191,6 +191,11 @@ public:
    * Default implementation returns CUDA_ERROR_NOT_SUPPORTED.
    * Subclasses that support VMM should override this.
    *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return. Placement must
+   * come from the explicit allocation properties (CUmemAllocationProp), not
+   * from the current device.
+   *
    * @param handle Output parameter for the allocation handle
    * @param size Size of the allocation in bytes
    * @return CUresult indicating success or failure
