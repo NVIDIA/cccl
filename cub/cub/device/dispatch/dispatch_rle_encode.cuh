@@ -20,6 +20,7 @@
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
@@ -172,14 +173,18 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   const int num_tiles =
     static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
 
+  void* allocations[1]       = {};
+  size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT)};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
   if (d_temp_storage == nullptr)
   {
-    // + alignof: the tile states are aligned up inside the allocation, so any base pointer works
-    temp_storage_bytes = static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT) + alignof(TilePartialStateT);
     return cudaSuccess;
   }
-  auto* tile_partial_states =
-    static_cast<TilePartialStateT*>(::cuda::align_up(d_temp_storage, alignof(TilePartialStateT)));
+  auto* tile_partial_states = static_cast<TilePartialStateT*>(allocations[0]);
 
   int key_ring_stages   = lookahead_policy.key_ring_stages;
   int pos_ring_stages   = lookahead_policy.pos_ring_stages;
