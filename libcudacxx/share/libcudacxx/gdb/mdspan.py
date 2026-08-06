@@ -177,6 +177,21 @@ def _layout_kind(layout_type: gdb.Type) -> str | None:
     return None
 
 
+def _is_default_accessor(accessor_type: gdb.Type, element_type: gdb.Type) -> bool:
+    """Return whether accessor_type is cuda::std::default_accessor<element_type>."""
+    stripped = accessor_type.strip_typedefs().unqualified()
+    name = memory_resource.public_type_name(stripped)
+    if name.split("<", 1)[0] != "cuda::std::default_accessor":
+        return False
+    try:
+        accessor_element = stripped.template_argument(0)
+    except gdb.error:
+        return False
+    return memory_resource.public_type_name(
+        accessor_element
+    ) == memory_resource.public_type_name(element_type)
+
+
 def _strides(mapping_ebco: gdb.Value, rank: int) -> list[int] | None:
     stride_value = _ebco_element(mapping_ebco, 1)
     if stride_value is None:
@@ -220,9 +235,42 @@ class MdspanPrinter:
 
         self._resolve()
 
+        self.type_name = self._build_type_name()
+
+    def _build_type_name(self) -> str:
+        """Build the displayed type name, eliding a trailing LayoutPolicy/
+        AccessorPolicy pair that just holds mdspan's defaults (layout_right,
+        default_accessor<ElementType>) -- matching how the type is normally
+        spelled out by hand, and how LLDB's own display name already elides
+        them.
+
+        Slices the already-rendered 4-argument text (rather than
+        re-rendering each gdb.Type individually) so kept arguments keep
+        GDB's own spelling verbatim -- gdb.Type.__str__ on an extracted
+        sub-type can format qualifiers/pointers differently in isolation
+        (e.g. "const int" vs. "int const", "int *" vs. "int*").
+        """
         dynamic_extent = _dynamic_extent()
         type_name = memory_resource.public_type_name(self.type)
-        self.type_name = re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", type_name)
+        type_name = re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", type_name)
+
+        try:
+            element_type = self.type.template_argument(0)
+            layout_type = self.type.template_argument(2)
+            accessor_type = self.type.template_argument(3)
+        except gdb.error:
+            return type_name
+        if not _is_default_accessor(accessor_type, element_type):
+            return type_name
+
+        class_name, angle_bracket, rest = type_name.partition("<")
+        if not angle_bracket or not rest.endswith(">"):
+            return type_name
+        parts = _split_top_level(rest[:-1])
+        if len(parts) != 4:
+            return type_name
+        keep = 2 if _layout_kind(layout_type) == "layout_right" else 3
+        return f"{class_name}<{', '.join(parts[:keep])}>"
 
     def _resolve(self) -> None:
         top_ebco = _find_ebco_base(self.value)
