@@ -164,7 +164,7 @@ function(libcudacxx_add_pretty_printer_test)
 
   # Explicitly set max optimization, the printers should work even when everything is
   # compiled out.
-  target_compile_options(${target_name} PRIVATE -O3)
+  target_compile_options(${target_name} PRIVATE -g -O3)
   target_compile_definitions(${target_name} PRIVATE NDEBUG)
 
   foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
