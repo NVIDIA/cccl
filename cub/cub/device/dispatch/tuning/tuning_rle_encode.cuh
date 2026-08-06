@@ -206,13 +206,13 @@ struct RleEncodePolicy
                               //!< also drives the streaming fallback (device-side callers and non-viable types)
   RleLookaheadPolicy lookahead; //!< The lookahead policy (used when algorithm is @p lookahead, otherwise ignored)
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
