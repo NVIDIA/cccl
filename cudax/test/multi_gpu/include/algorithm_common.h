@@ -54,9 +54,14 @@ void run_threaded(cuda::std::size_t num_ranks, Fn fn)
         case std::future_status::deferred:
           FAIL("Test should not use deferred execution, only async");
           break;
-        case std::future_status::timeout:
+        case std::future_status::timeout: {
+          // The standard gives no mechanism to abandon or cancel a task launched with
+          // std::async, and futures block in their destructor for task completion. So to make
+          // this error message actually useful, we need to toss them all into the oubliette.
+          [[maybe_unused]] auto* _ = new std::vector<std::future<void>>{std::move(futures)};
           FAIL("Future for rank " << i << " timed out after " << timeout << ", likely a deadlock");
           break;
+        }
         case std::future_status::ready:
           break;
       }
