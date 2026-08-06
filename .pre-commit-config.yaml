@@ -126,6 +126,13 @@ repos:
             ^.*libcudacxx/cmake/config\.guess$
           )
 
+      - id: check-cub-test-macros
+        name: require CUB test memory classification
+        entry: ci/util/pre-commit/check_cub_test_macros.py
+        language: python
+        files: ^(cub/test/.*\.(cu|cuh|h)|ci/util/pre-commit/check_cub_test_macros\.py)$
+        types: [file]
+
       - id: unprintable-unicode
         name: unprintable-unicode
         entry: ci/util/pre-commit/strip_unprintable.py
