@@ -30,11 +30,9 @@ int main()
   const int dev               = 0;
   const unsigned int ndomains = locality_domain_count(dev);
 
-  if (ndomains == 0)
-  {
-    fprintf(stderr, "Locality domains are not supported (toolkit, driver or hardware): test waived.\n");
-    return 0;
-  }
+  // Never 0: a device without locality-domain support reports a single
+  // whole-device domain.
+  EXPECT(ndomains >= 1);
 
   cuda_safe_call(cudaSetDevice(dev));
   cudaStream_t stream = nullptr;

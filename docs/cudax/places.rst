@@ -131,7 +131,9 @@ domain than across domains, so pinning both execution and data to the same
 domain can improve locality. Locality domain places expose this capability:
 
 - ``locality_domain_count(devid)`` -- number of domains the device exposes
-  (``0`` when locality-domain placement is unusable on this device, see below)
+  (never ``0``: a device without locality-domain support reports a single
+  whole-device domain; invalid device ordinals are rejected with an
+  exception)
 - ``exec_place::locality_domain(devid, domain)`` -- an execution place whose
   SMs all belong to the requested domain (a green context built from an
   SM split by locality domain)
@@ -155,25 +157,21 @@ introduction):
 .. code:: cpp
 
     const int dev = 0;
+
+    // Never 0: a device without locality-domain support reports a single
+    // whole-device domain, so the same code runs everywhere.
     const unsigned int n = locality_domain_count(dev);
 
-    if (n == 0) {
-        // Locality-domain placement is unusable on this device: fall back
-        // to regular device places.
-        ctx.parallel_for(exec_place::device(dev), lX.shape(), lX.rw())
-            ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
-    } else {
-        // One task per domain (with CUDASTF)
-        for (unsigned int i = 0; i < n; i++) {
-            ctx.task(exec_place::locality_domain(dev, i), lX.rw())
-                ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
-        }
-
-        // Or distribute a parallel_for over all domains at once
-        auto grid = make_locality_domain_grid(dev);
-        ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
-            ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
+    // One task per domain (with CUDASTF)
+    for (unsigned int i = 0; i < n; i++) {
+        ctx.task(exec_place::locality_domain(dev, i), lX.rw())
+            ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
     }
+
+    // Or distribute a parallel_for over all domains at once
+    auto grid = make_locality_domain_grid(dev);
+    ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
+        ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
 
 Like ``data_place::device(id)``, a locality-domain place is identified by a
 ``(device, domain)`` pair that acts as an identity token: construction of a
@@ -190,9 +188,9 @@ whole device. The domain ordinal is still carried through hashing,
 comparison and ``to_string()``, so distinct ordinals remain distinguishable
 as labels. This lets code name a locality domain precisely even when the
 underlying implementation is the whole device, and keeps a single code path
-across toolkits. On a CUDA 13.4+ toolkit, a count of ``0`` means the driver
-or device cannot answer the locality-domain query; check the count before
-building places.
+across toolkits. The same degrade applies at runtime on a CUDA 13.4+ toolkit
+whose driver cannot answer the locality-domain query: the count is never
+``0``, and such a device reports exactly one whole-device domain.
 
 **Environment variables:**
 

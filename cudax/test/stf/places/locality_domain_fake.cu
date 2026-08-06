@@ -80,9 +80,28 @@ int main()
   }
   EXPECT(ndomains == static_cast<unsigned int>(requested));
 
-  // Invalid device ordinals still report zero domains under the override
-  EXPECT(locality_domain_count(-1) == 0);
-  EXPECT(locality_domain_count(ndevs) == 0);
+  // Invalid device ordinals are rejected under the override too
+  bool threw_invalid = false;
+  try
+  {
+    locality_domain_count(-1);
+  }
+  catch (...)
+  {
+    threw_invalid = true;
+  }
+  EXPECT(threw_invalid);
+
+  bool threw_oob = false;
+  try
+  {
+    locality_domain_count(ndevs);
+  }
+  catch (...)
+  {
+    threw_oob = true;
+  }
+  EXPECT(threw_oob);
 
   cuda_safe_call(cudaSetDevice(dev));
   cudaStream_t stream = nullptr;

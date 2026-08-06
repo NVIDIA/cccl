@@ -49,11 +49,8 @@ int main()
     total_domains += helpers.back().get_count();
   }
 
-  if (total_domains == 0)
-  {
-    fprintf(stderr, "Locality domains are not supported (toolkit, driver or hardware): test waived.\n");
-    return 0;
-  }
+  // Never 0: every device reports at least one whole-device domain.
+  EXPECT(total_domains >= static_cast<size_t>(ndevs));
 
   // View-based factories agree with the ordinal-based ones
   for (const auto& helper : helpers)

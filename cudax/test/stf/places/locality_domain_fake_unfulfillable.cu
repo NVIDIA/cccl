@@ -90,10 +90,29 @@ int main()
   }
   EXPECT(threw);
 
-  // Invalid device ordinals still report zero domains (device validation
-  // precedes topology fulfillment)
-  EXPECT(locality_domain_count(-1) == 0);
-  EXPECT(locality_domain_count(ndevs) == 0);
+  // Invalid device ordinals are rejected (device validation precedes
+  // topology fulfillment)
+  bool threw_invalid = false;
+  try
+  {
+    locality_domain_count(-1);
+  }
+  catch (...)
+  {
+    threw_invalid = true;
+  }
+  EXPECT(threw_invalid);
+
+  bool threw_oob = false;
+  try
+  {
+    locality_domain_count(ndevs);
+  }
+  catch (...)
+  {
+    threw_oob = true;
+  }
+  EXPECT(threw_oob);
 
   return 0;
 #endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^

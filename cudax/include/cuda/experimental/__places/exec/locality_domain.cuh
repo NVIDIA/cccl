@@ -40,6 +40,9 @@
  * `to_string()`, so distinct ordinals stay distinguishable as labels. Code
  * written against this API therefore compiles and runs everywhere; on older
  * toolkits it simply behaves as if each GPU were a single, non-partitioned
+ * domain. The same degrade applies at runtime on a CUDA 13.4+ build whose
+ * driver cannot answer the locality-domain query: the count is never 0, and
+ * a device without locality-domain support reports exactly one whole-device
  * domain. Defining `CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK` selects the
  * fallback even on recent toolkits (useful to test that path).
  *
@@ -113,15 +116,15 @@ namespace cuda::experimental::places
 #if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
 
 /**
- * @brief Number of locality domains reported by the hardware backend.
+ * @brief Locality-domain count as answered by the driver, or 0 when the
+ * driver cannot answer (internal).
  *
- * Queries `CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`. Returns 0 when the
- * query cannot be performed (no driver support, invalid device, ...). The
- * public `locality_domain_count()` below consults the
- * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first and only then falls back to
- * this hardware path.
+ * Queries `CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`. A non-positive answer
+ * (old driver, attribute unsupported, ...) is reported as 0 so callers in
+ * this header can select the whole-device degrade; the public
+ * `locality_domain_count()` never exposes it.
  */
-inline unsigned int locality_domain_backend_count(int dev_id)
+inline int locality_domain_native_raw_count(int dev_id)
 {
   if (cuInit(0) != CUDA_SUCCESS)
   {
@@ -134,7 +137,23 @@ inline unsigned int locality_domain_backend_count(int dev_id)
   }
   int count       = 0;
   CUresult result = cuDeviceGetAttribute(&count, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, dev);
-  return (result == CUDA_SUCCESS && count > 0) ? static_cast<unsigned int>(count) : 0;
+  return (result == CUDA_SUCCESS && count > 0) ? count : 0;
+}
+
+/**
+ * @brief Number of locality domains reported by the hardware backend.
+ *
+ * Never 0: when the driver cannot answer the locality-domain query, the
+ * device reports a single domain and locality-domain places degrade to the
+ * whole device at runtime, exactly like the pre-13.4 fallback backend. The
+ * public `locality_domain_count()` below consults the
+ * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first and only then falls back to
+ * this hardware path.
+ */
+inline unsigned int locality_domain_backend_count(int dev_id)
+{
+  const int native = locality_domain_native_raw_count(dev_id);
+  return native > 0 ? static_cast<unsigned int>(native) : 1u;
 }
 
 /**
@@ -186,7 +205,10 @@ public:
 
     CUmemPoolProps props = {};
     props.allocType      = CU_MEM_ALLOCATION_TYPE_PINNED;
-    if (locality_domain_memory_disabled())
+    // Plain device memory when localization is disabled, or when the driver
+    // cannot answer the locality-domain query (whole-device degrade: the
+    // localized location type would be rejected).
+    if (locality_domain_memory_disabled() || locality_domain_native_raw_count(dev_id) <= 0)
     {
       props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
       props.location.id   = dev_id;
@@ -269,26 +291,37 @@ private:
   {
     CUdevice device = cuda_try<cuDeviceGet>(dev_id);
 
-    int num_domains = 0;
-    cuda_try(cuDeviceGetAttribute(&num_domains, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, device));
-    EXPECT(num_domains > 0, "Device ", dev_id, " reports no locality domains.");
+    // The public count never reports 0: when the driver cannot answer the
+    // locality-domain query, the device degrades to a single whole-device
+    // domain, so we build one green context spanning the full SM resource
+    // instead of splitting by domain.
+    const int raw_domains = locality_domain_native_raw_count(dev_id);
+    const int num_domains = (raw_domains > 0) ? raw_domains : 1;
 
     CUdevResource sm_resource;
     cuda_try(cuDeviceGetDevResource(device, &sm_resource, CU_DEV_RESOURCE_TYPE_SM));
 
-    // One SM resource group per locality domain.
-    ::std::vector<CU_DEV_SM_RESOURCE_GROUP_PARAMS> params(num_domains);
-    for (int i = 0; i < num_domains; ++i)
-    {
-      params[i]                  = CU_DEV_SM_RESOURCE_GROUP_PARAMS{};
-      params[i].flags            = CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
-      params[i].localityDomainId = static_cast<unsigned int>(i);
-    }
-
     ::std::vector<CUdevResource> domain_sms(num_domains);
-    CUdevResource remainder;
-    cuda_try(cuDevSmResourceSplit(
-      domain_sms.data(), static_cast<unsigned int>(num_domains), &sm_resource, &remainder, 0, params.data()));
+    if (raw_domains > 0)
+    {
+      // One SM resource group per locality domain.
+      ::std::vector<CU_DEV_SM_RESOURCE_GROUP_PARAMS> params(num_domains);
+      for (int i = 0; i < num_domains; ++i)
+      {
+        params[i]                  = CU_DEV_SM_RESOURCE_GROUP_PARAMS{};
+        params[i].flags            = CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
+        params[i].localityDomainId = static_cast<unsigned int>(i);
+      }
+
+      CUdevResource remainder;
+      cuda_try(cuDevSmResourceSplit(
+        domain_sms.data(), static_cast<unsigned int>(num_domains), &sm_resource, &remainder, 0, params.data()));
+    }
+    else
+    {
+      // Whole-device degrade: the single domain covers all SMs.
+      domain_sms[0] = sm_resource;
+    }
 
     // Create one green context (and a stream pool) per locality domain.
     ::std::vector<domain_entry> entries(num_domains);
@@ -314,18 +347,14 @@ private:
 /**
  * @brief Number of locality domains reported by the backend (fallback).
  *
- * Without the CUDA 13.4 locality-domain APIs every valid device reports a
- * single domain, so code written against this API keeps working with
- * whole-device semantics. The public `locality_domain_count()` below consults
- * the `CUDASTF_FAKE_LOCALITY_DOMAINS` override first.
+ * Without the CUDA 13.4 locality-domain APIs every device reports a single
+ * domain, so code written against this API keeps working with whole-device
+ * semantics. Device validation happens in the public
+ * `locality_domain_count()`, which also consults the
+ * `CUDASTF_FAKE_LOCALITY_DOMAINS` override first.
  */
-inline unsigned int locality_domain_backend_count(int dev_id)
+inline unsigned int locality_domain_backend_count(int)
 {
-  int count = 0;
-  if (cudaGetDeviceCount(&count) != cudaSuccess || dev_id < 0 || dev_id >= count)
-  {
-    return 0;
-  }
   return 1u;
 }
 
@@ -461,22 +490,20 @@ inline unsigned int locality_domain_fake_get_count(int dev_id)
 /**
  * @brief Number of locality domains exposed by a device.
  *
- * Consults the `CUDASTF_FAKE_LOCALITY_DOMAINS` override first (any valid
- * device is enough for the green-context fake topology), otherwise the
- * compile-time backend. Returns 0 when locality-domain placement is unusable
- * on this device (no driver support, invalid device, ...): callers are
- * expected to fall back to regular device places.
+ * Consults the `CUDASTF_FAKE_LOCALITY_DOMAINS` override first, otherwise the
+ * compile-time backend. Never returns 0: a device without locality-domain
+ * support (pre-13.4 toolkit, or a driver that cannot answer the query)
+ * reports a single domain covering the whole device, so callers need no
+ * zero-count special case. Invalid device ordinals are rejected with an
+ * exception, like `data_place::device`.
  */
 inline unsigned int locality_domain_count(int dev_id)
 {
+  static int const ndevs = cuda_try<cudaGetDeviceCount>();
+  EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
 #if _CCCL_CTK_AT_LEAST(12, 4)
   if (locality_domain_fake_count() > 0)
   {
-    int ndevs = 0;
-    if (cudaGetDeviceCount(&ndevs) != cudaSuccess || dev_id < 0 || dev_id >= ndevs)
-    {
-      return 0;
-    }
     return locality_domain_fake_get_count(dev_id);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -549,7 +576,9 @@ public:
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
 
-    if (locality_domain_memory_disabled())
+    // Plain device memory when localization is disabled, or when the driver
+    // cannot answer the locality-domain query (whole-device degrade).
+    if (locality_domain_memory_disabled() || locality_domain_native_raw_count(view_.devid) <= 0)
     {
       prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
       prop.location.id   = view_.devid;
@@ -818,7 +847,7 @@ inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_
 inline exec_place make_locality_domain_grid(int dev_id)
 {
   const unsigned int num_domains = locality_domain_count(dev_id);
-  EXPECT(num_domains > 0, "No locality domains available on device ", dev_id, ".");
+  _CCCL_ASSERT(num_domains > 0, "locality_domain_count never reports zero domains");
 
   ::std::vector<exec_place> domains;
   domains.reserve(num_domains);
@@ -834,8 +863,8 @@ inline exec_place make_locality_domain_grid(int dev_id)
  *
  * Mirrors `green_context_helper`: construct one per device, then use
  * `get_count()` / `get_view(i)` to build places. The count is captured at
- * construction; a zero count means locality-domain placement is unusable on
- * this device (callers should fall back to regular device places).
+ * construction and is always at least 1: a device without locality-domain
+ * support reports a single domain covering the whole device.
  */
 class locality_domain_helper
 {

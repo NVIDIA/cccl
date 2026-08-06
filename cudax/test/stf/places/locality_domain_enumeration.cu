@@ -46,11 +46,9 @@ int main()
     EXPECT(helper.get_count() == cnt);
     EXPECT(helper.get_device_id() == d);
 
-    if (cnt == 0)
-    {
-      fprintf(stderr, "Device %d reports no locality domain support (toolkit, driver or hardware): waived.\n", d);
-      continue;
-    }
+    // Never 0: a device without locality-domain support reports a single
+    // whole-device domain.
+    EXPECT(cnt >= 1);
 
     // Enumerate every domain through the helper
     for (size_t i = 0; i < helper.get_count(); i++)
@@ -76,9 +74,28 @@ int main()
     EXPECT(threw);
   }
 
-  // Out-of-range device ordinals must report zero domains, not fail
-  EXPECT(locality_domain_count(-1) == 0);
-  EXPECT(locality_domain_count(ndevs) == 0);
+  // Out-of-range device ordinals are rejected: the count is never 0
+  bool threw_invalid = false;
+  try
+  {
+    locality_domain_count(-1);
+  }
+  catch (...)
+  {
+    threw_invalid = true;
+  }
+  EXPECT(threw_invalid);
+
+  bool threw_oob = false;
+  try
+  {
+    locality_domain_count(ndevs);
+  }
+  catch (...)
+  {
+    threw_oob = true;
+  }
+  EXPECT(threw_oob);
 
   // ==== View identity (no hardware requirement) ====
 
