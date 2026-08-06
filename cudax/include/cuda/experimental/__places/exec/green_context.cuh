@@ -717,11 +717,11 @@ UNITTEST("green context data_place allocate/deallocate preserve the current devi
     return;
   }
 
-  auto dp = data_place::green_ctx(gc_helper.get_view(0));
+  const auto dp = data_place::green_ctx(gc_helper.get_view(0));
 
   cuda_try(cudaSetDevice(1));
 
-  void* ptr = dp.allocate(1024 * 1024);
+  void* const ptr = dp.allocate(1024 * 1024);
   EXPECT(cuda_try<cudaGetDevice>() == 1);
 
   dp.deallocate(ptr, 1024 * 1024);
