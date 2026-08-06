@@ -55,6 +55,8 @@ In `.github/workflows/bench.yml`:
 - If `raw_args` is non-empty, it is parsed and passed directly to `ci/bench/bench.sh`.
 - Otherwise, args are assembled from `base_ref`, `test_ref`, `arch`, `cub_filters`, `python_filters`, `nvbench_args`, and `nvbench_compare_args`.
 - CUB filters are passed as `--cub-filter` flags. Python filters are passed as `--python-filter` flags.
+- The workflow resolves NVBench `main` once before requesting AWS credentials and passes the resulting SHA to generated CUB build trees.
+- The workflow passes AWS credentials into the benchmark container for possible CUB builds, then asks `compare_paths.sh` to clear AWS/sccache credential state before benchmark execution, comparison, and Python environment setup.
 - Malformed quoted input (for example unmatched quotes) fails the workflow step.
 
 ## Python Benchmarks
@@ -72,7 +74,7 @@ For Python benchmarks, `compare_paths.sh`:
 1. Creates isolated virtual environments for base and test trees.
 2. Installs `cuda-cccl[bench-cuXX]` (editable, from each worktree), which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
 3. Runs matching benchmark scripts in each venv.
-4. Compares results using `nvbench-compare-robust` (installed with `cuda-bench`).
+4. Compares results using `${CCCL_BENCH_COMPARE_BIN}` when set, or `nvbench-compare-robust` from the benchmark venv otherwise.
 
 Python filters are regex patterns matched against relative paths under `python/cuda_cccl/benchmarks/`, for example:
 - `compute/reduce/sum\.py` — single benchmark

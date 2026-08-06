@@ -48,6 +48,16 @@ Environment:
   CCCL_BENCH_GPU_NAME        Optional GPU name included in artifact directory names.
   CCCL_BENCH_NVBENCH_SHA     NVBench SHA/tag used for generated CUB build trees.
                              Default: "main"
+  CCCL_BENCH_COMPARE_PYTHON  Optional Python executable used for CUB benchmark
+                             comparisons.
+  CCCL_BENCH_COMPARE_BIN     Optional nvbench-compare-robust executable used for
+                             Python benchmark comparisons.
+  CCCL_BENCH_DROP_AWS_CREDENTIALS
+                             If set to 1/ON/TRUE/YES, drop AWS and sccache
+                             credentials after CUB builds and before benchmark
+                             execution, comparison, and Python setup.
+  CCCL_BENCH_AWS_CONFIG_DIR  Optional AWS config directory to clear when
+                             CCCL_BENCH_DROP_AWS_CREDENTIALS is enabled.
   CCCL_BENCH_BUILD_ROOT      Root directory for generated build trees.
                              Default: "/tmp/cccl-bench-builds"
 EOF
@@ -130,7 +140,6 @@ configure_build_tree() {
   local side="$3"
   local log_path="$4"
   local target_arch="$5"
-  local nvbench_sha="${CCCL_BENCH_NVBENCH_SHA:-main}"
   local -a cmake_cmd
   cmake_cmd=(
     cmake
@@ -366,7 +375,9 @@ setup_python_venv() {
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
       '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
+      if [[ -z \"\${CCCL_BENCH_COMPARE_BIN:-}\" ]]; then
+        '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
+      fi
     "
   )
 
@@ -417,8 +428,9 @@ run_python_compare_target() {
   local started_at=0
   local elapsed_s=0
   local rc=0
+  local compare_bin="${CCCL_BENCH_COMPARE_BIN:-${venv_path}/bin/nvbench-compare-robust}"
   local -a compare_cmd
-  compare_cmd=("${venv_path}/bin/nvbench-compare-robust" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=("${compare_bin}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
@@ -476,6 +488,50 @@ run_grouped_logged_command() {
   return "${rc}"
 }
 
+env_value_is_truthy() {
+  local value="$1"
+  case "${value}" in
+    1 | ON | On | on | TRUE | True | true | YES | Yes | yes)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+drop_aws_credentials_if_requested() {
+  if [[ "${aws_credentials_drop_done}" -ne 0 ]]; then
+    return 0
+  fi
+  aws_credentials_drop_done=1
+
+  if ! env_value_is_truthy "${CCCL_BENCH_DROP_AWS_CREDENTIALS:-}"; then
+    return 0
+  fi
+
+  echo
+  echo "Dropping AWS and sccache credentials before benchmark execution and Python setup."
+
+  if command -v sccache >/dev/null 2>&1; then
+    sccache --stop-server >/dev/null 2>&1 || true
+  fi
+
+  local var_name=""
+  for var_name in ${!AWS_@} ${!SCCACHE_@}; do
+    unset "${var_name}"
+  done
+
+  local aws_config_dir="${CCCL_BENCH_AWS_CONFIG_DIR:-}"
+  if [[ -n "${aws_config_dir}" ]]; then
+    if [[ "${aws_config_dir}" == "/" ]]; then
+      die "Refusing to clear AWS config directory: ${aws_config_dir}" 1
+    fi
+    mkdir -p "${aws_config_dir}"
+    rm -f "${aws_config_dir}/config" "${aws_config_dir}/credentials"
+  fi
+}
+
 run_compare_target() {
   local target="$1"
   local compare_script="$2"
@@ -490,8 +546,9 @@ run_compare_target() {
   local elapsed_s=0
   local rc=0
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
+  local compare_python="${CCCL_BENCH_COMPARE_PYTHON:-python3}"
   local -a compare_cmd
-  compare_cmd=(python3 "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=("${compare_python}" "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
@@ -580,6 +637,7 @@ write_summary() {
     if [[ "${#FILTERS[@]}" -gt 0 ]]; then
       echo "- Base build dir: \`${base_build_dir}\`"
       echo "- Test build dir: \`${test_build_dir}\`"
+      echo "- NVBench SHA/tag: \`${nvbench_sha}\`"
     fi
     echo "- CUB targets selected: ${#selected_targets[@]}"
     echo "- CUB comparisons attempted: ${compares_attempted}"
@@ -758,6 +816,7 @@ artifact_tag="$(sanitize_label "${artifact_tag}")"
 artifact_dir="${artifact_root}/${artifact_tag}"
 
 build_root="${CCCL_BENCH_BUILD_ROOT:-/tmp/cccl-bench-builds}"
+nvbench_sha="${CCCL_BENCH_NVBENCH_SHA:-main}"
 build_token="$(sanitize_label "${test_label}-${timestamp}-${base_label}")"
 base_build_dir="${build_root}/base-${build_token}"
 test_build_dir="${build_root}/test-${build_token}"
@@ -774,6 +833,7 @@ fi
 echo "Base source: ${BASE_PATH}"
 echo "Test source: ${TEST_PATH}"
 if [[ "${#FILTERS[@]}" -gt 0 ]]; then
+  echo "NVBench SHA/tag: ${nvbench_sha}"
   echo "CUB filters:"
   for filter in "${FILTERS[@]}"; do
     echo "  - ${filter}"
@@ -808,6 +868,7 @@ fi
 any_failures=0
 compares_attempted=0
 compares_succeeded=0
+aws_credentials_drop_done=0
 declare -a selected_targets=()
 py_compares_attempted=0
 py_compares_succeeded=0
@@ -880,6 +941,8 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     test_build_all_rc=$?
     any_failures=1
   fi
+
+  drop_aws_credentials_if_requested
 
   for target in "${selected_targets[@]}"; do
     base_target_run_rc=125
@@ -961,6 +1024,8 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   if [[ ! -d "${test_py_bench_dir}" ]]; then
     die "Python benchmarks directory not found in test tree: ${test_py_bench_dir}"
   fi
+
+  drop_aws_credentials_if_requested
 
   cuda_major="$(detect_cuda_major_version)"
   echo "Detected CUDA major version: ${cuda_major}"
