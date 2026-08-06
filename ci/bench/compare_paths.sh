@@ -52,6 +52,9 @@ Environment:
                              comparisons.
   CCCL_BENCH_COMPARE_BIN     Optional nvbench-compare-robust executable used for
                              Python benchmark comparisons.
+  CCCL_BENCH_LEGACY_COMPARE_BIN
+                             Optional nvbench-compare-legacy executable used for
+                             Python benchmark comparisons.
   CCCL_BENCH_DROP_AWS_CREDENTIALS
                              If set to 1/ON/TRUE/YES, drop AWS and sccache
                              credentials after CUB builds and before benchmark
@@ -194,6 +197,22 @@ resolve_compare_script() {
   for candidate in \
     "${nvbench_src}/python/scripts/nvbench_compare_robust.py" \
     "${nvbench_src}/scripts/nvbench_compare_robust.py"; do
+    if [[ -f "${candidate}" ]]; then
+      printf "%s" "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+resolve_legacy_compare_script() {
+  local build_path="$1"
+  local nvbench_src="${build_path}/_deps/nvbench-src"
+  local candidate=""
+  # Different versions have the script at different locations:
+  for candidate in \
+    "${nvbench_src}/python/scripts/nvbench_compare.py" \
+    "${nvbench_src}/scripts/nvbench_compare.py"; do
     if [[ -f "${candidate}" ]]; then
       printf "%s" "${candidate}"
       return 0
@@ -416,41 +435,88 @@ run_python_target_for_side() {
     "${bench_cmd[@]}"
 }
 
+resolve_legacy_compare_bin() {
+  local venv_path="$1"
+  local compare_bin="$2"
+  local candidate=""
+
+  if [[ -n "${CCCL_BENCH_LEGACY_COMPARE_BIN:-}" ]]; then
+    printf "%s" "${CCCL_BENCH_LEGACY_COMPARE_BIN}"
+    return 0
+  fi
+
+  if [[ "${compare_bin}" == */* ]]; then
+    candidate="$(dirname "${compare_bin}")/nvbench-compare-legacy"
+    if [[ -x "${candidate}" ]]; then
+      printf "%s" "${candidate}"
+      return 0
+    fi
+  fi
+
+  candidate="${venv_path}/bin/nvbench-compare-legacy"
+  if [[ -x "${candidate}" ]]; then
+    printf "%s" "${candidate}"
+    return 0
+  fi
+
+  command -v nvbench-compare-legacy 2>/dev/null || return 1
+}
+
 run_python_compare_target() {
   local target_name="$1"
   local venv_path="$2"
   local base_json="$3"
   local test_json="$4"
-  local compare_out="$5"
-  local compare_log="$6"
 
-  local label="[py-compare] ${target_name}"
-  local started_at=0
-  local elapsed_s=0
-  local rc=0
   local compare_bin="${CCCL_BENCH_COMPARE_BIN:-${venv_path}/bin/nvbench-compare-robust}"
+  local legacy_compare_bin=""
+  local display=""
+  local compare_out=""
+  local compare_log=""
+  local robust_rc=0
   local -a compare_cmd
-  compare_cmd=("${compare_bin}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
-  : > "${compare_log}"
-  echo "::group::${label}"
-  print_shell_command "${compare_cmd[@]}"
-  started_at="${SECONDS}"
-  if "${compare_cmd[@]}" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
-    rc=0
-  else
-    rc=$?
+  for display in intervals simple explain; do
+    compare_out="$(compare_report_path_for_display "${target_name}" "${display}")"
+    compare_log="$(compare_log_path_for_display "${target_name}" "${display}")"
+    compare_cmd=(
+      "${compare_bin}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      --display
+      "${display}"
+      "${base_json}"
+      "${test_json}"
+    )
+
+    if ! run_compare_command \
+      "[py-compare:${display}] ${target_name}" \
+      "${compare_out}" \
+      "${compare_log}" \
+      "${compare_cmd[@]}"; then
+      robust_rc=1
+    fi
+  done
+
+  legacy_compare_bin="$(resolve_legacy_compare_bin "${venv_path}" "${compare_bin}" || true)"
+  if [[ -n "${legacy_compare_bin}" ]]; then
+    compare_cmd=(
+      "${legacy_compare_bin}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      "${base_json}"
+      "${test_json}"
+    )
+    if ! run_compare_command \
+      "[py-compare:legacy] ${target_name}" \
+      "${artifact_dir}/compare/${target_name}.legacy.md" \
+      "${artifact_dir}/logs/compare.${target_name}.legacy.log" \
+      "${compare_cmd[@]}"; then
+      echo "Legacy compare output is diagnostic; continuing after legacy compare failure." >&2
+    fi
   fi
-  elapsed_s=$((SECONDS - started_at))
-  echo "::endgroup::"
-  if [[ "${rc}" -eq 0 ]]; then
-    echo "${label} completed in ${elapsed_s}s"
-  else
-    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
-  fi
-  return "${rc}"
+
+  return "${robust_rc}"
 }
 
 # ============================================================================
@@ -479,6 +545,106 @@ run_grouped_logged_command() {
     rc="${pipe_statuses[1]}"
   fi
   elapsed_s=$((SECONDS - started_at))
+  echo "::endgroup::"
+  if [[ "${rc}" -eq 0 ]]; then
+    echo "${label} completed in ${elapsed_s}s"
+  else
+    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
+  fi
+  return "${rc}"
+}
+
+compare_report_path_for_display() {
+  local target_name="$1"
+  local display="$2"
+
+  if [[ "${display}" == "intervals" ]]; then
+    printf "%s" "${artifact_dir}/compare/${target_name}.md"
+  else
+    printf "%s" "${artifact_dir}/compare/${target_name}.${display}.md"
+  fi
+}
+
+compare_log_path_for_display() {
+  local target_name="$1"
+  local display="$2"
+
+  if [[ "${display}" == "intervals" ]]; then
+    printf "%s" "${artifact_dir}/logs/compare.${target_name}.log"
+  else
+    printf "%s" "${artifact_dir}/logs/compare.${target_name}.${display}.log"
+  fi
+}
+
+run_compare_command() {
+  local label="$1"
+  local compare_out="$2"
+  local compare_log="$3"
+  shift 3
+
+  local started_at=0
+  local elapsed_s=0
+  local rc=0
+
+  : > "${compare_out}"
+  : > "${compare_log}"
+  echo "::group::${label}"
+  print_shell_command "$@"
+  started_at="${SECONDS}"
+  if "$@" \
+    > >(tee "${compare_out}" | tee -a "${compare_log}") \
+    2> >(tee -a "${compare_log}" >&2); then
+    rc=0
+  else
+    rc=$?
+  fi
+  elapsed_s=$((SECONDS - started_at))
+  if [[ "${rc}" -ne 0 && ! -s "${compare_out}" ]]; then
+    printf "_Compare command failed with rc=%s; see \`%s\` for stderr/log output._\n" \
+      "${rc}" \
+      "${compare_log#"${artifact_dir}"/}" \
+      > "${compare_out}"
+  fi
+  echo "::endgroup::"
+  if [[ "${rc}" -eq 0 ]]; then
+    echo "${label} completed in ${elapsed_s}s"
+  else
+    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
+  fi
+  return "${rc}"
+}
+
+run_compare_command_with_pythonpath() {
+  local label="$1"
+  local compare_pythonpath="$2"
+  local compare_out="$3"
+  local compare_log="$4"
+  shift 4
+
+  local started_at=0
+  local elapsed_s=0
+  local rc=0
+
+  : > "${compare_out}"
+  : > "${compare_log}"
+  echo "::group::${label}"
+  print_shell_command --env "PYTHONPATH=${compare_pythonpath}" "$@"
+  started_at="${SECONDS}"
+  if PYTHONPATH="${compare_pythonpath}" \
+    "$@" \
+    > >(tee "${compare_out}" | tee -a "${compare_log}") \
+    2> >(tee -a "${compare_log}" >&2); then
+    rc=0
+  else
+    rc=$?
+  fi
+  elapsed_s=$((SECONDS - started_at))
+  if [[ "${rc}" -ne 0 && ! -s "${compare_out}" ]]; then
+    printf "_Compare command failed with rc=%s; see \`%s\` for stderr/log output._\n" \
+      "${rc}" \
+      "${compare_log#"${artifact_dir}"/}" \
+      > "${compare_out}"
+  fi
   echo "::endgroup::"
   if [[ "${rc}" -eq 0 ]]; then
     echo "${label} completed in ${elapsed_s}s"
@@ -538,38 +704,62 @@ run_compare_target() {
   local compare_script_dir="$3"
   local base_json="$4"
   local test_json="$5"
-  local compare_out="$6"
-  local compare_log="$7"
+  local legacy_compare_script="$6"
+  local legacy_compare_script_dir="$7"
 
-  local label="[compare] ${target}"
-  local started_at=0
-  local elapsed_s=0
-  local rc=0
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
   local compare_python="${CCCL_BENCH_COMPARE_PYTHON:-python3}"
+  local display=""
+  local compare_out=""
+  local compare_log=""
+  local robust_rc=0
   local -a compare_cmd
-  compare_cmd=("${compare_python}" "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
-  : > "${compare_log}"
-  echo "::group::${label}"
-  print_shell_command --env "PYTHONPATH=${compare_pythonpath}" "${compare_cmd[@]}"
-  started_at="${SECONDS}"
-  if PYTHONPATH="${compare_pythonpath}" \
-    "${compare_cmd[@]}" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
-    rc=0
-  else
-    rc=$?
+  for display in intervals simple explain; do
+    compare_out="$(compare_report_path_for_display "${target}" "${display}")"
+    compare_log="$(compare_log_path_for_display "${target}" "${display}")"
+    compare_cmd=(
+      "${compare_python}"
+      "${compare_script}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      --display
+      "${display}"
+      "${base_json}"
+      "${test_json}"
+    )
+
+    if ! run_compare_command_with_pythonpath \
+      "[compare:${display}] ${target}" \
+      "${compare_pythonpath}" \
+      "${compare_out}" \
+      "${compare_log}" \
+      "${compare_cmd[@]}"; then
+      robust_rc=1
+    fi
+  done
+
+  if [[ -n "${legacy_compare_script}" ]]; then
+    compare_pythonpath="${legacy_compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
+    compare_cmd=(
+      "${compare_python}"
+      "${legacy_compare_script}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      "${base_json}"
+      "${test_json}"
+    )
+    if ! run_compare_command_with_pythonpath \
+      "[compare:legacy] ${target}" \
+      "${compare_pythonpath}" \
+      "${artifact_dir}/compare/${target}.legacy.md" \
+      "${artifact_dir}/logs/compare.${target}.legacy.log" \
+      "${compare_cmd[@]}"; then
+      echo "Legacy compare output is diagnostic; continuing after legacy compare failure." >&2
+    fi
   fi
-  elapsed_s=$((SECONDS - started_at))
-  echo "::endgroup::"
-  if [[ "${rc}" -eq 0 ]]; then
-    echo "${label} completed in ${elapsed_s}s"
-  else
-    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
-  fi
-  return "${rc}"
+
+  return "${robust_rc}"
 }
 
 parse_quoted_args_to_nul_file() {
@@ -619,10 +809,28 @@ parse_quoted_args_to_array() {
 # Summary
 # ============================================================================
 
+write_compare_report_details() {
+  local summary="$1"
+  local compare_report_file="$2"
+
+  if [[ ! -f "${compare_report_file}" ]]; then
+    return 1
+  fi
+
+  echo
+  echo "<details><summary>${summary}</summary>"
+  echo
+  cat "${compare_report_file}"
+  echo
+  echo "</details>"
+  return 0
+}
+
 write_summary() {
   local summary_file="$1"
   local target=""
   local compare_report_file=""
+  local display=""
   local reports_emitted=0
 
   {
@@ -668,19 +876,18 @@ write_summary() {
     if [[ "${#selected_targets[@]}" -gt 0 ]]; then
       echo "## CUB Compare Reports"
       for target in "${selected_targets[@]}"; do
-        compare_report_file="${artifact_dir}/compare/${target}.md"
-        if [[ ! -f "${compare_report_file}" ]]; then
-          continue
-        fi
-        reports_emitted=$((reports_emitted + 1))
         echo
         echo "### \`${target}\`"
-        echo
-        echo "<details><summary>Expand full compare output for \`${target}\`</summary>"
-        echo
-        cat "${compare_report_file}"
-        echo
-        echo "</details>"
+        for display in intervals simple explain; do
+          compare_report_file="$(compare_report_path_for_display "${target}" "${display}")"
+          if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
+            reports_emitted=$((reports_emitted + 1))
+          fi
+        done
+        compare_report_file="${artifact_dir}/compare/${target}.legacy.md"
+        if write_compare_report_details "Legacy output" "${compare_report_file}"; then
+          reports_emitted=$((reports_emitted + 1))
+        fi
       done
     fi
 
@@ -691,19 +898,18 @@ write_summary() {
       local py_target_name=""
       for py_target_path in "${selected_py_targets[@]}"; do
         py_target_name="$(python_path_to_target_name "${py_target_path}")"
-        compare_report_file="${artifact_dir}/compare/${py_target_name}.md"
-        if [[ ! -f "${compare_report_file}" ]]; then
-          continue
-        fi
-        reports_emitted=$((reports_emitted + 1))
         echo
         echo "### \`${py_target_name}\` (\`${py_target_path}\`)"
-        echo
-        echo "<details><summary>Expand full compare output for \`${py_target_name}\`</summary>"
-        echo
-        cat "${compare_report_file}"
-        echo
-        echo "</details>"
+        for display in intervals simple explain; do
+          compare_report_file="$(compare_report_path_for_display "${py_target_name}" "${display}")"
+          if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
+            reports_emitted=$((reports_emitted + 1))
+          fi
+        done
+        compare_report_file="${artifact_dir}/compare/${py_target_name}.legacy.md"
+        if write_compare_report_details "Legacy output" "${compare_report_file}"; then
+          reports_emitted=$((reports_emitted + 1))
+        fi
       done
     fi
 
@@ -919,6 +1125,15 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
   fi
   compare_script_dir="$(dirname "${compare_script}")"
 
+  legacy_compare_script="$(resolve_legacy_compare_script "${test_build_dir}" || true)"
+  if [[ -z "${legacy_compare_script}" ]]; then
+    legacy_compare_script="$(resolve_legacy_compare_script "${base_build_dir}" || true)"
+  fi
+  legacy_compare_script_dir=""
+  if [[ -n "${legacy_compare_script}" ]]; then
+    legacy_compare_script_dir="$(dirname "${legacy_compare_script}")"
+  fi
+
   base_build_all_rc=0
   test_build_all_rc=0
 
@@ -949,8 +1164,6 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     test_target_run_rc=125
     base_run_log="${artifact_dir}/logs/run.base.${target}.log"
     test_run_log="${artifact_dir}/logs/run.test.${target}.log"
-    compare_report_md="${artifact_dir}/compare/${target}.md"
-    compare_report_log="${artifact_dir}/logs/compare.${target}.log"
 
     base_json="${artifact_dir}/base/${target}.json"
     base_md="${artifact_dir}/base/${target}.md"
@@ -995,8 +1208,8 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
         "${compare_script_dir}" \
         "${base_json}" \
         "${test_json}" \
-        "${compare_report_md}" \
-        "${compare_report_log}"; then
+        "${legacy_compare_script}" \
+        "${legacy_compare_script_dir}"; then
         compares_succeeded=$((compares_succeeded + 1))
       else
         any_failures=1
@@ -1054,8 +1267,6 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
     test_py_md="${artifact_dir}/test/${py_target_name}.md"
     base_py_run_log="${artifact_dir}/logs/run.base.${py_target_name}.log"
     test_py_run_log="${artifact_dir}/logs/run.test.${py_target_name}.log"
-    compare_py_report_md="${artifact_dir}/compare/${py_target_name}.md"
-    compare_py_report_log="${artifact_dir}/logs/compare.${py_target_name}.log"
 
     if run_python_target_for_side \
       "base" \
@@ -1089,9 +1300,7 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
         "${py_target_name}" \
         "${test_py_venv}" \
         "${base_py_json}" \
-        "${test_py_json}" \
-        "${compare_py_report_md}" \
-        "${compare_py_report_log}"; then
+        "${test_py_json}"; then
         py_compares_succeeded=$((py_compares_succeeded + 1))
       else
         any_failures=1

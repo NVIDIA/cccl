@@ -383,6 +383,7 @@ jobs:
             --env "CCCL_BENCH_COMPARE_PYTHON=/bench-compare-venv/bin/python3" \
             --env "CCCL_BENCH_DROP_AWS_CREDENTIALS=1" \
             --env "CCCL_BENCH_GPU_NAME=${GPU_NAME}" \
+            --env "CCCL_BENCH_LEGACY_COMPARE_BIN=/bench-compare-venv/bin/nvbench-compare-legacy" \
             --env "CCCL_BENCH_NVBENCH_SHA=${CCCL_BENCH_NVBENCH_SHA}" \
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
