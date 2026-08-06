@@ -31,6 +31,27 @@ struct wrapped_function
     return static_cast<Result>(m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...));
   }
 }; // end wrapped_function
+template <typename Function>
+struct deduced_wrapped_function
+{
+  // mutable because Function::operator() might be const
+  mutable Function m_f;
+
+  inline _CCCL_HOST_DEVICE deduced_wrapped_function()
+      : m_f()
+  {}
+
+  inline _CCCL_HOST_DEVICE deduced_wrapped_function(const Function& f)
+      : m_f(f)
+  {}
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename... Ts>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE decltype(auto) operator()(Ts&&... args) const
+  {
+    return m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...);
+  }
+}; // end deduced_wrapped_function
 } // namespace detail
 
 THRUST_NAMESPACE_END

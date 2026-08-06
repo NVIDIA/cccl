@@ -11,7 +11,7 @@ section for solutions that work on older Thrust versions.
 
 ## Quick Start: Use CCCL Example
 
-The CCCL repository contains a [stand-alone example](https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system) project the demonstrates how to use Thrust with any device system (CUDA, OpenMP, TBB, or CPP) from CMake using the CCCL package.
+The CCCL repository contains a [stand-alone example](https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system) project the demonstrates how to use Thrust with any device system (CUDA, OpenMP, TBB, HPX, or CPP) from CMake using the CCCL package.
 The choice of device system is flexible and determined at configure-time via the `CCCL_THRUST_DEVICE_SYSTEM` CMake variable, which initializes the default `CCCL::Thrust` target's configuration.
 
 If the default `CCCL::Thrust` target is not desired and your project would like more control over the Thrust configuration, set the CMake variable `CCCL_ENABLE_DEFAULT_THRUST_TARGET=OFF` and use the `thrust_create_target` function manually, as described in the following document.
@@ -63,7 +63,7 @@ This currently only applies when DEVICE=CUDA.
   binary size and allows large input sizes. However, it may degrade runtime performance
   for 32-bit indexed workloads.
 
-#### TBB / OpenMP
+#### TBB / OpenMP / HPX
 
 To explicitly specify host/device systems, `HOST` and `DEVICE` arguments can be
 passed to `thrust_create_target`. If an explicit system is not specified, the
@@ -238,7 +238,7 @@ on-demand by calls to `create_thrust_target`, or when explicitly requested via
 As mentioned, the basic Thrust interface is described by the `Thrust::Thrust`
 target.
 
-Each backend system (`CPP`, `CUDA`, `TBB`, `OMP`) is described by multiple
+Each backend system (`CPP`, `CUDA`, `TBB`, `OMP`, `HPX`) is described by multiple
 targets:
 
 - `Thrust::${system}`
