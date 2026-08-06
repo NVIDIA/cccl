@@ -290,20 +290,17 @@ template <typename T,
           int BlockDimX,
           BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
           int BlockDimY                  = 1,
-          int BlockDimZ                  = 1,
-          int WarpAggregateThreshold     = 0>
+          int BlockDimZ                  = 1>
 class BlockReduce
 {
 private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions =
-    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, true, WarpAggregateThreshold>;
-  using WarpReductionsNondeterministic =
-    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false, WarpAggregateThreshold>;
-  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
+  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =

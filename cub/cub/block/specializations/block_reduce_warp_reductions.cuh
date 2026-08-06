@@ -22,7 +22,6 @@
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -60,13 +59,17 @@ namespace detail
 //!   Whether the reduction is deterministic
 //!
 //! @tparam WarpAggregateThreshold
-//!   Minimum number of warps to use the parallel warp 0 reduction path
+//!   Minimum number of warps required to use the parallel warp-0 reduction path.
+//!   -1 (default): only use parallel path when HW redux is available.
+//!   0: always use sequential path.
+//!   >0: use parallel path when warps >= threshold.
+//!   Values below -1 are rejected via static_assert.
 template <typename T,
           int BlockDimX,
           int BlockDimY,
           int BlockDimZ,
           bool IsDeterministic       = true,
-          int WarpAggregateThreshold = 0>
+          int WarpAggregateThreshold = -1>
 struct BlockReduceWarpReductions
 {
   /// The thread block size in threads
@@ -81,7 +84,7 @@ struct BlockReduceWarpReductions
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
 
-  static_assert(WarpAggregateThreshold >= 0, "WarpAggregateThreshold must be non-negative");
+  static_assert(WarpAggregateThreshold >= -1, "WarpAggregateThreshold must be -1, 0, or positive");
 
   using WarpReduceInternal = typename WarpReduce<T, logical_warp_size>::InternalWarpReduce;
 
@@ -184,54 +187,30 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
-    // single-thread sequential loop over the warp aggregates.
-    // WarpAggregateThreshold defaults to 0 (always sequential). A later tuning pass can raise it
-    // to enable the parallel path when it is profitable (e.g. when HW redux is available).
-    // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
-    // Also require an identity element so inactive lanes can be padded safely.
-    constexpr int effective_threshold = (WarpAggregateThreshold == 0) ? (warps + 1) : WarpAggregateThreshold;
-    constexpr bool use_parallel_reduction =
-      (warps >= effective_threshold) && (threads_per_block >= warp_threads)
-      && ::cuda::has_identity_element_v<ReductionOp, T>;
+    // Decide whether to reduce warp aggregates in parallel (warp-0) or sequentially (thread-0).
+    // With HW redux the parallel path is a single instruction, so we enable it by default (-1).
+    // Without it, a simple unrolled loop over <=31 values is just as fast.
+    constexpr bool use_warp_redux_path = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported<ReductionOp, T>
+                                      && ::cuda::has_identity_element_v<ReductionOp, T>;
+    constexpr int effective_threshold =
+      use_warp_redux_path ? 2
+      : (WarpAggregateThreshold == 0)
+        ? (warps + 1)
+        : WarpAggregateThreshold;
+    constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
     {
+      // Single-thread sequential reduction over warp aggregates.
       if (linear_tid == 0)
       {
-        if constexpr (FullTile)
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
         {
-          T arr[warps];
-          arr[0] = warp_aggregate;
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 1; i < warps; ++i)
+          if (FullTile || (warp_idx * logical_warp_size < num_valid))
           {
-            arr[i] = temp_storage.warp_aggregates[i];
-          }
-          warp_aggregate = cub::ThreadReduce(arr, reduction_op);
-        }
-        else if constexpr (::cuda::has_identity_element_v<ReductionOp, T>)
-        {
-          const T id = ::cuda::identity_element<ReductionOp, T>();
-          T arr[warps];
-          arr[0] = warp_aggregate;
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 1; i < warps; ++i)
-          {
-            arr[i] = (i * logical_warp_size < num_valid) ? temp_storage.warp_aggregates[i] : id;
-          }
-          warp_aggregate = cub::ThreadReduce(arr, reduction_op);
-        }
-        else
-        {
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
-          {
-            if (warp_idx * logical_warp_size < num_valid)
-            {
-              warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
-            }
+            warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
           }
         }
       }
