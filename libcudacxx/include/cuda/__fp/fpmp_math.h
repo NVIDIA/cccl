@@ -85,7 +85,7 @@
     - normcdfinv(p) : Inverse normal CDF Phi^-1(p) - dedicated fp32mp2
     - normcdf(x)    : Normal CDF Phi(x) - placeholder (host: 0.5*erfc(-x/sqrt2))
 
-    Non-standard helper funcitons to convert integer uniform random numbers
+    Non-standard helper functions to convert integer uniform random numbers
     to Gaussian distributed random numbers:
     - icdf(uint32)  : Integer uniform -> Gaussian via normcdfinv (32-bit input)
     - icdf(uint64)  : Integer uniform -> Gaussian via normcdfinv (64-bit input)
