@@ -13,6 +13,7 @@ remain dimension-0-fastest; the tests below use non-square shapes so an
 accidental order reversal at the boundary is visible.
 """
 
+import numpy as np
 import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
@@ -322,8 +323,9 @@ def test_placement_evaluate_replicated_reporting():
     assert s_plain.resident_bytes == s_plain.vm_bytes
 
 
-def test_replicated_partition_allocation_rejected():
-    """Evaluation-only: a composite allocation cannot materialize copies."""
+def test_replicated_partition_direct_allocation_rejected():
+    """Direct allocation cannot hold per-instance copies: same contract as
+    data_place.replicated, allocate through a logical data."""
     _require_device()
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
@@ -331,10 +333,39 @@ def test_replicated_partition_allocation_rejected():
     n = 4 * MiB
     part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
     dplace = stf.data_place.composite_cute(grid, part)
-    # The C++ detail ("use data_place.replicated for physically replicated
-    # instances") goes to stderr; the Python surface is the MemoryError.
+    # The C++ detail ("allocate through a logical data") goes to stderr; the
+    # Python surface is the MemoryError.
     with pytest.raises(MemoryError):
         stf.DeviceArray((n,), "uint8", dplace)
+
+
+def test_replicated_partition_read_dep():
+    """A composite place with replicated axes is a replicated place: read
+    deps materialize one copy per replicated coordinate, writes are rejected
+    at dependency construction."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 512
+    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
+    dplace = stf.data_place.composite_cute(grid, part)
+
+    ctx = stf.context()
+    X = np.arange(n, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_rep_partition")
+
+    # Replicated places only support read access
+    with pytest.raises(ValueError, match="read"):
+        stf.write(lX, dplace)
+
+    with ctx.task(grid, lX.read(dplace)):
+        pass
+
+    results = []
+    ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
+    ctx.finalize()
+    assert abs(results[0] - float(X.sum())) < 1e-4
 
 
 def test_placement_evaluate_c_order_callback():

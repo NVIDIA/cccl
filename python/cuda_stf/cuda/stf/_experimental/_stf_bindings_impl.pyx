@@ -1801,10 +1801,13 @@ cdef class cute_partition:
 
         ``replicate_over`` names grid axes (C-order, like the spec's axis
         entries) that are bound to no tensor dimension and hold one copy of
-        their fiber's bytes per coordinate instead. Placement-planning
-        construct: ``placement_evaluate`` reports the per-member copies,
-        while allocating through such a partition is rejected (use
-        ``data_place.replicated`` for physically replicated instances).
+        their fiber's bytes per coordinate instead.
+        ``placement_evaluate`` reports the per-member copies, and a
+        composite data place built from such a partition is replicated
+        (read-only): through a logical data it resolves to one composite
+        allocation per replicated coordinate. Direct allocation is
+        rejected -- allocate through a logical data, like
+        ``data_place.replicated``.
         """
         public_dims = _validate_extents(true_dims, "true_dims")
         public_grid = _validate_extents(grid_dims, "grid_dims")

@@ -234,9 +234,12 @@ C2H_TEST("replicated partition axes report per-member copies", "[places][placeme
   REQUIRE(bytes_per_pos[1] == 4 * MiB);
   REQUIRE(stats.nallocs == 2);
 
-  // Evaluation only: a composite allocation cannot materialize the copies
+  // The composite place is itself replicated (read-only through deps); a
+  // DIRECT allocation cannot hold the per-instance copies and is rejected
+  // (through a logical data it resolves to one allocation per coordinate)
   stf_data_place_handle dpc = stf_data_place_composite_cute(grid, part);
   REQUIRE(dpc != nullptr);
+  REQUIRE(stf_data_place_is_replicated(dpc) == 1);
   REQUIRE(stf_data_place_allocate_nd(dpc, &dims, 1, nullptr) == nullptr);
   stf_data_place_destroy(dpc);
 

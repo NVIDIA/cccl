@@ -94,10 +94,13 @@ placement vocabulary: one canonical copy, read by tasks at
 `replicated_dplace(t)` (= `data_place.replicated(grid)`, read-only) so the
 runtime materializes one replica per grid member — the
 write-once-read-replicated shape of model weights. Partition specs express
-the planning side of the same idea with
-`cute_partition.from_spec(..., replicate_over=(axis,...))`, which
-`placement_evaluate` reports as per-member copies
-(`stats.replication_factor`, `stats.resident_bytes`).
+partial replication with
+`cute_partition.from_spec(..., replicate_over=(axis,...))`:
+`placement_evaluate` reports the per-member copies
+(`stats.replication_factor`, `stats.resident_bytes`), and a composite data
+place built from such a partition is itself replicated (read-only) — through
+a logical data it resolves to one composite VMM allocation per replicated
+coordinate, each striped over its fiber's places.
 
 ## Documentation
 

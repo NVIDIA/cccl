@@ -492,11 +492,13 @@ int stf_placement_evaluate_partition(
 //! \return New partition handle, or NULL on invalid input
 //! \param replicated_axes_mask Bitmask of grid axes holding one copy of their
 //! fiber's bytes per coordinate (bit a = native grid axis a; 0 = none). A
-//! replicated axis must not be bound by any spec entry. Replicated axes are a
-//! placement-planning construct: stf_placement_evaluate_partition() reports
-//! the per-member copies, while a composite allocation cannot materialize
-//! them and is rejected (use stf_data_place_replicated() for physically
-//! replicated instances).
+//! replicated axis must not be bound by any spec entry.
+//! stf_placement_evaluate_partition() reports the per-member copies, and a
+//! composite data place built from such a partition is REPLICATED (read-only;
+//! stf_data_place_is_replicated() returns 1): through a logical data it
+//! resolves to one composite allocation per replicated coordinate. Direct
+//! allocation is rejected -- allocate through a logical data, like
+//! stf_data_place_replicated().
 stf_cute_partition_handle stf_cute_partition_create(
   const stf_dim4* true_dims,
   const stf_dim4* grid_dims,
