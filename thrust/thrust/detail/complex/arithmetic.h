@@ -20,70 +20,74 @@ THRUST_NAMESPACE_BEGIN
 /* --- Binary Arithmetic Operators --- */
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>>
+operator+(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() + y.real(), x.imag() + y.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() + y, x.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x + y.real(), y.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>>
+operator-(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() - y.real(), x.imag() - y.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() - y, x.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x - y.real(), -y.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>>
+operator*(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() * y.real() - x.imag() * y.imag(), x.real() * y.imag() + x.imag() * y.real());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() * y, x.imag() * y);
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x * y.real(), x * y.imag());
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>>
+operator/(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   T s     = ::cuda::std::abs(y.real()) + ::cuda::std::abs(y.imag());
@@ -104,14 +108,14 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x.real() / y, x.imag() / y);
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
   return complex<T>(x) / y;
@@ -120,13 +124,13 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0
 /* --- Unary Arithmetic Operators --- */
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y)
+_CCCL_HOST_DEVICE constexpr complex<T> operator+(const complex<T>& y)
 {
   return y;
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y)
+_CCCL_HOST_DEVICE constexpr complex<T> operator-(const complex<T>& y)
 {
   return y * -T(1);
 }
@@ -147,7 +151,7 @@ _CCCL_HOST_DEVICE T arg(const complex<T>& z)
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z)
+_CCCL_HOST_DEVICE constexpr complex<T> conj(const complex<T>& z)
 {
   return complex<T>(z.real(), -z.imag());
 }

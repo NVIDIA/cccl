@@ -689,3 +689,170 @@ TEMPLATE_LIST_TEST_CASE("ComplexExplicitConstruction", "[complex]", FloatingPoin
   const thrust::complex<T> input(42.0, 1337.0);
   [[maybe_unused]] const user_complex result = thrust::exp(input);
 }
+
+// Compile-time tests for thrust::complex (issue #485). These exercise the
+// constexpr-marked constructors, accessors, arithmetic operators and equality
+// operators of thrust::complex<T> via static_assert. They are independent of
+// the runtime test cases above and run at compile time only.
+namespace
+{
+template <typename T>
+constexpr bool test_complex_constexpr_construction()
+{
+  using C = thrust::complex<T>;
+
+  // Default construction zero-initializes.
+  static_assert(C().real() == T(0), "default ctor real");
+  static_assert(C().imag() == T(0), "default ctor imag");
+
+  // Construct from real only.
+  static_assert(C(T(2)).real() == T(2), "ctor(real)");
+  static_assert(C(T(2)).imag() == T(0), "ctor(real) imag is zero");
+
+  // Construct from real and imag.
+  static_assert(C(T(1), T(2)).real() == T(1), "ctor(real, imag) real");
+  static_assert(C(T(1), T(2)).imag() == T(2), "ctor(real, imag) imag");
+
+  // Copy and converting copy.
+  static_assert(C(C(T(3), T(4))).real() == T(3), "copy ctor real");
+  static_assert(C(C(T(3), T(4))).imag() == T(4), "copy ctor imag");
+  return true;
+}
+
+template <typename T>
+constexpr bool test_complex_constexpr_arithmetic()
+{
+  using C = thrust::complex<T>;
+
+  // Binary +, -, * with two complex operands.
+  static_assert((C(T(1), T(2)) + C(T(3), T(4))).real() == T(4), "operator+ real");
+  static_assert((C(T(1), T(2)) + C(T(3), T(4))).imag() == T(6), "operator+ imag");
+  static_assert((C(T(5), T(6)) - C(T(1), T(2))).real() == T(4), "operator- real");
+  static_assert((C(T(5), T(6)) - C(T(1), T(2))).imag() == T(4), "operator- imag");
+  // (1+2i)(3+4i) = (1*3 - 2*4) + (1*4 + 2*3)i = -5 + 10i
+  static_assert((C(T(1), T(2)) * C(T(3), T(4))).real() == T(-5), "operator* real");
+  static_assert((C(T(1), T(2)) * C(T(3), T(4))).imag() == T(10), "operator* imag");
+
+  // Mixed scalar/complex operands.
+  static_assert((C(T(1), T(2)) + T(1)).real() == T(2), "operator+ scalar rhs");
+  static_assert((T(1) + C(T(1), T(2))).real() == T(2), "operator+ scalar lhs");
+  static_assert((C(T(2), T(4)) * T(2)).real() == T(4), "operator* scalar rhs");
+  static_assert((T(2) * C(T(2), T(4))).imag() == T(8), "operator* scalar lhs");
+  static_assert((C(T(4), T(8)) / T(2)).real() == T(2), "operator/ scalar rhs");
+  static_assert((C(T(4), T(8)) / T(2)).imag() == T(4), "operator/ scalar rhs imag");
+
+  // Complex / complex (the hardest one to keep constexpr-friendly).
+  static_assert((C(T(1), T(0)) / C(T(1), T(0))).real() == T(1), "complex/complex");
+
+  // Unary + and -.
+  static_assert((+C(T(1), T(2))).real() == T(1), "unary plus real");
+  static_assert((+C(T(1), T(2))).imag() == T(2), "unary plus imag");
+  static_assert((-C(T(1), T(2))).real() == T(-1), "unary minus real");
+  static_assert((-C(T(1), T(2))).imag() == T(-2), "unary minus imag");
+
+  // conj is constexpr.
+  static_assert(thrust::conj(C(T(1), T(2))).real() == T(1), "conj real");
+  static_assert(thrust::conj(C(T(1), T(2))).imag() == T(-2), "conj imag");
+
+  return true;
+}
+
+template <typename T>
+constexpr bool test_complex_constexpr_equality()
+{
+  using C = thrust::complex<T>;
+
+  static_assert(C(T(1), T(2)) == C(T(1), T(2)), "operator== same");
+  static_assert(C(T(1), T(2)) != C(T(3), T(4)), "operator!= different");
+  static_assert(C(T(5), T(0)) == T(5), "operator== complex/scalar");
+  static_assert(T(5) == C(T(5), T(0)), "operator== scalar/complex");
+  static_assert(C(T(5), T(1)) != T(5), "operator!= complex/scalar (imag != 0)");
+  static_assert(T(5) != C(T(6), T(0)), "operator!= scalar/complex");
+
+  return true;
+}
+
+template <typename T>
+constexpr bool test_complex_constexpr_compound_assignment()
+{
+  using C = thrust::complex<T>;
+
+  // The compound assignment operators mutate state; exercise them inside
+  // a constexpr function so we can verify the final value via static_assert.
+  C v(T(1), T(2));
+  v += C(T(3), T(4));
+  if (v.real() != T(4) || v.imag() != T(6))
+  {
+    return false;
+  }
+
+  v -= C(T(3), T(4));
+  if (v.real() != T(1) || v.imag() != T(2))
+  {
+    return false;
+  }
+
+  v *= C(T(3), T(4));
+  // (1+2i)(3+4i) = -5 + 10i
+  if (v.real() != T(-5) || v.imag() != T(10))
+  {
+    return false;
+  }
+
+  // Scalar compound assignments.
+  C s(T(2), T(4));
+  s += T(1);
+  if (s.real() != T(3) || s.imag() != T(4))
+  {
+    return false;
+  }
+  s *= T(2);
+  if (s.real() != T(6) || s.imag() != T(8))
+  {
+    return false;
+  }
+  s /= T(2);
+  if (s.real() != T(3) || s.imag() != T(4))
+  {
+    return false;
+  }
+
+  return true;
+}
+
+template <typename T>
+constexpr bool test_complex_constexpr_setters()
+{
+  using C = thrust::complex<T>;
+  C v;
+  v.real(T(5));
+  v.imag(T(7));
+  return v.real() == T(5) && v.imag() == T(7);
+}
+
+// Force evaluation of the static_asserts inside the helpers above, for both
+// float and double, at compile time.
+static_assert(test_complex_constexpr_construction<float>(), "");
+static_assert(test_complex_constexpr_construction<double>(), "");
+static_assert(test_complex_constexpr_arithmetic<float>(), "");
+static_assert(test_complex_constexpr_arithmetic<double>(), "");
+static_assert(test_complex_constexpr_equality<float>(), "");
+static_assert(test_complex_constexpr_equality<double>(), "");
+static_assert(test_complex_constexpr_compound_assignment<float>(), "");
+static_assert(test_complex_constexpr_compound_assignment<double>(), "");
+static_assert(test_complex_constexpr_setters<float>(), "");
+static_assert(test_complex_constexpr_setters<double>(), "");
+} // anonymous namespace
+
+TEMPLATE_LIST_TEST_CASE("ComplexConstexpr", "[complex]", FloatingPointTypes)
+{
+  // The actual checks are static_asserts at namespace scope above; this
+  // runtime case exists so the test binary records that the constexpr
+  // checks were exercised for each floating point type.
+  using T = TestType;
+  STATIC_REQUIRE(test_complex_constexpr_construction<T>());
+  STATIC_REQUIRE(test_complex_constexpr_arithmetic<T>());
+  STATIC_REQUIRE(test_complex_constexpr_equality<T>());
+  STATIC_REQUIRE(test_complex_constexpr_compound_assignment<T>());
+  STATIC_REQUIRE(test_complex_constexpr_setters<T>());
+}
