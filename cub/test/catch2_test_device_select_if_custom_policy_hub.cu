@@ -13,7 +13,7 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -43,7 +43,7 @@ struct is_even_t
   }
 };
 
-C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
+CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]", CUB_SMALL)
 {
   using value_t  = int;
   using offset_t = int;

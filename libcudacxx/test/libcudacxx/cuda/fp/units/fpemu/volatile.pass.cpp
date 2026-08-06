@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -31,7 +34,7 @@ static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked_high>);
 // Exercise the four volatile paths for one emulated type; values are exact double
 // bit patterns so the round-trips must be exactly preserved.
 template <class emu_type>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   const double v1 = 3.141592653589793;
   const double v2 = 2.718281828459045;
@@ -74,7 +77,7 @@ TEST_FUNC void test()
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<fp64emu>();
   test<fp64emu_low>();

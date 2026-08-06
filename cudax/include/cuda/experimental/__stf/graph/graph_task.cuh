@@ -32,6 +32,7 @@
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <mutex>
 
@@ -127,7 +128,7 @@ public:
 
     // DOT tracing and set_ready_prereqs must not throw after capture has begun,
     // or the stream would be left capturing. Abort instead.
-    throwproof->*[&] {
+    on_throw(::std::abort) << [&] {
       if (dot.is_tracing())
       {
         dot.template add_vertex<task, logical_data_untyped>(*this);

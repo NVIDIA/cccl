@@ -54,6 +54,8 @@ using ::cuda::experimental::places::localized_stats;
 using ::cuda::experimental::places::make_composite_data_place;
 using ::cuda::experimental::places::make_partition;
 using ::cuda::experimental::places::partition_spec;
+using ::cuda::experimental::places::replicate_over;
+using ::cuda::experimental::places::replicate_over_t;
 using ::cuda::experimental::places::whole;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 using ::cuda::experimental::places::green_context_helper;

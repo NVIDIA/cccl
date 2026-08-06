@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
@@ -96,7 +99,7 @@ _CCCL_HOST_DEVICE T exp_impl(T x)
 
 // Evaluate exp_impl<fp64emu> across a fixed set of inputs and verify each stays
 // within the relative-error bound of std::exp.
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   const double tv[10] = {0.0, 0.00001, 1.0, -1.0, 0.5, -0.5, 10.0, -10.0, 700.0, -700.0};
 

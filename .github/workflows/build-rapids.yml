@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.3', libs: 'rmm ucxx kvikio cudf cudf_kafka' }
+          - { cuda: '13.3', libs: 'rmm ucxx kvikio rapidsmpf cudf cudf_kafka' }
           - { cuda: '13.3', libs: 'rmm ucxx raft cuvs nvforest cuml' }
           - { cuda: '13.3', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
           # cuopt branches change at a different time, so it must be tested on its own to avoid environment conflicts.

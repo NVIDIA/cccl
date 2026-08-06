@@ -22,7 +22,7 @@
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -72,7 +72,7 @@ using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 // Index types used for NumItemsT testing. cub::detail::ChooseOffsetT only selects 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-C2H_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)
+CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", CUB_SMALL, key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -112,7 +112,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   REQUIRE(ref_keys == out_keys);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]", bit_window_key_types)
+CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]", CUB_SMALL, bit_window_key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -162,7 +162,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
 
 #ifndef NO_FP_KEY_TYPES
 
-C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", fp_key_types)
+CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", CUB_SMALL, fp_key_types)
 {
   using key_t  = c2h::get<0, TestType>;
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
@@ -218,7 +218,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   REQUIRE_BITWISE_EQ(ref_keys, out_keys);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]", fp_key_types)
+CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]", CUB_SMALL, fp_key_types)
 {
   using key_t    = c2h::get<0, TestType>;
   using limits_t = cuda::std::numeric_limits<key_t>;
@@ -284,7 +284,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
 
 #endif // !NO_FP_KEY_TYPES
 
-C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", single_key_type)
+CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", CUB_SMALL, single_key_type)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -339,7 +339,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   REQUIRE(ref_keys == out_keys);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", key_types)
+CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", CUB_SMALL, key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -373,7 +373,8 @@ C2H_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][devic
   REQUIRE(ref_keys == out_keys);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", single_key_type, num_items_types)
+CUB_TEST(
+  "DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", CUB_SMALL, single_key_type, num_items_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
@@ -414,7 +415,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
   REQUIRE(ref_keys == out_keys);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][device]", single_key_type)
+CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][device]", CUB_SMALL, single_key_type)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -484,8 +485,9 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
+CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
          "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         CUB_LARGE,
          single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
@@ -501,8 +503,9 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
   do_large_offset_test<key_t, num_items_t>(num_items);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets",
+CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets",
          "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         CUB_LARGE,
          single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
