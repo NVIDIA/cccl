@@ -429,6 +429,9 @@ public:
    * the place that owns it according to the partitioner. Extents follow the
    * dimension-0-fastest convention of dim4::get_index().
    *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
+   *
    * @throws std::invalid_argument if the product of the extents and elemsize
    * overflows size_t or exceeds PTRDIFF_MAX
    */

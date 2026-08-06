@@ -158,6 +158,10 @@ public:
    * dim4::get_index() (the STF slice convention). Row-major callers should
    * present reversed extents (and a coordinate-reversing partitioner).
    *
+   * The standalone contract of allocate() applies here as well: the caller's
+   * current device is unspecified on entry and must be left unchanged on
+   * return.
+   *
    * @param data_dims Extents of the tensor
    * @param elemsize Size of one element in bytes
    * @param stream CUDA stream for stream-ordered allocations
