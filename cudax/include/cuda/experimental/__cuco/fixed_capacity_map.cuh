@@ -481,6 +481,18 @@ public:
 
   // ===== Accessors =====
 
+  //! @brief Gets the number of elements in the map.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param[in] __stream CUDA stream used to get the number of elements
+  //!
+  //! @return The number of elements in the map
+  [[nodiscard]] _CCCL_HOST_API size_type size(::cuda::stream_ref __stream) const
+  {
+    return __impl->size(__stream);
+  }
+
   //! @brief Returns the total number of slots the map can hold (the prime/stride-adjusted capacity).
   //!
   //! @return Total slot count
