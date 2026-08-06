@@ -95,7 +95,18 @@ placement vocabulary: one canonical copy, read by tasks at
 runtime materializes one replica per grid member — the
 write-once-read-replicated shape of model weights. Partition specs express
 partial replication with
-`cute_partition.from_spec(..., replicate_over=(axis,...))`:
+`cute_partition.from_spec(..., replicate_over=(axis,...))` — the poster
+child is a weight sharded over one grid axis with one copy per coordinate
+of the other (tensor-parallel shards replicated across the remaining axis):
+
+```python
+# (P, Q) grid: blocked over axis 0, one copy per coordinate of axis 1
+part = stf.cute_partition.from_spec((K,), (("blocked", 0),), (P, Q), replicate_over=(1,))
+```
+
+(End-to-end shaped-grid execution from Python arrives with the grid-reshape
+bindings; the descriptor, `placement_evaluate` and the C/C++ layers handle
+it today.) In general:
 `placement_evaluate` reports the per-member copies
 (`stats.replication_factor`, `stats.resident_bytes`), and a composite data
 place built from such a partition is itself replicated (read-only) — through

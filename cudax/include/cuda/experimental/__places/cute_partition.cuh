@@ -1507,6 +1507,12 @@ private:
  * @param grid_dims Extents of the grid of places
  * @param replicated_axes Bitmask of grid axes holding one copy per
  *        coordinate (bit a = axis a; 0 = no replication)
+ *
+ * Example -- a weight blocked over grid axis 0 (tensor-parallel shards) with
+ * one copy per coordinate of grid axis 1:
+ *
+ *   auto part = make_partition_descriptor(
+ *     dim4(K), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(P, Q), 0x2);
  */
 inline cute_partition_descriptor make_partition_descriptor(
   dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims, unsigned replicated_axes = 0)
@@ -2163,6 +2169,62 @@ UNITTEST("make_partition blocked leaves and owners")
       EXPECT(part.owner(pos4(x, y)) == pos4(y / 2));
     }
   }
+};
+
+UNITTEST("blocked on one grid axis, replicated on the other")
+{
+  // The poster child: a 1-D weight blocked over grid axis 0 (tensor-parallel
+  // shards), with one copy per coordinate of grid axis 1 (replicated across
+  // the other axis). Grid (2, 2): 4 places, 2 shards x 2 copies.
+  const dim4 true_dims(8);
+  const dim4 grid_dims(2, 2);
+  const auto part = make_partition_descriptor(
+    true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims, /*replicated_axes=*/0x2);
+
+  EXPECT(part.replicated_axes_mask() == 0x2u);
+  EXPECT(part.replication_factor() == 2);
+  EXPECT(part.num_places() == 2); // the bound axis only
+
+  // owner() pins the replicated axis to 0: both copies of a shard share it
+  for (size_t x = 0; x < 8; x++)
+  {
+    EXPECT(part.owner(pos4(x)) == pos4(x / 4, 0));
+  }
+
+  // The composite place is a replicated place resolving to one composite
+  // allocation per coordinate of the replicated axis
+  ::std::vector<exec_place> places(4, exec_place::device(0));
+  const exec_place grid = make_grid(mv(places), grid_dims);
+  const data_place dp   = make_composite_data_place(grid, part);
+
+  EXPECT(dp.is_replicated());
+  EXPECT(dp.instance_count() == 2);
+  // Linear place i has coordinates (i % 2, i / 2): the instance is the
+  // replicated-axis coordinate
+  EXPECT(dp.instance_of(0) == 0);
+  EXPECT(dp.instance_of(1) == 0);
+  EXPECT(dp.instance_of(2) == 1);
+  EXPECT(dp.instance_of(3) == 1);
+
+  // Each instance is an ordinary (mask-free, single-instance) composite
+  // place striped over its two-place fiber
+  for (size_t r = 0; r < 2; r++)
+  {
+    const data_place m = dp.member(r);
+    EXPECT(m.is_composite());
+    EXPECT(!m.is_replicated());
+    EXPECT(m.instance_count() == 1);
+  }
+
+  // Fully replicated degenerate: no bound axis, both axes replicated; each
+  // one-place fiber collapses to the place's affine data place
+  const auto full = make_partition_descriptor(true_dims, {dim_spec{}}, grid_dims, /*replicated_axes=*/0x3);
+  EXPECT(full.replication_factor() == 4);
+  ::std::vector<exec_place> places2(4, exec_place::device(0));
+  const data_place dp_full = make_composite_data_place(make_grid(mv(places2), grid_dims), full);
+  EXPECT(dp_full.instance_count() == 4);
+  EXPECT(dp_full.member(0).is_device());
+  EXPECT(!dp_full.member(0).is_composite());
 };
 
 UNITTEST("make_partition pads uneven blocked dimensions")
