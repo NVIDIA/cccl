@@ -25,6 +25,7 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__hierarchy/hierarchy_dimensions.h>
+#  include <cuda/__numeric/mul_overflow.h>
 #  include <cuda/__numeric/overflow_cast.h>
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -416,8 +417,9 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Tp> dynamic_shared_memory(::cuda::std::size_t __n)
 {
-  using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
-  if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
+  constexpr auto __value_type_size         = sizeof(typename dynamic_shared_memory_option<_Tp>::value_type);
+  const auto [__dyn_smem_size, __overflow] = ::cuda::mul_overflow(__n, __value_type_size);
+  if (__overflow || __dyn_smem_size > __max_portable_dyn_smem_size)
   {
     _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
   }
