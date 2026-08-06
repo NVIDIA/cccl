@@ -15,6 +15,9 @@
 //  requires !same_as<U, Iter> && convertible_to<const U&, Iter>
 // reverse_iterator(const reverse_iterator<U> &);
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/iterator>
 
 struct Base

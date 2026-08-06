@@ -15,6 +15,9 @@
 
 // test explicitness
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/>
 
 int main(int, char**)

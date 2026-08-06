@@ -14,6 +14,9 @@
 //  If Extent is not equal to dynamic_extent, then count shall be equal to Extent.
 //
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 

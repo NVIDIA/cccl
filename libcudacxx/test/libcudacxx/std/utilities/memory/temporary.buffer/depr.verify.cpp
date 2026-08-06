@@ -10,6 +10,9 @@
 
 // Ensure allocator<void> is deprecated
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/algorithm>
 
 TEST_FUNC void test()

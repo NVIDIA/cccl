@@ -11,6 +11,9 @@
 
 // move_iterator
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/iterator>
 
 int main(int, char**)

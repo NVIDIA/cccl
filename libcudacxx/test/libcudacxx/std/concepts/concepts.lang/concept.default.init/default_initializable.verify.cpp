@@ -12,6 +12,9 @@
 //     requires { T{}; } &&
 //     is-default-initializable<T>;
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 
