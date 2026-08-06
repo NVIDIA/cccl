@@ -1031,6 +1031,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 }
               }
             }
+            __syncwarp();
             if (lane_id == 0)
             {
               ptx::mbarrier_arrive(&empty[slot_id]);
