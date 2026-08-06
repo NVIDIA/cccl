@@ -12,10 +12,18 @@
 
 #include <cuda/buffer>
 #include <cuda/std/cstddef>
+#include <cuda/std/random>
 
 #include <exception>
 #include <future>
 #include <vector>
+
+#include <c2h/catch2_test_helper.h>
+
+[[nodiscard]] inline cuda::std::minstd_rand make_rng(const c2h::seed_t& seed)
+{
+  return cuda::std::minstd_rand(static_cast<cuda::std::minstd_rand::result_type>(seed.get()));
+}
 
 // One output iterator per local output buffer. Collected after `out` is fully built so the
 // iterators do not dangle across reallocations.
