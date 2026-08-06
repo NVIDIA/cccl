@@ -1105,7 +1105,7 @@ struct even_flag_t
 template <unsigned int BlockThreads>
 struct select_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
     return {cub::SelectAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
@@ -1120,7 +1120,7 @@ struct select_tuning
 template <unsigned int BlockThreads>
 struct unique_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::UniqueByKeyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::UniqueByKeyPolicy
   {
     return {static_cast<int>(BlockThreads),
             10,

@@ -1048,6 +1048,42 @@ public:
     pimpl->freeze(freeze_mode, place);
   }
 
+  /**
+   * @brief Adopt an externally managed, already-valid instance of this
+   * logical data at `place`.
+   *
+   * The instance is registered as a valid SHARED copy: it will never be
+   * allocated, populated, reclaimed or deallocated by the library, and the
+   * reference instance is downgraded from modified to shared since it is no
+   * longer the unique valid copy. This is the import primitive for
+   * replicated data: a nested context created from one frozen member
+   * instance can adopt the remaining members so that a read at the
+   * replicated place resolves without issuing any copy.
+   *
+   * Only sound for read-only imports: writing through any instance of this
+   * logical data would invalidate copies the library does not own.
+   */
+  template <typename T>
+  void adopt_shared_instance(T view, const data_place& place)
+  {
+    const instance_id_t id             = find_instance_id(place);
+    pimpl->dinterface->instance<T>(id) = mv(view);
+    auto& inst                         = pimpl->get_data_instance(id);
+    inst.set_msir(reserved::msir_state_id::shared);
+    inst.set_allocated(true);
+    inst.reclaimable = false;
+    if (pimpl->ctx.has_start_events())
+    {
+      inst.add_read_prereq(pimpl->ctx, pimpl->ctx.get_start_events());
+    }
+    // The reference instance is no longer the unique valid copy
+    auto& ref = pimpl->get_data_instance(pimpl->reference_instance_id);
+    if (ref.get_msir() == reserved::msir_state_id::modified)
+    {
+      ref.set_msir(reserved::msir_state_id::shared);
+    }
+  }
+
   template <typename T>
   ::std::pair<T, event_list> get_frozen(task& fake_task, const data_place& dplace, access_mode m)
   {

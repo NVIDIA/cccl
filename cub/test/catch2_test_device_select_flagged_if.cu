@@ -433,7 +433,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
 template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
 struct flagged_if_prefetch_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
     auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
     policy.lookback._load_prefetch = Prefetch;

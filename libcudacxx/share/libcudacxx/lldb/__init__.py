@@ -16,6 +16,7 @@ import event
 import inplace_vector
 import memory_resource
 import std_array
+import stream
 import tuple
 
 import lldb
@@ -27,6 +28,7 @@ _FORMATTERS = (
     buffer,
     std_array,
     complex,
+    stream,
     tuple,
     inplace_vector,
     event,

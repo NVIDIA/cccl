@@ -746,7 +746,7 @@ public:
 
   // [simd.cond], basic_vec exposition-only conditional operators
 
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_select_impl(const mask_type& __mask, const basic_vec& __a, const basic_vec& __b) noexcept
   {
     basic_vec __result{};

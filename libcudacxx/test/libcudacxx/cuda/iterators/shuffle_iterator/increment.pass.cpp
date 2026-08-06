@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // constexpr iterator& operator++();
 // constexpr void operator++(int);
 // constexpr iterator operator++(int) requires incrementable<W>;
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   {
     cuda::shuffle_iterator iter1{fake_bijection{}, 1};
