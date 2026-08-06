@@ -24,3 +24,5 @@ libcudacxx_codegen_add_ptx_tests(
   TESTS ${libcudacxx_atomic_codegen_tests}
   COMPILE_DEFINITIONS _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1
 )
+
+add_subdirectory(sass)
