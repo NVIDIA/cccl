@@ -43,10 +43,15 @@ struct MergePolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
+    // gcc 8 folds comparisons of adjacent bool members within one expression into a BIT_FIELD_REF, which its
+    // constexpr evaluator cannot handle (ICE in cxx_eval_bit_field_ref, fixed in gcc 9). Keep each bool
+    // comparison in a separate statement to avoid the fold.
+    const bool same_bulk_copy_for_keys   = lhs.use_bulk_copy_for_keys == rhs.use_bulk_copy_for_keys;
+    const bool same_bulk_copy_for_values = lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values;
+    const bool same_unroll               = lhs.unroll == rhs.unroll;
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
-        && lhs.use_bulk_copy_for_keys == rhs.use_bulk_copy_for_keys
-        && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values && lhs.unroll == rhs.unroll;
+        && same_bulk_copy_for_keys && same_bulk_copy_for_values && same_unroll;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
