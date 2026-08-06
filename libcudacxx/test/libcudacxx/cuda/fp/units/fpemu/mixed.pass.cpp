@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -20,7 +23,7 @@
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-TEST_FUNC void test(double dx, double dy, double dz)
+TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
   constexpr double c1 = 9.876;
   constexpr int c2    = -6;

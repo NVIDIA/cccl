@@ -16,6 +16,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // nvcc doesn't currently support _Float64 in device code.
 // UNSUPPORTED: nvcc
 
@@ -29,7 +32,7 @@
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
 #if __STDCPP_FLOAT64_T__ == 1
   // _Float64 is a distinct type here, yet fpemu<_Float64> must still be a valid,

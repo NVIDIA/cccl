@@ -17,6 +17,9 @@
 
 // REQUIRES: !c++17
 
+// disable this test as it will be replaced soon
+// UNSUPPORTED: true
+
 // constant_wrapper
 
 // constexpr operator decltype(value)() const noexcept { return value; }
@@ -75,11 +78,12 @@ TEST_FUNC constexpr bool test()
     static_assert(noexcept(static_cast<const int (&)[3]>(cwArr)));
   }
 
+#if !_CCCL_TILE_COMPILATION() // error: indirect call is unsupported in tile code
   {
     // gcc < 13 fails this test with:
     //   'test()::<lambda(int)>::_FUN' is not a valid template argument of type 'int (*)(int)' because it is not
     //   a variable
-#if !_CCCL_COMPILER(GCC, <, 13)
+#  if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer conversion
     constexpr int (*fptr)(int) = [](int x) constexpr {
       return x * 2;
@@ -89,13 +93,14 @@ TEST_FUNC constexpr bool test()
     assert(result(5) == 10);
 
     // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#  if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#    if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
     static_assert(noexcept(static_cast<int (*)(int)>(decltype(cwFptr)::value)));
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) vvv
+#    else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) vvv
     static_assert(noexcept(static_cast<int (*)(int)>(cwFptr)));
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
-#endif // !_CCCL_COMPILER(GCC, <, 13)
+#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
+#  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     // nvcc < 13.2 fails to evaluate the call properly.

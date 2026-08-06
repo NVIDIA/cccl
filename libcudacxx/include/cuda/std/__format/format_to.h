@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _OutIt, class... _Args)
 _CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
-/*discard*/ _CCCL_API _OutIt format_to(_OutIt __out_it, format_string<_Args...> __fmt, _Args&&... __args)
+/*discard*/ _CCCL_HOST_DEVICE_API _OutIt format_to(_OutIt __out_it, format_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::vformat_to(::cuda::std::move(__out_it), __fmt.get(), ::cuda::std::make_format_args(__args...));
 }
@@ -41,7 +41,7 @@ _CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
 #if _CCCL_HAS_WCHAR_T()
 _CCCL_TEMPLATE(class _OutIt, class... _Args)
 _CCCL_REQUIRES(output_iterator<_OutIt, const wchar_t&>)
-/*discard*/ _CCCL_API _OutIt format_to(_OutIt __out_it, wformat_string<_Args...> __fmt, _Args&&... __args)
+/*discard*/ _CCCL_HOST_DEVICE_API _OutIt format_to(_OutIt __out_it, wformat_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::vformat_to(::cuda::std::move(__out_it), __fmt.get(), ::cuda::std::make_wformat_args(__args...));
 }

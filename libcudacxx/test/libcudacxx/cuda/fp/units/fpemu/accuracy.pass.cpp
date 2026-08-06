@@ -13,6 +13,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -23,7 +26,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 
 // Computes across all three accuracy levels and verifies the aggregate result is
 // finite, non-zero and reasonably bounded. Returns true on success.
-TEST_FUNC void test(double x)
+TEST_HOST_DEVICE_FUNC void test(double x)
 {
   // high accuracy: builtins deduce the accuracy level from the argument type.
   fp64emu_high acc_x = x;

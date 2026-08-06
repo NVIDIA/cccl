@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -34,7 +34,7 @@
 struct throwing_plus
 {
   template <typename T1, typename T2>
-  TEST_FUNC constexpr auto operator()(T1 a, T2 b) const
+  TEST_HOST_DEVICE_FUNC constexpr auto operator()(T1 a, T2 b) const
   {
     return a + b;
   }
@@ -44,7 +44,7 @@ struct throwing_plus
 // reduce with default plus<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_plus()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_plus()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec   = make_iota_vec<T, N>();
@@ -65,7 +65,7 @@ TEST_FUNC constexpr void test_reduce_plus()
 // reduce with explicit plus<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_explicit_plus()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_explicit_plus()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{2});
@@ -80,7 +80,7 @@ TEST_FUNC constexpr void test_reduce_explicit_plus()
 // reduce with multiplies<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_multiplies()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_multiplies()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{2});
@@ -100,7 +100,7 @@ TEST_FUNC constexpr void test_reduce_multiplies()
 // reduce with mask and default plus<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_masked_plus()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_masked_plus()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -127,7 +127,7 @@ TEST_FUNC constexpr void test_reduce_masked_plus()
 // reduce with mask and even-index elements
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_masked_even()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_masked_even()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -150,7 +150,7 @@ TEST_FUNC constexpr void test_reduce_masked_even()
 // reduce with mask, explicit binary_op, and explicit identity_element
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_masked_explicit_identity()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_masked_explicit_identity()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -171,7 +171,7 @@ TEST_FUNC constexpr void test_reduce_masked_explicit_identity()
 // reduce with mask and multiplies<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_masked_multiplies()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_masked_multiplies()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -197,7 +197,7 @@ TEST_FUNC constexpr void test_reduce_masked_multiplies()
 // reduce with bit_and<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_bit_and()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_bit_and()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -218,7 +218,7 @@ TEST_FUNC constexpr void test_reduce_bit_and()
 // reduce with bit_or<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_bit_or()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_bit_or()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -239,7 +239,7 @@ TEST_FUNC constexpr void test_reduce_bit_or()
 // reduce with bit_xor<>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_bit_xor()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_bit_xor()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -260,7 +260,7 @@ TEST_FUNC constexpr void test_reduce_bit_xor()
 // reduce noexcept with potentially-throwing operation
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_throwing_op()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_throwing_op()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -276,7 +276,7 @@ TEST_FUNC constexpr void test_reduce_throwing_op()
 // reduce with size 1
 
 template <typename T>
-TEST_FUNC constexpr void test_reduce_size_one()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_size_one()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<1>>;
   Vec vec(T{42});
@@ -288,7 +288,7 @@ TEST_FUNC constexpr void test_reduce_size_one()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_reduce_plus<T, N>();
   test_reduce_explicit_plus<T, N>();

@@ -19,6 +19,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -47,7 +50,7 @@ static_assert(cuda::std::is_constructible_v<P_hi, U_hi>);
 static_assert(cuda::std::is_trivially_copyable_v<P_hi>);
 static_assert(cuda::std::is_trivially_copyable_v<U_hi>);
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   constexpr double kTol = 1e-10;
 

@@ -12,7 +12,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -63,7 +63,8 @@ type_pair<custom_t>
 
 using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
 
-C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][device]", full_type_list, offsets)
+CUB_TEST(
+  "Device reduce works with all device interfaces", "[segmented][reduce][device]", CUB_SMALL, full_type_list, offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using input_t     = typename type_pair_t::input_t;
@@ -222,8 +223,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   }
 }
 
-C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
+CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
          "[segmented][reduce][device]",
+         CUB_SMALL,
          full_type_list)
 {
   using type_pair_t    = typename c2h::get<0, TestType>;

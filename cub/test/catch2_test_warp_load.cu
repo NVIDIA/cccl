@@ -7,7 +7,7 @@
 
 #include <thrust/sequence.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
@@ -217,8 +217,13 @@ struct params_t
   static constexpr int total_item_count             = total_warps * tile_size;
 };
 
-C2H_TEST(
-  "Warp load guarded range works with pointer", "[load][warp]", types, logical_warp_threads, items_per_thread, algorithm)
+CUB_TEST("Warp load guarded range works with pointer",
+         "[load][warp]",
+         CUB_SMALL,
+         types,
+         logical_warp_threads,
+         items_per_thread,
+         algorithm)
 {
   using params     = params_t<TestType>;
   using type       = typename params::type;
@@ -241,8 +246,9 @@ C2H_TEST(
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load guarded range works with cache modified iterator",
+CUB_TEST("Warp load guarded range works with cache modified iterator",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -270,8 +276,9 @@ C2H_TEST("Warp load guarded range works with cache modified iterator",
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load unguarded range works with pointer",
+CUB_TEST("Warp load unguarded range works with pointer",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -293,8 +300,9 @@ C2H_TEST("Warp load unguarded range works with pointer",
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load unguarded range works with cache modified iterator",
+CUB_TEST("Warp load unguarded range works with cache modified iterator",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -320,8 +328,9 @@ C2H_TEST("Warp load unguarded range works with cache modified iterator",
 }
 
 #if ALGO_TYPE == 3 // Test for cub::WarpLoadAlgorithm::WARP_LOAD_VECTORIZE;
-C2H_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
          "[store][warp]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>,
          logical_warp_threads,
          items_per_thread,

@@ -285,7 +285,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) equal = cw6 == cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(equal)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(equal));
@@ -293,7 +293,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) not_equal = cw6 != cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(not_equal)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(not_equal));
@@ -301,7 +301,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less = cw6 < cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(less)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(less));
@@ -309,7 +309,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less_equal = cw6 <= cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(less_equal)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(less_equal));
@@ -317,7 +317,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater = cw6 > cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(greater)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(greater));
@@ -325,7 +325,7 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cw6 >= cw3;
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(greater_equal)::value);
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(greater_equal));

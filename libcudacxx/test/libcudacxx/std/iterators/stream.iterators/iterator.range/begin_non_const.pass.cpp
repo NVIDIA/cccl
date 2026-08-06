@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <cuda/std/iterator>
 
 // template <class C> auto begin(C& c) -> decltype(c.begin());
@@ -24,7 +21,11 @@ int main(int, char**)
 {
   int ia[] = {1, 2, 3};
   cuda::std::inplace_vector<int, 3> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
+#if _CCCL_TILE_COMPILATION()
+  cuda::std::inplace_vector<int, 3>::iterator i = cuda::std::__begin_cpo{}(v);
+#else
   cuda::std::inplace_vector<int, 3>::iterator i = cuda::std::begin(v);
+#endif // !_CCCL_TILE_COMPILATION()
   assert(*i == 1);
   *i = 2;
   assert(*i == 2);

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
-
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -83,12 +80,15 @@ TEST_FUNC void test(float value)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(value);
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+
+#if !_CCCL_TILE_COMPILATION()
+#  if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(__float2half(value));
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(__float2bfloat16(value));
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(value));
   test<int>(static_cast<int>(value));

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: return in loop statement is not supported
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
