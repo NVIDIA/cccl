@@ -23,6 +23,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstddef>
+#include <cstdio>
 #include <map>
 #include <unordered_map>
 

@@ -86,8 +86,10 @@
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -398,9 +400,16 @@ public:
       // DOWN to it instead.
       CUdevice device = cuda_try<cuDeviceGet>(dev_id);
       CUdevResource input;
-      CUcontext primary_ctx = cuda_try<cuDevicePrimaryCtxRetain>(device);
-      cuda_try(cuCtxGetDevResource(primary_ctx, &input, CU_DEV_RESOURCE_TYPE_SM));
-      cuda_try(cuDevicePrimaryCtxRelease(device));
+      {
+        CUcontext primary_ctx = cuda_try<cuDevicePrimaryCtxRetain>(device);
+        // Release on every exit path: a throwing resource query must not leak
+        // the retained primary-context reference.
+        SCOPE(exit)
+        {
+          cuda_try(cuDevicePrimaryCtxRelease(device));
+        };
+        cuda_try(cuCtxGetDevResource(primary_ctx, &input, CU_DEV_RESOURCE_TYPE_SM));
+      }
 
       unsigned int finest_groups = 0;
       cuda_try(cuDevSmResourceSplitByCount(nullptr, &finest_groups, &input, nullptr, 0, 1));
@@ -656,6 +665,15 @@ public:
     {
       cuda_try(cudaSetDevice(restore_dev_id));
     }
+  }
+
+  // A scalar place executing device work (activate() switches devices), like
+  // the native backend's exec_place_cuda_ctx_impl which reports true. Callers
+  // branching on is_device() (e.g. the parallel_for reduction path) must see
+  // the same answer from both backends.
+  bool is_device() const override
+  {
+    return true;
   }
 
   ::std::string to_string() const override

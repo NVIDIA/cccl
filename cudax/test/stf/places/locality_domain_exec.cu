@@ -21,6 +21,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstdio>
 #include <unordered_map>
 
 using namespace cuda::experimental::stf;
@@ -126,6 +127,16 @@ int main()
       int cur_dev = -1;
       cuda_safe_call(cudaGetDevice(&cur_dev));
       EXPECT(cur_dev == dev);
+
+#if _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
+      // On the native backend, activation must actually select the domain's
+      // (green) context rather than being a no-op: cudaSetDevice(dev) above
+      // already makes the device check pass trivially, so also verify the
+      // current driver context changed under the scope.
+      CUcontext ctx_in = nullptr;
+      cuda_safe_call(cuCtxGetCurrent(&ctx_in));
+      EXPECT(ctx_in != ctx_before);
+#endif // _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
     }
 
     // After deactivation the previous driver context is restored
