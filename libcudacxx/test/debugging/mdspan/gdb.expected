@@ -1,5 +1,5 @@
 =============== mdspan.rank1_dynamic begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[4], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[4], data=<address> = {
   [0] = 10,
   [1] = -3,
   [2] = 7,
@@ -7,7 +7,7 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>, cuda::std::layou
 }
 =============== mdspan.rank1_dynamic end ===============
 =============== mdspan.rank2_static begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, 3, 4>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=2, extents=[3, 4], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, 3, 4>> rank=2, extents=[3, 4], data=<address> = {
   [0,0] = 0,
   [0,1] = 1,
   [0,2] = 2,
@@ -23,7 +23,7 @@ cuda::std::mdspan<int, cuda::std::extents<int, 3, 4>, cuda::std::layout_right, c
 }
 =============== mdspan.rank2_static end ===============
 =============== mdspan.rank2_mixed begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, 3, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=2, extents=[3, 4], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, 3, dynamic_extent>> rank=2, extents=[3, 4], data=<address> = {
   [0,0] = 100,
   [0,1] = 101,
   [0,2] = 102,
@@ -39,7 +39,7 @@ cuda::std::mdspan<int, cuda::std::extents<int, 3, dynamic_extent>, cuda::std::la
 }
 =============== mdspan.rank2_mixed end ===============
 =============== mdspan.rank2_dynamic begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=2, extents=[2, 3], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>> rank=2, extents=[2, 3], data=<address> = {
   [0,0] = 1000,
   [0,1] = 1001,
   [0,2] = 1002,
@@ -49,15 +49,15 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, 
 }
 =============== mdspan.rank2_dynamic end ===============
 =============== mdspan.rank0 begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=0, extents=[], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int>> rank=0, extents=[], data=<address> = {
   [] = 77
 }
 =============== mdspan.rank0 end ===============
 =============== mdspan.empty begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, 0, 3>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=2, extents=[0, 3], data=<address>
+cuda::std::mdspan<int, cuda::std::extents<int, 0, 3>> rank=2, extents=[0, 3], data=<address>
 =============== mdspan.empty end ===============
 =============== mdspan.layout_left begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, cuda::std::layout_left, cuda::std::default_accessor<int>> rank=2, extents=[2, 3], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, cuda::std::layout_left> rank=2, extents=[2, 3], data=<address> = {
   [0,0] = 2000,
   [0,1] = 2001,
   [0,2] = 2002,
@@ -67,7 +67,7 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, 
 }
 =============== mdspan.layout_left end ===============
 =============== mdspan.layout_stride begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, cuda::std::layout_stride, cuda::std::default_accessor<int>> rank=2, extents=[2, 3], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, cuda::std::layout_stride> rank=2, extents=[2, 3], data=<address> = {
   [0,0] = 3000,
   [0,1] = 3001,
   [0,2] = 3002,
@@ -77,31 +77,31 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent, dynamic_extent>, 
 }
 =============== mdspan.layout_stride end ===============
 =============== mdspan.rank0_layout_stride begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride, cuda::std::default_accessor<int>> rank=0, extents=[], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride> rank=0, extents=[], data=<address> = {
   [] = 55
 }
 =============== mdspan.rank0_layout_stride end ===============
 =============== mdspan.const_element begin ===============
-cuda::std::mdspan<int const, cuda::std::extents<int, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int const>> rank=1, extents=[3], data=<address> = {
+cuda::std::mdspan<int const, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[3], data=<address> = {
   [0] = 5,
   [1] = 6,
   [2] = 7
 }
 =============== mdspan.const_element end ===============
 =============== mdspan.pointer_element begin ===============
-cuda::std::mdspan<int*, cuda::std::extents<int, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int*>> rank=1, extents=[3], data=<address> = {
+cuda::std::mdspan<int*, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[3], data=<address> = {
   [0] = <address>,
   [1] = <address>,
   [2] = <address>
 }
 =============== mdspan.pointer_element end ===============
 =============== mdspan.nested begin ===============
-cuda::std::mdspan<cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>>, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> >> rank=1, extents=[2], data=<address> = {
-  [0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+cuda::std::mdspan<cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>>, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
+  [0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
     [0] = 1,
     [1] = 2
   },
-  [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+  [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
     [0] = 3,
     [1] = 4
   }
@@ -116,44 +116,44 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>, cuda::std::layou
 }
 =============== mdspan.custom_accessor end ===============
 =============== mdspan.host_mdspan begin ===============
-cuda::host_mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+cuda::host_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
   [0] = 41,
   [1] = 42
 }
 =============== mdspan.host_mdspan end ===============
 =============== mdspan.device_mdspan begin ===============
-cuda::device_mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address>
+cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address>
 =============== mdspan.device_mdspan end ===============
 =============== mdspan.managed_mdspan begin ===============
-cuda::managed_mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+cuda::managed_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
   [0] = 61,
   [1] = 62
 }
 =============== mdspan.managed_mdspan end ===============
 =============== mdspan.restrict_mdspan begin ===============
-cuda::restrict_mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+cuda::restrict_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
   [0] = 71,
   [1] = 72
 }
 =============== mdspan.restrict_mdspan end ===============
 =============== mdspan.vector begin ===============
-std::vector of length 2, capacity 2 = {[0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+std::vector of length 2, capacity 2 = {[0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
     [0] = -2,
     [1] = 4
-  }, [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[2], data=<address> = {
+  }, [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
     [0] = 11,
     [1] = -9
   }}
 =============== mdspan.vector end ===============
 =============== mdspan.update.before begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[3], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[3], data=<address> = {
   [0] = 1,
   [1] = 2,
   [2] = 3
 }
 =============== mdspan.update.before end ===============
 =============== mdspan.update.after begin ===============
-cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>, cuda::std::layout_right, cuda::std::default_accessor<int>> rank=1, extents=[3], data=<address> = {
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[3], data=<address> = {
   [0] = 9,
   [1] = -3,
   [2] = 15
