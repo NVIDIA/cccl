@@ -10,6 +10,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_reduce.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -972,7 +979,7 @@ public:
 
 private:
   template <class EnvT>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __validate_determinism_streaming_reduce() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL bool __validate_determinism_streaming_reduce() noexcept
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");

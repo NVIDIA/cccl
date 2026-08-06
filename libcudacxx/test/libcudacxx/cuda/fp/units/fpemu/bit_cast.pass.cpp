@@ -18,6 +18,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
@@ -39,7 +42,7 @@ struct fpemu_unpacked_bits
   uint64_t mantissa;
 };
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Packed fpemu<double>: reinterpret to/from the 64-bit IEEE-754 representation
   // via the standard bit_cast (fpemu::bits is private, so this is the only way).

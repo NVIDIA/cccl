@@ -50,6 +50,8 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -110,15 +112,15 @@ namespace cuda::experimental
 
 // Header (inline) builds decorate functions at the call site with CCCL
 // visibility macros directly:
-//   _CCCL_API         — public entry points (host/device, hidden from ABI)
-//   _CCCL_TRIVIAL_API — force-inlined internal/impl helpers (hot paths)
+//   _CCCL_HOST_DEVICE_API         — public entry points (host/device, hidden from ABI)
+//   _CCCL_TRIVIAL_HOST_DEVICE_API — force-inlined internal/impl helpers (hot paths)
 //   _CCCL_DEVICE_API  — device-only overloads
 // The only decorator that still needs a dedicated macro is the extern-"C"
 // ABI symbol used when building or linking the standalone libcufp library.
 #if defined __CUDA_LIBDEVICE__
 #  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_FPEMU_ABI extern "C" _CCCL_HOST_DEVICE
 #elif defined _CCCL_FPEMU_INLINE
-#  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_TRIVIAL_API
+#  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_TRIVIAL_HOST_DEVICE_API
 #else // _CCCL_FPEMU_BUILD_LIB or _CCCL_FPEMU_USE_LIB
 #  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_FPEMU_ABI extern "C" _CCCL_HOST_DEVICE
 #endif
@@ -423,50 +425,53 @@ struct __fpemu_uint128
 
   __fpemu_uint128() = default;
 
-  _CCCL_API constexpr __fpemu_uint128(uint64_t __value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128(uint64_t __value) noexcept
       : __lo_(__value)
       , __hi_(0)
   {}
 
-  _CCCL_API constexpr __fpemu_uint128(uint64_t __high, uint64_t __low) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128(uint64_t __high, uint64_t __low) noexcept
       : __lo_(__low)
       , __hi_(__high)
   {}
 
-  [[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator~() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128 operator~() const noexcept
   {
     return __fpemu_uint128{~__hi_, ~__lo_};
   }
 
-  _CCCL_API constexpr __fpemu_uint128& operator>>=(int __shift) noexcept;
+  _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128& operator>>=(int __shift) noexcept;
 
-  _CCCL_API constexpr __fpemu_uint128& operator|=(uint64_t __value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128& operator|=(uint64_t __value) noexcept
   {
     __lo_ |= __value;
     return *this;
   }
 };
 
-[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator+(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128
+operator+(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   const uint64_t __lo    = __a.__lo_ + __b.__lo_;
   const uint64_t __carry = (__lo < __a.__lo_) ? 1u : 0u;
   return __fpemu_uint128{__a.__hi_ + __b.__hi_ + __carry, __lo};
 }
 
-[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator-(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128
+operator-(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   const uint64_t __lo     = __a.__lo_ - __b.__lo_;
   const uint64_t __borrow = (__a.__lo_ < __b.__lo_) ? 1u : 0u;
   return __fpemu_uint128{__a.__hi_ - __b.__hi_ - __borrow, __lo};
 }
 
-[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator&(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128
+operator&(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   return __fpemu_uint128{__a.__hi_ & __b.__hi_, __a.__lo_ & __b.__lo_};
 }
 
-[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator<<(__fpemu_uint128 __value, int __shift) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128 operator<<(__fpemu_uint128 __value, int __shift) noexcept
 {
   if (__shift <= 0)
   {
@@ -483,7 +488,7 @@ struct __fpemu_uint128
   return __fpemu_uint128{(__value.__hi_ << __shift) | (__value.__lo_ >> (64 - __shift)), __value.__lo_ << __shift};
 }
 
-[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator>>(__fpemu_uint128 __value, int __shift) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128 operator>>(__fpemu_uint128 __value, int __shift) noexcept
 {
   if (__shift <= 0)
   {
@@ -500,35 +505,35 @@ struct __fpemu_uint128
   return __fpemu_uint128{__value.__hi_ >> __shift, (__value.__lo_ >> __shift) | (__value.__hi_ << (64 - __shift))};
 }
 
-_CCCL_API constexpr __fpemu_uint128& __fpemu_uint128::operator>>=(int __shift) noexcept
+_CCCL_HOST_DEVICE_API constexpr __fpemu_uint128& __fpemu_uint128::operator>>=(int __shift) noexcept
 {
   *this = *this >> __shift;
   return *this;
 }
 
-[[nodiscard]] _CCCL_API constexpr bool operator==(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator==(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   return __a.__hi_ == __b.__hi_ && __a.__lo_ == __b.__lo_;
 }
 
-[[nodiscard]] _CCCL_API constexpr bool operator!=(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator!=(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   return !(__a == __b);
 }
 
-[[nodiscard]] _CCCL_API constexpr bool operator<(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator<(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   return (__a.__hi_ < __b.__hi_) || (__a.__hi_ == __b.__hi_ && __a.__lo_ < __b.__lo_);
 }
 
-[[nodiscard]] _CCCL_API constexpr bool operator>(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator>(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
 {
   return __b < __a;
 }
 #endif // native vs emulated 128-bit
 
 #undef _CCCL_FPEMU_MAX
-#if defined(__CUDA_ARCH__) && !defined(__CUDA_LIBDEVICE__)
+#if _CCCL_DEVICE_COMPILATION() && !defined(__CUDA_LIBDEVICE__)
 // Global-scope qualifier: inside namespace cuda::experimental an
 // unqualified `max` now resolves to the fpmp2 max() template, which
 // shadows the CUDA device `::max(int, int)` builtin we want here.
@@ -547,7 +552,7 @@ _CCCL_API constexpr __fpemu_uint128& __fpemu_uint128::operator>>=(int __shift) n
 //!
 //! @param sign The 32-bit integer to invert the sign of
 //! @return The inverted sign
-_CCCL_TRIVIAL_API uint32_t __invert_msb(uint32_t __sign) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __invert_msb(uint32_t __sign) noexcept
 {
 #if _CCCL_FP64EMU_PTX_XOR == 1
   uint32_t result;
@@ -584,33 +589,34 @@ _CCCL_TRIVIAL_API uint32_t __invert_msb(uint32_t __sign) noexcept
 //! @param b_ Second 64-bit multiplicand as two 32-bit integers
 //! @return The high 32 bits of the multiplication result
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
 {
-  uint32_t __res;
-#if defined __CUDA_ARCH__
-  __uint32x2 __a64 = ::cuda::std::bit_cast<__uint32x2>(__a);
-  __uint32x2 __b64 = ::cuda::std::bit_cast<__uint32x2>(__b);
-  uint32_t __res32;
-  asm("{\n\t"
-      ".reg .u32 r0, ahi, bhi;\n\t"
-      "mov.b32         ahi, %1;   \n\t"
-      "mov.b32         bhi, %2;   \n\t"
-      "mad.hi.u32      r0, ahi, bhi,  0;\n\t"
-      "mov.b32         %0, r0;     \n\t"
-      "}"
-      : "=r"(__res32)
-      : "r"(__a64.x[1]), "r"(__b64.x[1]));
-  __res = __res32;
-#else
-  // Split inputs into 32-bit parts
-  uint32_t __ahi = __a.x[1];
-  uint32_t __bhi = __b.x[1];
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    ({
+      __uint32x2 __a64 = ::cuda::std::bit_cast<__uint32x2>(__a);
+      __uint32x2 __b64 = ::cuda::std::bit_cast<__uint32x2>(__b);
+      uint32_t __res32;
+      asm("{\n\t"
+          ".reg .u32 r0, ahi, bhi;\n\t"
+          "mov.b32         ahi, %1;   \n\t"
+          "mov.b32         bhi, %2;   \n\t"
+          "mad.hi.u32      r0, ahi, bhi,  0;\n\t"
+          "mov.b32         %0, r0;     \n\t"
+          "}"
+          : "=r"(__res32)
+          : "r"(__a64.x[1]), "r"(__b64.x[1]));
+      return __res32;
+    }),
+    ({
+      // Split inputs into 32-bit parts
+      uint32_t __ahi = __a.x[1];
+      uint32_t __bhi = __b.x[1];
 
-  // Compute high 32 bits directly
-  uint64_t __hi_hi = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
-  __res            = uint32_t(__hi_hi >> 32);
-#endif
-  return __res;
+      // Compute high 32 bits directly
+      uint64_t __hi_hi = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
+      return static_cast<uint32_t>(__hi_hi >> 32);
+    }))
 } //__mul_32
 
 //! @brief Multiply two 64-bit integers and return the high 64 bits of the result
@@ -627,55 +633,57 @@ _CCCL_TRIVIAL_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @param b_ Second 64-bit multiplicand as two 32-bit integers
 //! @return The high 64 bits of the multiplication result as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
-  __uint32x2 __res;
-#if defined __CUDA_ARCH__
-  uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a);
-  uint64_t __b64 = ::cuda::std::bit_cast<uint64_t>(__b);
-  uint64_t __res64;
-  asm("{\n\t"
-      ".reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;\n\t"
-      "mov.b64         {alo,ahi}, %1;   \n\t"
-      "mov.b64         {blo,bhi}, %2;   \n\t"
-      "mad.lo.cc.u32   r1, alo, bhi, 0;\n\t"
-      "madc.hi.u32     r2, alo, bhi,  0;\n\t"
-      "mad.lo.cc.u32   r1, ahi, blo, r1;\n\t"
-      "madc.hi.cc.u32  r2, ahi, blo, r2;\n\t"
-      "madc.hi.u32     r3, ahi, bhi,  0;\n\t"
-      "mad.lo.cc.u32   r2, ahi, bhi, r2;\n\t"
-      "addc.u32        r3, r3,  0;      \n\t"
-      "mov.b64         %0, {r2,r3};     \n\t"
-      "}"
-      : "=l"(__res64)
-      : "l"(__a64), "l"(__b64));
-  __res = ::cuda::std::bit_cast<__uint32x2>(__res64);
-#else
-  // Split inputs into 32-bit parts
-  uint32_t __alo = __a.x[0];
-  uint32_t __ahi = __a.x[1];
-  uint32_t __blo = __b.x[0];
-  uint32_t __bhi = __b.x[1];
+  NV_IF_TARGET(NV_IS_DEVICE,
+               ({
+                 uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a);
+                 uint64_t __b64 = ::cuda::std::bit_cast<uint64_t>(__b);
+                 uint64_t __res64;
+                 asm("{\n\t"
+                     ".reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;\n\t"
+                     "mov.b64         {alo,ahi}, %1;   \n\t"
+                     "mov.b64         {blo,bhi}, %2;   \n\t"
+                     "mad.lo.cc.u32   r1, alo, bhi, 0;\n\t"
+                     "madc.hi.u32     r2, alo, bhi,  0;\n\t"
+                     "mad.lo.cc.u32   r1, ahi, blo, r1;\n\t"
+                     "madc.hi.cc.u32  r2, ahi, blo, r2;\n\t"
+                     "madc.hi.u32     r3, ahi, bhi,  0;\n\t"
+                     "mad.lo.cc.u32   r2, ahi, bhi, r2;\n\t"
+                     "addc.u32        r3, r3,  0;      \n\t"
+                     "mov.b64         %0, {r2,r3};     \n\t"
+                     "}"
+                     : "=l"(__res64)
+                     : "l"(__a64), "l"(__b64));
+                 return ::cuda::std::bit_cast<__uint32x2>(__res64);
+               }),
+               ({
+                 // Split inputs into 32-bit parts
+                 uint32_t __alo = __a.x[0];
+                 uint32_t __ahi = __a.x[1];
+                 uint32_t __blo = __b.x[0];
+                 uint32_t __bhi = __b.x[1];
 
-  // Compute partial products that contribute to high 64 bits
-  uint64_t __lo_hi = uint64_t(__alo) * __bhi; // (a.lo * b.hi)
-  uint64_t __hi_lo = uint64_t(__ahi) * __blo; // (a.hi * b.lo)
-  uint64_t __hi_hi = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
+                 // Compute partial products that contribute to high 64 bits
+                 uint64_t __lo_hi = uint64_t(__alo) * __bhi; // (a.lo * b.hi)
+                 uint64_t __hi_lo = uint64_t(__ahi) * __blo; // (a.hi * b.lo)
+                 uint64_t __hi_hi = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
 
-  // Extract high parts and combine
-  uint32_t __lo_hi_hi = uint32_t(__lo_hi >> 32);
-  uint32_t __hi_lo_hi = uint32_t(__hi_lo >> 32);
-  uint32_t __hi_hi_lo = uint32_t(__hi_hi);
-  uint32_t __hi_hi_hi = uint32_t(__hi_hi >> 32);
+                 // Extract high parts and combine
+                 uint32_t __lo_hi_hi = uint32_t(__lo_hi >> 32);
+                 uint32_t __hi_lo_hi = uint32_t(__hi_lo >> 32);
+                 uint32_t __hi_hi_lo = uint32_t(__hi_hi);
+                 uint32_t __hi_hi_hi = uint32_t(__hi_hi >> 32);
 
-  // Combine high parts with carries
-  uint64_t __hi = uint64_t(__lo_hi_hi) + __hi_lo_hi + __hi_hi_lo;
+                 // Combine high parts with carries
+                 uint64_t __hi = uint64_t(__lo_hi_hi) + __hi_lo_hi + __hi_hi_lo;
 
-  // Store high result
-  __res.x[0] = uint32_t(__hi);
-  __res.x[1] = uint32_t(__hi >> 32) + __hi_hi_hi;
-#endif
-  return __res;
+                 // Store high result
+                 __uint32x2 __res;
+                 __res.x[0] = uint32_t(__hi);
+                 __res.x[1] = uint32_t(__hi >> 32) + __hi_hi_hi;
+                 return __res;
+               }))
 } //__mul_64
 
 //! @brief Multiply two 64-bit integers and return the full 128-bit result
@@ -698,7 +706,7 @@ _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @param b_ Second 64-bit multiplicand as two 32-bit integers
 //! @return The full 128-bit multiplication result as four 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   __uint32x4 __res;
 
@@ -727,26 +735,29 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
   __res.lo.x[0] = __lo_lo_lo;
   __res.lo.x[1] = __mid_lo;
 
-#if defined __CUDA_ARCH__
-  uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
-  uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
-  uint64_t __res64 = __umul64hi(__a64, __b64);
-  __res.hi         = ::cuda::std::bit_cast<__uint32x2>(__res64);
-#else
-  uint64_t __hi_hi    = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
-  uint32_t __lo_hi_hi = uint32_t(__lo_hi >> 32);
-  uint32_t __hi_lo_hi = uint32_t(__hi_lo >> 32);
-  uint32_t __hi_hi_lo = uint32_t(__hi_hi);
-  uint32_t __mid_hi   = uint32_t(__mid >> 32);
-  uint64_t __hi       = uint64_t(__mid_hi) + __lo_hi_hi + __hi_lo_hi + __hi_hi_lo;
-  uint32_t __hi_hi_hi = uint32_t(__hi_hi >> 32);
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    ({
+      uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
+      uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
+      uint64_t __res64 = __umul64hi(__a64, __b64);
+      __res.hi         = ::cuda::std::bit_cast<__uint32x2>(__res64);
+    }),
+    ({
+      uint64_t __hi_hi    = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
+      uint32_t __lo_hi_hi = uint32_t(__lo_hi >> 32);
+      uint32_t __hi_lo_hi = uint32_t(__hi_lo >> 32);
+      uint32_t __hi_hi_lo = uint32_t(__hi_hi);
+      uint32_t __mid_hi   = uint32_t(__mid >> 32);
+      uint64_t __hi       = uint64_t(__mid_hi) + __lo_hi_hi + __hi_lo_hi + __hi_hi_lo;
+      uint32_t __hi_hi_hi = uint32_t(__hi_hi >> 32);
 
-  // Store high result
-  __res.hi.x[0] = uint32_t(__hi);
-  __res.hi.x[1] = uint32_t(__hi >> 32) + __hi_hi_hi;
-#endif
+      // Store high result
+      __res.hi.x[0] = uint32_t(__hi);
+      __res.hi.x[1] = uint32_t(__hi >> 32) + __hi_hi_hi;
+    }))
   return __res;
-} //__mul_128
+}
 
 //! @brief Shift a 64-bit value left by a specified amount
 //!
@@ -756,7 +767,7 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @param man The 64-bit value to shift as two 32-bit integers
 //! @param shift The number of bits to shift (positive for left shift)
 //! @return The shifted value as two 32-bit integers
-_CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
 {
   uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
   __man64 <<= __shift;
@@ -771,12 +782,10 @@ _CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
 //! @param man The 64-bit value to shift as two 32-bit integers
 //! @param shift The number of bits to shift (positive for right shift)
 //! @return The shifted value as two 32-bit integers
-_CCCL_TRIVIAL_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
 {
   uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0; }))
   __man64 = __man64 >> __shift;
   return ::cuda::std::bit_cast<__uint32x2>(__man64);
 } //__shr_64
@@ -795,67 +804,64 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
 //!
 //! Uses CUDA intrinsics on device; host falls back to native multiply (RN).
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API float __fmul_dir(float __x, float __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API float __fmul_dir(float __x, float __y) noexcept
 {
-#if defined(__CUDA_ARCH__)
-  if constexpr (_Rm == __fpemu_rounding::rn)
-  {
-    return __fmul_rn(__x, __y);
-  }
-  else if constexpr (_Rm == __fpemu_rounding::rz)
-  {
-    return __fmul_rz(__x, __y);
-  }
-  else if constexpr (_Rm == __fpemu_rounding::ru)
-  {
-    return __fmul_ru(__x, __y);
-  }
-  else
-  {
-    return __fmul_rd(__x, __y);
-  }
-#else
-  (void) _Rm;
-  return __x * __y;
-#endif
-} //__fmul_dir
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      if constexpr (_Rm == __fpemu_rounding::rn)
+                      {
+                        return __fmul_rn(__x, __y);
+                      }
+                      else if constexpr (_Rm == __fpemu_rounding::rz)
+                      {
+                        return __fmul_rz(__x, __y);
+                      }
+                      else if constexpr (_Rm == __fpemu_rounding::ru)
+                      {
+                        return __fmul_ru(__x, __y);
+                      }
+                      else
+                      {
+                        return __fmul_rd(__x, __y);
+                      }
+                    }),
+                    ({ return __x * __y; }))
+}
 
 //! @brief Single-precision add with directed rounding (fast add paths)
 //!
 //! Uses CUDA intrinsics on device; host falls back to native add (RN).
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API float __fadd_dir(float __x, float __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API float __fadd_dir(float __x, float __y) noexcept
 {
-#if defined(__CUDA_ARCH__)
-  if constexpr (_Rm == __fpemu_rounding::rn)
-  {
-    return __fadd_rn(__x, __y);
-  }
-  else if constexpr (_Rm == __fpemu_rounding::rz)
-  {
-    return __fadd_rz(__x, __y);
-  }
-  else if constexpr (_Rm == __fpemu_rounding::ru)
-  {
-    return __fadd_ru(__x, __y);
-  }
-  else
-  {
-    return __fadd_rd(__x, __y);
-  }
-#else
-  (void) _Rm;
-  return __x + __y;
-#endif
-} //__fadd_dir
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      if constexpr (_Rm == __fpemu_rounding::rn)
+                      {
+                        return __fadd_rn(__x, __y);
+                      }
+                      else if constexpr (_Rm == __fpemu_rounding::rz)
+                      {
+                        return __fadd_rz(__x, __y);
+                      }
+                      else if constexpr (_Rm == __fpemu_rounding::ru)
+                      {
+                        return __fadd_ru(__x, __y);
+                      }
+                      else
+                      {
+                        return __fadd_rd(__x, __y);
+                      }
+                    }),
+                    ({ return __x + __y; }))
+}
 
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
 {
   uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0; }))
+
   if (__shift <= 0)
   {
     return __man;
@@ -884,11 +890,11 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __
 
 //! @brief Logical right shift of 128-bit mantissa with directed rounding
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_rnd(__fpemu_uint128 __man, int __shift, bool __sign = false) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpemu_uint128
+__shr_128_rnd(__fpemu_uint128 __man, int __shift, bool __sign = false) noexcept
 {
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? ((__shift > 127) ? 127 : __shift) : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? ((__shift > 127) ? 127 : __shift) : 0; }))
+
   if (__shift <= 0)
   {
     return __man;
@@ -925,7 +931,7 @@ _CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_rnd(__fpemu_uint128 __man, int __shi
 
 //! @brief Logical right shift of 128-bit mantissa with jam (sticky) only.
 //! Used during FMA alignment; directed rounding is deferred to the pack epilogue.
-_CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_jam(__fpemu_uint128 __man, int __shift) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpemu_uint128 __shr_128_jam(__fpemu_uint128 __man, int __shift) noexcept
 {
   return __shr_128_rnd<__fpemu_rounding::rn>(__man, __shift);
 } //__shr_128_jam
@@ -940,11 +946,10 @@ _CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_jam(__fpemu_uint128 __man, int __shi
 //! @param shift The number of bits to shift (positive for right shift)
 //! @return The shifted and rounded value as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
 {
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0; }))
+
   int64_t __man64  = ::cuda::std::bit_cast<int64_t>(__man);
   __man64          = __man64 >> __shift;
   __uint32x2 __res = ::cuda::std::bit_cast<__uint32x2>(__man64);
@@ -964,11 +969,10 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
 //! @param sign Result sign (used for directed rounding modes ru/rd)
 //! @return The shifted and rounded value as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high, __fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
 {
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0; }))
+
   int64_t __man64     = ::cuda::std::bit_cast<int64_t>(__man);
   int64_t __man64_res = __man64 >> __shift;
   __uint32x2 __res    = ::cuda::std::bit_cast<__uint32x2>(__man64_res);
@@ -1012,7 +1016,7 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
 //! @param __v The input number as two 32-bit integers
 //! @return The extracted exponent value
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __v) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __unpack_exp(__uint32x2 __v) noexcept
 {
   int32_t __exp;
 
@@ -1057,7 +1061,7 @@ _CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __v) noexcept
 //! @param is_zero_exp Whether the exponent is zero (denormal case)
 //! @return The extracted mantissa as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __v, bool __is_zero_exp) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __v, bool __is_zero_exp) noexcept
 {
   __uint32x2 __man32x2;
 
@@ -1089,7 +1093,8 @@ _CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __v, bool __
 //! @param exp   Output unbiased exponent field
 //! @param man   Output mantissa as two 32-bit integers
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API void __fp64_ovfl_sat([[maybe_unused]] bool __sign, int32_t& __exp, __uint32x2& __man) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API void
+__fp64_ovfl_sat([[maybe_unused]] bool __sign, int32_t& __exp, __uint32x2& __man) noexcept
 {
   if constexpr (_Rm == __fpemu_rounding::rz)
   {
@@ -1142,7 +1147,7 @@ _CCCL_TRIVIAL_API void __fp64_ovfl_sat([[maybe_unused]] bool __sign, int32_t& __
 //! @param man The mantissa as two 32-bit integers
 //! @return The packed 64-bit double precision number
 template <fpemu_accuracy _Acc = fpemu_accuracy::high, __fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man) noexcept
 {
   bool __zero_mantissa = __man.x[0] == 0 && __man.x[1] == 0;
   bool __is_nan        = false;
@@ -1226,7 +1231,7 @@ _CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man)
 //!
 //! @param c The 64-bit value to convert as two 32-bit integers
 //! @return The two's complement of the input value
-_CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 {
   uint64_t __c64   = ::cuda::std::bit_cast<uint64_t>(__c);
   uint64_t __res64 = 0 - __c64; // IMAD.WIDE.U32 Rd, RZ, RZ, -Rc
@@ -1240,7 +1245,7 @@ _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 //!
 //! @param x The 64-bit value to analyze as two 32-bit integers
 //! @return The position of the most significant set bit (0-based)
-_CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __flo_s64(__uint32x2 __x) noexcept
 {
   int64_t __x64 = ::cuda::std::bit_cast<int64_t>(__x);
   return ::cuda::std::countl_zero((uint64_t) (__x64 << 1));
@@ -1253,7 +1258,7 @@ _CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
 //!
 //! @param x The 64-bit value to analyze as two 32-bit integers
 //! @return The position of the most significant set bit (0-based)
-_CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __flo_u64(__uint32x2 __x) noexcept
 {
   uint64_t __x64 = ::cuda::std::bit_cast<uint64_t>(__x);
   // Skip sign bit
@@ -1268,7 +1273,7 @@ _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
 //! @param a First operand as two 32-bit integers
 //! @param b Second operand as two 32-bit integers
 //! @return The sum as two 32-bit integers
-_CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
   uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
@@ -1284,7 +1289,7 @@ _CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @param a First operand as two 32-bit integers
 //! @param b Second operand as two 32-bit integers
 //! @return The difference as two 32-bit integers
-_CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
   uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
@@ -1303,7 +1308,7 @@ _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @param sign Result sign (used for directed rounding modes ru/rd)
 //! @return The rounded value as two 32-bit integers
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
 {
   uint64_t __man64                              = ::cuda::std::bit_cast<uint64_t>(__man);
   const int __rshift                            = static_cast<int>(__fpemu_extra_bits) + __shift;
@@ -1365,7 +1370,7 @@ _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool _
 // ============================================================================
 
 //! @brief Right shift keeping a sticky bit.
-_CCCL_TRIVIAL_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t __dist) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t __dist) noexcept
 {
   return (__dist < 63) ? (__a >> __dist) | ((uint64_t) ((__a << ((0u - __dist) & 63)) != 0)) : (uint64_t) (__a != 0);
 } // __internal_fp64emu_shr_jam64
@@ -1374,7 +1379,8 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t _
 //!        bit at bit 62 and whose 'exp' is the biased exponent minus one.
 //!        Shared by divide and square root (square root passes sign = false).
 template <__fpemu_rounding _Rm>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_round_pack(bool __sign, int32_t __exp, uint64_t __sig) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64
+__internal_fp64emu_round_pack(bool __sign, int32_t __exp, uint64_t __sig) noexcept
 {
   constexpr bool __round_near_even = (_Rm == __fpemu_rounding::rn);
   uint32_t __round_increment       = 0x200;

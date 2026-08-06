@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -32,7 +32,7 @@
 // implicit conversion to basic_vec (sizeof(U) == Bytes)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_implicit_conv()
+TEST_HOST_DEVICE_FUNC constexpr void test_implicit_conv()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -52,7 +52,7 @@ TEST_FUNC constexpr void test_implicit_conv()
 // explicit conversion to basic_vec (sizeof(U) != Bytes)
 
 template <int Bytes, typename U, int N>
-TEST_FUNC constexpr void test_explicit_conv()
+TEST_HOST_DEVICE_FUNC constexpr void test_explicit_conv()
 {
   static_assert(sizeof(U) != Bytes);
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
@@ -74,7 +74,7 @@ TEST_FUNC constexpr void test_explicit_conv()
 // to_bitset
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_to_bitset()
+TEST_HOST_DEVICE_FUNC constexpr void test_to_bitset()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask(true);
@@ -105,7 +105,7 @@ TEST_FUNC constexpr void test_to_bitset()
 
 // N is guaranteed to be in [1, 64]
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_to_ullong()
+TEST_HOST_DEVICE_FUNC constexpr void test_to_ullong()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask(true);
@@ -138,7 +138,7 @@ TEST_FUNC constexpr void test_to_ullong()
 // SFINAE constraints
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_sfinae_negative()
+TEST_HOST_DEVICE_FUNC constexpr void test_sfinae_negative()
 {
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
@@ -152,7 +152,7 @@ TEST_FUNC constexpr void test_sfinae_negative()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_size()
 {
   test_to_bitset<Bytes, N>();
   test_to_ullong<Bytes, N>();
@@ -160,13 +160,13 @@ TEST_FUNC constexpr void test_size()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_size<Bytes, 1>();
   test_size<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

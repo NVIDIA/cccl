@@ -37,12 +37,14 @@ struct __fn
     return __array;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
   _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
   _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
@@ -69,12 +71,14 @@ struct __fn
     return __array + _Np;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
   _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
   _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {

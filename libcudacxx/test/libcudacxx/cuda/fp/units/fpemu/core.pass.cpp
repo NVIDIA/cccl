@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -22,7 +25,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 
 // Runs mul/add/div/sub/fma through the raw __fpbits64 emulation cores and checks
 // each against the native double reference. Returns true on success.
-TEST_FUNC void test(double dx, double dy, double dz)
+TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
   __fpbits64 ex = __fp64emu_from_double(dx);
   __fpbits64 ey = __fp64emu_from_double(dy);

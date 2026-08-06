@@ -14,9 +14,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-env
   // Source data: 3 buffers of different sizes laid out contiguously
@@ -101,7 +101,7 @@ struct BatchedMemcpyPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-tuning
   // Source data: 3 buffers laid out contiguously

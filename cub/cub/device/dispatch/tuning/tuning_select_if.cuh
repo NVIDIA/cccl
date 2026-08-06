@@ -18,6 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/prefetch.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -43,13 +44,15 @@ struct SelectLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+  detail::LoadPrefetch _load_prefetch = detail::LoadPrefetch::none; //!< Implementation detail; do not use directly
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SelectLookbackPolicy& lhs, const SelectLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay
+        && lhs._load_prefetch == rhs._load_prefetch;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -62,9 +65,10 @@ struct SelectLookbackPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
   {
     return os
-        << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+        << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .lookback_delay = " << p.lookback_delay << ", ._load_prefetch = " << p._load_prefetch << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -78,7 +82,7 @@ enum class SelectAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(SelectAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(SelectAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -102,12 +106,14 @@ struct SelectPolicy
   SelectLookbackPolicy lookback; //!< The policy for the selection algorithm based on decoupled-lookback. Only used when
                                  //!< @p algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -129,7 +135,7 @@ enum class PartitionAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(PartitionAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(PartitionAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -190,13 +196,13 @@ struct PartitionPolicy
   PartitionLookbackPolicy lookback; //!< The policy for the partition algorithm based on decoupled-lookback. Only used
                                     //!< when algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

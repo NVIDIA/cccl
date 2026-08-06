@@ -95,19 +95,25 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
-  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
+  template <class _Up,
+            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                             = 0,
+            enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
   template <class _Up,
+            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                              = 0,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<_Tp, _Up>, int>                                      = 0>
   _CCCL_API explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
+
+  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
+  _CCCL_HOST_DEVICE_API complex(const complex<_Up>& __c);
 
   _CCCL_API constexpr complex& operator=(const value_type& __re)
   {
@@ -116,13 +122,16 @@ public:
     return *this;
   }
 
-  template <class _Up>
+  template <class _Up, enable_if_t<!__is_extended_floating_point_v<_Up>, int> = 0>
   _CCCL_API constexpr complex& operator=(const complex<_Up>& __c)
   {
     __re_ = __c.real();
     __im_ = __c.imag();
     return *this;
   }
+
+  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
+  _CCCL_HOST_DEVICE_API constexpr complex& operator=(const complex<_Up>& __c);
 
 #if _CCCL_HOSTED()
   template <class _Up>
@@ -235,6 +244,7 @@ _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_
 }
 
 // 26.3.6 operators:
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -243,6 +253,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -251,6 +262,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -259,6 +271,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -267,6 +280,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -275,6 +289,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -282,6 +297,7 @@ template <class _Tp>
   __t += __x;
   return __t;
 }
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
@@ -395,6 +411,7 @@ template <class _Tp>
   return complex<_Tp>(__x, __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator*(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -403,6 +420,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator*(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -411,6 +429,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
@@ -510,12 +529,14 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   return complex<_Tp>(__x, __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator/(const complex<_Tp>& __x, const _Tp& __y)
 {
   return complex<_Tp>(__x.real() / __y, __x.imag() / __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -524,24 +545,28 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x)
 {
   return __x;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x)
 {
   return complex<_Tp>(-__x.real(), -__x.imag());
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return __x.real() == __y.real() && __x.imag() == __y.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -549,18 +574,21 @@ template <class _Tp>
 }
 
 #if _CCCL_STD_VER <= 2017
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const _Tp& __x, const complex<_Tp>& __y)
 {
   return __x == __y.real() && _Tp(0) == __y.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -575,6 +603,7 @@ template <class _Tp>
 #endif // _CCCL_STD_VER <= 2017
 
 #if _CCCL_HOSTED()
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -583,6 +612,7 @@ template <class _Tp, class _Up>
 }
 
 #  if _CCCL_STD_VER <= 2017
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
@@ -590,12 +620,14 @@ template <class _Tp, class _Up>
       && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
   return !(__x == __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
@@ -606,6 +638,7 @@ template <class _Tp, class _Up>
 
 // real
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp real(const complex<_Tp>& __c)
 {
@@ -640,6 +673,7 @@ using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::
 template <class _Tp>
 using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __cccl_complex_value_type<_Tp> real(_Tp __re)
 {
@@ -648,12 +682,14 @@ template <class _Tp>
 
 // imag
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp imag(const complex<_Tp>& __c)
 {
   return __c.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __cccl_complex_value_type<_Tp> imag(_Tp)
 {

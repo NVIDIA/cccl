@@ -11,6 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -23,7 +26,7 @@ static_assert(cuda::std::is_trivially_copyable_v<fp64emu>, "fp64emu must be triv
 static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked>, "fp64emu_unpacked must be trivially copyable");
 
 // Round-trip both the packed and unpacked types through a volatile object.
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Packed type (fp64emu).
   {

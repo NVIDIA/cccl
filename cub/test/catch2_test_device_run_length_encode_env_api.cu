@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_length_encode][env]", CUB_SMALL)
 {
   // example-begin encode-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -47,7 +47,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
   REQUIRE(num_runs_out == expected_num_runs);
 }
 
-C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "[run_length_encode][env]", CUB_SMALL)
 {
   // example-begin non-trivial-runs-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -98,7 +98,9 @@ struct RleNonTrivialRunsPolicySelector
 };
 // example-end non-trivial-runs-policy-selector
 
-C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts a custom policy selector", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts a custom policy selector",
+         "[run_length_encode][env]",
+         CUB_SMALL)
 {
   // example-begin non-trivial-runs-tuning
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

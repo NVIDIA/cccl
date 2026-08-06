@@ -16,7 +16,7 @@
 #include <cmath>
 
 #include "catch2_test_block_topk_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace
 {
@@ -103,7 +103,8 @@ struct block_shape
 using block_shapes_full_tile =
   c2h::type_list<block_shape<64, 8>, block_shape<256, 2>, block_shape<32, 16>, block_shape<128, 4>>;
 
-C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_key_types, select_direction_max)
+CUB_TEST(
+  "block_topk preserves keys across FP edge cases", "[block][topk]", CUB_SMALL, fp_key_types, select_direction_max)
 {
   using key_t                            = c2h::get<0, TestType>;
   static constexpr bool select_max       = c2h::get<1, TestType>::value;
@@ -147,8 +148,9 @@ C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_k
   }
 }
 
-C2H_TEST("block_topk::select_* selects the right top-k on a full tile",
+CUB_TEST("block_topk::select_* selects the right top-k on a full tile",
          "[block][topk]",
+         CUB_SMALL,
          fp_key_types,
          block_shapes_full_tile,
          select_direction_max)
@@ -190,7 +192,7 @@ C2H_TEST("block_topk::select_* selects the right top-k on a full tile",
   }
 }
 
-C2H_TEST("block_topk::{Min,Max}Keys preserve -0.0 in output", "[block][topk][float]", select_direction_max)
+CUB_TEST("block_topk::{Min,Max}Keys preserve -0.0 in output", "[block][topk][float]", CUB_SMALL, select_direction_max)
 {
   static constexpr bool select_max       = c2h::get<0, TestType>::value;
   static constexpr int threads_per_block = 128;
