@@ -160,10 +160,12 @@ function(libcudacxx_add_pretty_printer_test)
     NO_CLANG_TIDY
     SOURCES ${pretty_printer_SOURCES}
   )
+  target_link_libraries(${target_name} PRIVATE libcudacxx.compiler_interface)
+
   # Explicitly set max optimization, the printers should work even when everything is
   # compiled out.
   target_compile_options(${target_name} PRIVATE -O3)
-  target_link_libraries(${target_name} PRIVATE libcudacxx.compiler_interface)
+  target_compile_definitions(${target_name} PRIVATE NDEBUG)
 
   foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
     string(TOUPPER "${debugger}" DEBUGGER_UPPER)
@@ -182,14 +184,14 @@ function(libcudacxx_add_pretty_printer_test)
       NAME ${test_name}
       COMMAND
         # gersemi: off
-      "${Python_EXECUTABLE}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_pretty_printer_test.py"
-      --debugger "${debugger}"
-      --debugger-executable "${executable}"
-      --program "$<TARGET_FILE:${target_name}>"
-      --formatter-init "${formatter}"
-      --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
-      --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
-      ${pretty_printer_CASES}
+        "${Python_EXECUTABLE}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_pretty_printer_test.py"
+        --debugger "${debugger}"
+        --debugger-executable "${executable}"
+        --program "$<TARGET_FILE:${target_name}>"
+        --formatter-init "${formatter}"
+        --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
+        --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
+        ${pretty_printer_CASES}
       # gersemi: on
     )
     # Set an aggressive timeout because pretty printers should not be slow. If they are,
