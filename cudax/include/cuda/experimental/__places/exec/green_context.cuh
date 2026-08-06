@@ -703,6 +703,14 @@ UNITTEST("green context data_place allocate/deallocate preserve the current devi
     return;
   }
 
+  // Leave the device we entered with, not device 0, so later tests do not
+  // inherit changed state (the helper constructor itself switches devices).
+  const int entry_dev = cuda_try<cudaGetDevice>();
+  SCOPE(exit)
+  {
+    cuda_try(cudaSetDevice(entry_dev));
+  };
+
   green_context_helper gc_helper(8, 0);
   if (gc_helper.get_count() < 1)
   {
@@ -718,8 +726,6 @@ UNITTEST("green context data_place allocate/deallocate preserve the current devi
 
   dp.deallocate(ptr, 1024 * 1024);
   EXPECT(cuda_try<cudaGetDevice>() == 1);
-
-  cuda_try(cudaSetDevice(0));
 };
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::places
