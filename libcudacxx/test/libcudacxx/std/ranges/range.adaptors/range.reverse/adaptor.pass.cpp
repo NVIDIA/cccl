@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && c++17
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // cuda::std::views::reverse
@@ -37,13 +37,13 @@ inline constexpr bool
 
 struct Pred
 {
-  TEST_FUNC int operator()(int i) const noexcept
+  TEST_HOST_DEVICE_FUNC int operator()(int i) const noexcept
   {
     return i;
   }
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 

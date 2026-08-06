@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class CharT>
-TEST_FUNC void test_advance_to()
+TEST_HOST_DEVICE_FUNC void test_advance_to()
 {
   using Container = cuda::std::inplace_vector<CharT, 3>;
   using OutIt     = cuda::std::__back_insert_iterator<Container>;
@@ -64,7 +64,7 @@ TEST_FUNC void test_advance_to()
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_advance_to<char>();
 #if _CCCL_HAS_CHAR8_T()

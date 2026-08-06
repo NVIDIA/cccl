@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 // error: function-to-pointer decay is unsupported in tile code
 
 // constexpr auto begin();
@@ -23,11 +24,11 @@
 
 struct View : cuda::std::ranges::view_base
 {
-  TEST_FUNC int* begin() const
+  TEST_HOST_DEVICE_FUNC int* begin() const
   {
     return nullptr;
   }
-  TEST_FUNC int* end() const
+  TEST_HOST_DEVICE_FUNC int* end() const
   {
     return nullptr;
   }
@@ -40,7 +41,7 @@ _CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((View), View v)((v.begin()));
 
 struct Pred
 {
-  TEST_FUNC constexpr bool operator()(int i) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -53,7 +54,7 @@ template <bool Ret>
 struct always
 {
   template <class... Args>
-  TEST_FUNC constexpr bool operator()(Args&&...) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(Args&&...) const
   {
     return Ret;
   }
@@ -61,17 +62,17 @@ struct always
 
 struct TrackingPred
 {
-  TEST_FUNC constexpr explicit TrackingPred(bool* moved, bool* copied)
+  TEST_HOST_DEVICE_FUNC constexpr explicit TrackingPred(bool* moved, bool* copied)
       : moved_(moved)
       , copied_(copied)
   {}
-  TEST_FUNC constexpr TrackingPred(TrackingPred const& other)
+  TEST_HOST_DEVICE_FUNC constexpr TrackingPred(TrackingPred const& other)
       : moved_(other.moved_)
       , copied_(other.copied_)
   {
     *copied_ = true;
   }
-  TEST_FUNC constexpr TrackingPred(TrackingPred&& other)
+  TEST_HOST_DEVICE_FUNC constexpr TrackingPred(TrackingPred&& other)
       : moved_(other.moved_)
       , copied_(other.copied_)
   {
@@ -80,7 +81,7 @@ struct TrackingPred
   TrackingPred& operator=(TrackingPred const&) = default;
   TrackingPred& operator=(TrackingPred&&)      = default;
 
-  TEST_FUNC constexpr bool operator()(int i) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -89,13 +90,13 @@ struct TrackingPred
 };
 
 template <class Range, class Iter, class Sent, cuda::std::size_t N>
-TEST_FUNC constexpr auto make_subrange(int (&buffer)[N])
+TEST_HOST_DEVICE_FUNC constexpr auto make_subrange(int (&buffer)[N])
 {
   return Range{Iter{buffer}, Sent{Iter{buffer + N}}};
 }
 
 template <class Iter>
-TEST_FUNC constexpr void testOne()
+TEST_HOST_DEVICE_FUNC constexpr void testOne()
 {
   using Sent  = sentinel_wrapper<Iter>;
   using Range = cuda::std::ranges::subrange<Iter, Sent>;
@@ -155,7 +156,7 @@ TEST_FUNC constexpr void testOne()
   {
     struct LessThan3
     {
-      TEST_FUNC constexpr bool operator()(int i) const
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
       {
         return i < 3;
       }
@@ -183,7 +184,7 @@ TEST_FUNC constexpr void testOne()
     unused(it);
   }
 
-#if !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION() // lambda-to-pointer is invalid
   // Test with a non-const predicate
   {
     auto mutable_pred = [](int& i) mutable {
@@ -197,13 +198,13 @@ TEST_FUNC constexpr void testOne()
     static_assert(cuda::std::same_as<decltype(it), Iter>);
     assert(base(it) == buffer + 2);
   }
-#endif // !TEST_COMPILER(MSVC)
+#endif // !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
 
   // Test with a predicate that takes by non-const reference
   {
     struct LessThan3
     {
-      TEST_FUNC constexpr bool operator()(int& i) const
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int& i) const
       {
         return i < 3;
       }
@@ -240,7 +241,7 @@ TEST_FUNC constexpr void testOne()
   }
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   testOne<cpp17_input_iterator<int*>>();
   testOne<cpp20_input_iterator<int*>>();

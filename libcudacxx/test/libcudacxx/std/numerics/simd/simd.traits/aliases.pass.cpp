@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -27,7 +27,7 @@
 // vec<T, N> resolves to basic_vec<T, deduce-abi-t<T, N>>
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_vec_alias()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_alias()
 {
   using Alias  = simd::vec<T, N>;
   using Direct = simd::basic_vec<T, simd::fixed_size<N>>;
@@ -38,7 +38,7 @@ TEST_FUNC constexpr void test_vec_alias()
 // mask<T, N> resolves to basic_vec<T, deduce-abi-t<T, N>>::mask_type
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_mask_alias()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask_alias()
 {
   using Alias  = simd::mask<T, N>;
   using Direct = typename simd::vec<T, N>::mask_type;
@@ -49,7 +49,7 @@ TEST_FUNC constexpr void test_mask_alias()
 // default N for vec and mask uses native ABI size
 
 template <typename T>
-TEST_FUNC constexpr void test_default_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_default_size()
 {
   using DefaultVec = simd::vec<T>;
   using NativeVec  = simd::basic_vec<T, simd::native<T>>;
@@ -63,7 +63,7 @@ TEST_FUNC constexpr void test_default_size()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_vec_alias<T, N>();
   test_mask_alias<T, N>();
