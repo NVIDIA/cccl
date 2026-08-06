@@ -374,18 +374,14 @@ class DeviceArray:
             consumer = 2
         elif isinstance(consumer_stream, int):
             if consumer_stream < 0:
-                raise ValueError(
-                    f"__dlpack__: invalid stream value {consumer_stream}"
-                )
+                raise ValueError(f"__dlpack__: invalid stream value {consumer_stream}")
             consumer = consumer_stream
         else:
             raise TypeError("__dlpack__: stream must be an int or None")
         producer = self._stream_int
         if consumer == producer or self._nbytes == 0:
             return
-        (err, event) = cudart.cudaEventCreateWithFlags(
-            cudart.cudaEventDisableTiming
-        )
+        (err, event) = cudart.cudaEventCreateWithFlags(cudart.cudaEventDisableTiming)
         if err != cudart.cudaError_t.cudaSuccess:
             raise RuntimeError(f"cudaEventCreateWithFlags failed ({int(err)})")
         try:
