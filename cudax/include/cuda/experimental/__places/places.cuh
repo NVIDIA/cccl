@@ -408,6 +408,9 @@ public:
 
   /**
    * @brief Allocate memory at this data place (raw allocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
@@ -450,6 +453,9 @@ public:
 
   /**
    * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {

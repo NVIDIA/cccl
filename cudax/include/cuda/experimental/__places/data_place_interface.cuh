@@ -133,6 +133,12 @@ public:
   /**
    * @brief Allocate memory at this place
    *
+   * This is a standalone entry point: callers are not required to activate
+   * this place or make any particular device current beforehand, so
+   * implementations must not assume the calling thread's current device (or
+   * context) matches this place. An implementation that needs to switch must
+   * restore the caller's current device before returning.
+   *
    * @param size Size of the allocation in bytes
    * @param stream CUDA stream for stream-ordered allocations
    * @return Pointer to allocated memory
@@ -164,6 +170,9 @@ public:
 
   /**
    * @brief Deallocate memory at this place
+   *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return.
    *
    * @param ptr Pointer to memory to deallocate
    * @param size Size of the allocation
