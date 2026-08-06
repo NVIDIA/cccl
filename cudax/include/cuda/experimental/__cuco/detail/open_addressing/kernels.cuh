@@ -27,6 +27,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
@@ -304,7 +305,7 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
   using __value_type = typename _ContainerRef::value_type;
 
   __shared__ __value_type __buffer[_BlockSize];
-  __shared__ unsigned int __buffer_size;
+  __shared__ ::cuda::std::uint32_t __buffer_size;
 
   constexpr auto __cg_size         = _ContainerRef::cg_size;
   constexpr auto __tiles_per_block = _BlockSize / __cg_size;
@@ -330,8 +331,9 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
       const auto __slot = *(__old_storage.data() + __idx);
       if (__is_filled(__slot))
       {
-        const auto __buffer_idx = ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{__buffer_size}.fetch_add(
-          1, ::cuda::std::memory_order_relaxed);
+        const auto __buffer_idx =
+          ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_block>{__buffer_size}.fetch_add(
+            1, ::cuda::std::memory_order_relaxed);
         __buffer[__buffer_idx] = __slot;
       }
     }

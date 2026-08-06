@@ -481,9 +481,9 @@ public:
 
   // ===== Rehash =====
 
-  //! @brief Regenerates the container without changing its capacity.
+  //! @brief Rebuilds the map in new storage without changing its capacity.
   //!
-  //! This removes erased-key sentinels and reinserts all remaining elements into fresh storage.
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
   //!
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `rehash_async`.
@@ -495,10 +495,10 @@ public:
     __sync(__stream);
   }
 
-  //! @brief Reserves at least the requested number of slots and regenerates the container.
+  //! @brief Changes the map's capacity and rebuilds it in new storage.
   //!
-  //! Changes the capacity to a valid value that is not less than `__capacity`, then reinserts all
-  //! elements into fresh storage.
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
   //!
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `rehash_async`.
@@ -515,9 +515,9 @@ public:
     __sync(__stream);
   }
 
-  //! @brief Asynchronously regenerates the container without changing its capacity.
+  //! @brief Asynchronously rebuilds the map in new storage without changing its capacity.
   //!
-  //! This removes erased-key sentinels and reinserts all remaining elements into fresh storage.
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
   //!
   //! @param[in] __stream CUDA stream used for this operation
   _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
@@ -525,11 +525,10 @@ public:
     __impl->rehash_async(__stream, *this);
   }
 
-  //! @brief Asynchronously reserves at least the requested number of slots and regenerates the
-  //! container.
+  //! @brief Asynchronously changes the map's capacity and rebuilds it in new storage.
   //!
-  //! Changes the capacity to a valid value that is not less than `__capacity`, then reinserts all
-  //! elements into fresh storage.
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
   //!
   //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
   //! @note This overload is only available for dynamically sized containers.

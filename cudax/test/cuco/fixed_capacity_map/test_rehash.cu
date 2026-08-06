@@ -13,14 +13,13 @@
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
-#include <thrust/execution_policy.h>
-#include <thrust/logical.h>
-
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -136,8 +135,9 @@ void require_rehashed_contents(const Map& map, ::cuda::stream_ref stream, Memory
   auto found = ::cuda::make_buffer<mapped_type>(stream, mr, num_keys, mapped_type{0});
   map.find(stream, ::cuda::counting_iterator<key_type>{0}, ::cuda::counting_iterator<key_type>{num_keys}, found.begin());
 
-  const auto policy = ::thrust::cuda::par.on(stream.get());
-  REQUIRE(::thrust::all_of(
+  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+
+  REQUIRE(::cuda::std::all_of(
     policy,
     ::cuda::counting_iterator<int>{0},
     ::cuda::counting_iterator<int>{num_keys},
