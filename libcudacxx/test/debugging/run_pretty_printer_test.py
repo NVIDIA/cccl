@@ -32,8 +32,10 @@ _MARKER_PATTERN = re.compile(
 )
 _LLDB_ECHO_PATTERN = re.compile(r"^\s*\(lldb\)\s")
 _GDB_VALUE_PREFIX_PATTERN = re.compile(r"^\s*\$\d+ = ")
+_TEMPLATE_PATTERN = re.compile(r">\s+>")
 _NONZERO_HEX_PATTERN = re.compile(r"\b0x(?!0+\b)[0-9a-fA-F]+\b")
 _STREAM_UNIQUE_ID_PATTERN = re.compile(r"(?<=unique_id=)\d+")
+_NUMERIC_LITERAL_PATTERN = re.compile(r"\b(\d+)[uUlL]*(?![\w.])")
 
 
 class HarnessError(RuntimeError):
@@ -533,9 +535,10 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
     for line in output.splitlines():
         line = debugger.normalize_line(line.rstrip())
         # Some debuggers may print C++98 style > > for multiple templates.
-        line = re.sub(r">\s+>", ">>", line)
+        line = _TEMPLATE_PATTERN.sub(">>", line)
         line = _NONZERO_HEX_PATTERN.sub("<address>", line)
         line = _STREAM_UNIQUE_ID_PATTERN.sub("<id>", line)
+        line = _NUMERIC_LITERAL_PATTERN.sub(r"\1", line)
         normalized_lines.append(line)
     return "\n".join(normalized_lines) + "\n"
 
