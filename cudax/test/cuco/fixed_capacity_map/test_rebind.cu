@@ -13,14 +13,13 @@
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
-#include <thrust/execution_policy.h>
-#include <thrust/logical.h>
-
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -170,7 +169,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   constexpr int keys_per_block   = threads / cg_size;
 
   ::cuda::stream stream{::cuda::device_ref{0}};
-  const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   const probing_type probing_scheme = [&] {
     if constexpr (probing == 0)
@@ -237,7 +236,9 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   contains_with_rebound_ref<<<(num_keys + keys_per_block - 1) / keys_per_block, threads, 0, stream.get()>>>(
     ref, offset, num_keys, found.data());
   REQUIRE(cudaGetLastError() == cudaSuccess);
-  REQUIRE(::thrust::all_of(::thrust::cuda::par.on(stream.get()), found.data(), found.data() + num_keys, is_nonzero{}));
+  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+
+  REQUIRE(::cuda::std::all_of(policy, found.data(), found.data() + num_keys, is_nonzero{}));
 }
 
 C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][rebind][static]")
