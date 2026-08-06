@@ -24,13 +24,20 @@ int main()
   constexpr std::size_t num_items = 1 << 16;
   constexpr int input_value       = 2;
   constexpr int input_weight      = 3;
-  const std::vector<int> values(num_items, input_value);
-  const std::vector<int> weights(num_items, input_weight);
+  constexpr int sentinel_value    = 5;
+  constexpr int sentinel_weight   = 7;
+
+  std::vector<int> values(num_items, input_value);
+  std::vector<int> weights(num_items, input_weight);
+  values[num_items / 2]  = sentinel_value;
+  weights[num_items / 2] = sentinel_weight;
 
   constexpr int dot_product_init = 7;
   const int dot_product =
     std::transform_reduce(std::execution::par, values.begin(), values.end(), weights.begin(), dot_product_init);
-  constexpr int expected_dot_product = dot_product_init + int{num_items} * input_value * input_weight;
+  constexpr int regular_item_count = int{num_items} - 1;
+  constexpr int expected_dot_product =
+    dot_product_init + regular_item_count * input_value * input_weight + sentinel_value * sentinel_weight;
 
   if (dot_product != expected_dot_product)
   {
@@ -49,8 +56,8 @@ int main()
   constexpr int maximum_init           = 0;
   const int maximum_squared_difference = std::transform_reduce(
     std::execution::par, values.begin(), values.end(), weights.begin(), maximum_init, maximum, squared_difference);
-  constexpr int input_difference                    = input_value - input_weight;
-  constexpr int expected_maximum_squared_difference = input_difference * input_difference;
+  constexpr int sentinel_difference                 = sentinel_value - sentinel_weight;
+  constexpr int expected_maximum_squared_difference = sentinel_difference * sentinel_difference;
 
   if (maximum_squared_difference != expected_maximum_squared_difference)
   {
@@ -68,7 +75,8 @@ int main()
   constexpr int sum_of_squares_init = 11;
   const int sum_of_squares =
     std::transform_reduce(std::execution::par, values.begin(), values.end(), sum_of_squares_init, add, square);
-  constexpr int expected_sum_of_squares = sum_of_squares_init + int{num_items} * input_value * input_value;
+  constexpr int expected_sum_of_squares =
+    sum_of_squares_init + regular_item_count * input_value * input_value + sentinel_value * sentinel_value;
 
   if (sum_of_squares != expected_sum_of_squares)
   {
