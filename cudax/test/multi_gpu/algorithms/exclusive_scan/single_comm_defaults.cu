@@ -89,7 +89,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm, overloads default values", )
   SECTION("Default init, op, ident (all)")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::exclusive_scan(comms[i], envs[i], in[i], outputs[i]);
+      cudax::exclusive_scan(cudax::distributed, comms[i], envs[i], in[i], outputs[i]);
     });
     check_outputs();
   }
@@ -97,7 +97,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm, overloads default values", )
   SECTION("Default op, ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::exclusive_scan(comms[i], envs[i], in[i], outputs[i], init);
+      cudax::exclusive_scan(cudax::distributed, comms[i], envs[i], in[i], outputs[i], init);
     });
     check_outputs();
   }
@@ -105,7 +105,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm, overloads default values", )
   SECTION("Default ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::exclusive_scan(comms[i], envs[i], in[i], outputs[i], init, op);
+      cudax::exclusive_scan(cudax::distributed, comms[i], envs[i], in[i], outputs[i], init, op);
     });
     check_outputs();
   }
@@ -113,7 +113,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm, overloads default values", )
   SECTION("Default none")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::exclusive_scan(comms[i], envs[i], in[i], outputs[i], init, op, ident);
+      cudax::exclusive_scan(cudax::distributed, comms[i], envs[i], in[i], outputs[i], init, op, ident);
     });
     check_outputs();
   }

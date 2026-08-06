@@ -9,6 +9,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_segmented_scan.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -320,7 +327,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -579,7 +586,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -848,7 +855,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
@@ -1124,7 +1131,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
@@ -1352,7 +1359,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1609,7 +1616,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1841,7 +1848,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
@@ -2110,7 +2117,7 @@ public:
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
@@ -2374,7 +2381,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
@@ -2654,7 +2661,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 

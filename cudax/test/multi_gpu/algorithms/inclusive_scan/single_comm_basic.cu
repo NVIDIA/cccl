@@ -40,24 +40,9 @@ struct custom_plus
   }
 };
 
-template <class CustomType>
-class less_equal_comparable_t
-{
-public:
-  friend _CCCL_HOST_DEVICE bool operator<=(const CustomType& lhs, const CustomType& rhs)
-  {
-    return lhs.key <= rhs.key;
-  }
-};
-
-using custom_value =
-  c2h::custom_type_t<c2h::accumulateable_t,
-                     c2h::less_comparable_t,
-                     c2h::equal_comparable_t,
-                     c2h::greater_comparable_t,
-                     less_equal_comparable_t>;
-using value_types = c2h::type_list<cuda::std::int32_t, float, custom_value>;
-using operators   = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
+using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::less_comparable_t, c2h::equal_comparable_t>;
+using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
+using operators    = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
 
 static_assert(cudax::nccl_transportable<custom_value>);
 
@@ -154,7 +139,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::inclusive_scan(comms[i], envs[i], in[i], outputs[i], init, op, ident);
+    cudax::inclusive_scan(cudax::distributed, comms[i], envs[i], in[i], outputs[i], init, op, ident);
   });
 
   REQUIRE(in.size() == in_copy.size());
@@ -199,7 +184,7 @@ MULTI_GPU_TEST("inclusive_scan single-comm documentation example", c2h::type_lis
     auto input  = cuda::make_device_buffer<int>(environment, device, input_values);
     auto output = cuda::make_device_buffer<int>(environment, device, input_values.size(), cuda::no_init);
 
-    cudax::inclusive_scan(communicator, environment, input, output.begin(), /*__init=*/0);
+    cudax::inclusive_scan(cudax::distributed, communicator, environment, input, output.begin(), /*__init=*/0);
 
     // Every rank contributes {1, 2}, so rank r starts with a prefix of 3 * r.
     const auto rank = communicator.rank();

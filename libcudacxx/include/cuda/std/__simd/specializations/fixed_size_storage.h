@@ -24,6 +24,7 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/abi.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

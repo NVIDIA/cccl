@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <memory>
 #include <type_traits>
@@ -240,22 +241,32 @@ public:
     }
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
+
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
-    // Set only once both timing events exist and the start event has been recorded.
-    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
-    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
-    bool timing_active = false;
 
     t.start();
 
-    SCOPE(exit)
+    // If things go well, end the task with time measurements.
+    SCOPE(success)
     {
       t.end_uncleared();
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        if (timing_active)
+        if (start_event && end_event)
         {
-          // Inside the noexcept SCOPE(exit) body; keep cuda_safe_call so a CUDA
+          // Inside the noexcept SCOPE body; keep cuda_safe_call so a CUDA
           // error aborts rather than throwing through the guard.
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
@@ -277,6 +288,12 @@ public:
       t.clear();
     };
 
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      t.end();
+    };
+
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
@@ -287,7 +304,6 @@ public:
         start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         cuda_try<cudaEventRecord>(start_event, t.get_stream());
-        timing_active = true;
       }
     }
 
@@ -312,15 +328,19 @@ public:
       user_data_dtor_    = nullptr;
 
       auto callback = [](void* raw) {
-        auto* w = static_cast<decltype(resolved.get())>(raw);
-        SCOPE(exit)
-        {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        // The CUDA runtime calls this back, so an exception thrown by the user code must not
+        // leave it.
+        on_throw(::std::abort) << [raw] {
+          auto* w = static_cast<decltype(resolved.get())>(raw);
+          SCOPE(exit)
           {
-            delete w;
-          }
+            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+          w->first(w->second);
         };
-        w->first(w->second);
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -360,30 +380,32 @@ public:
       auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
-        SCOPE(exit)
-        {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        on_throw(::std::abort) << [untyped_wrapper] {
+          auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
+          SCOPE(exit)
           {
-            delete w;
+            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+
+          constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
+          constexpr bool fun_invocable_task_non_void_deps =
+            reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
+
+          static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                        "Incorrect lambda function signature in host_launch.");
+
+          if constexpr (fun_invocable_task_deps)
+          {
+            ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+          }
+          else if constexpr (fun_invocable_task_non_void_deps)
+          {
+            ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
           }
         };
-
-        constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
-        constexpr bool fun_invocable_task_non_void_deps =
-          reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
-
-        static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
-                      "Incorrect lambda function signature in host_launch.");
-
-        if constexpr (fun_invocable_task_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
-        }
-        else if constexpr (fun_invocable_task_non_void_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
-        }
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)

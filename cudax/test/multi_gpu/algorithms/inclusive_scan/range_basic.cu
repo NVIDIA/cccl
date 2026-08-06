@@ -40,24 +40,9 @@ struct custom_plus
   }
 };
 
-template <class CustomType>
-class less_equal_comparable_t
-{
-public:
-  friend _CCCL_HOST_DEVICE bool operator<=(const CustomType& lhs, const CustomType& rhs)
-  {
-    return lhs.key <= rhs.key;
-  }
-};
-
-using custom_value =
-  c2h::custom_type_t<c2h::accumulateable_t,
-                     c2h::less_comparable_t,
-                     c2h::equal_comparable_t,
-                     c2h::greater_comparable_t,
-                     less_equal_comparable_t>;
-using value_types = c2h::type_list<cuda::std::int32_t, float, custom_value>;
-using operators   = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
+using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::less_comparable_t, c2h::equal_comparable_t>;
+using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
+using operators    = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
 
 static_assert(cudax::nccl_transportable<custom_value>);
 
@@ -138,7 +123,7 @@ void do_inclusive_scan(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::inclusive_scan(comms, envs, in, outputs, init, op, ident);
+  cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op, ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
@@ -182,6 +167,7 @@ MULTI_GPU_TEST("inclusive_scan documentation example", c2h::type_list<int>)
   std::vector<typename cuda::device_buffer<int>::iterator> output_iterators = make_output_iterators(outputs);
 
   cudax::inclusive_scan(
+    cudax::distributed,
     comms,
     // Passing streams as the environment directly
     streams,

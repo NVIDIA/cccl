@@ -88,25 +88,25 @@ MULTI_GPU_TEST("exclusive_scan, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::exclusive_scan(comms, envs, in, outputs);
+    cudax::exclusive_scan(cudax::distributed, comms, envs, in, outputs);
     check_outputs();
   }
 
   SECTION("Default op, ident")
   {
-    cudax::exclusive_scan(comms, envs, in, outputs, init);
+    cudax::exclusive_scan(cudax::distributed, comms, envs, in, outputs, init);
     check_outputs();
   }
 
   SECTION("Default ident")
   {
-    cudax::exclusive_scan(comms, envs, in, outputs, init, op);
+    cudax::exclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op);
     check_outputs();
   }
 
   SECTION("Default none")
   {
-    cudax::exclusive_scan(comms, envs, in, outputs, init, op, ident);
+    cudax::exclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op, ident);
     check_outputs();
   }
 }

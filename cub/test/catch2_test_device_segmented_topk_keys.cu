@@ -18,7 +18,7 @@
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -101,8 +101,9 @@ using key_types =
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -181,8 +182,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -279,8 +281,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -376,8 +379,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and per-segment k",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -475,8 +479,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 }
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
          "[keys][segmented][topk][device][float]",
+         CUB_SMALL,
          select_direction_list)
 {
   constexpr cuda::std::int64_t segment_size                      = 8;
@@ -511,8 +516,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
 
 // Users may pass `k` and `num_segments` un-annotated. A plain integral value is taken as a uniform immediate with no
 // compile-time bound.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,

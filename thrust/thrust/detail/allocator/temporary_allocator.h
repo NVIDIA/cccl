@@ -87,7 +87,7 @@ public:
     return result.first;
   }
 
-  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n) noexcept
+  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     _CCCL_TRY
     {

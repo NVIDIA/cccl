@@ -26,7 +26,8 @@
 #include <cuda/std/__simd/math/common.h>
 #include <cuda/std/__simd/math/comparison.h>
 #include <cuda/std/__simd/math/exponential.h>
-#include <cuda/std/__simd/math/fma_lerp.h>
+#include <cuda/std/__simd/math/fma.h>
+#include <cuda/std/__simd/math/lerp.h>
 #include <cuda/std/__simd/math/manipulation.h>
 #include <cuda/std/__simd/math/min_max.h>
 #include <cuda/std/__simd/math/modulo.h>

@@ -17,6 +17,9 @@
 
 // Test that invalid memory order arguments are diagnosed where possible.
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include <cuda/std/atomic>
 
 int main(int, char**)

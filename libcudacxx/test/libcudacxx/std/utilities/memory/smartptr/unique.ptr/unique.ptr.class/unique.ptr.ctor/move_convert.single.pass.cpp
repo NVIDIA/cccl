@@ -7,8 +7,11 @@
 
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: invalid deduction of host device tile execution space attributes
 
 // <memory>
 
@@ -31,7 +34,7 @@
 // Explicit version
 
 template <class LHS, class RHS>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
 {
   using NewDel = typename LHS::deleter_type;
   static_assert(cuda::std::is_reference<NewDel>::value);
@@ -44,14 +47,14 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
 }
 
 template <class LHS, class RHS>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
 {
   assert(lhs.get_deleter().state() == LHSVal);
   assert(rhs.get_deleter().state() == RHSVal);
 }
 
 template <class LHS, class RHS>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
 {
   assert(lhs.get() == RHSVal);
   assert(rhs.get() == nullptr);
@@ -62,7 +65,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void checkNoneAlive()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void checkNoneAlive()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
@@ -79,10 +82,10 @@ struct NCConvertingDeleter
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 template <class T>
@@ -93,10 +96,10 @@ struct NCConvertingDeleter<T[]>
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 struct NCGenericDeleter
@@ -105,10 +108,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&)                 = delete;
   TEST_CONSTEXPR_CXX23 NCGenericDeleter(NCGenericDeleter&&) = default;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A>; // non-copyable deleters
   using DB  = NCConvertingDeleter<B>;
@@ -152,7 +155,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
     using APtr = cuda::std::unique_ptr<A>;
@@ -176,7 +179,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae();

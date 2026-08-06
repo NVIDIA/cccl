@@ -81,10 +81,76 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_r to do the
+    // rotation. For _Tp > uint32_t we can split the type to 32-bit words, use __funneshift_r to produce the result
+    // words and reorder them based on the __cnt value.
+
+    // clang-tidy doesn't see the content of NV_IF_TARGET, thus thinks the branches are all empty.
+    // NOLINTBEGIN(bugprone-branch-clone)
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x0000);
+                     return static_cast<_Tp>(::__funnelshift_r(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x1010);
+                     return static_cast<_Tp>(::__funnelshift_r(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __hi    = static_cast<uint32_t>(__v >> 32);
+                     const auto __lo    = static_cast<uint32_t>(__v);
+                     const auto __res_a = ::__funnelshift_r(__lo, __hi, __cnt);
+                     const auto __res_b = ::__funnelshift_r(__hi, __lo, __cnt);
+                     return (static_cast<uint32_t>(__cnt) % 64 < 32)
+                            ? (uint64_t{__res_b} << 32) | __res_a
+                            : (uint64_t{__res_a} << 32) | __res_b;
+                   }))
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __w0 = static_cast<uint32_t>(__v);
+                     const auto __w1 = static_cast<uint32_t>(__v >> 32);
+                     const auto __w2 = static_cast<uint32_t>(__v >> 64);
+                     const auto __w3 = static_cast<uint32_t>(__v >> 96);
+
+                     const auto __res_0 = ::__funnelshift_r(__w0, __w1, __cnt);
+                     const auto __res_1 = ::__funnelshift_r(__w1, __w2, __cnt);
+                     const auto __res_2 = ::__funnelshift_r(__w2, __w3, __cnt);
+                     const auto __res_3 = ::__funnelshift_r(__w3, __w0, __cnt);
+
+                     const auto __cnt_u     = static_cast<uint32_t>(__cnt);
+                     const auto __word_rot1 = (__cnt_u & 32) != 0;
+                     const auto __word_rot2 = (__cnt_u & 64) != 0;
+
+                     const auto __tmp_0 = __word_rot1 ? __res_1 : __res_0;
+                     const auto __tmp_1 = __word_rot1 ? __res_2 : __res_1;
+                     const auto __tmp_2 = __word_rot1 ? __res_3 : __res_2;
+                     const auto __tmp_3 = __word_rot1 ? __res_0 : __res_3;
+
+                     const auto __out_0 = __word_rot2 ? __tmp_2 : __tmp_0;
+                     const auto __out_1 = __word_rot2 ? __tmp_3 : __tmp_1;
+                     const auto __out_2 = __word_rot2 ? __tmp_0 : __tmp_2;
+                     const auto __out_3 = __word_rot2 ? __tmp_1 : __tmp_3;
+
+                     return (__uint128_t{__out_3} << 96) | (__uint128_t{__out_2} << 64) | (__uint128_t{__out_1} << 32)
+                          | __out_0;
+                   }))
+    }
+#  endif // _CCCL_HAS_INT128()
+    // NOLINTEND(bugprone-branch-clone)
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATERIGHT8)
@@ -123,10 +189,76 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_l to do the
+    // rotation. For _Tp > uint32_t we can split the type to 32-bit words, use __funneshift_l to produce the result
+    // words and reorder them based on the __cnt value.
+
+    // clang-tidy doesn't see the content of NV_IF_TARGET, thus thinks the branches are all empty.
+    // NOLINTBEGIN(bugprone-branch-clone)
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x0000);
+                     return static_cast<_Tp>(::__funnelshift_l(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x1010);
+                     return static_cast<_Tp>(::__funnelshift_l(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __hi    = static_cast<uint32_t>(__v >> 32);
+                     const auto __lo    = static_cast<uint32_t>(__v);
+                     const auto __res_a = ::__funnelshift_l(__lo, __hi, __cnt);
+                     const auto __res_b = ::__funnelshift_l(__hi, __lo, __cnt);
+                     return (static_cast<uint32_t>(__cnt) % 64 < 32)
+                            ? (uint64_t{__res_a} << 32) | __res_b
+                            : (uint64_t{__res_b} << 32) | __res_a;
+                   }))
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __w0 = static_cast<uint32_t>(__v);
+                     const auto __w1 = static_cast<uint32_t>(__v >> 32);
+                     const auto __w2 = static_cast<uint32_t>(__v >> 64);
+                     const auto __w3 = static_cast<uint32_t>(__v >> 96);
+
+                     const auto __res_0 = ::__funnelshift_l(__w3, __w0, __cnt);
+                     const auto __res_1 = ::__funnelshift_l(__w0, __w1, __cnt);
+                     const auto __res_2 = ::__funnelshift_l(__w1, __w2, __cnt);
+                     const auto __res_3 = ::__funnelshift_l(__w2, __w3, __cnt);
+
+                     const auto __cnt_u     = static_cast<uint32_t>(__cnt);
+                     const auto __word_rot1 = (__cnt_u & 32) != 0;
+                     const auto __word_rot2 = (__cnt_u & 64) != 0;
+
+                     const auto __tmp_0 = __word_rot1 ? __res_3 : __res_0;
+                     const auto __tmp_1 = __word_rot1 ? __res_0 : __res_1;
+                     const auto __tmp_2 = __word_rot1 ? __res_1 : __res_2;
+                     const auto __tmp_3 = __word_rot1 ? __res_2 : __res_3;
+
+                     const auto __out_0 = __word_rot2 ? __tmp_2 : __tmp_0;
+                     const auto __out_1 = __word_rot2 ? __tmp_3 : __tmp_1;
+                     const auto __out_2 = __word_rot2 ? __tmp_0 : __tmp_2;
+                     const auto __out_3 = __word_rot2 ? __tmp_1 : __tmp_3;
+
+                     return (__uint128_t{__out_3} << 96) | (__uint128_t{__out_2} << 64) | (__uint128_t{__out_1} << 32)
+                          | __out_0;
+                   }))
+    }
+#  endif // _CCCL_HAS_INT128()
+    // NOLINTEND(bugprone-branch-clone)
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATELEFT8)

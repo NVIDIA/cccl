@@ -75,7 +75,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default init, op, ident (all)")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(comms[i], envs[i], in[i], outputs[i]);
+      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i], outputs[i]);
     });
 
     for (const auto& buf : out)
@@ -87,7 +87,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default op, ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(comms[i], envs[i], in[i], outputs[i], init);
+      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i], outputs[i], init);
     });
 
     for (const auto& buf : out)
@@ -99,7 +99,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(comms[i], envs[i], in[i], outputs[i], init, op);
+      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i], outputs[i], init, op);
     });
 
     for (const auto& buf : out)
@@ -111,7 +111,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default none")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(comms[i], envs[i], in[i], outputs[i], init, op, ident);
+      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i], outputs[i], init, op, ident);
     });
 
     for (const auto& buf : out)

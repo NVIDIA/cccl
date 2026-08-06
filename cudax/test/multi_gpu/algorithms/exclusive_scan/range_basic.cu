@@ -123,7 +123,7 @@ void do_exclusive_scan(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::exclusive_scan(comms, envs, in, outputs, init, op, ident);
+  cudax::exclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op, ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
@@ -167,6 +167,7 @@ MULTI_GPU_TEST("exclusive_scan documentation example", c2h::type_list<int>)
   std::vector<typename cuda::device_buffer<int>::iterator> output_iterators = make_output_iterators(outputs);
 
   cudax::exclusive_scan(
+    cudax::distributed,
     comms,
     // Passing streams as the environment directly
     streams,

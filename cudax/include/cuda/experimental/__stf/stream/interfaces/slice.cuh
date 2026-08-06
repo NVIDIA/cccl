@@ -94,7 +94,6 @@ public:
       return;
     }
 
-    exec_place grid   = memory_node.affine_exec_place();
     size_t total_size = this->shape.size();
 
     // Get the extents stored as a dim4
@@ -117,8 +116,8 @@ public:
       }
     };
 
-    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
-      memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
+    auto [array,
+          cached_prereqs] = bctx.get_composite_cache().get(memory_node, delinearize, total_size, sizeof(T), data_dims);
     prereqs.merge(mv(cached_prereqs));
     base_ptr = static_cast<T*>(array->get_base_ptr());
 
@@ -160,7 +159,13 @@ public:
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
     auto* array = static_cast<localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
+    bctx.get_composite_cache().put(
+      memory_node,
+      ::std::unique_ptr<localized_array>(array),
+      prereqs,
+      this->shape.size(),
+      sizeof(T),
+      this->shape.get_data_dims());
   }
 
   void data_copy(backend_ctx_untyped& bctx,
@@ -211,15 +216,17 @@ public:
 
     if constexpr (dimensions == 0)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
+      // cudaMemcpyAsync is an overload set (cuda_runtime.h adds an alternate-spelling
+      // wrapper), so it keeps the runtime-status cuda_try form.
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 1)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 2)
     {
-      cuda_safe_call(cudaMemcpy2DAsync(
+      cuda_try<cudaMemcpy2DAsync>(
         dst_ptr,
         dst_instance.stride(1) * sizeof(T),
         src_ptr,
@@ -227,14 +234,14 @@ public:
         b.extent(0) * sizeof(T),
         b.extent(1),
         kind,
-        s));
+        s);
     }
     else
     {
       // We only support higher dimensions if they are contiguous !
       if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
       {
-        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
+        cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
       }
       else
       {
@@ -258,11 +265,7 @@ public:
 
   ::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
   {
-    auto s = this->instance(instance_id);
-
-    cudaPointerAttributes attributes{};
-    cuda_safe_call(cudaPointerGetAttributes(&attributes, s.data_handle()));
-
+    const auto attributes = cuda_try<cudaPointerGetAttributes>(this->instance(instance_id).data_handle());
     // Implicitly converted to an optional
     return attributes.type;
   }

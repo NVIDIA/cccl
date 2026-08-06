@@ -223,15 +223,17 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
     SECTION("gpu_direct_rdma_flush_writes_options")
     {
+      STATIC_REQUIRE(
+        static_cast<::cudaFlushGPUDirectRDMAWritesOptions>(0) == attributes::gpu_direct_rdma_flush_writes_options.none);
       STATIC_REQUIRE(::cudaFlushGPUDirectRDMAWritesOptionHost == attributes::gpu_direct_rdma_flush_writes_options.host);
       STATIC_REQUIRE(
         ::cudaFlushGPUDirectRDMAWritesOptionMemOps == attributes::gpu_direct_rdma_flush_writes_options.mem_ops);
 
-      [[maybe_unused]] auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
-#if !_CCCL_COMPILER(MSVC)
-      CCCLRT_REQUIRE((options == attributes::gpu_direct_rdma_flush_writes_options.host || //
-                      options == attributes::gpu_direct_rdma_flush_writes_options.mem_ops));
-#endif
+      constexpr int all_flush_writes_options =
+        attributes::gpu_direct_rdma_flush_writes_options.none | attributes::gpu_direct_rdma_flush_writes_options.host
+        | attributes::gpu_direct_rdma_flush_writes_options.mem_ops;
+      auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
+      CCCLRT_REQUIRE(static_cast<unsigned>(options) <= static_cast<unsigned>(all_flush_writes_options));
     }
 
     SECTION("gpu_direct_rdma_writes_ordering")

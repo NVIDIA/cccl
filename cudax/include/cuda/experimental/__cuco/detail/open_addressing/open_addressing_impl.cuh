@@ -22,19 +22,24 @@
 #endif // no system header
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/functors.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
@@ -318,6 +323,88 @@ public:
           __output_begin,
           __container_ref);
     }
+  }
+
+  //! @brief Asynchronously finds payloads for keys in `[first, last)` whose stencil satisfies `pred`.
+  //!
+  //! For each key `first[i]` with `pred(stencil[i]) == true` that is present, the associated payload is
+  //! written to the corresponding output position; otherwise the empty value sentinel is written.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin,
+    _Ref __container_ref) const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+
+    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
+      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
+        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
+  }
+
+  //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
+  //!
+  //! For each key that is present, the associated payload is written to the corresponding output
+  //! position; for each key that is absent, the empty value sentinel is written instead.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
+  {
+    this->find_if_async(
+      __stream,
+      __first,
+      __last,
+      ::cuda::constant_iterator<bool>{true},
+      ::cuda::std::identity{},
+      __output_begin,
+      __container_ref);
+  }
+
+  //! @brief Retrieves all elements in the container.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @tparam _OutputIt Device-accessible random access output iterator
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __output_begin Beginning of the output range
+  //!
+  //! @return Iterator indicating the end of the output
+  template <class _OutputIt>
+  [[nodiscard]] _CCCL_HOST_API _OutputIt retrieve_all(::cuda::stream_ref __stream, _OutputIt __output_begin) const
+  {
+    auto __counter = __make_counter(__stream);
+
+    const auto __input_begin = ::cuda::make_transform_iterator(
+      ::cuda::counting_iterator<__size_type>{0}, __get_slot<__has_payload, __storage_ref_type>{storage_ref()});
+    const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+    const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
+
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::DeviceSelect::If,
+      "cuco: failed to retrieve all elements",
+      __input_begin,
+      __output_begin,
+      __counter.data(),
+      capacity(),
+      __is_filled,
+      __env);
+
+    return __output_begin + __read_counter(__counter, __stream);
   }
 
   //! @brief Returns the total number of slots.

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/cmath>
 
@@ -20,39 +20,39 @@
 
 #include "test_macros.h"
 
-TEST_FUNC bool is_about(float x, float y)
+TEST_HOST_DEVICE_FUNC bool is_about(float x, float y)
 {
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-6);
 }
 
-TEST_FUNC bool is_about(double x, double y)
+TEST_HOST_DEVICE_FUNC bool is_about(double x, double y)
 {
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-TEST_FUNC bool is_about(long double x, long double y)
+TEST_HOST_DEVICE_FUNC bool is_about(long double x, long double y)
 {
   return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-TEST_FUNC bool is_about(__half x, __half y)
+TEST_HOST_DEVICE_FUNC bool is_about(__half x, __half y)
 {
   return (cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-TEST_FUNC bool is_about(__nv_bfloat16 x, __nv_bfloat16 y)
+TEST_HOST_DEVICE_FUNC bool is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   return (cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class T>
-TEST_FUNC void test_type(float zero)
+TEST_HOST_DEVICE_FUNC void test_type(float zero)
 {
   using Result = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
 
@@ -102,7 +102,7 @@ TEST_FUNC void test_type(float zero)
   }
 }
 
-TEST_FUNC void test(float zero)
+TEST_HOST_DEVICE_FUNC void test(float zero)
 {
   test_type<float>(zero);
   test_type<double>(zero);

@@ -72,7 +72,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::reduce(comms, envs, in, outputs);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs);
 
     for (const auto& buf : out)
     {
@@ -82,7 +82,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default op, ident")
   {
-    cudax::reduce(comms, envs, in, outputs, init);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init);
 
     for (const auto& buf : out)
     {
@@ -92,7 +92,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default ident")
   {
-    cudax::reduce(comms, envs, in, outputs, init, op);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op);
 
     for (const auto& buf : out)
     {
@@ -102,7 +102,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default none")
   {
-    cudax::reduce(comms, envs, in, outputs, init, op, ident);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op, ident);
 
     for (const auto& buf : out)
     {

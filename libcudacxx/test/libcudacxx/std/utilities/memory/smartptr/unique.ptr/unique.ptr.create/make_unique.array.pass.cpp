@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
@@ -24,10 +24,10 @@
 class foo
 {
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 foo()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 foo()
       : val_(3)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int get() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int get() const
   {
     return val_;
   }
@@ -36,7 +36,7 @@ private:
   int val_;
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     auto p1 = cuda::std::make_unique<int[]>(5);
