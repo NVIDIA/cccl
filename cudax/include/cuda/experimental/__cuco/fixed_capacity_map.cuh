@@ -108,7 +108,7 @@ private:
   mapped_type __empty_value_sentinel;
 
   //! @brief Synchronizes the CUDA stream.
-  static void __sync(::cuda::stream_ref __stream)
+  _CCCL_HOST_API static void __sync(::cuda::stream_ref __stream)
   {
     __stream.sync();
   }
@@ -477,6 +477,70 @@ public:
     const auto __num_out          = __zipped_out_end - __zipped_out_begin;
 
     return {__keys_out + __num_out, __values_out + __num_out};
+  }
+
+  // ===== Rehash =====
+
+  //! @brief Regenerates the container without changing its capacity.
+  //!
+  //! This removes erased-key sentinels and reinserts all remaining elements into fresh storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream)
+  {
+    rehash_async(__stream);
+    __sync(__stream);
+  }
+
+  //! @brief Reserves at least the requested number of slots and regenerates the container.
+  //!
+  //! Changes the capacity to a valid value that is not less than `__capacity`, then reinserts all
+  //! elements into fresh storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    rehash_async(__stream, __capacity);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronously regenerates the container without changing its capacity.
+  //!
+  //! This removes erased-key sentinels and reinserts all remaining elements into fresh storage.
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
+  {
+    __impl->rehash_async(__stream, *this);
+  }
+
+  //! @brief Asynchronously reserves at least the requested number of slots and regenerates the
+  //! container.
+  //!
+  //! Changes the capacity to a valid value that is not less than `__capacity`, then reinserts all
+  //! elements into fresh storage.
+  //!
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __impl->rehash_async(__stream, __capacity, *this);
   }
 
   // ===== Accessors =====
