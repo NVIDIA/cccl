@@ -15,6 +15,7 @@
 #include <chrono>
 #include <exception>
 #include <future>
+#include <type_traits>
 #include <vector>
 
 #include <c2h/catch2_test_helper.h>
@@ -59,7 +60,8 @@ void run_threaded(cuda::std::size_t num_ranks, Fn fn)
           // std::async, and futures block in their destructor for task completion. So to make
           // this error message actually useful, we need to toss them all into the oubliette.
           [[maybe_unused]] auto* _ = new std::vector<std::future<void>>{std::move(futures)};
-          FAIL("Future for rank " << i << " timed out after " << timeout << ", likely a deadlock");
+          static_assert(std::is_same_v<std::remove_cv_t<decltype(timeout)>, std::chrono::seconds>);
+          FAIL("Future for rank " << i << " timed out after " << timeout.count() << "s, likely a deadlock");
           break;
         }
         case std::future_status::ready:
