@@ -172,7 +172,7 @@ void test_segmented_encode(std::int64_t num_items, int max_seg, int elem_offset,
   // elem_offset elements in front of the input are set EQUAL to the first key: reading before
   // the input would extend the first run and fail the count comparison.
   c2h::device_vector<KeyT> d_keys_alloc(static_cast<std::size_t>(num_items) + elem_offset);
-  thrust::copy(c2h::device_policy, h_keys.begin(), h_keys.end(), d_keys_alloc.begin() + elem_offset);
+  thrust::copy(h_keys.begin(), h_keys.end(), d_keys_alloc.begin() + elem_offset);
   thrust::fill(c2h::device_policy, d_keys_alloc.begin(), d_keys_alloc.begin() + elem_offset, h_keys.front());
 
   // exact-size outputs; counts are sentinel-filled with 0, which no run can produce
