@@ -8,6 +8,8 @@
 ##
 ##===----------------------------------------------------------------------===##
 
+include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/CCCLTestParams.cmake")
+
 option(
   LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS
   "Fail configuration when tools required by libcu++ codegen tests are missing."
@@ -166,8 +168,15 @@ function(
   test_path
   check_prefixes
 )
+  cmake_parse_arguments(arg "" "DUMP_MODE" "CHECK_DEFINITIONS" ${ARGN})
+
   string(REGEX REPLACE "[^A-Za-z0-9_]" "_" check_suffix "${check_prefixes}")
   set(check_target_name "${target_path}.${check_suffix}.check")
+
+  set(filecheck_definitions)
+  foreach (definition IN LISTS arg_CHECK_DEFINITIONS)
+    list(APPEND filecheck_definitions "-D${definition}")
+  endforeach()
 
   add_custom_target(
     ${check_target_name}
@@ -182,7 +191,8 @@ function(
         $<TARGET_FILE:${target_name}>
         "${test_path}"
         "${check_prefixes}"
-        ${ARGN}
+        "${arg_DUMP_MODE}"
+        ${filecheck_definitions}
     # gersemi: on
   )
   cccl_ensure_metatargets(${check_target_name})
@@ -197,8 +207,14 @@ function(libcudacxx_codegen_add_test)
     CODE_KIND
     ARCH
     TEST
+    VARIANT
   )
-  set(multi_value_args CHECK_PREFIXES COMPILE_DEFINITIONS)
+  set(
+    multi_value_args
+    CHECK_PREFIXES
+    CHECK_DEFINITIONS
+    COMPILE_DEFINITIONS
+  )
   cmake_parse_arguments(
     arg
     "${options}"
@@ -214,6 +230,10 @@ function(libcudacxx_codegen_add_test)
     target_name
     "${arg_TARGET_PREFIX}_${arg_CODE_KIND}_sm${arg_ARCH}_${test_name}"
   )
+  if (arg_VARIANT)
+    string(APPEND test_target_path ".${arg_VARIANT}")
+    string(APPEND target_name ".${arg_VARIANT}")
+  endif()
 
   add_library(${target_name} STATIC "${arg_TEST}")
   libcudacxx_codegen_set_cuda_arch(${target_name} "${arg_ARCH}")
@@ -230,7 +250,7 @@ function(libcudacxx_codegen_add_test)
     )
   endif()
 
-  set(dump_options)
+  set(dump_mode --dump-ptx)
   if (arg_CODE_KIND STREQUAL "ptx")
     # Clang stopped emitting PTX in clang20. Add flags to re-enable it.
     if (
@@ -243,7 +263,7 @@ function(libcudacxx_codegen_add_test)
       )
     endif()
   else()
-    list(APPEND dump_options --dump-sass)
+    set(dump_mode --dump-sass)
     if (arg_SEPARABLE_COMPILATION)
       # CMake supplies the compile phase, so request relocatable device code
       # without adding a second compile-phase option via -dc.
@@ -257,9 +277,47 @@ function(libcudacxx_codegen_add_test)
       ${target_name}
       "${arg_TEST}"
       "${check_prefix}"
-      ${dump_options}
+      DUMP_MODE "${dump_mode}"
+      CHECK_DEFINITIONS ${arg_CHECK_DEFINITIONS}
     )
   endforeach()
+endfunction()
+
+# Separate variant definitions used as codegen test metadata from ordinary
+# definitions. FILECHECK_PREFIX_<name>=<prefix> adds the upper-case form of
+# <prefix> to the FileCheck invocation for that variant; all other definitions
+# are available to both the compiler and FileCheck.
+function(
+  libcudacxx_codegen_get_variant_options
+  out_compile_definitions
+  out_check_definitions
+  out_check_prefixes
+)
+  set(compile_definitions)
+  set(check_definitions)
+  set(check_prefixes)
+
+  foreach (definition IN LISTS ARGN)
+    if (definition MATCHES "^FILECHECK_PREFIX_[A-Za-z0-9_]+=(.*)$")
+      set(check_prefix "${CMAKE_MATCH_1}")
+      if (NOT check_prefix MATCHES "^[A-Za-z][A-Za-z0-9_-]*$")
+        message(
+          FATAL_ERROR
+          "Invalid FileCheck prefix '${check_prefix}' in '${definition}'"
+        )
+      endif()
+      string(TOUPPER "${check_prefix}" check_prefix)
+      list(APPEND check_prefixes "${check_prefix}")
+    else()
+      list(APPEND compile_definitions "${definition}")
+      list(APPEND check_definitions "${definition}")
+    endif()
+  endforeach()
+
+  list(REMOVE_DUPLICATES check_prefixes)
+  set(${out_compile_definitions} "${compile_definitions}" PARENT_SCOPE)
+  set(${out_check_definitions} "${check_definitions}" PARENT_SCOPE)
+  set(${out_check_prefixes} "${check_prefixes}" PARENT_SCOPE)
 endfunction()
 
 function(libcudacxx_codegen_add_ptx_tests)
@@ -290,7 +348,13 @@ endfunction()
 function(libcudacxx_codegen_add_sass_tests)
   set(options)
   set(one_value_args AGGREGATE_TARGET TARGET_PREFIX)
-  set(multi_value_args ARCHITECTURES TESTS COMPILE_DEFINITIONS)
+  set(
+    multi_value_args
+    ARCHITECTURES
+    CHECK_PREFIXES
+    TESTS
+    COMPILE_DEFINITIONS
+  )
   cmake_parse_arguments(
     arg
     "${options}"
@@ -301,6 +365,18 @@ function(libcudacxx_codegen_add_sass_tests)
 
   foreach (test_path IN LISTS arg_TESTS)
     file(READ "${test_path}" test_contents)
+    cccl_parse_variant_params(
+      "${test_path}"
+      num_variants
+      variant_labels
+      variant_definitions
+    )
+    cccl_log_variant_params(
+      "${test_path}"
+      ${num_variants}
+      variant_labels
+      variant_definitions
+    )
     string(
       REGEX MATCH
       "; SM[0-9]+[af]-PLUS(:|-[A-Z]+:)"
@@ -351,17 +427,70 @@ function(libcudacxx_codegen_add_sass_tests)
         "${test_contents}"
         "${arch}"
       )
+      string(REPLACE "," ";" common_check_prefixes "${check_prefixes}")
+      foreach (check_prefix IN LISTS arg_CHECK_PREFIXES)
+        string(
+          REGEX MATCH
+          "; ${check_prefix}(:|-[A-Z]+:)"
+          has_check_prefix
+          "${test_contents}"
+        )
+        if (has_check_prefix)
+          list(APPEND common_check_prefixes "${check_prefix}")
+        endif()
+      endforeach()
+      list(REMOVE_DUPLICATES common_check_prefixes)
 
-      libcudacxx_codegen_add_test(
-        ${test_options}
-        AGGREGATE_TARGET ${arg_AGGREGATE_TARGET}
-        TARGET_PREFIX ${arg_TARGET_PREFIX}
-        CODE_KIND sass
-        ARCH ${arch}
-        TEST "${test_path}"
-        CHECK_PREFIXES "${check_prefixes}"
-        COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
-      )
+      if (num_variants EQUAL 0)
+        list(JOIN common_check_prefixes "," combined_check_prefixes)
+        libcudacxx_codegen_add_test(
+          ${test_options}
+          AGGREGATE_TARGET ${arg_AGGREGATE_TARGET}
+          TARGET_PREFIX ${arg_TARGET_PREFIX}
+          CODE_KIND sass
+          ARCH ${arch}
+          TEST "${test_path}"
+          CHECK_PREFIXES "${combined_check_prefixes}"
+          COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
+        )
+      else()
+        math(EXPR last_variant "${num_variants} - 1")
+        foreach (variant_index RANGE ${last_variant})
+          cccl_get_variant_data(
+            variant_labels
+            variant_definitions
+            ${variant_index}
+            variant_label
+            definitions
+          )
+          libcudacxx_codegen_get_variant_options(
+            variant_compile_definitions
+            variant_check_definitions
+            variant_check_prefixes
+            ${definitions}
+          )
+
+          set(combined_check_prefixes ${common_check_prefixes})
+          list(APPEND combined_check_prefixes ${variant_check_prefixes})
+          list(REMOVE_DUPLICATES combined_check_prefixes)
+          list(JOIN combined_check_prefixes "," combined_check_prefixes)
+
+          libcudacxx_codegen_add_test(
+            ${test_options}
+            AGGREGATE_TARGET ${arg_AGGREGATE_TARGET}
+            TARGET_PREFIX ${arg_TARGET_PREFIX}
+            CODE_KIND sass
+            ARCH ${arch}
+            TEST "${test_path}"
+            VARIANT "${variant_label}"
+            CHECK_PREFIXES "${combined_check_prefixes}"
+            CHECK_DEFINITIONS ${variant_check_definitions}
+            COMPILE_DEFINITIONS
+              ${arg_COMPILE_DEFINITIONS}
+              ${variant_compile_definitions}
+          )
+        endforeach()
+      endif()
     endforeach()
   endforeach()
 endfunction()
