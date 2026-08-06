@@ -140,7 +140,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   ::cuda::std::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst,
   copy_configuration __config)
 {
-  static_assert(__can_mdspan_copy_bytes<_SrcElem, _SrcExtents, _SrcLayout, _DstExtents, _DstExtents, _DstLayout>);
+  static_assert(__can_mdspan_copy_bytes<_SrcElem, _SrcExtents, _SrcLayout, _DstElem, _DstExtents, _DstLayout>);
 
   // Check only destination, because the layout of destination is the same as source
   if (!__dst.is_exhaustive())
