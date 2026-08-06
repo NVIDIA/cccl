@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _ARRAY_PATTERN = re.compile(r"^cuda::std::array<.+,\s*(\d+)>$")
@@ -15,13 +17,7 @@ InternalDict = dict[str, object]
 
 
 def is_cuda_array(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType()
-        .GetDereferencedType()
-        .GetUnqualifiedType()
-        .GetDisplayTypeName()
-        or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _ARRAY_PATTERN.fullmatch(type_name) is not None
 
 
@@ -29,8 +25,7 @@ class ArraySyntheticProvider:
     """Expose cuda::std::array elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
-        if value.GetType().IsReferenceType():
-            value = value.Dereference()
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.update()
 

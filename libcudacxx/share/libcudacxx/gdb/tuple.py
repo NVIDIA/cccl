@@ -9,23 +9,17 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_cuda_tuple(value_type: gdb.Type) -> bool:
     # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = (
-        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
-    )
-    public_name = memory_resource.public_type_name(value_type)
-    template_name = _template_name(value_type)
+    value_type = cccl_common.canonical_type(value_type)
+    public_name = cccl_common.public_type_name(value_type)
+    template_name = cccl_common.template_name(value_type)
     return (
         public_name.startswith("cuda::std::")
         and template_name.rsplit("::", 1)[-1] == "tuple"
@@ -72,11 +66,9 @@ class TuplePrinter:
     """Expose cuda::std::tuple elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
-        value = memory_resource.strip_reference_value(value)
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = (
-            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
-        )
+        self.type = cccl_common.canonical_type(value.type)
         # A fully empty tuple (e.g. cuda::std::tuple<>) can compile to a type
         # with no debug-visible __base_ member at all.
         try:
@@ -92,7 +84,7 @@ class TuplePrinter:
             yield f"[{index}]", _leaf_element(base_value, field)
 
     def to_string(self) -> str:
-        return memory_resource.public_type_name(self.type)
+        return cccl_common.public_type_name(self.type)
 
 
 class TuplePrinterLookup(gdb.printing.PrettyPrinter):

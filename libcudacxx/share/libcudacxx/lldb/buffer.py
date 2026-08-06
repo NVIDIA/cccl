@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+import cccl_common
 import memory_resource
 
 import lldb
@@ -32,19 +33,12 @@ class BufferInfo(NamedTuple):
 
 
 def is_cuda_buffer(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType()
-        .GetDereferencedType()
-        .GetUnqualifiedType()
-        .GetDisplayTypeName()
-        or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _BUFFER_PATTERN.fullmatch(type_name) is not None
 
 
 def _buffer_info(value: lldb.SBValue) -> BufferInfo | None:
-    if value.GetType().IsReferenceType():
-        value = value.Dereference()
+    value = cccl_common.strip_reference_value(value)
     value = value.GetNonSyntheticValue()
     storage = value.GetChildMemberWithName("__buf_")
     if not storage.IsValid():
@@ -113,8 +107,7 @@ class BufferSyntheticProvider:
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
         self.declared_type = value.GetType()
-        if value.GetType().IsReferenceType():
-            value = value.Dereference()
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.host_copy = lldb.SBValue()
         self.clear()

@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
+import cccl_common
 import memory_resource
 
 import gdb
@@ -20,22 +21,8 @@ import gdb.printing
 _CUDA_MEMCPY_DEFAULT = 4
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
-def _strip_reference(value_type: gdb.Type) -> gdb.Type:
-    # target() gives the referenced type, but on a non-reference it either
-    # resolves a typedef or raises, so test the code first.
-    if value_type.code in (gdb.TYPE_CODE_REF, gdb.TYPE_CODE_RVALUE_REF):
-        return value_type.target()
-    return value_type
-
-
 def _is_cuda_buffer(value_type: gdb.Type) -> bool:
-    # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = _strip_reference(value_type).strip_typedefs().unqualified()
-    template_name = _template_name(value_type)
+    template_name = cccl_common.template_name(cccl_common.canonical_type(value_type))
     return (
         template_name.startswith("cuda::")
         and template_name.rsplit("::", 1)[-1] == "buffer"
@@ -46,11 +33,10 @@ class BufferPrinter:
     """Expose cuda::buffer metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
-        if value.type.code in (gdb.TYPE_CODE_REF, gdb.TYPE_CODE_RVALUE_REF):
-            value = value.referenced_value()
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = _strip_reference(value.type).strip_typedefs().unqualified()
-        self.type_name = memory_resource.public_type_name(self.type)
+        self.type = cccl_common.canonical_type(value.type)
+        self.type_name = cccl_common.public_type_name(self.type)
         self.value_type = self.type.template_argument(0)
 
         storage = value["__buf_"]
