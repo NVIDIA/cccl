@@ -226,26 +226,27 @@ TEST_FUNC constexpr bool test()
     assert(result.get() == 6);
   }
 
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
     // gcc < 13 fails this test with error:
     //   'fun_ptr' is not a valid template argument of type 'bool (*)(int)' because 'fun_ptr' is not a variable
-#if !_CCCL_COMPILER(GCC, <, 13)
+#  if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer
     using T                                        = cuda::std::__constant_wrapper<fun_ptr>;
     cuda::std::same_as<bool> decltype(auto) result = TEST_CALL(T, 5);
     assert(result);
-#endif // !_CCCL_COMPILER(GCC, <, 13)
+#  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
 
   {
     // gcc < 13 fails this test with error:
     //   'fun_ptr' is not a valid template argument of type 'bool (*)(int)' because 'fun_ptr' is not a variable
-#if !_CCCL_COMPILER(GCC, <, 13)
+#  if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer with constexpr param
     using T = cuda::std::__constant_wrapper<fun_ptr>;
     cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
     static_assert(result);
-#endif // !_CCCL_COMPILER(GCC, <, 13)
+#  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
   {
     // member ptr with runtime param
@@ -272,17 +273,17 @@ TEST_FUNC constexpr bool test()
   }
   {
     // todo(dabayer): This is failing with msvc.
-#if !_CCCL_COMPILER(MSVC)
+#  if !_CCCL_COMPILER(MSVC)
     // member function ptr with constexpr param
     using T = cuda::std::__constant_wrapper<&S::mem_fun>;
     cuda::std::same_as<cuda::std::__constant_wrapper<50>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<&s_value>, cuda::std::__cw<8>);
     static_assert(result == 50);
-#endif // !_CCCL_COMPILER(MSVC)
+#  endif // !_CCCL_COMPILER(MSVC)
   }
   {
     // nvcc < 13.2 fails to compile this test
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
+#  if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // overload set
     // will always unwrap the constexpr params and call the non-constexpr overload
     using T                                        = cuda::std::__constant_wrapper<OverloadSet{}>;
@@ -290,8 +291,9 @@ TEST_FUNC constexpr bool test()
     assert(result1 == 1);
     cuda::std::same_as<cuda::std::__constant_wrapper<1>> decltype(auto) result2 = TEST_CALL(T, cuda::std::__cw<42>);
     static_assert(result2 == 1);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
+#  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     // return non-structural type

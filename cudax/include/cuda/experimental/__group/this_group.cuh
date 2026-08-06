@@ -118,7 +118,6 @@ class __this_group_base
 public:
   using unit_type             = _Level;
   using level_type            = _Level;
-  using mapping_type          = void;
   using __mapping_result_type = __this_mapping_result<_Level>;
   using hierarchy_type        = _Hierarchy;
   using synchronizer_type     = level_synchronizer;
@@ -144,9 +143,6 @@ public:
   {
     return __hier_;
   }
-
-  // this groups don't have a mapping type
-  auto mapping() const = delete;
 
   // todo(dabayer): Do we want to expose mapping result getter?
   [[nodiscard]] _CCCL_DEVICE_API const __mapping_result_type& __mapping_result() const noexcept
