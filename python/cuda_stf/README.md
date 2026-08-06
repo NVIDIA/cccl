@@ -119,7 +119,14 @@ shard's replica at dispatch (replicas are layout-homogeneous, so only the
 base differs); *placement-aware* code detects `ReplicatedMeta` via
 `get_meta` and obtains per-replica bases with freeze + `get(member)`. This
 is also why direct allocation on a replicated place is rejected: "give me
-the pointer" has no answer when there are several.
+the pointer" has no answer when there are several. Consequently
+`replicated_empty` is a *primitive*, not a drop-in weight abstraction: it
+returns the canonical copy (plus registry metadata), and a consumer that
+wants per-replica access needs both a multi-tensor wrapper (the
+single-process analog of DTensor's ``Replicate()`` placement) and sharded
+execution -- a whole-device kernel takes one pointer per argument and
+cannot read "the right replica per domain". That wrapper belongs to the
+consuming framework layer, where the execution sharding lives.
 `placement_evaluate` reports the per-member copies
 (`stats.replication_factor`, `stats.resident_bytes`), and a composite data
 place built from such a partition is itself replicated (read-only) — through
