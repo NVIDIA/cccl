@@ -45,6 +45,13 @@ inline constexpr bool __is_cuda_std_reference_wrapper_v = false;
 template <class _Tp>
 inline constexpr bool __is_cuda_std_reference_wrapper_v<reference_wrapper<_Tp>> = true;
 
+template <class _Tp>
+inline constexpr bool __is_std_reference_wrapper_v = false;
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp>
+inline constexpr bool __is_std_reference_wrapper_v<::std::reference_wrapper<_Tp>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

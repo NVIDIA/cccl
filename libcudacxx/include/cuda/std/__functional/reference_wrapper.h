@@ -115,7 +115,7 @@ void cref(const _Tp&&) = delete;
 // [refwrap.common.ref]
 template <class _Rp, class _Tp, class _RpQual, class _TpQual>
 _CCCL_CONCEPT __ref_wrap_common_reference_exists_with = _CCCL_REQUIRES_EXPR((_Rp, _Tp, _RpQual, _TpQual), )(
-  requires(__is_cuda_std_reference_wrapper_v<_Rp>),
+  requires(__is_cuda_std_reference_wrapper_v<_Rp> || __is_std_reference_wrapper_v<_Rp>),
   typename(common_reference_t<typename _Rp::type&, _TpQual>),
   requires(convertible_to<_RpQual, common_reference_t<typename _Rp::type&, _TpQual>>));
 
