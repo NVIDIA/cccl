@@ -402,6 +402,7 @@ struct RunSpanT
 // only the 32 head-flag words. Then, it is up to the store warps to "decode" the positions from the headflags.
 // one warp tile is 32 chunks x 32 elements, so lane i owns word i.
 // This buys 2.5% BWUtil in the MaxSegSize{2^4, 2^6, 2^8}
+template <int items_per_thread>
 struct HeadFlagDecodeT
 {
   unsigned lane_head_flag_word;
@@ -446,7 +447,7 @@ struct HeadFlagDecodeT
       const int candidate_word_idx = flag_word_idx + step;
       // read the i'th row
       const int candidate_runs_before = __shfl_sync(full_mask, lane_runs_before_word, candidate_word_idx & 31);
-      if (candidate_word_idx < 32 && candidate_runs_before <= run_idx)
+      if (candidate_word_idx < items_per_thread && candidate_runs_before <= run_idx)
       {
         flag_word_idx = candidate_word_idx;
       }
@@ -985,7 +986,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             int buf_run_length[buf_per_lane];
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
-            const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
+            const HeadFlagDecodeT<items_per_thread> dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
 #  pragma unroll
             for (int it = 0; it < buf_per_lane; ++it)
