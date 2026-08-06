@@ -21,8 +21,14 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/__algorithm/copy.h>
 #include <cuda/__functional/always_true_false.h>
+#include <cuda/__functional/call_or.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/mdspan>
 
 CUB_NAMESPACE_BEGIN
@@ -64,13 +70,42 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
   {
-    return cub::DeviceTransform::__transform_internal(
-      ::cuda::std::make_tuple(mdspan_in.data_handle()),
-      mdspan_out.data_handle(),
-      mdspan_in.size(),
-      ::cuda::always_true{},
-      ::cuda::std::identity{},
-      env);
+    if constexpr (::cuda::std::same_as<T_In, T_Out>
+                  && ::cuda::__detail::__can_mdspan_copy_bytes<T_In, E_In, L_In, T_Out, E_Out, L_Out>)
+    {
+      _CCCL_TRY
+      {
+        ::cuda::copy_bytes(
+          ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, env), mdspan_in, mdspan_out);
+      }
+      _CCCL_CATCH (const ::cuda::cuda_error& __e)
+      {
+        return __e.status();
+      }
+#if _CCCL_HOSTED()
+      _CCCL_CATCH (const ::std::invalid_argument& __e)
+      {
+        static_cast<void>(__e);
+        return ::cudaErrorInvalidValue;
+      }
+#endif // _CCCL_HOSTED
+      _CCCL_CATCH_ALL
+      {
+        return ::cudaErrorUnknown;
+      }
+
+      return ::cudaSuccess;
+    }
+    else
+    {
+      return cub::DeviceTransform::__transform_internal(
+        ::cuda::std::make_tuple(mdspan_in.data_handle()),
+        mdspan_out.data_handle(),
+        mdspan_in.size(),
+        ::cuda::always_true{},
+        ::cuda::std::identity{},
+        env);
+    }
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
