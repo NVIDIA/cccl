@@ -286,6 +286,50 @@ public:
 
 #if _CCCL_CUDA_COMPILATION()
   //!
+  //! @brief Cooperatively initializes the slot storage with the empty slot sentinel.
+  //!
+  //! @note This function synchronizes the group `__group`.
+  //!
+  //! @tparam _Group Cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used to initialize the storage
+  template <class _Group>
+  _CCCL_DEVICE_API constexpr void initialize(_Group __group) noexcept
+  {
+    auto* const __slots    = __storage_ref.data();
+    const auto __num_slots = capacity();
+    for (auto __idx = static_cast<__size_type>(__group.thread_rank()); __idx < __num_slots;
+         __idx += static_cast<__size_type>(__group.size()))
+    {
+      __slots[__idx] = __empty_slot_sentinel;
+    }
+    __group.sync();
+  }
+
+  //!
+  //! @brief Cooperatively copies the slot storage to the given memory region.
+  //!
+  //! @note This function synchronizes the group `__group`.
+  //!
+  //! @tparam _Group Cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used to perform the copy
+  //! @param[out] __dst Pointer to the target memory region; must hold at least `capacity()` slots
+  template <class _Group>
+  _CCCL_DEVICE_API void make_copy(_Group __group, __value_type* __dst) const noexcept
+  {
+    static_assert(::cuda::std::is_trivially_copyable_v<__value_type>, "slot type must be trivially copyable");
+    const auto* const __src = __storage_ref.data();
+    const auto __num_slots  = capacity();
+    for (auto __idx = static_cast<__size_type>(__group.thread_rank()); __idx < __num_slots;
+         __idx += static_cast<__size_type>(__group.size()))
+    {
+      __dst[__idx] = __src[__idx];
+    }
+    __group.sync();
+  }
+
+  //!
   //! @brief Inserts an element.
   //!
   //! @tparam Value Input type which is convertible to '__value_type'
