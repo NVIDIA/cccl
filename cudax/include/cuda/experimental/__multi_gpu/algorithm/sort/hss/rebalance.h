@@ -22,12 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/device_copy.cuh>
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tuple.h>
@@ -245,20 +247,22 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
 
   {
     auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __env_it   = ::cuda::std::ranges::begin(__envs);
     auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
     {
       const auto __n = ::cuda::std::ranges::size(*__input_it);
 
       _CCCL_VERIFY(__n == __local_rebalanced[__idx].size(), "Incorrect sizing for temp storage");
-      const ::cuda::device_ref __device = __comm_it->logical_device().underlying_device();
 
-      ::cuda::copy_bytes(__local_rebalanced[__idx].stream(),
-                         __local_rebalanced[__idx],
-                         ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)), __n},
-                         ::cuda::copy_configuration{__device, __device, ::cuda::source_access_order::stream});
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm_it->logical_device(),
+        CUB_NS_QUALIFIER::DeviceCopy::Copy,
+        ::cuda::std::mdspan{__local_rebalanced[__idx].data(), __local_rebalanced[__idx].size()},
+        ::cuda::std::mdspan{::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)), __n},
+        *__env_it);
     }
   }
 }
