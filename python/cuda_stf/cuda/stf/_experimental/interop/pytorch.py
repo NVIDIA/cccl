@@ -355,7 +355,7 @@ def localized_parameter(
     )
 
 
-def replicated_empty(shape, dtype, grid, *, device=0, lifetime="pinned"):
+def replicated_empty(shape, dtype, grid, *, device=0, canonical=None, lifetime="pinned"):
     """Allocate a ``torch.Tensor`` intended to be replicated over *grid*.
 
     The sibling of :func:`localized_empty` for the other half of the
@@ -370,6 +370,12 @@ def replicated_empty(shape, dtype, grid, *, device=0, lifetime="pinned"):
     task dependencies. ``lifetime`` follows :func:`localized_empty`:
     ``"pinned"`` (CAI import, freed via :func:`release`) or ``"gc"``
     (DLPack import, storage owns the allocation).
+
+    ``canonical`` optionally names the data place of the canonical copy
+    (overriding ``device``). Pass the first member's place (e.g. a
+    locality-domain place on a domain grid) so the canonical copy IS
+    replica 0: the runtime then materializes only N-1 broadcast copies
+    instead of leaving an extra never-read build copy behind (N+1 total).
     """
     from .. import DeviceArray, data_place  # noqa: PLC0415
 
@@ -383,7 +389,7 @@ def replicated_empty(shape, dtype, grid, *, device=0, lifetime="pinned"):
     np_dtype = _np_dtype(dtype)
     meta = ReplicatedMeta(shape=shape, dtype=dtype, grid=grid, lifetime=lifetime)
 
-    dplace = data_place.device(int(device))
+    dplace = canonical if canonical is not None else data_place.device(int(device))
     buf = DeviceArray(shape, np_dtype, dplace)
 
     if lifetime == "gc":

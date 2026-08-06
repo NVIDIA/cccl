@@ -256,6 +256,16 @@ def test_replicated_empty_release_pinned(grid):
 
 
 @requires_cuda
+def test_replicated_empty_canonical_place(grid):
+    # The canonical copy can be placed explicitly (e.g. at replica 0's
+    # place) so the built copy IS a replica: N copies total, not N+1.
+    t = tp.replicated_empty((64,), torch.float32, grid, canonical=stf.data_place.device(0))
+    meta = tp.get_meta(t)
+    assert isinstance(meta, tp.ReplicatedMeta)
+    tp.release(t)
+
+
+@requires_cuda
 def test_replicated_empty_invalid_lifetime(grid):
     with pytest.raises(ValueError, match="lifetime"):
         tp.replicated_empty((8,), torch.float32, grid, lifetime="forever")
