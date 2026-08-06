@@ -148,24 +148,32 @@ domain can improve locality. Locality domain places expose this capability:
 share the same domain ordinal and are therefore co-located: the execution
 place's affine data place is the matching locality-domain data place.
 
+The following schematic example assumes the usual CUDASTF setup (a
+``context ctx``, a logical data ``lX`` and a ``kernel``, as in the STF
+introduction):
+
 .. code:: cpp
 
     const int dev = 0;
     const unsigned int n = locality_domain_count(dev);
-    // A count of 0 would mean locality-domain placement is unusable on this
-    // device; this example assumes a capable device.
-    assert(n > 0);
 
-    // One task per domain (with CUDASTF)
-    for (unsigned int i = 0; i < n; i++) {
-        ctx.task(exec_place::locality_domain(dev, i), lX.rw())
-            ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
+    if (n == 0) {
+        // Locality-domain placement is unusable on this device: fall back
+        // to regular device places.
+        ctx.parallel_for(exec_place::device(dev), lX.shape(), lX.rw())
+            ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
+    } else {
+        // One task per domain (with CUDASTF)
+        for (unsigned int i = 0; i < n; i++) {
+            ctx.task(exec_place::locality_domain(dev, i), lX.rw())
+                ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
+        }
+
+        // Or distribute a parallel_for over all domains at once
+        auto grid = make_locality_domain_grid(dev);
+        ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
+            ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
     }
-
-    // Or distribute a parallel_for over all domains at once
-    auto grid = make_locality_domain_grid(dev);
-    ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
-        ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
 
 Like ``data_place::device(id)``, a locality-domain place is identified by a
 ``(device, domain)`` pair that acts as an identity token: construction of a
