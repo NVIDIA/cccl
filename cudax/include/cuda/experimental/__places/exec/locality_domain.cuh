@@ -560,7 +560,11 @@ public:
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    cuda_try(cudaSetDevice(view_.devid));
+    // No cudaSetDevice here: unlike the cudaMallocAsync-based places (device,
+    // green_ctx), which draw from the *current* device's default pool, the pool
+    // is passed explicitly and was created with props.location.id == devid, so
+    // placement does not depend on the current device. This also keeps
+    // allocate() symmetric with deallocate(), which never switched.
     CUmemoryPool pool = locality_domain_mem_pool_cache::instance().get(view_.devid, view_.domain_id);
 
     CUdeviceptr ptr = 0;
