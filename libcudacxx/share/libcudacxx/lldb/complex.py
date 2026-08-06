@@ -17,7 +17,11 @@ InternalDict = dict[str, object]
 
 def is_cuda_complex(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
     )
     return _COMPLEX_PATTERN.fullmatch(type_name) is not None
 
@@ -26,6 +30,8 @@ class ComplexSyntheticProvider:
     """Expose complex real and imaginary parts as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        if value.GetType().IsReferenceType():
+            value = value.Dereference()
         self.value = value.GetNonSyntheticValue()
         self.update()
 

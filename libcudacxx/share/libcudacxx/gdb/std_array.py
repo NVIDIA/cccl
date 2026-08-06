@@ -20,7 +20,9 @@ def _template_name(value_type: gdb.Type) -> str:
 
 
 def _is_cuda_array(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     template_name = _template_name(value_type)
     return (
         template_name.startswith("cuda::std::")
@@ -32,8 +34,11 @@ class ArrayPrinter:
     """Expose cuda::std::array metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = memory_resource.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = (
+            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+        )
         self.type_name = memory_resource.public_type_name(self.type)
         self.size = int(self.type.template_argument(1))
 

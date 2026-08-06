@@ -15,9 +15,19 @@ _CHILD_NAME = "handle"
 InternalDict = dict[str, object]
 
 
+def _deref(value: lldb.SBValue) -> lldb.SBValue:
+    if value.GetType().IsReferenceType():
+        return value.Dereference()
+    return value
+
+
 def _event_type_name(value_type: lldb.SBType) -> str | None:
     type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
     )
     if _EVENT_PATTERN.fullmatch(type_name) is not None:
         return type_name
@@ -29,13 +39,15 @@ def is_cuda_event(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool
 
 
 def _event_handle(value: lldb.SBValue) -> lldb.SBValue:
-    return value.GetNonSyntheticValue().GetChildMemberWithName("__event_")
+    return _deref(value).GetNonSyntheticValue().GetChildMemberWithName("__event_")
 
 
 class EventSyntheticProvider:
     """Expose the native handle stored by a cuda event type."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        if value.GetType().IsReferenceType():
+            value = value.Dereference()
         self.value = value.GetNonSyntheticValue()
         self.handle = lldb.SBValue()
         self.type_name = ""

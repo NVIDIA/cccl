@@ -18,7 +18,9 @@ _EVENT_NAMES = frozenset({"cuda::event", "cuda::event_ref", "cuda::timed_event"}
 
 
 def _event_type_name(value_type: gdb.Type) -> str | None:
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     type_name = memory_resource.public_type_name(value_type)
     if type_name in _EVENT_NAMES:
         return type_name
@@ -26,7 +28,9 @@ def _event_type_name(value_type: gdb.Type) -> str | None:
 
 
 def _event_handle(value: gdb.Value) -> gdb.Value:
-    value_type = value.type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+    )
     value = value.cast(value_type)
     for field in value_type.fields():
         if field.name == "__event_":
@@ -43,8 +47,11 @@ class EventPrinter:
     """Expose the native handle stored by a cuda event type."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = memory_resource.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = (
+            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+        )
         self.type_name = memory_resource.public_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:

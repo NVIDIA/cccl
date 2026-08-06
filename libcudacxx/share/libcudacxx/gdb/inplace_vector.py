@@ -20,7 +20,9 @@ def _template_name(type_name: str) -> str:
 
 
 def _is_cuda_inplace_vector(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     template_name = _template_name(memory_resource.public_type_name(value_type))
     return template_name == "cuda::std::inplace_vector"
 
@@ -29,8 +31,11 @@ class InplaceVectorPrinter:
     """Expose cuda::std::inplace_vector size and constructed elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = memory_resource.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = (
+            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+        )
         self.type_name = memory_resource.public_type_name(self.type)
         self.element_type = self.type.template_argument(0)
         self.capacity = int(self.type.template_argument(1))

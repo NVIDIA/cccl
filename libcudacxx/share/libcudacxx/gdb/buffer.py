@@ -24,9 +24,17 @@ def _template_name(value_type: gdb.Type) -> str:
     return str(value_type).split("<", 1)[0]
 
 
+def _strip_reference(value_type: gdb.Type) -> gdb.Type:
+    # target() gives the referenced type, but on a non-reference it either
+    # resolves a typedef or raises, so test the code first.
+    if value_type.code in (gdb.TYPE_CODE_REF, gdb.TYPE_CODE_RVALUE_REF):
+        return value_type.target()
+    return value_type
+
+
 def _is_cuda_buffer(value_type: gdb.Type) -> bool:
     # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = _strip_reference(value_type).strip_typedefs().unqualified()
     template_name = _template_name(value_type)
     return (
         template_name.startswith("cuda::")
@@ -38,8 +46,10 @@ class BufferPrinter:
     """Expose cuda::buffer metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        if value.type.code in (gdb.TYPE_CODE_REF, gdb.TYPE_CODE_RVALUE_REF):
+            value = value.referenced_value()
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = _strip_reference(value.type).strip_typedefs().unqualified()
         self.type_name = memory_resource.public_type_name(self.type)
         self.value_type = self.type.template_argument(0)
 

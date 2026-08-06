@@ -18,7 +18,11 @@ InternalDict = dict[str, object]
 
 def is_memory_resource(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
     )
     return _RESOURCE_PATTERN.fullmatch(type_name) is not None
 
@@ -26,7 +30,11 @@ def is_memory_resource(value_type: lldb.SBType, _internal_dict: InternalDict) ->
 def memory_resource_description(value: lldb.SBValue) -> str:
     """Describe a type-erased resource using only public type information."""
     type_name = (
-        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
+        value.GetType()
+        .GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
     )
     if not type_name:
         type_name = "type-erased resource"

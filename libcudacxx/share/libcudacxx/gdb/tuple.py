@@ -21,7 +21,9 @@ def _template_name(value_type: gdb.Type) -> str:
 
 def _is_cuda_tuple(value_type: gdb.Type) -> bool:
     # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     public_name = memory_resource.public_type_name(value_type)
     template_name = _template_name(value_type)
     return (
@@ -70,8 +72,11 @@ class TuplePrinter:
     """Expose cuda::std::tuple elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = memory_resource.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = (
+            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+        )
         # A fully empty tuple (e.g. cuda::std::tuple<>) can compile to a type
         # with no debug-visible __base_ member at all.
         try:

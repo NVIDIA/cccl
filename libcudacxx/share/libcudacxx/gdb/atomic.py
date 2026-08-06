@@ -36,7 +36,9 @@ def _is_atomic_ref(type_name: str) -> bool:
 
 def _complete_type_name(value_type: gdb.Type) -> str:
     """Return the complete public type name, including CUDA thread scope."""
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     type_name = memory_resource.public_type_name(value_type)
     template_name = _template_name(type_name)
     if template_name not in {"cuda::atomic", "cuda::atomic_ref"}:
@@ -48,7 +50,9 @@ def _complete_type_name(value_type: gdb.Type) -> str:
 
 
 def _is_cuda_atomic(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value_type).strip_typedefs().unqualified()
+    )
     template_name = _template_name(memory_resource.public_type_name(value_type))
     return template_name in _ATOMIC_NAMES
 
@@ -58,7 +62,9 @@ def _reference_pointer(value: gdb.Value) -> gdb.Value:
 
 
 def _stored_value(value: gdb.Value, type_name: str) -> gdb.Value:
-    value_type = value.type.strip_typedefs().unqualified()
+    value_type = (
+        memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+    )
     storage = value["__a"]
     stored = storage["__a_value"]
 
@@ -77,8 +83,11 @@ class AtomicPrinter:
     """Expose the value represented by a CUDA atomic without executing inferior code."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = memory_resource.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = (
+            memory_resource.strip_reference(value.type).strip_typedefs().unqualified()
+        )
         self.type_name = _complete_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:

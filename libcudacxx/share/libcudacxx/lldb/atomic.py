@@ -25,13 +25,27 @@ _THREAD_SCOPE_NAMES = {
 InternalDict = dict[str, object]
 
 
+def _deref(value: lldb.SBValue) -> lldb.SBValue:
+    if value.GetType().IsReferenceType():
+        return value.Dereference()
+    return value
+
+
 def _type_name(value_type: lldb.SBType) -> str:
-    return value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+    return (
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
+    )
 
 
 def _complete_type_name(value_type: lldb.SBType) -> str:
     """Return the complete public type name, including default template arguments."""
-    value_type = value_type.GetCanonicalType().GetUnqualifiedType()
+    value_type = (
+        value_type.GetCanonicalType().GetDereferencedType().GetUnqualifiedType()
+    )
     type_name = value_type.GetName() or value_type.GetDisplayTypeName() or ""
     type_name = _ABI_NAMESPACE_PATTERN.sub("", type_name)
     type_name = type_name.replace("cuda::std::thread_scope_", "cuda::thread_scope_")
@@ -57,14 +71,16 @@ def _reference_pointer(value: lldb.SBValue) -> lldb.SBValue:
 
 
 def atomic_ref_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
-    pointer = _reference_pointer(value.GetNonSyntheticValue())
+    pointer = _reference_pointer(_deref(value).GetNonSyntheticValue())
     if not pointer.IsValid():
         return None
     return f"ptr={pointer.GetValueAsUnsigned(0):#x}"
 
 
 def _stored_value(value: lldb.SBValue, type_name: str) -> lldb.SBValue:
-    value_type = value.GetType().GetCanonicalType().GetUnqualifiedType()
+    value_type = (
+        value.GetType().GetCanonicalType().GetDereferencedType().GetUnqualifiedType()
+    )
     stored = _reference_pointer(value)
     if not stored.IsValid():
         return lldb.SBValue()
@@ -91,6 +107,8 @@ class AtomicSyntheticProvider:
     """Expose the value represented by a CUDA atomic as one synthetic child."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        if value.GetType().IsReferenceType():
+            value = value.Dereference()
         self.value = value.GetNonSyntheticValue()
         self.child = lldb.SBValue()
         self.update()

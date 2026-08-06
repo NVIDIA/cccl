@@ -121,8 +121,8 @@ Arguments
 
 ``CASES``
   Ordered runner arguments describing the debugger stops and expressions. Each case
-  has the form ``--case <breakpoint> <caller-frame-index> <section-name>
-  <expression>``.
+  has the form ``--case <breakpoint> <section-name> <expression>``. The expression is
+  evaluated in the breakpoint function's own frame.
 
 #]=======================================================================]
 function(libcudacxx_add_pretty_printer_test)

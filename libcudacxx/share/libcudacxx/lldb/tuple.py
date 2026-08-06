@@ -15,16 +15,26 @@ _LEAF_INDEX_PATTERN = re.compile(r"__tuple_leaf<(\d+),")
 InternalDict = dict[str, object]
 
 
+def _deref(value: lldb.SBValue) -> lldb.SBValue:
+    if value.GetType().IsReferenceType():
+        return value.Dereference()
+    return value
+
+
 def is_cuda_tuple(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
     )
     return _TUPLE_PATTERN.fullmatch(type_name) is not None
 
 
 def _has_elements(value: lldb.SBValue) -> bool:
     # cuda::std::tuple<> can compile with no debug-visible __base_ member.
-    base = value.GetNonSyntheticValue().GetChildMemberWithName("__base_")
+    base = _deref(value).GetNonSyntheticValue().GetChildMemberWithName("__base_")
     return base.IsValid() and bool(_leaf_bases(base.GetType()))
 
 
@@ -136,6 +146,8 @@ class TupleSyntheticProvider:
     """Expose cuda::std::tuple elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        if value.GetType().IsReferenceType():
+            value = value.Dereference()
         self.value = value.GetNonSyntheticValue()
         self.leaves: list[tuple[int, lldb.SBTypeMember]] = []
         self.base: lldb.SBValue = lldb.SBValue()

@@ -33,12 +33,18 @@ class BufferInfo(NamedTuple):
 
 def is_cuda_buffer(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+        value_type.GetCanonicalType()
+        .GetDereferencedType()
+        .GetUnqualifiedType()
+        .GetDisplayTypeName()
+        or ""
     )
     return _BUFFER_PATTERN.fullmatch(type_name) is not None
 
 
 def _buffer_info(value: lldb.SBValue) -> BufferInfo | None:
+    if value.GetType().IsReferenceType():
+        value = value.Dereference()
     value = value.GetNonSyntheticValue()
     storage = value.GetChildMemberWithName("__buf_")
     if not storage.IsValid():
@@ -106,6 +112,9 @@ class BufferSyntheticProvider:
     """Expose cuda::buffer elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.declared_type = value.GetType()
+        if value.GetType().IsReferenceType():
+            value = value.Dereference()
         self.value = value.GetNonSyntheticValue()
         self.host_copy = lldb.SBValue()
         self.clear()
@@ -183,8 +192,7 @@ class BufferSyntheticProvider:
         # STL element access can preserve an alloc_traits::value_type typedef.
         # Report the canonical display name so LLDB shows cuda::buffer instead.
         return (
-            self.value.GetType()
-            .GetCanonicalType()
+            self.declared_type.GetCanonicalType()
             .GetUnqualifiedType()
             .GetDisplayTypeName()
             or ""
