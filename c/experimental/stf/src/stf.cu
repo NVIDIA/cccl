@@ -12,6 +12,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -588,6 +589,28 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  auto* grid_ptr = from_opaque(grid);
+  return to_opaque(stf_try_allocate([grid_ptr] {
+    return new data_place(data_place::replicated(*grid_ptr));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated_deferred(void)
+{
+  return to_opaque(stf_try_allocate([] {
+    return new data_place(data_place::replicated());
+  }));
+}
+
+int stf_data_place_is_replicated(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  return from_opaque(h)->is_replicated() ? 1 : 0;
+}
+
 stf_get_executor_fn stf_partition_fn_blocked(int dim)
 {
   switch (dim)
@@ -681,8 +704,9 @@ void* stf_data_place_allocate_nd(
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
-  dim4 dims;
-  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  // The layouts are static_asserted identical above; bit_cast avoids the
+  // -Wclass-memaccess warning that memcpy onto the non-trivial dim4 triggers.
+  const dim4 dims = ::std::bit_cast<dim4>(*data_dims);
   try
   {
     return from_opaque(h)->allocate_nd(dims, elemsize, stream);
@@ -1118,6 +1142,10 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
       const auto dst_end   = dst_begin + copy_sz;
       _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
                    "stf_ctx_wait destination buffer must not overlap the logical data range");
+      // The range bounds are only consumed by the assertion, which compiles
+      // out in release builds.
+      (void) src_end;
+      (void) dst_end;
       ::std::memcpy(dst, data.data_handle(), copy_sz);
     };
 

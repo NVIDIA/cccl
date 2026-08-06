@@ -300,6 +300,22 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Replicated placement: one copy of the data in the affine memory of
+//! every member of \p grid. Read-only at the place: mutate the data at
+//! another place, the next replicated read re-broadcasts.
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid);
+
+//! \brief Deferred replicated placement: replicated over the grid of
+//! whichever task the dependency is used with (bound at task acquisition; a
+//! scalar execution place degenerates to its affine data place).
+stf_data_place_handle stf_data_place_replicated_deferred(void);
+
+//! \brief Whether \p h is a replicated data place (concrete or deferred).
+//! Replicated places only support read access; bindings can validate at
+//! dependency construction instead of hitting the C++ exception at task
+//! creation. Returns 1 if replicated, 0 otherwise.
+int stf_data_place_is_replicated(stf_data_place_handle h);
+
 //! \brief Native blocked partition function for a given dimension,
 //! usable wherever an stf_get_executor_fn is expected without any FFI
 //! callback cost.
