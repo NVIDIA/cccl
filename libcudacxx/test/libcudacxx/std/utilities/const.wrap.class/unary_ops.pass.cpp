@@ -196,11 +196,14 @@ static_assert(HasNoexceptDeref<cuda::std::__constant_wrapper<WithOps{42}>>);
 
 #endif // TEST_STD_VER >= 2020
 
+// Old msvc doesn't evaluate noexcept properly.
+#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptBitNot<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<42>>);
+#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(!HasDeref<cuda::std::__constant_wrapper<42>>);
 
 #if TEST_STD_VER >= 2020

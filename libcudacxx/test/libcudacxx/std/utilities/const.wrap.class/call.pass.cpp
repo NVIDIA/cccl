@@ -132,8 +132,11 @@ static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<no
 
 static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
 static_assert(!cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
+// Old msvc doesn't evaluate noexcept properly.
+#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, cuda::std::__constant_wrapper<42>>,
               "the call expression is still nothrow because the constexpr path is taken");
+#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 #endif // !_CCCL_COMPILER(GCC, <, 13)
 // clang-format on
 

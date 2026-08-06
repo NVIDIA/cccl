@@ -238,15 +238,18 @@ static_assert(HasGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__con
 static_assert(HasSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+// Old msvc doesn't evaluate noexcept properly.
+#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptNotEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLess<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
 #if TEST_STD_VER >= 2020
 

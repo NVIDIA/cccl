@@ -352,6 +352,8 @@ static_assert(HasBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_
 static_assert(HasLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 
+// Old msvc doesn't evaluate noexcept properly.
+#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptMultiply<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
@@ -364,6 +366,7 @@ static_assert(HasNoexceptBitOr<cuda::std::__constant_wrapper<6>, cuda::std::__co
 static_assert(HasNoexceptBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
 #if TEST_STD_VER >= 2020
 
