@@ -631,6 +631,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 "the unstaged floor configuration must launch within the default shared memory limit on every device");
   static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
                 "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
+  static_assert(policy.poll_loads_per_lane >= 3 && policy.poll_loads_per_lane <= 32,
+                "poll_loads_per_lane must be in [3, 32] so the fold windows cover the dense cap and the int "
+                "open-length accumulator cannot overflow");
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
   static_assert(policy.buf_per_lane() * (static_cast<int>(sizeof(KeyT)) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
