@@ -89,6 +89,16 @@ is the default — owns the pages, freed when the module is unloaded). See
 `tests/stf/test_device_array_dlpack.py` and
 `tests/stf/interop/test_localized_weights_example.py`.
 
+Its sibling `interop.pytorch.replicated_empty` covers the other half of the
+placement vocabulary: one canonical copy, read by tasks at
+`replicated_dplace(t)` (= `data_place.replicated(grid)`, read-only) so the
+runtime materializes one replica per grid member — the
+write-once-read-replicated shape of model weights. Partition specs express
+the planning side of the same idea with
+`cute_partition.from_spec(..., replicate_over=(axis,...))`, which
+`placement_evaluate` reports as per-member copies
+(`stats.replication_factor`, `stats.resident_bytes`).
+
 ## Documentation
 
 For complete documentation, examples, and API reference, visit:

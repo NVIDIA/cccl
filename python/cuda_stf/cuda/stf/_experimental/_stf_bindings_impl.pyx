@@ -200,6 +200,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         uint64_t nallocs
         uint64_t total_samples
         uint64_t matching_samples
+        uint64_t replication_factor
 
     ctypedef struct stf_partition_dim_spec:
         int policy
@@ -208,7 +209,9 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
 
     int stf_placement_evaluate(stf_exec_place_handle grid, stf_get_executor_fn mapper, const stf_dim4* data_dims, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
     int stf_placement_evaluate_partition(stf_exec_place_handle grid, stf_cute_partition_handle partition, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
-    stf_cute_partition_handle stf_cute_partition_create(const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+    stf_cute_partition_handle stf_cute_partition_create(const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank, uint32_t replicated_axes_mask)
+    uint32_t stf_cute_partition_replicated_axes(stf_cute_partition_handle p)
+    uint64_t stf_cute_partition_replication_factor(stf_cute_partition_handle p)
     stf_cute_partition_handle stf_cute_partition_from_leaves(const uint64_t* place_extents, const int64_t* place_strides, const int* place_axes, size_t num_place_leaves, const uint64_t* local_extents, const int64_t* local_strides, size_t num_local_leaves, const stf_dim4* padded_dims, const stf_dim4* true_dims, const stf_dim4* grid_dims)
     void stf_cute_partition_destroy(stf_cute_partition_handle h)
     void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
@@ -1781,7 +1784,7 @@ cdef class cute_partition:
             self._h = NULL
 
     @staticmethod
-    def from_spec(true_dims, spec, grid_dims):
+    def from_spec(true_dims, spec, grid_dims, replicate_over=()):
         """Build a partition from one entry per tensor dimension (C order).
 
         Each entry is ``None`` (dimension not distributed) or a tuple:
@@ -1795,6 +1798,13 @@ cdef class cute_partition:
         Example - 3-D tensor, dimension 1 blocked over grid axis 0::
 
             part = cute_partition.from_spec((nz, ny, nx), (None, ("blocked", 0), None), (nplaces,))
+
+        ``replicate_over`` names grid axes (C-order, like the spec's axis
+        entries) that are bound to no tensor dimension and hold one copy of
+        their fiber's bytes per coordinate instead. Placement-planning
+        construct: ``placement_evaluate`` reports the per-member copies,
+        while allocating through such a partition is rejected (use
+        ``data_place.replicated`` for physically replicated instances).
         """
         public_dims = _validate_extents(true_dims, "true_dims")
         public_grid = _validate_extents(grid_dims, "grid_dims")
@@ -1822,8 +1832,11 @@ cdef class cute_partition:
             c_spec[i].policy = policy
             c_spec[i].mesh_axis = _public_axis_to_native(entry[1], grid_rank, "grid axis")
             c_spec[i].block = entry[2] if policy == 3 else 0
+        cdef uint32_t rep_mask = 0
+        for axis in replicate_over:
+            rep_mask |= <uint32_t>(1 << _public_axis_to_native(axis, grid_rank, "replicate_over axis"))
         cdef cute_partition p = cute_partition.__new__(cute_partition)
-        p._h = stf_cute_partition_create(&td, &gd, c_spec, <size_t>rank)
+        p._h = stf_cute_partition_create(&td, &gd, c_spec, <size_t>rank, rep_mask)
         if p._h == NULL:
             raise ValueError("invalid partition specification (see stderr for the underlying error)")
         p._rank = rank
@@ -1887,6 +1900,18 @@ cdef class cute_partition:
     def grid_rank(self):
         """Rank of the grid of places."""
         return self._grid_rank
+
+    @property
+    def replicate_over(self):
+        """Grid axes (C-order tuple) holding one copy per coordinate."""
+        cdef uint32_t mask = stf_cute_partition_replicated_axes(self._h)
+        return tuple(sorted(
+            self._grid_rank - 1 - a for a in range(4) if mask & (1 << a)))
+
+    @property
+    def replication_factor(self):
+        """Copies of each byte the replicated axes imply (1 = none)."""
+        return stf_cute_partition_replication_factor(self._h)
 
     @property
     def true_dims(self):
@@ -2006,7 +2031,8 @@ class placement_stats:
     evaluation of one) distributes a tensor over data places."""
 
     def __init__(self, total_bytes, vm_bytes, block_size, nblocks, nallocs,
-                 total_samples, matching_samples, bytes_per_grid_index):
+                 total_samples, matching_samples, bytes_per_grid_index,
+                 replication_factor=1):
         self.total_bytes = total_bytes
         self.vm_bytes = vm_bytes
         self.block_size = block_size
@@ -2016,6 +2042,14 @@ class placement_stats:
         self.matching_samples = matching_samples
         #: bytes owned by each grid position (list indexed by linear grid index)
         self.bytes_per_grid_index = bytes_per_grid_index
+        #: copies of each byte along replicated partition axes (1 = none)
+        self.replication_factor = replication_factor
+
+    @property
+    def resident_bytes(self):
+        """Total bytes resident across all copies
+        (``vm_bytes * replication_factor``)."""
+        return self.vm_bytes * self.replication_factor
 
     @property
     def accuracy(self):
@@ -2105,7 +2139,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
             c_stats.nallocs,
             c_stats.total_samples,
             c_stats.matching_samples,
-            [per_pos[i] for i in range(grid_size)])
+            [per_pos[i] for i in range(grid_size)],
+            replication_factor=c_stats.replication_factor)
     finally:
         free(per_pos)
 

@@ -320,12 +320,14 @@ public:
     const ::std::vector<layout_leaf>& local_leaves,
     dim4 padded_dims,
     dim4 true_dims,
-    dim4 grid_dims)
+    dim4 grid_dims,
+    unsigned replicated_axes_mask = 0)
       : num_place_leaves_(place_leaves.size())
       , num_local_leaves_(local_leaves.size())
       , padded_dims_(padded_dims)
       , true_dims_(true_dims)
       , grid_dims_(grid_dims)
+      , replicated_axes_mask_(replicated_axes_mask)
   {
     if (place_leaves.size() > max_leaves || local_leaves.size() > max_leaves)
     {
@@ -856,6 +858,32 @@ public:
     return offset;
   }
 
+  //! Bit a set = grid axis a is REPLICATED: it is bound to no tensor
+  //! dimension and every coordinate along it holds one copy of the bytes its
+  //! fiber owns. A placement-planning construct: evaluation reports the
+  //! per-member copies, while a composite allocation (one VA range, each page
+  //! physically mapped once) cannot materialize them and is rejected -- use
+  //! data_place::replicated for physically replicated instances.
+  unsigned replicated_axes_mask() const
+  {
+    return replicated_axes_mask_;
+  }
+
+  //! Number of copies the replicated axes imply (product of their grid
+  //! extents; 1 when no axis is replicated)
+  size_t replication_factor() const
+  {
+    size_t n = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (replicated_axes_mask_ & (1u << a))
+      {
+        n *= grid_dims_.get(a);
+      }
+    }
+    return n;
+  }
+
   //! Structural comparison (used for data place ordering)
   int cmp(const cute_partition_descriptor& o) const
   {
@@ -920,7 +948,7 @@ public:
         return c;
       }
     }
-    return 0;
+    return cmp_sizes(replicated_axes_mask_, o.replicated_axes_mask_);
   }
 
   bool operator==(const cute_partition_descriptor& o) const
@@ -993,18 +1021,27 @@ private:
           throw ::std::invalid_argument("cute_partition: grid axis bound to more than one place leaf");
         }
       }
+      if (replicated_axes_mask_ & (1u << static_cast<unsigned>(a)))
+      {
+        throw ::std::invalid_argument(
+          "cute_partition: a replicated grid axis cannot also be bound to a tensor dimension");
+      }
     }
 
-    // Without replication, every grid axis with extent > 1 must be bound to a
-    // tensor dimension; otherwise owner() pins that axis to coordinate 0 and
-    // the remaining places on that axis own no bytes. Relax this only if
-    // replication is introduced.
-    if (num_places() != grid_dims_.size())
+    if ((replicated_axes_mask_ & ~0xFu) != 0)
+    {
+      throw ::std::invalid_argument("cute_partition: replicated axes are grid axes 0..3");
+    }
+
+    // Every grid axis with extent > 1 must be either bound to a tensor
+    // dimension or explicitly REPLICATED; otherwise owner() pins that axis to
+    // coordinate 0 and the remaining places on that axis own no bytes.
+    if (num_places() * replication_factor() != grid_dims_.size())
     {
       throw ::std::invalid_argument(
         "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
-        "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
-        "tensor dimension.");
+        "tensor dimension and not replicated). Collapse the unused grid axes, bind them to a tensor dimension, "
+        "or declare them replicated.");
     }
 
     for (size_t d = 0; d < 4; d++)
@@ -1073,6 +1110,7 @@ private:
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
+  unsigned replicated_axes_mask_ = 0;
 };
 
 //! A tensor dimension that is local to every grid place.
@@ -1181,6 +1219,7 @@ public:
       : padded_dims_(descriptor.padded_dims())
       , true_dims_(descriptor.true_dims())
       , grid_dims_(descriptor.grid_dims())
+      , replicated_axes_mask_(descriptor.replicated_axes_mask())
   {
     if (descriptor.place_leaves().size() != num_place_leaves || descriptor.place_axes().size() != num_place_leaves
         || descriptor.local_leaves().size() != num_local_leaves)
@@ -1214,6 +1253,12 @@ public:
   _CCCL_HOST_DEVICE const dim4& grid_dims() const
   {
     return grid_dims_;
+  }
+
+  //! See cute_partition_descriptor::replicated_axes_mask()
+  _CCCL_HOST_DEVICE unsigned replicated_axes_mask() const
+  {
+    return replicated_axes_mask_;
   }
 
   _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> place_leaves() const
@@ -1437,6 +1482,7 @@ private:
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
+  unsigned replicated_axes_mask_ = 0;
 };
 
 /**
@@ -1446,15 +1492,21 @@ private:
  * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up
  * to divisibility, which is what makes the resulting layout exact (see the
  * file-level documentation). Every grid axis with extent > 1 must be bound by
- * some entry; unbound axes would leave those places idle (replication is not
- * supported) and are rejected at construction time.
+ * some entry or declared REPLICATED via \p replicated_axes; axes that are
+ * neither would leave those places idle and are rejected at construction
+ * time. Replicated axes are a placement-planning construct: evaluation
+ * reports one copy of the fiber's bytes per coordinate along them, while a
+ * composite allocation cannot materialize the copies and is rejected (use
+ * data_place::replicated for physically replicated instances).
  *
  * @param true_dims True tensor extents (dimension 0 fastest)
  * @param spec One entry per tensor dimension (at most 4)
  * @param grid_dims Extents of the grid of places
+ * @param replicated_axes Bitmask of grid axes holding one copy per
+ *        coordinate (bit a = axis a; 0 = no replication)
  */
-inline cute_partition_descriptor
-make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
+inline cute_partition_descriptor make_partition_descriptor(
+  dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims, unsigned replicated_axes = 0)
 {
   if (spec.size() > 4)
   {
@@ -1573,7 +1625,8 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
     mv(local_leaves),
     dim4(padded[0], padded[1], padded[2], padded[3]),
     true_dims,
-    grid_dims);
+    grid_dims,
+    replicated_axes);
 }
 
 inline dim_spec __make_runtime_dim_spec(whole_dim_spec)
@@ -1698,11 +1751,50 @@ template <typename Partition>
     probes,
     stats);
 
+  // Replicated axes multiply the placement: every coordinate along them
+  // holds its own copy of the bytes its fiber owns, and owner() pins those
+  // axes to 0, so fan each owner run out to all member coordinates.
+  const unsigned rep_mask   = partition.replicated_axes_mask();
+  const dim4 gdims          = grid.get_dims();
+  stats.replication_factor  = 1;
+  for (size_t a = 0; a < 4; a++)
+  {
+    if (rep_mask & (1u << a))
+    {
+      stats.replication_factor *= gdims.get(a);
+    }
+  }
+
   for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
-    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
-    stats.nallocs++;
+    ::cuda::std::array<size_t, 4> c = {
+      static_cast<size_t>(p.x), static_cast<size_t>(p.y), static_cast<size_t>(p.z), static_cast<size_t>(p.t)};
+    // Mixed-radix walk over the replicated axes' coordinates
+    while (true)
+    {
+      const pos4 q(c[0], c[1], c[2], c[3]);
+      const data_place place = grid.get_place(q).affine_data_place();
+      stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+      stats.bytes_per_grid_index[gdims.get_index(q)] += num_blocks * block_size;
+      stats.nallocs++;
+
+      size_t a = 0;
+      for (; a < 4; a++)
+      {
+        if (!(rep_mask & (1u << a)))
+        {
+          continue;
+        }
+        if (++c[a] < gdims.get(a))
+        {
+          break;
+        }
+        c[a] = 0;
+      }
+      if (a == 4)
+      {
+        break;
+      }
+    }
   });
 
   return stats;
@@ -1729,6 +1821,16 @@ template <typename Partition>
 inline auto make_partition_placement_provider(
   const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
 {
+  if (partition.replicated_axes_mask() != 0)
+  {
+    // One VA range maps every page exactly once, so a composite allocation
+    // cannot materialize per-member copies. Replicated axes are a
+    // placement-planning construct (see evaluate_localized_placement); use
+    // data_place::replicated for physically replicated instances.
+    throw ::std::invalid_argument(
+      "cute_partition: a partition with replicated axes cannot back a composite allocation (evaluation only); use "
+      "data_place::replicated for physically replicated instances");
+  }
   return [partition, data_dims, total_size, elemsize](
            size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
     // Budget the analytic walks against what the sampled fallback would

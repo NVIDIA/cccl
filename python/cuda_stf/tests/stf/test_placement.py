@@ -267,6 +267,76 @@ def test_placement_evaluate_all_mapper_forms():
     assert s_callable.bytes_per_grid_index == s_native.bytes_per_grid_index
 
 
+def test_cute_partition_replicate_over():
+    """Replicated grid axes: declared, never bound, and visible as properties."""
+    # 2-D grid: tensor dim 0 blocked over grid axis 0, grid axis 1 replicated
+    part = stf.cute_partition.from_spec(
+        (8,), (("blocked", 0),), (2, 3), replicate_over=(1,)
+    )
+    assert part.replicate_over == (1,)
+    assert part.replication_factor == 3
+
+    # No replication: empty tuple, factor 1
+    plain = stf.cute_partition.from_spec((8,), (("blocked", 0),), (2,))
+    assert plain.replicate_over == ()
+    assert plain.replication_factor == 1
+
+    # An unbound grid axis without replicate_over is still rejected
+    with pytest.raises(ValueError):
+        stf.cute_partition.from_spec((8,), (("blocked", 0),), (2, 3))
+
+    # A replicated axis must not also be bound by the spec
+    with pytest.raises(ValueError):
+        stf.cute_partition.from_spec(
+            (8,), (("blocked", 0),), (2,), replicate_over=(0,)
+        )
+
+    # Replicated axes are grid axes: out-of-range is rejected
+    with pytest.raises(ValueError, match="replicate_over axis"):
+        stf.cute_partition.from_spec(
+            (8,), (("blocked", 0),), (2, 3), replicate_over=(2,)
+        )
+
+
+def test_placement_evaluate_replicated_reporting():
+    """Replicated axes report one copy of the fiber's bytes per member."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 4 * MiB
+    # The tensor is not distributed at all: the single grid axis is
+    # replicated, so every member holds a full copy.
+    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
+    s = stf.placement_evaluate(grid, part, None, elemsize=1, block_size=2 * MiB)
+
+    assert s.replication_factor == 2
+    assert s.bytes_per_grid_index == [4 * MiB, 4 * MiB]
+    assert s.resident_bytes == 2 * s.vm_bytes
+    assert s.accuracy == 1.0
+
+    # A non-replicated evaluation reports factor 1 and resident == vm
+    plain = stf.cute_partition.from_spec((n,), (("blocked", 0),), (2,))
+    s_plain = stf.placement_evaluate(grid, plain, None, elemsize=1, block_size=2 * MiB)
+    assert s_plain.replication_factor == 1
+    assert s_plain.resident_bytes == s_plain.vm_bytes
+
+
+def test_replicated_partition_allocation_rejected():
+    """Evaluation-only: a composite allocation cannot materialize copies."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 4 * MiB
+    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
+    dplace = stf.data_place.composite_cute(grid, part)
+    # The C++ detail ("use data_place.replicated for physically replicated
+    # instances") goes to stderr; the Python surface is the MemoryError.
+    with pytest.raises(MemoryError):
+        stf.DeviceArray((n,), "uint8", dplace)
+
+
 def test_placement_evaluate_c_order_callback():
     """The mapper sees C-order coordinates of the data's rank. A 2-D
     non-square shape blocked along axis 0 must match the equivalent

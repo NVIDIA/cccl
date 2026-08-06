@@ -231,8 +231,26 @@ class LocalizedMeta:
     _keepalive: list = _field(default_factory=list, repr=False)
 
 
-#: base storage pointer -> LocalizedMeta (guarded by the GIL; allocation
-#: and lookup are host-side).
+@_dataclass
+class ReplicatedMeta:
+    """Placement metadata for one replicated allocation.
+
+    One canonical physical copy backs the tensor; the grid names the places
+    that hold their own copy when the tensor is READ at
+    ``data_place.replicated(grid)`` (the runtime broadcasts on first use and
+    reuses the replicas afterwards). The write-once-read-replicated shape of
+    model weights.
+    """
+
+    shape: tuple
+    dtype: _Any
+    grid: _Any
+    lifetime: str = "pinned"  # "pinned" (CAI + registry) | "gc" (DLPack)
+    _keepalive: list = _field(default_factory=list, repr=False)
+
+
+#: base storage pointer -> LocalizedMeta | ReplicatedMeta (guarded by the
+#: GIL; allocation and lookup are host-side).
 _REGISTRY: dict = {}
 
 
@@ -337,6 +355,72 @@ def localized_parameter(
     )
 
 
+def replicated_empty(shape, dtype, grid, *, device=0, lifetime="pinned"):
+    """Allocate a ``torch.Tensor`` intended to be replicated over *grid*.
+
+    The sibling of :func:`localized_empty` for the other half of the
+    placement vocabulary: instead of striping one allocation over the grid,
+    the tensor is a single canonical copy (plain device memory on
+    ``device``) that tasks READ at ``data_place.replicated(grid)`` — the
+    runtime materializes one replica per grid member on first use. Write the
+    tensor at its canonical place (weight loading), read it replicated:
+    replicated places are read-only by contract.
+
+    Use :func:`replicated_dplace` to obtain the read-side data place for
+    task dependencies. ``lifetime`` follows :func:`localized_empty`:
+    ``"pinned"`` (CAI import, freed via :func:`release`) or ``"gc"``
+    (DLPack import, storage owns the allocation).
+    """
+    from .. import DeviceArray, data_place  # noqa: PLC0415
+
+    torch = _import_torch()
+    if isinstance(shape, int):
+        shape = (shape,)
+    shape = tuple(int(s) for s in shape)
+    if lifetime not in ("pinned", "gc"):
+        raise ValueError(f'lifetime must be "pinned" or "gc", got {lifetime!r}')
+
+    np_dtype = _np_dtype(dtype)
+    meta = ReplicatedMeta(shape=shape, dtype=dtype, grid=grid, lifetime=lifetime)
+
+    dplace = data_place.device(int(device))
+    buf = DeviceArray(shape, np_dtype, dplace)
+
+    if lifetime == "gc":
+        t = torch.from_dlpack(buf)
+    else:
+        t = torch.as_tensor(buf)
+    _, storage_dtypes = _np_dtype_tables()
+    if isinstance(dtype, torch.dtype) and dtype in storage_dtypes:
+        t = t.view(dtype)
+    t = t.view(shape)
+
+    base = t.untyped_storage().data_ptr()
+    if lifetime == "gc":
+        _weakref.finalize(buf, _evict, base, meta)
+    else:
+        meta._keepalive.extend((buf, dplace))
+    _REGISTRY[base] = meta
+    return t
+
+
+def replicated_dplace(tensor):
+    """Read-side data place for a :func:`replicated_empty` tensor.
+
+    Returns ``data_place.replicated(meta.grid)`` for use in read
+    dependencies (write access at a replicated place raises at dependency
+    construction).
+    """
+    from .. import data_place  # noqa: PLC0415
+
+    meta = get_meta(tensor)
+    if meta is None:
+        raise ValueError("tensor is not a registered STF allocation")
+    if not isinstance(meta, ReplicatedMeta):
+        raise TypeError("tensor is a localized allocation, not a replicated one")
+    return data_place.replicated(meta.grid)
+
+
 def release(tensor):
     """Explicitly release *tensor*'s localized allocation.
 
@@ -391,6 +475,11 @@ def placement_report(tensor, probes: int = 4096):
     if meta is None:
         raise ValueError("tensor is not a localized allocation")
     np_dtype = _np_dtype(meta.dtype)
+    if isinstance(meta, ReplicatedMeta):
+        raise ValueError(
+            "tensor is a replicated allocation: one full copy per grid "
+            "member by construction (no block-owner decision to report)"
+        )
     if meta.partition is not None:
         return placement_evaluate(meta.grid, meta.partition, None, np_dtype.itemsize)
     numel = 1

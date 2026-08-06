@@ -183,3 +183,79 @@ def test_localized_parameter_defaults_to_gc(grid):
 def test_invalid_lifetime_rejected(grid):
     with pytest.raises(ValueError, match="lifetime"):
         tp.localized_empty(SHAPE, torch.float16, grid, lifetime="forever")
+
+
+# ---------------------------------------------------------------------------
+# replicated_empty: the other half of the placement vocabulary — one
+# canonical copy, read replicated over the grid.
+# ---------------------------------------------------------------------------
+
+
+@requires_cuda
+def test_replicated_empty_roundtrip(grid):
+    t = tp.replicated_empty(SHAPE, torch.float32, grid)
+    src = torch.randn(SHAPE, dtype=torch.float32, device="cuda")
+    t.copy_(src)
+    torch.cuda.synchronize()
+    assert torch.equal(t, src)
+    assert t.dtype == torch.float32 and tuple(t.shape) == SHAPE
+
+
+@requires_cuda
+def test_replicated_empty_meta_and_dplace(grid):
+    t = tp.replicated_empty((64,), torch.float32, grid)
+    meta = tp.get_meta(t)
+    assert isinstance(meta, tp.ReplicatedMeta)
+    assert meta.grid is grid
+    # meta survives views and Parameter wrapping (same storage)
+    assert tp.get_meta(t.view(8, 8)) is meta
+
+    dplace = tp.replicated_dplace(t)
+    assert dplace is not None
+
+    # The read-side place is read-only by contract: a write dep at it is
+    # rejected at dependency construction
+    import numpy as np
+
+    ctx = stf.context()
+    lX = ctx.logical_data(np.zeros(8, dtype=np.float32))
+    with pytest.raises(ValueError, match="read"):
+        stf.write(lX, dplace)
+    ctx.finalize()
+
+
+@requires_cuda
+def test_replicated_dplace_rejects_localized(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid)
+    with pytest.raises(TypeError, match="localized"):
+        tp.replicated_dplace(t)
+    tp.release(t)
+
+
+@requires_cuda
+def test_replicated_empty_gc_lifetime(grid):
+    t = tp.replicated_empty((128,), torch.float32, grid, lifetime="gc")
+    meta = tp.get_meta(t)
+    assert meta is not None and meta.lifetime == "gc"
+    base = t.untyped_storage().data_ptr()
+    del t
+    import gc
+
+    gc.collect()
+    # storage died -> finalizer evicted the metadata
+    del base
+    assert all(m is not meta for m in tp.live_metas())
+
+
+@requires_cuda
+def test_replicated_empty_release_pinned(grid):
+    t = tp.replicated_empty((128,), torch.float32, grid)
+    assert tp.get_meta(t) is not None
+    tp.release(t)
+    assert tp.get_meta(t) is None
+
+
+@requires_cuda
+def test_replicated_empty_invalid_lifetime(grid):
+    with pytest.raises(ValueError, match="lifetime"):
+        tp.replicated_empty((8,), torch.float32, grid, lifetime="forever")
