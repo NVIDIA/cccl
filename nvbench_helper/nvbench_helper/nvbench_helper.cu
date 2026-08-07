@@ -110,6 +110,13 @@ public:
   template <typename T>
   void generate(seed_t seed, cuda::std::span<T> device_span, bit_entropy entropy, T min, T max);
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  void set_stream(cuda::stream_ref stream)
+  {
+    curandSetStream(m_gen, stream.get());
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
   const double* new_uniform_distribution(seed_t seed, std::size_t num_items);
   const double* new_lognormal_distribution(seed_t seed, std::size_t num_items);
   const double* new_constant(std::size_t num_items, double val);
@@ -284,6 +291,16 @@ public:
     }
   }
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  template <typename T>
+  void generate(cuda::stream_ref stream, seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max)
+  {
+    construct_guard(executor::device);
+    m_device_generator->set_stream(stream);
+    this->generate(thrust::cuda::par.on(stream.get()), *m_device_generator, seed, span, entropy, min, max);
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
   template <typename T>
   void power_law_segment_offsets(executor exec, seed_t seed, cuda::std::span<T> span, std::size_t total_elements)
   {
@@ -387,7 +404,7 @@ void generator_t::generate(
 
       for (int i = 0; i < number_of_steps; i++, ++seed)
       {
-        this->generate(is_device ? executor::device : executor::host, seed, tmp, bit_entropy::_1_000, min, max);
+        this->generate(exec, dist, seed, tmp, bit_entropy::_1_000, min, max);
 
         thrust::transform(
           exec,
@@ -466,7 +483,7 @@ void generator_t::generate(
 
       for (int i = 0; i < number_of_steps; i++, ++seed)
       {
-        this->generate(is_device ? executor::device : executor::host, seed, tmp, bit_entropy::_1_000, min, max);
+        this->generate(exec, dist, seed, tmp, bit_entropy::_1_000, min, max);
 
         thrust::transform(
           exec,
@@ -591,6 +608,14 @@ void gen_device(seed_t seed, cuda::std::span<T> device_span, bit_entropy entropy
 {
   gen(executor::device, seed, device_span, entropy, min, max);
 }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T>
+void gen_device(seed_t seed, cuda::stream_ref stream, cuda::std::span<T> device_span, bit_entropy entropy, T min, T max)
+{
+  generator_t{}.generate(stream, seed, device_span, entropy, min, max);
+}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 template <class T>
 struct offset_to_iterator_t
@@ -797,8 +822,17 @@ INSTANTIATE(uint64_t);
 #undef INSTANTIATE
 
 // Instantiates only the uniform data generators used by non-segmented benchmarks (e.g. Reduce/Scan/RadixSort).
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  define INSTANTIATE_STREAM_GEN(TYPE)      \
+    template void detail::gen_device<TYPE>( \
+      seed_t, cuda::stream_ref, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
+#else // THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#  define INSTANTIATE_STREAM_GEN(TYPE)
+#endif // THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+
 #define INSTANTIATE_GEN(TYPE)                                                                             \
   template void detail::gen_device<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max); \
+  INSTANTIATE_STREAM_GEN(TYPE);                                                                           \
   template void detail::gen_host<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
 
 #define INSTANTIATE(TYPE)                                                                                               \
@@ -838,3 +872,4 @@ INSTANTIATE_GEN(__nv_bfloat16);
 
 #undef INSTANTIATE
 #undef INSTANTIATE_GEN
+#undef INSTANTIATE_STREAM_GEN

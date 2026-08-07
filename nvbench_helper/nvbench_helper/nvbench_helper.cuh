@@ -13,6 +13,8 @@
 #include <cuda/std/type_traits>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cuda/buffer>
+#  include <cuda/devices>
 #  include <cuda/memory_resource>
 #  include <cuda/std/execution>
 #  include <cuda/stream>
@@ -212,6 +214,24 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   throw std::runtime_error("Can't convert string to bit entropy");
 }
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+[[nodiscard]] inline ::cuda::stream_ref get_stream_ref(nvbench::state& state)
+{
+  return ::cuda::stream_ref{state.get_cuda_stream()};
+}
+
+[[nodiscard]] inline ::cuda::stream_ref get_stream_ref(nvbench::launch& launch)
+{
+  return ::cuda::stream_ref{launch.get_stream()};
+}
+
+[[nodiscard]] inline auto pinned_memory_resource()
+{
+  return ::cuda::mr::synchronous_resource_adapter<::cuda::mr::legacy_pinned_memory_resource>{
+    ::cuda::mr::legacy_pinned_memory_resource{}};
+}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 // Creates an interpolated value of type T between min (at = 0.0) and max (at = 1.0).
 template <typename T>
 [[nodiscard]] T lerp_min_max(double at) noexcept
@@ -230,10 +250,43 @@ namespace detail
 void do_not_optimize(const void* ptr);
 
 template <typename T>
+struct default_gen_bounds
+{
+  [[nodiscard]] static T min()
+  {
+    return ::cuda::std::numeric_limits<T>::min();
+  }
+
+  [[nodiscard]] static T max()
+  {
+    return ::cuda::std::numeric_limits<T>::max();
+  }
+};
+
+template <typename T>
+struct default_gen_bounds<::cuda::std::complex<T>>
+{
+  [[nodiscard]] static ::cuda::std::complex<T> min()
+  {
+    return {::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::min()};
+  }
+
+  [[nodiscard]] static ::cuda::std::complex<T> max()
+  {
+    return {::cuda::std::numeric_limits<T>::max(), ::cuda::std::numeric_limits<T>::max()};
+  }
+};
+
+template <typename T>
 void gen_host(seed_t seed, cuda::std::span<T> data, bit_entropy entropy, T min, T max);
 
 template <typename T>
 void gen_device(seed_t seed, cuda::std::span<T> data, bit_entropy entropy, T min, T max);
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T>
+void gen_device(seed_t seed, cuda::stream_ref stream, cuda::std::span<T> data, bit_entropy entropy, T min, T max);
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 template <typename T>
 void gen_uniform_key_segments_host(
@@ -278,6 +331,21 @@ struct generator_base_t
     ++m_seed;
     return vec;
   }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  template <typename T>
+  auto device_buffer(cuda::stream_ref stream, cuda::device_ref device, T min, T max)
+  {
+    auto buffer = cuda::make_device_buffer<T>(stream, device, m_elements, cuda::no_init);
+    stream.sync();
+
+    cuda::std::span<T> span(buffer.data(), buffer.size());
+    gen_device(m_seed, stream, span, m_entropy, min, max);
+
+    ++m_seed;
+    return buffer;
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 template <class T>
@@ -290,6 +358,13 @@ struct vector_generator_t : generator_base_t
   {
     return generator_base_t::generate(m_min, m_max);
   }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  auto device_buffer(cuda::stream_ref stream, cuda::device_ref device)
+  {
+    return generator_base_t::device_buffer(stream, device, m_min, m_max);
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 template <>
@@ -298,21 +373,16 @@ struct vector_generator_t<void> : generator_base_t
   template <typename T>
   operator thrust::device_vector<T>()
   {
-    return generator_base_t::generate(::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::max());
+    return generator_base_t::generate(default_gen_bounds<T>::min(), default_gen_bounds<T>::max());
   }
 
-  // This overload is needed because numeric limits is not specialized for complex, making
-  // the min and max values for complex equal zero.
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   template <typename T>
-  operator thrust::device_vector<::cuda::std::complex<T>>()
+  auto device_buffer(cuda::stream_ref stream, cuda::device_ref device)
   {
-    const auto min =
-      ::cuda::std::complex<T>{::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::min()};
-    const auto max =
-      ::cuda::std::complex<T>{::cuda::std::numeric_limits<T>::max(), ::cuda::std::numeric_limits<T>::max()};
-
-    return generator_base_t::generate(min, max);
+    return generator_base_t::device_buffer(stream, device, default_gen_bounds<T>::min(), default_gen_bounds<T>::max());
   }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 struct uniform_key_segments_generator_t
@@ -335,6 +405,21 @@ struct uniform_key_segments_generator_t
     ++m_seed;
     return keys_vec;
   }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  template <class KeyT>
+  auto device_buffer(cuda::stream_ref stream, cuda::device_ref device)
+  {
+    auto keys_buffer = cuda::make_device_buffer<KeyT>(stream, device, m_total_elements, cuda::no_init);
+    stream.sync();
+
+    cuda::std::span<KeyT> keys(keys_buffer.data(), keys_buffer.size());
+    gen_uniform_key_segments_device(m_seed, keys, m_min_segment_size, m_max_segment_size);
+
+    ++m_seed;
+    return keys_buffer;
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 struct uniform_segment_offsets_generator_t
@@ -753,8 +838,7 @@ auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 }
 auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
-  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc)
-    .with(cuda::get_stream, launch.get_stream().get_stream());
+  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc).with(cuda::get_stream, get_stream_ref(launch));
 }
 #else
 auto policy(caching_allocator_t&, nvbench::launch&)
@@ -764,12 +848,27 @@ auto policy(caching_allocator_t&, nvbench::launch&)
 #endif
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+// Returns an environment for benchmarking using memory_resource as MR, stream, and any additional envs passed in.
+template <typename MemoryResource, typename... MoreEnvs>
+auto cub_bench_env(MemoryResource& memory_resource, ::cuda::stream_ref stream, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{stream, memory_resource, envs...};
+}
+
+// Returns an environment for benchmarking using alloc as MR, stream, and any additional envs passed in.
+template <typename... MoreEnvs>
+auto cub_bench_env(caching_allocator_t& alloc, ::cuda::stream_ref stream, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{
+    stream, ::cuda::std::execution::prop{cuda::mr::get_memory_resource, ::cuda::mr::resource_ref<>{alloc}}, envs...};
+}
+
 // Returns an environment for benchmarking using alloc as MR, launch's stream, and any additional envs passed in.
 template <typename... MoreEnvs>
 auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs... envs)
 {
   return cuda::std::execution::env{
-    ::cuda::stream_ref{launch.get_stream().get_stream()},
+    get_stream_ref(launch),
     ::cuda::std::execution::prop{cuda::mr::get_memory_resource, ::cuda::mr::resource_ref<>{alloc}},
     envs...};
 }
