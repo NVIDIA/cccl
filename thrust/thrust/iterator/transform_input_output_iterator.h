@@ -160,6 +160,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
+  _CCCL_EXEC_CHECK_DISABLE
   transform_input_output_iterator() = default;
 
   //!  This constructor takes as argument a \c Iterator an \c InputFunction and an

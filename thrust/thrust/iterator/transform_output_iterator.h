@@ -132,6 +132,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
+  _CCCL_EXEC_CHECK_DISABLE
   transform_output_iterator() = default;
 
   //! This constructor takes as argument an \c OutputIterator and an \c UnaryFunction and copies them to a new \p
