@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Target script for `docker run` command in build_cuda_stf_python.sh
+# The /workspace pathnames are hard-wired here.
+
+# Install GCC 13 toolset (needed for the build) and ccache (shared between
+# cu12 and cu13 builds via /root/.ccache bind-mount from the host).
+/workspace/ci/util/retry.sh 5 30 dnf -y install \
+  gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ ccache
+
+# When the caller bind-mounts a ccache dir, wire it through to CMake. This
+# transparently caches every compile, so the second wheel build (cu13 after
+# cu12, or vice versa) reuses the entire LLVM/clang object tree.
+if [[ -n "${CCACHE_DIR:-}" ]]; then
+  export CMAKE_C_COMPILER_LAUNCHER=ccache
+  export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
+  echo "ccache enabled: CCACHE_DIR=${CCACHE_DIR}"
+  ccache --version 2>&1 | head -1 || true
+  ccache --show-stats 2>&1 | head -5 || true
+fi
+echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
+# shellcheck disable=SC1091
+source /etc/profile.d/enable_devtools.sh
+
+# Check what's available
+command -v gcc
+gcc --version
+command -v nvcc
+nvcc --version
+
+# Set up Python environment
+# shellcheck source=ci/pyenv_helper.sh
+source /workspace/ci/pyenv_helper.sh
+# shellcheck disable=SC2154
+setup_python_env "${py_version}"
+command -v python
+python --version
+echo "Done setting up python env"
+
+# Figure out the version to use for the package, we need repo history
+if "$(git rev-parse --is-shallow-repository)"; then
+  git fetch --unshallow
+fi
+# Match the cuda-cccl version prefix so cuda-stf and cuda-cccl stay in lockstep.
+export PACKAGE_VERSION_PREFIX="0.1."
+package_version=$(/workspace/ci/generate_version.sh)
+echo "Using package version ${package_version}"
+# Override the version used by setuptools_scm to the custom version
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_STF="${package_version}"
+
+cd /workspace/python/cuda_stf
+
+# Determine CUDA version from nvcc
+cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
+echo "Detected CUDA version: ${cuda_version}"
+
+# Configure compilers:
+CXX="$(command -v g++)"
+export CXX
+CUDACXX="$(command -v nvcc)"
+export CUDACXX
+CUDAHOSTCXX="$(command -v g++)"
+export CUDAHOSTCXX
+
+# Build the wheel
+python -m pip wheel --no-deps --verbose --wheel-dir dist .
+
+# Rename wheel to include CUDA version suffix
+for wheel in dist/cuda_stf-*.whl; do
+    if [[ -f "$wheel" ]]; then
+        base_name=$(basename "$wheel" .whl)
+        new_name="${base_name}.cu${cuda_version}.whl"
+        mv "$wheel" "dist/${new_name}"
+        echo "Renamed wheel to: ${new_name}"
+    fi
+done
+
+# Move wheel to output directory
+mkdir -p /workspace/wheelhouse
+mv dist/cuda_stf-*.cu*.whl /workspace/wheelhouse/
