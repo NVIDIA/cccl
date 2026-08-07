@@ -27,7 +27,13 @@ function(libcudacxx_codegen_check_tools out_var)
 
   find_program(
     libcudacxx_codegen_filecheck
-    NAMES FileCheck FileCheck-21 FileCheck-20 FileCheck-19 FileCheck-18
+    NAMES
+      FileCheck
+      FileCheck-22
+      FileCheck-21
+      FileCheck-20
+      FileCheck-19
+      FileCheck-18
   )
   find_program(libcudacxx_codegen_cuobjdump NAMES cuobjdump)
   find_program(libcudacxx_codegen_bash NAMES bash)
@@ -155,13 +161,13 @@ endfunction()
 
 function(
   libcudacxx_codegen_add_check_target
-  aggregate_target
+  target_path
   target_name
   test_path
   check_prefixes
 )
   string(REGEX REPLACE "[^A-Za-z0-9_]" "_" check_suffix "${check_prefixes}")
-  set(check_target_name "${target_name}_${check_suffix}_check")
+  set(check_target_name "${target_path}.${check_suffix}.check")
 
   add_custom_target(
     ${check_target_name}
@@ -179,20 +185,31 @@ function(
         ${ARGN}
     # gersemi: on
   )
-  add_dependencies(${aggregate_target} ${check_target_name})
+  cccl_ensure_metatargets(${check_target_name})
 endfunction()
 
 function(libcudacxx_codegen_add_test)
+  set(options SEPARABLE_COMPILATION)
+  set(
+    one_value_args
+    AGGREGATE_TARGET
+    TARGET_PREFIX
+    CODE_KIND
+    ARCH
+    TEST
+  )
+  set(multi_value_args CHECK_PREFIXES COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
-    "SEPARABLE_COMPILATION"
-    "AGGREGATE_TARGET;TARGET_PREFIX;CODE_KIND;ARCH;TEST"
-    "CHECK_PREFIXES;COMPILE_DEFINITIONS"
+    "${options}"
+    "${one_value_args}"
+    "${multi_value_args}"
     ${ARGN}
   )
 
   cmake_path(GET arg_TEST FILENAME test_file)
   cmake_path(REMOVE_EXTENSION test_file LAST_ONLY OUTPUT_VARIABLE test_name)
+  set(test_target_path "${arg_AGGREGATE_TARGET}.sm${arg_ARCH}.${test_name}")
   set(
     target_name
     "${arg_TARGET_PREFIX}_${arg_CODE_KIND}_sm${arg_ARCH}_${test_name}"
@@ -236,7 +253,7 @@ function(libcudacxx_codegen_add_test)
 
   foreach (check_prefix IN LISTS arg_CHECK_PREFIXES)
     libcudacxx_codegen_add_check_target(
-      ${arg_AGGREGATE_TARGET}
+      ${test_target_path}
       ${target_name}
       "${arg_TEST}"
       "${check_prefix}"
@@ -246,11 +263,14 @@ function(libcudacxx_codegen_add_test)
 endfunction()
 
 function(libcudacxx_codegen_add_ptx_tests)
+  set(options)
+  set(one_value_args AGGREGATE_TARGET TARGET_PREFIX ARCH)
+  set(multi_value_args CHECK_PREFIXES TESTS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
-    ""
-    "AGGREGATE_TARGET;TARGET_PREFIX;ARCH"
-    "CHECK_PREFIXES;TESTS;COMPILE_DEFINITIONS"
+    "${options}"
+    "${one_value_args}"
+    "${multi_value_args}"
     ${ARGN}
   )
 
@@ -268,11 +288,14 @@ function(libcudacxx_codegen_add_ptx_tests)
 endfunction()
 
 function(libcudacxx_codegen_add_sass_tests)
+  set(options)
+  set(one_value_args AGGREGATE_TARGET TARGET_PREFIX)
+  set(multi_value_args ARCHITECTURES TESTS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
-    ""
-    "AGGREGATE_TARGET;TARGET_PREFIX"
-    "ARCHITECTURES;TESTS;COMPILE_DEFINITIONS"
+    "${options}"
+    "${one_value_args}"
+    "${multi_value_args}"
     ${ARGN}
   )
 
