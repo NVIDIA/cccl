@@ -252,17 +252,16 @@ TEST_FUNC constexpr bool test()
     assert(result);
   }
 
+  // This fails with old msvc.
+#  if !TEST_COMPILER(MSVC, <, 19, 30)
   {
     // function pointer with constexpr param
     using T                                = cuda::std::__constant_wrapper<fun_ptr>;
     [[maybe_unused]] decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(result)>);
-
-    // Old msvc fails with: Failure was caused by a read of a variable outside its lifetime.
-#  if !TEST_COMPILER(MSVC, <, 19, 30)
     static_assert(result);
-#  endif // !TEST_COMPILER(MSVC, <, 19, 30)
   }
+#  endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
   {
     // member ptr with runtime param
