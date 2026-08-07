@@ -95,8 +95,10 @@ public:
   _CCCL_API explicit constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI tuple(tuple const&) = default;
-  _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI tuple(tuple&&) = default;
 
   template <class _Alloc,
             __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
