@@ -238,26 +238,36 @@ _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__iota)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   template <class _Start>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start) const
-    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start))))
-      -> iota_view<remove_cvref_t<_Start>>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Start&& __start) noexcept(noexcept(
+    ::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start)))) -> iota_view<remove_cvref_t<_Start>>
   {
     return ::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start));
   }
 
   template <class _Start, class _BoundSentinel>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start, _BoundSentinel&& __bound_sentinel) const
-    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start),
-                                                     ::cuda::std::forward<_BoundSentinel>(__bound_sentinel))))
-      -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Start&& __start, _BoundSentinel&& __bound_sentinel) noexcept(
+    noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start),
+                                            ::cuda::std::forward<_BoundSentinel>(__bound_sentinel))))
+    -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
   {
     return ::cuda::std::ranges::iota_view(
       ::cuda::std::forward<_Start>(__start), ::cuda::std::forward<_BoundSentinel>(__bound_sentinel));
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // friend constexpr auto iter_move(const iterator& i) noexcept(see below);
 
 #include <cuda/std/array>

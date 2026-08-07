@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // cuda::std::views::drop_while
 
 // #include <cuda/std/algorithm>
@@ -22,7 +19,7 @@
 
 struct Pred
 {
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -38,7 +35,7 @@ struct BufferView : cuda::std::ranges::view_base
   cuda::std::size_t size_;
 
   template <cuda::std::size_t N>
-  TEST_HOST_DEVICE_FUNC constexpr BufferView(T (&b)[N])
+  TEST_FUNC constexpr BufferView(T (&b)[N])
       : buffer_(b)
       , size_(N)
   {}
@@ -52,7 +49,7 @@ struct MoveOnlyView : IntBufferView
   MoveOnlyView() noexcept = default;
 
   template <class T>
-  TEST_HOST_DEVICE_FUNC constexpr MoveOnlyView(T&& arr) noexcept(noexcept(IntBufferView(cuda::std::declval<T>())))
+  TEST_FUNC constexpr MoveOnlyView(T&& arr) noexcept(noexcept(IntBufferView(cuda::std::declval<T>())))
       : IntBufferView(cuda::std::forward<T>(arr))
   {}
 #else
@@ -63,11 +60,11 @@ struct MoveOnlyView : IntBufferView
   MoveOnlyView& operator=(const MoveOnlyView&) = delete;
   MoveOnlyView(MoveOnlyView&&)                 = default;
   MoveOnlyView& operator=(MoveOnlyView&&)      = default;
-  TEST_HOST_DEVICE_FUNC constexpr const int* begin() const
+  TEST_FUNC constexpr const int* begin() const
   {
     return buffer_;
   }
-  TEST_HOST_DEVICE_FUNC constexpr const int* end() const
+  TEST_FUNC constexpr const int* end() const
   {
     return buffer_ + size_;
   }
@@ -92,7 +89,7 @@ static_assert(!CanBePiped<int, decltype(cuda::std::views::drop_while(Pred{}))>);
 static_assert(!CanBePiped<Foo (&)[2], decltype(cuda::std::views::drop_while(Pred{}))>);
 
 template <class Range, class Expected>
-TEST_HOST_DEVICE_FUNC constexpr bool equal(Range&& range, Expected&& expected)
+TEST_FUNC constexpr bool equal(Range&& range, Expected&& expected)
 {
   auto irange    = range.begin();
   auto iexpected = cuda::std::begin(expected);
@@ -106,7 +103,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool equal(Range&& range, Expected&& expected)
   return true;
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[] = {1, 2, 3, 4, 3, 2, 1};
 
@@ -157,7 +154,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   {
     struct Pred2
     {
-      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
+      TEST_FUNC constexpr bool operator()(int i) const
       {
         return i < 4;
       }

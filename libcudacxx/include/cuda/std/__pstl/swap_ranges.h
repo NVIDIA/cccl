@@ -63,21 +63,29 @@ struct __swap_ranges_iter_swap_fn
   template <class _DifferenceType>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr void operator()(const _DifferenceType __index) const
   {
-    ::cuda::std::__iter_swap_cpo{}(
-      __first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
+    ::cuda::std::iter_swap(__first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
   }
 };
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
 struct __swap_ranges_transform_fn
 {
   template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(_Tp __lhs, _Up __rhs) const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp __lhs, _Up __rhs)
   {
     using ::cuda::std::swap;
     swap(__lhs, __rhs);
     return ::cuda::std::tuple{__lhs, __rhs};
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 

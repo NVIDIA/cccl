@@ -37,6 +37,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 template <class _Iter, class _Func>
 using for_each_result = in_fun_result<_Iter, _Func>;
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 _CCCL_BEGIN_NAMESPACE_CPO(__for_each)
 struct __fn
 {
@@ -57,7 +62,7 @@ public:
   _CCCL_REQUIRES(input_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter> _CCCL_AND
                    indirectly_unary_invocable<_Func, projected<_Iter, _Proj>>)
   _CCCL_API constexpr for_each_result<_Iter, _Func>
-  operator()(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {})
   {
     return __for_each_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __func, __proj);
   }
@@ -65,12 +70,16 @@ public:
   _CCCL_TEMPLATE(class _Range, class _Func, class _Proj = identity)
   _CCCL_REQUIRES(input_range<_Range> _CCCL_AND indirectly_unary_invocable<_Func, projected<iterator_t<_Range>, _Proj>>)
   _CCCL_API constexpr for_each_result<borrowed_iterator_t<_Range>, _Func>
-  operator()(_Range&& __range, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Func __func, _Proj __proj = {})
   {
-    return __for_each_impl(
-      ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __func, __proj);
+    return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

@@ -35,6 +35,12 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__find_if)
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   template <class _Ip, class _Sp, class _Pred, class _Proj>
@@ -53,19 +59,25 @@ struct __fn
   _CCCL_TEMPLATE(class _Ip, class _Sp, class _Pred, class _Proj = identity)
   _CCCL_REQUIRES(input_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
                    indirect_unary_predicate<_Pred, projected<_Ip, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __first, _Sp __last, _Pred __pred, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr _Ip
+  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, _Pred __pred, _Proj __proj = {})
   {
     return __find_if_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __pred, __proj);
   }
 
   _CCCL_TEMPLATE(class _Rp, class _Pred, class _Proj = identity)
   _CCCL_REQUIRES(input_range<_Rp> _CCCL_AND indirect_unary_predicate<_Pred, projected<iterator_t<_Rp>, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp> operator()(_Rp&& __r, _Pred __pred, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp>
+  _CCCL_STATIC_CALL_OPERATOR(_Rp&& __r, _Pred __pred, _Proj __proj = {})
   {
-    return __find_if_impl(
-      ::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r), __pred, __proj);
+    return __find_if_impl(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r), __pred, __proj);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
