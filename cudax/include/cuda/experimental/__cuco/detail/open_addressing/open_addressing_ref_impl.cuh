@@ -24,12 +24,17 @@
 #include <thrust/device_reference.h>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__barrier/barrier.h>
+#include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -318,15 +323,23 @@ public:
   template <class _Group>
   _CCCL_DEVICE_API void make_copy(_Group __group, __value_type* __dst) const noexcept
   {
-    static_assert(::cuda::std::is_trivially_copyable_v<__value_type>, "slot type must be trivially copyable");
-    const auto* const __src = __storage_ref.data();
-    const auto __num_slots  = capacity();
-    for (auto __idx = static_cast<__size_type>(__group.thread_rank()); __idx < __num_slots;
-         __idx += static_cast<__size_type>(__group.size()))
+    static_assert(::cuda::is_trivially_copyable_v<__value_type>, "slot type must be trivially copyable");
+    const auto __num_slots = capacity();
+
+    // Use raw aligned storage because Clang rejects a directly declared __shared__ barrier
+    using __barrier_type = ::cuda::barrier<::cuda::thread_scope_block>;
+    __shared__ ::cuda::std::aligned_storage_t<sizeof(__barrier_type), alignof(__barrier_type)> __barrier_storage;
+    auto* const __barrier = reinterpret_cast<__barrier_type*>(&__barrier_storage);
+
+    if (__group.thread_rank() == 0)
     {
-      __dst[__idx] = __src[__idx];
+      init(__barrier, __group.size());
     }
     __group.sync();
+
+    ::cuda::memcpy_async(__group, __dst, __storage_ref.data(), sizeof(__value_type) * __num_slots, *__barrier);
+
+    __barrier->arrive_and_wait();
   }
 
   //!

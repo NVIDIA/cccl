@@ -293,9 +293,7 @@ public:
   //!
   //! @note This is a group-collective operation: all threads of `__group` must call it with the
   //! same `__slots`. The group is synchronized before this function returns. The source map must
-  //! not be modified concurrently, and the destination must not be accessed concurrently. When
-  //! `value_type` has a packable representation, aligning `__slots` to `sizeof(value_type)` enables
-  //! the packed-CAS fast path in the returned ref.
+  //! not be modified concurrently, and the destination must not be accessed concurrently.
   //! @note The source and destination storage ranges must not overlap.
   //! @note `value_type` must be trivially copyable.
   //!
