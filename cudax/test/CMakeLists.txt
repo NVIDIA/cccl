@@ -132,6 +132,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.retrieve_all ${cudax_t
     cuco/fixed_capacity_map/test_retrieve_all.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.size ${cudax_target}
+    cuco/fixed_capacity_map/test_size.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
     cuco/fixed_capacity_map/test_capacity.cu
 )
