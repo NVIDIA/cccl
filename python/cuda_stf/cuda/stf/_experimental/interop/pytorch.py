@@ -595,6 +595,152 @@ def placement_report(tensor, probes: int = 4096):
     return placement_evaluate(meta.grid, meta.mapper, (numel * np_dtype.itemsize,), 1)
 
 # ---------------------------------------------------------------------------
+# map: per-die execution of a map expression over localized operands.
+# ---------------------------------------------------------------------------
+
+
+def _partitions_equal(a, b):
+    if a is b:
+        return True
+    return (
+        tuple(a.true_dims) == tuple(b.true_dims)
+        and tuple(a.grid_dims) == tuple(b.grid_dims)
+        and a.place_leaves == b.place_leaves
+        and a.local_leaves == b.local_leaves
+        and a.replicate_over == b.replicate_over
+    )
+
+
+#: per-grid-size stream pools for the fork/join (created once, reused)
+_MAP_STREAMS: dict = {}
+
+
+def _map_streams(nplaces):
+    torch = _import_torch()
+    pool = _MAP_STREAMS.get(nplaces)
+    if pool is None:
+        pool = [torch.cuda.Stream() for _ in range(nplaces)]
+        _MAP_STREAMS[nplaces] = pool
+    return pool
+
+
+def _die_view(torch, tensor, part, die):
+    """Strided view selecting exactly die's owned elements (padded space).
+
+    The local leaves are the die-local iteration shape; the grid place
+    offset rebases it. Die identity lives entirely in the storage offset,
+    so all dies' views are shape/stride identical -- one torch.compile
+    artifact (guards on shape/stride) serves every die.
+    """
+    leaves = part.local_leaves
+    sizes = tuple(int(e) for e, _ in leaves)
+    strides = tuple(int(st) for _, st in leaves)
+    offset = int(part.grid_place_offset(die)) + tensor.storage_offset()
+    return torch.as_strided(tensor, sizes, strides, offset)
+
+
+def views(tensor, spec=None):
+    """The per-die strided views of a localized tensor (one per grid
+    position, exactly the die's owned elements, padded space).
+
+    The escape hatch for constructs beyond :func:`map` -- e.g. reductions
+    over a SPLIT dim, done as per-die partials over these views followed by
+    a fold of the P partials (the write-dual pattern).
+    """
+    torch = _import_torch()
+    part = spec if spec is not None else spec_of(tensor)
+    if part is None or callable(part):
+        raise ValueError("views requires the structured (spec) tier")
+    gd = 1
+    for e in tuple(part.grid_dims):
+        gd *= int(e)
+    return [_die_view(torch, tensor, part, d) for d in range(gd)]
+
+
+def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attribute
+    """Apply a MAP expression per die, each die over its owned elements.
+
+    ``fn`` is any callable -- eager, or a (stock) ``torch.compile`` artifact
+    -- whose dataflow respects the split axes: pointwise always; dim-wise
+    ops along UNSPLIT dims (softmax/LayerNorm over an unsplit hidden dim
+    with batch-blocked operands) are valid; reductions or stencils touching
+    a split dim are not (those need per-die partials + a fold). ``fn`` must
+    write IN-PLACE (or into localized operands passed to it): out-of-place
+    results would come from the ordinary torch allocator, unlocalized.
+
+    The iteration spec is inferred from the operands: all localized
+    operands must share one partition (validated eagerly from the
+    registry); replicated allocations and ordinary broadcast scalars pass
+    through whole. ``spec=`` overrides only when no localized operand
+    carries one.
+
+    Execution forks one launch per die on a cached per-die stream (the
+    event-based fork/join idiom, which stream capture follows), each over
+    a strided view of exactly the die's elements -- restriction by
+    re-indexing, not predication. Confinement to SM partitions can be
+    layered by passing explicit ``streams=`` (e.g. green-context streams).
+
+    Views cover the PADDED space: split dims are padded to divisibility,
+    so ``fn`` may compute on padding elements; they are never observed
+    through the tensor's true extents.
+    """
+    torch = _import_torch()
+
+    part = spec
+    view_args = []  # per operand: partition or None (pass-through)
+    for t in tensors:
+        meta = get_meta(t) if isinstance(t, torch.Tensor) else None
+        if meta is None or isinstance(meta, ReplicatedMeta):
+            view_args.append(None)  # scalars, plain tensors, replicated: whole
+            continue
+        if meta.partition is None:
+            raise ValueError(
+                "map requires the structured (spec) tier; a mapper-tier "
+                "allocation has no leaves to build per-die views from"
+            )
+        if part is None:
+            part = meta.partition
+        elif not _partitions_equal(part, meta.partition):
+            raise ValueError(
+                "misaligned operands: all localized operands of map must "
+                "share one partition (or be replicated)"
+            )
+        view_args.append(meta.partition)
+    if part is None:
+        raise ValueError(
+            "no localized operand carries a partition; pass spec= explicitly"
+        )
+
+    gd = 1
+    for e in tuple(part.grid_dims):
+        gd *= int(e)
+
+    if streams is None:
+        streams = _map_streams(gd)
+    if len(streams) < gd:
+        raise ValueError(f"need {gd} streams, got {len(streams)}")
+
+    current = torch.cuda.current_stream()
+    fork = torch.cuda.Event()
+    fork.record(current)
+    join_events = []
+    for die in range(gd):
+        s = streams[die]
+        s.wait_event(fork)
+        with torch.cuda.stream(s):
+            args = tuple(
+                _die_view(torch, t, p, die) if p is not None else t
+                for t, p in zip(tensors, view_args)
+            )
+            fn(*args)
+        e = torch.cuda.Event()
+        e.record(s)
+        join_events.append(e)
+    for e in join_events:
+        current.wait_event(e)
+
+
+# ---------------------------------------------------------------------------
 # Optional convenience: a `torch.localized` namespace.
 #
 # Purely additive sugar -- an attribute (and sys.modules entry) on the torch
@@ -624,6 +770,8 @@ def _build_namespace(qualname):
     ns.get_meta = get_meta
     ns.spec_of = spec_of
     ns.grid_of = grid_of
+    ns.map = map
+    ns.views = views
     ns.live_metas = live_metas
     ns.placement_report = placement_report
     ns._cuda_stf_localized = True
