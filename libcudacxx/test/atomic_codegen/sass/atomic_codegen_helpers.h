@@ -46,4 +46,16 @@ using csa = cuda::std::atomic<T>;
 template <typename T, cuda::thread_scope>
 using csar = cuda::std::atomic_ref<T>;
 
+template <typename T, cuda::thread_scope Scope>
+using vca = volatile cuda::atomic<T, Scope>;
+
+template <typename T, cuda::thread_scope Scope>
+using vcar = cuda::atomic_ref<volatile T, Scope>;
+
+template <typename T, cuda::thread_scope>
+using vcsa = volatile cuda::std::atomic<T>;
+
+template <typename T, cuda::thread_scope>
+using vcsar = cuda::std::atomic_ref<volatile T>;
+
 #endif // _LIBCUDACXX_TEST_ATOMIC_CODEGEN_SASS_ATOMIC_CODEGEN_HELPERS_H
