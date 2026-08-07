@@ -20,6 +20,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -316,7 +318,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
-  if constexpr (!::cuda::std::contiguous_iterator<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
+  if constexpr (!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
   {
     *itr = val;
   }
