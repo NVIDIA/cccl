@@ -42,10 +42,8 @@ void inplace_merge(execution_policy<DerivedPolicy>& exec,
 {
   using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
 
-  thrust::detail::temporary_array<value_type, DerivedPolicy> a(exec, first, middle);
-  thrust::detail::temporary_array<value_type, DerivedPolicy> b(exec, middle, last);
-
-  thrust::merge(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), first, comp);
+  thrust::detail::temporary_array<value_type, DerivedPolicy> buf(exec, first, middle);
+  thrust::merge(thrust::seq, buf.begin(), buf.end(), middle, last, first, comp);
 }
 
 template <typename DerivedPolicy,
@@ -60,19 +58,19 @@ void inplace_merge_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp)
 {
-  using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
-  using value_type2 = thrust::detail::it_value_t<RandomAccessIterator2>;
+  using iterator_tuple = thrust::tuple<RandomAccessIterator1, RandomAccessIterator2>;
+  using zip_iterator   = thrust::zip_iterator<iterator_tuple>;
 
   RandomAccessIterator2 middle2 = first2 + (middle1 - first1);
   RandomAccessIterator2 last2   = first2 + (last1 - first1);
 
-  thrust::detail::temporary_array<value_type1, DerivedPolicy> lhs1(exec, first1, middle1);
-  thrust::detail::temporary_array<value_type1, DerivedPolicy> rhs1(exec, middle1, last1);
-  thrust::detail::temporary_array<value_type2, DerivedPolicy> lhs2(exec, first2, middle2);
-  thrust::detail::temporary_array<value_type2, DerivedPolicy> rhs2(exec, middle2, last2);
+  zip_iterator zipped_first  = thrust::make_zip_iterator(first1, first2);
+  zip_iterator zipped_middle = thrust::make_zip_iterator(middle1, middle2);
+  zip_iterator zipped_last   = thrust::make_zip_iterator(last1, last2);
 
-  thrust::merge_by_key(
-    thrust::seq, lhs1.begin(), lhs1.end(), rhs1.begin(), rhs1.end(), lhs2.begin(), rhs2.begin(), first1, first2, comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
+
+  inplace_merge(exec, zipped_first, zipped_middle, zipped_last, comp_first);
 }
 } // namespace sort_detail
 
