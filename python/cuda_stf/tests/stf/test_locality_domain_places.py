@@ -102,15 +102,17 @@ def test_machine_grid_granularities():
     with pytest.raises(ValueError, match="granularity"):
         stf.exec_place_grid.machine(granularity="warp")
 
-    # the domain-granularity grid drives a task end to end. Deps on a
-    # grid task need an explicit data place: a create()-built grid has no
-    # affine data place, and a bare rw() currently terminates through the
-    # void C API instead of raising (the known error-channel gap in the
-    # 5315 family).
+    # machine() grids carry a default BLOCKED affine, so bare
+    # dependencies (no explicit data place) resolve naturally -- data
+    # blocked along dim 0 over the grid. (A create()-built grid without a
+    # mapper still has no affine; deps there need explicit places.)
     N = 128
     ctx = stf.context()
     X = np.arange(N, dtype=np.float32)
     lX = ctx.logical_data(X, name="X_machine")
+    with ctx.task(gdom, lX.rw()):
+        pass
+    # explicit places keep working alongside the default affine
     with ctx.task(gdom, lX.read(stf.data_place.replicated(gdom))):
         pass
     results = []
