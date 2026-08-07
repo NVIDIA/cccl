@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -92,13 +92,12 @@ struct __cw_operators
   {
     return {};
   }
-  // todo(dabayer): nvcc 13.1-13.3 needs this to be concept, otherwise cudafe++ produces invalid input file for the host
-  // compiler for code like `constant_wrapper<&v>`. Try to find a workaround that could work even in C++17.
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp> _CCCL_AND requires { typename __constant_wrapper<(&_Tp::value)>; })
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator&(_Tp) noexcept
+  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(&_Tp::value)>{})
+  operator&(_Tp) noexcept
   {
-    return __constant_wrapper<(&_Tp::value)>{};
+    return {};
   }
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
@@ -539,6 +538,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA_STD___UTILITY_CONSTANT_WRAPPER_H

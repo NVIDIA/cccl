@@ -11,6 +11,7 @@
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
 
+// NTTP may not have a class type in C++17.
 // REQUIRES: !c++17
 
 // constant_wrapper
