@@ -30,13 +30,10 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__host_stdlib/mutex>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__type_traits/is_trivially_destructible.h>
-
-#  if _CCCL_HOSTED()
-#    include <mutex>
-#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
