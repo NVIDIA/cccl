@@ -30,17 +30,45 @@ namespace detail
 // this implementation
 struct device_memory_resource
 {
+private:
+  // cudaMallocAsync requires memory pool support, which is unavailable in some configurations,
+  // e.g. Windows drivers in TCC mode. Fall back to cudaMalloc/cudaFree there. See NVIDIA/cccl#10716.
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static bool use_memory_pools()
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (int device{}; _CCCL_TRY_CUDA_API(::cudaGetDevice, "failed to query the current device", &device);
+       int supported{};
+       _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute,
+                          "failed to query cudaDevAttrMemoryPoolsSupported",
+                          &supported,
+                          ::cudaDevAttrMemoryPoolsSupported,
+                          device);
+       return supported != 0;),
+      (return false;));
+  }
+
+public:
   CUB_RUNTIME_FUNCTION void* allocate(size_t bytes, size_t /* alignment */)
   {
     void* ptr{nullptr};
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
-      (_CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, NULL);),
+      ({
+        if (use_memory_pools())
+        {
+          _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, NULL);
+        }
+        else
+        {
+          _CCCL_TRY_CUDA_API(::cudaMalloc, "allocate failed to allocate with cudaMalloc", &ptr, bytes);
+        }
+      }),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::allocate not supported from device code.");
         ::cuda::std::terminate();
       }));
-    _CCCL_ASSERT(ptr != nullptr, "allocate failed to allocate with cudaMallocAsync");
+    _CCCL_ASSERT(ptr != nullptr, "allocate failed");
     return ptr;
   }
 
@@ -66,8 +94,15 @@ struct device_memory_resource
     NV_IF_ELSE_TARGET( //
       NV_IS_HOST,
       ({
-        _CCCL_TRY_CUDA_API(
-          ::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
+        if (use_memory_pools())
+        {
+          _CCCL_TRY_CUDA_API(
+            ::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
+        }
+        else
+        {
+          _CCCL_TRY_CUDA_API(::cudaMalloc, "allocate failed to allocate with cudaMalloc", &ptr, bytes);
+        }
       }),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::allocate not supported from device code.");
@@ -85,7 +120,16 @@ struct device_memory_resource
   {
     NV_IF_ELSE_TARGET( //
       NV_IS_HOST,
-      (_CCCL_TRY_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());),
+      ({
+        if (use_memory_pools())
+        {
+          _CCCL_TRY_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
+        }
+        else
+        {
+          _CCCL_TRY_CUDA_API(::cudaFree, "deallocate failed", ptr);
+        }
+      }),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::deallocate not supported from device code.");
         ::cuda::std::terminate();
