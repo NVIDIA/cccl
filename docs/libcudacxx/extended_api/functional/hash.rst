@@ -10,12 +10,9 @@ Defined in the header ``<cuda/functional>``.
     enum class hash_algorithm {
         xxhash_32,
         xxhash_64,
-        murmurhash3_32
-    #if _CCCL_HAS_INT128()
-        ,
-        murmurhash3_x86_128,
-        murmurhash3_x64_128
-    #endif // _CCCL_HAS_INT128()
+        murmurhash3_32,
+        murmurhash3_x86_128, // requires compiler support for __int128
+        murmurhash3_x64_128, // requires compiler support for __int128
     };
 
     template <typename Key, hash_algorithm Algorithm = hash_algorithm::xxhash_32>
@@ -73,6 +70,20 @@ Defined in the header ``<cuda/functional>``.
         [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<Key, Extent> keys) const noexcept;
     };
 
+    #else // !_CCCL_HAS_INT128()
+
+    template <typename Key>
+    class hash<Key, hash_algorithm::murmurhash3_x86_128> {
+        static_assert(cuda::std::__always_false_v<Key>,
+                      "cuda::hash with hash_algorithm::murmurhash3_x86_128 requires compiler support for __int128");
+    };
+
+    template <typename Key>
+    class hash<Key, hash_algorithm::murmurhash3_x64_128> {
+        static_assert(cuda::std::__always_false_v<Key>,
+                      "cuda::hash with hash_algorithm::murmurhash3_x64_128 requires compiler support for __int128");
+    };
+
     #endif // _CCCL_HAS_INT128()
 
 ``cuda::hash`` provides host/device implementations of xxHash and MurmurHash3.
@@ -104,8 +115,9 @@ The supported algorithms and result types are:
    * - ``hash_algorithm::murmurhash3_x64_128``
      - ``__uint128_t``
 
-The 128-bit MurmurHash3 algorithms are available only when ``_CCCL_HAS_INT128()``
-is true.
+The 128-bit algorithm enumerators are always available. Instantiating either
+128-bit ``cuda::hash`` specialization without compiler support for ``__int128``
+triggers a static assertion.
 
 Example
 -------

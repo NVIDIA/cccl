@@ -14,6 +14,8 @@
 #include "hash_test_helper.h"
 #include "test_macros.h"
 
+static_assert(cuda::hash_algorithm::murmurhash3_x86_128 != cuda::hash_algorithm::murmurhash3_x64_128);
+
 struct test_murmurhash3_32
 {
   hash_test<cuda::hash_algorithm::murmurhash3_32> murmurhash3_32_test;

@@ -23,6 +23,7 @@
 
 #include <cuda/__functional/hash/murmurhash3.h>
 #include <cuda/__functional/hash/xxhash.h>
+#include <cuda/std/__type_traits/always_false.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,12 +34,9 @@ enum class hash_algorithm
 {
   xxhash_32,
   xxhash_64,
-  murmurhash3_32
-#if _CCCL_HAS_INT128()
-  ,
+  murmurhash3_32,
   murmurhash3_x86_128,
   murmurhash3_x64_128
-#endif // _CCCL_HAS_INT128()
 };
 
 //! @brief A hash function class specialized for different hash algorithms.
@@ -88,6 +86,22 @@ class hash<_Key, hash_algorithm::murmurhash3_x64_128> : private ::cuda::__murmur
 public:
   using ::cuda::__murmurhash3_x64_128<_Key>::__murmurhash3_x64_128;
   using ::cuda::__murmurhash3_x64_128<_Key>::operator();
+};
+
+#else // !_CCCL_HAS_INT128()
+
+template <typename _Key>
+class hash<_Key, hash_algorithm::murmurhash3_x86_128>
+{
+  static_assert(::cuda::std::__always_false_v<_Key>,
+                "cuda::hash with hash_algorithm::murmurhash3_x86_128 requires compiler support for __int128");
+};
+
+template <typename _Key>
+class hash<_Key, hash_algorithm::murmurhash3_x64_128>
+{
+  static_assert(::cuda::std::__always_false_v<_Key>,
+                "cuda::hash with hash_algorithm::murmurhash3_x64_128 requires compiler support for __int128");
 };
 
 #endif // _CCCL_HAS_INT128()
