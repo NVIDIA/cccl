@@ -24,7 +24,7 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key>
     class hash<Key, hash_algorithm::xxhash_32> {
     public:
-        __host__ __device__ constexpr hash(cuda::std::uint32_t seed = 0);
+        __host__ __device__ constexpr explicit hash(cuda::std::uint32_t seed = 0);
         [[nodiscard]] __host__ __device__ constexpr cuda::std::uint32_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>
@@ -34,7 +34,7 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key>
     class hash<Key, hash_algorithm::xxhash_64> {
     public:
-        __host__ __device__ constexpr hash(cuda::std::uint64_t seed = 0);
+        __host__ __device__ constexpr explicit hash(cuda::std::uint64_t seed = 0);
         [[nodiscard]] __host__ __device__ cuda::std::uint64_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>
@@ -44,7 +44,7 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_32> {
     public:
-        __host__ __device__ constexpr hash(cuda::std::uint32_t seed = 0);
+        __host__ __device__ constexpr explicit hash(cuda::std::uint32_t seed = 0);
         [[nodiscard]] __host__ __device__ constexpr cuda::std::uint32_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>
@@ -56,7 +56,7 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x86_128> {
     public:
-        __host__ __device__ constexpr hash(cuda::std::uint32_t seed = 0);
+        __host__ __device__ constexpr explicit hash(cuda::std::uint32_t seed = 0);
         [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>
@@ -66,7 +66,7 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x64_128> {
     public:
-        __host__ __device__ constexpr hash(cuda::std::uint64_t seed = 0);
+        __host__ __device__ constexpr explicit hash(cuda::std::uint64_t seed = 0);
         [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>

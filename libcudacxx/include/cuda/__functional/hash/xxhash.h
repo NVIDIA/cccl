@@ -116,7 +116,7 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __xxhash_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit __xxhash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -326,7 +326,7 @@ public:
   //! @brief Constructs a XXH64 hash function with the given `seed`.
   //!
   //! @param __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __xxhash_64(::cuda::std::uint64_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit __xxhash_64(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 

@@ -98,7 +98,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 32-bit hash function with the given seed.
   //! @param __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -282,7 +282,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x86 128-bit hash function with the given seed.
   //! @param __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -627,7 +627,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
   //! @param __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
