@@ -67,4 +67,6 @@ benchmarks:
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
+    --cold-warmup-runs 10
+    --cold-max-warmup-walltime 0.05
   nvbench_compare_args: ""

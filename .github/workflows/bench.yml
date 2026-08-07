@@ -48,7 +48,7 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
         required: false
         default: ""
         type: string
@@ -100,7 +100,7 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
         required: false
         default: ""
         type: string
@@ -123,6 +123,56 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve NVBench SHA
+        run: |
+          nvbench_repo="https://github.com/NVIDIA/nvbench.git"
+          nvbench_ref="refs/heads/main"
+          nvbench_remote_ref="$(git ls-remote "${nvbench_repo}" "${nvbench_ref}")"
+          read -r nvbench_sha resolved_ref <<< "${nvbench_remote_ref}"
+          if [[ "${resolved_ref:-}" != "${nvbench_ref}" || ! "${nvbench_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Failed to resolve ${nvbench_repo} ${nvbench_ref}; got '${nvbench_remote_ref}'"
+            exit 1
+          fi
+          echo "Resolved NVBench ${nvbench_ref} to ${nvbench_sha}"
+          echo "CCCL_BENCH_NVBENCH_SHA=${nvbench_sha}" >> "${GITHUB_ENV}"
+
+      - name: Prepare benchmark compare dependencies
+        env:
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+        run: |
+          # The devcontainer mounts this path to /home/coder/.aws. Move aside
+          # any preexisting AWS config before installing Python packages, then
+          # use a workflow-owned .aws directory until the cleanup step restores
+          # the original.
+          aws_dir="${{ github.workspace }}/.aws"
+          aws_backup="${RUNNER_TEMP}/bench-original-aws"
+          echo "BENCH_AWS_BACKUP=${aws_backup}" >> "${GITHUB_ENV}"
+          rm -rf "${aws_backup}"
+          if [[ -e "${aws_dir}" ]]; then
+            mv "${aws_dir}" "${aws_backup}"
+          fi
+          mkdir -p "${aws_dir}"
+
+          compare_venv="${RUNNER_TEMP}/bench-compare-venv"
+          deps_script="${RUNNER_TEMP}/bench-compare-deps.sh"
+          mkdir -p "${compare_venv}"
+
+          cat <<"EOF" > "${deps_script}"
+          #! /usr/bin/env bash
+          set -euo pipefail
+
+          python3 -m venv --clear /bench-compare-venv
+          /bench-compare-venv/bin/pip install --upgrade pip
+          ./ci/util/retry.sh 5 30 /bench-compare-venv/bin/pip install 'cuda-bench[compare]>=0.3.0'
+          EOF
+          chmod +x "${deps_script}"
+
+          .devcontainer/launch.sh \
+            -d ${LAUNCH_ARGS} \
+            --volume "${deps_script}:/bench-compare-deps.sh" \
+            --volume "${compare_venv}:/bench-compare-venv" \
+            -- /bench-compare-deps.sh
 
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
@@ -274,7 +324,6 @@ jobs:
       - name: Run benchmark compare
         id: run-benchmark-compare
         env:
-          GH_TOKEN: ${{ github.token }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -284,6 +333,7 @@ jobs:
         run: |
           args_file="${{ steps.resolve-args.outputs.args_file }}"
           ci_script="${RUNNER_TEMP}/ci.sh"
+          compare_venv="${RUNNER_TEMP}/bench-compare-venv"
           timestamp_utc="$(date -u +'%Y%m%dT%H%M%SZ')"
 
           mapfile -d '' -t bench_args < "${args_file}"
@@ -315,12 +365,6 @@ jobs:
           # This adds them to a bench_args array while preserving any quotes, whitespace, etc
           mapfile -d '' -t bench_args < "/bench_args.txt"
 
-          # NVBench deps:
-          ./ci/util/retry.sh 5 30 python3 -m pip install \
-            colorama \
-            jsondiff \
-            tabulate
-
           ./ci/bench/bench.sh "${bench_args[@]}"
           EOF
           chmod +x "${ci_script}"
@@ -334,12 +378,18 @@ jobs:
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "CCCL_BENCH_ARTIFACT_ROOT=bench-artifacts" \
+            --env "CCCL_BENCH_AWS_CONFIG_DIR=/home/coder/.aws" \
+            --env "CCCL_BENCH_COMPARE_BIN=/bench-compare-venv/bin/nvbench-compare-robust" \
+            --env "CCCL_BENCH_COMPARE_PYTHON=/bench-compare-venv/bin/python3" \
+            --env "CCCL_BENCH_DROP_AWS_CREDENTIALS=1" \
             --env "CCCL_BENCH_GPU_NAME=${GPU_NAME}" \
-            --env "GH_TOKEN=${GH_TOKEN:-}" \
+            --env "CCCL_BENCH_LEGACY_COMPARE_BIN=/bench-compare-venv/bin/nvbench-compare-legacy" \
+            --env "CCCL_BENCH_NVBENCH_SHA=${CCCL_BENCH_NVBENCH_SHA}" \
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --volume "${ci_script}:/ci.sh" \
             --volume "${args_file}:/bench_args.txt" \
+            --volume "${compare_venv}:/bench-compare-venv" \
             -- /ci.sh \
             || rc=$?
 
@@ -369,3 +419,15 @@ jobs:
           path: bench-artifacts/*
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Cleanup AWS config
+        if: ${{ always() }}
+        run: |
+          aws_dir="${{ github.workspace }}/.aws"
+          aws_backup="${BENCH_AWS_BACKUP:-}"
+          rm -rf "${aws_dir}"
+          if [[ -n "${aws_backup}" && -e "${aws_backup}" ]]; then
+            mv "${aws_backup}" "${aws_dir}"
+          else
+            mkdir -p "${aws_dir}"
+          fi
