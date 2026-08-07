@@ -60,7 +60,104 @@ struct policy_selector_adapter
   }
 };
 
+template <typename PolicySelector,
+          typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename ScanTileStateT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT,
+          typename StreamingContextT>
+#if _CCCL_HAS_CONCEPTS()
+  requires rle_encode_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
+    const KeysInputIteratorT d_keys_in,
+    const UniqueOutputIteratorT d_unique_out,
+    const ValuesInputIteratorT d_values_in,
+    const AggregatesOutputIteratorT d_aggregates_out,
+    const NumRunsOutputIteratorT d_num_runs_out,
+    ScanTileStateT tile_state,
+    const int start_tile,
+    EqualityOpT equality_op,
+    ReductionOpT reduction_op,
+    const OffsetT num_items,
+    const StreamingContextT streaming_context,
+    vsmem_t vsmem)
+{
+  static constexpr RleEncodePolicy policy = current_policy<PolicySelector>();
+  // this kernel is launched only from the call path whose lookahead branch is compile-time viable, so on
+  // architectures whose policy selects lookahead it can never run and compiles to an empty stub
+  if constexpr (policy.algorithm != RleAlgorithm::lookback)
+  {
+    return;
+  }
+  else
+  {
+    using AgentReduceByKeyPolicyT = agent_reduce_by_key_policy<
+      policy.lookback.threads_per_block,
+      policy.lookback.items_per_thread,
+      policy.lookback.load_algorithm,
+      policy.lookback.load_modifier,
+      policy.lookback.scan_algorithm,
+      delay_constructor_t<policy.lookback.lookback_delay.kind,
+                          policy.lookback.lookback_delay.delay,
+                          policy.lookback.lookback_delay.l2_write_latency>>;
+
+    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
+      AgentReduceByKeyPolicyT,
+      reduce_by_key::AgentReduceByKey,
+      KeysInputIteratorT,
+      UniqueOutputIteratorT,
+      ValuesInputIteratorT,
+      AggregatesOutputIteratorT,
+      NumRunsOutputIteratorT,
+      EqualityOpT,
+      ReductionOpT,
+      OffsetT,
+      AccumT,
+      StreamingContextT>;
+
+    using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
+
+    __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
+
+    typename agent_reduce_by_key_t::TempStorage& temp_storage =
+      vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
+
+    agent_reduce_by_key_t(
+      temp_storage,
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      equality_op,
+      reduction_op,
+      streaming_context)
+      .ConsumeRange(num_items, tile_state, start_tile);
+
+    vsmem_helper_t::discard_temp_storage(temp_storage);
+  }
+}
+
+template <typename PolicySelector>
+struct streaming_kernel_source
+{
+  template <typename, typename... KernelArgTs>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto reduce_by_key_kernel()
+  {
+    return &DeviceRleEncodeStreamingKernel<PolicySelector, KernelArgTs...>;
+  }
+};
+
 template <class PolicySelector,
+          class KernelSource = reduce_by_key::reduce_by_key_kernel_source,
           class InputIteratorT,
           class UniqueOutputIteratorT,
           class LengthsOutputIteratorT,
@@ -90,7 +187,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_streaming(
     ::cuda::std::plus<>{},
     num_items,
     stream,
-    policy_selector_adapter<PolicySelector>{});
+    policy_selector_adapter<PolicySelector>{},
+    KernelSource{});
 }
 
 template <typename PolicySelector, typename KeyT, typename LengthT, typename NumRunsT, typename OffsetT>
@@ -347,7 +445,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       }
       else
       {
-        return invoke_streaming<PolicySelector>(
+        return invoke_streaming<PolicySelector, streaming_kernel_source<PolicySelector>>(
           d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
       }
     });
