@@ -21,8 +21,20 @@ set(
 )
 
 set(simd_codegen_default_prefixes SMXXX)
-simd_codegen_add_ptx_tests(80 simd_codegen_default_prefixes simd_codegen_load_store_tests)
-simd_codegen_add_ptx_tests(90 simd_codegen_default_prefixes simd_codegen_load_store_tests)
+libcudacxx_codegen_add_ptx_tests(
+  AGGREGATE_TARGET libcudacxx.test.simd.ptx
+  TARGET_PREFIX simd_codegen
+  ARCH 80
+  CHECK_PREFIXES ${simd_codegen_default_prefixes}
+  TESTS ${simd_codegen_load_store_tests}
+)
+libcudacxx_codegen_add_ptx_tests(
+  AGGREGATE_TARGET libcudacxx.test.simd.ptx
+  TARGET_PREFIX simd_codegen
+  ARCH 90
+  CHECK_PREFIXES ${simd_codegen_default_prefixes}
+  TESTS ${simd_codegen_load_store_tests}
+)
 
 # SM100/SM120 add 32-byte vectorized checks.
 if (
@@ -30,6 +42,18 @@ if (
   AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
 )
   set(simd_codegen_sm100_prefixes SMXXX SM100-PLUS)
-  simd_codegen_add_ptx_tests(100 simd_codegen_sm100_prefixes simd_codegen_load_store_tests)
-  simd_codegen_add_ptx_tests(120 simd_codegen_sm100_prefixes simd_codegen_load_store_tests)
+  libcudacxx_codegen_add_ptx_tests(
+    AGGREGATE_TARGET libcudacxx.test.simd.ptx
+    TARGET_PREFIX simd_codegen
+    ARCH 100
+    CHECK_PREFIXES ${simd_codegen_sm100_prefixes}
+    TESTS ${simd_codegen_load_store_tests}
+  )
+  libcudacxx_codegen_add_ptx_tests(
+    AGGREGATE_TARGET libcudacxx.test.simd.ptx
+    TARGET_PREFIX simd_codegen
+    ARCH 120
+    CHECK_PREFIXES ${simd_codegen_sm100_prefixes}
+    TESTS ${simd_codegen_load_store_tests}
+  )
 endif()
