@@ -673,11 +673,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 "reg-buf rounds must fit the 64B/lane register budget");
   static_assert(::cuda::std::is_integral_v<OffT> && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
                 "OffT must be an integer type wide enough for one tile");
-  constexpr int items_per_thread       = policy.items_per_thread;
-  constexpr int compute_warps          = policy.compute_warps;
-  constexpr int store_warps            = policy.compute_warps; // one store warp drains each compute warp's tile
-  constexpr int max_key_ring_stages    = policy.key_ring_stages;
-  constexpr int max_pos_ring_stages    = policy.pos_ring_stages;
+  constexpr int items_per_thread    = policy.items_per_thread;
+  constexpr int compute_warps       = policy.compute_warps;
+  constexpr int store_warps         = policy.compute_warps; // one store warp drains each compute warp's tile
+  constexpr int max_key_ring_stages = policy.key_ring_stages;
+  constexpr int max_pos_ring_stages = policy.pos_ring_stages;
+  _CCCL_ASSERT(key_ring_stages >= 1 && key_ring_stages <= max_key_ring_stages, "invalid key_ring_stages");
+  _CCCL_ASSERT(pos_ring_stages >= 1 && pos_ring_stages <= max_pos_ring_stages, "invalid pos_ring_stages");
+  _CCCL_ASSERT(2 * pos_ring_stages >= key_ring_stages, "pos ring parity wait aliases");
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
   // in the regressed case: always stage positions, so the store warps never run the flag-decode drain vvv
   const int staging_threshold  = keys_staged ? flag_staging_threshold : 0;
