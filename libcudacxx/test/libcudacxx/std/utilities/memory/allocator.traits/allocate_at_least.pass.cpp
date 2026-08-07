@@ -20,6 +20,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
 
+#include "test_macros.h"
+
 // check that cuda::std::allocation_result exists and isn't restricted to pointers
 using AllocResult = cuda::std::allocation_result<int>;
 
@@ -29,11 +31,11 @@ struct no_allocate_at_least
   using value_type = T;
   T t;
 
-  constexpr T* allocate(cuda::std::size_t)
+  TEST_FUNC constexpr T* allocate(cuda::std::size_t)
   {
     return &t;
   }
-  constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
+  TEST_FUNC constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
 };
 
 template <class T>
@@ -43,18 +45,18 @@ struct has_allocate_at_least
   T t1;
   T t2;
 
-  constexpr T* allocate(cuda::std::size_t)
+  TEST_FUNC constexpr T* allocate(cuda::std::size_t)
   {
     return &t1;
   }
-  constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
-  constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
+  TEST_FUNC constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
+  TEST_FUNC constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
   {
     return {&t2, 2};
   }
 };
 
-constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   { // check that cuda::std::allocate_at_least forwards to allocator::allocate if no allocate_at_least exists
     no_allocate_at_least<int> alloc;
