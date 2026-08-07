@@ -11,8 +11,6 @@
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
 
-// REQUIRES: !c++17
-
 // constant_wrapper
 
 // static constexpr decltype(auto) value = (X);
@@ -35,6 +33,8 @@ static_assert(cuda::std::same_as<decltype(cuda::std::__constant_wrapper<42>::val
 static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::type, cuda::std::__constant_wrapper<42>>);
 static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::value_type, int>);
 
+#if TEST_STD_VER >= 2020
+
 struct S
 {
   int member = 42;
@@ -46,16 +46,16 @@ using SValue = cuda::std::remove_const_t<decltype(s_value)>;
 static_assert(s_value.value.member == 5);
 
 // nvcc 12.0 fails to properly generate input file for host compiler.
-#if !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
+#  if !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
 static_assert(cuda::std::same_as<decltype(SValue::value), const S&>);
-#endif // !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
+#  endif // !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
 
 static_assert(cuda::std::same_as<SValue::type, SValue>);
 
 // nvcc < 13.1 fails to properly generate input file for host compiler.
-#if !(TEST_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_HOST_COMPILATION())
+#  if !(TEST_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_HOST_COMPILATION())
 static_assert(cuda::std::same_as<SValue::value_type, S>);
-#endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_HOST_COMPILATION())
+#  endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_HOST_COMPILATION())
 
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
@@ -64,6 +64,8 @@ TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 }
 
 static_assert(value_ref_to_template_parameter_object<S{5}>());
+
+#endif // TEST_STD_VER >= 2020
 
 constexpr int arr[] = {1, 2, 3, 4, 5};
 

@@ -15,8 +15,6 @@
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
 
-// REQUIRES: !c++17
-
 // constant_wrapper
 
 // template<constexpr-param R>
@@ -60,29 +58,35 @@ struct OpsReturnNonStructural
   }
 };
 
+template <class T, class R, class = void>
+inline constexpr bool HasAssign = false;
 template <class T, class R>
-concept HasAssign = requires(const T t, R r) {
-  { t = r };
-};
+inline constexpr bool
+  HasAssign<T, R, cuda::std::void_t<decltype(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> = true;
 
+template <class T, class R, class = void>
+inline constexpr bool HasNoexceptAssign = false;
 template <class T, class R>
-concept HasNoexceptAssign = requires(const T t, R r) {
-  { t = r } noexcept;
-};
+inline constexpr bool
+  HasNoexceptAssign<T, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> =
+    true;
 
 static_assert(!HasAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
 static_assert(!HasNoexceptAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
 
+#if TEST_STD_VER >= 2020
 static_assert(HasAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
 
 static_assert(!HasAssign<cuda::std::__constant_wrapper<OpsReturnNonStructural{5}>, cuda::std::__constant_wrapper<5>>);
+#endif // TEST_STD_VER >= 2020
 
 TEST_FUNC constexpr bool test()
 {
+#if TEST_STD_VER >= 2020
 // nvcc == 13.0 produces invalid source file for the host compilers. It replaces contexpr variables with their values
 // which doesn't work for assignment.
-#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
+#  if !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
   {
     // WithOps assignment
     const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
@@ -100,7 +104,8 @@ TEST_FUNC constexpr bool test()
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
     static_assert(result.value.value == 8);
   }
-#endif // !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
+#  endif // !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
+#endif // TEST_STD_VER >= 2020
 
   return true;
 }

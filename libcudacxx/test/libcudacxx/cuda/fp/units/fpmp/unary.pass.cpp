@@ -20,6 +20,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -32,14 +35,14 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Equality on the full multi-precision value, not just its double image, so a
 // wrong low word cannot pass unnoticed.
 template <class T>
-TEST_FUNC bool same(const T& __a, const T& __b)
+TEST_HOST_DEVICE_FUNC bool same(const T& __a, const T& __b)
 {
   return !(__a != __b);
 }
 
 // ---- increment / decrement ------------------------------------------------
 template <class T>
-TEST_FUNC void test_incdec()
+TEST_HOST_DEVICE_FUNC void test_incdec()
 {
   const T start(2.5);
   const T one(1.0);
@@ -107,7 +110,7 @@ TEST_FUNC void test_incdec()
 
 // ---- unary minus ---------------------------------------------------------
 template <class T>
-TEST_FUNC void test_neg()
+TEST_HOST_DEVICE_FUNC void test_neg()
 {
   const T x(2.5);
   assert(static_cast<double>(-x) == -2.5);
@@ -132,7 +135,7 @@ TEST_FUNC void test_neg()
 
 // ---- compound assignment -------------------------------------------------
 template <class T>
-TEST_FUNC void test_compound()
+TEST_HOST_DEVICE_FUNC void test_compound()
 {
   const T a(6.25);
   const T b(1.5);
@@ -184,7 +187,7 @@ TEST_FUNC void test_compound()
 // These take _FpType and go through the accumulate path rather than the full
 // add, so they are checked against the same operation spelled with fpmp2.
 template <class T, class Scalar>
-TEST_FUNC void test_compound_scalar()
+TEST_HOST_DEVICE_FUNC void test_compound_scalar()
 {
   {
     T x(6.25);
@@ -210,14 +213,14 @@ TEST_FUNC void test_compound_scalar()
 }
 
 template <class T>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_incdec<T>();
   test_neg<T>();
   test_compound<T>();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_type<fp32mp2>();
   test_type<fp32mp2_low>();
