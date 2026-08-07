@@ -53,6 +53,47 @@ struct copy_mdspan_t
   }
 };
 
+template <class _MDSpanIn, class _MDSpanOut, class _Env>
+[[nodiscard]] _CCCL_HOST_API ::cudaError_t
+__copy_mdspan_bytes(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
+{
+  _CCCL_TRY
+  {
+    ::cuda::copy_bytes(
+      ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __env), __mdspan_in, __mdspan_out);
+  }
+  _CCCL_CATCH (const ::cuda::cuda_error& __e)
+  {
+    return __e.status();
+  }
+#if _CCCL_HOSTED()
+  _CCCL_CATCH (const ::std::invalid_argument& __e)
+  {
+    static_cast<void>(__e);
+    return ::cudaErrorInvalidValue;
+  }
+#endif // _CCCL_HOSTED
+  _CCCL_CATCH_ALL
+  {
+    return ::cudaErrorUnknown;
+  }
+
+  return ::cudaSuccess;
+}
+
+template <class _MDSpanIn, class _MDSpanOut, class _Env>
+[[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
+__transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
+{
+  return CUB_NS_QUALIFIER::DeviceTransform::__transform_internal(
+    ::cuda::std::make_tuple(__mdspan_in.data_handle()),
+    __mdspan_out.data_handle(),
+    __mdspan_in.size(),
+    ::cuda::always_true{},
+    ::cuda::std::identity{},
+    __env);
+}
+
 template <typename T_In,
           typename E_In,
           typename L_In,
@@ -70,42 +111,19 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
   {
+    // NOLINTBEGIN(bugprone-branch-clone)
     if constexpr (::cuda::std::same_as<T_In, T_Out>
                   && ::cuda::__detail::__can_mdspan_copy_bytes<T_In, E_In, L_In, T_Out, E_Out, L_Out>)
     {
-      _CCCL_TRY
-      {
-        ::cuda::copy_bytes(
-          ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, env), mdspan_in, mdspan_out);
-      }
-      _CCCL_CATCH (const ::cuda::cuda_error& __e)
-      {
-        return __e.status();
-      }
-#if _CCCL_HOSTED()
-      _CCCL_CATCH (const ::std::invalid_argument& __e)
-      {
-        static_cast<void>(__e);
-        return ::cudaErrorInvalidValue;
-      }
-#endif // _CCCL_HOSTED
-      _CCCL_CATCH_ALL
-      {
-        return ::cudaErrorUnknown;
-      }
-
-      return ::cudaSuccess;
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_mdspan_bytes(mdspan_in, mdspan_out, env);),
+                   (return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);))
     }
     else
     {
-      return cub::DeviceTransform::__transform_internal(
-        ::cuda::std::make_tuple(mdspan_in.data_handle()),
-        mdspan_out.data_handle(),
-        mdspan_in.size(),
-        ::cuda::always_true{},
-        ::cuda::std::identity{},
-        env);
+      return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);
     }
+    // NOLINTEND(bugprone-branch-clone)
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
