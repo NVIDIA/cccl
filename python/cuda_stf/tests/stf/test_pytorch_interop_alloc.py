@@ -383,3 +383,19 @@ def test_attribute_chain_and_laziness():
     assert stf.interop.pytorch.localized_zeros is tp.localized_zeros
     # sibling adapters are NOT imported by touching the chain
     assert "cuda.stf._experimental.interop.numba" not in sys.modules
+
+
+@requires_cuda
+def test_spec_and_grid_accessors(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid)
+    assert tp.grid_of(t) is grid
+    assert tp.spec_of(t) is tp.get_meta(t).partition
+    # resolves through views and Parameter wrapping (storage-keyed)
+    assert tp.spec_of(t.view(-1)) is tp.spec_of(t)
+    assert tp.grid_of(torch.nn.Parameter(t, requires_grad=False)) is grid
+    r = tp.replicated_empty((8,), torch.float32, grid)
+    assert tp.spec_of(r) is None and tp.grid_of(r) is grid
+    with pytest.raises(ValueError, match="registered"):
+        tp.spec_of(torch.zeros(4, device="cuda"))
+    tp.release(t)
+    tp.release(r)

@@ -542,6 +542,28 @@ def get_meta(tensor):
     return _REGISTRY.get(base)
 
 
+def spec_of(tensor):
+    """Placement spec of a registered allocation: the ``cute_partition``
+    (structured tier), the mapper (callback tier), or ``None`` for a
+    replicated allocation. Looked up by base storage pointer, so views,
+    reshapes and ``nn.Parameter`` wrapping all resolve to their root
+    allocation (tensor attributes would not survive those)."""
+    meta = get_meta(tensor)
+    if meta is None:
+        raise ValueError("tensor is not a registered STF allocation")
+    if isinstance(meta, ReplicatedMeta):
+        return None
+    return meta.partition if meta.partition is not None else meta.mapper
+
+
+def grid_of(tensor):
+    """Execution grid of a registered allocation (see :func:`spec_of`)."""
+    meta = get_meta(tensor)
+    if meta is None:
+        raise ValueError("tensor is not a registered STF allocation")
+    return meta.grid
+
+
 def live_metas():
     """Snapshot of metadata for all live localized allocations."""
     return list(_REGISTRY.values())
@@ -600,6 +622,8 @@ def _build_namespace(qualname):
     ns.full_like = localized_full_like
     ns.release = release
     ns.get_meta = get_meta
+    ns.spec_of = spec_of
+    ns.grid_of = grid_of
     ns.live_metas = live_metas
     ns.placement_report = placement_report
     ns._cuda_stf_localized = True
