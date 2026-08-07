@@ -357,7 +357,7 @@ def test_replicated_partition_read_dep():
 
     # Replicated places only support read access
     with pytest.raises(ValueError, match="read"):
-        stf.write(lX, dplace)
+        lX.write(dplace)
 
     with ctx.task(grid, lX.read(dplace)):
         pass

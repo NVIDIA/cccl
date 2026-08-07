@@ -220,7 +220,7 @@ def test_replicated_empty_meta_and_dplace(grid):
     ctx = stf.context()
     lX = ctx.logical_data(np.zeros(8, dtype=np.float32))
     with pytest.raises(ValueError, match="read"):
-        stf.write(lX, dplace)
+        lX.write(dplace)
     ctx.finalize()
 
 
