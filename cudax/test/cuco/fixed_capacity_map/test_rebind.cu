@@ -52,7 +52,7 @@ struct original_hash
 
   [[nodiscard]] __host__ __device__ constexpr ::cuda::std::size_t operator()(int key) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key * 33 + seed);
+    return static_cast<::cuda::std::size_t>(key) * 33 + static_cast<::cuda::std::size_t>(seed);
   }
 };
 
