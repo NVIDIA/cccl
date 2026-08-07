@@ -568,11 +568,13 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
 }
 
+// The host cast is already the round-to-nearest conversion the name promises, so it needs
+// no rounding call on top of it.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rn(__x));), (return static_cast<_FpType>(roundf(__x));))
+    NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rn(__x));), (return static_cast<_FpType>(__x);))
 }
 
 /*
@@ -744,7 +746,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(double __x) noexcept
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rn<double>(int32_t __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__int2double_rn(__x);), (return round(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__int2double_rn(__x);), (return static_cast<double>(__x);))
 }
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rz<double>(int32_t __x) noexcept
