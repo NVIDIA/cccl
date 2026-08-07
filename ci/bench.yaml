@@ -62,7 +62,7 @@ benchmarks:
   test_ref: "HEAD"
   arch: "native"
   nvbench_args: >-
-    --timeout 30
+    --timeout 120
     --skip-time 15e-6
     --stopping-criterion entropy
     --throttle-threshold 90
