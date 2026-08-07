@@ -90,9 +90,9 @@ entry -- purely additive, nothing about torch's own behavior changes, and
 ```python
 import torch
 import cuda.stf._experimental as stf
-from cuda.stf._experimental.interop import pytorch as tp
+from cuda.stf._experimental.interop.pytorch import install
 
-tp.install()                       # adds torch.localized
+install()                          # adds torch.localized
 stf.machine_init()
 grid = stf.exec_place_grid.from_devices([0, 1])
 
@@ -103,10 +103,10 @@ b = torch.localized.zeros_like(x)  # reuses x's placement verbatim
 torch.localized.placement_report(w)
 ```
 
-`from torch.localized import zeros` works too; `tp.namespace()` returns the
-same object without patching torch, for codebases that prefer explicit
-imports. `install()` refuses to clobber a `torch.localized` that is not
-ours.
+`from torch.localized import zeros` works too. For codebases that prefer
+explicit imports over patching, `namespace()` (same module) returns the
+identical object without touching torch. `install()` refuses to clobber a
+`torch.localized` that is not ours.
 
 The localized-allocation surface (`interop.pytorch.localized_empty`, plus
 the factory family `localized_zeros/ones/full` and the placement-reusing
