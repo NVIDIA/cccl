@@ -102,3 +102,75 @@ void TestTransformReduceCountingIterator()
   ASSERT_EQUAL(result, -6);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformReduceCountingIterator);
+
+template <class Vector>
+void TestBinaryTransformReduceSimple()
+{
+  using T = typename Vector::value_type;
+
+  Vector v1{1, -2, 3};
+  Vector v2{-4, 5, 6};
+
+  T init   = 3;
+  T result = thrust::transform_reduce(v1.begin(), v1.end(), v2.begin(), init);
+
+  // Expected: 3 + (1*-4) + (-2*5) + (3*6) = 3 - 4 - 10 + 18 = 7
+  ASSERT_EQUAL(result, 7);
+}
+DECLARE_VECTOR_UNITTEST(TestBinaryTransformReduceSimple);
+
+template <class Vector>
+void TestBinaryTransformReduceWithOperator()
+{
+  using T = typename Vector::value_type;
+
+  Vector v1{1, -2, 3};
+  Vector v2{-1, 3, 6};
+
+  // compute (v1 - v2) and perform a multiplies reduction
+  T init   = 3;
+  T result = thrust::transform_reduce(
+    v1.begin(), v1.end(), v2.begin(), init, ::cuda::std::multiplies<T>(), ::cuda::std::minus<T>());
+
+  // Expected: 3 * (1 - (-1)) * (-2 - 3) * (3 - 6) = 3 * 2 * (-5) * (-3) = 90
+  ASSERT_EQUAL(result, 90);
+}
+DECLARE_VECTOR_UNITTEST(TestBinaryTransformReduceWithOperator);
+
+template <typename T>
+void TestBinaryTransformReduce(const size_t n)
+{
+  thrust::host_vector<T> h_v1 = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_v2 = unittest::random_integers<T>(n);
+
+  thrust::device_vector<T> d_v1 = h_v1;
+  thrust::device_vector<T> d_v2 = h_v2;
+
+  T init = 13;
+
+  T cpu_result = thrust::transform_reduce(h_v1.begin(), h_v1.end(), h_v2.begin(), init);
+  T gpu_result = thrust::transform_reduce(d_v1.begin(), d_v1.end(), d_v2.begin(), init);
+
+  ASSERT_ALMOST_EQUAL(cpu_result, gpu_result);
+}
+DECLARE_VARIABLE_UNITTEST(TestBinaryTransformReduce);
+
+template <typename T>
+void TestBinaryTransformReduceWithCustomOps(const size_t n)
+{
+  thrust::host_vector<T> h_v1 = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_v2 = unittest::random_integers<T>(n);
+
+  thrust::device_vector<T> d_v1 = h_v1;
+  thrust::device_vector<T> d_v2 = h_v2;
+
+  T init = 0;
+
+  T cpu_result = thrust::transform_reduce(
+    h_v1.begin(), h_v1.end(), h_v2.begin(), init, ::cuda::std::plus<T>(), ::cuda::std::plus<T>());
+  T gpu_result = thrust::transform_reduce(
+    d_v1.begin(), d_v1.end(), d_v2.begin(), init, ::cuda::std::plus<T>(), ::cuda::std::plus<T>());
+
+  ASSERT_ALMOST_EQUAL(cpu_result, gpu_result);
+}
+DECLARE_VARIABLE_UNITTEST(TestBinaryTransformReduceWithCustomOps);
