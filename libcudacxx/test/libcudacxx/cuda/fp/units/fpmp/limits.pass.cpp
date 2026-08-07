@@ -14,6 +14,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -124,7 +127,7 @@ _CCCL_HOST_DEVICE bool run_test()
   return c_eps32 && c_eps64 && c_inf32 && c_nan64 && c_low64;
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   assert(run_test());
 }
