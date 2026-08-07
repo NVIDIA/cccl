@@ -25,6 +25,7 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/counting_iterator.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -40,6 +41,7 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/forward.h>
@@ -200,13 +202,19 @@ public:
   {
     if constexpr (__integer_like<_Start> && __integer_like<_BoundSentinel>)
     {
-      if (__value_ < 0)
+      if constexpr (is_signed_v<_Start>)
       {
-        if (__bound_sentinel_ < 0)
+        if (__value_ < 0)
         {
-          return ::cuda::std::__to_unsigned_like(-__value_) - ::cuda::std::__to_unsigned_like(-__bound_sentinel_);
+          if constexpr (is_signed_v<_BoundSentinel>)
+          {
+            if (__bound_sentinel_ < 0)
+            {
+              return ::cuda::std::__to_unsigned_like(-__value_) - ::cuda::std::__to_unsigned_like(-__bound_sentinel_);
+            }
+          }
+          return ::cuda::std::__to_unsigned_like(__bound_sentinel_) + ::cuda::std::__to_unsigned_like(-__value_);
         }
-        return ::cuda::std::__to_unsigned_like(__bound_sentinel_) + ::cuda::std::__to_unsigned_like(-__value_);
       }
       return ::cuda::std::__to_unsigned_like(__bound_sentinel_) - ::cuda::std::__to_unsigned_like(__value_);
     }
@@ -255,6 +263,23 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iota = __iota::__fn{};
+} // namespace __cpo
+
+_CCCL_BEGIN_NAMESPACE_CPO(__indices)
+struct __fn
+{
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__integer_like<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp __size) const noexcept(noexcept(iota(_Tp{}, __size)))
+  {
+    return iota(_Tp{}, __size);
+  }
+};
+_CCCL_END_NAMESPACE_CPO
+
+inline namespace __cpo
+{
+_CCCL_GLOBAL_CONSTANT auto indices = __indices::__fn{};
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
