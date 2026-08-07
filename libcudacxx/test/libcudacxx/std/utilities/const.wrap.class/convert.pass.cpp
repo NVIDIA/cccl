@@ -11,8 +11,6 @@
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
 
-// REQUIRES: !c++17
-
 // constant_wrapper
 
 // constexpr operator decltype(value)() const noexcept { return value; }
@@ -39,13 +37,14 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int conversion
-    cuda::std::__constant_wrapper<6> cw6;
+    cuda::std::__constant_wrapper<6> cw6{};
     int result = cw6;
     assert(result == 6);
 
     static_assert(noexcept(static_cast<int>(cw6)));
   }
 
+#if TEST_STD_VER >= 2020
   {
     // struct conversion
     constexpr S s{42};
@@ -56,6 +55,7 @@ TEST_FUNC constexpr bool test()
 
     static_assert(noexcept(static_cast<const S&>(cws)));
   }
+#endif // TEST_STD_VER >= 2020
 
 #if !_CCCL_TILE_COMPILATION() // error: indirect call is unsupported in tile code
   {
@@ -81,14 +81,16 @@ TEST_FUNC constexpr bool test()
   }
 #endif // !_CCCL_TILE_COMPILATION()
 
+#if TEST_STD_VER >= 2020
 // nvcc < 13.3 fails to generate correct input file for host compiler.
-#if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
+#  if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
   {
     // conversion is implicit
     cuda::std::__constant_wrapper<S{42}> cws;
     f1(cws);
   }
-#endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
+#  endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
+#endif // TEST_STD_VER >= 2020
 
   return true;
 }

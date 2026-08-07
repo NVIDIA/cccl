@@ -866,50 +866,51 @@ __fp64mp2_neg(const double __x_hi, const double __x_lo, double* __res_hi, double
 
 // -- type-generic template declarations (dispatch to fp32/fp64) --
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_add(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_add(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_add(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_add(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_add(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_high_add(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_add(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_sub(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_sub(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_sub(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_sub(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_high_sub(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void __fpmp2_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_high_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_acc(const _Tp __c, _Tp* __acc_hi, _Tp* __acc_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mul(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mul(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_mul(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_mul(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_renormalize(const _Tp __x_hi, const _Tp __x_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_renormalize(const _Tp __x_hi, const _Tp __x_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mad(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mad(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -919,7 +920,7 @@ _CCCL_API inline void __fpmp2_mad(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_mad(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -929,7 +930,7 @@ _CCCL_API inline void __fpmp2_mid_mad(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_mad(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -939,7 +940,7 @@ _CCCL_API inline void __fpmp2_low_mad(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_high_mad(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -949,7 +950,7 @@ _CCCL_API inline void __fpmp2_high_mad(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_fma(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_fma(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -959,7 +960,7 @@ _CCCL_API inline void __fpmp2_fma(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_fma(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -969,7 +970,7 @@ _CCCL_API inline void __fpmp2_mid_fma(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_fma(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -979,7 +980,7 @@ _CCCL_API inline void __fpmp2_low_fma(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_high_fma(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -989,7 +990,7 @@ _CCCL_API inline void __fpmp2_high_fma(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_fma_exp(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_fma_exp(
   const _Tp __x_hi,
   const _Tp __x_lo,
   const _Tp __y_hi,
@@ -999,11 +1000,11 @@ _CCCL_API inline void __fpmp2_fma_exp(
   _Tp* __res_hi,
   _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_neg(const _Tp __x_hi, const _Tp __x_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void __fpmp2_neg(const _Tp __x_hi, const _Tp __x_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 
 // -- fp32 template specializations --
 template <>
-_CCCL_API inline void __fpmp2_add<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_add<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1014,7 +1015,7 @@ _CCCL_API inline void __fpmp2_add<float>(
   __fp32mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_add<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1025,7 +1026,7 @@ _CCCL_API inline void __fpmp2_mid_add<float>(
   __fp32mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_add<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1036,7 +1037,7 @@ _CCCL_API inline void __fpmp2_low_add<float>(
   __fp32mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_add<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<float>(
   const float __a_hi,
   const float __a_lo,
   const float __b_hi,
@@ -1047,7 +1048,7 @@ _CCCL_API inline void __fpmp2_high_add<float>(
   __fp32mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_sub<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_sub<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1058,7 +1059,7 @@ _CCCL_API inline void __fpmp2_sub<float>(
   __fp32mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_sub<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1069,7 +1070,7 @@ _CCCL_API inline void __fpmp2_mid_sub<float>(
   __fp32mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_sub<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1080,7 +1081,7 @@ _CCCL_API inline void __fpmp2_low_sub<float>(
   __fp32mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_sub<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1091,27 +1092,27 @@ _CCCL_API inline void __fpmp2_high_sub<float>(
   __fp32mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
   __fp32mp2_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
   __fp32mp2_mid_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
   __fp32mp2_low_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
   __fp32mp2_high_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mul<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mul<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1122,7 +1123,7 @@ _CCCL_API inline void __fpmp2_mul<float>(
   __fp32mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_mul<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1133,7 +1134,7 @@ _CCCL_API inline void __fpmp2_mid_mul<float>(
   __fp32mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_mul<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1144,13 +1145,13 @@ _CCCL_API inline void __fpmp2_low_mul<float>(
   __fp32mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_renormalize<float>(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   __fp32mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mad<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mad<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1163,7 +1164,7 @@ _CCCL_API inline void __fpmp2_mad<float>(
   __fp32mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_mad<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1176,7 +1177,7 @@ _CCCL_API inline void __fpmp2_mid_mad<float>(
   __fp32mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_mad<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1189,7 +1190,7 @@ _CCCL_API inline void __fpmp2_low_mad<float>(
   __fp32mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_mad<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1202,7 +1203,7 @@ _CCCL_API inline void __fpmp2_high_mad<float>(
   __fp32mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_fma<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_fma<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1215,7 +1216,7 @@ _CCCL_API inline void __fpmp2_fma<float>(
   __fp32mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_fma<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1228,7 +1229,7 @@ _CCCL_API inline void __fpmp2_mid_fma<float>(
   __fp32mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_fma<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1241,7 +1242,7 @@ _CCCL_API inline void __fpmp2_low_fma<float>(
   __fp32mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_fma<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<float>(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
@@ -1254,7 +1255,7 @@ _CCCL_API inline void __fpmp2_high_fma<float>(
   __fp32mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_neg<float>(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   __fp32mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);
@@ -1262,7 +1263,7 @@ __fpmp2_neg<float>(const float __x_hi, const float __x_lo, float* __res_hi, floa
 
 // -- fp64 template specializations --
 template <>
-_CCCL_API inline void __fpmp2_add<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_add<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1273,7 +1274,7 @@ _CCCL_API inline void __fpmp2_add<double>(
   __fp64mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_add<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1284,7 +1285,7 @@ _CCCL_API inline void __fpmp2_mid_add<double>(
   __fp64mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_add<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1295,7 +1296,7 @@ _CCCL_API inline void __fpmp2_low_add<double>(
   __fp64mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_add<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<double>(
   const double __a_hi,
   const double __a_lo,
   const double __b_hi,
@@ -1306,7 +1307,7 @@ _CCCL_API inline void __fpmp2_high_add<double>(
   __fp64mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_sub<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_sub<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1317,7 +1318,7 @@ _CCCL_API inline void __fpmp2_sub<double>(
   __fp64mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_sub<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1328,7 +1329,7 @@ _CCCL_API inline void __fpmp2_mid_sub<double>(
   __fp64mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_sub<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1339,7 +1340,7 @@ _CCCL_API inline void __fpmp2_low_sub<double>(
   __fp64mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_sub<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1350,27 +1351,27 @@ _CCCL_API inline void __fpmp2_high_sub<double>(
   __fp64mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
   __fp64mp2_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
   __fp64mp2_mid_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
   __fp64mp2_low_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
   __fp64mp2_high_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mul<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mul<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1381,7 +1382,7 @@ _CCCL_API inline void __fpmp2_mul<double>(
   __fp64mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_mul<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1392,7 +1393,7 @@ _CCCL_API inline void __fpmp2_mid_mul<double>(
   __fp64mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_mul<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1403,13 +1404,13 @@ _CCCL_API inline void __fpmp2_low_mul<double>(
   __fp64mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_renormalize<double>(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   __fp64mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mad<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mad<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1422,7 +1423,7 @@ _CCCL_API inline void __fpmp2_mad<double>(
   __fp64mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_mad<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1435,7 +1436,7 @@ _CCCL_API inline void __fpmp2_mid_mad<double>(
   __fp64mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_mad<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1448,7 +1449,7 @@ _CCCL_API inline void __fpmp2_low_mad<double>(
   __fp64mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_mad<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1461,7 +1462,7 @@ _CCCL_API inline void __fpmp2_high_mad<double>(
   __fp64mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_fma<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_fma<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1474,7 +1475,7 @@ _CCCL_API inline void __fpmp2_fma<double>(
   __fp64mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_fma<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1487,7 +1488,7 @@ _CCCL_API inline void __fpmp2_mid_fma<double>(
   __fp64mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_fma<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1500,7 +1501,7 @@ _CCCL_API inline void __fpmp2_low_fma<double>(
   __fp64mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_fma<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<double>(
   const double __x_hi,
   const double __x_lo,
   const double __y_hi,
@@ -1513,7 +1514,7 @@ _CCCL_API inline void __fpmp2_high_fma<double>(
   __fp64mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_neg<double>(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
   __fp64mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);

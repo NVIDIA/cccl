@@ -15,12 +15,15 @@
 //
 //  This test is primarily a compile-time guard, which is why fpemu is included
 //  first (the order that puts its declarations in scope before fpmp's bodies) and
-//  why the fpmp arithmetic runs in a TEST_FUNC: the shadowed calls only exist in
+//  why the fpmp arithmetic runs in a TEST_HOST_DEVICE_FUNC: the shadowed calls only exist in
 //  the device paths, so they have to be instantiated to be checked. The runtime
 //  assertions catch the quieter failure mode where a wrong-but-viable overload is
 //  selected and the arithmetic silently changes.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 // Include order is load-bearing here; see above.
 #include <cuda/fpemu>
@@ -38,7 +41,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // those are the names it declares; the fp32 paths are covered too because fpmp
 // qualifies every intrinsic uniformly.
 template <class _Tp>
-TEST_FUNC void check_fpmp()
+TEST_HOST_DEVICE_FUNC void check_fpmp()
 {
   using T = _Tp;
 
@@ -75,7 +78,7 @@ TEST_FUNC void check_fpmp()
 
 // The other direction: fpemu's intrinsic-named overloads must still be found for
 // fpemu's own types, exactly as fpemu/api.pass.cpp calls them.
-TEST_FUNC void check_fpemu()
+TEST_HOST_DEVICE_FUNC void check_fpemu()
 {
   const double dx = 1.2345;
   const double dy = 2.3456;
@@ -103,7 +106,7 @@ TEST_FUNC void check_fpemu()
 }
 
 // Values crossing between the two libraries, so both are live in one expression.
-TEST_FUNC void check_mixed()
+TEST_HOST_DEVICE_FUNC void check_mixed()
 {
   const double dx = 6.25;
   const double dy = 1.5;
@@ -120,7 +123,7 @@ TEST_FUNC void check_mixed()
   assert(static_cast<double>(round_trip) == 2.0 * (dx + dy));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   check_fpmp<fp32mp2>();
   check_fpmp<fp64mp2>();

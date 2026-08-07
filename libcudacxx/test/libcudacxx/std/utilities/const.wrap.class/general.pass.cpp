@@ -11,8 +11,6 @@
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
 
-// REQUIRES: !c++17
-
 // constant_wrapper
 
 // The class template constant_wrapper aids in metaprogramming by ensuring that the
@@ -25,19 +23,22 @@
 
 #include "test_macros.h"
 
-TEST_FUNC constexpr auto initial_phase(auto quantity_1, auto quantity_2)
+template <class Q1, class Q2>
+TEST_FUNC constexpr auto initial_phase(Q1 quantity_1, Q2 quantity_2)
 {
   return quantity_1 + quantity_2;
 }
 
-TEST_FUNC constexpr auto middle_phase(auto tbd)
+template <class TBD>
+TEST_FUNC constexpr auto middle_phase(TBD tbd)
 {
   return tbd;
 }
 
 TEST_FUNC constexpr void profit() {}
 
-TEST_FUNC void final_phase(auto gathered, auto available)
+template <class Gathered, class Available>
+TEST_FUNC void final_phase(Gathered gathered, Available available)
 {
   if constexpr (gathered == available)
   {
