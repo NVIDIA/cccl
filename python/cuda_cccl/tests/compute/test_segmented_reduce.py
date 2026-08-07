@@ -102,6 +102,42 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
         np.testing.assert_array_equal(result, expected)
 
 
+def test_segmented_reduce_stateful_transform_iterator_input():
+    """Segmented reduce accepts a stateful transform iterator input."""
+    num_items = 64
+    h_src = np.arange(num_items, dtype=np.float32)
+    h_start_offsets = np.asarray([0, 7, 19, 43], dtype=np.int64)
+    h_end_offsets = np.asarray([7, 19, 43, num_items], dtype=np.int64)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_double(i: np.int64) -> np.float32:
+        return src[i] * np.float32(2.0)
+
+    expected = np.asarray(
+        [
+            np.sum(h_src[start:end] * np.float32(2.0))
+            for start, end in zip(h_start_offsets, h_end_offsets)
+        ],
+        dtype=np.float32,
+    )
+    d_out = DeviceArray.empty(h_start_offsets.size, dtype=np.float32)
+    start_offsets = DeviceArray.from_numpy(h_start_offsets)
+    end_offsets = DeviceArray.from_numpy(h_end_offsets)
+    h_init = np.zeros(tuple(), dtype=np.float32)
+
+    cuda.compute.segmented_reduce(
+        d_in=TransformIterator(CountingIterator(np.int64(0)), gather_double),
+        d_out=d_out,
+        num_segments=h_start_offsets.size,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_allclose(d_out.copy_to_host(), expected, atol=1e-3)
+
+
 def test_segmented_reduce_struct_type(monkeypatch):
     # Disable SASS verification for this test (LDL instruction in SASS).
     monkeypatch.setattr(
