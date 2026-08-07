@@ -96,6 +96,12 @@ TEST_HOST_DEVICE_FUNC bool run_test()
   const double ds = static_cast<double>(::cuda::std::sqrt(da)); // sqrt(2)
   ok              = ok && (ds > 1.41420 && ds < 1.41422);
 
+  const double df = static_cast<double>(::cuda::std::fma(da, db, dc)); // 2*3 + 1
+  ok              = ok && (df > 6.999 && df < 7.001);
+
+  const double dp = static_cast<double>(::cuda::std::pow(da, db)); // 2^3
+  ok              = ok && (dp > 7.999 && dp < 8.001);
+
   return ok;
 }
 
