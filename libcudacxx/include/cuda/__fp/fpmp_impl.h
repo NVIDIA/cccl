@@ -142,13 +142,16 @@ namespace cuda::experimental
 //   - MSVC (no GCC runtime)
 //   - Most Windows toolchains (MinGW configurations vary)
 //
-// Override at compile time with -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=1 (force enable) or
-// -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=0 (force disable) when the auto-detection is wrong
-// for your environment.
+// The architecture is necessary but not sufficient, hence the __has_include: <quadmath.h>
+// lives in GCC's own include directory, which clang does not search even when GCC is
+// installed alongside it, so an x86_64 clang host generally cannot reach the header. Such
+// hosts fall back to binary64 for the fp64mp2 math functions; to give them the quad path,
+// put the header on the include path and build with -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=1
+// (-D...=0 forces it off when the detection is wrong the other way).
 */
 #ifndef _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH
 #  if (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)) && !defined(_MSC_VER) \
-    && !defined(_WIN32)
+    && !defined(_WIN32) && __has_include(<quadmath.h>)
 #    define _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH 1
 #  else
 #    define _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH 0

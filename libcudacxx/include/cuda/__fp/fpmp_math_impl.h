@@ -52,7 +52,10 @@
 // where fp128 arithmetic is device-callable, since those bodies go through
 // __fpmp2_to_quad; the host pass of a CUDA compilation stays on the double path, so that
 // a .cu file does not silently acquire a libquadmath dependency its host-only counterpart
-// never had. Outside CUDA the host decides alone.
+// never had. Outside CUDA the host decides alone, but only if it has a binary128 math
+// backend to decide in favour of: the __float128 type alone is not enough, the bodies also
+// need the *q or *l entry points behind it, which an x86_64 clang host without <quadmath.h>
+// does not have.
 //
 // The two passes can therefore disagree on fp64mp2 accuracy. That is the price of not
 // forcing -lquadmath on every translation unit built for an architecture with device
@@ -71,8 +74,10 @@
 // other fp128 knobs.
 */
 #ifndef _CCCL_FPMP_FP128_MATH_FALLBACK
-#  if (_CCCL_FPMP_FP128_ENABLE == 1) \
-    && (!_CCCL_CUDA_COMPILATION() || (_CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_FP128_DEVICE_OPS == 1)))
+#  if (_CCCL_FPMP_FP128_ENABLE == 1)                                                                     \
+    && ((!_CCCL_CUDA_COMPILATION()                                                                       \
+         && ((_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH == 1) || (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1))) \
+        || (_CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_FP128_DEVICE_OPS == 1)))
 #    define _CCCL_FPMP_FP128_MATH_FALLBACK 1
 #  else
 #    define _CCCL_FPMP_FP128_MATH_FALLBACK 0
@@ -816,7 +821,6 @@ namespace cuda::experimental
 // ----------------------------------------------------------------------
 #    elif (_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH == 1) && _CCCL_HOST_COMPILATION()
 #      define _CCCL_FPMP_EXPQ(x)          expq(x)
-#      define _CCCL_FPMP_EXP2Q(x)         exp2q(x)
 #      define _CCCL_FPMP_EXPM1Q(x)        expm1q(x)
 #      define _CCCL_FPMP_LOGQ(x)          logq(x)
 #      define _CCCL_FPMP_LOG2Q(x)         log2q(x)
@@ -849,6 +853,9 @@ namespace cuda::experimental
 #      define _CCCL_FPMP_ROUNDQ(x)        roundq(x)
 #      define _CCCL_FPMP_RINTQ(x)         rintq(x)
 #      define _CCCL_FPMP_NEARBYINTQ(x)    nearbyintq(x)
+// libquadmath has no exp10q in any version and gained exp2q only in GCC 9. powq covers
+// both without a version check, and stays in binary128.
+#      define _CCCL_FPMP_EXP2Q(x)         powq((__float128) 2.0, (x))
 #      define _CCCL_FPMP_EXP10Q(x)        powq((__float128) 10.0, (x))
 // ----------------------------------------------------------------------
 // Branch 3 -- HOST, no libquadmath, 128-bit `long double`
@@ -949,6 +956,14 @@ namespace cuda::experimental
 #      define _CCCL_FPMP_RINTQ(x)         ((__fpmp_fp128) rint((double) (x)))
 #      define _CCCL_FPMP_NEARBYINTQ(x)    ((__fpmp_fp128) nearbyint((double) (x)))
 #    endif // _CCCL_FPMP_FP128_MATH_FALLBACK == 1
+
+// None of the four branches matched, so the bodies below would expand to undefined
+// _CCCL_FPMP_*Q macros. The auto-detection above cannot produce this; forcing
+// CCCL_FPMP_FP128_MATH_FALLBACK=1 on a pass with no binary128 math backend can.
+#    if !defined(_CCCL_FPMP_EXPQ)
+#      error \
+        "CCCL_FPMP_FP128_MATH_FALLBACK is on but this compilation pass has no binary128 math backend (no <quadmath.h>, no 128-bit long double, no device fp128 intrinsics). Leave the knob unset to get the binary64 bodies, or provide a backend."
+#    endif
 
 /*
  * Simplified dispatch macro: uses __FPMP_*Q wrapper macros which already
