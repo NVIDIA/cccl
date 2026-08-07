@@ -19,11 +19,14 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <cuda/atomic>
 #include <cuda/ptx>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
+
+#if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
+#  include <cuda/atomic>
+#endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -111,16 +114,27 @@ struct TilePartialStateT
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
+  ::cuda::std::uint64_t packed = TilePartialStateT::pack(run_count, open_len).dword;
+#  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+  __nv_atomic_store(&tile_state_arr[tile_idx].dword, &packed, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+#  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
   ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
-  a.store(TilePartialStateT::pack(run_count, open_len).dword, ::cuda::memory_order_relaxed);
+  a.store(packed, ::cuda::memory_order_relaxed);
+#  endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 }
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
 _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
+#  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+  ::cuda::std::uint64_t dword;
+  __nv_atomic_load(&tile_state_arr[tile_idx].dword, &dword, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+  return {dword};
+#  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
   ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
   return {a.load(::cuda::memory_order_relaxed)};
+#  endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 }
 
 // CRITICAL: from choose_signed_offset, it is guaranteed that OffT covers the whole index space.
@@ -249,7 +263,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
   {
     if (!keys_staged)
     {
-      // vvv regressed case: no TMA; full now only mrans  "tile_id_buf[slot] is valid" vvv
+      // vvv regressed case: no TMA; full now only means "tile_id_buf[slot] is valid" vvv
       ptx::mbarrier_arrive(full_bar);
       // ^^^ regressed case ^^^
     }
@@ -280,7 +294,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
 _CCCL_DEVICE_API _CCCL_FORCEINLINE int
 clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
 {
-  int nxt = num_tiles; // if no more work was cancellable
+  int next = num_tiles; // if no more work was cancellable
   if (lane_id == 0)
   {
     wait_parity(&clc_bar, static_cast<unsigned>(pipeline_gen & 1));
@@ -291,29 +305,30 @@ clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_g
     const bool canceled = ptx::clusterlaunchcontrol_query_cancel_is_canceled(resp_snapshot);
     if (canceled)
     {
-      nxt = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(resp_snapshot);
+      next = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(resp_snapshot);
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
       ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
     }
   }
-  return __shfl_sync(full_mask, nxt, 0);
+  return __shfl_sync(full_mask, next, 0);
 }
 
 // calculate head_flags: each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
 // head = (key != predecessor)
-template <int items_per_thread, bool clamp_tail, class KeyT>
+template <int ItemsPerThread, bool ClampTail, class KeyT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned
 compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id, int skip_elems)
 {
-  static_assert(items_per_thread <= 32, "one lane per iter requires items_per_thread<=32");
+  static_assert(ItemsPerThread <= 32, "one lane per iter requires ItemsPerThread<=32");
   unsigned my_flags = 0;
-#  pragma unroll
-  for (int iter = 0; iter < items_per_thread; ++iter)
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int iter = 0; iter < ItemsPerThread; ++iter)
   {
+    // each iteration handles one 32-element chunk of the warp tile; lane i compares element i of the chunk
     const int loc = warp_tile_offset + iter * 32 + lane_id;
     int key_idx   = loc + skip_elems;
     int pred_idx  = loc + skip_elems - 1; // loc==0 reads the over fetched slot[slot_pad-1]
-    if constexpr (clamp_tail)
+    if constexpr (ClampTail)
     {
       // vvv regressed case: plain global loads have no ignore_oob, so clamp the tail reads into the input.
       // the clamped values are garbage, but (loc < tile_len) below already zeroes those heads vvv
@@ -321,11 +336,15 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
       pred_idx = (tile_id == 0) ? max(key_idx - 1, 0) : key_idx - 1;
       // ^^^ regressed case ^^^
     }
+
+    // a head = key differs from its predecessor; the global first element is always a head
     const KeyT key            = key_buf[key_idx];
     const KeyT pred           = key_buf[pred_idx];
     const int is_global_first = (tile_id == 0 && loc == 0);
     const int head            = (loc < tile_len) ? (is_global_first ? 1 : !(key == pred)) : 0;
-    const unsigned flags      = __ballot_sync(full_mask, head);
+
+    // gather the chunk's 32 head bits into one flag word; lane i keeps chunk i's word
+    const unsigned flags = __ballot_sync(full_mask, head);
     if (lane_id == iter)
     {
       my_flags = flags;
@@ -366,7 +385,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   }
 }
 
-template <int items_per_thread>
+template <int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, int lane_id)
 {
@@ -377,7 +396,7 @@ stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, in
   WarpScan<int>(warp_scan_storage).InclusiveSum(head_scan, head_scan);
   // head_scan is a running sum of run_count, so each lane know each chunk's base
   const int runs_before_word = head_scan - __popc(my_flags);
-  if (lane_id < items_per_thread)
+  if (lane_id < ItemsPerThread)
   {
     const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
     unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
@@ -403,7 +422,7 @@ struct RunSpanT
 // only the 32 head-flag words. Then, it is up to the store warps to "decode" the positions from the headflags.
 // one warp tile is 32 chunks x 32 elements, so lane i owns word i.
 // This buys 2.5% BWUtil in the MaxSegSize{2^4, 2^6, 2^8}
-template <int items_per_thread>
+template <int ItemsPerThread>
 struct HeadFlagDecodeT
 {
   unsigned lane_head_flag_word;
@@ -424,7 +443,7 @@ struct HeadFlagDecodeT
     // empty should be +infinity, since we use min
     lane_first_head_from_word = lane_word_run_count ? (lane_id * 32 + __ffs(lane_head_flag_word) - 1) : 0x7fffffff;
     // if not, we loop to find the next head in flag word [i, 32). this is just a fold with min
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int offset = 1; offset < 32; offset <<= 1)
     {
       const int shuffled_first_head = __shfl_down_sync(full_mask, lane_first_head_from_word, offset);
@@ -441,14 +460,14 @@ struct HeadFlagDecodeT
     // the word containing run_dex is then the largest i with runs_before(i) that is <= j
     // we do binary search over the distributed lane_runs_before_word table held across the warp
     int flag_word_idx = 0;
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int step = 16; step; step >>= 1)
     {
       // propose candidate
       const int candidate_word_idx = flag_word_idx + step;
       // read the i'th row
       const int candidate_runs_before = __shfl_sync(full_mask, lane_runs_before_word, candidate_word_idx & 31);
-      if (candidate_word_idx < items_per_thread && candidate_runs_before <= run_idx)
+      if (candidate_word_idx < ItemsPerThread && candidate_runs_before <= run_idx)
       {
         flag_word_idx = candidate_word_idx;
       }
@@ -502,7 +521,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     do
     {
       ready = true;
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < poll_loads_per_lane; ++i)
       {
         // we only try if that state is not published
@@ -518,7 +537,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     } while (__ballot_sync(full_mask, !ready) != 0u);
     int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
     // now, we fold the window
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < poll_loads_per_lane; ++i)
     {
       if (i < lane_tile_count)
@@ -533,7 +552,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     // vote for the highest tile id with runs
     const int last_tile_with_runs_in_window = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_window);
     int lane_open_length                    = 0;
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     // how long is the window_size's unfinished run?
     for (int i = 0; i < poll_loads_per_lane; ++i)
     {
@@ -1001,7 +1020,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             const HeadFlagDecodeT<items_per_thread> dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
-#  pragma unroll
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int it = 0; it < buf_per_lane; ++it)
             {
               if (it >= num_rounds)
@@ -1025,7 +1044,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // wait for prefixed (3/3)
             wait_parity(&prefixed[slot_id], key_ring.parity);
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
-#  pragma unroll
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int it = 0; it < buf_per_lane; ++it)
             {
               if (it >= num_rounds)
@@ -1066,7 +1085,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (keys_staged)
           {
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
-#  pragma unroll 2
+            _CCCL_PRAGMA_UNROLL(2)
             for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
@@ -1085,7 +1104,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           {
             // vvv regressed case vvv
             const KeyT* tile_keys = d_keys + static_cast<size_t>(tile_id) * tile_size;
-#  pragma unroll 2
+            _CCCL_PRAGMA_UNROLL(2)
             for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
