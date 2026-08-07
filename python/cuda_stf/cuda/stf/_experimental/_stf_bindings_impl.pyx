@@ -1611,14 +1611,16 @@ cdef class exec_place_grid(exec_place):
         err, ndevs = _rt.cudaGetDeviceCount()
         if int(err) != 0 or ndevs == 0:
             raise RuntimeError("no CUDA device available")
+        cdef exec_place_grid g
+        cdef data_place affine
         if granularity == "device":
-            g = exec_place_grid.from_devices(list(range(ndevs)))
+            g = <exec_place_grid?>exec_place_grid.from_devices(list(range(ndevs)))
         elif granularity == "locality_domain":
             places = []
             for d in range(ndevs):
                 for i in range(locality_domain_count(d)):
                     places.append(exec_place.locality_domain(d, i))
-            g = exec_place_grid.create(places)
+            g = <exec_place_grid?>exec_place_grid.create(places)
         else:
             raise ValueError(
                 f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
@@ -1627,9 +1629,8 @@ cdef class exec_place_grid(exec_place):
         # the natural strategy for a machine-level grid, and it makes bare
         # dependencies (lX.rw() without an explicit data place) resolve
         # instead of failing for lack of an affine.
-        cdef data_place affine = data_place.__new__(data_place)
-        affine._h = stf_data_place_composite(
-            (<exec_place_grid?>g)._h, stf_partition_fn_blocked(0))
+        affine = data_place.__new__(data_place)
+        affine._h = stf_data_place_composite(g._h, stf_partition_fn_blocked(0))
         if affine._h == NULL:
             raise RuntimeError("failed to create the default blocked affine")
         affine._add_owner(g)
