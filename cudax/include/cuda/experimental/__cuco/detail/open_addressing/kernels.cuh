@@ -23,11 +23,11 @@
 
 #include <cub/block/block_reduce.cuh>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
 #include <cooperative_groups.h>
@@ -130,8 +130,8 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
   const auto __block_num_successes = __block_reduce(__temp_storage).Sum(__thread_num_successes);
   if (threadIdx.x == 0)
   {
-    ::cuda::atomic_ref<typename _Ref::size_type, _Ref::thread_scope>{*__num_successes}.fetch_add(
-      __block_num_successes, ::cuda::std::memory_order_relaxed);
+    (void) ::cuda::experimental::cuco::detail::__atomic_fetch_add<_Ref::thread_scope>(
+      __num_successes, __block_num_successes);
   }
 }
 
