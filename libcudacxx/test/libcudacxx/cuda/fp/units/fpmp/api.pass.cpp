@@ -12,6 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -47,7 +50,7 @@ _CCCL_HOST_DEVICE void run_test(double dx, double dy, double dz)
   assert(close((double) fma(ex, ey, ez), ::cuda::std::fma(dx, dy, dz)));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // High-precision constants (as in the original example).
   const double dx = 1.123456782345678936;

@@ -396,25 +396,27 @@ __fp64mp2_rsqrt(const double __a_hi, const double __a_lo, double* __res_hi, doub
 
 // -- type-generic template declarations (dispatch to fp32/fp64) --
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_div(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_div(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_mid_div(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_div(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_low_div(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_div(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename T>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_high_div(const T __a_hi, const T __a_lo, const T __b_hi, const T __b_lo, T* __res_hi, T* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 
 // -- fp32 template specializations --
 template <>
-_CCCL_API inline void __fpmp2_div<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_div<float>(
   const float __a_hi,
   const float __a_lo,
   const float __b_hi,
@@ -425,7 +427,7 @@ _CCCL_API inline void __fpmp2_div<float>(
   __fp32mp2_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_div<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_div<float>(
   const float __a_hi,
   const float __a_lo,
   const float __b_hi,
@@ -436,7 +438,7 @@ _CCCL_API inline void __fpmp2_mid_div<float>(
   __fp32mp2_mid_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_div<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_div<float>(
   const float __a_hi,
   const float __a_lo,
   const float __b_hi,
@@ -447,7 +449,7 @@ _CCCL_API inline void __fpmp2_low_div<float>(
   __fp32mp2_low_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_div<float>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_div<float>(
   const float __a_hi,
   const float __a_lo,
   const float __b_hi,
@@ -458,13 +460,13 @@ _CCCL_API inline void __fpmp2_high_div<float>(
   __fp32mp2_high_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_sqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
 {
   __fp32mp2_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
 {
   __fp32mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
@@ -472,7 +474,7 @@ __fpmp2_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, fl
 
 // -- fp64 template specializations --
 template <>
-_CCCL_API inline void __fpmp2_div<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_div<double>(
   const double __a_hi,
   const double __a_lo,
   const double __b_hi,
@@ -483,7 +485,7 @@ _CCCL_API inline void __fpmp2_div<double>(
   __fp64mp2_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_mid_div<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_mid_div<double>(
   const double __a_hi,
   const double __a_lo,
   const double __b_hi,
@@ -494,7 +496,7 @@ _CCCL_API inline void __fpmp2_mid_div<double>(
   __fp64mp2_mid_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_low_div<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_low_div<double>(
   const double __a_hi,
   const double __a_lo,
   const double __b_hi,
@@ -505,7 +507,7 @@ _CCCL_API inline void __fpmp2_low_div<double>(
   __fp64mp2_low_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void __fpmp2_high_div<double>(
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_div<double>(
   const double __a_hi,
   const double __a_lo,
   const double __b_hi,
@@ -516,13 +518,13 @@ _CCCL_API inline void __fpmp2_high_div<double>(
   __fp64mp2_high_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_sqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
 {
   __fp64mp2_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
 {
   __fp64mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
