@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper pseudo-mutators
 
@@ -63,8 +63,6 @@
 
 #include "helpers.h"
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 
 struct WithOps
 {
@@ -392,7 +390,7 @@ static_assert(!HasBitXorAssign<cuda::std::__constant_wrapper<6>, cuda::std::__co
 static_assert(!HasShiftLeftAssign<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
 static_assert(!HasShiftRightAssign<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // NoOps - pseudo-mutators shouldn't work without supporting operators
 static_assert(!HasPreIncrement<cuda::std::__constant_wrapper<NoOps{}>>);
@@ -457,10 +455,6 @@ static_assert(!HasShiftLeftAssign<cuda::std::__constant_wrapper<OpsReturnNonStru
 static_assert(!HasShiftRightAssign<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{1}>>);
 // clang-format on
 
-#endif // TEST_STD_VER >= 2020
-
-#if TEST_STD_VER >= 2020
-
 // LWG 4383. constant_wrapper's pseudo-mutators are underconstrained
 // https://cplusplus.github.io/LWG/issue4383
 template <class T>
@@ -502,30 +496,30 @@ TEST_FUNC constexpr void lwg4383()
 {
   lwg4383_f(cuda::std::__cw<S{}>);
 }
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
 {
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // WithOps increment/decrement
     cuda::std::__constant_wrapper<WithOps{5}> cwWithOps5;
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{6}>> decltype(auto) result1 =
       ++cwWithOps5;
-    static_assert(result1.value.value == 6);
+    static_assert(result1.__get().value == 6);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{6}>> decltype(auto) result2 =
       cwWithOps5++;
-    static_assert(result2.value.value == 6);
+    static_assert(result2.__get().value == 6);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{4}>> decltype(auto) result3 =
       --cwWithOps5;
-    static_assert(result3.value.value == 4);
+    static_assert(result3.__get().value == 4);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{4}>> decltype(auto) result4 =
       cwWithOps5--;
-    static_assert(result4.value.value == 4);
+    static_assert(result4.__get().value == 4);
   }
 
 // nvcc < 13.1 produces invalid source file for the host compilers. It replaces contexpr variables with their values
@@ -538,43 +532,43 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{13}>> decltype(auto) result1 =
       cwWithOps10 += cwWithOps3;
-    static_assert(result1.value.value == 13);
+    static_assert(result1.__get().value == 13);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{7}>> decltype(auto) result2 =
       cwWithOps10 -= cwWithOps3;
-    static_assert(result2.value.value == 7);
+    static_assert(result2.__get().value == 7);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{30}>> decltype(auto) result3 =
       cwWithOps10 *= cwWithOps3;
-    static_assert(result3.value.value == 30);
+    static_assert(result3.__get().value == 30);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{3}>> decltype(auto) result4 =
       cwWithOps10 /= cwWithOps3;
-    static_assert(result4.value.value == 3);
+    static_assert(result4.__get().value == 3);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result5 =
       cwWithOps10 %= cwWithOps3;
-    static_assert(result5.value.value == 1);
+    static_assert(result5.__get().value == 1);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result6 =
       cwWithOps10 &= cwWithOps3;
-    static_assert(result6.value.value == 2);
+    static_assert(result6.__get().value == 2);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{11}>> decltype(auto) result7 =
       cwWithOps10 |= cwWithOps3;
-    static_assert(result7.value.value == 11);
+    static_assert(result7.__get().value == 11);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{9}>> decltype(auto) result8 =
       cwWithOps10 ^= cwWithOps3;
-    static_assert(result8.value.value == 9);
+    static_assert(result8.__get().value == 9);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{80}>> decltype(auto) result9 =
       cwWithOps10 <<= cwWithOps3;
-    static_assert(result9.value.value == 80);
+    static_assert(result9.__get().value == 80);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result10 =
       cwWithOps10 >>= cwWithOps3;
-    static_assert(result10.value.value == 1);
+    static_assert(result10.__get().value == 1);
   }
 
   {
@@ -584,49 +578,49 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{13}>> decltype(auto) result1 =
       cwWithOps10 += icWithOps3;
-    static_assert(result1.value.value == 13);
+    static_assert(result1.__get().value == 13);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{7}>> decltype(auto) result2 =
       cwWithOps10 -= icWithOps3;
-    static_assert(result2.value.value == 7);
+    static_assert(result2.__get().value == 7);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{30}>> decltype(auto) result3 =
       cwWithOps10 *= icWithOps3;
-    static_assert(result3.value.value == 30);
+    static_assert(result3.__get().value == 30);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{3}>> decltype(auto) result4 =
       cwWithOps10 /= icWithOps3;
-    static_assert(result4.value.value == 3);
+    static_assert(result4.__get().value == 3);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result5 =
       cwWithOps10 %= icWithOps3;
-    static_assert(result5.value.value == 1);
+    static_assert(result5.__get().value == 1);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result6 =
       cwWithOps10 &= icWithOps3;
-    static_assert(result6.value.value == 2);
+    static_assert(result6.__get().value == 2);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{11}>> decltype(auto) result7 =
       cwWithOps10 |= icWithOps3;
-    static_assert(result7.value.value == 11);
+    static_assert(result7.__get().value == 11);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{9}>> decltype(auto) result8 =
       cwWithOps10 ^= icWithOps3;
-    static_assert(result8.value.value == 9);
+    static_assert(result8.__get().value == 9);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{80}>> decltype(auto) result9 =
       cwWithOps10 <<= icWithOps3;
-    static_assert(result9.value.value == 80);
+    static_assert(result9.__get().value == 80);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result10 =
       cwWithOps10 >>= icWithOps3;
-    static_assert(result10.value.value == 1);
+    static_assert(result10.__get().value == 1);
   }
 #  endif // !(_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_HOST_COMPILATION())
 
   lwg4383();
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }
