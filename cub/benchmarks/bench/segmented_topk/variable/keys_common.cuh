@@ -1,7 +1,16 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Defer the unsupported-architecture diagnosis to the dispatch's runtime check so this benchmark compiles for the full
+// Shared implementation for the variable-segment-size keys-only top-k benchmarks. The two thin TUs that include it --
+// `keys.cu` (baseline) and `keys.cluster.cu` (cluster) -- only set defaults and list their `%RANGE%` knobs; everything
+// else (backend/requirement selection, the tuned `topk_backend_selector`, the dispatch wrapper including the
+// per-segment `device` reference, the nvbench body and its registration) lives here so the backends stay in lock-step.
+// Each includer must define `TUNE_BACKEND` (0 baseline / 1 cluster / 2 device / 3 automatic) and `TUNE_REQUIREMENT`
+// (0 non-det / 1 det + prefer-smaller-index / 2 det + prefer-larger-index) before including.
+
+#pragma once
+
+// Defer the unsupported-architecture diagnosis to the dispatch's runtime check so these benchmarks compile for the full
 // configuration space (including deterministic / large-segment requests, which only the SM90+ cluster backend serves)
 // across all target architectures, including pre-SM90. See CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in
 // cub/device/device_batched_topk.cuh. Must precede the CUB includes below.
@@ -11,6 +20,10 @@
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/reduce.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
@@ -26,25 +39,19 @@
 
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-// %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
-// %RANGE% TUNE_BACKEND backend 0:1:1
+#include "common.cuh"
 
-enum class topk_backend
-{
-  baseline,
-  cluster,
-  device,
-  automatic,
-};
-
-// Which backend this build benchmarks. A base build forces nothing (`automatic`, no `tune` override): the speedup
-// reference. A tuning build forces `TUNE_BACKEND`; the `%RANGE%` sweep covers baseline and cluster, but only baseline
-// knobs are exposed, so the cluster backend uses its default sub-policy. `device` (-DTUNE_BACKEND=2, one
-// `cub::DeviceTopK` call per segment) is checked before TUNE_BASE so it stays reachable on the base target.
 #ifndef TUNE_BACKEND
-#  define TUNE_BACKEND 0 // baseline: the swept default (a base build ignores this and measures `automatic`)
+#  error "keys_common.cuh requires the includer to define TUNE_BACKEND (0 baseline/1 cluster/2 device/3 automatic)"
+#endif
+#ifndef TUNE_REQUIREMENT
+#  error "keys_common.cuh requires the includer to define TUNE_REQUIREMENT (0 non-det / 1 det+smaller / 2 det+larger)"
+#endif
+#if TUNE_BACKEND < 0 || TUNE_BACKEND > 3
+#  error "keys_common.cuh: TUNE_BACKEND must be 0 (baseline), 1 (cluster), 2 (device), or 3 (automatic)"
+#endif
+#if TUNE_REQUIREMENT < 0 || TUNE_REQUIREMENT > 2
+#  error "keys_common.cuh: TUNE_REQUIREMENT must be 0 (non-det), 1 (det+smaller), or 2 (det+larger)"
 #endif
 
 // The tuning harness builds one architecture per GPU (and the cluster backend needs SM90+); base builds are exempt
@@ -58,6 +65,18 @@ enum class topk_backend
 #  endif
 #endif // !TUNE_BASE
 
+enum class topk_backend
+{
+  baseline,
+  cluster,
+  device,
+  automatic,
+};
+
+// Which backend this build benchmarks. A base build forces nothing (`automatic`, no `tune` override): the speedup
+// reference, and it lets the library pick cluster for variable segments that exceed baseline coverage. A tuning build
+// forces `TUNE_BACKEND` so that backend's sub-policy knobs (below) take effect. `device` (-DTUNE_BACKEND=2, one
+// `cub::DeviceTopK` call per segment) is checked before TUNE_BASE so it stays reachable on the base target.
 inline constexpr topk_backend selected_backend =
 #if TUNE_BACKEND == 2
   topk_backend::device;
@@ -71,9 +90,25 @@ inline constexpr topk_backend selected_backend =
   topk_backend::automatic;
 #endif
 
-// Determinism / tie-break requirement benchmarked by the cluster backend (a single combination for now).
-inline constexpr auto selected_determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+// The determinism / tie-break requirement this build issues. Only the cluster and automatic backends honor a
+// deterministic result set / concrete tie-break; the baseline and device backends must stay non-deterministic (enforced
+// by the static_assert below). The three values cover the distinct behaviors we benchmark: no guarantee, and
+// deterministic with either index preference.
+inline constexpr auto selected_determinism =
+#if TUNE_REQUIREMENT == 0
+  cuda::execution::determinism::__determinism_t::__not_guaranteed;
+#else
+  cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+#endif
+
+inline constexpr auto selected_tie_break =
+#if TUNE_REQUIREMENT == 1
+  cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+#elif TUNE_REQUIREMENT == 2
+  cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+#else
+    cuda::execution::tie_break::__tie_break_t::__unspecified;
+#endif
 
 // The baseline requirement is enforced inside `topk_backend_selector` (instantiated only for a forced baseline/cluster
 // backend). The device backend bypasses that selector (one cub::DeviceTopK call per segment), so its requirement is
@@ -81,13 +116,12 @@ inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_b
 static_assert(selected_backend != topk_backend::device
                 || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
                     && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
-              "The device backend does not honor determinism/tie-break requirements; keep selected_determinism and "
-              "selected_tie_break at their defaults for it.");
+              "The device backend does not honor determinism/tie-break requirements; keep TUNE_REQUIREMENT at 0 "
+              "(non-deterministic) for it.");
 
 // Policy selector passed to the tuning environment; instantiated only for a forced baseline/cluster backend (base,
-// `automatic`, and `device` builds never construct it). The struct is still compiled everywhere, so the baseline knob
-// branch stays gated on `!TUNE_BASE && (TUNE_BACKEND == 0 || 1)` -- a base/device/automatic build defines no TUNE_*
-// knobs. The cluster sub-policy is always the default (no cluster knobs are exposed here).
+// `automatic`, and `device` builds never construct it). The struct is still compiled everywhere, so each knob-driven
+// branch stays gated on `!TUNE_BASE && TUNE_BACKEND == <that backend>` -- a base build defines no TUNE_* knobs.
 template <class KeyT, class ValueT, class OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
@@ -104,7 +138,7 @@ struct topk_backend_selector
         || sizeof(KeyT) == 0,
       "The baseline backend cannot honor a deterministic result set or a concrete tie-break preference; "
       "force the cluster backend or request the non-deterministic defaults.");
-#if !TUNE_BASE && (TUNE_BACKEND == 0 || TUNE_BACKEND == 1)
+#if !TUNE_BASE && TUNE_BACKEND == 0
     constexpr auto store_alg = cub::BLOCK_STORE_WARP_TRANSPOSE;
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0
     constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;
@@ -124,7 +158,26 @@ struct topk_backend_selector
 #else
     const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #endif
+
+#if !TUNE_BASE && TUNE_BACKEND == 1
+    const auto cluster = cub::detail::batched_topk::cluster_topk_policy{
+      /*threads_per_block=*/TUNE_CLUSTER_THREADS_PER_BLOCK,
+      /*min_blocks_per_sm=*/TUNE_CLUSTER_MIN_BLOCKS_PER_SM,
+      /*min_chunks_per_block=*/TUNE_CLUSTER_MIN_CHUNKS_PER_BLOCK,
+      /*chunk_bytes=*/(TUNE_CLUSTER_CHUNK_KIB) * 1024,
+      /*load_align_bytes=*/(1 << (TUNE_CLUSTER_LOAD_ALIGN_BYTES_POW2)),
+      /*pipeline_stages=*/TUNE_CLUSTER_PIPELINE_STAGES,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/TUNE_CLUSTER_BITS_PER_PASS,
+      /*histogram_items_per_thread=*/TUNE_CLUSTER_HIST_IPT,
+      /*tie_break_items_per_thread=*/TUNE_CLUSTER_TIEBREAK_IPT,
+      /*copy_items_per_thread=*/TUNE_CLUSTER_COPY_IPT,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+#else
     const auto cluster = cub::detail::batched_topk::make_cluster_policy();
+#endif
+
     constexpr auto backend =
       (selected_backend == topk_backend::cluster)
         ? cub::detail::batched_topk::topk_algorithm::cluster
@@ -207,45 +260,49 @@ _CCCL_HOST_API static cudaError_t batched_topk_keys(
   }
 }
 
-template <typename KeyT, int MaxSegmentSize, int MaxNumSelected>
-void fixed_seg_size_topk_keys(
-  nvbench::state& state,
-  nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<MaxNumSelected>>)
+template <typename KeyT, int MaxSegmentSize, int K>
+void decode_style_variable_topk_keys(
+  nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
-  // Retrieve axis parameters
-  const auto max_elements      = static_cast<size_t>(state.get_int64("Elements{io}"));
-  const auto segment_size      = static_cast<::cuda::std::ptrdiff_t>(MaxSegmentSize);
-  const auto selected_elements = static_cast<::cuda::std::ptrdiff_t>(MaxNumSelected);
-  const auto num_segments      = ::cuda::std::max<std::size_t>(1, (max_elements / segment_size));
-  const auto elements          = num_segments * segment_size;
-  const bit_entropy entropy    = str_to_entropy(state.get_string("Entropy"));
-
-  // Skip workloads where k exceeds the segment size
-  if (selected_elements >= segment_size)
+  if constexpr (K > MaxSegmentSize)
   {
-    state.skip("Skipping workload where K >= SegmentSize.");
+    state.skip("K > MaxSegmentSize.");
     return;
   }
 
-  thrust::device_vector<KeyT> in_keys_buffer = generate(elements, entropy);
-  thrust::device_vector<KeyT> out_keys_buffer(selected_elements * num_segments, thrust::no_init);
-  const auto d_keys_in_ptr  = thrust::raw_pointer_cast(in_keys_buffer.data());
-  const auto d_keys_out_ptr = thrust::raw_pointer_cast(out_keys_buffer.data());
-  const auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
-  const auto d_keys_out = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
+  const auto num_segments                                     = static_cast<int>(state.get_int64("NumSegments"));
+  const thrust::device_vector<segment_size_t> d_segment_sizes = generate(
+    static_cast<std::size_t>(num_segments),
+    bit_entropy::_1_000,
+    static_cast<segment_size_t>(K),
+    static_cast<segment_size_t>(MaxSegmentSize));
+  const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
+  const auto output_elements = static_cast<std::size_t>(num_segments) * K;
 
-  const auto segment_sizes = ::cuda::args::constant<MaxSegmentSize>{};
-  const auto k             = ::cuda::args::constant<MaxNumSelected>{};
+  auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
+    num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
+  auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  state.add_element_count(elements, "NumElements");
-  state.add_element_count(segment_size, "SegmentSize");
-  state.add_element_count(selected_elements, "NumSelectedElements");
-  state.add_global_memory_reads<KeyT>(elements, "InputKeys");
-  state.add_global_memory_writes<KeyT>(selected_elements * num_segments, "OutputKeys");
+  const auto segment_sizes_param = cuda::args::deferred_sequence{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<1, MaxSegmentSize>()};
+  const auto k_param            = cuda::args::constant<K>{};
+  const auto num_segments_param = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
-  // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments. Consumed only by the
-  // per-segment device backend. Segment sizes fit in a signed 32-bit integer (the library caps them at 2^21).
-  const std::vector<cuda::std::int32_t> h_segment_sizes(num_segments, static_cast<cuda::std::int32_t>(MaxSegmentSize));
+  const auto d_keys_in = cuda::make_strided_iterator(
+    cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
+    static_cast<cuda::std::ptrdiff_t>(MaxSegmentSize));
+  const auto d_keys_out = cuda::make_strided_iterator(
+    cuda::make_counting_iterator(thrust::raw_pointer_cast(out_keys_buffer.data())),
+    static_cast<cuda::std::ptrdiff_t>(K));
+
+  state.add_element_count(input_elements, "NumElements");
+  state.add_global_memory_reads<KeyT>(input_elements, "InputKeys");
+  state.add_global_memory_reads<segment_size_t>(num_segments, "SegmentSizes");
+  state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
+
+  // Host copy of segment sizes — consumed only by the per-segment device backend.
+  std::vector<segment_size_t> h_segment_sizes(static_cast<std::size_t>(num_segments));
+  thrust::copy(d_segment_sizes.begin(), d_segment_sizes.end(), h_segment_sizes.begin());
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -255,26 +312,16 @@ void fixed_seg_size_topk_keys(
       "batched topk failed",
       d_keys_in,
       d_keys_out,
-      segment_sizes,
-      k,
-      ::cuda::args::immediate{static_cast<::cuda::std::int64_t>(num_segments)},
+      segment_sizes_param,
+      k_param,
+      num_segments_param,
       h_segment_sizes.data(),
       env);
   });
 }
 
-using key_type_list          = nvbench::type_list<float>;
-using segment_size_type_list = nvbench::type_list<uint32_t>;
-using out_offset_type_list   = nvbench::type_list<uint32_t>;
-
-using segment_size_        = nvbench::type_list<uint32_t>;
-using out_offset_type_list = nvbench::type_list<uint32_t>;
-
-using small_segment_size_list = nvbench::enum_type_list<64, 128, 256, 512, 1024>;
-using small_k_list            = nvbench::enum_type_list<8, 16, 32, 128, 512, 1024>;
-
-NVBENCH_BENCH_TYPES(fixed_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, small_segment_size_list, small_k_list))
-  .set_name("small")
-  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "MaxNumSelected{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(28, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.201", "0.000"});
+NVBENCH_BENCH_TYPES(decode_style_variable_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
+  .set_name("decode_style_variable_topk_keys")
+  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
+  .add_int64_axis("NumSegments", {1, 2, 4, 8, 16, 32})
+  .add_string_axis("Pattern", valid_patterns);
