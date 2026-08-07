@@ -54,6 +54,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+inline constexpr int byte_sample_privatized_levels =
+  static_cast<int>(::cuda::std::numeric_limits<unsigned char>::max()) + 2;
+
 template <typename PolicySelector, typename OutputCounterT, typename = void>
 struct local_counter
 {
@@ -276,9 +279,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const HistogramPolicy::Kernel sweep = active_policy.kernel(PrivatizationMode{});
-  const int threads_per_block         = sweep.threads_per_block;
-  const int items_per_thread          = sweep.items_per_thread;
+  const HistogramSweepPolicy sweep =
+    is_privatized_static_smem_v<PrivatizationMode> ? active_policy.static_smem
+    : is_privatized_dynamic_smem_v<PrivatizationMode>
+      ? active_policy.dynamic_smem
+      : active_policy.gmem;
+  const int threads_per_block = sweep.threads_per_block;
+  const int items_per_thread  = sweep.items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
@@ -289,7 +296,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
-                         sweep_kernel, active_policy.dynamic_smem.max_privatized_smem_bytes)))
+                         sweep_kernel, active_policy.max_privatized_dynamic_smem_bytes)))
                    {
                      return error;
                    }
@@ -385,7 +392,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_threads_per_block = init_threads_per_block;
+  constexpr int histogram_init_threads_per_block = 256;
   int histogram_init_grid_dims =
     (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
@@ -403,7 +410,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                          histogram_init_threads_per_block,
                          0,
                          stream,
-                         /* dependent_launch */ supports_dependent_launch(cc))
+                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -434,7 +441,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                          threads_per_block,
                          dynamic_smem_bytes,
                          stream,
-                         /* dependent_launch */ supports_dependent_launch(cc))
+                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
@@ -808,7 +815,7 @@ template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
 {
   using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
-  const auto kernel_config = HistogramPolicy::Kernel{
+  const auto kernel_config = HistogramSweepPolicy{
     sweep::BLOCK_THREADS,
     sweep::PIXELS_PER_THREAD,
     sweep::VEC_SIZE,
@@ -816,10 +823,18 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
     sweep::LOAD_MODIFIER,
     sweep::IS_RLE_COMPRESS,
     sweep::IS_WORK_STEALING};
-  return {kernel_config,
-          {kernel_config, legacy_privatized_smem_bins * supported_counter_bytes, 0},
-          {kernel_config, 0, 0, 0, 0, 0},
-          convert_pdl_trigger<ActivePolicy>(0)};
+  return {
+    kernel_config,
+    kernel_config,
+    kernel_config,
+    256 * int{sizeof(unsigned int)},
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    convert_pdl_trigger<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
