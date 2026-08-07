@@ -20,40 +20,22 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/load_store_f64.cu"
 )
 
-set(simd_codegen_default_prefixes SMXXX)
-libcudacxx_codegen_add_ptx_tests(
-  AGGREGATE_TARGET libcudacxx.test.simd.ptx
-  TARGET_PREFIX simd_codegen
-  ARCH 80
-  CHECK_PREFIXES ${simd_codegen_default_prefixes}
-  TESTS ${simd_codegen_load_store_tests}
-)
-libcudacxx_codegen_add_ptx_tests(
-  AGGREGATE_TARGET libcudacxx.test.simd.ptx
-  TARGET_PREFIX simd_codegen
-  ARCH 90
-  CHECK_PREFIXES ${simd_codegen_default_prefixes}
-  TESTS ${simd_codegen_load_store_tests}
-)
+foreach (arch IN LISTS simd_codegen_cuda_archs)
+  set(simd_codegen_check_prefixes SMXXX)
+  if (
+    arch MATCHES "^([0-9]+)"
+    AND CMAKE_MATCH_1 GREATER_EQUAL 100
+    AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9
+    AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
+  )
+    list(APPEND simd_codegen_check_prefixes SM100-PLUS)
+  endif()
 
-# SM100/SM120 add 32-byte vectorized checks.
-if (
-  CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9
-  AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
-)
-  set(simd_codegen_sm100_prefixes SMXXX SM100-PLUS)
   libcudacxx_codegen_add_ptx_tests(
     AGGREGATE_TARGET libcudacxx.test.simd.ptx
     TARGET_PREFIX simd_codegen
-    ARCH 100
-    CHECK_PREFIXES ${simd_codegen_sm100_prefixes}
+    ARCH "${arch}"
+    CHECK_PREFIXES ${simd_codegen_check_prefixes}
     TESTS ${simd_codegen_load_store_tests}
   )
-  libcudacxx_codegen_add_ptx_tests(
-    AGGREGATE_TARGET libcudacxx.test.simd.ptx
-    TARGET_PREFIX simd_codegen
-    ARCH 120
-    CHECK_PREFIXES ${simd_codegen_sm100_prefixes}
-    TESTS ${simd_codegen_load_store_tests}
-  )
-endif()
+endforeach()

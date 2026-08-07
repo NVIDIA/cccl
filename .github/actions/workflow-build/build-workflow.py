@@ -335,6 +335,19 @@ def get_job_type_info(job):
 
 
 @memoize_result
+def get_codegen_target(codegen_target):
+    if codegen_target not in matrix_yaml["codegen_targets"]:
+        raise Exception(
+            f"Unknown codegen target '{codegen_target}'. Valid options are: "
+            + ", ".join(matrix_yaml["codegen_targets"].keys())
+        )
+
+    result = matrix_yaml["codegen_targets"][codegen_target]
+    result["id"] = codegen_target
+    return result
+
+
+@memoize_result
 def get_tag_info(tag):
     if tag not in matrix_yaml["tags"].keys():
         raise Exception(
@@ -364,6 +377,7 @@ def get_all_matrix_job_tags_sorted():
     sorted_important_tags = [
         "project",
         "jobs",
+        "codegen_target",
         "cudacxx",
         "cxx",
         "ctk",
@@ -432,6 +446,10 @@ def generate_dispatch_group_name(matrix_job):
 
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
+    job_name = job_info["name"]
+    if "codegen_target" in matrix_job:
+        codegen_target = get_codegen_target(matrix_job["codegen_target"])
+        job_name += f" {codegen_target['name']}"
     cpu_str = matrix_job["cpu"]
     if job_info["gpu"]:
         gpu = get_gpu(matrix_job["gpu"])
@@ -470,7 +488,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
+    return f"[{config_tag}] {job_name}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -556,6 +574,13 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -py-version "{py_version}"'
     if py_ctk_mode:
         command += f' -ctk-mode "{py_ctk_mode}"'
+    if "codegen_target" in matrix_job:
+        codegen_target = get_codegen_target(matrix_job["codegen_target"])
+        command += f' -target "{codegen_target["cmake_target"]}"'
+        command += (
+            " -cmake-options "
+            f'"-DLIBCUDACXX_CODEGEN_FILECHECK_TESTS={codegen_target["id"]}"'
+        )
     if extra_args:
         command += f" {extra_args}"
 
@@ -598,6 +623,11 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
     if "args" in origin_job and not origin_job["args"]:
         del origin_job["args"]
+
+    if "codegen_target" in origin_job:
+        origin_job["codegen_target"] = get_codegen_target(origin_job["codegen_target"])[
+            "name"
+        ]
 
     origin["matrix_job"] = origin_job
 
@@ -1053,6 +1083,31 @@ def validate_tags(matrix_job, ignore_required=False):
             raise Exception(
                 error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'")
             )
+
+    jobs = matrix_job.get("jobs", [])
+    jobs = jobs if isinstance(jobs, list) else [jobs]
+    has_codegen_job = "codegen_filecheck" in jobs
+    if has_codegen_job and "codegen_target" not in matrix_job:
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job,
+                "The codegen_filecheck job requires a codegen_target tag.",
+            )
+        )
+    if not has_codegen_job and "codegen_target" in matrix_job:
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job,
+                "The codegen_target tag is only valid for codegen_filecheck jobs.",
+            )
+        )
+    if "codegen_target" in matrix_job:
+        codegen_targets = matrix_job["codegen_target"]
+        codegen_targets = (
+            codegen_targets if isinstance(codegen_targets, list) else [codegen_targets]
+        )
+        for codegen_target in codegen_targets:
+            get_codegen_target(codegen_target)
 
     if "gpu" in matrix_job:
         gpus = (

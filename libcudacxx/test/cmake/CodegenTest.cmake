@@ -17,6 +17,12 @@ option(
 )
 
 function(libcudacxx_codegen_check_tools out_var)
+  if (LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS)
+    set(require_codegen_tools TRUE)
+  else()
+    set(require_codegen_tools FALSE)
+  endif()
+
   get_property(
     tools_available
     GLOBAL
@@ -53,7 +59,7 @@ function(libcudacxx_codegen_check_tools out_var)
 
   if (missing_tools)
     list(JOIN missing_tools ", " missing_tools)
-    if (LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS)
+    if (require_codegen_tools)
       message(
         FATAL_ERROR
         "Tools required by libcu++ codegen tests were not found: ${missing_tools}"
@@ -81,6 +87,29 @@ set(
   libcudacxx_codegen_dump_and_check
   "${CMAKE_CURRENT_LIST_DIR}/../codegen/dump_and_check.bash"
 )
+
+# Return the concrete CUDA architectures requested for codegen testing.
+# Virtual-only architectures do not produce the SASS consumed by these tests;
+# special values such as "native" and "all" do not identify a stable FileCheck
+# prefix and should be replaced with explicit architectures by the caller.
+function(libcudacxx_codegen_get_cuda_architectures out_var)
+  set(cuda_architectures)
+  foreach (arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
+    if (arch MATCHES "^([0-9]+[af]?)(-real)?$")
+      list(APPEND cuda_architectures "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES cuda_architectures)
+
+  if (NOT cuda_architectures)
+    message(
+      FATAL_ERROR
+      "Libcu++ FileCheck codegen tests require at least one explicit real CUDA architecture; got '${CMAKE_CUDA_ARCHITECTURES}'"
+    )
+  endif()
+
+  set(${out_var} "${cuda_architectures}" PARENT_SCOPE)
+endfunction()
 
 function(libcudacxx_codegen_set_cuda_arch target_name arch)
   if (arch MATCHES "[af]$")

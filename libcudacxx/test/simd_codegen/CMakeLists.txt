@@ -8,8 +8,12 @@
 ##
 ##===----------------------------------------------------------------------===##
 
-add_custom_target(libcudacxx.test.simd.ptx)
-add_custom_target(libcudacxx.test.simd.sass)
+if (libcudacxx_codegen_filecheck_simd_ptx)
+  add_custom_target(libcudacxx.test.simd.ptx)
+endif()
+if (libcudacxx_codegen_filecheck_simd_sass)
+  add_custom_target(libcudacxx.test.simd.sass)
+endif()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP: skip unsupported compilers, find tools, set up CUDA architectures
@@ -51,44 +55,36 @@ if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   return()
 endif()
 
-set(simd_codegen_sass_cuda_archs 80 90)
-if (
-  CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8
-  AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
-)
-  list(APPEND simd_codegen_sass_cuda_archs 100 120)
+libcudacxx_codegen_get_cuda_architectures(simd_codegen_cuda_archs)
+
+if (libcudacxx_codegen_filecheck_simd_ptx)
+  add_subdirectory(load_store)
 endif()
 
-if (
-  CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9
-  AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
-)
-  list(APPEND simd_codegen_sass_cuda_archs 103 120f)
-endif()
+if (libcudacxx_codegen_filecheck_simd_sass)
+  set(simd_codegen_sass_tests)
+  file(
+    GLOB simd_codegen_sass_tests
+    CONFIGURE_DEPENDS
+    "floating_point/*.cu"
+    "integer/*.cu"
+    "min_max/*.cu"
+  )
 
-set(simd_codegen_sass_tests)
-file(
-  GLOB simd_codegen_sass_tests
-  "floating_point/*.cu"
-  "integer/*.cu"
-  "min_max/*.cu"
-)
+  # The 8-bit arithmetic and min/max tests require the PTX ISA 9.2 8-bit SIMD
+  # path available with CUDA 13.2 and newer.
+  if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
+    list(
+      REMOVE_ITEM simd_codegen_sass_tests
+      "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
+      "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
+    )
+  endif()
 
-# The 8-bit arithmetic and min/max tests require the PTX ISA 9.2 8-bit SIMD
-# path available with CUDA 13.2 and newer.
-if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
-  list(
-    REMOVE_ITEM simd_codegen_sass_tests
-    "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
+  libcudacxx_codegen_add_sass_tests(
+    AGGREGATE_TARGET libcudacxx.test.simd.sass
+    TARGET_PREFIX simd_codegen
+    ARCHITECTURES ${simd_codegen_cuda_archs}
+    TESTS ${simd_codegen_sass_tests}
   )
 endif()
-
-add_subdirectory(load_store)
-
-libcudacxx_codegen_add_sass_tests(
-  AGGREGATE_TARGET libcudacxx.test.simd.sass
-  TARGET_PREFIX simd_codegen
-  ARCHITECTURES ${simd_codegen_sass_cuda_archs}
-  TESTS ${simd_codegen_sass_tests}
-)

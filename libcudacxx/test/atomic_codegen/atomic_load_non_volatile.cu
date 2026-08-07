@@ -8,13 +8,13 @@ __global__ void load_relaxed_device_non_volatile(int* data, int* out)
 
 /*
 
-; SM8X-LABEL: .target sm_80
-; SM8X:      .visible .entry [[FUNCTION:_.*load_relaxed_device_non_volatile.*]](
-; SM8X-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
-; SM8X-DAG:  ld.param.{{b|u}}64 %rd[[#EXPECTED:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
-; SM8X-DAG:  cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#EXPECTED]];
-; SM8X-NEXT: {{/*[[:space:]] *}}ld.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]];{{[[:space:]]/*}}
-; SM8X-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
-; SM8X-NEXT: ret;
+; SMXX-LABEL: .target sm_{{[0-9]+}}
+; SMXX:      .visible .entry [[FUNCTION:_.*load_relaxed_device_non_volatile.*]](
+; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
+; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#EXPECTED:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
+; SMXX-DAG:  cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#EXPECTED]];
+; SMXX-NEXT: {{/*[[:space:]] *}}ld.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]];{{[[:space:]]/*}}
+; SMXX-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
+; SMXX-NEXT: ret;
 
 */
