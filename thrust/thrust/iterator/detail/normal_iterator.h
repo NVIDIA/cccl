@@ -33,6 +33,7 @@ class normal_iterator : public iterator_adaptor<normal_iterator<Pointer>, Pointe
   using super_t = iterator_adaptor<normal_iterator<Pointer>, Pointer>;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI normal_iterator() = default;
 
   _CCCL_HOST_DEVICE normal_iterator(Pointer p)

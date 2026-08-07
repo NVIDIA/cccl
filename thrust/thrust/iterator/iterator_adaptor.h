@@ -131,6 +131,7 @@ protected:
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
    */
+  _CCCL_EXEC_CHECK_DISABLE
   iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.

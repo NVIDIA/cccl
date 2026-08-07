@@ -39,6 +39,7 @@ class tagged_iterator : public make_tagged_iterator_base<Iterator, Tag>
   using super_t = make_tagged_iterator_base<Iterator, Tag>;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   tagged_iterator() = default;
 
   _CCCL_HOST_DEVICE explicit tagged_iterator(Iterator x)
