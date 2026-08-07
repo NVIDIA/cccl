@@ -82,3 +82,31 @@ def test_domain_exec_place_task():
             pass
 
     ctx.finalize()
+
+
+def test_machine_grid_granularities():
+    """machine() covers the current machine at device or locality-domain
+    granularity; the domain grid has sum(count(d)) places, device-major."""
+    stf.machine_init()
+    gdev = stf.exec_place_grid.machine()  # default: device granularity
+    gdom = stf.exec_place_grid.machine(granularity="locality_domain")
+    assert gdev is not None and gdom is not None
+
+    from cuda.bindings import runtime as rt
+
+    err, ndevs = rt.cudaGetDeviceCount()
+    assert int(err) == 0
+    expected = sum(stf.locality_domain_count(d) for d in range(ndevs))
+    assert expected >= ndevs  # never fewer domains than devices
+
+    with pytest.raises(ValueError, match="granularity"):
+        stf.exec_place_grid.machine(granularity="warp")
+
+    # the domain-granularity grid drives a task end to end
+    N = 128
+    ctx = stf.context()
+    X = np.zeros(N, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_machine")
+    with ctx.task(gdom, lX.rw()):
+        pass
+    ctx.finalize()

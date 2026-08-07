@@ -1593,6 +1593,36 @@ cdef class exec_place_grid(exec_place):
         return self._grid_rank
 
     @staticmethod
+    def machine(granularity="device"):
+        """Grid covering the current machine at a chosen granularity.
+
+        ``granularity="device"``: one execution place per CUDA device
+        (equivalent to ``from_devices(range(ndevs))``).
+
+        ``granularity="locality_domain"``: one place per locality domain of
+        every device, device-major order (device 0's domains, then device
+        1's, ...). A device without native locality-domain support
+        contributes a single whole-device domain, so this degrades to the
+        device granularity exactly where domains are unavailable.
+        """
+        from cuda.bindings import runtime as _rt  # noqa: PLC0415
+
+        err, ndevs = _rt.cudaGetDeviceCount()
+        if int(err) != 0 or ndevs == 0:
+            raise RuntimeError("no CUDA device available")
+        if granularity == "device":
+            return exec_place_grid.from_devices(list(range(ndevs)))
+        if granularity == "locality_domain":
+            places = []
+            for d in range(ndevs):
+                for i in range(locality_domain_count(d)):
+                    places.append(exec_place.locality_domain(d, i))
+            return exec_place_grid.create(places)
+        raise ValueError(
+            f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
+        )
+
+    @staticmethod
     def locality_domains(int dev_id=0):
         """Grid with one execution place per locality domain of a device
         (a single whole-device place with the fallback backend)."""
