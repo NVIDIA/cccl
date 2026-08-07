@@ -200,6 +200,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
     bit_position += 16;
     flag_mask >>= 16;
   }
+
   set_bits_in_low_half = __popc(flag_mask & 0xffu);
   if (rank >= set_bits_in_low_half)
   {
@@ -207,6 +208,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
     bit_position += 8;
     flag_mask >>= 8;
   }
+
   set_bits_in_low_half = __popc(flag_mask & 0xfu);
   if (rank >= set_bits_in_low_half)
   {
@@ -214,6 +216,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
     bit_position += 4;
     flag_mask >>= 4;
   }
+
   set_bits_in_low_half = __popc(flag_mask & 0x3u);
   if (rank >= set_bits_in_low_half)
   {
@@ -221,6 +224,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
     bit_position += 2;
     flag_mask >>= 2;
   }
+
   if (rank >= static_cast<int>(flag_mask & 1u))
   {
     bit_position += 1;
@@ -394,6 +398,7 @@ stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, in
   int head_scan = __popc(my_flags); // start: this word's head count
   typename WarpScan<int>::TempStorage warp_scan_storage;
   WarpScan<int>(warp_scan_storage).InclusiveSum(head_scan, head_scan);
+
   // head_scan is a running sum of run_count, so each lane know each chunk's base
   const int runs_before_word = head_scan - __popc(my_flags);
   if (lane_id < ItemsPerThread)
@@ -516,6 +521,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     const int lane_first_tile_id                        = last_seen_tile_id + lane_id;
     const int lane_tile_count                           = (window_size - lane_id + 31) >> 5;
     TilePartialStateT packed_words[poll_loads_per_lane] = {}; // must zero initialize
+
     bool ready;
     // first, all tile state in window must be ready
     do
@@ -535,6 +541,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         }
       }
     } while (__ballot_sync(full_mask, !ready) != 0u);
+
     int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
     // now, we fold the window
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -551,7 +558,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     }
     // vote for the highest tile id with runs
     const int last_tile_with_runs_in_window = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_window);
-    int lane_open_length                    = 0;
+
+    int lane_open_length = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
     // how long is the window_size's unfinished run?
     for (int i = 0; i < poll_loads_per_lane; ++i)
@@ -562,6 +570,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         lane_open_length += packed_words[i].open_len();
       }
     }
+
+    // reduce across the warp, then roll this window into the running prefix
     const int window_run_count   = __reduce_add_sync(full_mask, lane_run_count);
     const int window_open_length = __reduce_add_sync(full_mask, lane_open_length);
     // dense_mode is true if window_run_count > 128
@@ -638,9 +648,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static constexpr RleLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
   static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
   static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
+
   static_assert(policy.items_per_thread >= 1 && policy.items_per_thread <= 32, "items_per_thread must be in [1, 32]");
   static_assert(policy.compute_warps >= 1 && policy.compute_warps <= 31, "compute_warps must be in [1, 31]");
   static_assert(policy.key_ring_stages >= 1, "at least one pipeline stage");
+
   static_assert(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
                 "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
   static_assert(policy.floor_pos_ring_stages() <= policy.pos_ring_stages
@@ -649,11 +661,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(policy.floor_dyn_smem_bytes() + RleLookaheadPolicy::static_smem_budget
                   <= RleLookaheadPolicy::default_smem_per_block,
                 "the unstaged floor configuration must launch within the default shared memory limit on every device");
+
   static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
                 "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
   static_assert(policy.poll_loads_per_lane >= 3 && policy.poll_loads_per_lane <= 32,
                 "poll_loads_per_lane must be in [3, 32] so the fold windows cover the dense cap and the int "
                 "open-length accumulator cannot overflow");
+
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
   static_assert(policy.buf_per_lane() * (static_cast<int>(sizeof(KeyT)) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
@@ -940,6 +954,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       // if you are poll
       else if (squad == squadPoll)
       {
+        // running prefix state: everything folded so far, i.e. tiles [0, last_seen_tile_id)
         int last_seen_tile_id             = 0;
         OffT last_seen_prefix_run_count   = 0;
         OffT last_seen_prefix_open_length = 0;
@@ -958,6 +973,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
+
+          // fold every predecessor tile's published state into this tile's exclusive prefix
           OffT curr_prefix_run_count, curr_prefix_open_length;
           poll_and_fold<PolicySelector>(
             tile_partial_states,
@@ -970,6 +987,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             curr_prefix_run_count,
             curr_prefix_open_length);
           __syncwarp();
+
+          // hand the prefix to the STORE warps and the bookkeeper
           if (lane_id == 0)
           {
             prefix_packed[slot_id] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
@@ -1033,6 +1052,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               // note: this is garbage for the last run head
               buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
+
             __syncwarp();
             if (lane_id == 0)
             {
@@ -1041,6 +1061,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 ptx::mbarrier_arrive(&pos_buf_free[pos_ring.slot]);
               }
             }
+
             // wait for prefixed (3/3)
             wait_parity(&prefixed[slot_id], key_ring.parity);
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
