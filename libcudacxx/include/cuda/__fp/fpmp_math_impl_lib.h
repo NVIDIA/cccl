@@ -93,48 +93,48 @@ namespace cuda::experimental
 #  define _CCCL_FPMP_LIB_ARGS_2A_QUO __x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo, __quo
 // clang-format on
 
-#  define _CCCL_FPMP_LIB_VOID(name, layout)                                                         \
-    _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept;  \
-    _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept; \
-    template <typename _Tp>                                                                         \
-    _CCCL_API inline void __fpmp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(_Tp)) noexcept;             \
-    template <>                                                                                     \
-    _CCCL_API inline void __fpmp2_##name<float>(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept     \
-    {                                                                                               \
-      __fp32mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                               \
-    }                                                                                               \
-    template <>                                                                                     \
-    _CCCL_API inline void __fpmp2_##name<double>(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept   \
-    {                                                                                               \
-      __fp64mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                               \
+#  define _CCCL_FPMP_LIB_VOID(name, layout)                                                                   \
+    _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept;            \
+    _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept;           \
+    template <typename _Tp>                                                                                   \
+    _CCCL_HOST_DEVICE_API inline void __fpmp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(_Tp)) noexcept;           \
+    template <>                                                                                               \
+    _CCCL_HOST_DEVICE_API inline void __fpmp2_##name<float>(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept   \
+    {                                                                                                         \
+      __fp32mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                                         \
+    }                                                                                                         \
+    template <>                                                                                               \
+    _CCCL_HOST_DEVICE_API inline void __fpmp2_##name<double>(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept \
+    {                                                                                                         \
+      __fp64mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                                         \
     }
 
 // icdf takes a uniform integer of the given width instead of a limb pair and
 // exists for fp32mp2 only, so it has no generic template and no fp64mp2 kernel.
 // The wrapper is an overload rather than a specialization, selected by the
 // argument type.
-#  define _CCCL_FPMP_LIB_UINT_FP(name, width)                                                            \
-    _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_##name##width(                                                \
-      uint##width##_t __x, float* __res_hi, float* __res_lo) noexcept;                                   \
-    _CCCL_API inline void __fpmp2_##name(uint##width##_t __x, float* __res_hi, float* __res_lo) noexcept \
-    {                                                                                                    \
-      __fp32mp2_##name##width(__x, __res_hi, __res_lo);                                                  \
+#  define _CCCL_FPMP_LIB_UINT_FP(name, width)                                                                        \
+    _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_##name##width(                                                            \
+      uint##width##_t __x, float* __res_hi, float* __res_lo) noexcept;                                               \
+    _CCCL_HOST_DEVICE_API inline void __fpmp2_##name(uint##width##_t __x, float* __res_hi, float* __res_lo) noexcept \
+    {                                                                                                                \
+      __fp32mp2_##name##width(__x, __res_hi, __res_lo);                                                              \
     }
 
-#  define _CCCL_FPMP_LIB_RET(ret, name, layout)                                                    \
-    _CCCL_FPMP_BUILTIN_DECL ret __fp32mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept;  \
-    _CCCL_FPMP_BUILTIN_DECL ret __fp64mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept; \
-    template <typename _Tp>                                                                        \
-    _CCCL_API inline ret __fpmp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(_Tp)) noexcept;             \
-    template <>                                                                                    \
-    _CCCL_API inline ret __fpmp2_##name<float>(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept     \
-    {                                                                                              \
-      return __fp32mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                       \
-    }                                                                                              \
-    template <>                                                                                    \
-    _CCCL_API inline ret __fpmp2_##name<double>(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept   \
-    {                                                                                              \
-      return __fp64mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                       \
+#  define _CCCL_FPMP_LIB_RET(ret, name, layout)                                                              \
+    _CCCL_FPMP_BUILTIN_DECL ret __fp32mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept;            \
+    _CCCL_FPMP_BUILTIN_DECL ret __fp64mp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept;           \
+    template <typename _Tp>                                                                                  \
+    _CCCL_HOST_DEVICE_API inline ret __fpmp2_##name(_CCCL_FPMP_LIB_PARAMS_##layout(_Tp)) noexcept;           \
+    template <>                                                                                              \
+    _CCCL_HOST_DEVICE_API inline ret __fpmp2_##name<float>(_CCCL_FPMP_LIB_PARAMS_##layout(float)) noexcept   \
+    {                                                                                                        \
+      return __fp32mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                                 \
+    }                                                                                                        \
+    template <>                                                                                              \
+    _CCCL_HOST_DEVICE_API inline ret __fpmp2_##name<double>(_CCCL_FPMP_LIB_PARAMS_##layout(double)) noexcept \
+    {                                                                                                        \
+      return __fp64mp2_##name(_CCCL_FPMP_LIB_ARGS_##layout);                                                 \
     }
 
 #  define _CCCL_FPMP_LIB_1A(name)        _CCCL_FPMP_LIB_VOID(name, 1A)

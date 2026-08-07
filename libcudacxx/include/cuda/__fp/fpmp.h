@@ -293,11 +293,11 @@ public:
   // the whole value out first. Not constexpr: a volatile read is never a constant
   // expression.
   */
-  [[nodiscard]] _CCCL_API _FpType hi() const volatile noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _FpType hi() const volatile noexcept
   {
     return __mp2_hi_;
   }
-  [[nodiscard]] _CCCL_API _FpType lo() const volatile noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _FpType lo() const volatile noexcept
   {
     return __mp2_lo_;
   }
@@ -383,7 +383,7 @@ public:
   // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
   */
   template <typename _Dummy = void>
-  _CCCL_API void operator=(const volatile fpmp2& __other) volatile noexcept
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpmp2& __other) volatile noexcept
   {
     __mp2_hi_ = __other.__mp2_hi_;
     __mp2_lo_ = __other.__mp2_lo_;

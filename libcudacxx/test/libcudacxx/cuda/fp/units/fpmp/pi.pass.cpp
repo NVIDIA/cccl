@@ -26,6 +26,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -163,7 +166,7 @@ TEST_HOST_DEVICE_FUNC void check_pi(double one, int iters, double tol_eps)
   assert(::cuda::std::fabs((double) residual / kPi) <= tol_eps * eps);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Every input below is derived from this seed, and a literal seed would make
   // the whole computation a constant expression: the host compiler would then be

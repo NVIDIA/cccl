@@ -35,6 +35,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/fpmp_math>
 #include <cuda/std/cassert>
@@ -176,7 +179,7 @@ TEST_HOST_DEVICE_FUNC void check_all(const bs_case* __cases, int __n, double __o
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // See bs_call_put: the seed keeps the case table opaque to constant folding, so
   // the math under test really runs on whichever target the test runs on.

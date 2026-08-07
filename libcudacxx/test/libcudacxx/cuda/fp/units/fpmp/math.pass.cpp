@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: device math intrinsics are unsupported in tile code
 // UNSUPPORTED: nvrtc
 // note: the host half of this test launches the kernels through the CUDA runtime API,
@@ -40,7 +41,7 @@
 namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Comparison helpers, shared by the portable checks and the device-only kernels.
-TEST_FUNC bool approx_eq(double a, double b, double tol)
+TEST_HOST_DEVICE_FUNC bool approx_eq(double a, double b, double tol)
 {
   if (a == b)
   {
@@ -55,12 +56,12 @@ TEST_FUNC bool approx_eq(double a, double b, double tol)
   return (diff / mag) < tol;
 }
 
-TEST_FUNC bool check(double fpmp_val, double ref_val, double tol)
+TEST_HOST_DEVICE_FUNC bool check(double fpmp_val, double ref_val, double tol)
 {
   return approx_eq(fpmp_val, ref_val, tol);
 }
 
-TEST_FUNC bool check_int(long long fpmp_val, long long ref_val)
+TEST_HOST_DEVICE_FUNC bool check_int(long long fpmp_val, long long ref_val)
 {
   return fpmp_val == ref_val;
 }
@@ -70,7 +71,7 @@ TEST_FUNC bool check_int(long long fpmp_val, long long ref_val)
 // Reached on the host directly and on the device through force_include.h, so
 // these cover both the host fallbacks and the device paths.
 template <typename MP2>
-TEST_FUNC void test_host_device(double tol)
+TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 {
   const double x_val = 1.234567890123;
   const double y_val = 2.345678901234;

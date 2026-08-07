@@ -91,7 +91,7 @@ namespace cuda::experimental
  * --------------------------------------------------------------------
  */
 /*
-// Note: _CCCL_API inline (non-static) in inline mode for performance.
+// Note: _CCCL_HOST_DEVICE_API inline (non-static) in inline mode for performance.
 // With -dc compilation, nvcc caps registers at ~37 for static
 // __forceinline__ functions, ignoring __launch_bounds__ on the caller.
 // This limits the boys kernel to 5.8x speedup instead of 12x.
@@ -112,7 +112,7 @@ namespace cuda::experimental
 #  if defined(_CCCL_FPMP_BUILD_LIB)
 #    define _CCCL_FPMP_INTERNAL_CUSTOM_DECL _CCCL_FPMP_CORE_API
 #  else
-#    define _CCCL_FPMP_INTERNAL_CUSTOM_DECL _CCCL_API inline
+#    define _CCCL_FPMP_INTERNAL_CUSTOM_DECL _CCCL_HOST_DEVICE_API inline
 #  endif
 
 #  if !defined(_CCCL_FPMP_USE_ACCURATE_BOYS_F0)

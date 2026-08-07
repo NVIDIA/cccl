@@ -145,7 +145,7 @@ namespace cuda::experimental
  *   met    : fpmp arithmetic accuracy level (deduced from arguments).
  *********************************************************************/
 template <int _Mp, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_mixed requires at least 2 coefficients (degree >= 1)");
@@ -258,7 +258,7 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
  *   met    : fpmp arithmetic accuracy level (deduced from arguments)
  *********************************************************************/
 template <int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_comp requires at least 2 coefficients (degree >= 1)");
@@ -384,7 +384,7 @@ enum class __fpmp_poly_method
  *   met      : fpmp arithmetic accuracy level (deduced).
  *********************************************************************/
 template <__fpmp_poly_method _Strategy, int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   if constexpr (_Strategy == __fpmp_poly_method::horner_mixed)
