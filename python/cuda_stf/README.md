@@ -82,6 +82,32 @@ borrowed = numba.cuda.as_cuda_array(arr)   # CAI: arr must stay alive
 owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
 ```
 
+For pytorch-flavored code, an optional convenience attaches the factory
+family as a `torch.localized` namespace (an attribute plus a `sys.modules`
+entry -- purely additive, nothing about torch's own behavior changes, and
+`uninstall()` reverses it):
+
+```python
+import torch
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop import pytorch as tp
+
+tp.install()                       # adds torch.localized
+stf.machine_init()
+grid = stf.exec_place_grid.from_devices([0, 1])
+
+w = torch.localized.parameter((4096, 4096), torch.bfloat16, grid,
+                              spec=(("blocked", 0), None))
+x = torch.localized.zeros((8, 4096), torch.float32, grid)
+b = torch.localized.zeros_like(x)  # reuses x's placement verbatim
+torch.localized.placement_report(w)
+```
+
+`from torch.localized import zeros` works too; `tp.namespace()` returns the
+same object without patching torch, for codebases that prefer explicit
+imports. `install()` refuses to clobber a `torch.localized` that is not
+ours.
+
 The localized-allocation surface (`interop.pytorch.localized_empty`, plus
 the factory family `localized_zeros/ones/full` and the placement-reusing
 `*_like` variants) exposes

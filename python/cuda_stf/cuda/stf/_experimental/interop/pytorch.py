@@ -169,6 +169,7 @@ __all__ = ["pytorch_task", "tensor_arg", "tensor_arguments"]
 # not) — the enabler for compiler-side detection in consumers.
 # ---------------------------------------------------------------------------
 
+import sys as _sys
 import weakref as _weakref
 from dataclasses import dataclass as _dataclass, field as _field
 from typing import Any as _Any
@@ -570,3 +571,91 @@ def placement_report(tensor, probes: int = 4096):
     for s in meta.shape:
         numel *= s
     return placement_evaluate(meta.grid, meta.mapper, (numel * np_dtype.itemsize,), 1)
+
+# ---------------------------------------------------------------------------
+# Optional convenience: a `torch.localized` namespace.
+#
+# Purely additive sugar -- an attribute (and sys.modules entry) on the torch
+# module, nothing about torch's own behavior changes. The names mirror the
+# torch factory family; placement arguments are ours.
+# ---------------------------------------------------------------------------
+
+
+def _build_namespace(qualname):
+    import types  # noqa: PLC0415
+
+    ns = types.ModuleType(qualname)
+    ns.__doc__ = (
+        "Localized tensor factories attached by cuda.stf "
+        "(see cuda.stf._experimental.interop.pytorch.install)."
+    )
+    ns.empty = localized_empty
+    ns.zeros = localized_zeros
+    ns.ones = localized_ones
+    ns.full = localized_full
+    ns.parameter = localized_parameter
+    ns.empty_like = localized_empty_like
+    ns.zeros_like = localized_zeros_like
+    ns.ones_like = localized_ones_like
+    ns.full_like = localized_full_like
+    ns.release = release
+    ns.get_meta = get_meta
+    ns.live_metas = live_metas
+    ns.placement_report = placement_report
+    ns._cuda_stf_localized = True
+    return ns
+
+
+def install(name="localized"):
+    """Attach the localized factory namespace to torch as ``torch.<name>``.
+
+    After ``install()``, pytorch-style code reads naturally::
+
+        import torch
+        import cuda.stf._experimental as stf
+        from cuda.stf._experimental.interop import pytorch as tp
+
+        tp.install()
+        stf.machine_init()
+        grid = stf.exec_place_grid.from_devices([0, 1])
+
+        w = torch.localized.parameter((4096, 4096), torch.bfloat16, grid,
+                                      spec=(("blocked", 0), None))
+        x = torch.localized.zeros((8, 4096), torch.float32, grid)
+        torch.localized.placement_report(w)
+
+    ``from torch.localized import zeros`` also works (a ``sys.modules``
+    entry is registered). Idempotent; refuses to clobber a ``torch.<name>``
+    attribute that is not ours; reversible with :func:`uninstall`. Returns
+    the namespace. For codebases that prefer no patching, :func:`namespace`
+    returns the same object without touching torch.
+    """
+    torch = _import_torch()
+    existing = getattr(torch, name, None)
+    if existing is not None and not getattr(existing, "_cuda_stf_localized", False):
+        raise RuntimeError(
+            f"torch.{name} already exists and does not belong to cuda.stf; "
+            f"pick another name: install(name=...)"
+        )
+    ns = _build_namespace(f"torch.{name}")
+    setattr(torch, name, ns)
+    _sys.modules[f"torch.{name}"] = ns
+    return ns
+
+
+def namespace():
+    """The localized factory namespace WITHOUT patching torch (for users or
+    codebases that prefer explicit imports over convenience patching)."""
+    return _build_namespace("cuda.stf.localized")
+
+
+def uninstall(name="localized"):
+    """Remove a namespace previously attached by :func:`install`."""
+    torch = _import_torch()
+    existing = getattr(torch, name, None)
+    if existing is None:
+        return
+    if not getattr(existing, "_cuda_stf_localized", False):
+        raise RuntimeError(f"torch.{name} does not belong to cuda.stf; not removing it")
+    delattr(torch, name)
+    _sys.modules.pop(f"torch.{name}", None)

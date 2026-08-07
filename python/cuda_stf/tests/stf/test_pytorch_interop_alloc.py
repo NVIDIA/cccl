@@ -334,3 +334,42 @@ def test_localized_empty_accepts_prebuilt_partition(grid):
     with pytest.raises(ValueError, match="true_dims"):
         tp.localized_empty((128,), torch.float32, grid, spec=part)
     tp.release(t)
+
+
+# ---------------------------------------------------------------------------
+# torch.localized convenience namespace (no GPU needed: pure patching)
+# ---------------------------------------------------------------------------
+
+
+def test_install_uninstall_torch_localized():
+    ns = tp.install()
+    try:
+        assert torch.localized is ns
+        assert torch.localized.empty is tp.localized_empty
+        assert torch.localized.zeros_like is tp.localized_zeros_like
+        # import machinery works through the sys.modules entry
+        from torch.localized import zeros  # noqa: PLC0415
+
+        assert zeros is tp.localized_zeros
+        # idempotent
+        assert tp.install() is not None
+    finally:
+        tp.uninstall()
+    assert not hasattr(torch, "localized")
+
+
+def test_install_refuses_foreign_attribute():
+    torch.localized = object()
+    try:
+        with pytest.raises(RuntimeError, match="does not belong"):
+            tp.install()
+        with pytest.raises(RuntimeError, match="not removing"):
+            tp.uninstall()
+    finally:
+        del torch.localized
+
+
+def test_namespace_without_patching():
+    ns = tp.namespace()
+    assert ns.full is tp.localized_full
+    assert not hasattr(torch, "localized")
