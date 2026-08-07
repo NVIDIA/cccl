@@ -373,3 +373,13 @@ def test_namespace_without_patching():
     ns = tp.namespace()
     assert ns.full is tp.localized_full
     assert not hasattr(torch, "localized")
+
+
+def test_attribute_chain_and_laziness():
+    import sys
+
+    # one import is enough: stf.interop.pytorch resolves lazily
+    assert stf.interop.pytorch.install is tp.install
+    assert stf.interop.pytorch.localized_zeros is tp.localized_zeros
+    # sibling adapters are NOT imported by touching the chain
+    assert "cuda.stf._experimental.interop.numba" not in sys.modules

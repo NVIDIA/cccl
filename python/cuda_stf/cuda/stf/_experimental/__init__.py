@@ -47,6 +47,11 @@ _LAZY_SYMBOLS = {
     "task_graph": ".task_graph",
 }
 
+#: Lazily imported SUBPACKAGES (the attribute is the module itself). The
+#: interop adapters stay opt-in: accessing ``interop`` imports only the
+#: subpackage; each adapter imports its optional runtime at first call.
+_LAZY_MODULES = frozenset({"interop"})
+
 if TYPE_CHECKING:
     from ._stf_bindings import (
         AccessMode,
@@ -75,6 +80,10 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str) -> Any:
+    if name in _LAZY_MODULES:
+        value = importlib.import_module(f".{name}", __name__)
+        globals()[name] = value
+        return value
     module_name = _LAZY_SYMBOLS.get(name)
     if module_name is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
@@ -86,7 +95,7 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list[str]:
-    return sorted(set(globals()) | set(__all__))
+    return sorted(set(globals()) | set(__all__) | set(_LAZY_MODULES))
 
 
 __all__ = [

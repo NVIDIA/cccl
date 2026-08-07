@@ -613,9 +613,8 @@ def install(name="localized"):
 
         import torch
         import cuda.stf._experimental as stf
-        from cuda.stf._experimental.interop.pytorch import install
 
-        install()
+        stf.interop.pytorch.install()
         stf.machine_init()
         grid = stf.exec_place_grid.from_devices([0, 1])
 

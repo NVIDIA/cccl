@@ -90,9 +90,8 @@ entry -- purely additive, nothing about torch's own behavior changes, and
 ```python
 import torch
 import cuda.stf._experimental as stf
-from cuda.stf._experimental.interop.pytorch import install
 
-install()                          # adds torch.localized
+stf.interop.pytorch.install()      # adds torch.localized
 stf.machine_init()
 grid = stf.exec_place_grid.from_devices([0, 1])
 
@@ -104,8 +103,8 @@ torch.localized.placement_report(w)
 ```
 
 `from torch.localized import zeros` works too. For codebases that prefer
-explicit imports over patching, `namespace()` (same module) returns the
-identical object without touching torch. `install()` refuses to clobber a
+explicit imports over patching, `stf.interop.pytorch.namespace()` returns
+the identical object without touching torch. `install()` refuses to clobber a
 `torch.localized` that is not ours.
 
 The localized-allocation surface (`interop.pytorch.localized_empty`, plus
