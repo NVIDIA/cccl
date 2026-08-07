@@ -286,6 +286,7 @@ fi
 ./scrape_docs.bash "${HTML_DIR}/${VERSION}"
 
 cp "./404.html" "${HTML_DIR}/404.html"
+cp "./index.html" "${HTML_DIR}/index.html"
 
 # Provide version metadata for the theme switcher
 cat > "${HTML_DIR}/nv-versions.json" <<EOF
