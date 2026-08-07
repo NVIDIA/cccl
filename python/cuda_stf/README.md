@@ -97,9 +97,13 @@ grid = stf.exec_place_grid.from_devices([0, 1])
 
 w = torch.localized.parameter((4096, 4096), torch.bfloat16, grid,
                               spec=(("blocked", 0), None))
-x = torch.localized.zeros((8, 4096), torch.float32, grid)
+# no spec => the default: blocked along dim 0 (here: batch rows split
+# across the grid). Placement granularity is the 2 MiB VMM page, so give
+# the split something to work with -- a tensor smaller than one page lands
+# on a single place no matter the spec.
+x = torch.localized.zeros((8192, 4096), torch.float32, grid)
 b = torch.localized.zeros_like(x)  # reuses x's placement verbatim
-torch.localized.placement_report(w)
+torch.localized.placement_report(x)  # dry-run: bytes per grid position
 ```
 
 `from torch.localized import zeros` works too. For codebases that prefer
