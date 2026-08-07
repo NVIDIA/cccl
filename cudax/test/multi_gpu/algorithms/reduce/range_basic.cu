@@ -11,9 +11,12 @@
 #include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/memory_resource>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
@@ -81,19 +84,27 @@ template <class Env, class T, class Op>
 void do_reduce(cuda::std::span<cudax::nccl_communicator_ref> comms,
                const std::vector<Env>& envs,
                std::vector<cuda::device_buffer<T>>& in,
-               std::vector<typename cuda::device_buffer<T>::iterator>& outputs,
+               std::vector<cuda::device_buffer<T>>& out,
                const T& init,
                const T& ident,
                Op op)
 {
-  const auto envs_size    = envs.size();
-  const auto in_copy      = in;
-  const auto outputs_copy = outputs;
+  const auto envs_size = envs.size();
+  const auto in_copy   = in;
 
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op, ident);
+  cudax::reduce(
+    cudax::broadcasted,
+    comms,
+    envs,
+    in | cuda::std::views::transform(cuda::std::ranges::begin),
+    in | cuda::std::views::transform(cuda::std::ranges::size),
+    out | cuda::std::views::transform(cuda::std::ranges::begin),
+    init,
+    op,
+    ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
@@ -104,9 +115,56 @@ void do_reduce(cuda::std::span<cudax::nccl_communicator_ref> comms,
     INFO("device = " << i);
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
   }
-  REQUIRE_THAT(outputs, Catch::Matchers::Equals(outputs_copy));
 }
 } // namespace
+
+MULTI_GPU_TEST("reduce documentation example", c2h::type_list<int>)
+{
+  auto comms = this->communicators();
+
+  if (comms.size() != 2)
+  {
+    SKIP("The reduce documentation example requires exactly two local GPUs");
+  }
+
+  auto streams_owned = nccl_test_util::make_streams();
+  // Convert to stream_ref directly, cuda::stream on their own cant be passed directly to CUB
+  auto streams = std::vector<cuda::stream_ref>{streams_owned.begin(), streams_owned.end()};
+
+  //! [reduce]
+  constexpr cuda::std::array input_values{1, 2};
+  std::vector<cuda::device_buffer<int>> inputs;
+  std::vector<cuda::device_buffer<int>> outputs;
+
+  for (cuda::std::size_t i = 0; i < comms.size(); ++i)
+  {
+    const auto device = comms[i].logical_device().underlying_device();
+
+    inputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values));
+    outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, 1, cuda::no_init));
+  }
+
+  cudax::reduce(
+    cudax::broadcasted,
+    comms,
+    // Passing streams as the environment directly
+    streams,
+    inputs | cuda::std::views::transform(cuda::std::ranges::begin),
+    inputs | cuda::std::views::transform(cuda::std::ranges::size),
+    outputs | cuda::std::views::transform(cuda::std::ranges::begin),
+    /*__init=*/0);
+
+  // Every rank contributes {1, 2}, so every output holds the sum over all ranks. `reduce`
+  // broadcasts the result, so both local outputs hold the same value.
+  const auto expected_value = 3 * comms.front().size();
+  const auto expected_0 =
+    cuda::make_buffer<int>(outputs[0].stream(), cuda::mr::legacy_pinned_memory_resource{}, 1, expected_value);
+  const auto expected_1 =
+    cuda::make_buffer<int>(outputs[1].stream(), cuda::mr::legacy_pinned_memory_resource{}, 1, expected_value);
+  REQUIRE_THAT(outputs[0], Equals(expected_0));
+  REQUIRE_THAT(outputs[1], Equals(expected_1));
+  //! [reduce]
+}
 
 MULTI_GPU_TEST("reduce, one element per rank", value_types, operators)
 {
@@ -141,9 +199,7 @@ MULTI_GPU_TEST("reduce, one element per rank", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_reduce(comms, envs, in, outputs, init, ident, Op{});
+  do_reduce(comms, envs, in, out, init, ident, Op{});
 
   const T expected = [&] {
     std::vector<T> reference;
@@ -202,9 +258,7 @@ MULTI_GPU_TEST("reduce, multiple elements per rank", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_reduce(comms, envs, in, outputs, init, ident, Op{});
+  do_reduce(comms, envs, in, out, init, ident, Op{});
 
   const T expected = [&] {
     std::vector<T> reference;
@@ -269,9 +323,7 @@ MULTI_GPU_TEST("reduce, some ranks empty", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_reduce(comms, envs, in, outputs, init, ident, Op{});
+  do_reduce(comms, envs, in, out, init, ident, Op{});
 
   const T expected = [&] {
     std::vector<T> reference;
@@ -324,9 +376,7 @@ MULTI_GPU_TEST("reduce, all ranks empty", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_reduce(comms, envs, in, outputs, init, ident, Op{});
+  do_reduce(comms, envs, in, out, init, ident, Op{});
 
   // Reducing nothing seeded by `init` yields `init`, exactly like `std::accumulate` over an empty
   // range.

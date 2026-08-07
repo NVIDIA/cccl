@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -45,6 +46,7 @@
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -710,6 +712,26 @@ template <class _Ip>
 inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+
+template <class _Fn, class _Tp, class _Iter, class _Up>
+_CCCL_CONCEPT __indirectly_binary_reducible_impl = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter, _Up), )(
+  requires(movable<_Tp>),
+  requires(movable<_Up>),
+  requires(convertible_to<_Tp, _Up>),
+  requires(invocable<_Fn&, _Up, iter_reference_t<_Iter>>),
+  requires(assignable_from<_Up&, invoke_result_t<_Fn&, _Up, iter_reference_t<_Iter>>>));
+
+// Similar to __indirectly_binary_invokable. Asserts that for a given operator, type, and
+// iterator triple, that a general reduction is well formed, so _Fn(_Fn(_Tp, *_Iter), *_Iter)
+// etc is sane.
+template <class _Fn, class _Tp, class _Iter>
+_CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter), )(
+  requires(copy_constructible<_Fn>),
+  requires(indirectly_readable<_Iter>),
+  requires(invocable<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(__invoke_constructible<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(
+    __indirectly_binary_reducible_impl<_Fn, _Tp, _Iter, decay_t<invoke_result_t<_Fn&, _Tp, iter_reference_t<_Iter>>>>));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
