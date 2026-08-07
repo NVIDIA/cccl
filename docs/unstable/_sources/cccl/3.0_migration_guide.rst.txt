@@ -1,0 +1,310 @@
+.. _cccl-3.0-migration-guide:
+
+CCCL 2.x ‐ CCCL 3.0 migration guide
+===================================
+
+The CCCL team plans breaking changes carefully and only conducts them at major releases.
+The CCCL 2.8 release came with many deprecations to prepare for the breaking changes conducted in CCCL 3.0.
+This page summarizes the changes and helps migrating from CCCL 2.x to CCCL 3.0.
+
+See also the `list of all deprecated APIs in CCCL 2.8 <https://github.com/NVIDIA/cccl/issues/3700>`_
+and the `list of breaking changes in CCCL 3.0 <https://github.com/NVIDIA/cccl/issues/101>`_.
+
+CUDA Toolkit changes
+--------------------
+
+CCCL is moving to its own include directory within the CUDA Toolkit. This may cause build failures and some initial confusion.
+This section will have some suggestions and mitigations to help maintain builds across both CUDA12 and future releases.
+
+The CTK-provided includes are changing in the following ways:
+
++-------------------------------+------------------------------------+
+| **Before CUDA 13.0**          | **After CUDA 13.0**                |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/cuda/`   | `${CTK_ROOT}/include/cccl/cuda/`   |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/cub/`    | `${CTK_ROOT}/include/cccl/cub/`    |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/thrust/` | `${CTK_ROOT}/include/cccl/thrust/` |
++-------------------------------+------------------------------------+
+
+Due to these changes, and the fact that NVCC by default includes its own directories, you may encounter errors when including
+CCCL headers in source files that are compiled *only* by the host compiler.
+
+For example, when compiling with GCC or MSVC alone, you may see ``<cuda/...>``, ``<cub/...>``, or ``<thrust/...>`` headers missing.
+
+To mitigate this there are several solutions available depending on your build system:
+
+- **DO NOT** prefix missing includes with ``<cccl/>`` -- This will break.
+- CMake: link ``CCCL::CCCL`` to your target.
+  - Example: ``target_link_library(${MY_TARGET} PRIVATE CCCL::CCCL)``
+- Non-CMake: Directly include the CUDA Toolkit's CCCL directory. (Make/Other)
+  - Example: Add CCCL as an include flag ``-I${CTK_ROOT}/include/cccl``
+- Use a non-bundled CCCL. CCCL is available and maintained independently of the CTK.
+  - `See here for compatibility. <https://github.com/NVIDIA/cccl?tab=readme-ov-file#cuda-toolkit-ctk-compatibility>`_
+
+Removed macros
+--------------
+
+* ``CUB_IS_INT128_ENABLED``: No replacement
+* ``CUB_MAX(a, b)``: Use the ``cuda::std::max(a, b)`` function instead
+* ``CUB_MIN(a, b)``: Use the ``cuda::std::min(a, b)`` function instead
+* ``CUB_QUOTIENT_CEILING(a, b)``: Use ``cuda::ceil_div(a, b)`` instead
+* ``CUB_QUOTIENT_FLOOR(a, b)``: Use plain integer division ``a / b`` instead
+* ``CUB_ROUND_DOWN_NEAREST(a, b)``: Use ``cuda::round_down(a, b)`` instead
+* ``CUB_ROUND_UP_NEAREST(a, b)``: Use ``cuda::round_up(a, b)`` instead
+* ``CUB_RUNTIME_ENABLED``: No replacement
+* ``CUB_USE_COOPERATIVE_GROUPS``: No replacement
+* ``CUDA_CUB_RET_IF_FAIL``: No replacement
+* ``[THRUST|CUB]_CLANG_VERSION``: No replacement
+* ``[THRUST|CUB]_DEVICE_COMPILER*``: No replacement
+* ``[THRUST|CUB]_GCC_VERSION``: No replacement
+* ``[THRUST|CUB]_HOST_COMPILER*``: No replacement
+* ``[THRUST|CUB]_INCLUDE_DEVICE_CODE``: No replacement
+* ``[THRUST|CUB]_INCLUDE_HOST_CODE``: No replacement
+* ``[THRUST|CUB]_IS_DEVICE_CODE``: No replacement
+* ``[THRUST|CUB]_IS_HOST_CODE``: No replacement
+* ``[THRUST|CUB]_MSVC_VERSION_FULL``: No replacement
+* ``[THRUST|CUB]_MSVC_VERSION``: No replacement
+* ``THRUST_CDP_DISPATCH``: No replacement (Support for CUDA Dynamic Parallelism V1 (CDPv1) has been removed, see below)
+* ``THRUST_DECLTYPE_RETURNS_WITH_SFINAE_CONDITION``: No replacement
+* ``THRUST_DECLTYPE_RETURNS``: No replacement
+* ``THRUST_DEVICE_CODE``: No replacement
+* ``THRUST_HOST_BACKEND``: Use ``THRUST_HOST_SYSTEM`` instead
+* ``THRUST_INLINE_CONSTANT``: Use ``inline constexpr`` instead
+* ``THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT``: Use ``static constexpr`` instead
+* ``THRUST_LEGACY_GCC``: No replacement
+* ``THRUST_MODERN_GCC_REQUIRED_NO_ERROR``: No replacement
+* ``THRUST_MODERN_GCC``: No replacement
+* ``THRUST_MVCAP``: No replacement
+* ``THRUST_NODISCARD``: Use ``[[nodiscard]]`` instead
+* ``THRUST_RETOF1``: No replacement
+* ``THRUST_RETOF2``: No replacement
+* ``THRUST_RETOF``: No replacement
+* ``THRUST_TUNING_ARCH``: No direct replacement. Use compiler-specific ``__CUDA_ARCH__`` (nvcc) or  ``__NVCOMPILER_CUDA_ARCH__`` (nvc++) instead
+
+
+Removed functions and classes
+-----------------------------
+
+* ``_ReadWriteBarrier`` and ``__thrust_compiler_fence``: Use ``cuda::atomic`` instead
+* ``cub::*Kernel``: Any CUB kernel entrypoint is considered an implementation detail. No public exposure is provided.
+* ``cub::Agent*``: CUB agents were considered implementation details and have all been moved to internal namespaces. No public exposure is provided.
+* ``cub::AliasTemporaries``: No replacement
+* ``cub::ArrayWrapper``: Use ``cuda::std::array`` instead
+* ``cub::BAR``: No replacement
+* ``cub::BaseTraits::CATEGORY``: Use the facilities from ``<cuda/std/type_traits>`` instead
+* ``cub::BaseTraits::NULL_TYPE``: No replacement
+* ``cub::BaseTraits::PRIMITIVE``: Use the facilities from ``<cuda/std/type_traits>`` instead
+* ``cub::BFI``: Use ``cuda::bitfield_insert`` instead
+* ``cub::BinaryOpHasIdxParam::HAS_PARAM``: Use ``cub::BinaryOpHasIdxParam::value`` instead
+* ``cub::ConstantInputIterator``: Use ``thrust::constant_iterator`` instead
+* ``cub::CountingInputIterator``: Use ``thrust::counting_iterator`` instead
+* ``cub::CTA_SYNC_AND``: Use ``__syncthreads_and()`` instead
+* ``cub::CTA_SYNC_OR``: Use ``__syncthreads_or()`` instead
+* ``cub::CTA_SYNC``: Use ``__syncthreads()`` instead
+* ``cub::Device*Policy``: Those policy hubs are considered implementation details. No public exposure is provided.
+* ``cub::DeviceSpmv``: Use `cuSPARSE <https://docs.nvidia.com/cuda/cusparse>`_ instead
+* ``cub::Difference``: Use ``cuda::std::minus`` instead
+* ``cub::DivideAndRoundUp``: Use ``cuda::round_up`` instead
+* ``cub::Division``: Use ``cuda::std::divides`` instead
+* ``cub::Equality``: Use ``cuda::std::equal_to`` instead
+* ``cub::FFMA_RZ``: No replacement
+* ``cub::FMUL_RZ``: No replacement
+* ``cub::FpLimits<T>``: Use ``cuda::std::numeric_limits<T>`` instead
+* ``cub::GridBarrier``: Use the APIs from cooperative groups instead
+* ``cub::GridBarrierLifetime``: Use the APIs from cooperative groups instead
+* ``cub::IADD3``: No replacement
+* ``cub::Inequality``: Use ``cuda::std::not_equal_to`` instead
+* ``cub::Int2Type``: Use ``cuda::std::integral_constant`` instead
+* ``cub::IterateThreadLoad``: No replacement
+* ``cub::IterateThreadStore``: No replacement
+* ``cub::KernelConfig``: No replacement
+* ``cub::LaneId()``: Use ``cuda::ptx::get_sreg_laneid()`` instead
+* ``cub::LaneMaskGe()``: Use ``cuda::ptx::get_sreg_lanemask_ge()`` instead
+* ``cub::LaneMaskGt()``: Use ``cuda::ptx::get_sreg_lanemask_gt()`` instead
+* ``cub::LaneMaskLe()``: Use ``cuda::ptx::get_sreg_lanemask_le()`` instead
+* ``cub::LaneMaskLt()``: Use ``cuda::ptx::get_sreg_lanemask_lt()`` instead
+* ``cub::MakePolicyWrapper``: No replacement
+* ``cub::Max``: Use ``cuda::maximum`` instead
+* ``cub::max``: Use ``cuda::std::max`` instead
+* ``cub::MemBoundScaling``: No replacement
+* ``cub::Min``: Use ``cuda::minimum`` instead
+* ``cub::min``: Use ``cuda::std::min`` instead
+* ``cub::Mutex``: Use ``std::mutex`` instead
+* ``cub::PolicyWrapper``: No replacement
+* ``cub::PRMT``: Use ``cuda::ptx::prmt()`` instead
+* ``cub::RegBoundScaling``: No replacement
+* ``cub::SHFL_IDX_SYNC``: Use ``__shfl_sync()`` instead
+* ``cub::SHL_ADD``: No replacement
+* ``cub::SHR_ADD``: No replacement
+* ``cub::Sum``: Use ``cuda::std::plus`` instead
+* ``cub::Swap(a, b)``: Use ``cuda::std::swap(a, b)`` instead
+* ``cub::ThreadTrap()``: Use ``cuda::std::terminate()`` instead
+* ``cub::TransformInputIterator``: Use ``thrust::transform_iterator`` instead
+* ``cub::TripleChevronFactory``: No replacement for now, we are working on a new kernel launch facility
+* ``cub::ValueCache``: No replacement
+* ``cub::WARP_ALL``: Use ``__all_sync()`` instead
+* ``cub::WARP_ANY``: Use ``__any_sync()`` instead
+* ``cub::WARP_BALLOT``: Use ``__ballot_sync()`` instead
+* ``cub::WARP_SYNC``: Use ``__syncwarp()`` instead
+* ``cub::WarpId()``: Use ``cuda::ptx::get_sreg_warpid()`` instead
+* ``thrust::*::[first_argument_type|second_argument_type|result_type]``: The nested aliases have been removed for all function object types: ``thrust::[plus|minus|multiplies|divides|modulus|negate|square|equal_to|not_equal_to|greater|less|greater_equal|less_equal|logical_and|logical_or|logical_not|bit_and|bit_or|bit_xor|identity|maximum|minimum|project1st|project2nd]``. No replacement.
+* ``thrust::[unary|binary]_function``: No replacement. If you inherit from one of these types, just remove those base classes.
+* ``thrust::[unary|binary]_traits``: No replacement.
+* ``thrust::async::*``: No replacement for now. We are working on a C++26 senders implementation. For make a thrust algorithm skip syncing, use ``thrust::cuda::par_nosync`` as execution policy.
+* ``thrust::bidirectional_universal_iterator_tag``: No replacement
+* ``thrust::conjunction_value<Ts...>``: Use ``cuda::std::bool_constant<(Ts && ...)>`` instead
+* ``thrust::conjunction_value_v<Ts...>``: Use a fold expression: ``Ts && ...`` instead
+* ``thrust::cuda_cub::core::*``: Those are considered implementation details. No public exposure is provided.
+* ``thrust::cuda_cub::counting_iterator_t``: Use ``thrust::counting_iterator`` instead
+* ``thrust::cuda_cub::identity``: Use ``cuda::std::identity`` instead
+* ``thrust::cuda_cub::launcher::triple_chevron``: No replacement for now, we are working on a new kernel launch facility
+* ``thrust::cuda_cub::terminate``: Use ``cuda::std::terminate()`` instead
+* ``thrust::cuda_cub::transform_input_iterator_t``: Use ``thrust::transform_iterator`` instead
+* ``thrust::cuda_cub::transform_pair_of_input_iterators_t``: Use ``thrust::transform_iterator of a thrust::zip_iterator`` instead
+* ``thrust::disjunction_value<Ts...>``: Use ``cuda::std::bool_constant<(Ts || ...)>`` instead
+* ``thrust::disjunction_value_v<Ts...>``: Use a fold expression: ``Ts || ...`` instead
+* ``thrust::forward_universal_iterator_tag``: No replacement
+* ``thrust::identity<T>``: Use ``cuda::std::identity`` instead. If ``thrust::identity`` was used to perform a cast to ``T``, please define your own function object.
+* ``thrust::input_universal_iterator_tag``: No replacement
+* ``thrust::negation_value<T>``: Use ``cuda::std::bool_constant<!T>`` instead
+* ``thrust::negation_value_v<T>``: Use a plain negation ``!T``
+* ``thrust::not[1|2]``: Use ``cuda::std::not_fn`` instead
+* ``thrust::null_type``: No replacement
+* ``thrust::numeric_limits<T>``: Use ``cuda::std::numeric_limits<T>`` instead
+* ``thrust::optional<T>``: Use ``cuda::std::optional<T>`` instead.
+* ``thrust::output_universal_iterator_tag``: No replacement
+* ``thrust::random_access_universal_iterator_tag``: No replacement
+* ``thrust::remove_cvref[_t]``: Use ``cuda::std::remove_cvref[_t]`` instead
+* ``thrust::void_t``: Use ``cuda::std::void_t`` instead
+
+
+Deprecations with planned removal
+---------------------------------
+
+* ``CUB_LOG_SMEM_BANKS``: No replacement
+* ``CUB_LOG_WARP_THREADS``: No replacement
+* ``CUB_MAX_DEVICES``: No replacement
+* ``CUB_PREFER_CONFLICT_OVER_PADDING``: No replacement
+* ``CUB_PTX_LOG_SMEM_BANKS``: No replacement
+* ``CUB_PTX_LOG_WARP_THREADS``: No replacement
+* ``CUB_PTX_PREFER_CONFLICT_OVER_PADDING``: No replacement
+* ``CUB_PTX_SMEM_BANKS``: No replacement
+* ``CUB_PTX_SUBSCRIPTION_FACTOR``: No replacement
+* ``CUB_PTX_WARP_THREADS``: No replacement
+* ``CUB_SMEM_BANKS``: No replacement
+* ``CUB_SUBSCRIPTION_FACTOR``: No replacement
+* ``CUB_WARP_THREADS``: No replacement
+* ``THRUST_FALSE``: No replacement
+* ``THRUST_PREVENT_MACRO_SUBSTITUTION``: No replacement
+* ``THRUST_STATIC_ASSERT(expr)``: Use ``static_assert(expr)`` instead
+* ``THRUST_TRUE``: No replacement
+* ``THRUST_UNKNOWN``: No replacement
+* ``THRUST_UNUSED_VAR``: No replacement
+* ``cub::BFE``: Use ``cuda::bitfield_extract`` instead
+* ``cub::MergePathSearch``: No replacement
+* ``cub::Traits<T>::Max()``: Use ``cuda::std::numeric_limits<T>::max()`` instead
+* ``cub::Traits<T>::Min()``: Use ``cuda::std::numeric_limits<T>::min()`` instead
+* ``thrust::iterator_difference[_t]<T>``: Use ``cuda::std::iterator_traits<T>::difference_type`` or ``cuda::std::iter_difference_t<T>`` instead
+* ``thrust::iterator_pointer[_t]<T>``: Use ``cuda::std::iterator_traits<T>::pointer`` instead
+* ``thrust::iterator_reference[_t]<T>``: Use ``cuda::std::iterator_traits<T>::reference`` or ``cuda::std::iter_reference_t<T>`` instead
+* ``thrust::iterator_traits<T>``: Use ``cuda::std::iterator_traits<T>`` instead
+* ``thrust::iterator_value[_t]<T>``: Use ``cuda::std::iterator_traits<T>::value_type`` or ``cuda::std::iter_value_t<T>`` instead
+
+
+API breaks
+----------
+
+* ``cub::Block*``: All trailing ``int LEGACY_PTX_ARCH`` template parameters have been removed
+* ``cub::CachingAllocator``: The constructor taking a trailing ``bool debug`` parameter has been removed
+* ``cub::Device*``: All overloads with a trailing ``bool debug_synchronous`` parameter have been removed
+* ``cub::Dispatch*``: All Boolean template parameters have been replaced by enumerations to increase readability
+* ``cub::Dispatch*``: All policy hub template parameters have been moved to the back of the template parameters list
+* ``cub::DispatchScan[ByKey]``: The offset type must be an unsigned type of at least 4-byte size
+* ``cuda::ceil_div``: Now returns the common type of its arguments
+* ``thrust::pair``: Is now an alias to ``cuda::std::pair`` and no longer a distinct type
+* ``thrust::tabulate_output_iterator``: The ``value_type`` has been fixed to be ``void``
+* ``thrust::transform_iterator``: Upon copying, will now always copy its contained function. If the contained function is neither copy constructible nor copy assignable, the iterator fails to compile when attempting to be copied.
+* ``thrust::tuple``: Is now an alias to ``cuda::std::tuple`` and no longer a distinct type
+* ``thrust::universal_host_pinned_memory_resource``: The alias has changed to a different memory resource, potentially changing pointer types derived from an allocator/container using this memory resource.
+* The following Thrust function object types have been made aliases to the equally-named types in ``cuda::std::``: ``thrust::[plus|minus|multiplies|divides|modulus|negate|equal_to|not_equal_to|greater|less|greater_equal|less_equal|logical_and|logical_or|logical_not|bit_and|bit_or|bit_xor|identity|maximum|minimum]``. No replacement.
+* ``CUB_DEFINE_DETECT_NESTED_TYPE``: The generated detector trait no longer provides a ``::VALUE`` member. Use ``::value`` instead.
+
+
+Iterator traits
+^^^^^^^^^^^^^^^
+
+``cuda::std::iterator_traits`` will now correctly recognize user-provided specializations of ``std::iterator_traits``.
+All of Thrust's iterator traits have been redefined in terms of ``cuda::std::iterator_traits``,
+and users should prefer to use iterator traits from libcu++.
+``thrust::iterator_traits`` can no longer be specialized.
+Users should prefer to specialize ``cuda::std::iterator_traits`` instead of ``std::iterator_traits`` when necessary,
+to make their iterators work equally in device code.
+
+
+CUB Traits
+^^^^^^^^^^
+
+The functionality and internal use of ``cub::Traits`` has been minimized, because libcu++ provides better and standard alternatives.
+Only the use in CUB's radix sort implementation for bit-twiddling remains.
+Floating-point limits should be obtained using ``cuda::std::numeric_limits<T>`` instead of ``cub::FpLimits<T>``.
+Classification of types should be done with the facilities from ``<cuda/std/type_traits>`` and ``<cuda/type_traits>``,
+notably with ``cuda::std::is_signed[_v]``, ``cuda::std::is_integral[_v]``, etc.
+There is an important difference for extended floating point types though:
+Since ``cuda::std::is_floating_point[_v]`` will only recognize C++ standard floating point types,
+``cuda::is_floating_point[_v]`` must be used to correctly classify extended floating point types like ``__half`` or ``__nv_bfloat16``.
+``cub::BaseTraits`` and ``cub::Traits`` can no longer be specialized for custom types, and ``cub::FpLimits`` has been removed.
+
+We acknowledge the need to provide user-defined floating point types though,
+e.g., registering a custom half type with CUB to be used in radix sort.
+Therefore, users can still specialize ``cub::NumericTraits`` for their custom floating point types,
+inheriting from ``cub::BaseTraits`` and providing the necessary information for the type.
+Additionally, the traits from libcu++ have to be specialized as well:
+
+For example, a custom floating point type ``my_half`` could be registered with CUB and libcu++ like this:
+
+.. code:: cpp
+
+    template <>
+    inline constexpr bool ::cuda::is_floating_point_v<my_half> = true;
+
+    template <>
+    class ::cuda::std::numeric_limits<my_half> {
+    public:
+      static constexpr bool is_specialized = true;
+      static __host__ __device__ my_half max()    { return /* TODO */; }
+      static __host__ __device__ my_half min()    { return /* TODO */; }
+      static __host__ __device__ my_half lowest() { return /* TODO */; }
+    };
+
+    template <>
+    struct CUB_NS_QUALIFIER::NumericTraits<my_half> : BaseTraits<FLOATING_POINT, true, uint16_t, my_half> {};
+
+
+Behavioral changes
+------------------
+
+* ``cub::DeviceReduce::[Arg][Max|Min]``: Will now use ``cuda::std::numeric_limits<T>::[max|min]()`` instead of ``cub::Traits`` to determine the initial value
+* ``cuda::std::mdspan``: The implementation was entirely rewritten and you may experience subtle behavioral changes
+* ``thrust::transform_iterator``: The logic to determine the reference type has been reworked, especially wrt. to functions that return references to their own arguments (e.g., ``thrust::identity``).
+* ``thrust::transform_iterator::difference_type``: The logic to select the difference type has been reworked. It's now either ``int`` or ``ptrdiff``.
+
+
+ABI breaks
+----------
+
+* All of libcu++'s old ABI namespaces have been removed
+
+
+Platform support
+----------------
+
+* At least C++17 is required
+* At least clang 14 is required
+* At least GCC 7 is required
+* On Windows, at least Visual Studio 2019 is required (MSC_VER >= 1920)
+* Intel ICC (``icpx``) is no longer supported
+* At least CUDA Toolkit 12.0 is required
+* Support for CUDA Dynamic Parallelism V1 (CDPv1) has been removed
+* At least a GPU with compute capability 50 (Maxwell) is required
