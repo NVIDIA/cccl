@@ -704,10 +704,14 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().kernel(PrivatizationMode{}).threads_per_block),
-                  int(is_privatized_static_smem_v<PrivatizationMode>
-                        ? current_policy<PolicySelector>().static_smem.min_blocks_per_sm
-                        : 0))
+__launch_bounds__(
+  int(is_privatized_static_smem_v<PrivatizationMode> ? current_policy<PolicySelector>().static_smem.threads_per_block
+      : is_privatized_dynamic_smem_v<PrivatizationMode>
+        ? current_policy<PolicySelector>().dynamic_smem.threads_per_block
+        : current_policy<PolicySelector>().gmem.threads_per_block),
+  int(is_privatized_static_smem_v<PrivatizationMode>
+        ? current_policy<PolicySelector>().static_smem_min_blocks_per_sm
+        : 0))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -777,7 +781,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.kernel.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDynamicSmemKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -934,7 +938,11 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().kernel(PrivatizationMode{}).threads_per_block))
+__launch_bounds__(int(
+  is_privatized_static_smem_v<PrivatizationMode> ? current_policy<PolicySelector>().static_smem.threads_per_block
+  : is_privatized_dynamic_smem_v<PrivatizationMode>
+    ? current_policy<PolicySelector>().dynamic_smem.threads_per_block
+    : current_policy<PolicySelector>().gmem.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,

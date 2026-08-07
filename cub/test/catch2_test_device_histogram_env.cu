@@ -1627,8 +1627,8 @@ struct histogram_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     constexpr auto sweep =
-      cub::HistogramPolicy::Kernel{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, {sweep, 256 * sizeof(unsigned int), 0}, {sweep, 0, 0, 0, 0, 0}, 0};
+      cub::HistogramSweepPolicy{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {sweep, sweep, sweep, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0};
   }
 };
 
@@ -1645,8 +1645,8 @@ struct mixed_counter_histogram_tuning
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     constexpr auto sweep =
-      cub::HistogramPolicy::Kernel{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, {sweep, 512 * sizeof(unsigned int), 0}, {sweep, 228352, 2048, 28544, 19029, 8192}, 0};
+      cub::HistogramSweepPolicy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {sweep, sweep, sweep, 512 * sizeof(unsigned int), 0, 228352, 2048, 28544, 19029, 8192, 0};
   }
 };
 
@@ -1657,7 +1657,7 @@ static_assert(
 static_assert(cuda::std::is_same_v<cub::detail::histogram::local_counter_t<histogram_tuning<128>, unsigned long long>,
                                    unsigned long long>);
 
-C2H_TEST("DeviceHistogram supports narrower local counters than output counters", "[histogram][device]")
+CUB_TEST("DeviceHistogram supports narrower local counters than output counters", "[histogram][device]", CUB_SMALL)
 {
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
@@ -1807,43 +1807,49 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   // aggregate init
   constexpr auto p1 = cub::HistogramPolicy{
     {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
-    {{96, 3, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false}, 2052, 2},
-    {{128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false}, 12345, 1024, 4096, 8192, 16384},
+    {96, 3, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    2052,
+    2,
+    12345,
+    1024,
+    4096,
+    8192,
+    16384,
     2048};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::HistogramPolicy{
-    .gmem        = {.threads_per_block = 128,
-                    .items_per_thread  = 7,
-                    .vec_size          = 4,
-                    .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                    .rle_compress      = false,
-                    .work_stealing     = false},
-    .static_smem = {.kernel                    = {.threads_per_block = 96,
-                                                  .items_per_thread  = 3,
-                                                  .vec_size          = 4,
-                                                  .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                                                  .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                                                  .rle_compress      = false,
-                                                  .work_stealing     = false},
-                    .max_privatized_smem_bytes = 2052,
-                    .min_blocks_per_sm         = 2},
-    .dynamic_smem =
-      {.kernel                    = {.threads_per_block = 128,
-                                     .items_per_thread  = 7,
-                                     .vec_size          = 4,
-                                     .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                                     .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                                     .rle_compress      = false,
-                                     .work_stealing     = false},
-       .max_privatized_smem_bytes = 12345,
-       .range_max_bins            = 1024,
-       .even_2ch_max_bins         = 4096,
-       .even_3ch_max_bins         = 8192,
-       .even_4ch_max_bins         = 16384},
-    .init_kernel_pdl_trigger_max_bins = 2048};
+    .gmem                              = {.threads_per_block = 128,
+                                          .items_per_thread  = 7,
+                                          .vec_size          = 4,
+                                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                          .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                          .rle_compress      = false,
+                                          .work_stealing     = false},
+    .static_smem                       = {.threads_per_block = 96,
+                                          .items_per_thread  = 3,
+                                          .vec_size          = 4,
+                                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                          .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                          .rle_compress      = false,
+                                          .work_stealing     = false},
+    .dynamic_smem                      = {.threads_per_block = 128,
+                                          .items_per_thread  = 7,
+                                          .vec_size          = 4,
+                                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                          .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                          .rle_compress      = false,
+                                          .work_stealing     = false},
+    .max_privatized_static_smem_bytes  = 2052,
+    .static_smem_min_blocks_per_sm     = 2,
+    .max_privatized_dynamic_smem_bytes = 12345,
+    .dynamic_smem_range_max_bins       = 1024,
+    .dynamic_smem_even_2ch_max_bins    = 4096,
+    .dynamic_smem_even_3ch_max_bins    = 8192,
+    .dynamic_smem_even_4ch_max_bins    = 16384,
+    .init_kernel_pdl_trigger_max_bins  = 2048};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1857,24 +1863,10 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(
-    to_string(p1)
-    == "HistogramPolicy { .gmem = { .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4"
-       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-       ", .work_stealing = 0 }"
-       ", .static_smem = { .kernel = { .threads_per_block = 96, .items_per_thread = 3, .vec_size = 4"
-       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-       ", .work_stealing = 0 }"
-       ", .max_privatized_smem_bytes = 2052, .min_blocks_per_sm = 2 }, .dynamic_smem = { .kernel = { "
-       ".threads_per_block "
-       "= 128"
-       ", .items_per_thread = 7, .vec_size = 4, .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG"
-       ", .rle_compress = 0, .work_stealing = 0 }, .max_privatized_smem_bytes = 12345"
-       ", .range_max_bins = 1024, .even_2ch_max_bins = 4096, .even_3ch_max_bins = 8192"
-       ", .even_4ch_max_bins = 16384 }, .init_kernel_pdl_trigger_max_bins = 2048 }");
+  REQUIRE(to_string(p1) == to_string(p2));
 }
 
-C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget", "[histogram][device]")
+CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget", "[histogram][device]", CUB_SMALL)
 {
   using selector_t = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>;
 
@@ -1884,39 +1876,44 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
     cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
       cuda::compute_capability{10, 0});
 
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm90_policy, 4, 1) == 256);
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm100_policy, 4, 1) == 512);
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_static_smem_bins(sm100_policy, 4, 4) == 128);
-  STATIC_REQUIRE(sm90_policy.dynamic_smem.max_privatized_smem_bytes == 0);
-  STATIC_REQUIRE(sm100_policy.dynamic_smem.max_privatized_smem_bytes == 228352);
-  STATIC_REQUIRE(sm100_wide_counter_policy.dynamic_smem.max_privatized_smem_bytes == 0);
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_dynamic_smem_bins(sm100_policy, 4, 1) == 57088);
-  STATIC_REQUIRE(cub::detail::histogram::max_privatized_dynamic_smem_bins(sm100_policy, 4, 4) == 14272);
-  STATIC_REQUIRE(sm100_policy.dynamic_smem.range_max_bins == 2048);
-  STATIC_REQUIRE(sm100_policy.dynamic_smem.even_2ch_max_bins == 28544);
-  STATIC_REQUIRE(sm100_policy.dynamic_smem.even_3ch_max_bins == 19029);
-  STATIC_REQUIRE(sm100_policy.dynamic_smem.even_4ch_max_bins == 8192);
+  STATIC_REQUIRE(
+    cub::detail::histogram::max_privatized_smem_bins(sm90_policy.max_privatized_static_smem_bytes, 4, 1) == 256);
+  STATIC_REQUIRE(
+    cub::detail::histogram::max_privatized_smem_bins(sm100_policy.max_privatized_static_smem_bytes, 4, 1) == 512);
+  STATIC_REQUIRE(
+    cub::detail::histogram::max_privatized_smem_bins(sm100_policy.max_privatized_static_smem_bytes, 4, 4) == 128);
+  STATIC_REQUIRE(sm90_policy.max_privatized_dynamic_smem_bytes == 0);
+  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_bytes == 228352);
+  STATIC_REQUIRE(sm100_wide_counter_policy.max_privatized_dynamic_smem_bytes == 0);
+  STATIC_REQUIRE(
+    cub::detail::histogram::max_privatized_smem_bins(sm100_policy.max_privatized_dynamic_smem_bytes, 4, 1) == 57088);
+  STATIC_REQUIRE(
+    cub::detail::histogram::max_privatized_smem_bins(sm100_policy.max_privatized_dynamic_smem_bytes, 4, 4) == 14272);
+  STATIC_REQUIRE(sm100_policy.dynamic_smem_range_max_bins == 2048);
+  STATIC_REQUIRE(sm100_policy.dynamic_smem_even_2ch_max_bins == 28544);
+  STATIC_REQUIRE(sm100_policy.dynamic_smem_even_3ch_max_bins == 19029);
+  STATIC_REQUIRE(sm100_policy.dynamic_smem_even_4ch_max_bins == 8192);
   STATIC_REQUIRE(sm100_policy.gmem.threads_per_block == 768);
   STATIC_REQUIRE(sm100_policy.gmem.items_per_thread == 12);
-  STATIC_REQUIRE(sm100_policy.static_smem.kernel == sm100_policy.gmem);
+  STATIC_REQUIRE(sm100_policy.static_smem == sm100_policy.gmem);
 
   constexpr auto sm100_range_u64_policy =
     cub::detail::histogram::policy_selector_from_types<long long, unsigned int, 1, 1, false>{}(
       cuda::compute_capability{10, 0});
   STATIC_REQUIRE(sm100_range_u64_policy.gmem.threads_per_block == 768);
   STATIC_REQUIRE(sm100_range_u64_policy.gmem.items_per_thread == 6);
-  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.kernel.threads_per_block == 384);
-  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.kernel.items_per_thread == 8);
-  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.min_blocks_per_sm == 3);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.items_per_thread == 8);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem_min_blocks_per_sm == 3);
 
   constexpr auto sm100_multi_range_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
       cuda::compute_capability{10, 0});
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 1024);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
-  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.kernel.threads_per_block == 384);
-  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.kernel.items_per_thread == 5);
-  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.min_blocks_per_sm == 3);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.items_per_thread == 5);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem_min_blocks_per_sm == 3);
 
   STATIC_REQUIRE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57088, 4, 1));
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57089, 4, 1));

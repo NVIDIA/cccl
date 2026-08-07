@@ -46,8 +46,8 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   REQUIRE(custom_sm75_policy.gmem.items_per_thread == 16);
   REQUIRE(custom_sm90_policy.gmem.threads_per_block == 256);
   REQUIRE(custom_sm90_policy.gmem.items_per_thread == 8);
-  REQUIRE(custom_sm75_policy.static_smem.max_privatized_smem_bytes == 256 * sizeof(unsigned int));
-  REQUIRE(custom_sm90_policy.dynamic_smem.max_privatized_smem_bytes == 0);
+  REQUIRE(custom_sm75_policy.max_privatized_static_smem_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(custom_sm90_policy.max_privatized_dynamic_smem_bytes == 0);
   REQUIRE(custom_sm75_policy.init_kernel_pdl_trigger_max_bins == 0);
   REQUIRE(custom_sm90_policy.init_kernel_pdl_trigger_max_bins == 2048);
 

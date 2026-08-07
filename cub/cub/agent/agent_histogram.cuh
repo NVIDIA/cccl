@@ -157,9 +157,13 @@ struct AgentHistogram
   static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
   static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
   static constexpr auto policy            = current_policy<PolicySelector>();
-  static constexpr auto sweep             = policy.kernel(PrivatizationMode{});
+  static constexpr auto sweep =
+    uses_static_smem ? policy.static_smem
+    : uses_dynamic_smem
+      ? policy.dynamic_smem
+      : policy.gmem;
   static constexpr int privatized_static_smem_bins =
-    uses_static_smem ? policy.static_smem.max_privatized_smem_bytes / int{sizeof(CounterT)} / NumActiveChannels : 0;
+    uses_static_smem ? policy.max_privatized_static_smem_bytes / int{sizeof(CounterT)} / NumActiveChannels : 0;
   static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
                 "Static-SMEM privatization requires room for at least one bin");
   static constexpr int vec_size                    = sweep.vec_size;
