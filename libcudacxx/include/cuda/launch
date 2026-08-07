@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__launch/configuration.h>
+#include <cuda/__launch/finalize.h>
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__launch/launch.h>
 

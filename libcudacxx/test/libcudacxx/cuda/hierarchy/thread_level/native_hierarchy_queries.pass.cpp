@@ -23,6 +23,8 @@ TEST_DEVICE_FUNC void test_thread()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
+  test_same_level_queries(cuda::gpu_thread);
+
   // 1. Test cuda::gpu_thread.dims(x)
   test_dims(uint3{static_cast<unsigned>(warpSize), 1u, 1u}, cuda::gpu_thread, cuda::warp);
   test_dims(blockDim, cuda::gpu_thread, cuda::block);

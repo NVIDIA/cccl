@@ -29,6 +29,8 @@ TEST_DEVICE_FUNC void test_cluster()
   uint3 index = blockIdx;
   NV_IF_TARGET(NV_PROVIDES_SM_90, (index = __clusterIdx();))
 
+  test_same_level_queries(cuda::cluster);
+
   // 1. Test cuda::cluster.dims(x)
   test_dims(dims, cuda::cluster, cuda::grid);
 

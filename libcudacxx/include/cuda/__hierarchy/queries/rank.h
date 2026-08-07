@@ -83,6 +83,32 @@ struct __rank_query_native
   }
 };
 
+template <class _Level>
+struct __same_level_rank_query_native
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp __call() noexcept
+  {
+    return _Tp{};
+  }
+};
+
+template <>
+struct __rank_query_native<thread_level, thread_level> : __same_level_rank_query_native<thread_level>
+{};
+
+template <>
+struct __rank_query_native<warp_level, warp_level> : __same_level_rank_query_native<warp_level>
+{};
+
+template <>
+struct __rank_query_native<block_level, block_level> : __same_level_rank_query_native<block_level>
+{};
+
+template <>
+struct __rank_query_native<cluster_level, cluster_level> : __same_level_rank_query_native<cluster_level>
+{};
+
 template <>
 struct __rank_query_native<thread_level, warp_level>
 {
@@ -152,6 +178,36 @@ struct __rank_query
     return ::cuda::__rank_query_generic<_Tp, _Unit, _NextLevel, _Level>(__hier);
   }
 };
+
+template <class _Level>
+struct __same_level_rank_query
+{
+  template <class _Tp, class _Hierarchy>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp __call(const _Hierarchy&) noexcept
+  {
+    return _Tp{};
+  }
+};
+
+template <>
+struct __rank_query<thread_level, thread_level> : __same_level_rank_query<thread_level>
+{};
+
+template <>
+struct __rank_query<warp_level, warp_level> : __same_level_rank_query<warp_level>
+{};
+
+template <>
+struct __rank_query<block_level, block_level> : __same_level_rank_query<block_level>
+{};
+
+template <>
+struct __rank_query<cluster_level, cluster_level> : __same_level_rank_query<cluster_level>
+{};
+
+template <>
+struct __rank_query<grid_level, grid_level> : __same_level_rank_query<grid_level>
+{};
 
 template <>
 struct __rank_query<thread_level, warp_level>

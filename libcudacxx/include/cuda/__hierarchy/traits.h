@@ -25,6 +25,7 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
@@ -65,6 +66,18 @@ inline constexpr bool __is_natively_reachable_hierarchy_level_v<
 
 template <class _LevelDesc>
 using __level_type_of = typename _LevelDesc::level_type;
+
+template <class _LevelDesc, class = void>
+struct __is_concrete_hierarchy_level_desc_impl : ::cuda::std::false_type
+{};
+
+template <class _LevelDesc>
+struct __is_concrete_hierarchy_level_desc_impl<_LevelDesc, ::cuda::std::void_t<typename _LevelDesc::extents_type>>
+    : ::cuda::std::bool_constant<__is_hierarchy_level_desc_v<_LevelDesc>>
+{};
+
+template <class _LevelDesc>
+inline constexpr bool __is_concrete_hierarchy_level_desc_v = __is_concrete_hierarchy_level_desc_impl<_LevelDesc>::value;
 
 // __has_bottom_unit_or_level_v
 

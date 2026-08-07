@@ -32,6 +32,7 @@
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
 #  include <cuda/std/__type_traits/rank.h>
 #  include <cuda/std/span>
@@ -641,9 +642,10 @@ operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>
   return kernel_config(hierarchy_add_level(config.hierarchy(), new_level), config.options());
 }
 
-template <typename L1, typename Dims1, typename L2, typename Dims2>
-_CCCL_HOST_API constexpr auto
-operator&(const hierarchy_level_desc<L1, Dims1>& l1, const hierarchy_level_desc<L2, Dims2>& l2) noexcept
+template <typename _L1,
+          typename _L2,
+          typename = ::cuda::std::enable_if_t<__is_hierarchy_level_desc_v<_L1> && __is_hierarchy_level_desc_v<_L2>>>
+_CCCL_HOST_API constexpr auto operator&(const _L1& l1, const _L2& l2) noexcept
 {
   return kernel_config(::cuda::make_hierarchy(l1, l2));
 }
@@ -718,6 +720,11 @@ constexpr auto distribute(int numElements) noexcept
 {
   int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
+}
+
+[[nodiscard]] _CCCL_HOST_API constexpr auto distribute(int numElements) noexcept
+{
+  return make_config(make_hierarchy(grid_dims(at_least{numElements}, gpu_thread), auto_block_dims()));
 }
 
 template <typename... Prev>
