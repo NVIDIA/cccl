@@ -496,6 +496,9 @@ run_python_compare_target() {
       "${compare_cmd[@]}"; then
       robust_rc=1
     fi
+    if [[ "${display}" == "explain" ]] && ! normalize_explain_markdown_report "${compare_out}"; then
+      robust_rc=1
+    fi
   done
 
   legacy_compare_bin="$(resolve_legacy_compare_bin "${venv_path}" "${compare_bin}" || true)"
@@ -574,6 +577,148 @@ compare_log_path_for_display() {
   else
     printf "%s" "${artifact_dir}/logs/compare.${target_name}.${display}.log"
   fi
+}
+
+normalize_explain_markdown_report() {
+  local report_path="$1"
+  local tmp_path=""
+
+  [[ -s "${report_path}" ]] || return 0
+
+  tmp_path="$(mktemp "${report_path}.XXXXXX")"
+  if ! awk '
+    function clear_array(values, key) {
+      for (key in values) {
+        delete values[key]
+      }
+    }
+
+    function trim(value) {
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      return value
+    }
+
+    function split_markdown_row(line, cells,    i, c, depth, cell, count) {
+      clear_array(cells)
+      if (substr(line, 1, 1) != "|") {
+        return 0
+      }
+
+      depth = 0
+      cell = ""
+      count = 0
+      for (i = 2; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        if (c == "[") {
+          depth++
+        } else if (c == "]") {
+          if (depth > 0) {
+            depth--
+          }
+        }
+
+        if (c == "|" && depth == 0) {
+          count++
+          cells[count] = cell
+          cell = ""
+        } else {
+          cell = cell c
+        }
+      }
+
+      if (cell != "") {
+        count++
+        cells[count] = cell
+      }
+      return count
+    }
+
+    function replace_interval_pipes(value,    i, c, depth, out) {
+      depth = 0
+      out = ""
+      for (i = 1; i <= length(value); i++) {
+        c = substr(value, i, 1)
+        if (c == "[") {
+          depth++
+          out = out c
+        } else if (c == "]") {
+          if (depth > 0) {
+            depth--
+          }
+          out = out c
+        } else if (c == "|" && depth > 0) {
+          out = out "/"
+        } else {
+          out = out c
+        }
+      }
+      return out
+    }
+
+    function print_markdown_row(cells, count,    i, out) {
+      out = "|"
+      for (i = 1; i <= count; i++) {
+        out = out cells[i] "|"
+      }
+      print out
+    }
+
+    {
+      if (substr($0, 1, 1) != "|") {
+        clear_array(interval_columns)
+        interval_column_count = 0
+        print
+        next
+      }
+
+      cell_count = split_markdown_row($0, cells)
+      if (cell_count == 0) {
+        print
+        next
+      }
+
+      ref_interval_column = cell_count - 6
+      cmp_interval_column = cell_count - 5
+      found_interval_columns = \
+        ref_interval_column > 0 && \
+        trim(cells[ref_interval_column]) == "Ref [Lo | Ce | Hi]" && \
+        trim(cells[cmp_interval_column]) == "Cmp [Lo | Ce | Hi]" && \
+        trim(cells[cell_count - 4]) == "Ref Noise" && \
+        trim(cells[cell_count - 3]) == "Cmp Noise" && \
+        trim(cells[cell_count - 2]) == "Reason" && \
+        trim(cells[cell_count - 1]) == "Change" && \
+        trim(cells[cell_count]) == "Status"
+
+      if (found_interval_columns) {
+        clear_array(interval_columns)
+        interval_columns[ref_interval_column] = 1
+        interval_columns[cmp_interval_column] = 1
+        interval_column_count = 2
+        cells[ref_interval_column] = replace_interval_pipes(cells[ref_interval_column])
+        cells[cmp_interval_column] = replace_interval_pipes(cells[cmp_interval_column])
+        print_markdown_row(cells, cell_count)
+        next
+      }
+
+      if (interval_column_count > 0) {
+        for (i in interval_columns) {
+          if (i <= cell_count) {
+            cells[i] = replace_interval_pipes(cells[i])
+          }
+        }
+        print_markdown_row(cells, cell_count)
+        next
+      }
+
+      print
+    }
+  ' "${report_path}" > "${tmp_path}"; then
+    rm -f "${tmp_path}"
+    return 1
+  fi
+
+  mv "${tmp_path}" "${report_path}"
 }
 
 run_compare_command() {
@@ -735,6 +880,9 @@ run_compare_target() {
       "${compare_out}" \
       "${compare_log}" \
       "${compare_cmd[@]}"; then
+      robust_rc=1
+    fi
+    if [[ "${display}" == "explain" ]] && ! normalize_explain_markdown_report "${compare_out}"; then
       robust_rc=1
     fi
   done
