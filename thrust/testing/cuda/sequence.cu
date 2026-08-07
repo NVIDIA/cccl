@@ -1,58 +1,63 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator>
-__global__ void sequence_kernel(ExecutionPolicy exec, Iterator first, Iterator last)
+struct sequence_kernel
 {
-  thrust::sequence(exec, first, last);
-}
+  template <typename ExecutionPolicy, typename Data>
+  __device__ void operator()(ExecutionPolicy exec, Data data) const
+  {
+    thrust::sequence(exec, data.begin(), data.end());
+  }
+};
 
-template <typename ExecutionPolicy, typename Iterator, typename T>
-__global__ void sequence_kernel(ExecutionPolicy exec, Iterator first, Iterator last, T init)
+struct sequence_init_kernel
 {
-  thrust::sequence(exec, first, last, init);
-}
+  template <typename ExecutionPolicy, typename Data, typename T>
+  __device__ void operator()(ExecutionPolicy exec, Data data, T init) const
+  {
+    thrust::sequence(exec, data.begin(), data.end(), init);
+  }
+};
 
-template <typename ExecutionPolicy, typename Iterator, typename T>
-__global__ void sequence_kernel(ExecutionPolicy exec, Iterator first, Iterator last, T init, T step)
+struct sequence_init_step_kernel
 {
-  thrust::sequence(exec, first, last, init, step);
-}
+  template <typename ExecutionPolicy, typename Data, typename T>
+  __device__ void operator()(ExecutionPolicy exec, Data data, T init, T step) const
+  {
+    thrust::sequence(exec, data.begin(), data.end(), init, step);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestSequenceDevice(ExecutionPolicy exec)
 {
-  thrust::device_vector<int> v(5);
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  auto v = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  thrust::device_vector<int> ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  cuda::launch(stream, test_runtime::single_thread_config(), sequence_kernel{}, exec, v);
+  stream.sync();
 
-  sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end(), 10);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  test_runtime::assert_equal(stream, v, {0, 1, 2, 3, 4});
 
-  ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  cuda::launch(stream, test_runtime::single_thread_config(), sequence_init_kernel{}, exec, v, 10);
+  stream.sync();
 
-  sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end(), 10, 2);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  test_runtime::assert_equal(stream, v, {10, 11, 12, 13, 14});
 
-  ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
+  cuda::launch(stream, test_runtime::single_thread_config(), sequence_init_step_kernel{}, exec, v, 10, 2);
+  stream.sync();
+
+  test_runtime::assert_equal(stream, v, {10, 12, 14, 16, 18});
 }
 
 void TestSequenceDeviceSeq()
@@ -70,31 +75,24 @@ DECLARE_UNITTEST(TestSequenceDeviceDevice);
 
 void TestSequenceCudaStreams()
 {
-  using Vector = thrust::device_vector<int>;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v(5);
+  auto v = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::sequence(thrust::cuda::par.on(stream.get()), v.begin(), v.end());
+  stream.sync();
 
-  thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end());
-  cudaStreamSynchronize(s);
+  test_runtime::assert_equal(stream, v, {0, 1, 2, 3, 4});
 
-  Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  thrust::sequence(thrust::cuda::par.on(stream.get()), v.begin(), v.end(), 10);
+  stream.sync();
 
-  thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10);
-  cudaStreamSynchronize(s);
+  test_runtime::assert_equal(stream, v, {10, 11, 12, 13, 14});
 
-  ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  thrust::sequence(thrust::cuda::par.on(stream.get()), v.begin(), v.end(), 10, 2);
+  stream.sync();
 
-  thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10, 2);
-  cudaStreamSynchronize(s);
-
-  ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, v, {10, 12, 14, 16, 18});
 }
 DECLARE_UNITTEST(TestSequenceCudaStreams);
