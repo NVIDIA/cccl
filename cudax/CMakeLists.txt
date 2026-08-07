@@ -77,6 +77,8 @@ if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()
 
+include(cmake/cudaxTidyExceptionEscape.cmake)
+
 if (cudax_ENABLE_HEADER_TESTING)
   include(cmake/cudaxHeaderTesting.cmake)
 endif()

@@ -29,8 +29,8 @@ Helper modules
      - Standardizes project/subproject behavior when included with ``add_subdirectory()`` by a consumer/CPM.
      - ``cccl_add_subdir_helper()``
    * - ``CCCLAddTidyTarget.cmake``
-     - clang-tidy integration: global, per-subproject, and per-source analysis targets.
-     - ``cccl_tidy_init()``, ``cccl_tidy_make_subproject_target()``, ``cccl_tidy_add_target()``
+     - clang-tidy integration: global, per-subproject, per-source, and per-header analysis targets.
+     - ``cccl_tidy_init()``, ``cccl_tidy_make_subproject_target()``, ``cccl_tidy_add_target()``, ``cccl_tidy_add_header_sweep()``
    * - ``CCCLBuildCompilerTargets.cmake``
      - Build the ``cccl.compiler_interface`` target carrying warning, RTTI, exception, and ptxas flags.
      - ``cccl_build_compiler_targets()``
