@@ -125,16 +125,25 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos,
   return static_cast<_SizeT>(__r - __p);
 }
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 // In tile mode we cannot pass function pointers, but we can wrap the indirect call into the call operator
 template <class _Traits>
 struct _TraitsWrapperEq
 {
   [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool
-  operator()(typename _Traits::char_type __lhs, typename _Traits::char_type __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(typename _Traits::char_type __lhs, typename _Traits::char_type __rhs) noexcept
   {
     return _Traits::eq(__lhs, __rhs);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
