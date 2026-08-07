@@ -43,6 +43,7 @@ enum class __pstl_algorithm
   __max_element,
   __merge,
   __min_element,
+  __minmax_element,
   __partition,
   __partition_copy,
   __reduce,
