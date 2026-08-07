@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/__utility/unreachable.h>
@@ -35,59 +36,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 #  if __cccl_ptx_isa >= 870
-
-#    if _CCCL_HAS_INT128()
-using _QueryCancelResult = __uint128_t;
-#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-struct alignas(16) _QueryCancelResult
-{
-  ::cuda::std::uint64_t __lo_;
-  ::cuda::std::uint64_t __hi_;
-};
-#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
-
-template <int _Index>
-[[nodiscard]] _CCCL_DEVICE_API int __cluster_get_dim(_QueryCancelResult __result) noexcept
-{
-  unsigned __r;
-
-  asm volatile("{\n\t"
-               ".reg .b128 query_result;");
-#    if _CCCL_HAS_INT128()
-  asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
-#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-  asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
-#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
-
-  if constexpr (_Index == 0)
-  {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, query_result;"
-                 : "=r"(__r)
-                 :
-                 : "memory");
-  }
-  else if constexpr (_Index == 1)
-  {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, query_result;"
-                 : "=r"(__r)
-                 :
-                 : "memory");
-  }
-  else if constexpr (_Index == 2)
-  {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, query_result;"
-                 : "=r"(__r)
-                 :
-                 : "memory");
-  }
-  else
-  {
-    _CCCL_UNREACHABLE();
-  }
-  asm volatile("}");
-  return __r;
-}
-
 //! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
 //! from the current grid. On success, it invokes the unary function `__uf` before trying again.
 //! On failure, it returns.
@@ -103,7 +51,7 @@ template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
 {
   __shared__ ::cuda::std::uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
-  __shared__ _QueryCancelResult __result;
+  __shared__ ::uint4 __result;
   bool __phase = false;
 
   // Initialize barrier and kick-start try_cancel pipeline:
@@ -148,39 +96,27 @@ _CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool _
     ::__syncthreads(); // All threads of prior thread block have "exited".
     // Note: this syncthreads provides the .acquire.cta fence preventing
     // the next query operations from being re-ordered above the poll loop.
+    if (!::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(__result))
     {
-      int __success = 0;
-      asm volatile("{\n\t"
-                   ".reg .pred p;\t\n"
-                   ".reg .b128 query_result;");
-#    if _CCCL_HAS_INT128()
-      asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
-#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-      asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
-#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
-      asm volatile("clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, query_result;\n\t"
-                   "selp.b32 %0, 1, 0, p;\n\t"
-                   "}\n\t"
-                   : "=r"(__success));
-      if (__success != 1)
-      {
-        // Invalidating mbarrier and synchronizing before exiting not
-        // required since each thread block calls this API at most once.
-        break;
-      }
+      // Invalidating mbarrier and synchronizing before exiting not
+      // required since each thread block calls this API at most once.
+      break;
     }
 
-    // Read new thread block dimensions
-    ::dim3 __b(::cuda::device::__cluster_get_dim<0>(__result), 1, 1);
-    if constexpr (__ThreadBlockRank >= 2)
+    // Read new thread block index
     {
-      __b.y = ::cuda::device::__cluster_get_dim<1>(__result);
+      ::dim3 __new_blocK_idx{1, 1, 1};
+      __new_blocK_idx.x = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<unsigned>(__result);
+      if constexpr (__ThreadBlockRank >= 2)
+      {
+        __new_blocK_idx.y = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_y<unsigned>(__result);
+      }
+      if constexpr (__ThreadBlockRank == 3)
+      {
+        __new_blocK_idx.z = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_z<unsigned>(__result);
+      }
+      __block_idx = __new_blocK_idx;
     }
-    if constexpr (__ThreadBlockRank == 3)
-    {
-      __b.z = ::cuda::device::__cluster_get_dim<2>(__result);
-    }
-    __block_idx = __b;
 
     // Wait for all threads to read __result before issuing next async op.
     // generic->generic synchronization
