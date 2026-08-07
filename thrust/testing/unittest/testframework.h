@@ -58,30 +58,30 @@ using FloatingPointTypes = unittest::type_list<float, double>;
 class custom_numeric
 {
 public:
-  _CCCL_HOST_DEVICE constexpr custom_numeric()
+  _CCCL_API constexpr custom_numeric()
   {
     fill(0);
   }
 
   // Allow construction from any integral numeric.
   template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-  _CCCL_HOST_DEVICE constexpr custom_numeric(const T& i)
+  _CCCL_API constexpr custom_numeric(const T& i)
   {
     fill(static_cast<int>(i));
   }
 
-  _CCCL_HOST_DEVICE constexpr custom_numeric(const custom_numeric& other)
+  _CCCL_API constexpr custom_numeric(const custom_numeric& other)
   {
     fill(other.value[0]);
   }
 
-  _CCCL_HOST_DEVICE constexpr custom_numeric& operator=(int val)
+  _CCCL_API constexpr custom_numeric& operator=(int val)
   {
     fill(val);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE constexpr custom_numeric& operator=(const custom_numeric& other)
+  _CCCL_API constexpr custom_numeric& operator=(const custom_numeric& other)
   {
     if (this != &other)
     {
@@ -92,23 +92,23 @@ public:
 
   // cast to void * instead of bool to fool overload resolution
   // WTB C++11 explicit conversion operators
-  _CCCL_HOST_DEVICE operator void*() const
+  _CCCL_API operator void*() const
   {
     // static cast first to avoid MSVC warning C4312
     return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
-#define DEFINE_OPERATOR(op)                                         \
-  _CCCL_HOST_DEVICE constexpr custom_numeric& operator op()         \
-  {                                                                 \
-    fill(op value[0]);                                              \
-    return *this;                                                   \
-  }                                                                 \
-  _CCCL_HOST_DEVICE constexpr custom_numeric operator op(int) const \
-  {                                                                 \
-    custom_numeric ret(*this);                                      \
-    op ret;                                                         \
-    return ret;                                                     \
+#define DEFINE_OPERATOR(op)                                 \
+  _CCCL_API constexpr custom_numeric& operator op()         \
+  {                                                         \
+    fill(op value[0]);                                      \
+    return *this;                                           \
+  }                                                         \
+  _CCCL_API constexpr custom_numeric operator op(int) const \
+  {                                                         \
+    custom_numeric ret(*this);                              \
+    op ret;                                                 \
+    return ret;                                             \
   }
 
   DEFINE_OPERATOR(++)
@@ -116,10 +116,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                      \
-  _CCCL_HOST_DEVICE constexpr custom_numeric operator op() const \
-  {                                                              \
-    return custom_numeric(op value[0]);                          \
+#define DEFINE_OPERATOR(op)                              \
+  _CCCL_API constexpr custom_numeric operator op() const \
+  {                                                      \
+    return custom_numeric(op value[0]);                  \
   }
 
   DEFINE_OPERATOR(+)
@@ -128,10 +128,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                                                 \
-  _CCCL_HOST_DEVICE constexpr custom_numeric operator op(const custom_numeric& other) const \
-  {                                                                                         \
-    return custom_numeric(value[0] op other.value[0]);                                      \
+#define DEFINE_OPERATOR(op)                                                         \
+  _CCCL_API constexpr custom_numeric operator op(const custom_numeric& other) const \
+  {                                                                                 \
+    return custom_numeric(value[0] op other.value[0]);                              \
   }
 
   DEFINE_OPERATOR(+)
@@ -149,11 +149,11 @@ public:
 
 #define CONCAT(X, Y) X##Y
 
-#define DEFINE_OPERATOR(op)                                                                        \
-  _CCCL_HOST_DEVICE constexpr custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
-  {                                                                                                \
-    fill(value[0] op other.value[0]);                                                              \
-    return *this;                                                                                  \
+#define DEFINE_OPERATOR(op)                                                                \
+  _CCCL_API constexpr custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
+  {                                                                                        \
+    fill(value[0] op other.value[0]);                                                      \
+    return *this;                                                                          \
   }
 
   DEFINE_OPERATOR(+)
@@ -169,10 +169,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                                                                 \
-  _CCCL_HOST_DEVICE friend constexpr bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
-  {                                                                                                         \
-    return lhs.value[0] op rhs.value[0];                                                                    \
+#define DEFINE_OPERATOR(op)                                                                         \
+  _CCCL_API friend constexpr bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
+  {                                                                                                 \
+    return lhs.value[0] op rhs.value[0];                                                            \
   }
 
   DEFINE_OPERATOR(==)
@@ -194,7 +194,7 @@ public:
 private:
   int value[5] = {0};
 
-  _CCCL_HOST_DEVICE constexpr void fill(int val)
+  _CCCL_API constexpr void fill(int val)
   {
     for (auto& v : value)
     {
