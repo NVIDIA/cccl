@@ -254,8 +254,8 @@ TEST_FUNC constexpr bool test()
 
   {
     // function pointer with constexpr param
-    using T               = cuda::std::__constant_wrapper<fun_ptr>;
-    decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
+    using T                                = cuda::std::__constant_wrapper<fun_ptr>;
+    [[maybe_unused]] decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(result)>);
 
     // Old msvc fails with: Failure was caused by a read of a variable outside its lifetime.
