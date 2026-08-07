@@ -30,6 +30,7 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 // Sibling families whose kernels this family calls (fmin/fmax/min/max are used here).
 #include <cuda/__fp/fpmp_math_impl_classify.h>
+#include <cuda/std/__floating_point/constants.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -258,14 +259,14 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fmod(
   const bool __y_nan  = (__y_hi != __y_hi) || (__y_lo != __y_lo) || ((__y_hi + __y_lo) != (__y_hi + __y_lo));
   const float __axh   = (__x_hi < 0.0f) ? -__x_hi : __x_hi;
   const float __ayh   = (__y_hi < 0.0f) ? -__y_hi : __y_hi;
-  const bool __x_inf  = (__axh == __builtin_huge_valf());
-  const bool __y_inf  = (__ayh == __builtin_huge_valf());
+  const bool __x_inf  = (__axh == ::cuda::std::__fp_inf<float>());
+  const bool __y_inf  = (__ayh == ::cuda::std::__fp_inf<float>());
   const bool __y_zero = (__y_hi == 0.0f);
 
   if (__x_nan || __y_nan || __x_inf || __y_zero)
   {
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
   if (__y_inf) /* fmod(finite, inf) = x */
@@ -360,15 +361,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
   const bool __y_nan  = (__y_hi != __y_hi) || (__y_lo != __y_lo) || ((__y_hi + __y_lo) != (__y_hi + __y_lo));
   const float __axh   = (__x_hi < 0.0f) ? -__x_hi : __x_hi;
   const float __ayh   = (__y_hi < 0.0f) ? -__y_hi : __y_hi;
-  const bool __x_inf  = (__axh == __builtin_huge_valf());
-  const bool __y_inf  = (__ayh == __builtin_huge_valf());
+  const bool __x_inf  = (__axh == ::cuda::std::__fp_inf<float>());
+  const bool __y_inf  = (__ayh == ::cuda::std::__fp_inf<float>());
   const bool __y_zero = (__y_hi == 0.0f);
   const bool __xneg   = (__x_hi < 0.0f);
 
   if (__x_nan || __y_nan || __x_inf || __y_zero)
   {
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
   if (__y_inf) /* remainder(finite, inf) = x */

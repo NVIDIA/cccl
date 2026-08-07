@@ -29,6 +29,7 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 // Sibling families whose kernels this family calls (exp/log/log1p are used by the hyperbolics).
 #include <cuda/__fp/fpmp_math_impl_exp.h>
+#include <cuda/std/__floating_point/constants.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -428,9 +429,9 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
   const bool __is_neg  = __x_hi < 0.0f;
   const float __abs_hi = __is_neg ? -__x_hi : __x_hi;
 
-  if (__abs_hi == __builtin_huge_valf())
+  if (__abs_hi == ::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __is_neg ? -__builtin_huge_valf() : __builtin_huge_valf();
+    *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -550,15 +551,15 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
    * a negative lo (i.e., x < 1 by a sub-ulp amount). */
   if (__x_hi < 1.0f || (__x_hi == 1.0f && __x_lo < 0.0f))
   {
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
 
   /* acosh(+inf) = +inf. */
-  if (__x_hi == __builtin_huge_valf())
+  if (__x_hi == ::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -686,13 +687,13 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     const float __abs_lo = __is_neg ? -__x_lo : __x_lo;
     if (__abs_hi == 1.0f && __abs_lo == 0.0f)
     {
-      *__res_hi = __is_neg ? -__builtin_huge_valf() : __builtin_huge_valf();
+      *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
       *__res_lo = 0.0f;
       return;
     }
     /* |x| > 1 (including +inf): outside domain. */
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
 

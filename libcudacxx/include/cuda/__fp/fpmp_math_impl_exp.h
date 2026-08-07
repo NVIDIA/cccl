@@ -27,6 +27,7 @@
 */
 
 #include <cuda/__fp/fpmp_math_impl.h>
+#include <cuda/std/__floating_point/constants.h>
 
 #include <nv/target>
 
@@ -279,7 +280,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   // Overflow threshold for single precision: ln(FLT_MAX) ~= 88.7228 = 0x1.62e430p+6
   if (__x_hi > 0x1.62e430p+6f)
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -553,18 +554,18 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
   }
 
   /* +inf input -> +inf. */
-  if (__x_hi == __builtin_huge_valf())
+  if (__x_hi == ::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
 
   /* -inf input -> log(-inf) = NaN. */
-  if (__x_hi == -__builtin_huge_valf())
+  if (__x_hi == -::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
 
@@ -619,15 +620,15 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
   /* (1 + x) < 0  -> NaN. */
   if (__sum.hi() < 0.0f)
   {
-    *__res_hi = __builtin_nanf("");
-    *__res_lo = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
 
   /* (1 + x) == 0 (i.e., x == -1) -> log(0) = -inf. */
   if (__sum.hi() == 0.0f && __sum.lo() == 0.0f)
   {
-    *__res_hi = -__builtin_huge_valf();
+    *__res_hi = -::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -638,8 +639,8 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
   {
     if (__sum.lo() < 0.0f)
     {
-      *__res_hi = __builtin_nanf("");
-      *__res_lo = __builtin_nanf("");
+      *__res_hi = ::cuda::std::__fp_nan<float>();
+      *__res_lo = ::cuda::std::__fp_nan<float>();
       return;
     }
     __sum = ffloat(__sum.lo(), 0.0f);
@@ -701,7 +702,7 @@ __internal_fpmp2_log2(const float __x_hi, const float __x_lo, float* __res_hi, f
    * but NaN composition is cleanest with an explicit short-circuit
    * (avoids an unnecessary mul that could quiet a signaling NaN
    * on some platforms). */
-  if (__l_hi != __l_hi || __l_hi == __builtin_huge_valf() || __l_hi == -__builtin_huge_valf())
+  if (__l_hi != __l_hi || __l_hi == ::cuda::std::__fp_inf<float>() || __l_hi == -::cuda::std::__fp_inf<float>())
   {
     *__res_hi = __l_hi;
     *__res_lo = (__l_hi != __l_hi) ? __l_hi : 0.0f;
@@ -754,7 +755,7 @@ __internal_fpmp2_log10(const float __x_hi, const float __x_lo, float* __res_hi, 
   float __l_lo;
   __fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
 
-  if (__l_hi != __l_hi || __l_hi == __builtin_huge_valf() || __l_hi == -__builtin_huge_valf())
+  if (__l_hi != __l_hi || __l_hi == ::cuda::std::__fp_inf<float>() || __l_hi == -::cuda::std::__fp_inf<float>())
   {
     *__res_hi = __l_hi;
     *__res_lo = (__l_hi != __l_hi) ? __l_hi : 0.0f;
@@ -839,7 +840,7 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
   /* Overflow / underflow shortcuts. */
   if (__x_hi >= 128.0f)
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -942,7 +943,7 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
   }
   if (__x_hi >= 39.0f)
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
@@ -1096,15 +1097,15 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
   }
 
   /* +inf input -> +inf. */
-  if (__x_hi == __builtin_huge_valf())
+  if (__x_hi == ::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
 
   /* -inf input -> -1 exactly. */
-  if (__x_hi == -__builtin_huge_valf())
+  if (__x_hi == -::cuda::std::__fp_inf<float>())
   {
     *__res_hi = -1.0f;
     *__res_lo = 0.0f;
@@ -1158,9 +1159,9 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* exp() may already produce +inf for very large x; pass that
    * through without quietly turning it into NaN via inf - 1. */
-  if (__e_hi == __builtin_huge_valf())
+  if (__e_hi == ::cuda::std::__fp_inf<float>())
   {
-    *__res_hi = __builtin_huge_valf();
+    *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }

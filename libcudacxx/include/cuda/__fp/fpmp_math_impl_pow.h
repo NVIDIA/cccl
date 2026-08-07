@@ -29,6 +29,7 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 // Sibling families whose kernels this family calls (exp/log are used by pow).
 #include <cuda/__fp/fpmp_math_impl_exp.h>
+#include <cuda/std/__floating_point/constants.h>
 
 #include <nv/target>
 
@@ -118,7 +119,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_pow(
     if (__b_hi < 0.0f)
     {
       const float __sign = (__a_is_neg && __b_is_odd_int) ? -1.0f : 1.0f;
-      *__res_hi          = __sign * __builtin_huge_valf();
+      *__res_hi          = __sign * ::cuda::std::__fp_inf<float>();
     }
     else
     {
@@ -131,22 +132,22 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_pow(
   /* ---- (6) negative base with non-integer exponent ---- */
   if (__a_is_neg && !__b_is_int)
   {
-    *__res_hi = __builtin_nanf("");
+    *__res_hi = ::cuda::std::__fp_nan<float>();
     *__res_lo = 0.0f;
     return;
   }
 
   /* ---- (7) |a| = Inf ---- */
-  if (__abs_a_hi == __builtin_huge_valf())
+  if (__abs_a_hi == ::cuda::std::__fp_inf<float>())
   {
     const float __sign = (__a_is_neg && __b_is_odd_int) ? -1.0f : 1.0f;
-    *__res_hi          = (__b_hi > 0.0f) ? __sign * __builtin_huge_valf() : __sign * 0.0f;
+    *__res_hi          = (__b_hi > 0.0f) ? __sign * ::cuda::std::__fp_inf<float>() : __sign * 0.0f;
     *__res_lo          = 0.0f;
     return;
   }
 
   /* ---- (8) |b| = Inf ---- */
-  if (__b_hi == __builtin_huge_valf() || __b_hi == -__builtin_huge_valf())
+  if (__b_hi == ::cuda::std::__fp_inf<float>() || __b_hi == -::cuda::std::__fp_inf<float>())
   {
     /* IEEE 754: pow(-1, +-Inf) = 1.  pow(+1, ...) already handled at (1). */
     if (__abs_a_hi == 1.0f && __abs_a_lo == 0.0f)
@@ -156,7 +157,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_pow(
       return;
     }
     const bool __abs_a_gt_one = (__abs_a_hi > 1.0f) || (__abs_a_hi == 1.0f && __abs_a_lo > 0.0f);
-    *__res_hi                 = ((__b_hi > 0.0f) == __abs_a_gt_one) ? __builtin_huge_valf() : 0.0f;
+    *__res_hi                 = ((__b_hi > 0.0f) == __abs_a_gt_one) ? ::cuda::std::__fp_inf<float>() : 0.0f;
     *__res_lo                 = 0.0f;
     return;
   }
