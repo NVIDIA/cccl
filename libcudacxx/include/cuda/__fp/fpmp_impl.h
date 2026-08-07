@@ -142,13 +142,16 @@ namespace cuda::experimental
 //   - MSVC (no GCC runtime)
 //   - Most Windows toolchains (MinGW configurations vary)
 //
-// Override at compile time with -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=1 (force enable) or
-// -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=0 (force disable) when the auto-detection is wrong
-// for your environment.
+// The architecture is necessary but not sufficient, hence the __has_include: <quadmath.h>
+// lives in GCC's own include directory, which clang does not search even when GCC is
+// installed alongside it, so an x86_64 clang host generally cannot reach the header. Such
+// hosts fall back to binary64 for the fp64mp2 math functions; to give them the quad path,
+// put the header on the include path and build with -D_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH=1
+// (-D...=0 forces it off when the detection is wrong the other way).
 */
 #ifndef _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH
 #  if (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)) && !defined(_MSC_VER) \
-    && !defined(_WIN32)
+    && !defined(_WIN32) && __has_include(<quadmath.h>)
 #    define _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH 1
 #  else
 #    define _CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH 0
@@ -278,23 +281,9 @@ namespace cuda::experimental
 #  endif
 #endif
 
-/*
-// fp128 math functions fallback to system implementation enabling
-//
-// Per-pass, unlike the two macros above: it selects function *bodies*, not declarations.
-// The device pass takes the quad path only where fp128 arithmetic is device-callable, since
-// those bodies go through __fpmp2_to_quad; the host pass of a CUDA compilation stays on the
-// double path, as before, so that a .cu file does not silently acquire a libquadmath
-// dependency its host-only counterpart never had.
-*/
-#ifndef _CCCL_FPMP_FP128_MATH_FALLBACK
-#  if (_CCCL_FPMP_FP128_ENABLE == 1) \
-    && (!_CCCL_CUDA_COMPILATION() || (_CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_FP128_DEVICE_OPS == 1)))
-#    define _CCCL_FPMP_FP128_MATH_FALLBACK 1
-#  else
-#    define _CCCL_FPMP_FP128_MATH_FALLBACK 0
-#  endif
-#endif
+// The third fp128 knob, _CCCL_FPMP_FP128_MATH_FALLBACK, selects the bodies of the fp64mp2
+// math functions rather than anything in the class, so it lives with them in
+// <cuda/__fp/fpmp_math_impl.h> and is derived from the two macros above.
 
 /*
 // Internal 128-bit floating-point type definition
@@ -579,11 +568,13 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
 }
 
+// The host cast is already the round-to-nearest conversion the name promises, so it needs
+// no rounding call on top of it.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rn(__x));), (return static_cast<_FpType>(roundf(__x));))
+    NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rn(__x));), (return static_cast<_FpType>(__x);))
 }
 
 /*
@@ -755,7 +746,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(double __x) noexcept
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rn<double>(int32_t __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__int2double_rn(__x);), (return round(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__int2double_rn(__x);), (return static_cast<double>(__x);))
 }
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rz<double>(int32_t __x) noexcept

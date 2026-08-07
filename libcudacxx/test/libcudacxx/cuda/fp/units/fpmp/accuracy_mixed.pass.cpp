@@ -23,54 +23,74 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Result type must match the participating fpmp2 type, regardless of operand
 // order or which argument is the scalar.
 static_assert(
-  ::cuda::std::is_same<decltype(add<fpmp2_accuracy::high>(::cuda::std::declval<fp32mp2>(), 1.0f)), fp32mp2>::value,
+  ::cuda::std::is_same<decltype(cudax::add<cudax::fpmp2_accuracy::high>(::cuda::std::declval<cudax::fp32mp2>(), 1.0f)),
+                       cudax::fp32mp2>::value,
   "add(mp2_def, float) must return mp2_def");
-static_assert(::cuda::std::is_same<decltype(sub<fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<fp32mp2_low>())),
-                                   fp32mp2_low>::value,
+static_assert(::cuda::std::is_same<
+                decltype(cudax::sub<cudax::fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<cudax::fp32mp2_low>())),
+                cudax::fp32mp2_low>::value,
               "sub(float, mp2_low) must return mp2_low");
-static_assert(::cuda::std::is_same<decltype(mul<fpmp2_accuracy::high>(::cuda::std::declval<fp32mp2_high>(), 2)),
-                                   fp32mp2_high>::value,
-              "mul(mp2_high, int) must return mp2_high");
-static_assert(::cuda::std::is_same<decltype(fma<fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<fp32mp2_low>(), 2.0f)),
-                                   fp32mp2_low>::value,
-              "fma(float, mp2_low, float) must return mp2_low");
 static_assert(
-  ::cuda::std::is_same<decltype(mad<fpmp2_accuracy::def>(1.0f, 2.0f, ::cuda::std::declval<fp32mp2>())), fp32mp2>::value,
-  "mad(float, float, mp2_def) must return mp2_def");
+  ::cuda::std::is_same<decltype(cudax::mul<cudax::fpmp2_accuracy::high>(::cuda::std::declval<cudax::fp32mp2_high>(), 2)),
+                       cudax::fp32mp2_high>::value,
+  "mul(mp2_high, int) must return mp2_high");
+static_assert(
+  ::cuda::std::is_same<
+    decltype(cudax::fma<cudax::fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<cudax::fp32mp2_low>(), 2.0f)),
+    cudax::fp32mp2_low>::value,
+  "fma(float, mp2_low, float) must return mp2_low");
+static_assert(::cuda::std::is_same<
+                decltype(cudax::mad<cudax::fpmp2_accuracy::def>(1.0f, 2.0f, ::cuda::std::declval<cudax::fp32mp2>())),
+                cudax::fp32mp2>::value,
+              "mad(float, float, mp2_def) must return mp2_def");
 
 // Each mixed-type call must equal the strict form (scalars wrapped in the fpmp2
 // type) bit-for-bit.
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
-  using ff = fp32mp2_low;
+  using ff = cudax::fp32mp2_low;
   ff a(1.234567890f), b(2.345678901f);
   const float s = 0.5f;
   const float t = 3.0f;
 
   // Binary, both argument orders.
-  assert((double) add<fpmp2_accuracy::high>(a, s) == (double) add<fpmp2_accuracy::high>(a, ff(s)));
-  assert((double) add<fpmp2_accuracy::high>(s, a) == (double) add<fpmp2_accuracy::high>(ff(s), a));
-  assert((double) sub<fpmp2_accuracy::high>(a, s) == (double) sub<fpmp2_accuracy::high>(a, ff(s)));
-  assert((double) sub<fpmp2_accuracy::high>(s, a) == (double) sub<fpmp2_accuracy::high>(ff(s), a));
-  assert((double) mul<fpmp2_accuracy::low>(a, s) == (double) mul<fpmp2_accuracy::low>(a, ff(s)));
-  assert((double) mul<fpmp2_accuracy::low>(s, a) == (double) mul<fpmp2_accuracy::low>(ff(s), a));
-  assert((double) div<fpmp2_accuracy::def>(a, s) == (double) div<fpmp2_accuracy::def>(a, ff(s)));
-  assert((double) div<fpmp2_accuracy::def>(s, a) == (double) div<fpmp2_accuracy::def>(ff(s), a));
+  assert((double) cudax::add<cudax::fpmp2_accuracy::high>(a, s)
+         == (double) cudax::add<cudax::fpmp2_accuracy::high>(a, ff(s)));
+  assert((double) cudax::add<cudax::fpmp2_accuracy::high>(s, a)
+         == (double) cudax::add<cudax::fpmp2_accuracy::high>(ff(s), a));
+  assert((double) cudax::sub<cudax::fpmp2_accuracy::high>(a, s)
+         == (double) cudax::sub<cudax::fpmp2_accuracy::high>(a, ff(s)));
+  assert((double) cudax::sub<cudax::fpmp2_accuracy::high>(s, a)
+         == (double) cudax::sub<cudax::fpmp2_accuracy::high>(ff(s), a));
+  assert((double) cudax::mul<cudax::fpmp2_accuracy::low>(a, s)
+         == (double) cudax::mul<cudax::fpmp2_accuracy::low>(a, ff(s)));
+  assert((double) cudax::mul<cudax::fpmp2_accuracy::low>(s, a)
+         == (double) cudax::mul<cudax::fpmp2_accuracy::low>(ff(s), a));
+  assert((double) cudax::div<cudax::fpmp2_accuracy::def>(a, s)
+         == (double) cudax::div<cudax::fpmp2_accuracy::def>(a, ff(s)));
+  assert((double) cudax::div<cudax::fpmp2_accuracy::def>(s, a)
+         == (double) cudax::div<cudax::fpmp2_accuracy::def>(ff(s), a));
 
   // Ternary fma: scalar in every position.
-  assert((double) fma<fpmp2_accuracy::high>(a, s, t) == (double) fma<fpmp2_accuracy::high>(a, ff(s), ff(t)));
-  assert((double) fma<fpmp2_accuracy::high>(s, a, t) == (double) fma<fpmp2_accuracy::high>(ff(s), a, ff(t)));
-  assert((double) fma<fpmp2_accuracy::high>(s, t, a) == (double) fma<fpmp2_accuracy::high>(ff(s), ff(t), a));
+  assert((double) cudax::fma<cudax::fpmp2_accuracy::high>(a, s, t)
+         == (double) cudax::fma<cudax::fpmp2_accuracy::high>(a, ff(s), ff(t)));
+  assert((double) cudax::fma<cudax::fpmp2_accuracy::high>(s, a, t)
+         == (double) cudax::fma<cudax::fpmp2_accuracy::high>(ff(s), a, ff(t)));
+  assert((double) cudax::fma<cudax::fpmp2_accuracy::high>(s, t, a)
+         == (double) cudax::fma<cudax::fpmp2_accuracy::high>(ff(s), ff(t), a));
 
   // Ternary mad: one scalar, two fpmp2 operands.
-  assert((double) mad<fpmp2_accuracy::low>(a, b, s) == (double) mad<fpmp2_accuracy::low>(a, b, ff(s)));
-  assert((double) mad<fpmp2_accuracy::low>(a, s, b) == (double) mad<fpmp2_accuracy::low>(a, ff(s), b));
-  assert((double) mad<fpmp2_accuracy::low>(s, a, b) == (double) mad<fpmp2_accuracy::low>(ff(s), a, b));
+  assert((double) cudax::mad<cudax::fpmp2_accuracy::low>(a, b, s)
+         == (double) cudax::mad<cudax::fpmp2_accuracy::low>(a, b, ff(s)));
+  assert((double) cudax::mad<cudax::fpmp2_accuracy::low>(a, s, b)
+         == (double) cudax::mad<cudax::fpmp2_accuracy::low>(a, ff(s), b));
+  assert((double) cudax::mad<cudax::fpmp2_accuracy::low>(s, a, b)
+         == (double) cudax::mad<cudax::fpmp2_accuracy::low>(ff(s), a, b));
 }
 
 TEST_HOST_DEVICE_FUNC void test()
