@@ -388,6 +388,11 @@ public:
     return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
   }
 
+  [[nodiscard]] _CCCL_API constexpr basic_string_view subview(size_type __pos = 0, size_type __n = npos) const
+  {
+    return substr(__pos, __n);
+  }
+
   // compare
 
   [[nodiscard]] _CCCL_API constexpr int compare(basic_string_view __sv) const noexcept

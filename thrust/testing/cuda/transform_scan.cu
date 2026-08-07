@@ -363,8 +363,6 @@ void TestTransformScanConstAccumulator()
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
-  Vector::iterator iter;
-
   Vector input{1, 3, -2, 4, -5};
   Vector reference(5);
   Vector output(5);
