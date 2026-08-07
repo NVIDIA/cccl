@@ -905,6 +905,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // now we start to stage head positions per warp tile, if a warptile has enough runs
           // (it is only worth it when we have more runs by a certain threshold per warp tile)
           // (otherwise, it is cheaper to recalculate positions from head_flags directly)
+          // Paired with STORE's predicate; they intentionally disagree at run_count == 0 (see there).
           const bool stage_flags = (local_run_count < staging_threshold);
           if (stage_flags)
           {
@@ -992,6 +993,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (lane_id == 0)
           {
             prefix_packed[slot_id] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
+            // CRITICAL: POLL doesn't participate in empty. This arrive gates STORE -> empty -> LOAD's
+            // rewrite of the slot, so all reads of slot_id must precede it. Same chain bounds full's phase.
             ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed
           }
         }
@@ -1028,6 +1031,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
           // if the compute warp decided to skip staging for this warp tile, the positions were never staged:
           // decode them from the head flags and buffer intermediate results in register
+          // At run_count == 0 COMPUTE stages nothing but we fall through to the staged drain; safe only
+          // because the loop bound run_idx < warp_tile_run_count == 0 never reads the pos slot.
           if (warp_tile_run_count >= 1 && warp_tile_run_count < staging_threshold)
           {
             // wait for staged_warp_tile (2/3)
