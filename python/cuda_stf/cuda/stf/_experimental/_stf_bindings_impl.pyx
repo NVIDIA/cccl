@@ -171,6 +171,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place_handle stf_data_place_device(int dev_id)
     stf_data_place_handle stf_data_place_managed()
     stf_data_place_handle stf_data_place_affine()
+    uint32_t stf_locality_domain_count(int dev_id)
+    stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+    stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
     stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
     stf_data_place_handle stf_data_place_replicated_deferred()
     int stf_data_place_is_replicated(stf_data_place_handle h)
@@ -1090,6 +1094,17 @@ def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
 def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
 def rw(ld, dplace=None):     return dep(ld, AccessMode.RW.value, dplace)
 
+def locality_domain_count(int dev_id=0):
+    """Number of locality domains of a device. Never 0: without native
+    locality-domain support (pre-13.4 toolkit or driver) the device reports
+    a single domain covering the whole device. Raises for an invalid
+    device ordinal."""
+    cdef uint32_t n = stf_locality_domain_count(dev_id)
+    if n == 0:
+        raise ValueError(f"invalid device ordinal {dev_id} (see stderr)")
+    return int(n)
+
+
 def machine_init():
     """Initialize machine topology (P2P access, device memory pools).
 
@@ -1284,6 +1299,17 @@ cdef class exec_place:
         p._h = stf_exec_place_device(dev_id)
         if p._h == NULL:
             raise RuntimeError(f"failed to create exec_place for device {dev_id}")
+        return p
+
+    @staticmethod
+    def locality_domain(int dev_id, int domain_id):
+        """Execution place pinned to one locality domain of a device (the
+        whole device with the fallback backend). Ordinals are identity
+        tokens, validated lazily at use."""
+        cdef exec_place p = exec_place.__new__(exec_place)
+        p._h = stf_exec_place_locality_domain(dev_id, domain_id)
+        if p._h == NULL:
+            raise RuntimeError("failed to create locality-domain exec place")
         return p
 
     @staticmethod
@@ -1499,6 +1525,16 @@ cdef class exec_place_grid(exec_place):
         self._mapper_keep_alive = None
 
     @staticmethod
+    def locality_domains(int dev_id=0):
+        """Grid with one execution place per locality domain of a device
+        (a single whole-device place with the fallback backend)."""
+        cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
+        g._h = stf_exec_place_locality_domain_grid(dev_id)
+        if g._h == NULL:
+            raise RuntimeError("failed to create locality-domain grid")
+        return g
+
+    @staticmethod
     def from_devices(device_ids):
         """Create a 1-D grid with one place per device.
 
@@ -1626,6 +1662,17 @@ cdef class data_place:
         p._h = stf_data_place_device(dev_id)
         if p._h == NULL:
             raise RuntimeError(f"failed to create data_place for device {dev_id}")
+        return p
+
+    @staticmethod
+    def locality_domain(int dev_id, int domain_id):
+        """Data place whose allocations are localized to one locality
+        domain of a device (plain device memory with the fallback
+        backend)."""
+        cdef data_place p = data_place.__new__(data_place)
+        p._h = stf_data_place_locality_domain(dev_id, domain_id)
+        if p._h == NULL:
+            raise RuntimeError("failed to create locality-domain data place")
         return p
 
     @staticmethod

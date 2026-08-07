@@ -1,0 +1,89 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Locality-domain places from Python: count, scalar places, the per-device
+domain grid, allocation, and task execution. On a device without native
+locality-domain support every query degrades to a single whole-device
+domain, so these tests adapt to the reported count instead of hardcoding
+one."""
+
+import numpy as np
+import pytest
+
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
+
+
+def test_count_never_zero():
+    n = stf.locality_domain_count(0)
+    assert n >= 1
+    with pytest.raises(ValueError):
+        stf.locality_domain_count(-1)
+
+
+def test_scalar_places_identity():
+    n = stf.locality_domain_count(0)
+    for d in range(n):
+        ep = stf.exec_place.locality_domain(0, d)
+        dp = stf.data_place.locality_domain(0, d)
+        assert ep is not None and dp is not None
+        # same ordinal compares equal, distinct ordinals distinct
+        assert dp == stf.data_place.locality_domain(0, d)
+        assert ep == stf.exec_place.locality_domain(0, d)
+    if n >= 2:
+        assert stf.data_place.locality_domain(0, 0) != stf.data_place.locality_domain(0, 1)
+        assert stf.exec_place.locality_domain(0, 0) != stf.exec_place.locality_domain(0, 1)
+
+
+def test_domain_allocation_roundtrip():
+    stf.machine_init()
+    n = stf.locality_domain_count(0)
+    nbytes = 4 << 20
+    for d in range(n):
+        dp = stf.data_place.locality_domain(0, d)
+        ptr = dp.allocate(nbytes)
+        assert ptr != 0
+        dp.deallocate(ptr, nbytes)
+
+
+def test_domain_grid_task():
+    """A grid task over the device's locality domains, reading a logical
+    data at the replicated place: the uGPU counterpart of the replicated
+    grid test."""
+    stf.machine_init()
+    grid = stf.exec_place_grid.locality_domains(0)
+    n = stf.locality_domain_count(0)
+
+    N = 512
+    ctx = stf.context()
+    X = np.arange(N, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_domains")
+
+    rep = stf.data_place.replicated(grid)
+    with ctx.task(grid, lX.read(rep)):
+        pass
+
+    results = []
+    ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
+    ctx.finalize()
+    assert abs(results[0] - float(X.sum())) < 1e-4
+    assert n >= 1
+
+
+def test_domain_exec_place_task():
+    """A plain task pinned to each domain in turn."""
+    stf.machine_init()
+    n = stf.locality_domain_count(0)
+
+    N = 256
+    ctx = stf.context()
+    X = np.zeros(N, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_dom_exec")
+
+    for d in range(n):
+        with ctx.task(stf.exec_place.locality_domain(0, d), lX.rw()):
+            pass
+
+    ctx.finalize()

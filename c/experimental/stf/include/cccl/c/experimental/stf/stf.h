@@ -284,6 +284,26 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Number of locality domains of a device. Never 0 for a valid
+//! device: without native locality-domain support (pre-13.4 toolkit, or a
+//! driver that cannot answer the query) the device reports a single domain
+//! covering the whole device. Returns 0 only on error (invalid device;
+//! detail on stderr).
+uint32_t stf_locality_domain_count(int dev_id);
+
+//! \brief Execution place pinned to one locality domain of a device (the
+//! whole device with the fallback backend). Ordinals are identity tokens,
+//! validated lazily at use (native backend).
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Grid with one execution place per locality domain of \p dev_id
+//! (a single whole-device place with the fallback backend).
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
+
+//! \brief Data place whose allocations are localized to one locality
+//! domain of a device (plain device memory with the fallback backend).
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id);
+
 //! \brief Replicated placement: one copy of the data in the affine memory of
 //! every member of \p grid. Read-only at the place: mutate the data at
 //! another place, the next replicated read re-broadcasts.

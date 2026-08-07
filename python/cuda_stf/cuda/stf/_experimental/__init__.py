@@ -35,6 +35,7 @@ _LAZY_SYMBOLS = {
     "green_context_helper": "._stf_bindings",
     "green_ctx_view": "._stf_bindings",
     "green_places": ".green_places",
+    "locality_domain_count": "._stf_bindings",
     "machine_init": "._stf_bindings",
     "stackable_context": "._stf_bindings",
     "DeviceArray": ".device_array",
