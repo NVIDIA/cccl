@@ -135,12 +135,42 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             ]
         )
 
-        # Find the output wheel
-        output_wheels = list(output_dir.glob("*.whl"))
-        if not output_wheels:
+        # Locate the repacked wheel by its expected name, derived from the
+        # base wheel's dist-info the same way `wheel pack` names its output.
+        # output_dir may already contain other wheels (e.g. from previous
+        # runs), so an unordered glob could return one of those instead.
+        dist_infos = list(base_wheel.glob("*.dist-info"))
+        if len(dist_infos) != 1:
+            raise RuntimeError(
+                f"Expected exactly one dist-info directory in {base_wheel}"
+            )
+        dist_name, dist_version = dist_infos[0].name[: -len(".dist-info")].rsplit("-", 1)
+        wheel_text = (dist_infos[0] / "WHEEL").read_text()
+        wheel_tags = [
+            line.split(":", 1)[1].strip()
+            for line in wheel_text.splitlines()
+            if line.startswith("Tag:")
+        ]
+        if not wheel_tags:
+            raise RuntimeError(f"No Tag found in {dist_infos[0] / 'WHEEL'}")
+        # Reconstruct the tagline exactly as `wheel pack` does: sorted unique
+        # impls, abivers, and platforms joined with dots.
+        impls = sorted({tag.split("-")[0] for tag in wheel_tags})
+        abivers = sorted({tag.split("-")[1] for tag in wheel_tags})
+        platforms = sorted({tag.split("-")[2] for tag in wheel_tags})
+        tagline = "-".join([".".join(impls), ".".join(abivers), ".".join(platforms)])
+        # Include the build tag if present (wheel pack appends it to name-version).
+        build_tag = None
+        for line in wheel_text.splitlines():
+            if line.startswith("Build:"):
+                build_tag = line.split(":", 1)[1].strip()
+                break
+        name_version = f"{dist_name}-{dist_version}"
+        if build_tag:
+            name_version += f"-{build_tag}"
+        merged_wheel = output_dir / f"{name_version}-{tagline}.whl"
+        if not merged_wheel.exists():
             raise RuntimeError("Failed to create merged wheel")
-
-        merged_wheel = output_wheels[0]
         print(f"Successfully merged wheel: {merged_wheel}")
         return merged_wheel
 
