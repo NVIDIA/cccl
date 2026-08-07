@@ -4,9 +4,6 @@
 // UNSUPPORTED: enable-tile
 // UNSUPPORTED: force-tile
 // error: device math intrinsics are unsupported in tile code
-// UNSUPPORTED: nvrtc
-// note: the host half of this test launches the kernels through the CUDA runtime API,
-// which is not available in NVRTC's device-only translation unit
 
 //===----------------------------------------------------------------------===//
 //
@@ -28,7 +25,8 @@
 //      normcdf, the inverse error functions, cyl_bessel_i*, the vector norms)
 //      or against names that exist in glibc and CUDA but not in ISO C++, namely
 //      exp10, sincos and the POSIX Bessel functions. Neither group has a
-//      portable host spelling, so they stay in kernels and are device-only.
+//      portable host spelling, so NV_IF_TARGET keeps them out of the host pass
+//      and only the kernel run reaches them.
 //
 //===----------------------------------------------------------------------===//
 
@@ -199,255 +197,87 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 
 #if _CCCL_CUDA_COMPILATION()
 
-#  define CUDA_CHECK(call)           \
-    do                               \
-    {                                \
-      assert((call) == cudaSuccess); \
-    } while (0)
-
-// Result structure stored in managed memory.
-struct Result
-{
-  double fpmp_val;
-  double ref_val;
-};
-
-// One-argument kernels: f(x) -> fpmp2
-#  define DEFINE_KERNEL_1A(name)                          \
-    template <typename MP2>                               \
-    __global__ void kernel_##name(double x_in, Result* r) \
-    {                                                     \
-      MP2 x       = MP2(x_in);                            \
-      MP2 res     = name(x);                              \
-      r->fpmp_val = static_cast<double>(res);             \
-      r->ref_val  = ::name(x_in);                         \
-    }
-
-DEFINE_KERNEL_1A(exp10)
-DEFINE_KERNEL_1A(j0)
-DEFINE_KERNEL_1A(j1)
-DEFINE_KERNEL_1A(y0)
-DEFINE_KERNEL_1A(y1)
-DEFINE_KERNEL_1A(cyl_bessel_i0)
-DEFINE_KERNEL_1A(cyl_bessel_i1)
-DEFINE_KERNEL_1A(sinpi)
-DEFINE_KERNEL_1A(cospi)
-DEFINE_KERNEL_1A(normcdf)
-DEFINE_KERNEL_1A(rcbrt)
-DEFINE_KERNEL_1A(erfcinv)
-DEFINE_KERNEL_1A(erfinv)
-DEFINE_KERNEL_1A(erfcx)
-
-// Three-argument kernels: f(a,b,c) -> fpmp2
-#  define DEFINE_KERNEL_3A(name)                                                    \
-    template <typename MP2>                                                         \
-    __global__ void kernel_##name(double a_in, double b_in, double c_in, Result* r) \
-    {                                                                               \
-      MP2 a = MP2(a_in), b = MP2(b_in), c = MP2(c_in);                              \
-      MP2 res     = name(a, b, c);                                                  \
-      r->fpmp_val = static_cast<double>(res);                                       \
-      r->ref_val  = ::name(a_in, b_in, c_in);                                       \
-    }
-
-DEFINE_KERNEL_3A(norm3d)
-DEFINE_KERNEL_3A(rnorm3d)
-
-// Four-argument kernels: f(a,b,c,d) -> fpmp2
-#  define DEFINE_KERNEL_4A(name)                                                                 \
-    template <typename MP2>                                                                      \
-    __global__ void kernel_##name(double a_in, double b_in, double c_in, double d_in, Result* r) \
-    {                                                                                            \
-      MP2 a = MP2(a_in), b = MP2(b_in), c = MP2(c_in), d = MP2(d_in);                            \
-      MP2 res     = name(a, b, c, d);                                                            \
-      r->fpmp_val = static_cast<double>(res);                                                    \
-      r->ref_val  = ::name(a_in, b_in, c_in, d_in);                                              \
-    }
-
-DEFINE_KERNEL_4A(norm4d)
-DEFINE_KERNEL_4A(rnorm4d)
-
-// Two-argument kernels: f(x,y) -> fpmp2
-#  define DEFINE_KERNEL_2A(name)                                       \
-    template <typename MP2>                                            \
-    __global__ void kernel_##name(double x_in, double y_in, Result* r) \
-    {                                                                  \
-      MP2 x       = MP2(x_in);                                         \
-      MP2 y       = MP2(y_in);                                         \
-      MP2 res     = name(x, y);                                        \
-      r->fpmp_val = static_cast<double>(res);                          \
-      r->ref_val  = ::name(x_in, y_in);                                \
-    }
-
-DEFINE_KERNEL_2A(rhypot)
-
-// sincos / sincospi (use sin+cos / sinpi+cospi to avoid overload clash).
-template <typename MP2>
-__global__ void kernel_sincos(double x_in, Result* r_sin, Result* r_cos)
-{
-  MP2 x           = MP2(x_in);
-  r_sin->fpmp_val = static_cast<double>(sin(x));
-  r_cos->fpmp_val = static_cast<double>(cos(x));
-  double sd, cd;
-  ::sincos(x_in, &sd, &cd);
-  r_sin->ref_val = sd;
-  r_cos->ref_val = cd;
-}
-
-template <typename MP2>
-__global__ void kernel_sincospi(double x_in, Result* r_sin, Result* r_cos)
-{
-  MP2 x           = MP2(x_in);
-  r_sin->fpmp_val = static_cast<double>(sinpi(x));
-  r_cos->fpmp_val = static_cast<double>(cospi(x));
-  double sd, cd;
-  ::sincospi(x_in, &sd, &cd);
-  r_sin->ref_val = sd;
-  r_cos->ref_val = cd;
-}
-
-// normcdfinv (input must be in (0,1)).
-template <typename MP2>
-__global__ void kernel_normcdfinv(double x_in, Result* r)
-{
-  MP2 x       = MP2(x_in);
-  MP2 res     = normcdfinv(x);
-  r->fpmp_val = static_cast<double>(res);
-  r->ref_val  = ::normcdfinv(x_in);
-}
-
-// Mixed-signature kernels.
-template <typename MP2>
-__global__ void kernel_jn(int n, double x_in, Result* r)
-{
-  MP2 x       = MP2(x_in);
-  MP2 res     = jn(n, x);
-  r->fpmp_val = static_cast<double>(res);
-  r->ref_val  = ::jn(n, x_in);
-}
-
-template <typename MP2>
-__global__ void kernel_yn(int n, double x_in, Result* r)
-{
-  MP2 x       = MP2(x_in);
-  MP2 res     = yn(n, x);
-  r->fpmp_val = static_cast<double>(res);
-  r->ref_val  = ::yn(n, x_in);
-}
-
-// ---- checks whose reference exists only in CUDA ----------------------------
+// ---- checks whose reference exists only in CUDA -----------------------------
 //
-// Launched from the host half, so these run on the device only.
+// Compiled for the device only, since neither these references nor, for erfinv,
+// erfcinv and erfcx, the fpmp2 entry points themselves have a host spelling. The
+// kernel that force_include.h already wraps main() in is what runs them, so the test
+// launches nothing of its own -- which is also what keeps it compilable by NVRTC,
+// whose device-only translation unit has no runtime API to launch with.
 template <typename MP2>
-static bool test_device(double tol)
+TEST_DEVICE_FUNC void test_device(double tol)
 {
   const double x_val = 1.234567890123;
   const double y_val = 2.345678901234;
-  const double p_val = 0.3;
+  const double p_val = 0.3; // probability argument, must be in (0,1)
   const int n_val    = 3;
 
-  Result *r1, *r2;
-
-  CUDA_CHECK(cudaMallocManaged(&r1, sizeof(Result)));
-  CUDA_CHECK(cudaMallocManaged(&r2, sizeof(Result)));
-
-  bool ok = true;
-
-#  define RUN_1A(name, xv)                \
-    kernel_##name<MP2><<<1, 1>>>(xv, r1); \
-    CUDA_CHECK(cudaDeviceSynchronize());  \
-    ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-
-#  define RUN_2A(name, xv, yv)                \
-    kernel_##name<MP2><<<1, 1>>>(xv, yv, r1); \
-    CUDA_CHECK(cudaDeviceSynchronize());      \
-    ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-
-#  define RUN_3A(name, av, bv, cv)                \
-    kernel_##name<MP2><<<1, 1>>>(av, bv, cv, r1); \
-    CUDA_CHECK(cudaDeviceSynchronize());          \
-    ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-
-#  define RUN_4A(name, av, bv, cv, dv)                \
-    kernel_##name<MP2><<<1, 1>>>(av, bv, cv, dv, r1); \
-    CUDA_CHECK(cudaDeviceSynchronize());              \
-    ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
+#  define CHECK_1A(name, xv)     assert(check(static_cast<double>(name(MP2(xv))), ::name(xv), tol))
+#  define CHECK_2A(name, xv, yv) assert(check(static_cast<double>(name(MP2(xv), MP2(yv))), ::name(xv, yv), tol))
+#  define CHECK_3A(name, av, bv, cv) \
+    assert(check(static_cast<double>(name(MP2(av), MP2(bv), MP2(cv))), ::name(av, bv, cv), tol))
+#  define CHECK_4A(name, av, bv, cv, dv) \
+    assert(check(static_cast<double>(name(MP2(av), MP2(bv), MP2(cv), MP2(dv))), ::name(av, bv, cv, dv), tol))
 
   // Base-10 exponential: exp10 is in glibc and CUDA but not in ISO C++.
-  RUN_1A(exp10, x_val)
+  CHECK_1A(exp10, x_val);
 
   // Reciprocal cube root
-  RUN_1A(rcbrt, x_val)
+  CHECK_1A(rcbrt, x_val);
 
-  // Error / Probability
-  RUN_1A(erfcinv, p_val)
-  RUN_1A(erfinv, p_val)
-  RUN_1A(erfcx, x_val)
-  RUN_1A(normcdf, x_val)
+  // Error / probability
+  CHECK_1A(erfcinv, p_val);
+  CHECK_1A(erfinv, p_val);
+  CHECK_1A(erfcx, x_val);
+  CHECK_1A(normcdf, x_val);
+  CHECK_1A(normcdfinv, p_val);
 
   // Bessel: j0/j1/y0/y1 are POSIX rather than ISO, and MSVC spells them _j0.
-  RUN_1A(j0, x_val)
-  RUN_1A(j1, x_val)
-  RUN_1A(y0, x_val)
-  RUN_1A(y1, x_val)
-  RUN_1A(cyl_bessel_i0, x_val)
-  RUN_1A(cyl_bessel_i1, x_val)
+  CHECK_1A(j0, x_val);
+  CHECK_1A(j1, x_val);
+  CHECK_1A(y0, x_val);
+  CHECK_1A(y1, x_val);
+  CHECK_1A(cyl_bessel_i0, x_val);
+  CHECK_1A(cyl_bessel_i1, x_val);
 
   // CUDA trigonometric (pi-scaled)
-  RUN_1A(sinpi, x_val)
-  RUN_1A(cospi, x_val)
-
-  // Inverse CDF
-  kernel_normcdfinv<MP2><<<1, 1>>>(p_val, r1);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
+  CHECK_1A(sinpi, x_val);
+  CHECK_1A(cospi, x_val);
 
   // Reciprocal hypotenuse
-  RUN_2A(rhypot, x_val, y_val)
+  CHECK_2A(rhypot, x_val, y_val);
 
-  // Vector norm (3/4 args)
-  RUN_3A(norm3d, x_val, y_val, p_val)
-  RUN_3A(rnorm3d, x_val, y_val, p_val)
-  RUN_4A(norm4d, x_val, y_val, p_val, 0.7)
-  RUN_4A(rnorm4d, x_val, y_val, p_val, 0.7)
-
-  // sincos / sincospi
-  kernel_sincos<MP2><<<1, 1>>>(x_val, r1, r2);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-  ok = check(r2->fpmp_val, r2->ref_val, tol) && ok;
-
-  kernel_sincospi<MP2><<<1, 1>>>(x_val, r1, r2);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-  ok = check(r2->fpmp_val, r2->ref_val, tol) && ok;
+  // Vector norms
+  CHECK_3A(norm3d, x_val, y_val, p_val);
+  CHECK_3A(rnorm3d, x_val, y_val, p_val);
+  CHECK_4A(norm4d, x_val, y_val, p_val, 0.7);
+  CHECK_4A(rnorm4d, x_val, y_val, p_val, 0.7);
 
   // Bessel functions taking an order
-  kernel_jn<MP2><<<1, 1>>>(n_val, x_val, r1);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
-  kernel_yn<MP2><<<1, 1>>>(n_val, x_val, r1);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  ok = check(r1->fpmp_val, r1->ref_val, tol) && ok;
+  assert(check(static_cast<double>(jn(n_val, MP2(x_val))), ::jn(n_val, x_val), tol));
+  assert(check(static_cast<double>(yn(n_val, MP2(x_val))), ::yn(n_val, x_val), tol));
 
-#  undef RUN_1A
-#  undef RUN_2A
-#  undef RUN_3A
-#  undef RUN_4A
+  // The paired sine and cosine, checked through sin/cos and sinpi/cospi so that the
+  // fpmp2 call is unambiguous next to the CUDA reference of the same name.
+  {
+    double ref_sin = 0.0, ref_cos = 0.0;
+    ::sincos(x_val, &ref_sin, &ref_cos);
+    assert(check(static_cast<double>(sin(MP2(x_val))), ref_sin, tol));
+    assert(check(static_cast<double>(cos(MP2(x_val))), ref_cos, tol));
+  }
+  {
+    double ref_sin = 0.0, ref_cos = 0.0;
+    ::sincospi(x_val, &ref_sin, &ref_cos);
+    assert(check(static_cast<double>(sinpi(MP2(x_val))), ref_sin, tol));
+    assert(check(static_cast<double>(cospi(MP2(x_val))), ref_cos, tol));
+  }
 
-  cudaFree(r1);
-  cudaFree(r2);
-  return ok;
+#  undef CHECK_1A
+#  undef CHECK_2A
+#  undef CHECK_3A
+#  undef CHECK_4A
 }
 
-// The launches must live outside the NV_IF_TARGET(NV_IS_HOST) block in main(): nvcc's device
-// pass discards that block, so the kernel templates would never be instantiated for the device
-// and every launch would fail with cudaErrorInvalidDeviceFunction.
-bool test_device_all()
-{
-  bool ok = test_device<cudax::fp32mp2>(1e-5);
-  ok      = test_device<cudax::fp64mp2>(1e-12) && ok;
-  return ok;
-}
 #endif // _CCCL_CUDA_COMPILATION()
 
 int main(int, char**)
@@ -458,9 +288,9 @@ int main(int, char**)
   test_host_device<cudax::fp64mp2>(1e-12);
 
 #if _CCCL_CUDA_COMPILATION()
-  // The remaining functions have no portable host reference and so are checked
-  // through kernels, which only the host half can launch.
-  NV_IF_TARGET(NV_IS_HOST, (assert(test_device_all());))
+  // The remaining functions are reachable from device code only, so the kernel run is
+  // the one that checks them.
+  NV_IF_TARGET(NV_IS_DEVICE, (test_device<cudax::fp32mp2>(1e-5); test_device<cudax::fp64mp2>(1e-12);))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }
