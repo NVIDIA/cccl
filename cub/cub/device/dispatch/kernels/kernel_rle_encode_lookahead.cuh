@@ -276,6 +276,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
   __syncwarp();
 }
 
+// CLC is fast, so folding it into LOAD won't cost performance, and it saves us 32 threads
 _CCCL_DEVICE_API _CCCL_FORCEINLINE int
 clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
 {
@@ -672,10 +673,19 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
   // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
   __shared__ ::cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
-  // LOAD --full--> COMPUTE & POLL
-  // COMPUTE(all warps) --computed--> COMPUTE w0, then cw0 calculates & publishes this tile's aggregate to the global
-  // POLL --prefixed--> STORE
-  // STORE --empty--> LOAD & POLL
+  // barrier dependency graph, per key-ring slot; A = arrives, W = waits (arrival counts in the init loop below)
+  //
+  // spine:  LOAD --> {COMPUTE, POLL} --> {STORE, BOOKKEEPER} --> LOAD  (slot recycles)
+  //
+  //                       LOAD   COMPUTE(all)   POLL   STORE(all)   BOOKKEEPER
+  // clc_bar               A,W                                                    next stolen tile id, 1 in flight
+  // full                   A          W          W
+  // computed                         A,W(w0)             W             W        w0 then publishes the tile aggregate
+  // staged_warp_tile[w]               A                  W                       per-warp-tile handoff to its drainer
+  // prefixed                                     A       W             W
+  // pos_buf_free                      W                  A                       staging gate, pos ring is shallower
+  // empty                  W                              A             A        POLL never waits on empty: it is
+  //                                                                              transitively gated by LOAD's next full
   __shared__ ::cuda::std::uint64_t full[max_key_ring_stages];
   __shared__ ::cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
     empty[max_key_ring_stages];
