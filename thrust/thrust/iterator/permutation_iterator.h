@@ -127,6 +127,7 @@ permutation_iterator : public detail::make_permutation_iterator_base<ElementIter
 
 public:
   //! Null constructor calls the null constructor of this \p permutation_iterator's element iterator.
+  _CCCL_EXEC_CHECK_DISABLE
   permutation_iterator() = default;
 
   //! Constructor accepts an \c ElementIterator into a range of values and an \c IndexIterator into a range of indices

@@ -170,11 +170,13 @@ public:
 
   /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
    */
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE pointer()
       : super_t(static_cast<Element*>(nullptr))
   {}
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t)
       : super_t(static_cast<Element*>(nullptr))
   {}

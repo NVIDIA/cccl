@@ -21,6 +21,7 @@ struct seq_t
     : system::detail::sequential::execution_policy<seq_t>
     , allocator_aware_execution_policy<system::detail::sequential::execution_policy>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   constexpr seq_t() = default;
 
   // allow any execution_policy to convert to the sequential one. required for minimum_system to pick it
