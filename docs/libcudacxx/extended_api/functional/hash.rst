@@ -70,7 +70,7 @@ Defined in the header ``<cuda/functional>``.
         [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<Key, Extent> keys) const noexcept;
     };
 
-    #else // !_CCCL_HAS_INT128()
+    #else // _CCCL_HAS_INT128()
 
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x86_128> {

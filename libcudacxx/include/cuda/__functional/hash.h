@@ -88,7 +88,7 @@ public:
   using ::cuda::__murmurhash3_x64_128<_Key>::operator();
 };
 
-#else // !_CCCL_HAS_INT128()
+#else // _CCCL_HAS_INT128()
 
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_x86_128>
