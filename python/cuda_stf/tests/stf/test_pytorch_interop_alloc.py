@@ -183,3 +183,219 @@ def test_localized_parameter_defaults_to_gc(grid):
 def test_invalid_lifetime_rejected(grid):
     with pytest.raises(ValueError, match="lifetime"):
         tp.localized_empty(SHAPE, torch.float16, grid, lifetime="forever")
+
+
+# ---------------------------------------------------------------------------
+# replicated_empty: the other half of the placement vocabulary — one
+# canonical copy, read replicated over the grid.
+# ---------------------------------------------------------------------------
+
+
+@requires_cuda
+def test_replicated_empty_roundtrip(grid):
+    t = tp.replicated_empty(SHAPE, torch.float32, grid)
+    src = torch.randn(SHAPE, dtype=torch.float32, device="cuda")
+    t.copy_(src)
+    torch.cuda.synchronize()
+    assert torch.equal(t, src)
+    assert t.dtype == torch.float32 and tuple(t.shape) == SHAPE
+
+
+@requires_cuda
+def test_replicated_empty_meta_and_dplace(grid):
+    t = tp.replicated_empty((64,), torch.float32, grid)
+    meta = tp.get_meta(t)
+    assert isinstance(meta, tp.ReplicatedMeta)
+    assert meta.grid is grid
+    # meta survives views and Parameter wrapping (same storage)
+    assert tp.get_meta(t.view(8, 8)) is meta
+
+    dplace = tp.replicated_dplace(t)
+    assert dplace is not None
+
+    # The read-side place is read-only by contract: a write dep at it is
+    # rejected at dependency construction
+    import numpy as np
+
+    ctx = stf.context()
+    lX = ctx.logical_data(np.zeros(8, dtype=np.float32))
+    with pytest.raises(ValueError, match="read"):
+        lX.write(dplace)
+    ctx.finalize()
+
+
+@requires_cuda
+def test_replicated_dplace_rejects_localized(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid)
+    with pytest.raises(TypeError, match="localized"):
+        tp.replicated_dplace(t)
+    tp.release(t)
+
+
+@requires_cuda
+def test_replicated_empty_gc_lifetime(grid):
+    t = tp.replicated_empty((128,), torch.float32, grid, lifetime="gc")
+    meta = tp.get_meta(t)
+    assert meta is not None and meta.lifetime == "gc"
+    base = t.untyped_storage().data_ptr()
+    del t
+    import gc
+
+    gc.collect()
+    # storage died -> finalizer evicted the metadata
+    del base
+    assert all(m is not meta for m in tp.live_metas())
+
+
+@requires_cuda
+def test_replicated_empty_release_pinned(grid):
+    t = tp.replicated_empty((128,), torch.float32, grid)
+    assert tp.get_meta(t) is not None
+    tp.release(t)
+    assert tp.get_meta(t) is None
+
+
+@requires_cuda
+def test_replicated_empty_canonical_place(grid):
+    # The canonical copy can be placed explicitly (e.g. at replica 0's
+    # place) so the built copy IS a replica: N copies total, not N+1.
+    t = tp.replicated_empty((64,), torch.float32, grid, canonical=stf.data_place.device(0))
+    meta = tp.get_meta(t)
+    assert isinstance(meta, tp.ReplicatedMeta)
+    tp.release(t)
+
+
+@requires_cuda
+def test_replicated_empty_invalid_lifetime(grid):
+    with pytest.raises(ValueError, match="lifetime"):
+        tp.replicated_empty((8,), torch.float32, grid, lifetime="forever")
+
+
+# ---------------------------------------------------------------------------
+# Factory family: zeros / ones / full and the *_like variants
+# ---------------------------------------------------------------------------
+
+
+@requires_cuda
+def test_localized_factories_values(grid):
+    z = tp.localized_zeros((64, 32), torch.float32, grid)
+    o = tp.localized_ones((64, 32), torch.float32, grid)
+    f = tp.localized_full((64, 32), 3.5, torch.float32, grid)
+    torch.cuda.synchronize()
+    assert torch.all(z == 0) and torch.all(o == 1) and torch.all(f == 3.5)
+    for t in (z, o, f):
+        assert tp.get_meta(t) is not None
+        tp.release(t)
+
+
+@requires_cuda
+def test_localized_like_reuses_placement(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid, spec=(None, ("blocked", 0), None))
+    meta = tp.get_meta(t)
+
+    z = tp.localized_zeros_like(t)
+    zmeta = tp.get_meta(z)
+    # the partition OBJECT is reused, not rebuilt
+    assert zmeta.partition is meta.partition
+    assert zmeta.shape == meta.shape and zmeta.dtype == meta.dtype
+    torch.cuda.synchronize()
+    assert torch.all(z == 0)
+
+    # dtype override keeps the placement (partition is element-indexed)
+    h = tp.localized_empty_like(t, dtype=torch.float32)
+    assert tp.get_meta(h).partition is meta.partition
+    assert h.dtype == torch.float32
+
+    # in-place torch init works on any localized tensor (no first-touch
+    # placement semantics: pages are placed at allocation)
+    h.normal_()
+    torch.cuda.synchronize()
+
+    for x in (t, z, h):
+        tp.release(x)
+
+
+@requires_cuda
+def test_localized_like_rejects_non_localized(grid):
+    plain = torch.zeros(8, device="cuda")
+    with pytest.raises(ValueError, match="localized"):
+        tp.localized_empty_like(plain)
+    r = tp.replicated_empty((8,), torch.float32, grid)
+    with pytest.raises(ValueError, match="localized"):
+        tp.localized_zeros_like(r)
+    tp.release(r)
+
+
+@requires_cuda
+def test_localized_empty_accepts_prebuilt_partition(grid):
+    part = stf.cute_partition.from_spec((256,), (("blocked", 0),), (N_PLACES,))
+    t = tp.localized_empty((256,), torch.float32, grid, spec=part)
+    assert tp.get_meta(t).partition is part
+    with pytest.raises(ValueError, match="true_dims"):
+        tp.localized_empty((128,), torch.float32, grid, spec=part)
+    tp.release(t)
+
+
+# ---------------------------------------------------------------------------
+# torch.localized convenience namespace (no GPU needed: pure patching)
+# ---------------------------------------------------------------------------
+
+
+def test_install_uninstall_torch_localized():
+    ns = tp.install()
+    try:
+        assert torch.localized is ns
+        assert torch.localized.empty is tp.localized_empty
+        assert torch.localized.zeros_like is tp.localized_zeros_like
+        # import machinery works through the sys.modules entry
+        from torch.localized import zeros  # noqa: PLC0415
+
+        assert zeros is tp.localized_zeros
+        # idempotent
+        assert tp.install() is not None
+    finally:
+        tp.uninstall()
+    assert not hasattr(torch, "localized")
+
+
+def test_install_refuses_foreign_attribute():
+    torch.localized = object()
+    try:
+        with pytest.raises(RuntimeError, match="does not belong"):
+            tp.install()
+        with pytest.raises(RuntimeError, match="not removing"):
+            tp.uninstall()
+    finally:
+        del torch.localized
+
+
+def test_namespace_without_patching():
+    ns = tp.namespace()
+    assert ns.full is tp.localized_full
+    assert not hasattr(torch, "localized")
+
+
+def test_attribute_chain_and_laziness():
+    import sys
+
+    # one import is enough: stf.interop.pytorch resolves lazily
+    assert stf.interop.pytorch.install is tp.install
+    assert stf.interop.pytorch.localized_zeros is tp.localized_zeros
+    # sibling adapters are NOT imported by touching the chain
+    assert "cuda.stf._experimental.interop.numba" not in sys.modules
+
+
+@requires_cuda
+def test_spec_and_grid_accessors(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid)
+    assert tp.grid_of(t) is grid
+    assert tp.spec_of(t) is tp.get_meta(t).partition
+    # resolves through views and Parameter wrapping (storage-keyed)
+    assert tp.spec_of(t.view(-1)) is tp.spec_of(t)
+    assert tp.grid_of(torch.nn.Parameter(t, requires_grad=False)) is grid
+    r = tp.replicated_empty((8,), torch.float32, grid)
+    assert tp.spec_of(r) is None and tp.grid_of(r) is grid
+    with pytest.raises(ValueError, match="registered"):
+        tp.spec_of(torch.zeros(4, device="cuda"))
+    tp.release(t)
+    tp.release(r)
