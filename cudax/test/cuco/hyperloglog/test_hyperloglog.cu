@@ -20,7 +20,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>
 
