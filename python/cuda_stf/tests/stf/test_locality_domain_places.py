@@ -102,11 +102,18 @@ def test_machine_grid_granularities():
     with pytest.raises(ValueError, match="granularity"):
         stf.exec_place_grid.machine(granularity="warp")
 
-    # the domain-granularity grid drives a task end to end
+    # the domain-granularity grid drives a task end to end. Deps on a
+    # grid task need an explicit data place: a create()-built grid has no
+    # affine data place, and a bare rw() currently terminates through the
+    # void C API instead of raising (the known error-channel gap in the
+    # 5315 family).
     N = 128
     ctx = stf.context()
-    X = np.zeros(N, dtype=np.float32)
+    X = np.arange(N, dtype=np.float32)
     lX = ctx.logical_data(X, name="X_machine")
-    with ctx.task(gdom, lX.rw()):
+    with ctx.task(gdom, lX.read(stf.data_place.replicated(gdom))):
         pass
+    results = []
+    ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
     ctx.finalize()
+    assert abs(results[0] - float(X.sum())) < 1e-4
