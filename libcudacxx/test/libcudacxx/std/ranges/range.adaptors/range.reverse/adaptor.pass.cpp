@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // cuda::std::views::reverse
 
 #include <cuda/std/cassert>
@@ -37,13 +34,13 @@ inline constexpr bool
 
 struct Pred
 {
-  TEST_HOST_DEVICE_FUNC int operator()(int i) const noexcept
+  TEST_FUNC int operator()(int i) const noexcept
   {
     return i;
   }
 };
 
-TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 
@@ -156,6 +153,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 
   // Test that cuda::std::views::reverse is a range adaptor
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     // Test `v | views::reverse`
     {
       BidirRange view(buf, buf + 3);
@@ -164,6 +162,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
       assert(base(result.begin().base()) == buf + 3);
       assert(base(result.end().base()) == buf);
     }
+#endif // !_CCCL_TILE_COMPILATION()
 
     // Test `adaptor | views::reverse`
     {

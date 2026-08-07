@@ -69,6 +69,11 @@ struct __shift_left_predicate
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cuda>
 {
@@ -123,11 +128,11 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
-    iter_difference_t<_InputIterator> __num_shifted) const
+    iter_difference_t<_InputIterator> __num_shifted)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
@@ -156,6 +161,10 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
