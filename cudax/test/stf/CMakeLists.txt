@@ -82,6 +82,15 @@ set(
   places/replicated_data_place.cu
   places/replicated_frozen_import.cu
   places/cute_parallel_for.cu
+  places/locality_domain_alloc.cu
+  places/locality_domain_enumeration.cu
+  places/locality_domain_exec.cu
+  places/locality_domain_fake.cu
+  places/locality_domain_fake_unfulfillable.cu
+  places/locality_domain_grid.cu
+  places/locality_domain_helper.cu
+  places/locality_domain_localized_disabled.cu
+  places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -187,6 +196,7 @@ set(
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
+  places/locality_domain_grid_pfor.cu
   places/managed_from_shape.cu
   reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
