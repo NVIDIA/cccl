@@ -856,7 +856,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                         file=sys.stderr,
                     )
             for consumer in two_stage_job["consumers"]:
-                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
+                if remove_dispatch_job_from_container(consumer, unique_standalone_jobs):
                     print(
                         f"Removing standalone job '{consumer['name']}' "
                         + f"as it appears as a consumer in '{group_name}'",
