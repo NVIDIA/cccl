@@ -146,6 +146,16 @@
       }
     },
     {
+      "name": "libcudacxx-codegen-filecheck",
+      "displayName": "libcu++: Codegen FileCheck",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "80",
+        "LIBCUDACXX_CODEGEN_FILECHECK_TESTS": "all",
+        "LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS": true
+      }
+    },
+    {
       "name": "libcudacxx-cpp17",
       "displayName": "libcu++: C++17",
       "inherits": "libcudacxx",
@@ -530,11 +540,18 @@
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
+        "libcudacxx.test.c2h_all",
+        "libcudacxx.test.debugging"
+      ]
+    },
+    {
+      "name": "libcudacxx-codegen-filecheck",
+      "configurePreset": "libcudacxx-codegen-filecheck",
+      "targets": [
         "libcudacxx.test.atomics.ptx",
         "libcudacxx.test.atomics.sass",
         "libcudacxx.test.simd.ptx",
-        "libcudacxx.test.c2h_all",
-        "libcudacxx.test.debugging"
+        "libcudacxx.test.simd.sass"
       ]
     },
     {

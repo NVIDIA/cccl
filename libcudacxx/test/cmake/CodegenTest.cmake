@@ -17,6 +17,12 @@ option(
 )
 
 function(libcudacxx_codegen_check_tools out_var)
+  if (LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS)
+    set(require_codegen_tools TRUE)
+  else()
+    set(require_codegen_tools FALSE)
+  endif()
+
   get_property(
     tools_available
     GLOBAL
@@ -53,7 +59,7 @@ function(libcudacxx_codegen_check_tools out_var)
 
   if (missing_tools)
     list(JOIN missing_tools ", " missing_tools)
-    if (LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS)
+    if (require_codegen_tools)
       message(
         FATAL_ERROR
         "Tools required by libcu++ codegen tests were not found: ${missing_tools}"
