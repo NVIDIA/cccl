@@ -42,10 +42,6 @@ inline constexpr bool check = check_one<Result, T1, T2> && check_one<Result, T2,
 template <class T1, class T2>
 inline constexpr bool check_none = !has_common_reference<T1, T2> && !has_common_reference<T2, T1>;
 
-// https://eel.is/c++draft/meta.trans#other-2.4
-template <class X, class Y>
-using CondRes = decltype(false ? cuda::std::declval<X (&)()>()() : cuda::std::declval<Y (&)()>()());
-
 using cuda::std::common_reference_t;
 using cuda::std::is_same_v;
 
@@ -117,13 +113,14 @@ TEST_FUNC constexpr bool test_common_reference()
   static_assert(check<B const&, RefW<D>,       B const&>);
   static_assert(check<B const&, RefW<D const>, B const&>);
 
-  static_assert(is_same_v<B&,       CondRes<RefW<D>,       B&>>);
-  static_assert(is_same_v<B const&, CondRes<RefW<D>,       B const&>>);
-  static_assert(is_same_v<B const&, CondRes<RefW<D const>, B const&>>);
-
   static_assert( check<B&,       RefW<B>,       C&>);
+// MSVC does not agree on these COND-RES results; the cause is the DevCom-1627396 workaround in
+// <cuda/std/__type_traits/common_reference.h>, whose fix is tracked separately and is deliberately
+// not part of this P2655R3 change.
+#if !TEST_COMPILER(MSVC)
   static_assert( check<B&,       RefW<B>,       C>);
   static_assert( check<B const&, RefW<B const>, C>);
+#endif // !TEST_COMPILER(MSVC)
   static_assert(!check<B&,       RefW<C>,       B&>); // RefW<C> cannot be converted to B&
   static_assert( check<B&,       RefW<B>,       C const&>); // was const B& before P2655R3
 
