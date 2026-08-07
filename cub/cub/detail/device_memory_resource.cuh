@@ -31,22 +31,26 @@ namespace detail
 struct device_memory_resource
 {
 private:
+#if _CCCL_HOSTED()
+  struct memory_pools_supported_cache_tag
+  {};
+
   // cudaMallocAsync requires memory pool support, which is unavailable in some configurations,
   // e.g. Windows drivers in TCC mode. Fall back to cudaMalloc/cudaFree there. See NVIDIA/cccl#10716.
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static bool use_memory_pools()
+  // The attribute query is cached per device, so allocations on devices with memory pool support
+  // only pay for an atomic load.
+  [[nodiscard]] _CCCL_HOST static bool use_memory_pools()
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (int device{}; _CCCL_TRY_CUDA_API(::cudaGetDevice, "failed to query the current device", &device);
-       int supported{};
-       _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute,
-                          "failed to query cudaDevAttrMemoryPoolsSupported",
-                          &supported,
-                          ::cudaDevAttrMemoryPoolsSupported,
-                          device);
-       return supported != 0;),
-      (return false;));
+    int device{};
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "failed to query the current device", &device);
+    const auto payload = GetPerDeviceAttributeCache<memory_pools_supported_cache_tag>()(
+      [device](int& supported) {
+        return ::cudaDeviceGetAttribute(&supported, ::cudaDevAttrMemoryPoolsSupported, device);
+      },
+      device);
+    return payload.error == cudaSuccess && payload.attribute != 0;
   }
+#endif // _CCCL_HOSTED()
 
 public:
   CUB_RUNTIME_FUNCTION void* allocate(size_t bytes, size_t /* alignment */)
