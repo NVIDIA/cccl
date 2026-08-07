@@ -79,9 +79,11 @@ _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator 
 {
   static_assert(is_copy_constructible_v<_InputIterator>, "Iterators has to be copy constructible.");
   static_assert(is_copy_constructible_v<_OutputIterator>, "The output iterator has to be copy constructible.");
-  return ::cuda::std::__move<_ClassicAlgPolicy>(
-           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
-    .second;
+  return ::cuda::std::__rewrap_iter(
+    __result,
+    ::cuda::std::__move<_ClassicAlgPolicy>(
+      ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
+      .second);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
