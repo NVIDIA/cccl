@@ -30,16 +30,16 @@ Tag reference
      - The documentation verification build.
      - Yes
    * - ``[skip-tpt]`` / ``[skip-third-party-testing]``
-     - All third-party canary builds (MatX, PyTorch, RAPIDS).
+     - All third-party canary and compile-time benchmark builds (MatX, PyTorch, RAPIDS).
      - Yes
    * - ``[skip-rapids]``
-     - RAPIDS canary builds only.
+     - RAPIDS canary and compile-time benchmark builds only.
      - Yes
    * - ``[skip-matx]``
-     - MatX canary builds only.
+     - MatX canary and compile-time benchmark builds only.
      - Yes
    * - ``[skip-pytorch]``
-     - PyTorch canary builds only.
+     - PyTorch canary and compile-time benchmark builds only.
      - Yes
    * - ``[bench-only]``
      - Equivalent to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``.
