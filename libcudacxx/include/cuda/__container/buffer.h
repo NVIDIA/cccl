@@ -975,6 +975,36 @@ _CCCL_HOST_API auto make_buffer(
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+//! @brief Creates a buffer like \p __source with \p __size uninitialized elements on \p __stream.
+//! @param[in] __stream The stream used for allocation and stored in the new buffer.
+//! @param[in] __source The source buffer whose memory resource, type, properties, and alignment are reused.
+//! @param[in] __size The number of uninitialized elements in the new buffer.
+//! @return A new buffer with the same type and allocation metadata as \p __source.
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _Properties...>
+empty_like(const stream_ref __stream,
+           const buffer<_Tp, _Properties...>& __source,
+           const typename buffer<_Tp, _Properties...>::size_type __size)
+{
+  return buffer<_Tp, _Properties...>{
+    __stream,
+    __source.memory_resource(),
+    __size,
+    ::cuda::no_init,
+    ::cuda::std::execution::prop{::cuda::allocation_alignment, __source.alignment()}};
+}
+
+//! @brief Creates a buffer like \p __source with the same size and uninitialized elements on \p __stream.
+//! @param[in] __stream The stream used for allocation and stored in the new buffer.
+//! @param[in] __source The source buffer whose memory resource, type, properties, size, and alignment are reused.
+//! @return A new buffer with the same type and allocation metadata as \p __source.
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _Properties...>
+empty_like(const stream_ref __stream, const buffer<_Tp, _Properties...>& __source)
+{
+  return ::cuda::empty_like(__stream, __source, __source.size());
+}
+
 // Empty buffer make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
