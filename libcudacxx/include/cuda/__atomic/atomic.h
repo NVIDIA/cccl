@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/copy_cv.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/atomic>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -80,7 +81,7 @@ struct atomic : public ::cuda::std::__atomic_impl<_Tp, _Sco>
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
 struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
 {
-  using value_type = _Tp;
+  using value_type = ::cuda::std::remove_cv_t<_Tp>;
 
   static constexpr size_t required_alignment = sizeof(_Tp);
 
@@ -90,7 +91,7 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
       : ::cuda::std::__atomic_ref_impl<_Tp, _Sco>(__ref)
   {}
 
-  _CCCL_HOST_DEVICE_API inline _Tp operator=(_Tp __v) const noexcept
+  _CCCL_HOST_DEVICE_API inline value_type operator=(value_type __v) const noexcept
   {
     this->store(__v);
     return __v;
@@ -105,12 +106,14 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
   atomic_ref& operator=(const atomic_ref&)                   = delete;
   atomic_ref& operator=(const atomic_ref&) const             = delete;
 
-  _CCCL_HOST_DEVICE_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_HOST_DEVICE_API inline value_type
+  fetch_max(const value_type& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return ::cuda::std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
 
-  _CCCL_HOST_DEVICE_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_HOST_DEVICE_API inline value_type
+  fetch_min(const value_type& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return ::cuda::std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
