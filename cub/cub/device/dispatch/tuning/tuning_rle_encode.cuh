@@ -33,6 +33,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
+#include <cuda/std/cstdint>
 #include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
@@ -101,11 +102,17 @@ inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
 }
 #endif // _CCCL_HOSTED()
 
+namespace detail::rle::encode
+{
+// in-tile run positions are staged as a signed 16-bit value; the tile-size cap keeps every position representable
+using position_t = ::cuda::std::int16_t;
+} // namespace detail::rle::encode
+
 //! The tuning policy for the lookahead implementation of DeviceRunLengthEncode::Encode
 struct RleLookaheadPolicy
 {
   int items_per_thread; //!< Number of items each lane of a compute warp processes; a warp tile is
-                        //!< 32 * items_per_thread items
+                        //!< warp_threads * items_per_thread items
   int compute_warps; //!< Number of compute warps; each processes one warp tile per pipeline generation
   int key_ring_stages; //!< Depth of the key staging ring: how many pipeline generations can be in flight
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
@@ -118,7 +125,7 @@ struct RleLookaheadPolicy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int warp_tile_size() const noexcept
   {
-    return 32 * items_per_thread;
+    return detail::warp_threads * items_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
@@ -129,32 +136,34 @@ struct RleLookaheadPolicy
   // store buffers one key + one length per reg-buf round in registers
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int buf_per_lane() const noexcept
   {
-    return ((flag_staging_threshold - 1 + 31) / 32 > 0) ? (flag_staging_threshold - 1 + 31) / 32 : 1;
+    return ((flag_staging_threshold - 1 + (detail::warp_threads - 1)) / detail::warp_threads > 0)
+           ? (flag_staging_threshold - 1 + (detail::warp_threads - 1)) / detail::warp_threads
+           : 1;
   }
 
   // for each input tile, we need to store the keys and in-tile positions
-  // for in tile position we can just do unsigned int16 since tile size is never bigger than 2^16
+  // in-tile positions are staged as position_t: tile size is capped so they fit a signed 16-bit value
   // each key slot carries slot_pad extra leading elements
   // we overcopy one 16B chunk to the left, so that we get the last tiles boundary element
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_pad(int key_size) const noexcept
   {
-    return 16 / key_size; // elements; 16 bytes = cp_async_bulk quantum
+    return detail::bulk_copy_min_align / key_size; // elements; 16 bytes = cp_async_bulk quantum
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_stride(int key_size, int key_align) const noexcept
   {
-    return tile_size() + slot_pad(key_size) + (key_align < 16 ? 16 / key_size : 0);
+    return tile_size() + slot_pad(key_size)
+         + (key_align < detail::bulk_copy_min_align ? detail::bulk_copy_min_align / key_size : 0);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
   dyn_smem_bytes(int key_size, int key_align) const noexcept
   {
     return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
-         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(short);
+         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t);
   }
 
-  static constexpr ::cuda::std::size_t static_smem_budget     = 8 * 1024;
-  static constexpr ::cuda::std::size_t default_smem_per_block = 48 * 1024;
+  static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_key_ring_stages() const noexcept
   {
@@ -168,7 +177,8 @@ struct RleLookaheadPolicy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t floor_dyn_smem_bytes() const noexcept
   {
-    return static_cast<::cuda::std::size_t>(floor_pos_ring_stages()) * tile_size() * sizeof(short);
+    return static_cast<::cuda::std::size_t>(floor_pos_ring_stages()) * tile_size()
+         * sizeof(detail::rle::encode::position_t);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -718,12 +728,12 @@ struct policy_selector
     {
       return ::cuda::std::nullopt;
     }
-    if (16 % key_size != 0)
+    if (detail::bulk_copy_min_align % key_size != 0)
     {
       return ::cuda::std::nullopt;
     }
     const int items_per_thread = (key_size >= 16) ? 8 : (key_size == 8 ? 16 : 32);
-    return RleLookaheadPolicy{items_per_thread, 8, 5, 3, 5, 32};
+    return RleLookaheadPolicy{items_per_thread, 8, 5, 3, 5, detail::warp_threads};
   }
 
   _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
@@ -740,7 +750,7 @@ struct policy_selector
     {
       return false;
     }
-    if (16 % key_size != 0 || key_align != key_size)
+    if (detail::bulk_copy_min_align % key_size != 0 || key_align != key_size)
     {
       return false;
     }

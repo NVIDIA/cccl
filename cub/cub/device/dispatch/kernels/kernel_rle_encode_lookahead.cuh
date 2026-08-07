@@ -391,7 +391,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
 
 template <int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, int lane_id)
+stage_head_positions(unsigned my_flags, position_t* pos_dst, int warp_tile_offset, int lane_id)
 {
   // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
   // (CRITICAL for MaxSeg=1,2,4)
@@ -410,7 +410,7 @@ stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, in
     {
       const int head_offset = __ffs(static_cast<int>(pending_heads)) - 1; // offset (0..31) of the next head within the
                                                                           // word
-      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = static_cast<short>(word_pos + head_offset);
+      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = static_cast<position_t>(word_pos + head_offset);
       ++run_index;
       pending_heads &= (pending_heads - 1); // clear the lowest set bit
     }
@@ -658,12 +658,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(policy.floor_pos_ring_stages() <= policy.pos_ring_stages
                   && 2 * policy.floor_pos_ring_stages() >= policy.floor_key_ring_stages(),
                 "the unstaged floor configuration must satisfy the pos ring parity bound");
-  static_assert(policy.floor_dyn_smem_bytes() + RleLookaheadPolicy::static_smem_budget
-                  <= RleLookaheadPolicy::default_smem_per_block,
+  static_assert(policy.floor_dyn_smem_bytes() + RleLookaheadPolicy::static_smem_budget <= detail::max_smem_per_block,
                 "the unstaged floor configuration must launch within the default shared memory limit on every device");
 
-  static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
-                "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
+  static_assert(
+    policy.tile_size() <= 0xffff && policy.tile_size() - 1 <= ::cuda::std::numeric_limits<position_t>::max(),
+    "tile_size must fit the 16-bit state words and the staged position type");
   static_assert(policy.poll_loads_per_lane >= 3 && policy.poll_loads_per_lane <= 32,
                 "poll_loads_per_lane must be in [3, 32] so the fold windows cover the dense cap and the int "
                 "open-length accumulator cannot overflow");
@@ -691,8 +691,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   extern __shared__ char smem_raw[];
   KeyT* const tile_buf = reinterpret_cast<KeyT*>(smem_raw);
   // when keys are not staged, the positions ring sits at the base
-  short* const pos_buf =
-    reinterpret_cast<short*>(tile_buf + (keys_staged ? static_cast<size_t>(key_ring_stages) * slot_stride : 0));
+  position_t* const pos_buf =
+    reinterpret_cast<position_t*>(tile_buf + (keys_staged ? static_cast<size_t>(key_ring_stages) * slot_stride : 0));
   __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
                                                    // try_cancel)
   __shared__ int warp_run_counts[max_key_ring_stages][compute_warps]; // per compute warp run counts
@@ -857,7 +857,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int tile_len =
             static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
-          short* const pos_dst = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
+          position_t* const pos_dst = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           unsigned my_flags;
           if (keys_staged)
           {
@@ -1025,7 +1025,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           // staged positions
-          const short* run_positions      = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
+          const position_t* run_positions = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
           const int warp_tile_run_count   = __shfl_sync(full_mask, lane_warp_tile_run_count, warp_tile_id);
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
