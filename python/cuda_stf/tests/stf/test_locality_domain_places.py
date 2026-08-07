@@ -102,28 +102,23 @@ def test_machine_grid_granularities():
     with pytest.raises(ValueError, match="granularity"):
         stf.exec_place_grid.machine(granularity="warp")
 
-    # machine() grids carry a default BLOCKED affine, so bare
-    # dependencies (no explicit data place) resolve naturally -- data
-    # blocked along dim 0 over the grid. (A create()-built grid without a
-    # mapper still has no affine; deps there need explicit places.)
-    #
-    # KNOWN C++ ISSUE (found on GB300, 2026-08-08): a replicated read whose
-    # valid source instance lives at a COMPOSITE place terminates in
-    # exec_place deactivate ("invalid device ordinal", places.cuh device
-    # impl) -- the broadcast-copy path derives a device restore ordinal
-    # from a composite affine. Reproducer: rw at the machine grid's
-    # composite affine, then read(data_place.replicated(grid)). Until
-    # fixed, this test keeps the replicated read sourced from the host
-    # instance (before any composite write), like test_domain_grid_task.
+    # machine() grids with more than one place carry a default BLOCKED
+    # affine, so bare dependencies (no explicit data place) resolve
+    # naturally -- data blocked along dim 0 over the grid. Single-place
+    # machines deliberately get NO composite affine: make_grid degenerates
+    # them to the (shared) scalar place, whose own device affine already
+    # resolves bare deps -- and mutating the shared place's affine poisons
+    # unrelated deactivate paths (found the hard way on GB300).
     N = 128
     ctx = stf.context()
     X = np.arange(N, dtype=np.float32)
     lX = ctx.logical_data(X, name="X_machine")
-    # replicated read first: source instance is the host-provided one
-    with ctx.task(gdom, lX.read(stf.data_place.replicated(gdom))):
-        pass
-    # bare rw resolves at the default blocked affine
+    # bare rw resolves at the default blocked affine (multi-place grids)
+    # or the scalar place's device affine (single-place machines)
     with ctx.task(gdom, lX.rw()):
+        pass
+    # explicit places compose with the default affine
+    with ctx.task(gdom, lX.read(stf.data_place.replicated(gdom))):
         pass
     results = []
     ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))

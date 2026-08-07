@@ -1547,12 +1547,14 @@ cdef class exec_place_grid(exec_place):
         cdef data_place affine
         if granularity == "device":
             g = <exec_place_grid?>exec_place_grid.from_devices(list(range(ndevs)))
+            nplaces = ndevs
         elif granularity == "locality_domain":
             places = []
             for d in range(ndevs):
                 for i in range(locality_domain_count(d)):
                     places.append(exec_place.locality_domain(d, i))
             g = <exec_place_grid?>exec_place_grid.create(places)
+            nplaces = len(places)
         else:
             raise ValueError(
                 f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
@@ -1561,13 +1563,21 @@ cdef class exec_place_grid(exec_place):
         # the natural strategy for a machine-level grid, and it makes bare
         # dependencies (lX.rw() without an explicit data place) resolve
         # instead of failing for lack of an affine.
-        affine = data_place.__new__(data_place)
-        affine._h = stf_data_place_composite(g._h, stf_partition_fn_blocked(0))
-        if affine._h == NULL:
-            raise RuntimeError("failed to create the default blocked affine")
-        affine._add_owner(g)
-        g.set_affine_data_place(affine)
-        g._mapper_keep_alive = affine
+        #
+        # NEVER on a single-place machine: make_grid degenerates size-1
+        # grids to the place itself, which for the device granularity is
+        # the process-shared exec_place::device(0) -- mutating ITS affine
+        # to a composite poisons every later activate/deactivate restore
+        # path (cudaSetDevice on the composite ordinal; found on GB300).
+        # A scalar place's own device affine already resolves bare deps.
+        if nplaces > 1:
+            affine = data_place.__new__(data_place)
+            affine._h = stf_data_place_composite(g._h, stf_partition_fn_blocked(0))
+            if affine._h == NULL:
+                raise RuntimeError("failed to create the default blocked affine")
+            affine._add_owner(g)
+            g.set_affine_data_place(affine)
+            g._mapper_keep_alive = affine
         return g
 
     @staticmethod
