@@ -37,10 +37,21 @@ N_PLACES = 2
 SHAPE = (4096, 1024)  # rows split across dies; big enough for real striping
 
 
-@pytest.fixture()
-def grid():
+@pytest.fixture(params=["devices", "locality_domains"])
+def grid(request):
+    """Every example runs at two granularities: a device grid (repeat), and
+    the machine's locality domains -- the substrate the placement work is
+    for. The domain flavor skips cleanly where the locality-domain
+    bindings (PR #10703) are not in the build."""
     stf.machine_init()
-    return stf.exec_place_grid.from_devices([0] * N_PLACES)
+    if request.param == "devices":
+        return stf.exec_place_grid.from_devices([0] * N_PLACES)
+    eg = stf.exec_place_grid
+    if hasattr(eg, "machine"):
+        return eg.machine(granularity="locality_domain")
+    if hasattr(eg, "locality_domains"):
+        return eg.locality_domains(0)
+    pytest.skip("locality-domain bindings not available (PR #10703)")
 
 
 def _compiled(fn):
@@ -116,7 +127,7 @@ def test_split_dim_reduction_is_partials_plus_fold(grid):
     total = partials.sum()
     torch.cuda.synchronize()
     assert total.item() == SHAPE[0] * SHAPE[1]
-    assert partials.numel() == N_PLACES
+    assert partials.numel() == len(tp.views(x))  # one partial per grid place
     tp.release(x)
 
 
