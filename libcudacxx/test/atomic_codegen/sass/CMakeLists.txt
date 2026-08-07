@@ -15,24 +15,7 @@ if (NOT CMAKE_CUDA_COMPILER_ID STREQUAL NVIDIA)
   return()
 endif()
 
-# Generate SASS for the numeric real architectures requested by the build.
-set(atomic_codegen_sass_cuda_archs)
-foreach (arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
-  if (arch MATCHES "^([0-9]+)(-real)?$")
-    set(arch_number "${CMAKE_MATCH_1}")
-    if (arch_number GREATER_EQUAL 75)
-      list(APPEND atomic_codegen_sass_cuda_archs "${arch_number}")
-    endif()
-  endif()
-endforeach()
-list(REMOVE_DUPLICATES atomic_codegen_sass_cuda_archs)
-
-if (NOT atomic_codegen_sass_cuda_archs)
-  message(
-    "-- Skipping atomic SASS codegen tests without numeric real CUDA architectures"
-  )
-  return()
-endif()
+libcudacxx_codegen_get_cuda_architectures(atomic_codegen_sass_cuda_archs)
 
 if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.1)
   set(atomic_codegen_sass_cuda_version_prefix CUDA12-0)
