@@ -180,6 +180,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     int stf_data_place_is_replicated(stf_data_place_handle h)
     stf_data_place_handle stf_data_place_current_device()
     stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
+    stf_get_executor_fn stf_partition_fn_blocked(int dim)
     stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
     stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
     void stf_data_place_destroy(stf_data_place_handle h)
@@ -1543,16 +1544,30 @@ cdef class exec_place_grid(exec_place):
         if int(err) != 0 or ndevs == 0:
             raise RuntimeError("no CUDA device available")
         if granularity == "device":
-            return exec_place_grid.from_devices(list(range(ndevs)))
-        if granularity == "locality_domain":
+            g = exec_place_grid.from_devices(list(range(ndevs)))
+        elif granularity == "locality_domain":
             places = []
             for d in range(ndevs):
                 for i in range(locality_domain_count(d)):
                     places.append(exec_place.locality_domain(d, i))
-            return exec_place_grid.create(places)
-        raise ValueError(
-            f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
-        )
+            g = exec_place_grid.create(places)
+        else:
+            raise ValueError(
+                f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
+            )
+        # Default affine: data blocked along dimension 0 over the grid --
+        # the natural strategy for a machine-level grid, and it makes bare
+        # dependencies (lX.rw() without an explicit data place) resolve
+        # instead of failing for lack of an affine.
+        cdef data_place affine = data_place.__new__(data_place)
+        affine._h = stf_data_place_composite(
+            (<exec_place_grid?>g)._h, stf_partition_fn_blocked(0))
+        if affine._h == NULL:
+            raise RuntimeError("failed to create the default blocked affine")
+        affine._add_owner(g)
+        g.set_affine_data_place(affine)
+        g._mapper_keep_alive = affine
+        return g
 
     @staticmethod
     def locality_domains(int dev_id=0):
