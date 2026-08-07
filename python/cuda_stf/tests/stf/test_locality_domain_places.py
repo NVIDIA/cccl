@@ -45,8 +45,8 @@ def test_domain_allocation_roundtrip():
 
 def test_domain_grid_task():
     """A grid task over the device's locality domains, reading a logical
-    data at the replicated place: the uGPU counterpart of the replicated
-    grid test."""
+    data at the replicated place: the locality-domain counterpart of the
+    replicated grid test."""
     stf.machine_init()
     grid = stf.exec_place_grid.locality_domains(0)
     n = stf.locality_domain_count(0)
