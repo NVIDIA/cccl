@@ -82,7 +82,9 @@ borrowed = numba.cuda.as_cuda_array(arr)   # CAI: arr must stay alive
 owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
 ```
 
-The localized-allocation surface (`interop.pytorch.localized_empty`) exposes
+The localized-allocation surface (`interop.pytorch.localized_empty`, plus
+the factory family `localized_zeros/ones/full` and the placement-reusing
+`*_like` variants) exposes
 this as `lifetime="pinned"` (CAI + registry, freed by `release()`) versus
 `lifetime="gc"` (DLPack; the tensor — typically an `nn.Parameter`, where it
 is the default — owns the pages, freed when the module is unloaded). See

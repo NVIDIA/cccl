@@ -307,8 +307,17 @@ def localized_empty(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pin
     else:
         if spec is None:
             spec = (("blocked", 0),) + (None,) * (len(shape) - 1)
-        gd = grid.dims() if callable(getattr(grid, "dims", None)) else grid.dims
-        part = cute_partition.from_spec(shape, spec, tuple(int(e) for e in gd))
+        if isinstance(spec, cute_partition):
+            # Prebuilt partition (e.g. reused from another allocation's meta
+            # by the *_like factories): its extents are the contract.
+            if tuple(spec.true_dims) != shape:
+                raise ValueError(
+                    f"partition true_dims {tuple(spec.true_dims)} do not match shape {shape}"
+                )
+            part = spec
+        else:
+            gd = grid.dims() if callable(getattr(grid, "dims", None)) else grid.dims
+            part = cute_partition.from_spec(shape, spec, tuple(int(e) for e in gd))
         dplace = data_place.composite_cute(grid, part)
         buf = DeviceArray(shape, np_dtype, dplace)
         meta.partition = part
@@ -353,6 +362,75 @@ def localized_parameter(
         localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime),
         requires_grad=requires_grad,
     )
+
+
+def localized_zeros(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"):
+    """:func:`localized_empty` filled with zeros.
+
+    The fill is an ordinary in-place torch write through the tensor's single
+    base pointer. Unlike NUMA first-touch, VMM placement is fixed at
+    allocation by the partition -- the fill has no effect on locality (this
+    holds for any in-place initializer: ``normal_()``, ``nn.init.*``, ...).
+    """
+    t = localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime)
+    t.zero_()
+    return t
+
+
+def localized_ones(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"):
+    """:func:`localized_empty` filled with ones (see :func:`localized_zeros`)."""
+    t = localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime)
+    t.fill_(1)
+    return t
+
+
+def localized_full(shape, fill_value, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"):
+    """:func:`localized_empty` filled with ``fill_value`` (see :func:`localized_zeros`)."""
+    t = localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime)
+    t.fill_(fill_value)
+    return t
+
+
+def _localized_like(tensor, dtype, lifetime):
+    meta = get_meta(tensor)
+    if meta is None or not isinstance(meta, LocalizedMeta):
+        raise ValueError("tensor is not a localized allocation")
+    return localized_empty(
+        meta.shape,
+        meta.dtype if dtype is None else dtype,
+        meta.grid,
+        spec=meta.partition if meta.partition is not None else None,
+        mapper=meta.mapper,
+        lifetime=meta.lifetime if lifetime is None else lifetime,
+    )
+
+
+def localized_empty_like(tensor, *, dtype=None, lifetime=None):
+    """New localized allocation with *tensor*'s placement (same grid and
+    partition object -- or mapper -- same shape; ``dtype``/``lifetime``
+    overridable)."""
+    return _localized_like(tensor, dtype, lifetime)
+
+
+def localized_zeros_like(tensor, *, dtype=None, lifetime=None):
+    """:func:`localized_empty_like` filled with zeros."""
+    t = _localized_like(tensor, dtype, lifetime)
+    t.zero_()
+    return t
+
+
+def localized_ones_like(tensor, *, dtype=None, lifetime=None):
+    """:func:`localized_empty_like` filled with ones."""
+    t = _localized_like(tensor, dtype, lifetime)
+    t.fill_(1)
+    return t
+
+
+def localized_full_like(tensor, fill_value, *, dtype=None, lifetime=None):
+    """:func:`localized_empty_like` filled with ``fill_value``."""
+    t = _localized_like(tensor, dtype, lifetime)
+    t.fill_(fill_value)
+    return t
 
 
 def replicated_empty(shape, dtype, grid, *, device=0, canonical=None, lifetime="pinned"):

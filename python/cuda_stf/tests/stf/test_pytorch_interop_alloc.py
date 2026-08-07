@@ -269,3 +269,68 @@ def test_replicated_empty_canonical_place(grid):
 def test_replicated_empty_invalid_lifetime(grid):
     with pytest.raises(ValueError, match="lifetime"):
         tp.replicated_empty((8,), torch.float32, grid, lifetime="forever")
+
+
+# ---------------------------------------------------------------------------
+# Factory family: zeros / ones / full and the *_like variants
+# ---------------------------------------------------------------------------
+
+
+@requires_cuda
+def test_localized_factories_values(grid):
+    z = tp.localized_zeros((64, 32), torch.float32, grid)
+    o = tp.localized_ones((64, 32), torch.float32, grid)
+    f = tp.localized_full((64, 32), 3.5, torch.float32, grid)
+    torch.cuda.synchronize()
+    assert torch.all(z == 0) and torch.all(o == 1) and torch.all(f == 3.5)
+    for t in (z, o, f):
+        assert tp.get_meta(t) is not None
+        tp.release(t)
+
+
+@requires_cuda
+def test_localized_like_reuses_placement(grid):
+    t = tp.localized_empty(SHAPE, torch.float16, grid, spec=(None, ("blocked", 0), None))
+    meta = tp.get_meta(t)
+
+    z = tp.localized_zeros_like(t)
+    zmeta = tp.get_meta(z)
+    # the partition OBJECT is reused, not rebuilt
+    assert zmeta.partition is meta.partition
+    assert zmeta.shape == meta.shape and zmeta.dtype == meta.dtype
+    torch.cuda.synchronize()
+    assert torch.all(z == 0)
+
+    # dtype override keeps the placement (partition is element-indexed)
+    h = tp.localized_empty_like(t, dtype=torch.float32)
+    assert tp.get_meta(h).partition is meta.partition
+    assert h.dtype == torch.float32
+
+    # in-place torch init works on any localized tensor (no first-touch
+    # placement semantics: pages are placed at allocation)
+    h.normal_()
+    torch.cuda.synchronize()
+
+    for x in (t, z, h):
+        tp.release(x)
+
+
+@requires_cuda
+def test_localized_like_rejects_non_localized(grid):
+    plain = torch.zeros(8, device="cuda")
+    with pytest.raises(ValueError, match="localized"):
+        tp.localized_empty_like(plain)
+    r = tp.replicated_empty((8,), torch.float32, grid)
+    with pytest.raises(ValueError, match="localized"):
+        tp.localized_zeros_like(r)
+    tp.release(r)
+
+
+@requires_cuda
+def test_localized_empty_accepts_prebuilt_partition(grid):
+    part = stf.cute_partition.from_spec((256,), (("blocked", 0),), (N_PLACES,))
+    t = tp.localized_empty((256,), torch.float32, grid, spec=part)
+    assert tp.get_meta(t).partition is part
+    with pytest.raises(ValueError, match="true_dims"):
+        tp.localized_empty((128,), torch.float32, grid, spec=part)
+    tp.release(t)
