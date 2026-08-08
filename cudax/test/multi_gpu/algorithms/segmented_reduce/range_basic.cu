@@ -128,9 +128,9 @@ template <class T, class Op>
   return offsets;
 }
 
-template <class T, class RNG>
+template <class T, cuda::std::size_t N, class RNG>
 [[nodiscard]] std::vector<std::vector<T>>
-uniform_values(int num_ranks, const std::vector<offset_type>& segment_sizes, RNG& rng)
+uniform_values(int num_ranks, const cuda::std::array<offset_type, N>& segment_sizes, RNG& rng)
 {
   const auto count =
     static_cast<cuda::std::size_t>(std::accumulate(segment_sizes.begin(), segment_sizes.end(), offset_type{0}));
@@ -305,9 +305,10 @@ MULTI_GPU_TEST("segmented_reduce, one segment of one element per rank", value_ty
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 1;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {1}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {1});
+  constexpr cuda::std::array offsets       = {1};
+  constexpr cuda::std::size_t num_segments = offsets.size();
+  const auto values_by_rank                = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;
@@ -345,9 +346,10 @@ MULTI_GPU_TEST("segmented_reduce, multiple equal-sized segments per rank", value
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 4;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {10, 10, 10, 10}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {10, 10, 10, 10});
+  constexpr cuda::std::array offsets       = {10, 10, 10, 10};
+  constexpr cuda::std::size_t num_segments = offsets.size();
+  const auto values_by_rank                = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;
@@ -385,9 +387,10 @@ MULTI_GPU_TEST("segmented_reduce, ragged segments per rank", value_types, operat
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 5;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {1, 7, 3, 128, 12}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {1, 7, 3, 128, 12});
+  constexpr cuda::std::array offsets       = {1, 7, 3, 128, 12};
+  constexpr cuda::std::size_t num_segments = offsets.size();
+  const auto values_by_rank                = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;
@@ -436,9 +439,8 @@ MULTI_GPU_TEST("segmented_reduce, segment lengths differ across ranks", value_ty
     const std::vector<offset_type> segment_sizes{
       static_cast<offset_type>(r + 1), static_cast<offset_type>(2 * r + 3), static_cast<offset_type>(r + 5)};
 
-    values_by_rank.emplace_back();
     fill_random(
-      values_by_rank.back(),
+      values_by_rank.emplace_back(),
       static_cast<cuda::std::size_t>(std::accumulate(segment_sizes.begin(), segment_sizes.end(), offset_type{0})),
       rng);
     offsets_by_rank.push_back(make_offsets(segment_sizes));
@@ -480,9 +482,10 @@ MULTI_GPU_TEST("segmented_reduce, some segments empty", value_types, operators)
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 4;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {6, 0, 4, 0}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {6, 0, 4, 0});
+  constexpr cuda::std::array offsets       = {6, 0, 4, 0};
+  constexpr cuda::std::size_t num_segments = offsets.size();
+  const auto values_by_rank                = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;
@@ -575,9 +578,10 @@ MULTI_GPU_TEST("segmented_reduce, all ranks empty", value_types, operators)
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 3;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {0, 0, 0}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {0, 0, 0});
+  constexpr cuda::std::array offsets       = {0, 0, 0};
+  constexpr cuda::std::size_t num_segments = offsets.size();
+  const auto values_by_rank                = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;
@@ -684,9 +688,10 @@ MULTI_GPU_TEST("segmented_reduce, zero segments", value_types, operators)
   auto streams = nccl_test_util::make_streams();
   auto rng     = make_rng(C2H_SEED(2));
 
-  constexpr cuda::std::size_t num_segments = 0;
-  const auto values_by_rank                = uniform_values<T>(comms.front().size(), {}, rng);
-  const auto offsets_by_rank               = uniform_offsets(comms.front().size(), {});
+  constexpr cuda::std::array<offset_type, 0> offsets = {};
+  constexpr cuda::std::size_t num_segments           = offsets.size();
+  const auto values_by_rank                          = uniform_values<T>(comms.front().size(), offsets, rng);
+  const auto offsets_by_rank                         = uniform_offsets(comms.front().size(), offsets);
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset_type>> offsets;

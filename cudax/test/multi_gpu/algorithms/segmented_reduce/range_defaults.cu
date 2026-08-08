@@ -38,9 +38,10 @@ MULTI_GPU_TEST("segmented_reduce, range overloads default values", )
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  constexpr cuda::std::size_t num_segments = 2;
-  constexpr offset values_per_segment      = 10;
+  constexpr offset values_per_segment = 10;
   const std::vector<offset> offset_values{0, values_per_segment, 2 * values_per_segment};
+  // The last offset closes the final segment, so there is one less segment than offsets.
+  const cuda::std::size_t num_segments = offset_values.size() - 1;
 
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<offset>> offsets;
