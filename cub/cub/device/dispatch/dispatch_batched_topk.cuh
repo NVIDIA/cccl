@@ -150,6 +150,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   using large_segment_tile_offset_t = typename ::cuda::args::__traits<TotalNumItemsGuaranteeT>::element_type;
 
   // Wrap the raw enum into the internal discrete param type

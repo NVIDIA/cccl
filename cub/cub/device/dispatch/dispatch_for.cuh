@@ -126,6 +126,11 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     return error;
   }
 
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;

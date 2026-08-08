@@ -622,6 +622,11 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         break;
       }
 
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
+      }
+
       DispatchReduceByKey dispatch(
         d_temp_storage,
         temp_storage_bytes,
@@ -704,6 +709,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
