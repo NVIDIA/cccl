@@ -612,8 +612,8 @@ private:
       const bool has_larger_lane_id = lane & stride;
       const bool reverse            = group_reverse ^ has_larger_lane_id;
 
-      KeyT& key      = *keys;
-      KeyT other_key = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(key, stride, member_mask);
+      KeyT& key            = *keys;
+      const KeyT other_key = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(key, stride, member_mask);
 
       [[maybe_unused]] ValueT other_value;
       if constexpr (!keys_only)
