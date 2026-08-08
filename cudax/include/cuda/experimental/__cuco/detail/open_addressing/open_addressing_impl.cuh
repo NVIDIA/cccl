@@ -26,7 +26,6 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__container/buffer.h>
-#include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
@@ -43,6 +42,7 @@
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
+#include <cuda/experimental/__cuco/detail/utility/memcpy_async.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -144,7 +144,7 @@ private:
   __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
-    ::cuda::__driver::__memcpyAsync(&__result, __counter.data(), sizeof(__size_type), __stream.get());
+    ::cuda::experimental::cuco::detail::__memcpy_async(&__result, __counter.data(), sizeof(__size_type), __stream);
     __stream.sync();
     return __result;
   }

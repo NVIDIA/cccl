@@ -152,6 +152,10 @@ cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
     cuco/utility/test_capacity.cu
 )
 
+cudax_add_catch2_test(test_target cuco.utility.memcpy_async
+    cuco/utility/test_memcpy_async.cu
+)
+
 cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )

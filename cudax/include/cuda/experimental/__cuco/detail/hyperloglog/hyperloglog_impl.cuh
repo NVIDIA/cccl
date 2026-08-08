@@ -40,6 +40,7 @@
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/utility/memcpy_async.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
@@ -452,10 +453,10 @@ public:
   {
     const auto __num_regs = __sketch.size();
 
-    ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __sketch.size(), ::cuda::no_init};
+    ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __num_regs, ::cuda::no_init};
 
-    ::cuda::__driver::__memcpyAsync(
-      __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream.get());
+    ::cuda::experimental::cuco::detail::__memcpy_async(
+      __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream);
     __stream.sync();
 
     __fp_type __sum               = 0;
