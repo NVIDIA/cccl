@@ -15,6 +15,7 @@ import complex
 import event
 import inplace_vector
 import memory_resource
+import span
 import std_array
 import stream
 import tuple
@@ -32,6 +33,7 @@ _FORMATTERS = (
     tuple,
     inplace_vector,
     event,
+    span,
 )
 InternalDict = dict[str, object]
 
