@@ -14,14 +14,6 @@
 // %RANGE% TUNE_LOAD ld 0:2:1
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
-// %RANGE% TUNE_STATIC_SMEM_MAX_BYTES smem_bytes 0:512:256
-// %RANGE% TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM smem_blocks 0:4:1
-// %RANGE% TUNE_DYNAMIC_SMEM_MAX_BYTES dyn_bytes 0:228352:228352
-// %RANGE% TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS dyn_range_bins 0:2048:2048
-// %RANGE% TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS dyn_even_2ch_bins 0:28544:28544
-// %RANGE% TUNE_DYNAMIC_SMEM_EVEN_3CH_MAX_BINS dyn_even_3ch_bins 0:19029:19029
-// %RANGE% TUNE_DYNAMIC_SMEM_EVEN_4CH_MAX_BINS dyn_even_4ch_bins 0:8192:8192
-// %RANGE% TUNE_INIT_KERNEL_PDL_TRIGGER_MAX_BINS pdl_bins 0:2048:2048
 
 template <typename SampleT, typename CounterT, typename OffsetT>
 static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
@@ -58,7 +50,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
+      cuda::execution::tune(bench_policy_selector<SampleT, CounterT, 1, 1, false>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
