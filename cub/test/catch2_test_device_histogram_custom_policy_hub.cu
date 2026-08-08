@@ -46,10 +46,10 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   REQUIRE(custom_sm75_policy.gmem.items_per_thread == 16);
   REQUIRE(custom_sm90_policy.gmem.threads_per_block == 256);
   REQUIRE(custom_sm90_policy.gmem.items_per_thread == 8);
-  REQUIRE(custom_sm75_policy.max_privatized_static_smem_bytes == 256 * sizeof(unsigned int));
-  REQUIRE(custom_sm90_policy.max_privatized_dynamic_smem_bytes == 0);
-  REQUIRE(custom_sm75_policy.init_kernel_pdl_trigger_max_bins == 0);
-  REQUIRE(custom_sm90_policy.init_kernel_pdl_trigger_max_bins == 2048);
+  REQUIRE(custom_sm75_policy.max_privatized_static_smem_single_channel_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(custom_sm90_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
+  REQUIRE(custom_sm75_policy.max_num_bins_for_init_kernel_pdl_trigger == 0);
+  REQUIRE(custom_sm90_policy.max_num_bins_for_init_kernel_pdl_trigger == 2048);
 
   using sample_t                                     = cuda::std::uint8_t;
   using counter_t                                    = int;
