@@ -42,9 +42,10 @@ class TestExecPlaceGrid:
 
     def test_grid_create_with_dims(self):
         places = [stf.exec_place.device(0)] * 4
-        grid = stf.exec_place_grid.create(places, grid_dims=(2, 2, 1, 1))
+        grid = stf.exec_place_grid.create(places, grid_dims=(2, 2))
         assert grid.size == 4
-        assert grid.dims == (2, 2, 1, 1)
+        assert grid.dims == (2, 2)
+        assert grid.grid_rank == 2
 
     def test_grid_empty_raises(self):
         with pytest.raises(ValueError, match="at least one device"):
@@ -57,7 +58,7 @@ class TestExecPlaceGrid:
     def test_scalar_exec_place_dims(self):
         ep = stf.exec_place.device(0)
         assert ep.size == 1
-        assert ep.dims == (1, 1, 1, 1)
+        assert ep.dims == (1,)
 
     def test_grid_reshape_preserves_linear_place_order(self):
         places = [
@@ -237,7 +238,7 @@ class TestCompositeTask:
         with ctx.task(grid, lX.rw()) as t:
             dims = t.get_grid_dims()
             assert dims is not None
-            assert dims == (2, 1, 1, 1)
+            assert dims == (2,)
             s0 = t.get_stream_at_index(0)
             s1 = t.get_stream_at_index(1)
             assert s0 is not None and s0 != 0
@@ -386,6 +387,6 @@ class TestCompositeTask:
         with ctx.task(grid, lX.rw()) as t:
             dims = t.get_grid_dims()
             assert dims is not None
-            assert dims == (2, 1, 1, 1)
+            assert dims == (2,)
 
         ctx.finalize()

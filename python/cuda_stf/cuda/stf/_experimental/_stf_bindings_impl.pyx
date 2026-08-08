@@ -1263,6 +1263,47 @@ cdef class exec_place_resources:
             self._h = NULL
 
 
+# Public shapes are C order (dimension 0 outermost/slowest). The C ABI and
+# the C++ implementation remain dimension-0-fastest; the helpers below are
+# the only place the two conventions meet. Rank is always explicit: it is
+# never inferred by trimming extent-1 dimensions, which are legitimate.
+
+def _validate_extents(dims, what="shape"):
+    """Validate an int or a sequence of 1 to 4 positive integral extents and
+    return it as a tuple (public C order, untouched)."""
+    if isinstance(dims, bool):
+        raise TypeError(f"{what} must be an int or a sequence of ints")
+    if isinstance(dims, int):
+        dims = (dims,)
+    dims = tuple(dims)
+    if not 1 <= len(dims) <= 4:
+        raise ValueError(f"{what} must have 1 to 4 dimensions, got {len(dims)}")
+    for e in dims:
+        if isinstance(e, bool) or not isinstance(e, int):
+            raise TypeError(f"{what} extents must be ints, got {e!r}")
+        if e <= 0:
+            raise ValueError(f"{what} extents must be positive, got {e}")
+    return dims
+
+
+cdef int _fill_dim4_c_order(object dims, stf_dim4* out, str what=u"shape") except -1:
+    """Convert a public C-order shape into a native dimension-0-fastest
+    stf_dim4: reverse the active dimensions, then pad with trailing 1s."""
+    rev = _validate_extents(dims, what)[::-1]
+    padded = rev + (1,) * (4 - len(rev))
+    out.x = <uint64_t>padded[0]
+    out.y = <uint64_t>padded[1]
+    out.z = <uint64_t>padded[2]
+    out.t = <uint64_t>padded[3]
+    return 0
+
+
+def _native_to_public(native, int rank):
+    """Convert a native (x, y, z, t) tuple back to a public C-order tuple of
+    the stored rank."""
+    return tuple(native[:rank])[::-1]
+
+
 cdef class exec_place:
     cdef stf_exec_place_handle _h
     cdef stf_exec_place_scope_handle _scope
@@ -1415,10 +1456,11 @@ cdef class exec_place:
 
     @property
     def dims(self):
-        """Grid dimensions as (x, y, z, t). Scalar places return (1, 1, 1, 1)."""
+        """Grid dimensions as a C-order tuple. Scalar places return ``(1,)``;
+        grids return a tuple of their grid rank (see exec_place_grid)."""
         cdef stf_dim4 d
         stf_exec_place_get_dims(self._h, &d)
-        return (d.x, d.y, d.z, d.t)
+        return _native_to_public((d.x, d.y, d.z, d.t), _exec_place_grid_rank(self))
 
     @property
     def size(self):
@@ -1574,9 +1616,16 @@ cdef class exec_place_grid(exec_place):
     or ``create()``.
     """
     cdef object _mapper_keep_alive  # prevent GC of ctypes callback if mapper was set
+    cdef int _grid_rank
 
     def __cinit__(self):
         self._mapper_keep_alive = None
+        self._grid_rank = 1
+
+    @property
+    def grid_rank(self):
+        """Rank of the grid (number of public dimensions)."""
+        return self._grid_rank
 
     @staticmethod
     def machine(granularity="device"):
@@ -1705,25 +1754,20 @@ cdef class exec_place_grid(exec_place):
 
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         if grid_dims is not None:
-            dim_list = [int(d) for d in grid_dims]
-            if not 1 <= len(dim_list) <= 4:
-                raise ValueError("grid_dims must have between 1 and 4 entries (x, y, z, t)")
-            if any(d <= 0 for d in dim_list):
-                raise ValueError("grid_dims entries must be positive integers")
+            public_grid = _validate_extents(grid_dims, "grid_dims")
             product = 1
-            for d in dim_list:
+            for d in public_grid:
                 product *= d
             if product != n:
                 raise ValueError(
                     f"grid_dims product ({product}) must equal the number of places ({n})"
                 )
-            dims.x = dim_list[0]
-            dims.y = dim_list[1] if len(dim_list) > 1 else 1
-            dims.z = dim_list[2] if len(dim_list) > 2 else 1
-            dims.t = dim_list[3] if len(dim_list) > 3 else 1
+            _fill_dim4_c_order(public_grid, &dims, u"grid_dims")
             g._h = stf_exec_place_grid_create(c_places, n, &dims)
+            g._grid_rank = len(public_grid)
         else:
             g._h = stf_exec_place_grid_create(c_places, n, NULL)
+            g._grid_rank = 1
 
         if g._h == NULL:
             raise RuntimeError("failed to create exec_place grid")
@@ -1739,6 +1783,14 @@ cdef class exec_place_grid(exec_place):
             g._mapper_keep_alive = dplace
 
         return g
+
+
+cdef int _exec_place_grid_rank(exec_place place):
+    """Grid rank of an exec place: the stored rank for Python-created grids,
+    1 for scalar places (their native dims are (1, 1, 1, 1))."""
+    if isinstance(place, exec_place_grid):
+        return (<exec_place_grid>place)._grid_rank
+    return 1
 
 
 cdef class data_place:
@@ -2025,6 +2077,8 @@ cdef class task:
     cdef list _mapper_states
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
+    # Grid rank of the exec place set through set_exec_place (1 = scalar)
+    cdef int _grid_rank
 
     def __cinit__(self, context ctx):
         self._t = stf_task_create(ctx._ctx)
@@ -2035,6 +2089,7 @@ cdef class task:
         self._owners = []
         self._mapper_states = []
         self._alive = ctx._alive
+        self._grid_rank = 1
 
     def __dealloc__(self):
         # See stackable_logical_data.__dealloc__ for why a None _alive must
@@ -2109,6 +2164,7 @@ cdef class task:
 
         cdef exec_place ep = <exec_place> exec_p
         stf_task_set_exec_place(self._t, ep._h)
+        self._grid_rank = _exec_place_grid_rank(ep)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
         _collect_mapper_states_from(ep, self._mapper_states, set())
@@ -2124,14 +2180,15 @@ cdef class task:
         return CudaStream(<uintptr_t>s)
 
     def get_grid_dims(self):
-        """When the task's exec place is a grid, return (x, y, z, t) shape.
+        """When the task's exec place is a grid, return its C-order shape
+        (rank taken from the grid set with :meth:`set_exec_place`).
 
         Call after start(). Returns None if the task is not on a grid.
         """
         cdef stf_dim4 dims
         if stf_task_get_grid_dims(self._t, &dims) != 0:
             return None
-        return (dims.x, dims.y, dims.z, dims.t)
+        return _native_to_public((dims.x, dims.y, dims.z, dims.t), self._grid_rank)
 
     def get_stream_at_index(self, size_t place_index):
         """When the task's exec place is a grid, return the CUstream for the
@@ -2153,7 +2210,9 @@ cdef class task:
         dims = self.get_grid_dims()
         if dims is None:
             return [self.stream_ptr()]
-        cdef size_t n = dims[0] * dims[1] * dims[2] * dims[3]
+        cdef size_t n = 1
+        for e in dims:
+            n *= e
         return [self.get_stream_at_index(i) for i in range(n)]
 
     def get_arg(self, index) -> int:
