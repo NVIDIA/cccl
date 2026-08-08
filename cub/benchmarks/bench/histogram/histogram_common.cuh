@@ -27,17 +27,17 @@
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
 #  endif // TUNE_LOAD_ALGORITHM_ID
 
-template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
+template <typename SampleT, typename CounterT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, bool IS_EVEN>
 struct bench_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::HistogramPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
     constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    constexpr auto sweep = cub::HistogramSweepPolicy{
+    constexpr auto sweep = cub::HistogramPrivatizationPolicy{
       TUNE_THREADS,
       TUNE_ITEMS,
       TUNE_VEC_SIZE,
@@ -45,18 +45,13 @@ struct bench_policy_selector
       TUNE_LOAD_MODIFIER,
       TUNE_RLE_COMPRESS,
       TUNE_WORK_STEALING};
-    return {
-      sweep,
-      sweep,
-      sweep,
-      TUNE_STATIC_SMEM_MAX_BYTES,
-      TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM,
-      TUNE_DYNAMIC_SMEM_MAX_BYTES,
-      TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS,
-      TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS,
-      TUNE_DYNAMIC_SMEM_EVEN_3CH_MAX_BINS,
-      TUNE_DYNAMIC_SMEM_EVEN_4CH_MAX_BINS,
-      TUNE_INIT_KERNEL_PDL_TRIGGER_MAX_BINS};
+    auto policy =
+      cub::detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IS_EVEN>{}(
+        cc);
+    policy.gmem         = sweep;
+    policy.static_smem  = sweep;
+    policy.dynamic_smem = sweep;
+    return policy;
   }
 };
 #endif // !TUNE_BASE
