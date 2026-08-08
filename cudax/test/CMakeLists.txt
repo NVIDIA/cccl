@@ -128,6 +128,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.find ${cudax_target}
     cuco/fixed_capacity_map/test_find.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.retrieve_all ${cudax_target}
+    cuco/fixed_capacity_map/test_retrieve_all.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
     cuco/fixed_capacity_map/test_capacity.cu
 )
@@ -292,6 +296,10 @@ cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
 
 cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
     coop/shuffle_up/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.scratch
+    coop/scratch.cu
 )
 
 if (cudax_ENABLE_CUFILE)

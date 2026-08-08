@@ -92,6 +92,45 @@ Buffers can be constructed in several ways, depending on how you want to initial
 
 In each case the memory is allocated and initialized in stream order on the provided stream.
 
+.. warning::
+
+   Construction from host iterators or host ranges is stream-ordered: the copy from the source is enqueued on the
+   provided stream. The source memory must remain valid until that copy completes on the stream, not just until the
+   constructor returns. This follows the same ordering rules as other asynchronous work submitted to a
+   `CUDA stream <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__.
+
+   Avoid returning a buffer constructed from a temporary host source:
+
+   .. code:: cpp
+
+      cuda::device_buffer<int> make_buffer_from_values(
+        std::vector<int> values,
+        cuda::stream_ref stream,
+        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+      {
+        return cuda::device_buffer<int>{stream, mr, values.begin(), values.end()};
+        // BUG: values is destroyed when the function returns, but the H2D copy may still be in flight.
+      }
+
+   If the host source must be destroyed before the caller can synchronize later, synchronize the stream first:
+
+   .. code:: cpp
+
+      cuda::device_buffer<int> make_buffer_from_values(
+        std::vector<int> values,
+        cuda::stream_ref stream,
+        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+      {
+        auto ret = cuda::device_buffer<int>{stream, mr, values.begin(), values.end()};
+        stream.sync(); // Ensure the H2D copy completes before values is destroyed.
+        return ret;
+      }
+
+   Some ``cudaMemcpyAsync`` paths historically synchronized implicitly when copying from pageable host memory, which
+   could mask this bug. Do not rely on that behavior; newer platforms and asynchronous copy implementations may
+   perform a truly asynchronous copy. The same lifetime rule applies to temporary host sources such as initializer
+   lists, whose backing storage is destroyed at the end of the full expression.
+
 Example:
 
 .. code:: cpp
@@ -117,8 +156,11 @@ Example:
      std::vector<int> vec{1, 2, 3, 4, 5};
      cuda::device_buffer<int> buf4{stream, mr, vec.begin(), vec.end()};
 
-     // From initializer list
-     cuda::device_buffer<int> buf5{stream, mr, {1, 2, 3, 4, 5}};
+     // From range
+     cuda::device_buffer<int> buf5{stream, mr, vec};
+
+     // Keep local host sources alive until stream-ordered copies complete.
+     stream.sync();
    }
 
 Stored Stream Management and Deallocation
@@ -206,10 +248,13 @@ Example:
    #include <cuda/memory_resource>
    #include <cuda/std/cstddef>
    #include <algorithm>
+   #include <vector>
 
    void iterate_buffer(cuda::stream_ref stream) {
      auto mr = cuda::pinned_default_memory_pool();
-     cuda::host_buffer<int> buf{stream, mr, {1, 2, 3, 4, 5}};
+     std::vector<int> vec{1, 2, 3, 4, 5};
+     cuda::host_buffer<int> buf{stream, mr, vec};
+     stream.sync();
 
      // Unsynchronized element access by index
      for (cuda::std::size_t i = 0; i < buf.size(); ++i) {

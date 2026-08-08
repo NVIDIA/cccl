@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// complex<__nv_bfloat16> is not available in tile mode
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>

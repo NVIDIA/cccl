@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -35,7 +35,7 @@
 // partial_load: range
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_range()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_range()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   auto arr  = make_iota_array<T, N>();
@@ -51,7 +51,7 @@ TEST_FUNC constexpr void test_partial_load_range()
 // partial_load: range, masked
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_range_masked()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_range_masked()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -70,7 +70,7 @@ TEST_FUNC constexpr void test_partial_load_range_masked()
 // partial_load: smaller range (count < Vec.size)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_smaller_range()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_smaller_range()
 {
   if constexpr (N > 1)
   {
@@ -97,7 +97,7 @@ TEST_FUNC constexpr void test_partial_load_smaller_range()
 // partial_load: iterator + count
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_iter_count()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_iter_count()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   auto arr  = make_iota_array<T, N>();
@@ -119,7 +119,7 @@ TEST_FUNC constexpr void test_partial_load_iter_count()
 // partial_load: iterator + sentinel
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_iter_sentinel()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_iter_sentinel()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   auto arr  = make_iota_array<T, N>();
@@ -141,7 +141,7 @@ TEST_FUNC constexpr void test_partial_load_iter_sentinel()
 // flag_convert: lossy load from wider type
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_convert()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_convert()
 {
   if constexpr (sizeof(T) <= sizeof(int) && cuda::std::is_integral_v<T>)
   {
@@ -166,7 +166,7 @@ TEST_FUNC constexpr void test_partial_load_convert()
 // noexcept: public functions must NOT be noexcept
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_load_not_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_not_noexcept()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -188,7 +188,7 @@ TEST_FUNC constexpr void test_partial_load_not_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_partial_load_range<T, N>();
   test_partial_load_range_masked<T, N>();

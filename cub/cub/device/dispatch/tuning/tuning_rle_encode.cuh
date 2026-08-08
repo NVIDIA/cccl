@@ -100,13 +100,13 @@ struct RleEncodePolicy
   RleAlgorithm algorithm = RleAlgorithm::lookback; //!< The RLE-encode algorithm to use
   RleLookbackPolicy lookback; //!< The lookback policy
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return !(lhs == rhs);

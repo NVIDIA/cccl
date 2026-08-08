@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // cuda::std::views::common
 
@@ -26,7 +26,7 @@ template <class View, class T>
 _CCCL_CONCEPT CanBePiped =
   _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 

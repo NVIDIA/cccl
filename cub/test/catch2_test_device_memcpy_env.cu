@@ -137,7 +137,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CU
 template <int BlockThreads>
 struct batch_memcpy_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
     return {
       cub::BatchedCopyAlgorithm::lookback,
