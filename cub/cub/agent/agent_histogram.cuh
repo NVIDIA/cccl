@@ -163,7 +163,7 @@ struct AgentHistogram
       ? policy.dynamic_smem
       : policy.gmem;
   static constexpr int privatized_static_smem_bins =
-    uses_static_smem ? policy.max_privatized_static_smem_bytes / int{sizeof(CounterT)} / NumActiveChannels : 0;
+    uses_static_smem ? policy.max_privatized_static_smem_single_channel_bytes / int{sizeof(CounterT)} : 0;
   static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
                 "Static-SMEM privatization requires room for at least one bin");
   static constexpr int vec_size                    = sweep.vec_size;
@@ -219,7 +219,7 @@ struct AgentHistogram
   const int* num_output_bins; // one for each channel
   const int* num_privatized_bins; // one for each channel
   CounterT* gmem_privatized_histograms[NumActiveChannels]; // one for each channel
-  CounterT* dyn_smem_privatized_histograms[NumActiveChannels]; // dynamic shared-memory channel bases, when enabled
+  CounterT* dynamic_smem_privatized_histograms[NumActiveChannels]; // dynamic shared-memory channel bases, when enabled
   OutputCounterT** output_histogram; // final output, in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
@@ -228,7 +228,7 @@ struct AgentHistogram
   {
     if constexpr (uses_dynamic_smem)
     {
-      return dyn_smem_privatized_histograms[channel];
+      return dynamic_smem_privatized_histograms[channel];
     }
     else if constexpr (uses_static_smem)
     {
@@ -548,7 +548,7 @@ struct AgentHistogram
   //! @param privatized_decode_op
   //!   The transform operator for determining privatized counter indices from samples, one for each channel
   //!
-  //! @param dyn_smem_privatized_histograms
+  //! @param dynamic_smem_privatized_histograms
   //!   Base of the runtime-sized shared-memory histogram, or `nullptr` for a static-SMEM or global-memory mode
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& static_smem_storage,
@@ -559,7 +559,7 @@ struct AgentHistogram
     CounterT** gmem_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
     PrivatizedDecodeOpT* privatized_decode_op,
-    CounterT* dyn_smem_privatized_histograms)
+    CounterT* dynamic_smem_privatized_histograms)
       : static_smem_storage(static_smem_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
@@ -571,12 +571,12 @@ struct AgentHistogram
   {
     if constexpr (uses_dynamic_smem)
     {
-      _CCCL_ASSERT(dyn_smem_privatized_histograms != nullptr, "Dynamic-SMEM mode requires a shared-memory base");
-      CounterT* channel_histogram = dyn_smem_privatized_histograms;
+      _CCCL_ASSERT(dynamic_smem_privatized_histograms != nullptr, "Dynamic-SMEM mode requires a shared-memory base");
+      CounterT* channel_histogram = dynamic_smem_privatized_histograms;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        this->dyn_smem_privatized_histograms[ch] = channel_histogram;
+        this->dynamic_smem_privatized_histograms[ch] = channel_histogram;
         channel_histogram += num_privatized_bins[ch];
       }
     }

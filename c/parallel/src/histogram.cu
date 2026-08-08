@@ -56,7 +56,7 @@ struct histogram_kernel_source
   }
 
   template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
+            typename PrivatizationMode,
             typename FirstLevelArrayT,
             typename SecondLevelArrayT,
             bool IsEven,
@@ -96,7 +96,7 @@ std::string get_init_kernel_name(int num_active_channels, std::string_view count
 }
 
 std::string get_sweep_kernel_name(
-  int privatized_smem_bins,
+  std::string_view privatization_mode_t,
   int num_channels,
   int num_active_channels,
   cccl_iterator_t d_samples,
@@ -147,7 +147,7 @@ std::string get_sweep_kernel_name(
     "cub::detail::histogram::DeviceHistogramSweepDeviceInitKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
     "{10}, {11}>",
     chained_policy_t,
-    privatized_smem_bins,
+    privatization_mode_t,
     num_channels,
     num_active_channels,
     samples_iterator_t,
@@ -324,17 +324,20 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   fflush(stdout);
 #endif
 
-  // TODO: This is tricky because we need to know the input to set this to a
-  // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
-  // information here.
-  const int privatized_smem_bins =
-    num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
-
   const bool is_byte_sample = d_samples.value_type.size == 1;
+  const auto privatization =
+    is_byte_sample
+      ? cub::detail::histogram::privatization_mode::static_smem
+      : cub::detail::histogram::select_privatization_mode_for_counter_size<true, 1>(
+          active_policy, num_output_levels_val - 1, static_cast<int>(d_output_histograms.value_type.size));
+  const std::string_view privatization_mode_t =
+    privatization == cub::detail::histogram::privatization_mode::static_smem
+      ? "cub::detail::histogram::HistogramPrivatizedStaticSmem"
+      : "cub::detail::histogram::HistogramPrivatizedGmem";
 
   std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
   std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
-    privatized_smem_bins,
+    privatization_mode_t,
     num_channels,
     num_active_channels,
     d_samples,
@@ -574,6 +577,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // LevelT
       OffsetT, // OffsetT
       cub::detail::histogram::policy_selector, // PolicySelector
+      void, // PrivatizedCounterT: C Parallel preserves the counter width after type erasure
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
