@@ -58,7 +58,12 @@ static_assert(cuda::std::same_as<SValue::value_type, S>);
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 {
+  // gcc < 13 evaluates this as taking address of rvalue.
+#  if TEST_COMPILER(GCC, <, 13)
+  return &V == cuda::std::__constant_wrapper<V>::__get();
+#  else // ^^^ TEST_COMPILER(GCC, <, 13) ^^^ / vvv !TEST_COMPILER(GCC, <, 13) vvv
   return &V == &cuda::std::__constant_wrapper<V>{};
+#  endif // ^^^ !TEST_COMPILER(GCC, <, 13) ^^^
 }
 
 static_assert(value_ref_to_template_parameter_object<S{5}>());
