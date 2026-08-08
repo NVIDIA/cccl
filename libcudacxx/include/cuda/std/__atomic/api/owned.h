@@ -48,8 +48,8 @@ struct __atomic_common
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile, _Tp)
 };
 
 template <typename _Tp, typename _Sco>
@@ -67,11 +67,11 @@ struct __atomic_arithmetic
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile, _Tp)
 
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile, _Tp)
 };
 
 template <typename _Tp, typename _Sco>
@@ -89,14 +89,14 @@ struct __atomic_bitwise
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile, _Tp)
 
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile, _Tp)
 
-  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, )
-  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile, _Tp)
 };
 
 template <typename _Tp, typename _Sco>
@@ -114,11 +114,11 @@ struct __atomic_pointer
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile, _Tp)
 
-  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, )
-  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, volatile)
+  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, , _Tp)
+  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, volatile, _Tp)
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>

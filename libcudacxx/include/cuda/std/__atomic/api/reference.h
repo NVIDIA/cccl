@@ -46,7 +46,7 @@ struct __atomic_ref_common
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, , remove_cv_t<_Tp>)
 };
 
 template <typename _Tp, typename _Sco>
@@ -62,8 +62,8 @@ struct __atomic_ref_arithmetic
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, , remove_cv_t<_Tp>)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, , remove_cv_t<_Tp>)
 };
 
 template <typename _Tp, typename _Sco>
@@ -79,9 +79,9 @@ struct __atomic_ref_bitwise
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
-  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
-  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, , remove_cv_t<_Tp>)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, , remove_cv_t<_Tp>)
+  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(const, , remove_cv_t<_Tp>)
 };
 
 template <typename _Tp, typename _Sco>
@@ -97,8 +97,8 @@ struct __atomic_ref_pointer
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
-  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
-  _LIBCUDACXX_ATOMIC_POINTER_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, , remove_cv_t<_Tp>)
+  _LIBCUDACXX_ATOMIC_POINTER_IMPL(const, , remove_cv_t<_Tp>)
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
