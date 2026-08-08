@@ -651,7 +651,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-                     <= policy.init_kernel_pdl_trigger_max_bins)
+                     <= policy.max_num_bins_for_init_kernel_pdl_trigger)
                  {
                    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
                  }
@@ -793,10 +793,10 @@ __launch_bounds__(
                    OutputCounterT>;
 
   // Shared memory for AgentHistogram
-  __shared__ typename AgentHistogramT::TempStorage static_smem_storage;
+  __shared__ typename AgentHistogramT::TempStorage static_smem;
 
   AgentHistogramT agent(
-    static_smem_storage,
+    static_smem,
     d_samples,
     num_output_bins_wrapper.data(),
     num_privatized_bins_wrapper.data(),
@@ -862,7 +862,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.threads_per_
                    OffsetT,
                    OutputCounterT>;
 
-  __shared__ typename AgentHistogramT::TempStorage static_smem_storage;
+  __shared__ typename AgentHistogramT::TempStorage static_smem;
   extern __shared__ __align__(16) unsigned char dynamic_smem[];
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
@@ -877,7 +877,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.threads_per_
   }
 
   AgentHistogramT agent(
-    static_smem_storage,
+    static_smem,
     d_samples,
     num_output_bins_wrapper.data(),
     num_privatized_bins_wrapper.data(),
@@ -1050,10 +1050,10 @@ __launch_bounds__(int(
                    OutputCounterT>;
 
   // Shared memory for AgentHistogram
-  __shared__ typename AgentHistogramT::TempStorage static_smem_storage;
+  __shared__ typename AgentHistogramT::TempStorage static_smem;
 
   AgentHistogramT agent(
-    static_smem_storage,
+    static_smem,
     d_samples,
     num_output_bins_wrapper.data(),
     num_privatized_bins_wrapper.data(),
