@@ -17,7 +17,10 @@ setup_python_env() {
 
     # Create a venv with the requested Python version.
     # uv downloads a pre-built CPython binary automatically — no compilation needed.
-    uv venv --seed --python "${py_version}" "${HOME}/.cccl-venv"
+    # --clear keeps this idempotent: a job that runs several build scripts
+    # (e.g. the combined cuda-stf producer) sets up the env more than once,
+    # and current uv errors on an existing venv instead of reusing it.
+    uv venv --clear --seed --python "${py_version}" "${HOME}/.cccl-venv"
 
     # Windows venvs use Scripts/, Linux/macOS use bin/
     if [[ -f "${HOME}/.cccl-venv/Scripts/activate" ]]; then
