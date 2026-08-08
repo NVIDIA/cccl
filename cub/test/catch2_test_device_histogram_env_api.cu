@@ -418,20 +418,20 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    const auto sweep = cub::HistogramSweepPolicy{
+    const auto sweep = cub::HistogramPrivatizationPolicy{
       128, cc > cuda::compute_capability{9, 0} ? 16 : 7, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, false, false};
     return {
-      .gmem                              = sweep,
-      .static_smem                       = sweep,
-      .dynamic_smem                      = sweep,
-      .max_privatized_static_smem_bytes  = 256 * sizeof(unsigned int),
-      .static_smem_min_blocks_per_sm     = 0,
-      .max_privatized_dynamic_smem_bytes = 0,
-      .dynamic_smem_range_max_bins       = 0,
-      .dynamic_smem_even_2ch_max_bins    = 0,
-      .dynamic_smem_even_3ch_max_bins    = 0,
-      .dynamic_smem_even_4ch_max_bins    = 0,
-      .init_kernel_pdl_trigger_max_bins  = 2048};
+      .gmem                                                  = sweep,
+      .static_smem                                           = sweep,
+      .dynamic_smem                                          = sweep,
+      .max_privatized_static_smem_single_channel_bytes       = 256 * sizeof(unsigned int),
+      .max_privatized_dynamic_smem_single_channel_bytes      = 0,
+      .static_smem_min_blocks_per_sm                         = 0,
+      .max_privatized_dynamic_smem_multi_channel_range_bytes = 0,
+      .max_privatized_dynamic_smem_2_channel_even_bytes      = 0,
+      .max_privatized_dynamic_smem_3_channel_even_bytes      = 0,
+      .max_privatized_dynamic_smem_4_channel_even_bytes      = 0,
+      .max_num_bins_for_init_kernel_pdl_trigger              = 2048};
   }
 };
 // example-end histogram-even-policy-selector
