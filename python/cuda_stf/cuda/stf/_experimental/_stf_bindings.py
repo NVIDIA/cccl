@@ -44,6 +44,7 @@ _BINDING_EXPORTS = (
     "green_context_helper",
     "green_ctx_view",
     "logical_data",
+    "locality_domain_count",
     "machine_init",
     "read",
     "rw",
