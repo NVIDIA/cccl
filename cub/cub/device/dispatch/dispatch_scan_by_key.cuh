@@ -620,20 +620,20 @@ struct dispatch_scan_by_key
       return error;
     }
 
+    const ScanByKeyPolicy active_policy = policy_selector(cc);
+
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
-                   ss << policy_selector(cc);
+                   ss << active_policy;
                    _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
                            cc.major_cap(),
                            cc.minor_cap(),
                            ss.str().c_str());
                  }))
 #else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    detail::log_dispatch("DeviceScanByKey", cc, policy_selector(cc));
+    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
-    const ScanByKeyPolicy active_policy = policy_selector(cc);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -728,20 +728,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
+  const ScanByKeyPolicy active_policy = policy_selector(cc);
+
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
-                 ss << policy_selector(cc);
+                 ss << active_policy;
                  _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
 #else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceScanByKey", cc, policy_selector(cc));
+  log_dispatch("DeviceScanByKey", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
-  const ScanByKeyPolicy active_policy = policy_selector(cc);
 
   // Get device ordinal
   int device_ordinal;
