@@ -400,6 +400,7 @@ template <typename PerPartitionOffsetT,
           typename MaxExtremumOutIteratorT,
           typename MaxIndexOutIteratorT,
           typename GlobalOffsetT,
+          typename ReductionOpT,
           typename TuningEnvT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax(
   void* d_temp_storage,
@@ -410,15 +411,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
   MaxExtremumOutIteratorT d_max_out,
   MaxIndexOutIteratorT d_max_index_out,
   GlobalOffsetT num_items,
+  ReductionOpT reduce_op,
   cudaStream_t stream,
   const TuningEnvT& = {})
 {
-  using input_value_t             = it_value_t<InputIteratorT>;
-  using output_extremum_t         = non_void_value_t<MinExtremumOutIteratorT, input_value_t>;
-  using reduce_op_t               = arg_minmax_reduce_op<>;
-  using per_partition_accum_t     = argminmax_accum_t<output_extremum_t, PerPartitionOffsetT>;
-  using global_accum_t            = argminmax_accum_t<output_extremum_t, GlobalOffsetT>;
-  using default_policy_selector_t = policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, reduce_op_t>;
+  using input_value_t         = it_value_t<InputIteratorT>;
+  using output_extremum_t     = non_void_value_t<MinExtremumOutIteratorT, input_value_t>;
+  using per_partition_accum_t = argminmax_accum_t<output_extremum_t, PerPartitionOffsetT>;
+  using global_accum_t        = argminmax_accum_t<output_extremum_t, GlobalOffsetT>;
+  using default_policy_selector_t =
+    policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, ReductionOpT>;
   using policy_selector_t =
     ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
@@ -441,9 +443,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
 
   arg_index_input_iterator_t d_indexed_offset_in(d_in);
 
-  // The reduction operator (fixed to the default less<> comparator)
-  reduce_op_t reduce_op{};
-
   // Transforms the per-partition result to a global result by adding the current partition's offset
   local_to_global_op_t local_to_global_op{GlobalOffsetT{0}};
 
@@ -462,7 +461,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
 
   // Reduction operator type that enables accumulating per-partition results to a global reduction result
   using accumulating_transform_output_op_t =
-    accumulating_transform_output_op<global_accum_t, local_to_global_op_t, reduce_op_t, decltype(d_result_out)>;
+    accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, decltype(d_result_out)>;
   auto accumulating_out_op = accumulating_transform_output_op_t{
     true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
