@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -234,6 +235,15 @@ public:
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
+  /**
+   * @brief Create a data place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to plain device memory.
+   */
+  static data_place locality_domain(const locality_domain_view& view);
+  static data_place locality_domain(int dev_id, int domain_id);
+
   bool operator==(const data_place& rhs) const
   {
     // Same pointer means same place
@@ -400,6 +410,9 @@ public:
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
@@ -408,6 +421,9 @@ public:
 
   /**
    * @brief Allocate memory at this data place (raw allocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
@@ -422,6 +438,9 @@ public:
    * composite places use the geometry to back each block of the allocation on
    * the place that owns it according to the partitioner. Extents follow the
    * dimension-0-fastest convention of dim4::get_index().
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    *
    * @throws std::invalid_argument if the product of the extents and elemsize
    * overflows size_t or exceeds PTRDIFF_MAX
@@ -450,6 +469,9 @@ public:
 
   /**
    * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {
@@ -888,6 +910,15 @@ public:
    */
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create an execution place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to the whole device.
+   */
+  static exec_place locality_domain(const locality_domain_view& view);
+  static exec_place locality_domain(int dev_id, int domain_id);
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);
