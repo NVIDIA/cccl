@@ -21,6 +21,7 @@
 #  include <thrust/extrema.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 
+#  include <cuda/__cmath/round_up.h>
 #  include <cuda/__iterator/discard_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
@@ -98,10 +99,12 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
     stream);
   throw_on_error(error, "minmax_element failed to determine temporary storage size");
 
+  // Round tmp_size up to the alignment of offset_t so the index slots are properly aligned.
+  const auto aligned_tmp_size = ::cuda::round_up(tmp_size, alignof(offset_t));
   // Allocate: the algorithm's temporary storage followed by two index slots (min, max).
-  thrust::detail::temporary_array<char, Derived> tmp(policy, tmp_size + 2 * sizeof(offset_t));
+  thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + 2 * sizeof(offset_t));
   void* tmp_ptr       = static_cast<void*>(tmp.data().get());
-  offset_t* min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + tmp_size);
+  offset_t* min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
   offset_t* max_index = min_index + 1;
 
   error = cub::DeviceReduce::ArgMinMax(
