@@ -43,8 +43,6 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
-#include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
@@ -68,73 +66,6 @@ namespace detail
 template <typename DeterminismT>
 inline constexpr bool is_non_deterministic_v =
   ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
-
-template <typename T, typename IndexT>
-struct arg_minmax_accum_t
-{
-  T min_value;
-  T max_value;
-  IndexT min_index;
-  IndexT max_index;
-};
-
-// converts a counting index into an initial accumulator
-template <typename InputIteratorT, typename IndexT>
-struct arg_minmax_transform_op
-{
-  InputIteratorT d_in;
-
-  _CCCL_HOST_DEVICE auto operator()(IndexT idx) const -> arg_minmax_accum_t<it_value_t<InputIteratorT>, IndexT>
-  {
-    const auto val = d_in[idx];
-    return {val, val, idx, idx};
-  }
-};
-
-//! @brief Reduction operator for ArgMinMax: first minimum (smallest index on tie), last maximum (largest index on tie).
-template <typename T, typename IndexT, typename CompareOpT>
-struct arg_minmax_reduce_op
-{
-  CompareOpT compare_op;
-
-  _CCCL_HOST_DEVICE arg_minmax_accum_t<T, IndexT>
-  operator()(const arg_minmax_accum_t<T, IndexT>& a, const arg_minmax_accum_t<T, IndexT>& b) const
-  {
-    auto result = a;
-    // first minimum: strictly smaller wins; ties keep the smaller index
-    if (compare_op(b.min_value, a.min_value) || (!compare_op(a.min_value, b.min_value) && b.min_index < a.min_index))
-    {
-      result.min_value = b.min_value;
-      result.min_index = b.min_index;
-    }
-    // last maximum: strictly greater wins; ties keep the larger index
-    if (compare_op(a.max_value, b.max_value) || (!compare_op(b.max_value, a.max_value) && b.max_index > a.max_index))
-    {
-      result.max_value = b.max_value;
-      result.max_index = b.max_index;
-    }
-    return result;
-  }
-};
-
-//! @brief Output operator: unzips a combined argminmax_accum_t and writes to the four user-supplied iterators.
-template <typename MinExtremumOutT, typename MinIndexOutT, typename MaxExtremumOutT, typename MaxIndexOutT>
-struct unzip_and_write_arg_minmax_op
-{
-  MinExtremumOutT min_out;
-  MinIndexOutT min_index_out;
-  MaxExtremumOutT max_out;
-  MaxIndexOutT max_index_out;
-
-  template <typename IndexT, typename ResultT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, ResultT result)
-  {
-    *min_out       = result.min_value;
-    *min_index_out = result.min_index;
-    *max_out       = result.max_value;
-    *max_index_out = result.max_index;
-  }
-};
 } // namespace detail
 
 //! @rst
@@ -2098,31 +2029,60 @@ private:
     ::cuda::std::int64_t num_items,
     const EnvT& env)
   {
-    using ValueT = detail::it_value_t<InputIteratorT>;
-    using IndexT = ::cuda::std::int64_t;
+    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
 
-    auto transform_op = detail::arg_minmax_transform_op<InputIteratorT, IndexT>{d_in};
-    auto reduce_op    = detail::arg_minmax_reduce_op<ValueT, IndexT, ::cuda::std::less<>>{{}};
-    auto unzip_op     = detail::unzip_and_write_arg_minmax_op<
-          MinExtremumOutIteratorT,
-          MinIndexOutIteratorT,
-          MaxExtremumOutIteratorT,
-          MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out};
-    auto d_out = ::cuda::make_tabulate_output_iterator(::cuda::std::move(unzip_op));
+    using PerPartitionOffsetT = int;
+    using GlobalOffsetT       = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(
-      d_temp_storage, temp_storage_bytes, env, [&](auto, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce::dispatch(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
           storage,
           bytes,
-          ::cuda::counting_iterator<IndexT, IndexT>{IndexT{0}},
-          d_out,
-          detail::make_num_items_dispatch_arg(num_items),
-          reduce_op,
-          detail::reduce::no_init,
+          d_in,
+          d_min_out,
+          d_min_index_out,
+          d_max_out,
+          d_max_index_out,
+          static_cast<GlobalOffsetT>(num_items),
           stream,
-          transform_op);
+          tuning_env);
       });
+  }
+
+  template <typename InputIteratorT,
+            typename MinExtremumOutIteratorT,
+            typename MinIndexOutIteratorT,
+            typename MaxExtremumOutIteratorT,
+            typename MaxIndexOutIteratorT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_minmax(
+    InputIteratorT d_in,
+    MinExtremumOutIteratorT d_min_out,
+    MinIndexOutIteratorT d_min_index_out,
+    MaxExtremumOutIteratorT d_max_out,
+    MaxIndexOutIteratorT d_max_index_out,
+    ::cuda::std::int64_t num_items,
+    const EnvT& env)
+  {
+    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
+
+    using PerPartitionOffsetT = int;
+    using GlobalOffsetT       = ::cuda::std::int64_t;
+
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
+        storage,
+        bytes,
+        d_in,
+        d_min_out,
+        d_min_index_out,
+        d_max_out,
+        d_max_index_out,
+        static_cast<GlobalOffsetT>(num_items),
+        stream,
+        tuning_env);
+    });
   }
 
 public:
@@ -2341,9 +2301,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
-      return __arg_minmax(storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
-    });
+    return __arg_minmax(d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
   }
 
   //! @rst
