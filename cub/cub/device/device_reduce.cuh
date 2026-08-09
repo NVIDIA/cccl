@@ -2050,41 +2050,6 @@ private:
       });
   }
 
-  template <typename InputIteratorT,
-            typename MinExtremumOutIteratorT,
-            typename MinIndexOutIteratorT,
-            typename MaxExtremumOutIteratorT,
-            typename MaxIndexOutIteratorT,
-            typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_minmax(
-    InputIteratorT d_in,
-    MinExtremumOutIteratorT d_min_out,
-    MinIndexOutIteratorT d_min_index_out,
-    MaxExtremumOutIteratorT d_max_out,
-    MaxIndexOutIteratorT d_max_index_out,
-    ::cuda::std::int64_t num_items,
-    const EnvT& env)
-  {
-    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
-
-    using PerPartitionOffsetT = int;
-    using GlobalOffsetT       = ::cuda::std::int64_t;
-
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
-        storage,
-        bytes,
-        d_in,
-        d_min_out,
-        d_min_index_out,
-        d_max_out,
-        d_max_index_out,
-        static_cast<GlobalOffsetT>(num_items),
-        stream,
-        tuning_env);
-    });
-  }
-
 public:
   //! @rst
   //! Finds the device-wide first minimum and last maximum in a single pass, also returning their indices.
@@ -2301,7 +2266,9 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return __arg_minmax(d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
+    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+      return __arg_minmax(storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
+    });
   }
 
   //! @rst
