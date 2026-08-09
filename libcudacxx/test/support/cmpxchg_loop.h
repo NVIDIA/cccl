@@ -11,7 +11,7 @@
 #include "test_macros.h"
 
 template <class A, class T>
-TEST_FUNC bool cmpxchg_weak_loop(A& atomic, T& expected, T desired)
+TEST_HOST_DEVICE_FUNC bool cmpxchg_weak_loop(A& atomic, T& expected, T desired)
 {
   for (int i = 0; i < 10; i++)
   {
@@ -25,7 +25,7 @@ TEST_FUNC bool cmpxchg_weak_loop(A& atomic, T& expected, T desired)
 }
 
 template <class A, class T>
-TEST_FUNC bool
+TEST_HOST_DEVICE_FUNC bool
 cmpxchg_weak_loop(A& atomic, T& expected, T desired, cuda::std::memory_order success, cuda::std::memory_order failure)
 {
   for (int i = 0; i < 10; i++)
@@ -40,7 +40,7 @@ cmpxchg_weak_loop(A& atomic, T& expected, T desired, cuda::std::memory_order suc
 }
 
 template <class A, class T>
-TEST_FUNC bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired)
+TEST_HOST_DEVICE_FUNC bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired)
 {
   for (int i = 0; i < 10; i++)
   {
@@ -54,7 +54,7 @@ TEST_FUNC bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired)
 }
 
 template <class A, class T>
-TEST_FUNC bool
+TEST_HOST_DEVICE_FUNC bool
 c_cmpxchg_weak_loop(A* atomic, T* expected, T desired, cuda::std::memory_order success, cuda::std::memory_order failure)
 {
   for (int i = 0; i < 10; i++)

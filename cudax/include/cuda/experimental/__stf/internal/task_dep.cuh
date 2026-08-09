@@ -90,6 +90,13 @@ public:
   }
 
   // We should only assign it once
+  //! Replace the dependency's data place (used when a deferred replicated
+  //! place is materialized against the task's execution place at acquire)
+  void set_dplace(data_place d)
+  {
+    dplace = mv(d);
+  }
+
   void set_instance_id(instance_id_t id)
   {
     EXPECT(instance_id == instance_id_t::invalid);

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.math], abs, fabs
@@ -22,7 +25,7 @@ template <typename T>
 struct signed_values
 {
   template <typename I>
-  TEST_FUNC constexpr T operator()(I i) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr T operator()(I i) const noexcept
   {
     return static_cast<T>(static_cast<int>(i) - 2);
   }
@@ -30,7 +33,7 @@ struct signed_values
 
 // floating point types
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(math_values<T>{});
@@ -59,7 +62,7 @@ inline constexpr bool has_simd_fabs<V, cuda::std::void_t<decltype(cuda::std::sim
   true;
 
 template <typename T, int N>
-TEST_FUNC void test_signed_integral_type()
+TEST_HOST_DEVICE_FUNC void test_signed_integral_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(signed_values<T>{});
@@ -75,7 +78,7 @@ TEST_FUNC void test_signed_integral_type()
   }
 }
 
-TEST_FUNC void test_signed_integral()
+TEST_HOST_DEVICE_FUNC void test_signed_integral()
 {
   test_signed_integral_type<int8_t, 4>();
   test_signed_integral_type<int16_t, 4>();

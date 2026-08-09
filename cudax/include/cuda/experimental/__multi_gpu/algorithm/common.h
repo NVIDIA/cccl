@@ -22,14 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/system/cuda/detail/dispatch.h>
-#include <thrust/system/cuda/detail/util.h>
-
 #include <cuda/__container/buffer.h>
 #include <cuda/__device/device_ref.h>
 #include <cuda/__functional/lazy_call_or.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/no_init.h>
@@ -49,24 +47,11 @@
 
 namespace cuda::experimental::__detail
 {
-#define __CUDAX_MULTI_GPU_DISPATCH(__logical_device, __count, __call, __arguments)                       \
-  do                                                                                                     \
-  {                                                                                                      \
-    const auto __cur_context = ::cuda::__ensure_current_context{(__logical_device).context()};           \
-    auto __status            = ::cudaError_t{};                                                          \
-                                                                                                         \
-    THRUST_INDEX_TYPE_DISPATCH(__status, __call, __count, __arguments);                                  \
-    THRUST_NS_QUALIFIER::cuda_cub::throw_on_error(__status, /*msg=*/"performing " #__call #__arguments); \
-  } while (0)
-
-#define __CUDAX_MULTI_GPU_DOUBLE_DISPATCH(__logical_device, __count1, __count2, __call, __arguments)     \
-  do                                                                                                     \
-  {                                                                                                      \
-    const auto __cur_context = ::cuda::__ensure_current_context{(__logical_device).context()};           \
-    auto __status            = ::cudaError_t{};                                                          \
-                                                                                                         \
-    THRUST_DOUBLE_INDEX_TYPE_DISPATCH(__status, __call, __count1, __count2, __arguments);                \
-    THRUST_NS_QUALIFIER::cuda_cub::throw_on_error(__status, /*msg=*/"performing " #__call #__arguments); \
+#define __CUDAX_MULTI_GPU_DISPATCH(__logical_device, __call, ...)                              \
+  do                                                                                           \
+  {                                                                                            \
+    const auto __cur_context = ::cuda::__ensure_current_context{(__logical_device).context()}; \
+    _CCCL_TRY_CUDA_API(__call, "performing" #__call "(" #__VA_ARGS__ ")", __VA_ARGS__);        \
   } while (0)
 
 template <class _Env>
@@ -80,6 +65,11 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
     },
     __env);
 }
+
+template <class _Env>
+using __resource_type_for _CCCL_NODEBUG =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
+    ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
 
 template <typename _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)
@@ -118,8 +108,7 @@ struct __in_range_out_it_properties
 
   using __env_type = ::cuda::std::ranges::range_value_t<_EnvRange>;
 
-  using __resource_type = ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
-    ::cuda::std::declval<__env_type>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+  using __resource_type = ::cuda::experimental::__detail::__resource_type_for<__env_type>;
 
   using __buffer_type = ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
 };

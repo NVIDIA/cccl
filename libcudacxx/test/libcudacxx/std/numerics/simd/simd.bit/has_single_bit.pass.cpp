@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.bit], has_single_bit
@@ -22,7 +25,7 @@
 template <typename T, int N>
 struct test_has_single_bit
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
     using Mask = typename Vec::mask_type;
@@ -48,7 +51,7 @@ struct has_simd_has_single_bit<V, cuda::std::void_t<decltype(simd::has_single_bi
     : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
 {
   using IntVec   = simd::basic_vec<int, simd::fixed_size<4>>;
   using UintVec  = simd::basic_vec<unsigned, simd::fixed_size<4>>;

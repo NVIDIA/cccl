@@ -39,8 +39,8 @@ from . import types as cccl_types
 from ._bindings import Op, OpKind
 from ._caching import (
     CachableFunction,
-    _cache_registry,
     _make_cache_key_from_args,
+    _process_wide_cache_registry,
     cache_with_registered_key_functions,
 )
 
@@ -549,7 +549,7 @@ def _infer_return_type(py_func, input_types):
 
 _infer_return_type.cache_clear = _infer_return_type_cache.clear  # type: ignore[attr-defined]
 # Keep clear_all_caches() covering this cache too.
-_cache_registry["_jit._infer_return_type"] = _infer_return_type
+_process_wide_cache_registry["_jit._infer_return_type"] = _infer_return_type
 
 
 def _infer_return_type_impl(py_func, input_types):

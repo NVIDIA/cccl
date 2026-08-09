@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,6 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_compress.h>
+#include <cuda/std/__bit/bit_expand.h>
+#include <cuda/std/__bit/bit_repeat.h>
+#include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
@@ -30,6 +34,8 @@
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__bit/shl.h>
+#include <cuda/std/__bit/shr.h>
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_BIT

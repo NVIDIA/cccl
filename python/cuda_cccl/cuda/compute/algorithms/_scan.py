@@ -11,7 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
@@ -51,6 +51,7 @@ def get_init_kind(
 
 class _Scan(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -124,16 +125,26 @@ class _Scan(Serializable):
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         # loaded_build_result / device_scan_fn are bound lazily on the first
-        # __call__ (see _bind_device_scan_fn); nothing is loaded here.
-        self.build_results = cccl.build_for_ccs(
+        # __call__ (see _bind_device_scan_fn).
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
-            init_value_type_info,
+            d_in,
+            d_out,
+            op,
+            init_value,
             force_inclusive,
             self.init_kind,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceScanBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+                init_value_type_info,
+                force_inclusive,
+                self.init_kind,
+                compute_capability=compute_capability,
+            ),
         )
 
     def _bind_device_scan_fn(self) -> None:
@@ -171,7 +182,9 @@ class _Scan(Serializable):
     ):
         # Select (and lazily load) the current device's build result, then bind the
         # derived compute fn from it.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
         self._bind_device_scan_fn()
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)

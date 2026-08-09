@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // Disable CCCL assertions in this test to test the erroneous behavior
 #undef CCCL_ENABLE_ASSERTIONS
@@ -26,10 +26,11 @@
 TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure because of an alignment specifier
 
 template <class T>
-TEST_FUNC void test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
+TEST_HOST_DEVICE_FUNC void
+test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
 {
-  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)));
-  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
+  static_assert(noexcept(cuda::std::aligned_alloc(align, n * sizeof(T))));
+  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(align, n * sizeof(T)));
   if (expect_success)
   {
     // check that the memory was allocated
@@ -60,7 +61,7 @@ struct alignas(128) OverAlignedStruct
   char data[32];
 };
 
-TEST_FUNC bool should_expect_success()
+TEST_HOST_DEVICE_FUNC bool should_expect_success()
 {
   bool host_expect_success = true;
 #if TEST_COMPILER(MSVC)
@@ -72,7 +73,7 @@ TEST_FUNC bool should_expect_success()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return host_expect_success;), (return true;))
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   const bool expect_success = should_expect_success();
 

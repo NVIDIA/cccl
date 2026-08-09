@@ -167,10 +167,12 @@ public:
         info.logical_data_id = dep.get_d().get_unique_id();
         info.mode            = dep.get_access_mode();
 
-        auto logical_data       = dep.get_d();
-        info.validate_access_op = [logical_data](stackable_ctx& sctx, int offset, access_mode mode) mutable {
-          logical_data.validate_access(offset, sctx, mode);
-        };
+        auto logical_data = dep.get_d();
+        auto dep_dplace   = dep.get_dplace();
+        info.validate_access_op =
+          [logical_data, dep_dplace](stackable_ctx& sctx, int offset, access_mode mode) mutable {
+            logical_data.validate_access(offset, sctx, mode, dep_dplace);
+          };
 
         info.resolve_op = [logical_data](int offset, access_mode mode) mutable -> task_dep_untyped {
           auto ld = logical_data.get_ld(offset);
@@ -211,7 +213,7 @@ public:
           {
             auto validate = [&](const auto& arg) {
               arg.get_d().validate_access(
-                offset_, sctx_, lookup_combined_mode(combined_modes, arg.get_d().get_unique_id()));
+                offset_, sctx_, lookup_combined_mode(combined_modes, arg.get_d().get_unique_id()), arg.get_dplace());
             };
             (validate(initial_args), ...);
           }
@@ -1062,6 +1064,17 @@ public:
         d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
       }
 
+      // Composite (localized) allocations cached by the popped context must
+      // not be destroyed with it: ~localized_array unmaps VMM backing with
+      // synchronous driver calls that no event can defer, and the body graph
+      // launched by finalize() may still be running. Hand the cache over to
+      // the parent, gated on the body's completion events: entries are then
+      // reused or released once the parent has synchronized with the nested
+      // work (the dangling-event registration below guarantees the parent's
+      // fence/finalize waits on the body graph).
+      parent_ctx.get_backend().get_composite_cache().import_from(
+        mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+
       // Forward the body graph's completion event into the parent context.
       //
       // Without this, a graph_scope used purely for token ordering (no
@@ -1725,7 +1738,8 @@ public:
     [[maybe_unused]] auto validate = [&combined_accesses, offset, this](const auto& arg) {
       if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
       {
-        arg.get_d().validate_access(offset, *this, lookup_combined_mode(combined_accesses, arg.get_d().get_unique_id()));
+        arg.get_d().validate_access(
+          offset, *this, lookup_combined_mode(combined_accesses, arg.get_d().get_unique_id()), arg.get_dplace());
       }
     };
 

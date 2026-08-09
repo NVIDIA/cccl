@@ -7,18 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
-
-// REQUIRES: !c++17
 
 // constant_wrapper
 
@@ -43,12 +34,18 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "helpers.h"
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
+
+// gcc < 14 warns about comparing &value == &value (which is always true).
+#if TEST_COMPILER(GCC, <, 14)
+TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+#endif // TEST_COMPILER(GCC, <, 14)
 
 struct WithOps
 {
@@ -121,65 +118,67 @@ struct OpsReturnNonStructural
 struct NoOps
 {};
 
+template <class T, class = void>
+inline constexpr bool HasPlus = false;
 template <class T>
-concept HasPlus = requires(T t) {
-  { +t };
-};
+inline constexpr bool HasPlus<T, cuda::std::void_t<decltype(+cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasMinus = false;
 template <class T>
-concept HasMinus = requires(T t) {
-  { -t };
-};
+inline constexpr bool HasMinus<T, cuda::std::void_t<decltype(-cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasBitNot = false;
 template <class T>
-concept HasBitNot = requires(T t) {
-  { ~t };
-};
+inline constexpr bool HasBitNot<T, cuda::std::void_t<decltype(~cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNot = false;
 template <class T>
-concept HasNot = requires(T t) {
-  { !t };
-};
+inline constexpr bool HasNot<T, cuda::std::void_t<decltype(!cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasBitAnd = false;
 template <class T>
-concept HasBitAnd = requires(T t) {
-  { &t };
-};
+inline constexpr bool HasBitAnd<T, cuda::std::void_t<decltype(&cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasDeref = false;
 template <class T>
-concept HasDeref = requires(T t) {
-  { *t };
-};
+inline constexpr bool HasDeref<T, cuda::std::void_t<decltype(*cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptPlus = false;
 template <class T>
-concept HasNoexceptPlus = requires(T t) {
-  { +t } noexcept;
-};
+inline constexpr bool HasNoexceptPlus<T, cuda::std::enable_if_t<noexcept(+cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptMinus = false;
 template <class T>
-concept HasNoexceptMinus = requires(T t) {
-  { -t } noexcept;
-};
+inline constexpr bool HasNoexceptMinus<T, cuda::std::enable_if_t<noexcept(-cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptBitNot = false;
 template <class T>
-concept HasNoexceptBitNot = requires(T t) {
-  { ~t } noexcept;
-};
+inline constexpr bool HasNoexceptBitNot<T, cuda::std::enable_if_t<noexcept(~cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptNot = false;
 template <class T>
-concept HasNoexceptNot = requires(T t) {
-  { !t } noexcept;
-};
+inline constexpr bool HasNoexceptNot<T, cuda::std::enable_if_t<noexcept(!cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptBitAnd = false;
 template <class T>
-concept HasNoexceptBitAnd = requires(T t) {
-  { &t } noexcept;
-};
+inline constexpr bool HasNoexceptBitAnd<T, cuda::std::enable_if_t<noexcept(&cuda::std::declval<T&>())>> = true;
 
+template <class T, class = void>
+inline constexpr bool HasNoexceptDeref = false;
 template <class T>
-concept HasNoexceptDeref = requires(T t) {
-  { *t } noexcept;
-};
+inline constexpr bool HasNoexceptDeref<T, cuda::std::enable_if_t<noexcept(*cuda::std::declval<T&>())>> = true;
+
+#if TEST_STD_VER >= 2020
 
 static_assert(HasPlus<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasMinus<cuda::std::__constant_wrapper<WithOps{42}>>);
@@ -195,12 +194,19 @@ static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasNoexceptDeref<cuda::std::__constant_wrapper<WithOps{42}>>);
 
+#endif // TEST_STD_VER >= 2020
+
+// Old msvc doesn't evaluate noexcept properly.
+#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptBitNot<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<42>>);
 static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<42>>);
+#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(!HasDeref<cuda::std::__constant_wrapper<42>>);
+
+#if TEST_STD_VER >= 2020
 
 static_assert(!HasPlus<cuda::std::__constant_wrapper<NoOps{}>>);
 static_assert(!HasMinus<cuda::std::__constant_wrapper<NoOps{}>>);
@@ -223,33 +229,44 @@ static_assert(!HasNoexceptMinus<cuda::std::__constant_wrapper<OpsReturnNonStruct
 static_assert(!HasNoexceptBitNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
 static_assert(!HasNoexceptNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
 static_assert(!HasNoexceptBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
+// todo(dabayer): This is failing with MSVC.
+#  if !_CCCL_COMPILER(MSVC)
 static_assert(!HasNoexceptDeref<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
+#  endif // !_CCCL_COMPILER(MSVC)
+
+#endif // TEST_STD_VER >= 2020
 
 TEST_FUNC constexpr bool test()
 {
   {
     // int
-    cuda::std::__constant_wrapper<42> cw42;
+    cuda::std::__constant_wrapper<42> cw42{};
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = +cw42;
+    decltype(auto) result = +cw42;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
     static_assert(result == 42);
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<-42>> decltype(auto) result2 = -cw42;
+    decltype(auto) result2 = -cw42;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<-42>, decltype(result2)>);
     static_assert(result2 == -42);
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<~42>> decltype(auto) result3 = ~cw42;
+    decltype(auto) result3 = ~cw42;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<~42>, decltype(result3)>);
     static_assert(result3 == ~42);
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<!42>> decltype(auto) result4 = !cw42;
+    decltype(auto) result4 = !cw42;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<!42>, decltype(result4)>);
     static_assert(result4 == !42);
 
-    // gcc < 13 fails this test with error:
-    //  the address of 'cuda::std::__4::__cw_fixed_value<int>{42}' is not a valid template argument
-#if !_CCCL_COMPILER(GCC, <, 13)
-    cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>> decltype(auto) result5 = &cw42;
+    // todo(dabayer): This is failing with MSVC.
+#if !_CCCL_COMPILER(MSVC)
+    decltype(auto) result5 = &cw42;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>, decltype(result5)>);
     static_assert(result5 == &cw42.value);
-#endif // !_CCCL_COMPILER(GCC, <, 13)
+#endif // !_CCCL_COMPILER(MSVC)
   }
+
+#if TEST_STD_VER >= 2020
 
   {
     // WithOps
@@ -297,9 +314,14 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<NonStructural> decltype(auto) result5 = &cwOpsReturnNonStructural;
     assert(result5.get() == 84);
 
+    // todo(dabayer): This is failing with MSVC.
+#  if !_CCCL_COMPILER(MSVC)
     cuda::std::same_as<NonStructural> decltype(auto) result6 = *cwOpsReturnNonStructural;
     assert(result6.get() == 0);
+#  endif // !_CCCL_COMPILER(MSVC)
   }
+
+#endif // TEST_STD_VER >= 2020
 
   return true;
 }

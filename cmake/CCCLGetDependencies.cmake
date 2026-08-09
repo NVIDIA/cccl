@@ -103,12 +103,18 @@ macro(cccl_get_nvtx)
   CPMAddPackage(
     NAME NVTX
     GITHUB_REPOSITORY NVIDIA/NVTX
-    # We should track release-v3, but due to an upstream issue, we pin it now:
-    GIT_TAG 60587e3059c2e6a4d5c83f22c978715c98a5f1f8
+    GIT_TAG release-v3
     DOWNLOAD_ONLY ON
     SYSTEM ON
   )
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
+endmacro()
+
+macro(cccl_get_rapids_test)
+  set(rapids-cmake-version "26.06")
+  set(rapids-cmake-tag "v26.06.00")
+  include("${CCCL_SOURCE_DIR}/cmake/RAPIDS.cmake")
+  include(rapids-test)
 endmacro()
 
 macro(cccl_get_thrust)

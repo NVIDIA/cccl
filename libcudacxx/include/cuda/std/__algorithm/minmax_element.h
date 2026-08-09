@@ -90,7 +90,7 @@ _CCCL_API constexpr pair<_Iter, _Iter> __minmax_element_impl(_Iter __first, _Sen
       {
         __result.second = __i;
       }
-      break;
+      return __result;
     }
 
     if (__less(__first, __i))
