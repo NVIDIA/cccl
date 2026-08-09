@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -37,8 +37,8 @@ void arg_minmax(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<offset_t> out_indices(2); // [0] = min index, [1] = max index
 
   const T* d_in           = thrust::raw_pointer_cast(in.data());
-  T* d_out_extrema        = thrust::raw_pointer_cast(out_extrema.data());
   offset_t* d_out_indices = thrust::raw_pointer_cast(out_indices.data());
+  T* d_out_extrema        = thrust::raw_pointer_cast(out_extrema.data());
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
