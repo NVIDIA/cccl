@@ -66,7 +66,18 @@ set(cudax_ENABLE_HEADER_TESTING OFF)
 set(libcudacxx_ENABLE_INSTALL_RULES OFF)
 set(CUB_ENABLE_INSTALL_RULES OFF)
 set(Thrust_ENABLE_INSTALL_RULES OFF)
+# Redirect any install rules inside the CCCL tree that use the GNU default
+# locations (notably the cccl-config CMake package files) INTO the package
+# directory. Without this they land at the wheel root (site-packages/lib/...),
+# outside any package. Same push/pop as python/cuda_cccl/CMakeLists.txt.
+include(GNUInstallDirs)
+set(old_libdir "${CMAKE_INSTALL_LIBDIR}") # push
+set(old_includedir "${CMAKE_INSTALL_INCLUDEDIR}") # push
+set(CMAKE_INSTALL_LIBDIR "cuda/stf/_experimental/lib")
+set(CMAKE_INSTALL_INCLUDEDIR "cuda/stf/_experimental/include")
 add_subdirectory(${_cccl_root} _parent_cccl)
+set(CMAKE_INSTALL_LIBDIR "${old_libdir}") # pop
+set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
 
 # ---------------------------------------------------------------------------
 # Cython toolchain

@@ -264,7 +264,7 @@ Test organization:
 * `tests/compute` — Algorithms and iterators
 * `tests/headers` — Header integration
 * `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
-* `test_examples.py` — Runs compute/coop examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
+* `test_examples.py` — Runs compute examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 

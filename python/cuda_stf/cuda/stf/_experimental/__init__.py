@@ -7,7 +7,14 @@
 from __future__ import annotations
 
 import importlib
+import importlib.metadata
 from typing import TYPE_CHECKING, Any
+
+# Installed distribution version (matches cuda_cccl's convention).
+try:
+    __version__ = importlib.metadata.version("cuda-stf")
+except Exception:  # noqa: BLE001 - not installed (e.g. in-tree import)
+    __version__ = "0.0.0"
 
 from . import paths
 from .paths import (
@@ -85,9 +92,11 @@ __all__ = [
     "CudaStream",
     "DeviceArray",
     "TaskGraph",
+    "__version__",
     "async_resources",
     "cond",
     "context",
+    "data_place",
     "dep",
     "exec_place",
     "exec_place_grid",
@@ -99,7 +108,6 @@ __all__ = [
     "green_context_helper",
     "green_ctx_view",
     "green_places",
-    "data_place",
     "machine_init",
     "paths",
     "stackable_context",
