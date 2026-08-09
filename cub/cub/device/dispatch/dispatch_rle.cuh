@@ -620,7 +620,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       return error;
     }
 
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    error = CubDebug(detail::validate_stream_device(stream));
+    if (cudaSuccess != error)
     {
       return error;
     }

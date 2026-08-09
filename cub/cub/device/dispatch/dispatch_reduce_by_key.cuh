@@ -622,9 +622,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         break;
       }
 
-      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      error = CubDebug(detail::validate_stream_device(stream));
+      if (cudaSuccess != error)
       {
-        return error;
+        break;
       }
 
       DispatchReduceByKey dispatch(

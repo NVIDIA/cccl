@@ -635,9 +635,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         break;
       }
 
-      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      error = CubDebug(detail::validate_stream_device(stream));
+      if (cudaSuccess != error)
       {
-        return error;
+        break;
       }
 
       // Create dispatch functor
