@@ -5,7 +5,7 @@
 [build-system]
 # STF builds cccl.c.experimental.stf and cudax through the top-level CCCL
 # project, which requires a recent FindCUDAToolkit.
-requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython>=3.1.0", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -56,23 +56,31 @@ minimal-sysctk13 = [
 ]
 cu12 = [
   "cuda-stf[minimal-cu12]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
   "cuda-stf[minimal-cu13]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 sysctk12 = [
   "cuda-stf[minimal-sysctk12]",
-  "numba>=0.60.0",
-  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
+  # plain numba-cuda (no [cu12]) so it relies on the system-provided CUDA toolkit
+  # instead of pulling the toolkit from pip -- the whole point of the sysctk extra.
+  "numba-cuda>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 sysctk13 = [
   "cuda-stf[minimal-sysctk13]",
-  "numba>=0.60.0",
-  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
+  # plain numba-cuda (no [cu13]) so it relies on the system-provided CUDA toolkit
+  # instead of pulling the toolkit from pip -- the whole point of the sysctk extra.
+  "numba-cuda>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 # The tests exercise cuda.compute and C++ header discovery from cuda-cccl.
 test-cu12 = [
@@ -164,6 +172,9 @@ known-first-party = [
 ]
 
 [tool.pytest.ini_options]
+# Make tests/ importable regardless of the invocation directory (matches
+# cuda_cccl; test_examples.py imports examples by dotted module name).
+pythonpath = ["tests"]
 markers = [
   "large: tests requiring large device memory allocations",
 ]
