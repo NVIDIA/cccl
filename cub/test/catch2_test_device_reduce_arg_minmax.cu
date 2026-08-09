@@ -231,9 +231,8 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
   using output_t = typename params::output_t;
   using offset_t = int32_t;
 
-  constexpr int max_items    = 5000000;
-  constexpr int min_items    = 1;
-  constexpr int num_segments = 1;
+  constexpr int max_items = 5000000;
+  constexpr int min_items = 1;
 
   // Generate the input sizes to test for
   const int num_items = GENERATE_COPY(
@@ -263,6 +262,8 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
   CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items);
 
 #if TEST_TYPES != 4
+  constexpr int num_segments = 1;
+
   SECTION("argminmax")
   {
     // Prepare verification data
