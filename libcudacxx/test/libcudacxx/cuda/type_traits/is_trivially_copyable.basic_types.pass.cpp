@@ -12,6 +12,12 @@
 #include "cuda_fp_types.h"
 #include "test_macros.h"
 
+// Several CUDA vector types (e.g. long4) are deprecated in favor of their aligned variants. Suppress the deprecation
+// warnings for the whole test, because emitting the suppression pragmas inside a __host__ __device__ function body
+// triggers nvcc error #20199 ("unrecognized #pragma in device code").
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
 template <class T>
 TEST_FUNC void test_is_trivially_copyable()
 {
@@ -57,9 +63,7 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<long1>();
   test_is_trivially_copyable<long2>();
   test_is_trivially_copyable<long3>();
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_is_trivially_copyable<long4>();
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   test_is_trivially_copyable<long4_16a>();
   test_is_trivially_copyable<long4_32a>();
@@ -67,9 +71,7 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<ulong1>();
   test_is_trivially_copyable<ulong2>();
   test_is_trivially_copyable<ulong3>();
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_is_trivially_copyable<ulong4>();
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   test_is_trivially_copyable<ulong4_16a>();
   test_is_trivially_copyable<ulong4_32a>();
@@ -77,9 +79,7 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<longlong1>();
   test_is_trivially_copyable<longlong2>();
   test_is_trivially_copyable<longlong3>();
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_is_trivially_copyable<longlong4>();
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   test_is_trivially_copyable<longlong4_16a>();
   test_is_trivially_copyable<longlong4_32a>();
@@ -87,9 +87,7 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<ulonglong1>();
   test_is_trivially_copyable<ulonglong2>();
   test_is_trivially_copyable<ulonglong3>();
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_is_trivially_copyable<ulonglong4>();
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   test_is_trivially_copyable<ulonglong4_16a>();
   test_is_trivially_copyable<ulonglong4_32a>();
@@ -101,9 +99,7 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<double1>();
   test_is_trivially_copyable<double2>();
   test_is_trivially_copyable<double3>();
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   test_is_trivially_copyable<double4>();
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   test_is_trivially_copyable<double4_16a>();
   test_is_trivially_copyable<double4_32a>();
