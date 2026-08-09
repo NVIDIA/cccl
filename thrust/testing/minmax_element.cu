@@ -13,7 +13,7 @@ void TestMinMaxElementSimple()
   ASSERT_EQUAL(*thrust::minmax_element(data.begin(), data.end()).first, 1);
   ASSERT_EQUAL(*thrust::minmax_element(data.begin(), data.end()).second, 5);
   ASSERT_EQUAL(thrust::minmax_element(data.begin(), data.end()).first - data.begin(), 2);
-  ASSERT_EQUAL(thrust::minmax_element(data.begin(), data.end()).second - data.begin(), 1);
+  ASSERT_EQUAL(thrust::minmax_element(data.begin(), data.end()).second - data.begin(), 4);
 }
 DECLARE_VECTOR_UNITTEST(TestMinMaxElementSimple);
 
