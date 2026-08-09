@@ -128,11 +128,11 @@ struct unzip_and_write_arg_extremum_op
   }
 };
 
-// Transform: KeyValuePair<OffsetT, T> produced by ArgIndexInputIterator → argminmax_accum_t<T, OffsetT>
+// transform the KeyValuePair<OffsetT, T> produced by ArgIndexInputIterator to argminmax_accum_t<T, OffsetT>
 template <typename T, typename OffsetT>
 struct kvp_to_argminmax_accum
 {
-  _CCCL_HOST_DEVICE detail::argminmax_accum_t<T, OffsetT> operator()(KeyValuePair<OffsetT, T> kv) const
+  _CCCL_HOST_DEVICE auto operator()(KeyValuePair<OffsetT, T> kv) const -> argminmax_accum_t<T, OffsetT>
   {
     return {kv.value, kv.value, kv.key, kv.key};
   }
@@ -160,17 +160,16 @@ struct local_to_global_minmax_op
   }
 };
 
-// Output operator: unzips a global argminmax_accum_t and writes to the four user-supplied iterators
 template <typename MinExtremumOutT, typename MinIndexOutT, typename MaxExtremumOutT, typename MaxIndexOutT>
-struct unzip_and_write_arg_minmax_op
+struct write_arg_minmax_result_op
 {
   MinExtremumOutT min_out;
   MinIndexOutT min_index_out;
   MaxExtremumOutT max_out;
   MaxIndexOutT max_index_out;
 
-  template <typename IndexT, typename ResultT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, ResultT result)
+  template <typename IndexT, typename T, typename GlobalOffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, const argminmax_accum_t<T, GlobalOffsetT>& result)
   {
     *min_out       = result.min_value;
     *min_index_out = result.min_index;
@@ -230,7 +229,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   using output_extremum_t         = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
   using default_policy_selector_t = detail::reduce::
     policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, ReductionOpT>;
-  using default_policy_t = decltype(default_policy_selector_t{}(::cuda::compute_capability{}));
   using policy_selector_t =
     ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
@@ -415,17 +413,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
   cudaStream_t stream,
   const TuningEnvT& = {})
 {
-  using input_value_t     = detail::it_value_t<InputIteratorT>;
-  using output_extremum_t = detail::non_void_value_t<MinExtremumOutIteratorT, input_value_t>;
-
-  using reduce_op_t = detail::arg_minmax_reduce_op<>;
-
-  using per_partition_accum_t = detail::argminmax_accum_t<output_extremum_t, PerPartitionOffsetT>;
-  using global_accum_t        = detail::argminmax_accum_t<output_extremum_t, GlobalOffsetT>;
-
-  using default_policy_selector_t =
-    detail::reduce::policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, reduce_op_t>;
-  using default_policy_t = decltype(default_policy_selector_t{}(::cuda::compute_capability{}));
+  using input_value_t             = it_value_t<InputIteratorT>;
+  using output_extremum_t         = non_void_value_t<MinExtremumOutIteratorT, input_value_t>;
+  using reduce_op_t               = arg_minmax_reduce_op<>;
+  using per_partition_accum_t     = argminmax_accum_t<output_extremum_t, PerPartitionOffsetT>;
+  using global_accum_t            = argminmax_accum_t<output_extremum_t, GlobalOffsetT>;
+  using default_policy_selector_t = policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, reduce_op_t>;
   using policy_selector_t =
     ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
@@ -435,10 +428,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
 
   // Tabulate output iterator that unzips the result and writes to the four user-provided output iterators
   auto d_result_out = ::cuda::make_tabulate_output_iterator(
-    unzip_and_write_arg_minmax_op<MinExtremumOutIteratorT,
-                                  MinIndexOutIteratorT,
-                                  MaxExtremumOutIteratorT,
-                                  MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
+    write_arg_minmax_result_op<MinExtremumOutIteratorT,
+                               MinIndexOutIteratorT,
+                               MaxExtremumOutIteratorT,
+                               MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
   // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
   using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
