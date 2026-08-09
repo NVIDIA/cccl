@@ -2112,16 +2112,16 @@ private:
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto, void* storage, size_t& bytes, cudaStream_t stream) {
-        return TransformReduce(
+        return detail::reduce::dispatch(
           storage,
           bytes,
           ::cuda::counting_iterator<IndexT, IndexT>{IndexT{0}},
           d_out,
-          num_items,
+          detail::make_num_items_dispatch_arg(num_items),
           reduce_op,
-          transform_op,
           detail::reduce::no_init,
-          stream);
+          stream,
+          transform_op);
       });
   }
 
@@ -2341,7 +2341,9 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return __arg_minmax(d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
+    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+      return __arg_minmax(storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, env);
+    });
   }
 
   //! @rst
