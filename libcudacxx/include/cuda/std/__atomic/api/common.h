@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -101,18 +101,18 @@
   {                                                                                                                 \
     __atomic_wait(&__a, __v, __m, _Sco{});                                                                          \
   }                                                                                                                 \
-  // P3323R1: notify_one/notify_all are constrained to !is_const_v<T>                                         \
-  _CCCL_TEMPLATE(class _T2 = _Tp)                                                                                     \
-  _CCCL_REQUIRES((!is_const_v<_T2>) )                                                                                  \
-  _CCCL_HOST_DEVICE_API inline void notify_one() _CONST _VOLATILE noexcept                                             \
-  {                                                                                                                    \
-    __atomic_notify_one(&__a, _Sco{});                                                                                 \
-  }                                                                                                                    \
-  _CCCL_TEMPLATE(class _T2 = _Tp)                                                                                     \
-  _CCCL_REQUIRES((!is_const_v<_T2>) )                                                                                  \
-  _CCCL_HOST_DEVICE_API inline void notify_all() _CONST _VOLATILE noexcept                                             \
-  {                                                                                                                    \
-    __atomic_notify_all(&__a, _Sco{});                                                                                 \
+  /* P3323R1: notify_one/notify_all are constrained to !is_const_v<T> */                                            \
+  _CCCL_TEMPLATE(class _T2 = _Tp)                                                                                   \
+  _CCCL_REQUIRES((!is_const_v<_T2>) )                                                                               \
+  _CCCL_HOST_DEVICE_API inline void notify_one() _CONST _VOLATILE noexcept                                          \
+  {                                                                                                                 \
+    __atomic_notify_one(&__a, _Sco{});                                                                              \
+  }                                                                                                                 \
+  _CCCL_TEMPLATE(class _T2 = _Tp)                                                                                   \
+  _CCCL_REQUIRES((!is_const_v<_T2>) )                                                                               \
+  _CCCL_HOST_DEVICE_API inline void notify_all() _CONST _VOLATILE noexcept                                          \
+  {                                                                                                                 \
+    __atomic_notify_all(&__a, _Sco{});                                                                              \
   }
 
 // API definitions for arithmetic atomics

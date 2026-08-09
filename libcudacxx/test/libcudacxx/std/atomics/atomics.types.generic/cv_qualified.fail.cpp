@@ -21,7 +21,7 @@
 int main(int, char**)
 {
   // P3323R1: atomic<const T> is ill-formed because T must be cv-unqualified.
-  cuda::std::atomic<const int> a(0);
+  cuda::std::atomic<const int> a(0); // expected-error@*:* {{requires T to be cv-unqualified}}
   (void) a;
 
   return 0;
