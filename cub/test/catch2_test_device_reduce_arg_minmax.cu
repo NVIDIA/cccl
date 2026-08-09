@@ -8,6 +8,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 
+#include <cuda/__cmath/uabs.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/devices>
@@ -74,6 +75,15 @@ enum class gen_data_t : int
   GEN_TYPE_RANDOM,
   /// Constant value as input data
   GEN_TYPE_CONST
+};
+
+struct abs_less_t
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
+  {
+    return cuda::uabs(a) < cuda::uabs(b);
+  }
 };
 
 #if TEST_TYPES == 0
@@ -196,6 +206,30 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles single element", "[reduce][a
   REQUIRE(min_index[0] == 0);
   REQUIRE(max_out[0] == 42);
   REQUIRE(max_index[0] == 0);
+}
+
+CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax with compare_op", "[reduce][arg_minmax]", CUB_SMALL)
+{
+  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_out   = thrust::device_vector<float>(1);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto max_out   = thrust::device_vector<float>(1);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+
+  auto error = cub::DeviceReduce::ArgMinMax(
+    input.begin(),
+    min_out.begin(),
+    min_index.begin(),
+    max_out.begin(),
+    max_index.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    cuda::std::less{});
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(min_out[0] == 0.0f);
+  REQUIRE(min_index[0] == 3);
+  REQUIRE(max_out[0] == 4.0f);
+  REQUIRE(max_index[0] == 2);
 }
 
 // All-same values: first minimum at index 0, last maximum at last index
@@ -415,5 +449,47 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
       test_argminmax(policy);
     }
   }
+
+#  if TEST_TYPES < 2
+  SECTION("argminmax-abs_less_t")
+  {
+    abs_less_t compare_op;
+
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+
+    // First minimum by abs value: first element with smallest |value|
+    auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
+    const auto expected_min       = *expected_min_it;
+    const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
+
+    // Last maximum by abs value: last element with largest |value|
+    auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
+    const auto expected_max       = *expected_last_max_it;
+    const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
+                                  - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
+
+    // Run test
+    using unwrapped_t = unwrap_value_t<output_t>;
+    c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
+    c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
+    device_arg_minmax(
+      unwrap_it(d_in_it),
+      d_min_out.data(),
+      d_min_index.data(),
+      d_max_out.data(),
+      d_max_index.data(),
+      num_items,
+      compare_op);
+
+    // Verify
+    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
+    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
+    REQUIRE(expected_min == gpu_min);
+    REQUIRE(expected_min_index == d_min_index[0]);
+    REQUIRE(expected_max == gpu_max);
+    REQUIRE(expected_max_index == d_max_index[0]);
+  }
+#  endif
 #endif // TEST_TYPES != 4
 }
