@@ -441,8 +441,12 @@ resolve_legacy_compare_bin() {
   local candidate=""
 
   if [[ -n "${CCCL_BENCH_LEGACY_COMPARE_BIN:-}" ]]; then
-    printf "%s" "${CCCL_BENCH_LEGACY_COMPARE_BIN}"
-    return 0
+    if [[ -x "${CCCL_BENCH_LEGACY_COMPARE_BIN}" ]]; then
+      printf "%s" "${CCCL_BENCH_LEGACY_COMPARE_BIN}"
+      return 0
+    fi
+    echo "CCCL_BENCH_LEGACY_COMPARE_BIN is set but not executable: ${CCCL_BENCH_LEGACY_COMPARE_BIN}" >&2
+    return 1
   fi
 
   if [[ "${compare_bin}" == */* ]]; then
@@ -476,7 +480,7 @@ run_python_compare_target() {
   local robust_rc=0
   local -a compare_cmd
 
-  for display in intervals simple explain; do
+  for display in "${COMPARE_DISPLAYS[@]}"; do
     compare_out="$(compare_report_path_for_display "${target_name}" "${display}")"
     compare_log="$(compare_log_path_for_display "${target_name}" "${display}")"
     compare_cmd=(
@@ -860,7 +864,7 @@ run_compare_target() {
   local robust_rc=0
   local -a compare_cmd
 
-  for display in intervals simple explain; do
+  for display in "${COMPARE_DISPLAYS[@]}"; do
     compare_out="$(compare_report_path_for_display "${target}" "${display}")"
     compare_log="$(compare_log_path_for_display "${target}" "${display}")"
     compare_cmd=(
@@ -961,7 +965,7 @@ write_compare_report_details() {
   local summary="$1"
   local compare_report_file="$2"
 
-  if [[ ! -f "${compare_report_file}" ]]; then
+  if [[ ! -s "${compare_report_file}" ]]; then
     return 1
   fi
 
@@ -1026,7 +1030,7 @@ write_summary() {
       for target in "${selected_targets[@]}"; do
         echo
         echo "### \`${target}\`"
-        for display in intervals simple explain; do
+        for display in "${COMPARE_DISPLAYS[@]}"; do
           compare_report_file="$(compare_report_path_for_display "${target}" "${display}")"
           if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
             reports_emitted=$((reports_emitted + 1))
@@ -1048,7 +1052,7 @@ write_summary() {
         py_target_name="$(python_path_to_target_name "${py_target_path}")"
         echo
         echo "### \`${py_target_name}\` (\`${py_target_path}\`)"
-        for display in intervals simple explain; do
+        for display in "${COMPARE_DISPLAYS[@]}"; do
           compare_report_file="$(compare_report_path_for_display "${py_target_name}" "${display}")"
           if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
             reports_emitted=$((reports_emitted + 1))
@@ -1143,6 +1147,7 @@ parse_cli_args "$@"
 
 declare -a NVBENCH_RUN_ARGS
 declare -a NVBENCH_COMPARE_ARGS
+readonly -a COMPARE_DISPLAYS=(intervals simple explain)
 parse_quoted_args_to_array NVBENCH_RUN_ARGS "${NVBENCH_ARGS_STRING}" "--nvbench-args" \
   || die "Failed to parse --nvbench-args."
 parse_quoted_args_to_array NVBENCH_COMPARE_ARGS "${NVBENCH_COMPARE_ARGS_STRING}" "--nvbench-compare-args" \
