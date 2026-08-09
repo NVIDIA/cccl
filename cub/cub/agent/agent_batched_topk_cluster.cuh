@@ -141,13 +141,7 @@ struct smem_block_tile_layout
   }
 };
 
-// -----------------------------------------------------------------------------
-// Occupancy-free cluster-blocks arithmetic (shared by host dispatch and device agent)
-// -----------------------------------------------------------------------------
-// Whether a segment takes the barrier-free single-CTA path: resident in one CTA (`<= max_block_resident_items`) and
-// at/below the single-CTA tuning threshold. Occupancy- and head-alignment-independent, so the host fast path and the
-// device collapse decision agree exactly. 32-bit: the public entry caps the segment size at 2^21, so every operand fits
-// `uint32_t`.
+// Whether a segment takes the cluster-barrier-free single-CTA path.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool is_single_cta_eligible(
   ::cuda::std::uint32_t segment_size,
   ::cuda::std::uint32_t max_block_resident_items,
@@ -168,26 +162,11 @@ struct smem_block_tile_layout
   return ::cuda::std::clamp(num_blocks, ::cuda::std::uint32_t{1}, max_cluster_blocks);
 }
 
-// Cluster top-k agent
-// -----------------------------------------------------------------------------
-// Cluster blocks is a runtime value (see `process_impl` for the readback), so
-// it is not a template parameter; per-block block_tile layout is still controlled
-// by the template parameters below.
-//
 // `Determinism` / `TieBreak` carry the requested `cuda::execution` requirements down from the dispatch layer. Any
 // deterministic guarantee selects the cluster-wide, index-ordered tie-break scan (and the blocked chunk partition it
 // depends on) over the nondeterministic racing atomics; `not_guaranteed` keeps the atomics. On the deterministic path
 // `prefer_larger_index` reverses the scan order so the largest-index ties win (else the smallest).
-template <int ThreadsPerBlock,
-          int HistogramItemsPerThread,
-          int PipelineStages,
-          int ChunkBytes,
-          int LoadAlignBytes,
-          int BitsPerPass,
-          int TieBreakItemsPerThread,
-          int SingleBlockMaxSegSize,
-          int MinChunksPerBlock,
-          int CopyItemsPerThread,
+template <typename PolicyGetter, // TODO(bgruber): pass cluster_topk_policy as NTTP in C++20
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -203,6 +182,8 @@ struct agent_batched_topk_cluster
   // ---------------------------------------------------------------------------
   // Types / constants
   // ---------------------------------------------------------------------------
+  static constexpr auto policy = PolicyGetter{}();
+
   using key_it_t   = it_value_t<KeyInputItItT>;
   using key_t      = it_value_t<key_it_t>;
   using value_it_t = it_value_t<ValueInputItItT>;
@@ -279,36 +260,21 @@ struct agent_batched_topk_cluster
   // non-deterministic path.
   static constexpr bool is_residency_reversed = needs_set_determinism && is_tie_reversed;
 
-  // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
-  // `process_impl`).
-  static constexpr int single_block_max_seg_size = SingleBlockMaxSegSize;
-
-  // A CTA joins a segment's logical cluster only if it would own at least this many chunks (see `run`). At 1 the
-  // logical cluster is just the CTAs that receive any chunk. Must be positive: it is the divisor in
-  // `compute_num_logical_cluster_blocks` and a zero-chunk CTA has no work.
-  static constexpr int min_chunks_per_block = MinChunksPerBlock;
-  static_assert(min_chunks_per_block >= 1, "min_chunks_per_block must be positive");
+  // Divisor in `compute_num_logical_cluster_blocks`, and a zero-chunk CTA has no work, so it must be positive.
+  static_assert(policy.min_chunks_per_block >= 1, "min_chunks_per_block must be positive");
 
   // Enable the per-segment logical-single-CTA runtime path only when the host could not size the launch to each
   // segment's exact size: any per-segment sequence (`!is_single_value`) or a `deferred` single value. For host-exact
   // `immediate`/`constant` singles the dispatch already picks the matching cluster blocks, so the logic is compiled
   // out.
   static constexpr bool enable_runtime_single_cta =
-    !::cuda::args::__traits<SegmentSizeParameterT>::is_single_value
+    (!::cuda::args::__traits<SegmentSizeParameterT>::is_single_value)
     || ::cuda::args::__traits<SegmentSizeParameterT>::is_deferred;
 
-  static constexpr int threads_per_block          = ThreadsPerBlock;
-  static constexpr int histogram_items_per_thread = HistogramItemsPerThread;
-  static constexpr int load_align_bytes           = LoadAlignBytes;
-  static constexpr int bits_per_pass              = BitsPerPass;
-  static constexpr int tie_break_items_per_thread = TieBreakItemsPerThread;
-  static constexpr int copy_items_per_thread      = CopyItemsPerThread; // select-all copy fast path
-
-  // Radix passes for this key type (compile-time). The overflow stream flips direction each pass, and `run` preselects
-  // the initial direction so the leftover after `num_passes` matches the deterministic filter (see `run`). The first
-  // wave is always primed in that initial direction, so `first_wave_is_forward` -- the only direction the first-wave
-  // stage->chunk mapping needs -- is a compile-time constant (non-deterministic keeps the forward default).
-  static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
+  // Radix passes for this key type (compile-time). The overflow stream flips direction each pass; `run` primes the
+  // first wave in `first_wave_is_forward` so the leftover after `num_passes` matches the deterministic filter
+  // (non-deterministic keeps the forward default).
+  static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
   static constexpr bool first_wave_is_forward =
     !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
 
@@ -317,14 +283,15 @@ struct agent_batched_topk_cluster
   static constexpr int static_max_segment_size = ::cuda::args::__traits<SegmentSizeParameterT>::highest;
 
   // Segments small enough to always be single-CTA resident (one contiguous SMEM span, see `run`) need at most
-  // `ceil(static_max_segment_size / threads_per_block)` sweep rounds. We clamp each per-thread unroll down to that
-  // bound to trim predication/registers on sub-tile segments. Larger segments keep the full unroll (codegen unchanged).
+  // `ceil(static_max_segment_size / policy.threads_per_block)` sweep rounds. We clamp each per-thread unroll down to
+  // that bound to trim predication/registers on sub-tile segments. Larger segments keep the full unroll (codegen
+  // unchanged).
   static constexpr bool should_clamp_items_to_segment =
-    static_max_segment_size > 0 && static_max_segment_size < single_block_max_seg_size;
+    static_max_segment_size > 0 && static_max_segment_size < policy.single_block_max_seg_size;
   static constexpr int segment_rounds_ceil =
-    should_clamp_items_to_segment ? ::cuda::ceil_div(static_max_segment_size, threads_per_block) : 0;
+    should_clamp_items_to_segment ? ::cuda::ceil_div(static_max_segment_size, policy.threads_per_block) : 0;
   static constexpr int segment_rounds_floor =
-    should_clamp_items_to_segment ? static_max_segment_size / threads_per_block : 0;
+    should_clamp_items_to_segment ? static_max_segment_size / policy.threads_per_block : 0;
 
   // Clamp a per-thread unroll down to the segment's bounded round count (only when `should_clamp_items_to_segment`);
   // larger/unbounded segments keep the full tuning width, and the guard keeps the rounds arithmetic in `int`.
@@ -337,17 +304,17 @@ struct agent_batched_topk_cluster
   // remainder loop (the chunk helper `for_each_chunk_key_impl` and the copy fast path); the `ceil` clamp
   // keeps the whole resident segment inside one tile for fully-predicated loops (the final filters' `process_tiles`).
   static constexpr int histogram_items_per_thread_clamped =
-    clamp_unroll(segment_rounds_floor, histogram_items_per_thread);
+    clamp_unroll(segment_rounds_floor, policy.histogram_items_per_thread);
   static constexpr int tie_break_items_per_thread_clamped =
-    clamp_unroll(segment_rounds_ceil, tie_break_items_per_thread);
-  static constexpr int copy_items_per_thread_clamped = clamp_unroll(segment_rounds_floor, copy_items_per_thread);
+    clamp_unroll(segment_rounds_ceil, policy.tie_break_items_per_thread);
+  static constexpr int copy_items_per_thread_clamped = clamp_unroll(segment_rounds_floor, policy.copy_items_per_thread);
   static_assert(histogram_items_per_thread_clamped >= 1, "histogram_items_per_thread_clamped must be positive");
   static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
   static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
 
-  static constexpr int num_buckets          = 1 << bits_per_pass;
-  using smem_layout_t                       = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
-  static constexpr int max_chunk_items      = smem_layout_t::max_chunk_items;
+  static constexpr int num_buckets     = 1 << policy.bits_per_pass;
+  using smem_layout_t                  = smem_block_tile_layout<key_t, policy.chunk_bytes, policy.load_align_bytes>;
+  static constexpr int max_chunk_items = smem_layout_t::max_chunk_items;
   static constexpr int num_load_align_items = smem_layout_t::num_load_align_items;
   static constexpr int slot_alignment       = smem_layout_t::slot_alignment;
 
@@ -357,28 +324,31 @@ struct agent_batched_topk_cluster
   using smem_keys_t = ::cuda::std::span<key_t>;
 
   // Tie-break unroll for either filter's streamed overflow, which feeds `process_tiles` one chunk slot at a time: clamp
-  // items so the tile (`threads_per_block * items`) stays within a chunk, bounding the per-tile early-exit to <= chunk
-  // granularity. Resident/edge regions keep the full `tie_break_items_per_thread_clamped`. Floors at 1.
+  // items so the tile (`policy.threads_per_block * items`) stays within a chunk, bounding the per-tile early-exit to <=
+  // chunk granularity. Resident/edge regions keep the full `tie_break_items_per_thread_clamped`. Floors at 1.
   static constexpr int tie_break_items_streamed =
-    ::cuda::std::clamp(max_chunk_items / threads_per_block, 1, tie_break_items_per_thread_clamped);
+    ::cuda::std::clamp(max_chunk_items / policy.threads_per_block, 1, tie_break_items_per_thread_clamped);
   static_assert(tie_break_items_streamed >= 1, "tie_break_items_streamed must be positive");
 
-  static_assert(PipelineStages > 0);
+  static_assert(policy.pipeline_stages > 0);
   // `load_phase` tracks one parity bit per stage in a 32-bit mask.
-  static_assert(PipelineStages <= 32, "PipelineStages must fit in the 32-bit per-stage phase mask");
+  static_assert(policy.pipeline_stages <= 32, "pipeline_stages must fit in the 32-bit per-stage phase mask");
   // `__block_elect_one` elects via a full-warp `__shfl_sync` + `elect.sync`, so the block must be whole warps.
-  static_assert(ThreadsPerBlock % detail::warp_threads == 0, "ThreadsPerBlock must be a multiple of the warp size");
-  static_assert(CopyItemsPerThread > 0, "copy_items_per_thread must be positive");
-  static_assert(HistogramItemsPerThread > 0, "histogram_items_per_thread must be positive");
-  static_assert(TieBreakItemsPerThread > 0, "tie_break_items_per_thread must be positive");
-  static_assert(ChunkBytes > 0);
-  static_assert(LoadAlignBytes > 0);
-  static_assert(ChunkBytes % LoadAlignBytes == 0, "ChunkBytes must be a multiple of LoadAlignBytes");
+  static_assert(policy.threads_per_block % detail::warp_threads == 0,
+                "threads_per_block must be a multiple of the warp size");
+  static_assert(policy.copy_items_per_thread > 0, "copy_items_per_thread must be positive");
+  static_assert(policy.histogram_items_per_thread > 0, "histogram_items_per_thread must be positive");
+  static_assert(policy.tie_break_items_per_thread > 0, "tie_break_items_per_thread must be positive");
+  static_assert(policy.chunk_bytes > 0);
+  static_assert(policy.load_align_bytes > 0);
+  static_assert(policy.chunk_bytes % policy.load_align_bytes == 0,
+                "chunk_bytes must be a multiple of load_align_bytes");
   // The hybrid load relies on the aligned bulk-copy path being exact (no scalar guard), which requires the load
   // alignment to be a power of two and at least the bulk-copy minimum alignment. Mirrors `is_valid_cluster_policy`
   // (checked by the dispatch on the whole policy); repeated here to also guard direct agent instantiations.
-  static_assert(LoadAlignBytes >= detail::bulk_copy_min_align, "LoadAlignBytes must be >= bulk_copy_min_align");
-  static_assert(::cuda::is_power_of_two(LoadAlignBytes), "LoadAlignBytes must be a power of two");
+  static_assert(policy.load_align_bytes >= detail::bulk_copy_min_align,
+                "load_align_bytes must be >= bulk_copy_min_align");
+  static_assert(::cuda::is_power_of_two(policy.load_align_bytes), "load_align_bytes must be a power of two");
   static_assert(max_chunk_items > 0);
 
   using decomposer_t = detail::identity_decomposer_t;
@@ -390,7 +360,7 @@ struct agent_batched_topk_cluster
   // (e.g. `float3`: 12 bytes, 4-byte aligned) a `load_align` boundary would slice a key or leave bubbles in the
   // resident range, so such types fall back to plain per-element loads/stores.
   static constexpr bool key_is_bulk_tileable =
-    int{sizeof(key_t)} == int{alignof(key_t)} && LoadAlignBytes % int{sizeof(key_t)} == 0;
+    int{sizeof(key_t)} == int{alignof(key_t)} && policy.load_align_bytes % int{sizeof(key_t)} == 0;
   static constexpr bool use_block_load_to_shared =
     THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>
     && ::cuda::std::__can_to_address<key_it_t> && key_is_bulk_tileable;
@@ -401,9 +371,9 @@ struct agent_batched_topk_cluster
   // The leader-block prefix sum spans `num_buckets` entries. Each thread owns
   // `buckets_per_thread` consecutive buckets in a blocked arrangement; entries
   // past the last valid bucket contribute zero so the histogram size is no
-  // longer constrained to be `<= threads_per_block`.
-  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
-  using block_scan_t                      = BlockScan<offset_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
+  // longer constrained to be `<= policy.threads_per_block`.
+  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, policy.threads_per_block);
+  using block_scan_t                      = BlockScan<offset_t, policy.threads_per_block, BLOCK_SCAN_WARP_SCANS>;
 
   // ---------------------------------------------------------------------------
   // Shared memory storage
@@ -432,7 +402,7 @@ struct agent_batched_topk_cluster
     typename block_scan_t::TempStorage scan_storage;
     // One mbarrier handle per pipeline stage, shared by the resident load and the overflow stream and reused
     // (ping-ponged) across radix passes; all are initialized once up front by `init_load_barriers`.
-    ::cuda::std::uint64_t load_mbar[PipelineStages];
+    ::cuda::std::uint64_t load_mbar[policy.pipeline_stages];
     // Persistent unaligned boundary edges (block-load path only): the head prefix (`[0, num_load_align_items)`, on rank
     // 0) and the peeled tail suffix (`[num_load_align_items, 2 * num_load_align_items)`, on the tail owner whenever it
     // is unaligned), each strictly `< num_load_align_items` keys. Loaded once in the first pass and consumed into every
@@ -495,12 +465,13 @@ struct agent_batched_topk_cluster
 
   // Stage a small (`< num_load_align_items` items) unaligned run -- a boundary edge (head prefix / tail suffix) -- from
   // gmem `src` into SMEM `dst` and consume it into the first pass in one strided sweep:
-  // each thread copies *and* consumes the same indices it owns (`local % threads_per_block == threadIdx.x`), consuming
-  // from the just-loaded register rather than from SMEM. These runs cannot go through the aligned (16-byte-aligned dst,
-  // guard-free) BlockLoadToShared path. Fusing the copy and consume steps means no thread ever reads a key another
-  // thread wrote, so the first-pass consume step needs no barrier after the staging *by construction* -- not by a
-  // coincidental match between two separate traversals. Later passes and the final filter re-read `dst` (from
-  // `edge_keys` / the resident span) only after a pass-boundary barrier, so their reads are independently safe.
+  // each thread copies *and* consumes the same indices it owns (`local % policy.threads_per_block == threadIdx.x`),
+  // consuming from the just-loaded register rather than from SMEM. These runs cannot go through the aligned
+  // (16-byte-aligned dst, guard-free) BlockLoadToShared path. Fusing the copy and consume steps means no thread ever
+  // reads a key another thread wrote, so the first-pass consume step needs no barrier after the staging *by
+  // construction* -- not by a coincidental match between two separate traversals. Later passes and the final filter
+  // re-read `dst` (from `edge_keys` / the resident span) only after a pass-boundary barrier, so their reads are
+  // independently safe.
   //
   // TODO(cccl): an asymmetric-alignment BlockLoadToShared API (independent begin/end alignment, e.g. an aligned begin
   // with an arbitrary end) would let a boundary chunk be loaded with a single aligned-bulk + in-place edge call and
@@ -511,7 +482,7 @@ struct agent_batched_topk_cluster
   {
     _CCCL_ASSERT(num_keys >= 0 && num_keys <= num_load_align_items, "a boundary edge must fit in its edge_keys slot");
     _CCCL_PRAGMA_NOUNROLL()
-    for (int key_idx = tid; key_idx < num_keys; key_idx += threads_per_block)
+    for (int key_idx = tid; key_idx < num_keys; key_idx += policy.threads_per_block)
     {
       const key_t key = src[key_idx];
       dst[key_idx]    = key;
@@ -520,15 +491,16 @@ struct agent_batched_topk_cluster
   }
 
   // Apply `apply(key, key_idx)` to each key of a contiguous chunk (`key_idx` is the key's strided lane index in
-  // `[0, num_keys)`), processing tiles of `Unroll * threads_per_block` keys. Each full tile is loaded into registers
-  // by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
-  // `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would interleave each load
-  // with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's clamped (floor) items per
-  // thread, so the sub-tile remainder is handled by a single fused block-stride loop bounded by the count.
+  // `[0, num_keys)`), processing tiles of `Unroll * policy.threads_per_block` keys. Each full tile is loaded into
+  // registers by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the
+  // histogram passes: `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would
+  // interleave each load with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's
+  // clamped (floor) items per thread, so the sub-tile remainder is handled by a single fused block-stride loop bounded
+  // by the count.
   template <int Unroll, typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* keys, int num_keys, Apply&& apply) const
   {
-    constexpr int tile   = Unroll * threads_per_block;
+    constexpr int tile   = Unroll * policy.threads_per_block;
     const int full_tiles = ::cuda::round_down(num_keys, tile);
 
     _CCCL_PRAGMA_NOUNROLL()
@@ -538,18 +510,18 @@ struct agent_batched_topk_cluster
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Unroll; ++i)
       {
-        regs[i] = keys[tile_base + i * threads_per_block + tid];
+        regs[i] = keys[tile_base + i * policy.threads_per_block + tid];
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Unroll; ++i)
       {
-        const int key_idx = tile_base + i * threads_per_block + tid;
+        const int key_idx = tile_base + i * policy.threads_per_block + tid;
         apply(regs[i], key_idx);
       }
     }
 
     // Sub-tile remainder. No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
-    for (int key_idx = full_tiles + tid; key_idx < num_keys; key_idx += threads_per_block)
+    for (int key_idx = full_tiles + tid; key_idx < num_keys; key_idx += policy.threads_per_block)
     {
       apply(keys[key_idx], key_idx);
     }
@@ -577,7 +549,7 @@ struct agent_batched_topk_cluster
   _CCCL_DEVICE _CCCL_FORCEINLINE void init_load_barriers()
   {
     _CCCL_PRAGMA_NOUNROLL()
-    for (int stage = tid; stage < PipelineStages; stage += threads_per_block)
+    for (int stage = tid; stage < policy.pipeline_stages; stage += policy.threads_per_block)
     {
       ::cuda::ptx::mbarrier_init(&temp_storage.load_mbar[stage], 1u);
     }
@@ -589,7 +561,7 @@ struct agent_batched_topk_cluster
   // per stage, with a matching `wait_stage(stage)`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void issue_bulk_copy(int stage, char* dst, ::cuda::std::span<const key_t> src)
   {
-    _CCCL_ASSERT(stage >= 0 && stage < PipelineStages, "pipeline stage index out of range");
+    _CCCL_ASSERT(stage >= 0 && stage < policy.pipeline_stages, "pipeline stage index out of range");
     // Only the block leader (see `is_block_leader`) drives the mbarrier, for a uniform branch and better mbarrier
     // codegen.
     if (!is_block_leader)
@@ -599,13 +571,13 @@ struct agent_batched_topk_cluster
     const int num_bytes = static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
     // A source is one chunk's aligned bulk (`round_down(count, num_load_align_items)`): a whole load-align unit, <= a
     // slot.
-    _CCCL_ASSERT(num_bytes % load_align_bytes == 0, "a bulk copy size must be a whole load-alignment unit");
-    _CCCL_ASSERT(num_bytes <= ChunkBytes, "a bulk copy must not exceed one chunk slot");
+    _CCCL_ASSERT(num_bytes % policy.load_align_bytes == 0, "a bulk copy size must be a whole load-alignment unit");
+    _CCCL_ASSERT(num_bytes <= policy.chunk_bytes, "a bulk copy must not exceed one chunk slot");
     if (num_bytes > 0)
     {
       // The TMA path only requires `bulk_copy_min_align` (>= 16), but the aligned base + `load_align`-multiple bulk
       // packing give every destination the stronger `load_align_bytes` alignment (matching the gmem sources).
-      _CCCL_ASSERT(::cuda::is_aligned(dst, load_align_bytes),
+      _CCCL_ASSERT(::cuda::is_aligned(dst, policy.load_align_bytes),
                    "block_tile destination must satisfy the shared-memory bulk-copy alignment");
 #if __cccl_ptx_isa >= 860
       ::cuda::ptx::cp_async_bulk(
@@ -636,7 +608,7 @@ struct agent_batched_topk_cluster
   // Wait for stage `stage`'s copy to land (all threads spin on its current parity), then flip that stage's parity bit.
   _CCCL_DEVICE _CCCL_FORCEINLINE void wait_stage(int stage)
   {
-    _CCCL_ASSERT(stage >= 0 && stage < PipelineStages, "pipeline stage index out of range");
+    _CCCL_ASSERT(stage >= 0 && stage < policy.pipeline_stages, "pipeline stage index out of range");
     const ::cuda::std::uint32_t parity = (load_phase >> stage) & 1u;
     _CCCL_PRAGMA_NOUNROLL()
     while (!::cuda::ptx::mbarrier_try_wait_parity(&temp_storage.load_mbar[stage], parity))
@@ -771,17 +743,18 @@ struct agent_batched_topk_cluster
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void reset_hist()
   {
-    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread. The `<
-    // threads_per_block` leftover is compiled out when `num_buckets` is a multiple of `threads_per_block`.
-    constexpr int full_rounds = num_buckets / threads_per_block;
+    // The `num_buckets / policy.threads_per_block` full strided rounds are in range for every thread. The `<
+    // policy.threads_per_block` leftover is compiled out when `num_buckets` is a multiple of
+    // `policy.threads_per_block`.
+    constexpr int full_rounds = num_buckets / policy.threads_per_block;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int r = 0; r < full_rounds; ++r)
     {
-      temp_storage.hist[r * threads_per_block + tid] = 0;
+      temp_storage.hist[r * policy.threads_per_block + tid] = 0;
     }
-    if constexpr (num_buckets % threads_per_block != 0)
+    if constexpr (num_buckets % policy.threads_per_block != 0)
     {
-      if (const int i = full_rounds * threads_per_block + tid; i < num_buckets)
+      if (const int i = full_rounds * policy.threads_per_block + tid; i < num_buckets)
       {
         temp_storage.hist[i] = 0;
       }
@@ -898,11 +871,11 @@ private:
   // Overflow streaming
   // ---------------------------------------------------------------------------
   // Re-streams a rank's "overflow" chunks (those that do not fit its resident SMEM region) from gmem through a fixed,
-  // round-robin set of `num_stream_stages` (<= `PipelineStages`) streaming slots, reused across every radix pass and
-  // the final filter. It ping-pongs the iteration order across calls (`stream_is_forward`) so the `num_stream_stages`
-  // turn-around chunks one pass leaves resident in the streaming slots are reused by the next with no reload; the
-  // remaining `num_local_overflow_chunks - num_stream_stages` are reloaded from gmem each pass.
-  // `compute_segment_layout` sizes the reservation `num_local_stream_slots = min(PipelineStages,
+  // round-robin set of `num_stream_stages` (<= `policy.pipeline_stages`) streaming slots, reused across every radix
+  // pass and the final filter. It ping-pongs the iteration order across calls (`stream_is_forward`) so the
+  // `num_stream_stages` turn-around chunks one pass leaves resident in the streaming slots are reused by the next with
+  // no reload; the remaining `num_local_overflow_chunks - num_stream_stages` are reloaded from gmem each pass.
+  // `compute_segment_layout` sizes the reservation `num_local_stream_slots = min(policy.pipeline_stages,
   // num_local_excess_chunks)` (`num_local_excess_chunks = local_partition.num_chunks - num_local_slots`) that
   // `init_overflow_stream` adopts as `num_stream_stages`, so a streaming rank reloads exactly `num_local_excess_chunks`
   // chunks per pass -- the reserved slots only ever buy reuse of the turn-around chunks, never a reload-free pass. The
@@ -931,7 +904,7 @@ private:
                    && layout.num_local_overflow_chunks <= layout.local_partition.num_chunks - layout.overflow_base,
                  "overflow stream chunk windows escape the rank's partition");
     // The streaming region is carved from the tile's slots and capped by the pipeline depth.
-    _CCCL_ASSERT(stream_slot_base >= 0 && layout.num_local_stream_slots <= static_cast<offset_t>(PipelineStages)
+    _CCCL_ASSERT(stream_slot_base >= 0 && layout.num_local_stream_slots <= static_cast<offset_t>(policy.pipeline_stages)
                    && static_cast<offset_t>(stream_slot_base) + layout.num_local_stream_slots
                         <= max_block_resident_items / static_cast<offset_t>(max_chunk_items),
                  "overflow stream slots escape the block tile or pipeline");
@@ -954,7 +927,7 @@ private:
     {
       return {};
     }
-    _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_in_bulk_ptr + chunk.offset, load_align_bytes),
+    _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_in_bulk_ptr + chunk.offset, policy.load_align_bytes),
                  "a chunk source must start on a load-alignment boundary");
     return {layout.block_keys_in_bulk_ptr + chunk.offset, static_cast<::cuda::std::size_t>(chunk.num_items)};
   }
@@ -967,7 +940,8 @@ private:
     const auto chunk = get_chunk(layout.local_partition.global_index(layout.overflow_base + overflow_idx),
                                  layout.segment_size,
                                  layout.num_cluster_head_items);
-    return smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots + (stream_slot_base + stage) * ChunkBytes), chunk.num_items);
+    return smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots + (stream_slot_base + stage) * policy.chunk_bytes),
+                       chunk.num_items);
   }
 
   // Consume the `i`-th visit on the block-load path (its ping-pong-ordered position is `overflow_idx`): wait for its
@@ -1013,7 +987,7 @@ private:
       }
       _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
                    "cannot issue a load into a streaming stage that is still in flight");
-      char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+      char* const dst = key_slots + (stream_slot_base + stage) * policy.chunk_bytes;
       issue_bulk_copy(stage, dst, chunk_bulk_src(layout.overflow_base, next_overflow_idx));
       stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
     }
@@ -1158,11 +1132,11 @@ private:
         for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), consume_key);
       },
       [&](const auto& chunk) {
-        const int num_iterations = ::cuda::ceil_div(chunk.num_items, threads_per_block);
+        const int num_iterations = ::cuda::ceil_div(chunk.num_items, policy.threads_per_block);
         _CCCL_PRAGMA_UNROLL(UnrollFactor)
         for (int j = 0; j < num_iterations; ++j)
         {
-          const int item_idx = j * threads_per_block + tid;
+          const int item_idx = j * policy.threads_per_block + tid;
           if (item_idx < chunk.num_items)
           {
             consume_key(
@@ -1282,9 +1256,9 @@ private:
                    "a nonzero prefix count must come from a working rank");
       if constexpr (is_scan_descending)
       {
+        // Lower ranks follow; leader last.
         _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += threads_per_block) // lower ranks follow;
-                                                                                                // leader last
+        for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += policy.threads_per_block)
         {
           add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
         }
@@ -1295,7 +1269,7 @@ private:
         // last logical rank is last.
         _CCCL_PRAGMA_NOUNROLL()
         for (unsigned rank = cluster_block_rank + 1u + threadIdx.x; rank < layout.num_logical_cluster_blocks;
-             rank += threads_per_block)
+             rank += policy.threads_per_block)
         {
           add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
         }
@@ -1338,7 +1312,8 @@ private:
   template <detail::topk::select SelectDirection>
   struct det_filter_state
   {
-    using identify_op_t = detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using identify_op_t =
+      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
 
     identify_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
@@ -1403,7 +1378,7 @@ private:
     }
     else
     {
-      return tile_base + i * threads_per_block + tid;
+      return tile_base + i * policy.threads_per_block + tid;
     }
   }
 
@@ -1570,7 +1545,7 @@ private:
     }
   }
 
-  // Classify (`classify_tile`) and place each of `num_keys` keys, tiled by `threads_per_block * ItemsPerThread`.
+  // Classify (`classify_tile`) and place each of `num_keys` keys, tiled by `policy.threads_per_block * ItemsPerThread`.
   // `FromSmem` picks the key source; `Reversed` walks the span high-to-low. Both final filters share this via
   // `Deterministic`:
   //   * `false` (a `nondet_filter_state`, always striped): every tile placed in arrival order (`place_tile` with
@@ -1596,7 +1571,7 @@ private:
                    && static_cast<offset_t>(num_keys) <= layout.segment_size - seg_base
                    && (!FromSmem || num_keys == 0 || smem_src != nullptr),
                  "process_tiles: region must be a valid in-segment source span");
-    constexpr int tile_size = threads_per_block * ItemsPerThread;
+    constexpr int tile_size = policy.threads_per_block * ItemsPerThread;
     int tile_base           = 0;
 
     if constexpr (Deterministic && Blocked)
@@ -1740,7 +1715,7 @@ private:
                       /*Deterministic=*/true,
                       Blocked>(
           state,
-          ::cuda::ptr_rebind<key_t>(key_slots + local_resident_chunk_idx * ChunkBytes),
+          ::cuda::ptr_rebind<key_t>(key_slots + local_resident_chunk_idx * policy.chunk_bytes),
           chunk.offset,
           chunk.num_items,
           false);
@@ -1904,12 +1879,12 @@ private:
     if constexpr (use_block_load_to_shared)
     {
       _CCCL_PRAGMA_NOUNROLL()
-      for (int key_idx = tid; key_idx < num_head_edge_keys; key_idx += threads_per_block)
+      for (int key_idx = tid; key_idx < num_head_edge_keys; key_idx += policy.threads_per_block)
       {
         apply(temp_storage.edge_keys[key_idx]);
       }
       _CCCL_PRAGMA_NOUNROLL()
-      for (int key_idx = tid; key_idx < num_tail_edge_keys; key_idx += threads_per_block)
+      for (int key_idx = tid; key_idx < num_tail_edge_keys; key_idx += policy.threads_per_block)
       {
         apply(temp_storage.edge_keys[num_load_align_items + key_idx]);
       }
@@ -2003,7 +1978,7 @@ private:
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(
           state,
-          ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * ChunkBytes),
+          ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * policy.chunk_bytes),
           chunk.offset,
           chunk.num_items,
           false);
@@ -2251,7 +2226,7 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(smem_keys_t& resident_keys)
   {
-    using extract_bin_op_t   = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -2271,15 +2246,15 @@ private:
     if constexpr (use_block_load_to_shared)
     {
       // Resident load geometry (meaningful only when this rank owns resident chunks). Chunks are written densely in
-      // slot order from offset 0 at the fixed stride `local_resident_chunk_idx * ChunkBytes` and read back in the same
-      // order, so the consume loop needs no stored per-chunk state. `num_prologue_stages` shared mbarrier stages carry
-      // the resident pipeline. The stream ring (`num_stream_stages` stages) and the resident window share the same
-      // mbarrier array; the first wave is primed in consume order so the earliest-consumed copies issue first (see the
-      // direction-aware layout below).
+      // slot order from offset 0 at the fixed stride `local_resident_chunk_idx * policy.chunk_bytes` and read back in
+      // the same order, so the consume loop needs no stored per-chunk state. `num_prologue_stages` shared mbarrier
+      // stages carry the resident pipeline. The stream ring (`num_stream_stages` stages) and the resident window share
+      // the same mbarrier array; the first wave is primed in consume order so the earliest-consumed copies issue first
+      // (see the direction-aware layout below).
       const bool interleave_overflow_prime = layout.num_local_overflow_chunks > offset_t{0};
       const int num_prologue_stages =
         layout.num_local_resident_chunks > 0
-          ? (::cuda::std::min) (PipelineStages, static_cast<int>(layout.num_local_resident_chunks))
+          ? (::cuda::std::min) (+policy.pipeline_stages, static_cast<int>(layout.num_local_resident_chunks))
           : 0;
 
       // First wave = the `num_stream_stages` overflow chunks resident when the overflow phase begins (forward chunks
@@ -2328,7 +2303,7 @@ private:
       // resident window in consume order as they are consumed. Forward walks the window `+1` (ascending); `stage_rot`
       // corrects a misaligned reload tail so the last chunks still land `[stage_base, stage_base +
       // num_prologue_stages)` in order. Reverse walks the window `-1` (descending) from its top; `reverse_cycle_seed`
-      // seeds the cycle position so chunk `my_resident-1` frees `stage_base`.
+      // seeds the cycle position so chunk `num_local_resident_chunks-1` frees `stage_base`.
       const offset_t tail_align =
         num_prologue_stages > 0
           ? layout.num_local_resident_chunks % static_cast<offset_t>(num_prologue_stages)
@@ -2349,7 +2324,7 @@ private:
       // `num_local_overflow_chunks - 1` (== `fw(reverse_first_stage)`). `prime_complement` marks sub-case A, where the
       // up-front loop primes the early-consumed complement stages first and then hands the counter to the re-arms.
       const bool prime_complement = interleave_overflow_prime && num_stream_stages > num_prologue_stages;
-      // Sub-case A implies `num_prologue_stages < PipelineStages`, which forces `num_prologue_stages ==
+      // Sub-case A implies `num_prologue_stages < policy.pipeline_stages`, which forces `num_prologue_stages ==
       // num_local_resident_chunks`: the resident consume loop then never reloads a resident successor (`chunk +
       // num_prologue_stages >= num_local_resident_chunks` always), so every one of the last `num_prologue_stages`
       // iterations re-arms a shared stream stage.
@@ -2473,7 +2448,7 @@ private:
                   : first_wave_chunk_idx - offset_t{1};
             }
           }
-          issue_bulk_copy(stage, key_slots + dst_slot_idx * ChunkBytes, chunk_bulk_src(src_base, src_idx));
+          issue_bulk_copy(stage, key_slots + dst_slot_idx * policy.chunk_bytes, chunk_bulk_src(src_base, src_idx));
         }
       }
 
@@ -2604,7 +2579,7 @@ private:
           consume_is_resident ? static_cast<int>(consume_chunk_idx) : stream_slot_base + stage;
         const offset_t consume_base = consume_is_resident ? layout.resident_base : layout.overflow_base;
         wait_stage(stage);
-        const key_t* consume_src = ::cuda::ptr_rebind<key_t>(key_slots + consume_slot_idx * ChunkBytes);
+        const key_t* consume_src = ::cuda::ptr_rebind<key_t>(key_slots + consume_slot_idx * policy.chunk_bytes);
         const auto consume_chunk_desc =
           get_chunk(layout.local_partition.global_index(consume_base + consume_chunk_idx),
                     layout.segment_size,
@@ -2628,7 +2603,7 @@ private:
           // stranding a lagging waiter.
           __syncthreads();
           issue_bulk_copy(
-            stage, key_slots + refill_slot_idx * ChunkBytes, chunk_bulk_src(refill_base, refill_chunk_idx));
+            stage, key_slots + refill_slot_idx * policy.chunk_bytes, chunk_bulk_src(refill_base, refill_chunk_idx));
         }
       }
 
@@ -2692,12 +2667,12 @@ private:
         const offset_t chunk_idx = layout.local_partition.global_index(layout.resident_base + local_resident_chunk_idx);
         const auto chunk         = get_chunk(chunk_idx, layout.segment_size, layout.num_cluster_head_items);
         key_t* const chunk_keys =
-          ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * ChunkBytes);
-        const int num_iterations = ::cuda::ceil_div(chunk.num_items, threads_per_block);
+          ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * policy.chunk_bytes);
+        const int num_iterations = ::cuda::ceil_div(chunk.num_items, policy.threads_per_block);
         _CCCL_PRAGMA_UNROLL(histogram_items_per_thread_clamped)
         for (int j = 0; j < num_iterations; ++j)
         {
-          const int item_idx = j * threads_per_block + tid;
+          const int item_idx = j * policy.threads_per_block + tid;
           if (item_idx < chunk.num_items)
           {
             const key_t key =
@@ -2736,7 +2711,7 @@ private:
       // to the segment. `load_align_bytes` is a multiple of `sizeof(key_t)`, so the aligned pointer lands on a key
       // boundary and the pointer difference is already an exact item count; narrow it to 32-bit `offset_t` right away.
       const offset_t head_to_boundary_offset_items = static_cast<offset_t>(
-        ::cuda::align_up(layout.block_keys_in_bulk_ptr, load_align_bytes) - layout.block_keys_in_bulk_ptr);
+        ::cuda::align_up(layout.block_keys_in_bulk_ptr, policy.load_align_bytes) - layout.block_keys_in_bulk_ptr);
       layout.num_cluster_head_items = (::cuda::std::min) (head_to_boundary_offset_items, layout.segment_size);
       // Distance to the next alignment boundary is < one alignment unit, so the head prefix fits its `edge_keys` slot.
       _CCCL_ASSERT(layout.num_cluster_head_items < static_cast<offset_t>(num_load_align_items),
@@ -2752,19 +2727,19 @@ private:
     layout.num_cluster_chunks = static_cast<offset_t>(
       smem_layout_t::num_chunks_from_num_items(layout.segment_size - layout.num_cluster_head_items));
 
-    // Logical cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
-    // launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing, and
-    // never lead -- but stay resident and still arrive at every cluster barrier (a returned CTA would hang the barrier;
-    // see the TODOs at the barrier sites). Derived from this CTA's head-aligned `num_cluster_chunks` so it matches the
-    // partition exactly. Collapses to 1 on the single-CTA path and stays at `num_full_cluster_blocks` for host-exact
-    // sizes (the dispatch already matched it).
+    // Logical cluster blocks: the CTAs that actually receive chunks (at least `policy.min_chunks_per_block` each), <=
+    // the launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing,
+    // and never lead -- but stay resident and still arrive at every cluster barrier (a returned CTA would hang the
+    // barrier; see the TODOs at the barrier sites). Derived from this CTA's head-aligned `num_cluster_chunks` so it
+    // matches the partition exactly. Collapses to 1 on the single-CTA path and stays at `num_full_cluster_blocks` for
+    // host-exact sizes (the dispatch already matched it).
     layout.num_logical_cluster_blocks = is_single_cta ? 1u : num_full_cluster_blocks;
     if constexpr (enable_runtime_single_cta)
     {
       if (!is_single_cta)
       {
-        layout.num_logical_cluster_blocks =
-          compute_num_logical_cluster_blocks(layout.num_cluster_chunks, min_chunks_per_block, num_full_cluster_blocks);
+        layout.num_logical_cluster_blocks = compute_num_logical_cluster_blocks(
+          layout.num_cluster_chunks, policy.min_chunks_per_block, num_full_cluster_blocks);
       }
     }
     _CCCL_ASSERT(layout.num_logical_cluster_blocks >= 1u && layout.num_logical_cluster_blocks <= num_full_cluster_blocks
@@ -2859,9 +2834,9 @@ private:
     // `num_local_slots >= 1`.
     //
     // `num_local_stream_slots` is right-sized: clamped into `[1, num_local_slots]` when streaming; deep overflows still
-    // get the full `PipelineStages` depth. The generic fallback has no async pipeline (it re-reads overflow from gmem
-    // each pass and peels nothing), so it reserves no streaming slots. Dispatch guarantees >= 1 whole chunk slot of
-    // capacity, so the streaming clamp below is well-defined.
+    // get the full `policy.pipeline_stages` depth. The generic fallback has no async pipeline (it re-reads overflow
+    // from gmem each pass and peels nothing), so it reserves no streaming slots. Dispatch guarantees >= 1 whole chunk
+    // slot of capacity, so the streaming clamp below is well-defined.
     _CCCL_ASSERT(max_block_resident_items >= static_cast<offset_t>(max_chunk_items)
                    && max_block_resident_items % static_cast<offset_t>(max_chunk_items) == offset_t{0},
                  "block tile capacity must be a positive whole number of chunk slots");
@@ -2894,7 +2869,7 @@ private:
       {
         const offset_t num_local_excess_chunks = layout.local_partition.num_chunks - num_local_slots;
         const offset_t num_local_desired_stream_slots =
-          (::cuda::std::min) (static_cast<offset_t>(PipelineStages), num_local_excess_chunks);
+          (::cuda::std::min) (static_cast<offset_t>(policy.pipeline_stages), num_local_excess_chunks);
         num_local_stream_slots = ::cuda::std::clamp(num_local_desired_stream_slots, offset_t{1}, num_local_slots);
       }
     }
@@ -2923,18 +2898,18 @@ private:
     layout.num_local_tail_edge_items = static_cast<int>(tail_suffix_items);
   }
 
-  // Radix histogram/scan passes: refine the splitter one `bits_per_pass` digit at a time until the top-k prefix is
-  // pinned down (or early stop fires). Folds `kth_key_bits_local` up digit by digit and returns the number of passes
+  // Radix histogram/scan passes: refine the splitter one `policy.bits_per_pass` digit at a time until the top-k prefix
+  // is pinned down (or early stop fires). Folds `kth_key_bits_local` up digit by digit and returns the number of passes
   // that actually ran (`num_executed_passes`), which the final filter uses to size its identify operator.
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(smem_keys_t resident_keys, key_prefix_t& kth_key_bits_local)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
     using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
-    constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
+    constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     int num_executed_passes = num_passes;
     // No unroll pragma on purpose: the compiler's partial/full auto-unroll beats forced nounroll here.
@@ -2981,7 +2956,7 @@ private:
                 layout.local_partition.global_index(layout.resident_base + local_resident_chunk_idx);
               const auto chunk = get_chunk(chunk_idx, layout.segment_size, layout.num_cluster_head_items);
               for_each_chunk_key<histogram_items_per_thread_clamped>(
-                ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * ChunkBytes),
+                ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * policy.chunk_bytes),
                 chunk.num_items,
                 add_hist);
             }
@@ -3040,15 +3015,15 @@ private:
                          : "memory");
           }
         };
-        constexpr int full_rounds = num_buckets / threads_per_block;
+        constexpr int full_rounds = num_buckets / policy.threads_per_block;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int r = 0; r < full_rounds; ++r)
         {
-          reduce_bucket(r * threads_per_block + tid);
+          reduce_bucket(r * policy.threads_per_block + tid);
         }
-        if constexpr (num_buckets % threads_per_block != 0)
+        if constexpr (num_buckets % policy.threads_per_block != 0)
         {
-          if (const int i = full_rounds * threads_per_block + tid; i < num_buckets)
+          if (const int i = full_rounds * policy.threads_per_block + tid; i < num_buckets)
           {
             reduce_bucket(i);
           }
@@ -3111,7 +3086,7 @@ private:
       {
         const int bucket = static_cast<int>(pass_result.kth_bucket);
         _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "published splitter bucket index is out of range");
-        detail::topk::set_kth_key_bits<key_t, bits_per_pass>(kth_key_bits_local, pass, bucket);
+        detail::topk::set_kth_key_bits<key_t, policy.bits_per_pass>(kth_key_bits_local, pass, bucket);
         num_executed_passes = pass + 1;
 
         // Non-leader: the lane owning the splitter bucket holds its exclusive prefix and raw count in registers from
@@ -3147,11 +3122,11 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void run()
   {
     using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.
-    [[maybe_unused]] constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
+    [[maybe_unused]] constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
@@ -3237,10 +3212,10 @@ private:
   // compiler cannot reorder across the separate loops) and expose their latency on small segments.
   _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all()
   {
-    constexpr int copy_items           = copy_items_per_thread_clamped;
-    const offset_t num_cluster_items   = static_cast<offset_t>(segment_size);
-    const offset_t cluster_tid         = cluster_block_rank * static_cast<offset_t>(threads_per_block) + threadIdx.x;
-    const offset_t num_cluster_threads = num_full_cluster_blocks * static_cast<offset_t>(threads_per_block);
+    constexpr int copy_items         = copy_items_per_thread_clamped;
+    const offset_t num_cluster_items = static_cast<offset_t>(segment_size);
+    const offset_t cluster_tid = cluster_block_rank * static_cast<offset_t>(policy.threads_per_block) + threadIdx.x;
+    const offset_t num_cluster_threads = num_full_cluster_blocks * static_cast<offset_t>(policy.threads_per_block);
     const offset_t step                = num_cluster_threads * static_cast<offset_t>(copy_items);
     auto keys_in_it                    = d_key_segments_it[segment_id];
     auto keys_out_it                   = d_key_segments_out_it[segment_id];
@@ -3319,7 +3294,7 @@ private:
     if constexpr (enable_runtime_single_cta)
     {
       const bool fits_single_cta =
-        is_single_cta_eligible(segment_size, max_block_resident_items, single_block_max_seg_size);
+        is_single_cta_eligible(segment_size, max_block_resident_items, policy.single_block_max_seg_size);
       if (fits_single_cta && cluster_block_rank != 0u)
       {
         return false;

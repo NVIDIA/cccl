@@ -262,6 +262,17 @@ inline constexpr int topk_min_blocks_per_sm = topk_min_blocks_per_sm_helper<Poli
 template <class PolicySelector>
 inline constexpr int topk_max_blocks_per_cluster = topk_max_blocks_per_cluster_helper<PolicySelector>();
 
+// Hands the cluster agent its resolved sub-policy as a type (C++17 has no class-type NTTP).
+// TODO(bgruber): drop this in C++20 and pass `policy.cluster` by value.
+template <class PolicySelector>
+struct cluster_policy_getter
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+  {
+    return current_policy<PolicySelector>().cluster;
+  }
+};
+
 // -----------------------------------------------------------------------------
 // Global kernel entry point (single symbol for both backends)
 // -----------------------------------------------------------------------------
@@ -351,16 +362,7 @@ device_batched_topk_kernel(
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
       (using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
-         policy.cluster.threads_per_block,
-         policy.cluster.histogram_items_per_thread,
-         policy.cluster.pipeline_stages,
-         policy.cluster.chunk_bytes,
-         policy.cluster.load_align_bytes,
-         policy.cluster.bits_per_pass,
-         policy.cluster.tie_break_items_per_thread,
-         policy.cluster.single_block_max_seg_size,
-         policy.cluster.min_chunks_per_block,
-         policy.cluster.copy_items_per_thread,
+         cluster_policy_getter<PolicySelector>,
          Determinism,
          TieBreak,
          KeyInputItItT,
