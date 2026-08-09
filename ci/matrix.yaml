@@ -444,10 +444,15 @@ workflows:
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
 
   python-wheels:
+    # NOTE: release-wheels.yml harvests every 'wheel-*' artifact of a run of
+    # this workflow and publishes it to PyPI. cuda.stf._experimental jobs are
+    # deliberately absent (like the TSan lanes below): the experimental
+    # cuda-stf wheel must not be published, and the combined STF producer's
+    # cuda_cccl wheel would collide with the release one in dist/. STF
+    # coverage lives in the pull_request/nightly/weekly workflows.
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
 
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
