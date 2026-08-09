@@ -21,9 +21,7 @@
 #  include <thrust/extrema.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 
-#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/discard_iterator.h>
-#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -73,60 +71,6 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
   return first + get_value(policy, index_ptr);
 }
 
-template <typename OffsetT, typename T>
-struct minmax_accum_t
-{
-  ::cuda::std::pair<OffsetT, T> min, max;
-};
-
-template <typename OffsetT, typename T>
-struct minmax_load_transformation
-{
-  // convert from zip_iterator
-  template <typename TRef>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::tuple<OffsetT, TRef> input) const
-    -> minmax_accum_t<OffsetT, T>
-  {
-    auto p = ::cuda::std::pair<OffsetT, T>{::cuda::std::get<0>(input), ::cuda::std::get<1>(input)};
-    return {p, p};
-  }
-};
-
-template <typename OffsetT>
-struct output_t
-{
-  OffsetT min_offset;
-  OffsetT max_offset;
-
-  output_t() = default;
-
-  // convert from accumulator type (during assignment at the end of the kernel)
-  template <typename T>
-  _CCCL_API _CCCL_FORCEINLINE output_t(minmax_accum_t<OffsetT, T> result)
-      : min_offset(result.min.first)
-      , max_offset(result.max.first)
-  {}
-};
-
-template <typename OffsetT, typename T, typename ValueLessThen = ::cuda::std::less<>>
-struct minmax_reduce_op : ValueLessThen
-{
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(const minmax_accum_t<OffsetT, T>& a, const minmax_accum_t<OffsetT, T>& b) const
-    -> minmax_accum_t<OffsetT, T>
-  {
-    const auto& less = static_cast<const ValueLessThen&>(*this);
-    const auto min   = cub::detail::arg_less<ValueLessThen>{less}(a.min, b.min);
-    const auto max   = cub::detail::arg_less<cub::detail::swap_args<ValueLessThen>>{less}(a.max, b.max);
-    return {min, max};
-  }
-
-  // needed for __accumulator_t, never called at runtime
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(
-    const cub::detail::reduce::empty_problem_init_t<output_t<OffsetT>>&, const minmax_accum_t<OffsetT, T>&) const
-    -> minmax_accum_t<OffsetT, T>;
-};
-
 template <class Derived, class ItemsIt, class BinaryPred>
 ::cuda::std::pair<ItemsIt, ItemsIt> CUB_RUNTIME_FUNCTION
 cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
@@ -140,40 +84,45 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
     return {first, first};
   }
 
-  using input_t = thrust::detail::it_value_t<ItemsIt>;
-  auto indexed_first =
-    ::cuda::make_zip_iterator(::cuda::counting_iterator<offset_t>(0), thrust::try_unwrap_contiguous_iterator(first));
-  auto reduction_op = minmax_reduce_op<offset_t, input_t, BinaryPred>{binary_pred};
-  auto transform_op = minmax_load_transformation<offset_t, input_t>{};
-  using output_t    = output_t<offset_t>;
-  const auto init   = cub::detail::reduce::empty_problem_init_t<output_t>{};
-
-  size_t tmp_size = 0;
-  auto error      = cub::DeviceReduce::TransformReduce(
+  ::cuda::std::size_t tmp_size = 0;
+  auto error                   = cub::DeviceReduce::ArgMinMax(
     nullptr,
     tmp_size,
-    indexed_first,
-    static_cast<output_t*>(nullptr),
+    first,
+    ::cuda::discard_iterator{},
+    static_cast<offset_t*>(nullptr),
+    ::cuda::discard_iterator{},
+    static_cast<offset_t*>(nullptr),
     num_items,
-    reduction_op,
-    transform_op,
-    init,
+    binary_pred,
     stream);
-  throw_on_error(error, "minmax_element failed to allocate temporary storages");
+  throw_on_error(error, "minmax_element failed to determine temporary storage size");
 
-  // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
-  thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(output_t) + tmp_size);
-  output_t* out_ptr = thrust::detail::aligned_reinterpret_cast<output_t*>(tmp.data().get());
-  void* tmp_ptr     = static_cast<void*>(tmp.data().get() + sizeof(output_t));
+  // Allocate: the algorithm's temporary storage followed by two index slots (min, max).
+  thrust::detail::temporary_array<char, Derived> tmp(policy, tmp_size + 2 * sizeof(offset_t));
+  void* tmp_ptr       = static_cast<void*>(tmp.data().get());
+  offset_t* min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + tmp_size);
+  offset_t* max_index = min_index + 1;
 
-  error = cub::DeviceReduce::TransformReduce(
-    tmp_ptr, tmp_size, indexed_first, out_ptr, num_items, reduction_op, transform_op, init, stream);
-  cuda_cub::throw_on_error(error, "minmax_element failed to launch cub::DeviceReduce::ArgMin");
+  error = cub::DeviceReduce::ArgMinMax(
+    tmp_ptr,
+    tmp_size,
+    first,
+    ::cuda::discard_iterator{},
+    min_index,
+    ::cuda::discard_iterator{},
+    max_index,
+    num_items,
+    binary_pred,
+    stream);
+  cuda_cub::throw_on_error(error, "minmax_element failed to launch cub::DeviceReduce::ArgMinMax");
 
-  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "min_element failed to synchronize");
-
-  const auto [min_offset, max_offset] = get_value(policy, out_ptr);
-  return {first + min_offset, first + max_offset};
+  offset_t host_indices[2];
+  cuda_cub::throw_on_error(
+    ::cudaMemcpyAsync(host_indices, min_index, 2 * sizeof(offset_t), cudaMemcpyDeviceToHost, stream),
+    "minmax_element failed to copy indices to host");
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "minmax_element failed to synchronize");
+  return {first + host_indices[0], first + host_indices[1]};
 }
 } // namespace __extrema
 
