@@ -7,6 +7,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/cstdint>
 
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 namespace
@@ -82,8 +83,9 @@ void check_layout_matrix()
 }
 } // namespace
 
-TEST_CASE("Segmented TopK cluster SMEM layout exposes the full physical capacity (head is an edge, not a chunk)",
-          "[keys][segmented][topk][cluster][layout]")
+CUB_TEST("Segmented TopK cluster SMEM layout exposes the full physical capacity (head is an edge, not a chunk)",
+         "[keys][segmented][topk][cluster][layout]",
+         CUB_SMALL)
 {
   constexpr auto policy = cub::detail::batched_topk::make_cluster_policy();
 
