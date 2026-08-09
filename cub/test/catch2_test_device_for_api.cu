@@ -427,7 +427,7 @@ CUB_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_t{}));
 }
 
-C2H_TEST("Device for each n fails when using stream from another device", "[for_each][device]")
+CUB_TEST("Device for each n fails when using stream from another device", "[for_each][device]", CUB_SMALL)
 {
   if (cuda::devices.size() < 2)
   {

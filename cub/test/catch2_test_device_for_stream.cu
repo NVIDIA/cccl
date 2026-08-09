@@ -10,6 +10,7 @@
 #include <cuda/stream>
 
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 #define CCCL_DISABLE_STREAM_DEVICE_CHECK
@@ -27,8 +28,9 @@ struct incrementer_t
   }
 };
 
-C2H_TEST("Device for each n with stream from another device works when using CCCL_DISABLE_STREAM_DEVICE_CHECK",
-         "[for][device]")
+CUB_TEST("Device for each n with stream from another device works when using CCCL_DISABLE_STREAM_DEVICE_CHECK",
+         "[for][device]",
+         CUB_SMALL)
 {
   if (cuda::devices.size() < 2)
   {
