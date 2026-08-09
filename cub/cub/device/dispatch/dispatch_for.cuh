@@ -141,21 +141,22 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     return error;
   }
 
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    constexpr ForPolicy active_policy = policy_getter();
+
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceFor to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceFor to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
 #else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceFor", cc, policy_selector(cc));
+  log_dispatch("DeviceFor", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    constexpr ForPolicy active_policy = policy_getter();
     if constexpr (active_policy.threads_per_block > 0)
     {
       return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
@@ -164,7 +165,7 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     {
       return invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
-  }));
+  });
 }
 } // namespace detail::for_each
 
