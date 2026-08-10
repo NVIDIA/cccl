@@ -107,6 +107,18 @@ struct stable_sort_keys_partial_tile_t
   }
 };
 
+// Counterpart of stable_sort_keys_partial_tile_t for the overload that takes no sentinel: it sorts
+// the first valid_items keys without requiring a value that is ordered after all of them.
+struct stable_sort_keys_partial_tile_no_sentinel_t
+{
+  template <class BlockMergeSortT, class KeyT, class DefaultT>
+  __device__ void
+  operator()(BlockMergeSortT& sort, KeyT& thread_data, int valid_items, DefaultT /* oob_default */) const
+  {
+    sort.StableSort(thread_data, CustomLess{}, valid_items);
+  }
+};
+
 struct stable_sort_pairs_partial_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
@@ -114,6 +126,16 @@ struct stable_sort_pairs_partial_tile_t
   operator()(BlockMergeSortT& sort, KeyT& thread_keys, ValueT& thread_vals, int valid_items, DefaultT oob_default) const
   {
     sort.StableSort(thread_keys, thread_vals, CustomLess{}, valid_items, oob_default);
+  }
+};
+
+struct stable_sort_pairs_partial_tile_no_sentinel_t
+{
+  template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
+  __device__ void operator()(
+    BlockMergeSortT& sort, KeyT& thread_keys, ValueT& thread_vals, int valid_items, DefaultT /* oob_default */) const
+  {
+    sort.StableSort(thread_keys, thread_vals, CustomLess{}, valid_items);
   }
 };
 
@@ -171,6 +193,12 @@ using key_types        = c2h::type_list<std::int32_t, std::int64_t>;
 using threads_in_block = c2h::enum_type_list<int, THREADS_IN_BLOCK>;
 using items_per_thread = c2h::enum_type_list<int, 1, 2, 10, 15>;
 
+// Both partial-tile interfaces have to produce the same sorted valid prefix
+using partial_tile_key_actions =
+  c2h::type_list<stable_sort_keys_partial_tile_t, stable_sort_keys_partial_tile_no_sentinel_t>;
+using partial_tile_pair_actions =
+  c2h::type_list<stable_sort_pairs_partial_tile_t, stable_sort_pairs_partial_tile_no_sentinel_t>;
+
 template <class TestType>
 struct params_t
 {
@@ -186,10 +214,12 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
          CUB_SMALL,
          key_types,
          items_per_thread,
-         threads_in_block)
+         threads_in_block,
+         partial_tile_key_actions)
 {
-  using params = params_t<TestType>;
-  using key_t  = typename params::key_t;
+  using params   = params_t<TestType>;
+  using key_t    = typename params::key_t;
+  using action_t = c2h::get<3, TestType>;
 
   c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
 
@@ -200,7 +230,7 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
                    thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
                    CustomLess{});
 
-  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, stable_sort_keys_partial_tile_t{});
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, action_t{});
 
   REQUIRE(h_reference == d_keys);
 }
@@ -234,12 +264,14 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
          CUB_SMALL,
          key_types,
          items_per_thread,
-         threads_in_block)
+         threads_in_block,
+         partial_tile_pair_actions)
 {
-  using params  = params_t<TestType>;
-  using key_t   = typename params::key_t;
-  using value_t = key_t;
-  using pair_t  = std::pair<key_t, value_t>;
+  using params   = params_t<TestType>;
+  using key_t    = typename params::key_t;
+  using value_t  = key_t;
+  using pair_t   = std::pair<key_t, value_t>;
+  using action_t = c2h::get<3, TestType>;
 
   c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::device_vector<value_t> d_vals(d_keys.size());
@@ -269,8 +301,7 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
     h_vals[idx] = h_ref[idx].second;
   }
 
-  block_merge_sort<params::items_per_thread, params::threads_in_block>(
-    d_keys, d_vals, stable_sort_pairs_partial_tile_t{});
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, d_vals, action_t{});
 
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_vals == d_vals);
