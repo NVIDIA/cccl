@@ -80,7 +80,7 @@ enum class RleNonTrivialRunsAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(RleNonTrivialRunsAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(RleNonTrivialRunsAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -104,13 +104,13 @@ struct RleNonTrivialRunsPolicy
   RleNonTrivialRunsLookbackPolicy lookback; //!< The policy for the non-trivial-runs algorithm based on
                                             //!< decoupled-lookback. Only used when @p algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

@@ -66,7 +66,7 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
 class group;
 
 // mappings
@@ -87,10 +87,12 @@ class take;
 
 // synchronizers
 
-class lane_synchronizer;
-
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
+
+class lane_synchronizer;
+
+class level_synchronizer;
 
 // traits
 

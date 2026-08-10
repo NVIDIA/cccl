@@ -224,7 +224,10 @@ template <class _Type, class _UType>
 __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType>) noexcept
 {
   // NOLINTBEGIN(bugprone-branch-clone)
-  if constexpr (__is_tuple_of_iterator_references_v<remove_cvref_t<_UType>>)
+  // Reject unpacking a tuple_of_iterator_references through the 1-arg variadic constructor so the
+  // dedicated constructor is used instead. Do allow it if the original type is a tuple_of_iterator_references though
+  if constexpr (__is_tuple_of_iterator_references_v<remove_cvref_t<_UType>>
+                && !__is_tuple_of_iterator_references_v<remove_cvref_t<_Type>>)
   {
     return __select_constructor::__invalid;
   }

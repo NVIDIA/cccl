@@ -7,10 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): nvcc + nvrtc fails to create stubs for kernels kernels that take constant_wrapper as an argument.
-// UNSUPPORTED: !clang || nvcc
-
-// REQUIRES: !c++17
+// nvrtc is unsupported.
+// UNSUPPORTED: nvrtc
 
 // constant_wrapper
 

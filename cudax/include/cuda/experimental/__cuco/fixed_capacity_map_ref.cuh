@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__utility/pair.h>
@@ -73,7 +74,10 @@ template <class _Key,
 class fixed_capacity_map_ref
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
-  static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
+  static_assert(::cuda::is_power_of_two(sizeof(_Key)), "key_type size must be a power of two");
+  static_assert(sizeof(_Tp) <= 8, "sizeof(mapped_type) must be no larger than 8 bytes.");
+  static_assert(::cuda::is_power_of_two(sizeof(::cuda::std::pair<_Key, _Tp>)),
+                "value_type size must be a power of two");
   static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
                 "bitwise comparison via specialization of cuda::is_bitwise_comparable_v<Key>.");
@@ -311,6 +315,35 @@ public:
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl.contains(__group, __key);
+  }
+
+  //! @brief Finds the slot associated with a key.
+  //!
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator find(_ProbeKey __key) const noexcept
+  {
+    return __impl.find(__key);
+  }
+
+  //! @brief Cooperative-group variant of `find`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ParentCG, class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator
+  find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    return __impl.find(__group, __key);
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

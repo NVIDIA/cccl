@@ -17,7 +17,7 @@
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -49,7 +49,8 @@ struct flag_intra_segment_duplicates
 };
 
 template <typename ItemItT, typename SegIdItT>
-flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES flag_intra_segment_duplicates(ItemItT, SegIdItT)
+  -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputItItT,
@@ -212,8 +213,9 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
   return num_duplicates == 0;
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -313,8 +315,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -432,8 +435,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and per-segment k",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -549,8 +553,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and per-segment k",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,

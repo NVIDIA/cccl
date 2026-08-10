@@ -220,11 +220,11 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::it_value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
+  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
+                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                  typename InitValueT::value_type>>,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
@@ -552,38 +552,44 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     int smem_size  = smem_size_1_stage;
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
-                   // 1 CTA per SM +1 since it tends to improve performance
-                   // TODO(bgruber): make the +1 a tuning parameter
-                   const int max_stages_for_even_workload = static_cast<int>(
-                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
+    NV_IF_TARGET(
+      NV_IS_HOST, ({
+        // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
+        // 1 CTA per SM +1 since it tends to improve performance
+        // TODO(bgruber): make the +1 a tuning parameter
+        const int max_stages_for_even_workload = static_cast<int>(
+          ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
-                   while (num_stages <= max_stages_for_even_workload)
-                   {
-                     const int next_smem_size = detail::scan::smem_for_stages(
-                       lookahead_policy,
-                       num_stages + 1,
-                       static_cast<int>(kernel_source.InputSize()),
-                       static_cast<int>(kernel_source.InputAlign()),
-                       static_cast<int>(kernel_source.OutputAlign()),
-                       static_cast<int>(kernel_source.AccumSize()),
-                       static_cast<int>(kernel_source.AccumAlign()));
-                     if (next_smem_size > max_dynamic_smem_size)
-                     {
-                       // This number of stages failed, so stay at the current settings
-                       break;
-                     }
+        while (num_stages <= max_stages_for_even_workload)
+        {
+          const int next_smem_size = detail::scan::smem_for_stages(
+            lookahead_policy,
+            num_stages + 1,
+            static_cast<int>(kernel_source.InputSize()),
+            static_cast<int>(kernel_source.InputAlign()),
+            static_cast<int>(kernel_source.OutputAlign()),
+            static_cast<int>(kernel_source.AccumSize()),
+            static_cast<int>(kernel_source.AccumAlign()));
+          if (next_smem_size > max_dynamic_smem_size)
+          {
+            // This number of stages failed, so stay at the current settings
+            break;
+          }
 
-                     smem_size = next_smem_size;
-                     ++num_stages;
-                   }
+          smem_size = next_smem_size;
+          ++num_stages;
+        }
 
-                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
-                   {
-                     return error;
-                   }
-                 }))
+        // Set scan kernel's max shared memory limit to the max smem value. We might not use all of it, but it prevents
+        // multiple kernels from overwriting the max shared memory limit by different values.
+        //
+        // TODO: Since CTK 13.2 we can use CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE to allow non-portable shared memory
+        //       sizes, however we need something that works even with older CTKs.
+        if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, max_dynamic_smem_size))
+        {
+          return error;
+        }
+      }))
 
     // Invoke init kernel
     {
@@ -1163,38 +1169,44 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   int smem_size  = smem_size_1_stage;
 
   // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
-                 // 1 CTA per SM +1 since it tends to improve performance
-                 // TODO(bgruber): make the +1 a tuning parameter
-                 const int max_stages_for_even_workload = static_cast<int>(
-                   ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
+      // 1 CTA per SM +1 since it tends to improve performance
+      // TODO(bgruber): make the +1 a tuning parameter
+      const int max_stages_for_even_workload = static_cast<int>(
+        ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
-                 while (num_stages <= max_stages_for_even_workload)
-                 {
-                   const int next_smem_size = detail::scan::smem_for_stages(
-                     lookahead_policy,
-                     num_stages + 1,
-                     static_cast<int>(kernel_source.InputSize()),
-                     static_cast<int>(kernel_source.InputAlign()),
-                     static_cast<int>(kernel_source.OutputAlign()),
-                     static_cast<int>(kernel_source.AccumSize()),
-                     static_cast<int>(kernel_source.AccumAlign()));
-                   if (next_smem_size > max_dynamic_smem_size)
-                   {
-                     // This number of stages failed, so stay at the current settings
-                     break;
-                   }
+      while (num_stages <= max_stages_for_even_workload)
+      {
+        const int next_smem_size = detail::scan::smem_for_stages(
+          lookahead_policy,
+          num_stages + 1,
+          static_cast<int>(kernel_source.InputSize()),
+          static_cast<int>(kernel_source.InputAlign()),
+          static_cast<int>(kernel_source.OutputAlign()),
+          static_cast<int>(kernel_source.AccumSize()),
+          static_cast<int>(kernel_source.AccumAlign()));
+        if (next_smem_size > max_dynamic_smem_size)
+        {
+          // This number of stages failed, so stay at the current settings
+          break;
+        }
 
-                   smem_size = next_smem_size;
-                   ++num_stages;
-                 }
+        smem_size = next_smem_size;
+        ++num_stages;
+      }
 
-                 if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
-                 {
-                   return error;
-                 }
-               }))
+      // Set scan kernel's max shared memory limit to the max smem value. We might not use all of it, but it prevents
+      // multiple kernels from overwriting the max shared memory limit by different values.
+      //
+      // TODO: Since CTK 13.2 we can use CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE to allow non-portable shared memory
+      //       sizes, however we need something that works even with older CTKs.
+      if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, max_dynamic_smem_size))
+      {
+        return error;
+      }
+    }))
 
   // Invoke init kernel
   {

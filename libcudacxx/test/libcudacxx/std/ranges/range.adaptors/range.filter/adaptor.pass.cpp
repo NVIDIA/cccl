@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // cuda::std::views::filter
@@ -32,7 +32,7 @@ struct NonCopyablePredicate
   NonCopyablePredicate& operator=(NonCopyablePredicate const&) = delete;
 
   template <class T>
-  [[nodiscard]] TEST_FUNC constexpr bool operator()(const T& x) const
+  [[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr bool operator()(const T& x) const
   {
     return x % 2 == 0;
   }
@@ -43,15 +43,15 @@ struct Range : cuda::std::ranges::view_base
   using Iterator = forward_iterator<int*>;
   using Sentinel = sentinel_wrapper<Iterator>;
 
-  TEST_FUNC constexpr explicit Range(int* b, int* e)
+  TEST_HOST_DEVICE_FUNC constexpr explicit Range(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
-  [[nodiscard]] TEST_FUNC constexpr Iterator begin() const
+  [[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr Iterator begin() const
   {
     return Iterator(begin_);
   }
-  [[nodiscard]] TEST_FUNC constexpr Sentinel end() const
+  [[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr Sentinel end() const
   {
     return Sentinel(Iterator(end_));
   }
@@ -63,14 +63,14 @@ private:
 
 struct Pred
 {
-  [[nodiscard]] TEST_FUNC constexpr bool operator()(int i) const
+  [[nodiscard]] TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
   {
     return i % 2 == 0;
   }
 };
 
 template <typename View>
-TEST_FUNC constexpr void compareViews(View v, cuda::std::initializer_list<int> list)
+TEST_HOST_DEVICE_FUNC constexpr void compareViews(View v, cuda::std::initializer_list<int> list)
 {
   auto b1 = v.begin();
   auto e1 = v.end();
@@ -84,7 +84,7 @@ TEST_FUNC constexpr void compareViews(View v, cuda::std::initializer_list<int> l
   assert(b2 == e2);
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   int buff[] = {0, 1, 2, 3, 4, 5, 6, 7};
 

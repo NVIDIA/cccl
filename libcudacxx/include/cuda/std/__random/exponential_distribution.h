@@ -49,21 +49,23 @@ public:
   public:
     using distribution_type = exponential_distribution;
 
-    _CCCL_API explicit param_type(result_type __lambda = 1)
+    _CCCL_HOST_DEVICE_API explicit param_type(result_type __lambda = 1)
         : __lambda_{__lambda}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type lambda() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type lambda() const noexcept
     {
       return __lambda_;
     }
 
-    [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__lambda_ == __y.__lambda_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -75,25 +77,25 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API exponential_distribution() noexcept
+  _CCCL_HOST_DEVICE_API exponential_distribution() noexcept
       : exponential_distribution{1}
   {}
-  _CCCL_API explicit exponential_distribution(result_type __lambda) noexcept
+  _CCCL_HOST_DEVICE_API explicit exponential_distribution(result_type __lambda) noexcept
       : __p_{param_type{__lambda}}
   {}
-  _CCCL_API explicit exponential_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API explicit exponential_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return -::cuda::std::log(
@@ -102,36 +104,36 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type lambda() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type lambda() const noexcept
   {
     return __p_.lambda();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return result_type{0};
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator==(const exponential_distribution& __x, const exponential_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator!=(const exponential_distribution& __x, const exponential_distribution& __y) noexcept
   {
     return !(__x == __y);

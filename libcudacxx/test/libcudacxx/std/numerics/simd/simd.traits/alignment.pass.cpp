@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -29,7 +29,7 @@ namespace simd = cuda::std::simd;
 inline constexpr size_t optimal_cuda_alignment = _CCCL_CTK_AT_LEAST(12, 9) ? 32 : 16;
 
 template <typename T, int N>
-TEST_FUNC void test_default_u()
+TEST_HOST_DEVICE_FUNC void test_default_u()
 {
   using V = simd::basic_vec<T, simd::fixed_size<N>>;
   static_assert(simd::alignment<V>::value == optimal_cuda_alignment);
@@ -37,7 +37,7 @@ TEST_FUNC void test_default_u()
 }
 
 template <typename T, int N, typename U>
-TEST_FUNC void test_explicit_u()
+TEST_HOST_DEVICE_FUNC void test_explicit_u()
 {
   using V = simd::basic_vec<T, simd::fixed_size<N>>;
   static_assert(simd::alignment<V, U>::value == optimal_cuda_alignment);
@@ -45,7 +45,7 @@ TEST_FUNC void test_explicit_u()
 }
 
 template <typename T>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_default_u<T, 1>();
   test_default_u<T, 3>();
@@ -54,7 +54,7 @@ TEST_FUNC void test_type()
   test_default_u<T, 8>();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // default U = value_type
   test_type<char>();

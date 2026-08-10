@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <cuda/std/iterator>
 
 // template <class T, size_t N> T* begin(T (&array)[N]);
@@ -22,7 +19,11 @@
 int main(int, char**)
 {
   int ia[] = {1, 2, 3};
-  int* i   = cuda::std::begin(ia);
+#if _CCCL_TILE_COMPILATION()
+  int* i = cuda::std::__begin_cpo{}(ia);
+#else
+  int* i = cuda::std::begin(ia);
+#endif // !_CCCL_TILE_COMPILATION()
   assert(*i == 1);
   *i = 2;
   assert(ia[0] == 2);

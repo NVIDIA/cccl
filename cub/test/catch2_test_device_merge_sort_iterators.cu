@@ -17,7 +17,7 @@
 
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,7 +30,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeysCopy, sort_keys_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, stable_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, stable_sort_keys_copy);
 
-C2H_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using offset_t = std::int32_t;
@@ -50,7 +50,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][de
   REQUIRE(keys_equal == true);
 }
 
-C2H_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using offset_t = std::int32_t;
@@ -74,7 +74,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable
   REQUIRE(keys_expected == keys_out);
 }
 
-C2H_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using offset_t = std::int32_t;
@@ -95,7 +95,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device
   REQUIRE(keys_equal == true);
 }
 
-C2H_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using offset_t = std::int32_t;
@@ -116,7 +116,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][
   REQUIRE(keys_equal == true);
 }
 
-C2H_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using data_t   = std::uint64_t;
@@ -142,7 +142,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][d
   REQUIRE(values_equal == true);
 }
 
-C2H_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using data_t   = std::uint64_t;
@@ -171,7 +171,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][devic
   REQUIRE(values_equal == true);
 }
 
-C2H_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort][device]")
+CUB_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t    = std::uint32_t;
   using data_t   = std::uint64_t;
