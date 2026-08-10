@@ -129,6 +129,25 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_mi
   REQUIRE(max_index[0] == 0);
 }
 
+CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles zero-length input", "[reduce][arg_minmax]", CUB_SMALL)
+{
+  auto input     = thrust::device_vector<int>{};
+  auto min_out   = thrust::device_vector<int>(1);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto max_out   = thrust::device_vector<int>(1);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+
+  // For zero-length inputs, no output is written; just verify it does not crash.
+  auto error = cub::DeviceReduce::ArgMinMax(
+    input.begin(),
+    min_out.begin(),
+    min_index.begin(),
+    max_out.begin(),
+    max_index.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()));
+  REQUIRE(error == cudaSuccess);
+}
+
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts run_to_run determinism requirements",
               "[reduce][arg_minmax]",
               CUB_SMALL)
