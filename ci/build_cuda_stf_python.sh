@@ -104,7 +104,10 @@ echo "Merging CUDA wheels..."
 
 # Set up a Python environment for the merge/repair steps.
 source "$ci_dir/pyenv_helper.sh"
-setup_python_env "${py_version}"
+# Dedicated venv name: the combined cuda-stf producer runs this script right
+# after build_cuda_cccl_python.sh in the same job, and the default .cccl-venv
+# already belongs to that first setup.
+setup_python_env "${py_version}" ".cccl-stf-venv"
 
 # Needed for unpacking and repacking wheels.
 python -m pip install wheel

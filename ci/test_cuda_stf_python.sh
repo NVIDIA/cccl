@@ -22,7 +22,7 @@ case "${cuda_major_version}" in
     ;;
 esac
 
-setup_python_env "${py_version}"
+setup_python_env "${py_version}" ".cccl-stf-venv"
 
 # Locate exactly one wheel matching the given glob under the shared wheelhouse.
 find_one_wheel() {
