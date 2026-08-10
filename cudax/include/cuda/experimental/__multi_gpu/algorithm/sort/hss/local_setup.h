@@ -49,10 +49,10 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Measure the per-rank sizes, desired offsets, and global key count for the sort.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _SizeTRange>
 [[nodiscard]] _CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup_result_type
 _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
-  _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size)
+  _CommRange&& __comms, _EnvRange&& __envs, _SizeTRange&& __num_items_range, ::cuda::std::int32_t __comm_size)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -61,12 +61,12 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   __all_local_sizes.reserve(__num_local_inputs);
 
   {
-    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __env_it   = ::cuda::std::ranges::begin(__envs);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
+    auto __env_it       = ::cuda::std::ranges::begin(__envs);
+    auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__num_items_it)
     {
       __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
         ::cuda::get_stream(*__env_it),
@@ -74,7 +74,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         __comm_size,
         // Technically, we only need to write this value at entry rank(), but that would
         // require a whole separate memcpy call which honestly does not seem worth it.
-        static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(*__input_it)),
+        static_cast<::cuda::std::uint64_t>(*__num_items_it),
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it)));
     }
   }
