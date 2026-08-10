@@ -301,12 +301,12 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
 
     // First minimum: standard min_element returns the first occurrence
     auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend());
-    const auto expected_min       = *expected_min_it;
+    const auto expected_min       = static_cast<output_t>(*expected_min_it);
     const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
 
     // Last maximum: max_element on the reversed range finds the last occurrence in the forward range
     auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend());
-    const auto expected_max       = *expected_last_max_it;
+    const auto expected_max       = static_cast<output_t>(*expected_last_max_it);
     const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
                                   - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
@@ -332,11 +332,11 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
     c2h::host_vector<item_t> host_items(in_items);
 
     auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend());
-    const auto expected_min       = *expected_min_it;
+    const auto expected_min       = static_cast<output_t>(*expected_min_it);
     const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
 
     auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend());
-    const auto expected_max       = *expected_last_max_it;
+    const auto expected_max       = static_cast<output_t>(*expected_last_max_it);
     const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
                                   - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
@@ -458,12 +458,12 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
 
       // First minimum by abs value: first element with smallest |value|
       auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
-      const auto expected_min       = *expected_min_it;
+      const auto expected_min       = static_cast<output_t>(*expected_min_it);
       const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
 
       // Last maximum by abs value: last element with largest |value|
       auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
-      const auto expected_max       = *expected_last_max_it;
+      const auto expected_max       = static_cast<output_t>(*expected_last_max_it);
       const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
                                     - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
