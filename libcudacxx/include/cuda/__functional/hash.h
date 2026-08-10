@@ -42,8 +42,8 @@ enum class hash_algorithm
 //! @brief A hash function class specialized for different hash algorithms.
 //!
 //! @tparam _Key The type of the values to hash
-//! @tparam _Algorithm The hash algorithm to use, defaults to `hash_algorithm::xxhash_32`
-template <typename _Key, hash_algorithm _Algorithm = hash_algorithm::xxhash_32>
+//! @tparam _Algorithm The hash algorithm to use, defaults to `hash_algorithm::xxhash_64`
+template <typename _Key, hash_algorithm _Algorithm = hash_algorithm::xxhash_64>
 class hash;
 
 template <typename _Key>

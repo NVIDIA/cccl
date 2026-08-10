@@ -16,6 +16,8 @@
 
 TEST_FUNC void test()
 {
+  static_assert(cuda::std::is_same_v<cuda::hash<int>, cuda::hash<int, cuda::hash_algorithm::xxhash_64>>);
+
   hash_test<cuda::hash_algorithm::xxhash_64> xxhash64_test;
 
   xxhash64_test(static_cast<char>(0), 16804241149081757544ull, 0);

@@ -15,7 +15,7 @@ Defined in the header ``<cuda/functional>``.
         murmurhash3_x64_128, // requires compiler support for __int128
     };
 
-    template <typename Key, hash_algorithm Algorithm = hash_algorithm::xxhash_32>
+    template <typename Key, hash_algorithm Algorithm = hash_algorithm::xxhash_64>
     class hash;
 
     template <typename Key>
