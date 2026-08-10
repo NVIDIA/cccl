@@ -57,6 +57,10 @@ check_source_compiles(
 cmake_pop_check_state()
 
 if (NOT libcudacxx_atomic_codegen_has_int128)
+  message(
+    STATUS
+    "Skipping 128-bit atomic SASS codegen tests: 128-bit integers are not supported"
+  )
   list(FILTER libcudacxx_atomic_codegen_tests EXCLUDE REGEX "_types_128_")
 else()
   # Native 128-bit atomic_ref operations require the PTX ISA 8.4 path available

@@ -33,7 +33,7 @@ __device__ void atomic_store(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 ; NON_BLOCK-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX: {{.*}}{{@!?}}[[LOCK_FREE]] BRA{{(\.U)?}} {{.*}}
 ; SMXX: {{.*}}BSYNC [[SYNC]]{{.*}}
-; SMXX: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}, R8{{.*}}
+; SMXX: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}, {{R[0-9]+}}{{.*}}
 ; SMXX: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
 ; BLOCK: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
 ; NON_BLOCK: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}

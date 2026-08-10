@@ -29,8 +29,8 @@ __device__ void atomic_store(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
-; BLOCK: {{.*}}ST.E.128.STRONG.{{CTA|SM}} {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, R8{{.*}}
-; NON_BLOCK: {{.*}}ST.E.128.STRONG.[[SASS_SCOPE]] {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, R8{{.*}}
+; BLOCK: {{.*}}ST.E.128.STRONG.{{CTA|SM}} {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, {{R[0-9]+}}{{.*}}
+; NON_BLOCK: {{.*}}ST.E.128.STRONG.[[SASS_SCOPE]] {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, {{R[0-9]+}}{{.*}}
 ; SMXX-NEXT: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
