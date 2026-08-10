@@ -57,7 +57,7 @@ namespace cuda::experimental
 // result used by the numeric_limits specialization is an exact power of two, so the repeated product
 // is exact.
 template <class _FpType>
-[[nodiscard]] _CCCL_API constexpr _FpType __fpmp_limits_exp2(int __e) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _FpType __fpmp_limits_exp2(int __e) noexcept
 {
   _FpType __r          = _FpType(1);
   const _FpType __base = (__e < 0) ? _FpType(0.5) : _FpType(2);
@@ -101,17 +101,17 @@ public:
   static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
 
   // Smallest all-normal value: hi = FpType_min scaled up by p so that lo is still normal.
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type min() noexcept
   {
     return type(__base::min() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(__base::digits), _FpType(0));
   }
   // Largest value: hi = FpType_max, plus the largest lo that keeps (hi, lo) non-overlapping.
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type max() noexcept
   {
     return type(__base::max(),
                 __base::max() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1)));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type lowest() noexcept
   {
     return type(-__base::max(),
                 -(__base::max() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1))));
@@ -120,11 +120,11 @@ public:
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = __base::radix;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type epsilon() noexcept
   {
     return type(::cuda::experimental::__fpmp_limits_exp2<_FpType>(1 - digits), _FpType(0));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type round_error() noexcept
   {
     return type(_FpType(0.5), _FpType(0));
   }
@@ -152,19 +152,19 @@ public:
   static constexpr bool has_signaling_NaN                                  = true;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type infinity() noexcept
   {
     return type(__base::infinity(), _FpType(0));
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type quiet_NaN() noexcept
   {
     return type(__base::quiet_NaN(), _FpType(0));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type signaling_NaN() noexcept
   {
     return type(__base::signaling_NaN(), _FpType(0));
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr type denorm_min() noexcept
   {
     return type(__base::denorm_min(), _FpType(0));
   }

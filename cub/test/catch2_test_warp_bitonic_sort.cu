@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 using cub::detail::warp_threads;
@@ -354,7 +354,8 @@ struct params_t
   static constexpr int total_warps      = 2;
 };
 
-C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_thread_list, num_block_dims_list)
+CUB_TEST(
+  "Warp sort on keys-only works", "[sort][warp]", CUB_SMALL, key_types, items_per_thread_list, num_block_dims_list)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -380,8 +381,9 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   REQUIRE(h_in_out == h_out);
 }
 
-C2H_TEST("Warp sort keys-only on partial warp-tile works",
+CUB_TEST("Warp sort keys-only on partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          items_per_thread_list,
          num_block_dims_list,
@@ -416,8 +418,9 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   REQUIRE(h_in_out == h_out);
 }
 
-C2H_TEST("Warp sort on keys-value pairs works",
+CUB_TEST("Warp sort on keys-value pairs works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          items_per_thread_list,
          num_block_dims_list,
@@ -459,8 +462,9 @@ C2H_TEST("Warp sort on keys-value pairs works",
   REQUIRE(h_values_in_out == h_values_out);
 }
 
-C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
+CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          items_per_thread_list,
          num_block_dims_list,
@@ -515,8 +519,9 @@ using custom_key_types   = c2h::type_list<custom_t>;
 using custom_value_types = c2h::type_list<custom_t>;
 using custom_items_per_thread_list = c2h::enum_type_list<int, 3>;
 
-C2H_TEST("Warp sort on custom key-value pairs works",
+CUB_TEST("Warp sort on custom key-value pairs works",
          "[sort][warp]",
+         CUB_SMALL,
          custom_key_types,
          custom_items_per_thread_list,
          num_block_dims_list,

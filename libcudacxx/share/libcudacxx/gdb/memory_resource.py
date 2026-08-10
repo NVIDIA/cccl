@@ -6,40 +6,30 @@
 
 from __future__ import annotations
 
-import re
 from types import ModuleType
+
+import cccl_common
 
 import gdb
 import gdb.printing
 
-_ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
 _RESOURCE_NAMES = frozenset(
     {"any_resource", "any_synchronous_resource", "basic_any_resource"}
 )
 
 
-def public_type_name(value_type: gdb.Type) -> str:
-    """Return a type name without CUDA ABI inline namespaces."""
-    return _ABI_NAMESPACE_PATTERN.sub("", str(value_type))
-
-
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_memory_resource(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
-    type_name = public_type_name(value_type)
-    template_name = _template_name(value_type)
+    value_type = cccl_common.canonical_type(value_type)
+    type_name = cccl_common.public_type_name(value_type)
     return (
         type_name.startswith("cuda::mr::")
-        and template_name.rsplit("::", 1)[-1] in _RESOURCE_NAMES
+        and cccl_common.template_name(value_type).rsplit("::", 1)[-1] in _RESOURCE_NAMES
     )
 
 
 def memory_resource_description(value: gdb.Value) -> str:
-    value_type = value.type.strip_typedefs().unqualified()
-    type_name = public_type_name(value_type)
+    value = cccl_common.strip_reference_value(value)
+    type_name = cccl_common.canonical_type_name(value.type)
     try:
         address = int(value.address)
     except (gdb.error, TypeError):

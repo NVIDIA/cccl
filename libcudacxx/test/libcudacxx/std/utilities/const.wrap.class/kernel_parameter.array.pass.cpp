@@ -14,8 +14,6 @@
 // nvrtc is unsupported.
 // UNSUPPORTED: nvrtc
 
-// REQUIRES: !c++17
-
 // constant_wrapper
 
 // Test that constant_wrapper can be safely passed as a parameter from host to device.

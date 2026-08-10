@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -349,15 +349,15 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(__location, __allocation_type);
-  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
-  {
-    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
-  }
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   _CCCL_ASSERT(__location.type == ::CU_MEM_LOCATION_TYPE_DEVICE,
                "Before CUDA 13 only device memory pools have a default");
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
+  {
+    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+  }
   return __pool;
 }
 
