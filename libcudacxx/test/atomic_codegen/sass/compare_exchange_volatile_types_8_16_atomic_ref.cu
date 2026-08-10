@@ -11,7 +11,8 @@
 // clang-format off
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block
 // %PARAM% TYPE type int8_t:uint8_t:int16_t:uint16_t:f16:bf16
-// %PARAM% CAS cas compare_exchange_weak:compare_exchange_strong
+// Strong compare-exchange may retry internally using weak compare-exchange; only the weak overload must contain one CAS.
+// %PARAM% CAS,FILECHECK_PREFIX_SINGLE_CAS cas compare_exchange_weak=compare_exchange_weak,single_cas:compare_exchange_strong=compare_exchange_strong,smxx
 // %PARAM% SUCCESS_ORDER,FAILURE_ORDER,FILECHECK_PREFIX_ORDER order rr=mor,mor,no_membar:ar=moa,mor,no_membar:aa=moa,moa,no_membar:er=more,mor,release:br=moar,mor,release:ba=moar,moa,release:sr=mosc,mor,seq_cst:sa=mosc,moa,seq_cst:ss=mosc,mosc,seq_cst
 // clang-format on
 
@@ -31,7 +32,7 @@ __device__ bool atomic_compare_exchange(cuda::atomic_ref<volatile TYPE, SCOPE>& 
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
-; SMXX-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]], 0xfffffffc, {{.*}}
+; SMXX-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
 ; SEQ_CST-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
 ; BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
@@ -45,7 +46,7 @@ __device__ bool atomic_compare_exchange(cuda::atomic_ref<volatile TYPE, SCOPE>& 
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}}{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]]{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
+; SINGLE_CAS-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
