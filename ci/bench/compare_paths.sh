@@ -725,29 +725,58 @@ normalize_explain_markdown_report() {
   mv "${tmp_path}" "${report_path}"
 }
 
-run_compare_command() {
+run_compare_command_impl() {
   local label="$1"
   local compare_out="$2"
   local compare_log="$3"
   shift 3
 
+  local -a env_prefixes=()
+  while [[ "$#" -gt 0 && "$1" == --env ]]; do
+    shift
+    env_prefixes+=("$1")
+    shift
+  done
+
   local started_at=0
   local elapsed_s=0
   local rc=0
+  local stderr_tmp=""
+  stderr_tmp="$(mktemp "${compare_log}.stderr.XXXXXX")"
 
   : > "${compare_out}"
   : > "${compare_log}"
   echo "::group::${label}"
-  print_shell_command "$@"
+
+  local -a print_env_args=()
+  local env_prefix=""
+  for env_prefix in "${env_prefixes[@]}"; do
+    print_env_args+=(--env "${env_prefix}")
+  done
+  print_shell_command "${print_env_args[@]}" "$@"
+
   started_at="${SECONDS}"
-  if "$@" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
+  if [[ "${#env_prefixes[@]}" -gt 0 ]]; then
+    if env "${env_prefixes[@]}" "$@" > "${compare_out}" 2> "${stderr_tmp}"; then
+      rc=0
+    else
+      rc=$?
+    fi
+  elif "$@" > "${compare_out}" 2> "${stderr_tmp}"; then
     rc=0
   else
     rc=$?
   fi
   elapsed_s=$((SECONDS - started_at))
+  if [[ -s "${compare_out}" ]]; then
+    cat "${compare_out}"
+    cat "${compare_out}" >> "${compare_log}"
+  fi
+  if [[ -s "${stderr_tmp}" ]]; then
+    cat "${stderr_tmp}" >&2
+    cat "${stderr_tmp}" >> "${compare_log}"
+  fi
+  rm -f "${stderr_tmp}"
   if [[ "${rc}" -ne 0 && ! -s "${compare_out}" ]]; then
     printf "_Compare command failed with rc=%s; see \`%s\` for stderr/log output._\n" \
       "${rc}" \
@@ -763,6 +792,10 @@ run_compare_command() {
   return "${rc}"
 }
 
+run_compare_command() {
+  run_compare_command_impl "$@"
+}
+
 run_compare_command_with_pythonpath() {
   local label="$1"
   local compare_pythonpath="$2"
@@ -770,37 +803,12 @@ run_compare_command_with_pythonpath() {
   local compare_log="$4"
   shift 4
 
-  local started_at=0
-  local elapsed_s=0
-  local rc=0
-
-  : > "${compare_out}"
-  : > "${compare_log}"
-  echo "::group::${label}"
-  print_shell_command --env "PYTHONPATH=${compare_pythonpath}" "$@"
-  started_at="${SECONDS}"
-  if PYTHONPATH="${compare_pythonpath}" \
-    "$@" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
-    rc=0
-  else
-    rc=$?
-  fi
-  elapsed_s=$((SECONDS - started_at))
-  if [[ "${rc}" -ne 0 && ! -s "${compare_out}" ]]; then
-    printf "_Compare command failed with rc=%s; see \`%s\` for stderr/log output._\n" \
-      "${rc}" \
-      "${compare_log#"${artifact_dir}"/}" \
-      > "${compare_out}"
-  fi
-  echo "::endgroup::"
-  if [[ "${rc}" -eq 0 ]]; then
-    echo "${label} completed in ${elapsed_s}s"
-  else
-    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
-  fi
-  return "${rc}"
+  run_compare_command_impl \
+    "${label}" \
+    "${compare_out}" \
+    "${compare_log}" \
+    --env "PYTHONPATH=${compare_pythonpath}" \
+    "$@"
 }
 
 env_value_is_truthy() {
