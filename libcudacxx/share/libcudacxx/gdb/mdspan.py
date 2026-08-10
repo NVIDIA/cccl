@@ -10,7 +10,7 @@ import re
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
@@ -42,14 +42,11 @@ def _dynamic_extent() -> int:
     return (1 << size_t_bits) - 1
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_cuda_mdspan(value_type: gdb.Type) -> bool:
-    # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = value_type.strip_typedefs().unqualified()
-    template_name = _template_name(value_type)
+    # canonical_type resolves references/typedefs that can hide accessibility
+    # properties.
+    value_type = cccl_common.canonical_type(value_type)
+    template_name = cccl_common.template_name(value_type)
     if (
         template_name.startswith("cuda::std::")
         and template_name.rsplit("::", 1)[-1] == "mdspan"
@@ -137,7 +134,7 @@ def _split_top_level(text: str) -> list[str]:
 def _static_extents(extents_type: gdb.Type) -> list[int] | None:
     """Parse the static extents (dynamic_extent sentinel kept) out of an
     ``extents<IndexType, Values...>`` type's name."""
-    match = _EXTENTS_PATTERN.search(memory_resource.public_type_name(extents_type))
+    match = _EXTENTS_PATTERN.search(cccl_common.public_type_name(extents_type))
     if match is None:
         return None
     parts = _split_top_level(match.group(1))
@@ -170,7 +167,7 @@ def _combined_extents(
 
 
 def _layout_kind(layout_type: gdb.Type) -> str | None:
-    name = memory_resource.public_type_name(layout_type)
+    name = cccl_common.public_type_name(layout_type)
     for kind in _LAYOUT_KINDS:
         if name == f"cuda::std::{kind}":
             return kind
@@ -180,16 +177,16 @@ def _layout_kind(layout_type: gdb.Type) -> str | None:
 def _is_default_accessor(accessor_type: gdb.Type, element_type: gdb.Type) -> bool:
     """Return whether accessor_type is cuda::std::default_accessor<element_type>."""
     stripped = accessor_type.strip_typedefs().unqualified()
-    name = memory_resource.public_type_name(stripped)
+    name = cccl_common.public_type_name(stripped)
     if name.split("<", 1)[0] != "cuda::std::default_accessor":
         return False
     try:
         accessor_element = stripped.template_argument(0)
     except gdb.error:
         return False
-    return memory_resource.public_type_name(
+    return cccl_common.public_type_name(
         accessor_element
-    ) == memory_resource.public_type_name(element_type)
+    ) == cccl_common.public_type_name(element_type)
 
 
 def _strides(mapping_ebco: gdb.Value, rank: int) -> list[int] | None:
@@ -224,8 +221,9 @@ class MdspanPrinter:
     """Expose cuda::std::mdspan metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = cccl_common.canonical_type(value.type)
 
         self.extents: list[int] | None = None
         self.data: gdb.Value | None = None
@@ -251,7 +249,7 @@ class MdspanPrinter:
         (e.g. "const int" vs. "int const", "int *" vs. "int*").
         """
         dynamic_extent = _dynamic_extent()
-        type_name = memory_resource.public_type_name(self.type)
+        type_name = cccl_common.public_type_name(self.type)
         type_name = re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", type_name)
 
         try:
@@ -283,7 +281,7 @@ class MdspanPrinter:
 
         # Find the real cuda::std::mdspan type, skipping any cuda:: wrapper.
         mdspan_type = self.type
-        while _template_name(mdspan_type).rsplit("::", 1)[-1] != "mdspan":
+        while cccl_common.template_name(mdspan_type).rsplit("::", 1)[-1] != "mdspan":
             bases = _direct_bases(mdspan_type)
             if len(bases) != 1:
                 return
@@ -291,7 +289,7 @@ class MdspanPrinter:
         extents_type = mdspan_type.template_argument(1)
         layout_type = mdspan_type.template_argument(2)
         accessor_type = mdspan_type.template_argument(3)
-        self.accessor_name = memory_resource.public_type_name(accessor_type)
+        self.accessor_name = cccl_common.public_type_name(accessor_type)
 
         dynamic_extent = _dynamic_extent()
         static_values = _static_extents(extents_type)

@@ -9,6 +9,8 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+import cccl_common
+
 import lldb
 
 _MDSPAN_PATTERN = re.compile(r"^cuda::std::mdspan<.+>$")
@@ -17,7 +19,8 @@ _EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
 _EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
 # Not host-dereferenceable; never index through these accessors.
-_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
+_DEVICE_ONLY_ACCESSOR_MARKERS = (
+    "__device_accessor<", "__shared_memory_accessor<")
 # cuda:: accessibility wrappers around cuda::std::mdspan.
 _WRAPPER_MDSPAN_NAMES = frozenset(
     {
@@ -39,9 +42,7 @@ def _dynamic_extent(target: lldb.SBTarget) -> int:
 
 
 def is_cuda_mdspan(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     if _MDSPAN_PATTERN.fullmatch(type_name) is not None:
         return True
     template_name = type_name.split("<", 1)[0]
@@ -132,7 +133,8 @@ def _ebco_element(
             if error.Fail():
                 return None
             return ebco_value.CreateValueFromData(name, data, element_type)
-        impl = ebco_value.CreateChildAtOffset(name, base.GetOffsetInBytes(), impl_type)
+        impl = ebco_value.CreateChildAtOffset(
+            name, base.GetOffsetInBytes(), impl_type)
         return impl.GetChildMemberWithName("__elem_")
     return None
 
@@ -213,7 +215,8 @@ def _offset(
             return 0
         return sum(index * stride for index, stride in zip(indices, strides))
     positions = (
-        range(len(extents)) if kind == "layout_right" else reversed(range(len(extents)))
+        range(len(extents)) if kind == "layout_right" else reversed(
+            range(len(extents)))
     )
     result = 0
     for pos in positions:
@@ -248,21 +251,14 @@ class MdspanInfo(NamedTuple):
         return size
 
 
-def _display_type_name(value: lldb.SBValue) -> str:
-    return (
-        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
-        or ""
-    )
-
-
 def _readable_type_name(name: str, dynamic_extent: int) -> str:
     """Replace the raw dynamic_extent sentinel with a readable name."""
     return re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", name)
 
 
 def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
-    value = value.GetNonSyntheticValue()
-    type_name = _display_type_name(value)
+    value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
+    type_name = cccl_common.canonical_type_name(value.GetType())
 
     top_ebco = _find_ebco_base(value)
     if top_ebco is None:
@@ -288,7 +284,8 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     static_values = _static_extents(extents_type)
     if static_values is None:
         return MdspanInfo(type_name, None, None, None, None, accessor_name)
-    rank_dynamic = sum(1 for value_ in static_values if value_ == dynamic_extent)
+    rank_dynamic = sum(
+        1 for value_ in static_values if value_ == dynamic_extent)
 
     mapping_ebco = _find_ebco_base(mapping)
     dynamic_values: list[int] = []
@@ -338,6 +335,7 @@ class MdspanSyntheticProvider:
     """Expose cuda::std::mdspan elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.info: MdspanInfo | None = None
         self.update()
@@ -369,7 +367,7 @@ class MdspanSyntheticProvider:
         return self.num_children() != 0
 
     def get_type_name(self) -> str:
-        name = _display_type_name(self.value)
+        name = cccl_common.canonical_type_name(self.value.GetType())
         dynamic_extent = _dynamic_extent(self.value.GetTarget())
         return _readable_type_name(name, dynamic_extent)
 
@@ -379,7 +377,8 @@ class MdspanSyntheticProvider:
         stripped = name.strip("[]")
         try:
             parsed = (
-                tuple(int(index) for index in stripped.split(",")) if stripped else ()
+                tuple(int(index)
+                      for index in stripped.split(",")) if stripped else ()
             )
         except ValueError:
             return -1

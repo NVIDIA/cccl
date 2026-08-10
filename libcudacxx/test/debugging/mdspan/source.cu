@@ -11,120 +11,119 @@
 
 #include <vector>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using inner_mdspan = cuda::std::mdspan<int, cuda::std::extents<int, 2>>;
 
 [[gnu::noinline]] void inspect_rank1_dynamic(const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_rank2_static(const cuda::std::mdspan<int, cuda::std::extents<int, 3, 4>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void
 inspect_rank2_mixed(const cuda::std::mdspan<int, cuda::std::extents<int, 3, cuda::std::dynamic_extent>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_rank2_dynamic(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_rank0(const cuda::std::mdspan<int, cuda::std::extents<int>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_empty(const cuda::std::mdspan<int, cuda::std::extents<int, 0, 3>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void
 inspect_layout_left(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_left>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void
 inspect_layout_stride(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_stride>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void
 inspect_rank0_layout_stride(const cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_const_element(const cuda::std::mdspan<const int, cuda::std::dextents<int, 1>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_pointer_element(const cuda::std::mdspan<int*, cuda::std::dextents<int, 1>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::mdspan<inner_mdspan, cuda::std::extents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_custom_accessor(
   const cuda::std::
     mdspan<int, cuda::std::dextents<int, 1>, cuda::std::layout_right, cuda::std::aligned_accessor<int, 16>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_host_mdspan(const cuda::host_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 // No elements expected: device memory isn't host-dereferenceable.
 [[gnu::noinline]] void inspect_device_mdspan(const cuda::device_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 // Unified memory is host-readable: full element display, like host_mdspan.
 [[gnu::noinline]] void inspect_managed_mdspan(const cuda::managed_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_restrict_mdspan(const cuda::restrict_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_vector(const std::vector<cuda::std::mdspan<int, cuda::std::extents<int, 2>>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 int main()
