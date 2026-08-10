@@ -6,11 +6,10 @@
 
 #include <vector>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 // An empty, non-final type triggers the tuple element's empty-base-class
 // optimization instead of storing the element in a __value_ data member.
@@ -19,22 +18,22 @@ struct empty_type
 
 [[gnu::noinline]] void inspect_basic(const cuda::std::tuple<int, double, char>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_empty(const cuda::std::tuple<>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_single(const cuda::std::tuple<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_ebco(const cuda::std::tuple<int, empty_type, double>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 // An empty leading element shares its storage offset with the element that
@@ -44,58 +43,63 @@ struct empty_type
 // mix these up unless every case is exercised on its own.
 [[gnu::noinline]] void inspect_ebco_first(const cuda::std::tuple<empty_type, int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_ebco_last(const cuda::std::tuple<int, empty_type>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_ebco_adjacent(const cuda::std::tuple<empty_type, empty_type, int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_pointer(const cuda::std::tuple<int*, const char*>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_nested_empty(const cuda::std::tuple<int, cuda::std::tuple<>, double>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::tuple<int, cuda::std::tuple<double, char>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_reference(const cuda::std::tuple<int&, double&>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_const(const cuda::std::tuple<int, double>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
+
+// An optimized build inlines every use of std::vector::operator[], so no
+// out-of-line copy is left for the debugger to call. Instantiate that one member
+// explicitly to keep a copy, which lets the debugger evaluate values[i].
+template typename std::vector<cuda::std::tuple<int, int>>::const_reference
+  std::vector<cuda::std::tuple<int, int>>::operator[](size_type) const;
 
 [[gnu::noinline]] void inspect_vector(const std::vector<cuda::std::tuple<int, int>>& values)
 {
-  keep_for_debugger(values[0]);
-  keep_for_debugger(values[1]);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::std::tuple<int, double>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::std::tuple<int, double>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 int main()

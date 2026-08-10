@@ -9,9 +9,8 @@ import operator
 from collections.abc import Iterable
 
 import numpy as np
-from numpy.typing import DTypeLike
-
 from cuda.core import Buffer, Device, Stream
+from numpy.typing import DTypeLike
 
 
 def get_compute_capability() -> tuple[int, int]:
