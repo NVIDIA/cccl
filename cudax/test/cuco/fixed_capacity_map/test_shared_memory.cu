@@ -202,7 +202,7 @@ make_copy_shmem_kernel(GlobalRef global_ref, int num_keys, int* keys_exist, int*
   if (block.thread_rank() == 0)
   {
     const auto new_key     = static_cast<key_type>(num_keys);
-    const auto new_value   = static_cast<mapped_type>(num_keys + 1);
+    const auto new_value   = static_cast<mapped_type>(num_keys) + mapped_type{1};
     const bool inserted    = shared_ref.insert(value_type{new_key, new_value});
     const auto inserted_it = shared_ref.find(new_key);
     copy_mutable[blockIdx.x] =
