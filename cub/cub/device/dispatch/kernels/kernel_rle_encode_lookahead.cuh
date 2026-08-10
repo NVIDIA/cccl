@@ -20,7 +20,7 @@
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/ptx>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -41,13 +41,13 @@ _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const RleLookaheadPolicy& 
 {
   const int num_total_warps =
     1 /*load*/ + policy.compute_warps + 1 /*poll*/ + policy.compute_warps /*store*/ + 1 /*bookkeeper*/;
-  return num_total_warps * 32;
+  return num_total_warps * detail::warp_threads;
 }
 
 // This is important for position staging on dense cases (16 way bank conflicts).
 _CCCL_DEVICE_API _CCCL_FORCEINLINE int swizzle_xor_stride32(int x)
 {
-  return x ^ (x >> 5);
+  return x ^ (x >> detail::log2_warp_threads);
 }
 
 constexpr unsigned full_mask = 0xffffffffu;
@@ -653,10 +653,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(policy.compute_warps >= 1 && policy.compute_warps <= 31, "compute_warps must be in [1, 31]");
   static_assert(policy.key_ring_stages >= 1, "at least one pipeline stage");
 
-  static_assert(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
-                "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
+  static_assert(
+    policy.pos_ring_stages >= 1
+      && RleLookaheadPolicy::max_key_stages_per_pos_stage * policy.pos_ring_stages >= policy.key_ring_stages,
+    "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
   static_assert(policy.floor_pos_ring_stages() <= policy.pos_ring_stages
-                  && 2 * policy.floor_pos_ring_stages() >= policy.floor_key_ring_stages(),
+                  && RleLookaheadPolicy::max_key_stages_per_pos_stage * policy.floor_pos_ring_stages()
+                       >= policy.floor_key_ring_stages(),
                 "the unstaged floor configuration must satisfy the pos ring parity bound");
   static_assert(policy.floor_dyn_smem_bytes() + RleLookaheadPolicy::static_smem_budget <= detail::max_smem_per_block,
                 "the unstaged floor configuration must launch within the default shared memory limit on every device");
@@ -671,8 +674,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
   static_assert(policy.buf_per_lane() * (static_cast<int>(sizeof(KeyT)) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
-  static_assert(::cuda::std::is_integral_v<OffT> && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
-                "OffT must be an integer type wide enough for one tile");
+  static_assert(
+    (::cuda::std::is_same_v<OffT, ::cuda::std::int32_t> || ::cuda::std::is_same_v<OffT, ::cuda::std::int64_t>)
+      && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
+    "OffT must be the internal signed 32/64-bit offset type, wide enough for one tile");
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int compute_warps       = policy.compute_warps;
   constexpr int store_warps         = policy.compute_warps; // one store warp drains each compute warp's tile
@@ -680,7 +685,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr int max_pos_ring_stages = policy.pos_ring_stages;
   _CCCL_ASSERT(key_ring_stages >= 1 && key_ring_stages <= max_key_ring_stages, "invalid key_ring_stages");
   _CCCL_ASSERT(pos_ring_stages >= 1 && pos_ring_stages <= max_pos_ring_stages, "invalid pos_ring_stages");
-  _CCCL_ASSERT(2 * pos_ring_stages >= key_ring_stages, "pos ring parity wait aliases");
+  _CCCL_ASSERT(RleLookaheadPolicy::max_key_stages_per_pos_stage * pos_ring_stages >= key_ring_stages,
+               "pos ring parity wait aliases");
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
   // in the regressed case: always stage positions, so the store warps never run the flag-decode drain vvv
   const int staging_threshold  = keys_staged ? flag_staging_threshold : 0;

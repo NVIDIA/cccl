@@ -30,6 +30,7 @@
 #include <cuda/__memory/align_up.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/iterator>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
@@ -227,7 +228,7 @@ inline constexpr bool lookahead_instantiable =
   && ::cuda::std::is_same_v<it_value_t<InputIteratorT>, it_value_t<UniqueOutputIteratorT>>
   && (16 % sizeof(it_value_t<InputIteratorT>) == 0)
   && (alignof(it_value_t<InputIteratorT>) == sizeof(it_value_t<InputIteratorT>))
-  && ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8);
+  && (::cuda::std::is_same_v<OffsetT, ::cuda::std::int32_t> || ::cuda::std::is_same_v<OffsetT, ::cuda::std::int64_t>);
 
 // Launches the lookahead init + main kernels. Callable from host and device: the host arm queries the
 // device's opt-in shared memory and picks the tuned staged configuration when it fits, else the unstaged
@@ -290,7 +291,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   size_t dyn_smem_bytes = lookahead_policy.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
   NV_IF_TARGET(NV_IS_HOST,
                ({
-                 int device = 0, max_optin_smem = 0;
+                 int device         = 0;
+                 int max_optin_smem = 0;
                  if (const auto error = CubDebug(cudaGetDevice(&device)))
                  {
                    return error;

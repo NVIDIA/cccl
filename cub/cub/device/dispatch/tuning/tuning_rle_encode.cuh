@@ -31,6 +31,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
 #include <cuda/std/cstdint>
@@ -165,14 +166,20 @@ struct RleLookaheadPolicy
 
   static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;
 
+  //!< the unstaged floor configuration keeps at most this many key generations in flight
+  static constexpr int floor_key_ring_cap = 4;
+  //!< one pos-ring stage may cover at most this many key generations: the parity bound
+  //!< pos_ring_stages * max_key_stages_per_pos_stage >= key_ring_stages must hold
+  static constexpr int max_key_stages_per_pos_stage = 2;
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_key_ring_stages() const noexcept
   {
-    return key_ring_stages < 4 ? key_ring_stages : 4;
+    return (::cuda::std::min) (key_ring_stages, int{floor_key_ring_cap});
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_pos_ring_stages() const noexcept
   {
-    return (floor_key_ring_stages() + 1) / 2;
+    return ::cuda::ceil_div(floor_key_ring_stages(), max_key_stages_per_pos_stage);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t floor_dyn_smem_bytes() const noexcept
@@ -542,7 +549,6 @@ struct policy_selector
   bool lengths_out_contiguous;
   bool num_runs_out_contiguous;
   bool input_matches_unique_type;
-  bool offset_is_i32_or_i64;
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleLookbackPolicy
   {
@@ -732,8 +738,17 @@ struct policy_selector
     {
       return ::cuda::std::nullopt;
     }
-    const int items_per_thread = (key_size >= 16) ? 8 : (key_size == 8 ? 16 : 32);
-    return RleLookaheadPolicy{items_per_thread, 8, 5, 3, 5, detail::warp_threads};
+    // each lane holds target_key_bytes_per_lane of keys per generation, so the key slot stays the same
+    // byte size across key widths; the warp cap binds for 1B and 2B keys
+    constexpr int target_key_bytes_per_lane = 128;
+    const int items_per_thread        = (::cuda::std::min) (detail::warp_threads, target_key_bytes_per_lane / key_size);
+    constexpr int compute_warps       = 8;
+    constexpr int key_ring_stages     = 5;
+    constexpr int pos_ring_stages     = 3;
+    constexpr int poll_loads_per_lane = 5;
+    constexpr int flag_staging_threshold = detail::warp_threads;
+    return RleLookaheadPolicy{
+      items_per_thread, compute_warps, key_ring_stages, pos_ring_stages, poll_loads_per_lane, flag_staging_threshold};
   }
 
   _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
@@ -746,7 +761,7 @@ struct policy_selector
     return false;
 #else
     if (!input_contiguous || !unique_out_contiguous || !lengths_out_contiguous || !num_runs_out_contiguous
-        || !key_is_trivially_copyable || !input_matches_unique_type || !offset_is_i32_or_i64)
+        || !key_is_trivially_copyable || !input_matches_unique_type)
     {
       return false;
     }
@@ -802,8 +817,7 @@ struct policy_selector_from_types
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<UniqueOutputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<LengthsOutputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<NumRunsOutputIteratorT>,
-      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>,
-      ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8)};
+      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>};
     return selector(cc);
   }
 };
