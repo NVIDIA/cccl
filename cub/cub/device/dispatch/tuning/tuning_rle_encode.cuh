@@ -741,11 +741,11 @@ struct policy_selector
     // each lane holds target_key_bytes_per_lane of keys per generation, so the key slot stays the same
     // byte size across key widths; the warp cap binds for 1B and 2B keys
     constexpr int target_key_bytes_per_lane = 128;
-    const int items_per_thread        = (::cuda::std::min) (detail::warp_threads, target_key_bytes_per_lane / key_size);
-    constexpr int compute_warps       = 8;
-    constexpr int key_ring_stages     = 5;
-    constexpr int pos_ring_stages     = 3;
-    constexpr int poll_loads_per_lane = 5;
+    const int items_per_thread  = (::cuda::std::min) (int{detail::warp_threads}, target_key_bytes_per_lane / key_size);
+    constexpr int compute_warps = 8;
+    constexpr int key_ring_stages        = 5;
+    constexpr int pos_ring_stages        = 3;
+    constexpr int poll_loads_per_lane    = 5;
     constexpr int flag_staging_threshold = detail::warp_threads;
     return RleLookaheadPolicy{
       items_per_thread, compute_warps, key_ring_stages, pos_ring_stages, poll_loads_per_lane, flag_staging_threshold};
