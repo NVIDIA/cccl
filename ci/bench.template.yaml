@@ -63,7 +63,7 @@ benchmarks:
   arch: "native"
   nvbench_args: >-
     --timeout 30
-    --skip-time 15e-6
+    --skip-time 5e-6
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
