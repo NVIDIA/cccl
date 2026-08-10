@@ -85,13 +85,7 @@ void TestMinMaxElementCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -99,7 +93,7 @@ void TestMinMaxElementCudaStreams()
   ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first, 1);
   ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second, 5);
   ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first - data.begin(), 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin(), 1);
+  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin(), 4);
 
   cudaStreamDestroy(s);
 }
@@ -121,6 +115,6 @@ void TestMinMaxElementDevicePointer()
   T* raw_ptr = thrust::raw_pointer_cast(data.data());
   size_t n   = data.size();
   ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr, 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
+  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 4);
 }
 DECLARE_UNITTEST(TestMinMaxElementDevicePointer);
