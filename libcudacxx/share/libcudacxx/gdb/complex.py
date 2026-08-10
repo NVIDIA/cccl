@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
@@ -17,13 +17,9 @@ import gdb.printing
 _COMPLEX_NAMES = frozenset({"cuda::complex", "cuda::std::complex"})
 
 
-def _template_name(type_name: str) -> str:
-    return type_name.split("<", 1)[0]
-
-
 def _is_cuda_complex(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
-    template_name = _template_name(memory_resource.public_type_name(value_type))
+    value_type = cccl_common.canonical_type(value_type)
+    template_name = cccl_common.template_name(cccl_common.public_type_name(value_type))
     return template_name in _COMPLEX_NAMES
 
 
@@ -31,9 +27,10 @@ class ComplexPrinter:
     """Expose cuda::std::complex and cuda::complex parts to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
-        self.type_name = memory_resource.public_type_name(self.type)
+        self.type = cccl_common.canonical_type(value.type)
+        self.type_name = cccl_common.public_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
         yield "real", self.value["__re_"]
