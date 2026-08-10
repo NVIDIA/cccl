@@ -286,9 +286,9 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x,
   uint32_t __mant32_z  = (uint32_t) (((uint64_t) (uint32_t) (__mant_a >> 32) * (uint64_t) __recip32) >> 32);
   uint32_t __mant32_z2 = __mant32_z << 1;
   uint64_t __rem64     = ((__mant_a - (uint64_t) __mant32_z2 * (uint32_t) (__mant_b >> 32)) << 28)
-                   - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
-  uint32_t __q32      = (uint32_t) (((uint64_t) (uint32_t) (__rem64 >> 32) * (uint64_t) __recip32) >> 32) + 4;
-  uint64_t __mant64_z = ((uint64_t) __mant32_z << 32) + ((uint64_t) __q32 << 4);
+                       - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
+  uint32_t __q32       = (uint32_t) (((uint64_t) (uint32_t) (__rem64 >> 32) * (uint64_t) __recip32) >> 32) + 4;
+  uint64_t __mant64_z  = ((uint64_t) __mant32_z << 32) + ((uint64_t) __q32 << 4);
 
   // Refine if the quotient is close to a rounding boundary (exact remainder).
   if ((__mant64_z & 0x1FF) < (4u << 4))
@@ -407,9 +407,9 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
   uint32_t __mant32_z  = (uint32_t) (((uint64_t) (uint32_t) (__mant_a >> 32) * (uint64_t) __recip32) >> 32);
   uint32_t __mant32_z2 = __mant32_z << 1;
   uint64_t __rem64     = ((__mant_a - (uint64_t) __mant32_z2 * (uint32_t) (__mant_b >> 32)) << 28)
-                   - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
-  uint32_t __q32      = (uint32_t) (((uint64_t) (uint32_t) (__rem64 >> 32) * (uint64_t) __recip32) >> 32) + 4;
-  uint64_t __mant64_z = ((uint64_t) __mant32_z << 32) + ((uint64_t) __q32 << 4);
+                       - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
+  uint32_t __q32       = (uint32_t) (((uint64_t) (uint32_t) (__rem64 >> 32) * (uint64_t) __recip32) >> 32) + 4;
+  uint64_t __mant64_z  = ((uint64_t) __mant32_z << 32) + ((uint64_t) __q32 << 4);
 
   // Refine if the quotient is close to a rounding boundary (exact remainder).
   if ((__mant64_z & 0x1FF) < (4u << 4))
@@ -418,7 +418,7 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
     __mant64_z &= ~(uint64_t) 0x7F;
     __mant32_z2 = __q32 << 1;
     __rem64     = ((__rem64 - (uint64_t) __mant32_z2 * (uint32_t) (__mant_b >> 32)) << 28)
-            - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
+                - (uint64_t) __mant32_z2 * ((uint32_t) __mant_b >> 4);
     if (__rem64 & _CCCL_FPEMU_SIGN_64)
     {
       __mant64_z -= 1 << 7;

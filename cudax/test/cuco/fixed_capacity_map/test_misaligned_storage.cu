@@ -65,13 +65,13 @@ void run_misaligned_external_storage()
   using probing_type        = cudax::cuco::linear_probing<1, cudax::cuco::hash<Key>>;
   constexpr int bucket_size = 1;
   using map_type            = cudax::cuco::fixed_capacity_map<
-               Key,
-               Mapped,
-               ::cuda::std::dynamic_extent,
-               ::cuda::thread_scope_device,
-               ::cuda::std::equal_to<Key>,
-               probing_type,
-               bucket_size>;
+    Key,
+    Mapped,
+    ::cuda::std::dynamic_extent,
+    ::cuda::thread_scope_device,
+    ::cuda::std::equal_to<Key>,
+    probing_type,
+    bucket_size>;
   using ref_type   = typename map_type::ref_type;
   using value_type = typename map_type::value_type;
   using span_type  = typename ref_type::storage_span_type;
