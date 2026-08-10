@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -13,6 +13,8 @@
 #include <cuda/devices>
 #include <cuda/std/__execution/env.h>
 #include <cuda/stream>
+
+#include <iostream>
 
 #include "cub_test_macros.h"
 
