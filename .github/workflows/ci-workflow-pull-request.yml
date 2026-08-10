@@ -444,6 +444,7 @@ jobs:
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
+      nvbench_compare_legacy_args: ${{ matrix.nvbench_compare_legacy_args }}
 
   dispatch-compile-time-bench:
     name: Compile-time Bench (${{ matrix.id }})

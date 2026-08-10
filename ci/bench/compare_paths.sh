@@ -16,7 +16,8 @@ Usage: $0 <base-path> <test-path> \
   [--python-filter "<regex>"] \
   [--arch "<arch>"] \
   [--nvbench-args "<args>"] \
-  [--nvbench-compare-args "<args>"]
+  [--nvbench-compare-args "<args>"] \
+  [--nvbench-compare-legacy-args "<args>"]
 
 Compare benchmark performance between two checked-out CCCL trees.
 
@@ -35,6 +36,8 @@ Options:
   --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
   --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
   --nvbench-compare-args <args>  Extra args passed to nvbench-compare-robust.
+  --nvbench-compare-legacy-args <args>
+                             Extra args passed to nvbench-compare-legacy.
 
 Environment:
   CCCL_BENCH_ARTIFACT_ROOT   Root directory for outputs.
@@ -510,7 +513,7 @@ run_python_compare_target() {
     compare_cmd=(
       "${legacy_compare_bin}"
       --no-color
-      "${NVBENCH_COMPARE_ARGS[@]}"
+      "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
     )
@@ -905,7 +908,7 @@ run_compare_target() {
       "${compare_python}"
       "${legacy_compare_script}"
       --no-color
-      "${NVBENCH_COMPARE_ARGS[@]}"
+      "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
     )
@@ -1032,9 +1035,14 @@ write_summary() {
       echo "- NVBench args: not specified"
     fi
     if [[ -n "${NVBENCH_COMPARE_ARGS_STRING}" ]]; then
-      echo "- NVBench compare args: \`${NVBENCH_COMPARE_ARGS_STRING}\`"
+      echo "- NVBench robust compare args: \`${NVBENCH_COMPARE_ARGS_STRING}\`"
     else
-      echo "- NVBench compare args: not specified"
+      echo "- NVBench robust compare args: not specified"
+    fi
+    if [[ -n "${NVBENCH_COMPARE_LEGACY_ARGS_STRING}" ]]; then
+      echo "- NVBench legacy compare args: \`${NVBENCH_COMPARE_LEGACY_ARGS_STRING}\`"
+    else
+      echo "- NVBench legacy compare args: not specified"
     fi
     echo
 
@@ -1113,6 +1121,7 @@ parse_cli_args() {
 
   NVBENCH_ARGS_STRING=""
   NVBENCH_COMPARE_ARGS_STRING=""
+  NVBENCH_COMPARE_LEGACY_ARGS_STRING=""
   TARGET_ARCH=""
   FILTERS=()
   PYTHON_FILTERS=()
@@ -1137,6 +1146,13 @@ parse_cli_args() {
           die "Missing value for --nvbench-compare-args"
         fi
         NVBENCH_COMPARE_ARGS_STRING="$2"
+        shift 2
+        ;;
+      --nvbench-compare-legacy-args)
+        if [[ "$#" -lt 2 ]]; then
+          die "Missing value for --nvbench-compare-legacy-args"
+        fi
+        NVBENCH_COMPARE_LEGACY_ARGS_STRING="$2"
         shift 2
         ;;
       --cub-filter)
@@ -1168,11 +1184,17 @@ parse_cli_args "$@"
 
 declare -a NVBENCH_RUN_ARGS
 declare -a NVBENCH_COMPARE_ARGS
+declare -a NVBENCH_COMPARE_LEGACY_ARGS
 readonly -a COMPARE_DISPLAYS=(intervals simple explain)
 parse_quoted_args_to_array NVBENCH_RUN_ARGS "${NVBENCH_ARGS_STRING}" "--nvbench-args" \
   || die "Failed to parse --nvbench-args."
 parse_quoted_args_to_array NVBENCH_COMPARE_ARGS "${NVBENCH_COMPARE_ARGS_STRING}" "--nvbench-compare-args" \
   || die "Failed to parse --nvbench-compare-args."
+parse_quoted_args_to_array \
+  NVBENCH_COMPARE_LEGACY_ARGS \
+  "${NVBENCH_COMPARE_LEGACY_ARGS_STRING}" \
+  "--nvbench-compare-legacy-args" \
+  || die "Failed to parse --nvbench-compare-legacy-args."
 
 validate_repo_path "${BASE_PATH}"
 validate_repo_path "${TEST_PATH}"
@@ -1239,8 +1261,14 @@ if [[ "${#NVBENCH_RUN_ARGS[@]}" -gt 0 ]]; then
   done
 fi
 if [[ "${#NVBENCH_COMPARE_ARGS[@]}" -gt 0 ]]; then
-  echo "Extra compare args:"
+  echo "Extra robust compare args:"
   for arg in "${NVBENCH_COMPARE_ARGS[@]}"; do
+    echo "  - ${arg}"
+  done
+fi
+if [[ "${#NVBENCH_COMPARE_LEGACY_ARGS[@]}" -gt 0 ]]; then
+  echo "Extra legacy compare args:"
+  for arg in "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"; do
     echo "  - ${arg}"
   done
 fi

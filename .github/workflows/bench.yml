@@ -52,6 +52,11 @@ on:
         required: false
         default: ""
         type: string
+      nvbench_compare_legacy_args:
+        description: "nvbench-compare-legacy extra args"
+        required: false
+        default: ""
+        type: string
       raw_args:
         description: "Raw Args (advanced, bypasses all other inputs)"
         required: false
@@ -101,6 +106,11 @@ on:
         type: string
       nvbench_compare_args:
         description: "nvbench-compare-robust extra args"
+        required: false
+        default: ""
+        type: string
+      nvbench_compare_legacy_args:
+        description: "nvbench-compare-legacy extra args"
         required: false
         default: ""
         type: string
@@ -211,6 +221,7 @@ jobs:
           INPUT_RAW_ARGS: ${{ inputs.raw_args }}
           INPUT_NVBENCH_ARGS: ${{ inputs.nvbench_args }}
           INPUT_NVBENCH_COMPARE_ARGS: ${{ inputs.nvbench_compare_args }}
+          INPUT_NVBENCH_COMPARE_LEGACY_ARGS: ${{ inputs.nvbench_compare_legacy_args }}
         run: |
           parse_quoted_args() {
             local quoted_args="$1"
@@ -294,6 +305,9 @@ jobs:
             fi
             if [[ -n "${INPUT_NVBENCH_COMPARE_ARGS}" ]]; then
               bench_args+=(--nvbench-compare-args "${INPUT_NVBENCH_COMPARE_ARGS}")
+            fi
+            if [[ -n "${INPUT_NVBENCH_COMPARE_LEGACY_ARGS}" ]]; then
+              bench_args+=(--nvbench-compare-legacy-args "${INPUT_NVBENCH_COMPARE_LEGACY_ARGS}")
             fi
           fi
 
