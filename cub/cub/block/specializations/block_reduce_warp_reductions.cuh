@@ -194,7 +194,7 @@ struct BlockReduceWarpReductions
                                       && ::cuda::has_identity_element_v<ReductionOp, T>;
     constexpr int effective_threshold =
       use_warp_redux_path ? 2
-      : (WarpAggregateThreshold == 0)
+      : (WarpAggregateThreshold <= 0)
         ? (warps + 1)
         : WarpAggregateThreshold;
     constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
