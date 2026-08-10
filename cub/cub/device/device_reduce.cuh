@@ -2067,7 +2067,6 @@ public:
   //! - On ties for the maximum, the largest index is returned (last maximum).
   //! - For zero-length inputs, no output is written.
   //! - Does not support non-commutative comparison operators.
-  //! - Provides "run-to-run" determinism on the same GPU device.
   //! - The ranges ``[d_in, d_in + num_items)``, ``d_min_out``, ``d_min_index_out``, ``d_max_out``, and
   //!   ``d_max_index_out`` shall not overlap.
   //! - @devicestorage
@@ -2210,9 +2209,6 @@ public:
   //! - On ties for the maximum, the largest index is returned (last maximum).
   //! - For zero-length inputs, no output is written.
   //! - Does not support non-commutative comparison operators.
-  //! - Provides determinism based on the environment's determinism requirements.
-  //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
-  //!   as the ``env`` parameter.
   //! - The ranges ``[d_in, d_in + num_items)``, ``d_min_out``, ``d_min_index_out``, ``d_max_out``, and
   //!   ``d_max_index_out`` shall not overlap.
   //!
@@ -2224,8 +2220,8 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_arg_minmax_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin argminmax-env-determinism
-  //!     :end-before: example-end argminmax-env-determinism
+  //!     :start-after: example-begin argminmax-env
+  //!     :end-before: example-end argminmax-env
   //!
   //! @endrst
   //!
