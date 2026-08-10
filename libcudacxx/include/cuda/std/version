@@ -144,7 +144,8 @@
 // # define __cccl_lib_to_chars                             201611L
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
-#define __cccl_lib_variant 201606L
+#define __cccl_lib_variant        201606L
+#define __cccl_lib_ranges_indices 202506L
 
 #define __cccl_lib_saturation_arithmetic 202603L
 

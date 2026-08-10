@@ -12,6 +12,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
@@ -54,8 +55,6 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
   const auto expected = [&] {
     std::vector<T> reference;
 
@@ -72,7 +71,13 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs);
+    cudax::reduce(
+      cudax::broadcasted,
+      comms,
+      envs,
+      in | cuda::std::views::transform(cuda::std::ranges::begin),
+      in | cuda::std::views::transform(cuda::std::ranges::size),
+      out | cuda::std::views::transform(cuda::std::ranges::begin));
 
     for (const auto& buf : out)
     {
@@ -82,7 +87,14 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default op, ident")
   {
-    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init);
+    cudax::reduce(
+      cudax::broadcasted,
+      comms,
+      envs,
+      in | cuda::std::views::transform(cuda::std::ranges::begin),
+      in | cuda::std::views::transform(cuda::std::ranges::size),
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init);
 
     for (const auto& buf : out)
     {
@@ -92,7 +104,15 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default ident")
   {
-    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op);
+    cudax::reduce(
+      cudax::broadcasted,
+      comms,
+      envs,
+      in | cuda::std::views::transform(cuda::std::ranges::begin),
+      in | cuda::std::views::transform(cuda::std::ranges::size),
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init,
+      op);
 
     for (const auto& buf : out)
     {
@@ -102,7 +122,16 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default none")
   {
-    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op, ident);
+    cudax::reduce(
+      cudax::broadcasted,
+      comms,
+      envs,
+      in | cuda::std::views::transform(cuda::std::ranges::begin),
+      in | cuda::std::views::transform(cuda::std::ranges::size),
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init,
+      op,
+      ident);
 
     for (const auto& buf : out)
     {

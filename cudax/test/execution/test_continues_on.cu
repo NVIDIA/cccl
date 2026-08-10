@@ -41,11 +41,11 @@ C2H_TEST("continues_on can be piped", "[adaptors][continues_on]")
   bool called{false};
   auto sched = impulse_scheduler{};
   auto snd   = ex::just(13) //
-           | ex::continues_on(sched) //
-           | ex::then([&](int val) {
+             | ex::continues_on(sched) //
+             | ex::then([&](int val) {
                called = true;
                return val;
-             });
+               });
   static_assert(ex::get_completion_behavior<decltype(snd)>() == ex::completion_behavior::asynchronous);
   // Start the operation
   auto op = ex::connect(std::move(snd), checked_value_receiver{13});
