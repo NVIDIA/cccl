@@ -17,11 +17,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 from utils import ALL_TYPES as _ALL_TYPES
 from utils import as_cupy_stream
 
-import cuda.bench as bench
 import cuda.compute
 from cuda.compute import ZipIterator
 

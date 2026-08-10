@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _EVENT_PATTERN = re.compile(r"^cuda::(?:event|event_ref|timed_event)$")
@@ -16,9 +18,7 @@ InternalDict = dict[str, object]
 
 
 def _event_type_name(value_type: lldb.SBType) -> str | None:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     if _EVENT_PATTERN.fullmatch(type_name) is not None:
         return type_name
     return None
@@ -29,13 +29,18 @@ def is_cuda_event(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool
 
 
 def _event_handle(value: lldb.SBValue) -> lldb.SBValue:
-    return value.GetNonSyntheticValue().GetChildMemberWithName("__event_")
+    return (
+        cccl_common.strip_reference_value(value)
+        .GetNonSyntheticValue()
+        .GetChildMemberWithName("__event_")
+    )
 
 
 class EventSyntheticProvider:
     """Expose the native handle stored by a cuda event type."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.handle = lldb.SBValue()
         self.type_name = ""

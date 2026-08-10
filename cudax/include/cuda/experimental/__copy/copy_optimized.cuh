@@ -119,15 +119,15 @@ _CCCL_HOST_API void __copy_optimized(
   const auto __grid_size = ::cuda::ceil_div(__tensor_size, _ExtentT{__block_size});
   const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
   const auto& __kernel   = ::cuda::experimental::__copy_optimized_kernel<
-      decltype(__config),
-      _TpIn,
-      _TpOut,
-      _SrcAccessor,
-      _DstAccessor,
-      _ExtentT,
-      _StrideTIn,
-      _StrideTOut,
-      _Rank>;
+    decltype(__config),
+    _TpIn,
+    _TpOut,
+    _SrcAccessor,
+    _DstAccessor,
+    _ExtentT,
+    _StrideTIn,
+    _StrideTOut,
+    _Rank>;
 
   ::cuda::launch(
     __stream,

@@ -1,9 +1,9 @@
 =============== memory_resource.device begin ===============
-(const device_resource_type) cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
+(const device_resource_type &) <address> cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
 =============== memory_resource.device end ===============
 =============== memory_resource.host_device begin ===============
-(const host_device_resource_type) cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> @ <address>
+(const host_device_resource_type &) <address> cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> @ <address>
 =============== memory_resource.host_device end ===============
 =============== memory_resource.alias begin ===============
-(const resource_alias) cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
+(const resource_alias &) <address> cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
 =============== memory_resource.alias end ===============
