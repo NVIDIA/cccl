@@ -282,7 +282,6 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
   using output_t = typename params::output_t;
-  using offset_t = int32_t;
 
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
