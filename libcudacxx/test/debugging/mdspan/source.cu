@@ -110,6 +110,13 @@ inspect_device_mdspan_real_memory(const cuda::device_mdspan<int, cuda::std::exte
   KEEP_FOR_DEBUGGER(values);
 }
 
+// A plain cuda::std::mdspan (default_accessor, no device_accessor marker) whose data pointer
+// happens to be a real cudaMalloc'd allocation.
+[[gnu::noinline]] void inspect_mdspan_device_backed(const cuda::std::mdspan<int, cuda::std::extents<int, 2>>& values)
+{
+  KEEP_FOR_DEBUGGER(values);
+}
+
 // Unified memory is host-readable: full element display, like host_mdspan.
 [[gnu::noinline]] void inspect_managed_mdspan(const cuda::managed_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
@@ -264,6 +271,24 @@ int main()
   const cuda::device_mdspan<int, cuda::std::extents<int, 2>> device_mdspan_real_span(device_mdspan_real_data);
   inspect_device_mdspan_real_memory(device_mdspan_real_span);
   cudaFree(device_mdspan_real_data);
+
+  int* mdspan_device_backed_data = nullptr;
+  if (cudaMalloc(&mdspan_device_backed_data, 2 * sizeof(int)) != cudaSuccess)
+  {
+    return 1;
+  }
+  const int mdspan_device_backed_host_data[2] = {93, 94};
+  if (cudaMemcpy(mdspan_device_backed_data,
+                 mdspan_device_backed_host_data,
+                 sizeof(mdspan_device_backed_host_data),
+                 cudaMemcpyHostToDevice)
+      != cudaSuccess)
+  {
+    return 1;
+  }
+  const cuda::std::mdspan<int, cuda::std::extents<int, 2>> mdspan_device_backed_span(mdspan_device_backed_data);
+  inspect_mdspan_device_backed(mdspan_device_backed_span);
+  cudaFree(mdspan_device_backed_data);
 
   int managed_mdspan_data[2] = {61, 62};
   const cuda::managed_mdspan<int, cuda::std::extents<int, 2>> managed_mdspan_span(managed_mdspan_data);

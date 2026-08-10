@@ -127,6 +127,12 @@
 =============== mdspan.device_mdspan_real_memory begin ===============
 (cuda::device_mdspan<int, cuda::std::extents<int, 2>>) <address> rank=1, extents=[2], data=<address>
 =============== mdspan.device_mdspan_real_memory end ===============
+=============== mdspan.device_backed begin ===============
+(cuda::std::mdspan<int, cuda::std::extents<int, 2>>) <address> rank=1, extents=[2], data=<address>: {
+  [0] = 0
+  [1] = 0
+}
+=============== mdspan.device_backed end ===============
 =============== mdspan.managed_mdspan begin ===============
 (cuda::managed_mdspan<int, cuda::std::extents<int, 2>>) <address> rank=1, extents=[2], data=<address>: {
   [0] = 61
