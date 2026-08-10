@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 enum class block_exchange_op
@@ -247,7 +248,12 @@ struct params_t
   static constexpr int tile_size        = block_threads * items_per_thread;
 };
 
-C2H_TEST("Block exchange striped to blocked works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange striped to blocked works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -264,7 +270,12 @@ C2H_TEST("Block exchange striped to blocked works in-place", "[exchange][block]"
   REQUIRE(expected == data);
 }
 
-C2H_TEST("Block exchange blocked to striped works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange blocked to striped works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -281,8 +292,12 @@ C2H_TEST("Block exchange blocked to striped works in-place", "[exchange][block]"
   REQUIRE(expected == data);
 }
 
-C2H_TEST(
-  "Block exchange warp-striped to blocked works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange warp-striped to blocked works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -300,8 +315,12 @@ C2H_TEST(
   REQUIRE(expected == data);
 }
 
-C2H_TEST(
-  "Block exchange blocked to warp-striped works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange blocked to warp-striped works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -319,7 +338,12 @@ C2H_TEST(
   REQUIRE(expected == data);
 }
 
-C2H_TEST("Block exchange scatter to blocked works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange scatter to blocked works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -335,7 +359,12 @@ C2H_TEST("Block exchange scatter to blocked works in-place", "[exchange][block]"
   REQUIRE(expected == data);
 }
 
-C2H_TEST("Block exchange scatter to striped works in-place", "[exchange][block]", types, block_threads, items_per_thread)
+CUB_TEST("Block exchange scatter to striped works in-place",
+         "[exchange][block]",
+         CUB_SMALL,
+         types,
+         block_threads,
+         items_per_thread)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -352,8 +381,9 @@ C2H_TEST("Block exchange scatter to striped works in-place", "[exchange][block]"
   REQUIRE(expected == data);
 }
 
-C2H_TEST("Block exchange guarded scatter to striped works in-place",
+CUB_TEST("Block exchange guarded scatter to striped works in-place",
          "[exchange][block]",
+         CUB_SMALL,
          types,
          block_threads,
          items_per_thread)
@@ -372,8 +402,9 @@ C2H_TEST("Block exchange guarded scatter to striped works in-place",
   require_valid_scatter_outputs(data, input, params::block_threads, params::items_per_thread);
 }
 
-C2H_TEST("Block exchange flagged scatter to striped works in-place",
+CUB_TEST("Block exchange flagged scatter to striped works in-place",
          "[exchange][block]",
+         CUB_SMALL,
          types,
          block_threads,
          items_per_thread)
