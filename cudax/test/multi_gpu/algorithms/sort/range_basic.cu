@@ -13,6 +13,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/ranges>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
@@ -46,7 +47,12 @@ void check_sort_case(
   auto environments   = std::vector<cuda::stream_ref>{streams.begin(), streams.end()};
   auto device_vec     = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
-  cudax::sort(cudax::distributed, comms, environments, device_vec, cmp);
+  cudax::sort(cudax::distributed,
+              comms,
+              environments,
+              device_vec | cuda::std::views::transform(cuda::std::ranges::begin),
+              device_vec | cuda::std::views::transform(cuda::std::ranges::size),
+              cmp);
 
   sort_test_util::check_rank_sizes(comms, device_vec, host_inputs);
 
@@ -103,7 +109,8 @@ MULTI_GPU_TEST("sort documentation example", c2h::type_list<int>)
               comms,
               // Passing streams as the environment directly
               streams,
-              inputs);
+              inputs | cuda::std::views::transform(cuda::std::ranges::begin),
+              inputs | cuda::std::views::transform(cuda::std::ranges::size));
 
   // The sort is in place and each rank keeps its original element count, so the globally sorted
   // sequence {1, 2, 3, 4} is split back into two elements per rank, in ascending rank order.

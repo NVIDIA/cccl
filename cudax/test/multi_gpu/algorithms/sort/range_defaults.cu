@@ -11,6 +11,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/ranges>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
@@ -70,7 +71,11 @@ MULTI_GPU_TEST("sort, range overloads default values", )
   {
     auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
-    cudax::sort(cudax::distributed, comms, environments, device_vec);
+    cudax::sort(cudax::distributed,
+                comms,
+                environments,
+                device_vec | cuda::std::views::transform(cuda::std::ranges::begin),
+                device_vec | cuda::std::views::transform(cuda::std::ranges::size));
 
     check_sorted(device_vec);
   }
@@ -79,7 +84,12 @@ MULTI_GPU_TEST("sort, range overloads default values", )
   {
     auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
-    cudax::sort(cudax::distributed, comms, environments, device_vec, cmp);
+    cudax::sort(cudax::distributed,
+                comms,
+                environments,
+                device_vec | cuda::std::views::transform(cuda::std::ranges::begin),
+                device_vec | cuda::std::views::transform(cuda::std::ranges::size),
+                cmp);
 
     check_sorted(device_vec);
   }

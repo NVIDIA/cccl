@@ -124,25 +124,27 @@ public:
   using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<_Tp, __resizable_buffer_type>;
 
 private:
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _SizeTRange>
   [[nodiscard]] _CCCL_HOST_API static __local_setup_result_type __local_setup(
-    _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size);
+    _CommRange&& __comms, _EnvRange&& __envs, _SizeTRange&& __num_items_range, ::cuda::std::int32_t __comm_size);
 
   // Histogram helpers
   // ------------------------------------------------------------------------------------------
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   [[nodiscard]] _CCCL_HOST_API static ::std::vector<__per_comm_histogramming_result_type> __histogramming_phase(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp);
 
-  template <class _CommRange, class _InputRange>
+  template <class _CommRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __local_sampling(
     _CommRange&& __comms,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     ::cuda::std::int32_t __j,
     double __sampling_probability,
     const _BinaryOp& __cmp,
@@ -172,11 +174,12 @@ private:
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
     ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __compute_histogram(
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __range_of_local_keys,
+    _InputIterRange&& __key_iters,
+    _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
     ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
@@ -189,13 +192,14 @@ private:
 
   // ------------------------------------------------------------------------------------------
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   [[nodiscard]] _CCCL_HOST_API static ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>
   __compute_send_counts_and_offsets(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
     const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
     ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
@@ -208,12 +212,13 @@ private:
     const ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
     ::std::vector<::cuda::std::size_t>* __h_counts);
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   [[nodiscard]] _CCCL_HOST_API static __data_exchange_result_type __data_exchange(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
     const ::std::vector<__per_comm_histogramming_result_type>& __hist_results);
 
@@ -241,21 +246,23 @@ private:
 
   // ------------------------------------------------------------------------------------------
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __rebalance_to_original_counts(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     const __data_exchange_result_type& __exchange_result);
 
 public:
-  template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
+  template <class _Policy, class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __execute(
     const __result_policy_base<_Policy>&,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
+    _InputIterRange&& __input_iters,
+    _SizeTRange&& __num_items_range,
     _BinaryOp __cmp);
 };
 

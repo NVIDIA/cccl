@@ -104,12 +104,13 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Redistribute the globally sorted keys back to each rank's original per-rank size.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_counts(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   const __data_exchange_result_type& __exchange_results)
 {
   // At this point we have sorted a huge pile of numbers across several GPUs. Near the end,
@@ -163,12 +164,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   __local_rebalanced.reserve(__num_local_inputs);
 
   {
-    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
-    auto __env_it   = ::cuda::std::ranges::begin(__envs);
+    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
+    auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
+    auto __env_it       = ::cuda::std::ranges::begin(__envs);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__input_it, (void) ++__env_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__num_items_it, (void) ++__env_it)
     {
       auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
         __exchange_results.__local_current_offsets[__idx].stream(),
@@ -218,7 +219,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
       __local_rebalanced.emplace_back(
         __counts.stream(),
         __counts.memory_resource(),
-        ::cuda::std::ranges::size(*__input_it),
+        *__num_items_it,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
     }
@@ -246,14 +247,15 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   }
 
   {
-    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __env_it   = ::cuda::std::ranges::begin(__envs);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
+    auto __env_it       = ::cuda::std::ranges::begin(__envs);
+    auto __input_it     = ::cuda::std::ranges::begin(__input_iters);
+    auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
-      const auto __n = ::cuda::std::ranges::size(*__input_it);
+      const auto __n = *__num_items_it;
 
       _CCCL_VERIFY(__n == __local_rebalanced[__idx].size(), "Incorrect sizing for temp storage");
 
@@ -261,7 +263,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         __comm_it->logical_device(),
         CUB_NS_QUALIFIER::DeviceCopy::Copy,
         ::cuda::std::mdspan{__local_rebalanced[__idx].data(), __local_rebalanced[__idx].size()},
-        ::cuda::std::mdspan{::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)), __n},
+        ::cuda::std::mdspan{::cuda::std::to_address(*__input_it), __n},
         *__env_it);
     }
   }
