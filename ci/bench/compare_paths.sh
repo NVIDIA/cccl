@@ -1025,6 +1025,19 @@ write_summary() {
       echo
     fi
 
+    echo "## Benchmark Arguments"
+    if [[ -n "${NVBENCH_ARGS_STRING}" ]]; then
+      echo "- NVBench args: \`${NVBENCH_ARGS_STRING}\`"
+    else
+      echo "- NVBench args: not specified"
+    fi
+    if [[ -n "${NVBENCH_COMPARE_ARGS_STRING}" ]]; then
+      echo "- NVBench compare args: \`${NVBENCH_COMPARE_ARGS_STRING}\`"
+    else
+      echo "- NVBench compare args: not specified"
+    fi
+    echo
+
     if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
       echo "## Python Filters"
       for filter in "${PYTHON_FILTERS[@]}"; do
