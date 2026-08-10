@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/buffer>
-#include <cuda/functional>
 #include <cuda/memory_resource>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -17,7 +16,6 @@
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/ranges>
-#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
 
@@ -28,56 +26,11 @@
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
+#include "reduce_common.cuh"
+#include <c2h/catch2_test_helper.h>
+
 namespace
 {
-struct custom_plus
-{
-  template <class T>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs + rhs;
-  }
-};
-
-using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::less_comparable_t, c2h::equal_comparable_t>;
-using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
-using operators    = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
-
-static_assert(cudax::nccl_transportable<custom_value>);
-
-template <typename T>
-T make_value(int i)
-{
-  return static_cast<T>(i);
-}
-
-template <>
-custom_value make_value<>(int i)
-{
-  custom_value ret{};
-
-  ret.key = static_cast<std::size_t>(i);
-  ret.val = static_cast<std::size_t>(i);
-  return ret;
-};
-
-template <class T, class Op>
-[[nodiscard]] T get_identity()
-{
-  if constexpr (cuda::std::is_same_v<Op, cuda::std::plus<>> || cuda::std::is_same_v<Op, custom_plus>)
-  {
-    return make_value<T>(0);
-  }
-  else if constexpr (cuda::std::is_same_v<Op, cuda::maximum<>>)
-  {
-    return cuda::std::numeric_limits<T>::lowest();
-  }
-  else
-  {
-    static_assert(cuda::std::__always_false_v<T, Op>, "Add handling");
-  }
-}
-
 // Run the full reduction, wait for it to finish, and check that `reduce` left its argument ranges
 // untouched. This boilerplate is identical for every test regardless of how the inputs are shaped.
 template <class Env, class T, class Op>
