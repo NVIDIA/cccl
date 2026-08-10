@@ -1094,7 +1094,9 @@ def validate_tags(matrix_job, ignore_required=False):
                 "The codegen_filecheck job requires a codegen_target tag.",
             )
         )
-    if not has_codegen_job and "codegen_target" in matrix_job:
+    if "codegen_target" in matrix_job and any(
+        job != "codegen_filecheck" for job in jobs
+    ):
         raise Exception(
             error_message_with_matrix_job(
                 matrix_job,

@@ -260,12 +260,7 @@ function(libcudacxx_codegen_add_test)
     TEST
     VARIANT
   )
-  set(
-    multi_value_args
-    CHECK_PREFIXES
-    CHECK_DEFINITIONS
-    COMPILE_DEFINITIONS
-  )
+  set(multi_value_args CHECK_PREFIXES CHECK_DEFINITIONS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
     "${options}"
@@ -399,13 +394,7 @@ endfunction()
 function(libcudacxx_codegen_add_sass_tests)
   set(options)
   set(one_value_args AGGREGATE_TARGET TARGET_PREFIX)
-  set(
-    multi_value_args
-    ARCHITECTURES
-    CHECK_PREFIXES
-    TESTS
-    COMPILE_DEFINITIONS
-  )
+  set(multi_value_args ARCHITECTURES CHECK_PREFIXES TESTS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
     "${options}"
@@ -415,6 +404,11 @@ function(libcudacxx_codegen_add_sass_tests)
   )
 
   foreach (test_path IN LISTS arg_TESTS)
+    set_property(
+      DIRECTORY
+      APPEND
+      PROPERTY CMAKE_CONFIGURE_DEPENDS "${test_path}"
+    )
     file(READ "${test_path}" test_contents)
     cccl_parse_variant_params(
       "${test_path}"
@@ -442,13 +436,17 @@ function(libcudacxx_codegen_add_sass_tests)
     endif()
 
     set(test_archs)
+    set(has_arch_specific_checks FALSE)
     foreach (arch IN LISTS arg_ARCHITECTURES)
       libcudacxx_codegen_get_sass_check_prefixes(
         check_prefixes
-        has_arch_specific_checks
+        arch_has_specific_checks
         "${test_contents}"
         "${arch}"
       )
+      if (arch_has_specific_checks)
+        set(has_arch_specific_checks TRUE)
+      endif()
       if (NOT "${check_prefixes}" STREQUAL "SMXX")
         list(APPEND test_archs "${arch}")
       endif()

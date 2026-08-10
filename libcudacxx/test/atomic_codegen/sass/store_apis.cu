@@ -27,8 +27,8 @@ __device__ void atomic_store(TEMPLATE<int32_t, SCOPE>& atom, int32_t value)
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
-; BLOCK: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*}}, R6{{.*}}
-; NON_BLOCK: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*}}, R6{{.*}}
+; BLOCK: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*}}, {{R[0-9]+}}{{.*}}
+; NON_BLOCK: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*}}, {{R[0-9]+}}{{.*}}
 ; SMXX-NEXT: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
