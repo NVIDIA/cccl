@@ -199,9 +199,6 @@ struct arg_minmax_reduce_op : CompareOpT
 template <typename CompareOpT>
 arg_minmax_reduce_op(CompareOpT) -> arg_minmax_reduce_op<CompareOpT>;
 
-//! @brief Arg minmax functor using the default less-than comparator
-using arg_minmax = arg_minmax_reduce_op<>;
-
 template <typename ScanOpT>
 struct ScanBySegmentOp
 {

@@ -2244,6 +2244,9 @@ public:
   //! @tparam MaxIndexOutIteratorT
   //!   **[inferred]** Output iterator type for recording the index of the maximum value
   //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison operator type returning ``true`` if the first argument is less than the second
+  //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
