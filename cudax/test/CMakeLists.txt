@@ -151,6 +151,10 @@ cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
 
+cudax_add_catch2_test(test_target cuco.bloom_filter.add_and_contains ${cudax_target}
+  cuco/bloom_filter/test_add_and_contains.cu
+)
+
 # cudax_add_cuco_fail_test
 function(cudax_add_cuco_fail_test target_name_var test_name source)
   set(test_target cudax.test.${test_name})
