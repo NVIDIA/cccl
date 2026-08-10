@@ -326,6 +326,10 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
     REQUIRE(expected_max_index == d_max_index[0]);
   }
 
+  // GCC7 ICEs (finish_member_declaration, cp/semantics.c:3029) on the generic lambda used below to
+  // exercise the various environment/stream argument types, so skip this section there. The behavior
+  // is compiler-independent and remains covered by newer compilers and the *_env test files.
+#if !_CCCL_COMPILER(GCC, <, 8)
   SECTION("argminmax with user provided memory and environment")
   {
     // Prepare verification data
@@ -445,6 +449,7 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
       test_argminmax(policy);
     }
   }
+#endif // !_CCCL_COMPILER(GCC, <, 8)
 
   // abs comparison via cuda::uabs only compiles for integral scalar types
   if constexpr (cuda::std::is_integral_v<item_t>)
