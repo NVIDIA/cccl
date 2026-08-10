@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -233,6 +234,15 @@ public:
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create a data place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to plain device memory.
+   */
+  static data_place locality_domain(const locality_domain_view& view);
+  static data_place locality_domain(int dev_id, int domain_id);
 
   bool operator==(const data_place& rhs) const
   {
@@ -900,6 +910,15 @@ public:
    */
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create an execution place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to the whole device.
+   */
+  static exec_place locality_domain(const locality_domain_view& view);
+  static exec_place locality_domain(int dev_id, int domain_id);
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);

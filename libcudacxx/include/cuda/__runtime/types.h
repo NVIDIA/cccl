@@ -32,9 +32,14 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 using memory_location = ::cudaMemLocation;
+
+inline constexpr memory_location host_memory_location = {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-inline constexpr memory_location host_memory_location = {::cudaMemLocationTypeHost, 0};
-#  endif // _CCCL_CTK_AT_LEAST(12, 2)
+  ::cudaMemLocationTypeHost,
+#  else // ^^^ CUDA 12.2+ ^^^ / vvv CUDA 12.1- vvv
+  /*cudaMemLocationTypeHost*/ static_cast<::cudaMemLocationType>(2),
+#  endif // ^^^ CUDA 12.1- ^^^
+  0};
 
 _CCCL_DIAG_POP
 

@@ -53,6 +53,11 @@ _CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 template <auto _Xp, class = remove_cvref_t<decltype(_Xp)>>
 struct __constant_wrapper;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_std_constant_wrapper_v = false;
+template <auto _Xp, class _Tp>
+inline constexpr bool __is_cuda_std_constant_wrapper_v<__constant_wrapper<_Xp, _Tp>> = true;
+
 template <class _Tp, class = void>
 inline constexpr bool __is_constexpr_param_v = false;
 template <class _Tp>
@@ -65,42 +70,42 @@ struct __cw_operators
 {
   // unary operators
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(+_Tp::value)>{})
   operator+(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(-_Tp::value)>{})
   operator-(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(~_Tp::value)>{})
   operator~(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(!_Tp::value)>{})
   operator!(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(&_Tp::value)>{})
   operator&(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(*_Tp::value)>{})
   operator*(_Tp) noexcept
   {
@@ -109,28 +114,28 @@ struct __cw_operators
 
   // pseudo-mutators
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(++_Tp::value)>{})
   operator++(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Tp::value++)>{})
   operator++(_Tp, int) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(--_Tp::value)>{})
   operator--(_Tp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Tp>)
+  _CCCL_REQUIRES(__is_cuda_std_constant_wrapper_v<_Tp> _CCCL_AND __is_constexpr_param_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Tp::value--)>{})
   operator--(_Tp, int) noexcept
   {
@@ -139,7 +144,8 @@ struct __cw_operators
 
   // binary operators
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value + _Rp::value)>{})
   operator+(_Lp, _Rp) noexcept
@@ -147,7 +153,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value - _Rp::value)>{})
   operator-(_Lp, _Rp) noexcept
@@ -155,7 +162,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value* _Rp::value)>{})
   operator*(_Lp, _Rp) noexcept
@@ -163,7 +171,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value / _Rp::value)>{})
   operator/(_Lp, _Rp) noexcept
@@ -171,7 +180,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value % _Rp::value)>{})
   operator%(_Lp, _Rp) noexcept
@@ -180,7 +190,8 @@ struct __cw_operators
   }
 
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value << _Rp::value)>{})
   operator<<(_Lp, _Rp) noexcept
@@ -188,7 +199,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value >> _Rp::value)>{})
   operator>>(_Lp, _Rp) noexcept
@@ -196,7 +208,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value& _Rp::value)>{})
   operator&(_Lp, _Rp) noexcept
@@ -204,7 +217,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value | _Rp::value)>{})
   operator|(_Lp, _Rp) noexcept
@@ -212,7 +226,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value ^ _Rp::value)>{})
   operator^(_Lp, _Rp) noexcept
@@ -221,8 +236,10 @@ struct __cw_operators
   }
 
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp> _CCCL_AND(
-    !is_constructible_v<bool, decltype(_Lp::value)> || !is_constructible_v<bool, decltype(_Rp::value)>))
+  _CCCL_REQUIRES(
+    (__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+      _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp> _CCCL_AND(
+        !is_constructible_v<bool, decltype(_Lp::value)> || !is_constructible_v<bool, decltype(_Rp::value)>))
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value&& _Rp::value)>{})
   operator&&(_Lp, _Rp) noexcept
@@ -230,8 +247,10 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp> _CCCL_AND(
-    !is_constructible_v<bool, decltype(_Lp::value)> || !is_constructible_v<bool, decltype(_Rp::value)>))
+  _CCCL_REQUIRES(
+    (__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+      _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp> _CCCL_AND(
+        !is_constructible_v<bool, decltype(_Lp::value)> || !is_constructible_v<bool, decltype(_Rp::value)>))
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value || _Rp::value)>{})
   operator||(_Lp, _Rp) noexcept
@@ -242,7 +261,8 @@ struct __cw_operators
   // comparisons
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<
                                                                 _LIBCUDACXX_AUTO_CAST(_Lp::value <=> _Rp::value)>{})
   operator<=>(_Lp, _Rp) noexcept
@@ -251,7 +271,8 @@ struct __cw_operators
   }
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value < _Rp::value)>{})
   operator<(_Lp, _Rp) noexcept
@@ -259,7 +280,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value <= _Rp::value)>{})
   operator<=(_Lp, _Rp) noexcept
@@ -267,7 +289,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value == _Rp::value)>{})
   operator==(_Lp, _Rp) noexcept
@@ -275,7 +298,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value != _Rp::value)>{})
   operator!=(_Lp, _Rp) noexcept
@@ -283,7 +307,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value > _Rp::value)>{})
   operator>(_Lp, _Rp) noexcept
@@ -291,7 +316,8 @@ struct __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value >= _Rp::value)>{})
   operator>=(_Lp, _Rp) noexcept
@@ -301,10 +327,13 @@ struct __cw_operators
 
   // Use enable_if, because default template arguments may not be used in template friend declarations in C++17.
   template <class _Lp, class _Rp>
-  friend enable_if_t<__is_constexpr_param_v<_Lp> && __is_constexpr_param_v<_Rp>> operator,(_Lp, _Rp) = delete;
+  friend enable_if_t<(__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                     && __is_constexpr_param_v<_Lp> && __is_constexpr_param_v<_Rp>>
+  operator,(_Lp, _Rp) = delete;
 
   _CCCL_TEMPLATE(class _Lp, class _Rp)
-  _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
+  _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
+                   _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API friend constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Lp::value->*_Rp::value)>{})
   operator->*(_Lp, _Rp) noexcept
