@@ -156,11 +156,11 @@ __internal_fpmp2_frac_to_angle(uint32_t __hi, uint32_t __lo, uint32_t __s, _FpTy
    * countl_zero is well defined for 0 (it yields 32), unlike __builtin_clz, and lowers
    * to the clz instruction on device.
    */
-  uint32_t __lz = (uint32_t)::cuda::std::countl_zero(__hi);
+  uint32_t __lz = (uint32_t) ::cuda::std::countl_zero(__hi);
 
   if (__lz >= 32U)
   {
-    __lz += (__lo == 0U) ? 0U : (uint32_t)::cuda::std::countl_zero(__lo);
+    __lz += (__lo == 0U) ? 0U : (uint32_t) ::cuda::std::countl_zero(__lo);
     __hi             = __lo;
     __lo             = 0U;
     uint32_t __shift = __lz - 32U;
@@ -211,7 +211,7 @@ __internal_fpmp2_frac_to_angle(uint32_t __hi, uint32_t __lo, uint32_t __s, _FpTy
     return;
   }
 
-  uint32_t __rlz = (uint32_t)::cuda::std::countl_zero(__rem);
+  uint32_t __rlz = (uint32_t) ::cuda::std::countl_zero(__rem);
 
   uint32_t __rem_norm = (__rlz > 0U) ? ((__rem << __rlz) | (__rem_extra >> (32U - __rlz))) : __rem;
 
