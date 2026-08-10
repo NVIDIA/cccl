@@ -213,7 +213,7 @@
       outside [-0.5, 0.5].  Compared to the earlier composition
       exp(x * ln base) -- which forced __fpmp2_exp to re-derive
       n_internal from the already-amplified product, stacking two
-      reduction errors -- the dedicated path keeps only one ffloat
+      reduction errors -- the dedicated path keeps only one __ffloat
       multiplication on the input side (and zero for exp2).  Net:
       `exp2` matches the composed path within 1 bit on the `work`
       dataset while cutting fp32mp2 call cost; `exp10` matches the
@@ -1148,38 +1148,30 @@ _CCCL_HOST_DEVICE_API inline int fpmp_signbit(const fpmp2<_FpType, _TypeAcc>& __
   return __fpmp2_signbit(__x.hi(), __x.lo());
 }
 
-// Standard names are provided only when no conflicting macro is active.
-#ifndef isfinite
+// The same tests under their standard names.
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API inline int isfinite(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return fpmp_isfinite(__x);
 }
-#endif
 
-#ifndef isinf
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API inline int isinf(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return fpmp_isinf(__x);
 }
-#endif
 
-#ifndef isnan
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API inline int isnan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return fpmp_isnan(__x);
 }
-#endif
 
-#ifndef signbit
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API inline int signbit(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return fpmp_signbit(__x);
 }
-#endif
 
 /*
  * Note: the fpmp2 warp-shuffle overloads (__shfl_sync, __shfl_xor_sync,
@@ -1324,36 +1316,27 @@ remquo(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x,
   return ::cuda::experimental::remquo(__x, __y, __quo);
 }
 
-// Classification functions. Only defined when no like-named function macro is
-// active (matches the cuda::experimental guards above).
-#ifndef isfinite
+// Classification functions.
 template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API int isfinite(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return ::cuda::experimental::isfinite(__x);
 }
-#endif
-#ifndef isinf
 template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API int isinf(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return ::cuda::experimental::isinf(__x);
 }
-#endif
-#ifndef isnan
 template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API int isnan(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return ::cuda::experimental::isnan(__x);
 }
-#endif
-#ifndef signbit
 template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API int signbit(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   return ::cuda::experimental::signbit(__x);
 }
-#endif
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

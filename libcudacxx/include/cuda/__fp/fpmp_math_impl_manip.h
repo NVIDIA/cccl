@@ -75,7 +75,7 @@ namespace cuda::experimental
  * same result and saturating is exact, not lossy.
  *
  * The fp64mp2 branch (compile-time-selected when FpType == double)
- * forwards to `::ldexp(double, int)`; fp64 hardware handles this in
+ * forwards to `::cuda::std::ldexp(double, int)`; fp64 hardware handles this in
  * one instruction and there is no fp64 cost concern on machines that
  * have fp64mp2 enabled.
  * --------------------------------------------------------------------
@@ -86,7 +86,7 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    using ffloat = fp32mp2_low;
+    using __ffloat = fp32mp2_low;
 
     /* Saturate |n| to +-300.  Any |n| larger than this is provably
      * monotone in the final result (overflow or underflow) for
@@ -132,7 +132,7 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
     const float __s2 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
     const float __s3 = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek3) << 23);
 
-    const ffloat __result = ffloat(__x_hi, __x_lo) * __s1 * __s2 * __s3;
+    const __ffloat __result = __ffloat(__x_hi, __x_lo) * __s1 * __s2 * __s3;
 
     *__res_hi = __result.hi();
     *__res_lo = __result.lo();
@@ -143,8 +143,8 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
      * both of them, so the pair keeps its low limb; the double round-trip this
      * replaces discarded lo for every fp64mp2 value, ldexp(1 + 2^-70, 4) coming
      * back as exactly 16. */
-    *__res_hi = ::ldexp(__x_hi, __n);
-    *__res_lo = ::ldexp(__x_lo, __n);
+    *__res_hi = ::cuda::std::ldexp(__x_hi, __n);
+    *__res_lo = ::cuda::std::ldexp(__x_lo, __n);
   }
 
   /* Overflow, for either element type: the low limb is meaningless once the high
@@ -153,7 +153,7 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
    * about 2^-53 of hi) makes hi + lo NaN instead of the infinity this is
    * documented to return.  Collapse to (+-inf, 0), which is what a conversion
    * from an overflowing scalar produces. */
-  if ((std::isinf) (static_cast<double>(*__res_hi)))
+  if (::cuda::std::isinf(static_cast<double>(*__res_hi)))
   {
     *__res_lo = _FpType(0);
   }
@@ -204,7 +204,7 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_fabs(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = ::fabs(__x_hi);
+  *__res_hi = ::cuda::std::fabs(__x_hi);
   *__res_lo = (__x_hi < _FpType(0)) ? -__x_lo : __x_lo;
 }
 
@@ -230,14 +230,14 @@ _CCCL_FPMP_CORE_API void __fpmp2_copysign(
   const _FpType __x_hi,
   const _FpType __x_lo,
   const _FpType __y_hi,
-  const _FpType __y_lo,
+  [[maybe_unused]] const _FpType __y_lo,
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  (void) __y_lo;
-  const bool __flip = ((std::signbit) (static_cast<double>(__x_hi)) != (std::signbit) (static_cast<double>(__y_hi)));
-  *__res_hi         = __flip ? -__x_hi : __x_hi;
-  *__res_lo         = __flip ? -__x_lo : __x_lo;
+  const bool __flip =
+    (::cuda::std::signbit(static_cast<double>(__x_hi)) != ::cuda::std::signbit(static_cast<double>(__y_hi)));
+  *__res_hi = __flip ? -__x_hi : __x_hi;
+  *__res_lo = __flip ? -__x_lo : __x_lo;
 }
 
 /* nextafter has no dedicated fp32mp2 kernel: the fallback macro composes it over
@@ -269,7 +269,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_nextafter(
   double* __res_lo) noexcept
 {
   __fpmp2_from_double(
-    ::nextafter(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
+    ::cuda::std::nextafter(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(nextafter)
@@ -298,13 +298,13 @@ _CCCL_FPMP_MATH_DISPATCH_2A(nextafter)
 template <typename _FpType>
 _CCCL_FPMP_CORE_API int __fpmp2_ilogb(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
-  const int __e = ::ilogb(static_cast<double>(__x_hi));
+  const int __e = ::cuda::std::ilogb(static_cast<double>(__x_hi));
 
   int __hi_exp      = 0;
-  const _FpType __m = ::frexp(__x_hi, &__hi_exp);
+  const _FpType __m = ::cuda::std::frexp(__x_hi, &__hi_exp);
   const bool __below_power_of_two =
     (__fpmp_internal_fabs(__m) == _FpType(0.5)) && (__x_lo != _FpType(0))
-    && ((std::signbit) (static_cast<double>(__x_hi)) != (std::signbit) (static_cast<double>(__x_lo)));
+    && (::cuda::std::signbit(static_cast<double>(__x_hi)) != ::cuda::std::signbit(static_cast<double>(__x_lo)));
 
   return __below_power_of_two ? __e - 1 : __e;
 }
@@ -328,9 +328,9 @@ __fpmp2_logb(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
   // integer sentinels, so widening one of those would hand back a plausible finite
   // exponent where an infinity or a NaN belongs. ::logb has the right answers for them.
   // Either way the result is an integer, so the low limb stays zero.
-  *__res_hi = ((std::isfinite) (static_cast<double>(__x_hi)) && __x_hi != _FpType(0))
+  *__res_hi = (::cuda::std::isfinite(static_cast<double>(__x_hi)) && __x_hi != _FpType(0))
               ? static_cast<_FpType>(__fpmp2_ilogb<_FpType>(__x_hi, __x_lo))
-              : static_cast<_FpType>(::logb(static_cast<double>(__x_hi)));
+              : static_cast<_FpType>(::cuda::std::logb(static_cast<double>(__x_hi)));
   *__res_lo = _FpType(0);
 }
 /*
@@ -382,11 +382,11 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_frexp(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo, int* __nptr) noexcept
 {
-  _FpType __m_hi = ::frexp(__x_hi, __nptr);
-  _FpType __m_lo = ::ldexp(__x_lo, -*__nptr);
+  _FpType __m_hi = ::cuda::std::frexp(__x_hi, __nptr);
+  _FpType __m_lo = ::cuda::std::ldexp(__x_lo, -*__nptr);
 
   if (__fpmp_internal_fabs(__m_hi) == _FpType(0.5) && __m_lo != _FpType(0)
-      && ((std::signbit) (static_cast<double>(__m_hi)) != (std::signbit) (static_cast<double>(__m_lo))))
+      && (::cuda::std::signbit(static_cast<double>(__m_hi)) != ::cuda::std::signbit(static_cast<double>(__m_lo))))
   {
     __m_hi += __m_hi;
     __m_lo += __m_lo;
@@ -435,7 +435,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_modf(
 
   if (*__res_hi == _FpType(0))
   {
-    *__res_hi = (std::signbit) (static_cast<double>(__x_hi)) ? -_FpType(0) : _FpType(0);
+    *__res_hi = ::cuda::std::signbit(static_cast<double>(__x_hi)) ? -_FpType(0) : _FpType(0);
     *__res_lo = _FpType(0);
   }
 }

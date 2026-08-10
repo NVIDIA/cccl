@@ -248,10 +248,9 @@ _CCCL_FPMP_MATH_DISPATCH_2A(fdim)
  * Finite test isfinite(x) (fp32mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isfinite) (static_cast<double>(__x_hi));
+  return ::cuda::std::isfinite(static_cast<double>(__x_hi));
 }
 
 /*
@@ -259,10 +258,9 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, const floa
  * Finite test isfinite(x) (fp64mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const double __x_hi, const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isfinite) (__x_hi);
+  return ::cuda::std::isfinite(__x_hi);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isfinite)
@@ -272,10 +270,9 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isfinite)
  * Infinity test isinf(x) (fp32mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isinf) (static_cast<double>(__x_hi));
+  return ::cuda::std::isinf(static_cast<double>(__x_hi));
 }
 
 /*
@@ -283,10 +280,9 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, const float _
  * Infinity test isinf(x) (fp64mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const double __x_hi, const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isinf) (__x_hi);
+  return ::cuda::std::isinf(__x_hi);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isinf)
@@ -296,10 +292,9 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isinf)
  * NaN test isnan(x) (fp32mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isnan) (static_cast<double>(__x_hi));
+  return ::cuda::std::isnan(static_cast<double>(__x_hi));
 }
 
 /*
@@ -307,10 +302,9 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, const float _
  * NaN test isnan(x) (fp64mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const double __x_hi, const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::isnan) (__x_hi);
+  return ::cuda::std::isnan(__x_hi);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isnan)
@@ -320,10 +314,9 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isnan)
  * Sign-bit test signbit(x) (fp32mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::signbit) (static_cast<double>(__x_hi));
+  return ::cuda::std::signbit(static_cast<double>(__x_hi));
 }
 
 /*
@@ -331,10 +324,9 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, const float
  * Sign-bit test signbit(x) (fp64mp2) - hi-limb test
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const double __x_hi, const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
 {
-  (void) __x_lo;
-  return (std::signbit) (__x_hi);
+  return ::cuda::std::signbit(__x_hi);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(signbit)

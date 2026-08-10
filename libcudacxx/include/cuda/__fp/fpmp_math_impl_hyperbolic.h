@@ -74,7 +74,7 @@ namespace cuda::experimental
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* optimal crossover between polynomial and exp paths. */
   constexpr float __branch_point = 0.6554117f;
@@ -99,19 +99,19 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  ffloat __x(__x_hi, __x_lo);
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x(__x_hi, __x_lo);
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   if (__abs_hi >= __branch_point)
   {
     /* ---- (2) large-|x| branch: 1 - 2/(exp(2|x|)+1) ------------ */
-    ffloat __two_abs = __abs_a + __abs_a; /* exactly 2|x|: addition of equals */
+    __ffloat __two_abs = __abs_a + __abs_a; /* exactly 2|x|: addition of equals */
     float __u_hi;
     float __u_lo;
     __fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
-    ffloat __denom  = ffloat(__u_hi, __u_lo) + ffloat(1.f);
-    ffloat __r      = ffloat(2.f) / __denom;
-    ffloat __result = ffloat(1.f) - __r;
+    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + __ffloat(1.f);
+    __ffloat __r      = __ffloat(2.f) / __denom;
+    __ffloat __result = __ffloat(1.f) - __r;
     if (__is_neg)
     {
       __result = -__result;
@@ -134,30 +134,30 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
    *     so the high-degree Horner steps run in float for free.
    *
    */
-  constexpr ffloat __tanh_c[11] = {
+  constexpr __ffloat __tanh_c[11] = {
     /* 9 low-degree ff entries (full double precision) */
-    ffloat(-0.33333333333333304), /* [0] = d1  = -1/3 */
-    ffloat(0.13333333333317149), /* [1] = d2 */
-    ffloat(-5.3968253953220913e-2), /* [2] = d3 */
-    ffloat(2.1869487987893173e-2), /* [3] = d4 */
-    ffloat(-8.863225224458907e-3), /* [4] = d5 */
-    ffloat(3.5920144108182715e-3), /* [5] = d6 */
-    ffloat(-1.4550475435045451e-3), /* [6] = d7 */
-    ffloat(5.8648819462048805e-4), /* [7] = d8 */
-    ffloat(-2.2870121144856145e-4), /* [8] = d9 (last ff term) */
+    __ffloat(-0.33333333333333304), /* [0] = d1  = -1/3 */
+    __ffloat(0.13333333333317149), /* [1] = d2 */
+    __ffloat(-5.3968253953220913e-2), /* [2] = d3 */
+    __ffloat(2.1869487987893173e-2), /* [3] = d4 */
+    __ffloat(-8.863225224458907e-3), /* [4] = d5 */
+    __ffloat(3.5920144108182715e-3), /* [5] = d6 */
+    __ffloat(-1.4550475435045451e-3), /* [6] = d7 */
+    __ffloat(5.8648819462048805e-4), /* [7] = d8 */
+    __ffloat(-2.2870121144856145e-4), /* [8] = d9 (last ff term) */
     /* high-order M = 2 entries: .lo() == 0 by construction */
-    ffloat(7.709298e-5f), /* [9] = d10 */
-    ffloat(-1.596018e-5f), /* [10] = d11 (leading) */
+    __ffloat(7.709298e-5f), /* [9] = d10 */
+    __ffloat(-1.596018e-5f), /* [10] = d11 (leading) */
   };
 
-  ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 2>(__a2, __tanh_c);
+  __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
+  __ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 2>(__a2, __tanh_c);
 
   /* tanh(x) = x + x * x^2 * Q(x^2). Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
-  ffloat __result = renormalize(__x + __x * (__a2 * __q));
-  *__res_hi       = __result.hi();
-  *__res_lo       = __result.lo();
+  __ffloat __result = renormalize(__x + __x * (__a2 * __q));
+  *__res_hi         = __result.hi();
+  *__res_lo         = __result.lo();
 } // __internal_fpmp2_tanh
 
 /*
@@ -196,7 +196,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   constexpr float __branch_point = 0.6554117f;
 
@@ -212,8 +212,8 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  ffloat __x(__x_hi, __x_lo);
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x(__x_hi, __x_lo);
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   if (__abs_hi >= __branch_point)
   {
@@ -221,10 +221,10 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     float __u_hi;
     float __u_lo;
     __fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
-    ffloat __e(__u_hi, __u_lo);
-    ffloat __half_e     = __e * ffloat(0.5f);
-    ffloat __half_inv_e = ffloat(0.5f) / __e;
-    ffloat __result     = renormalize(__half_e - __half_inv_e);
+    __ffloat __e(__u_hi, __u_lo);
+    __ffloat __half_e     = __e * __ffloat(0.5f);
+    __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+    __ffloat __result     = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
     {
       __result = -__result;
@@ -251,30 +251,30 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
    * The exact rational Taylor coefficients have zero truncation
    * noise; the only source of error is fp32mp2 arithmetic.
    */
-  constexpr ffloat __sinh_c[11] = {
+  constexpr __ffloat __sinh_c[11] = {
     /* 8 low-degree ff entries (full double precision) */
-    ffloat(1.6666666666666666e-1), /* [0] = 1/3!  = 1/6 */
-    ffloat(8.3333333333333333e-3), /* [1] = 1/5!  */
-    ffloat(1.9841269841269841e-4), /* [2] = 1/7!  */
-    ffloat(2.7557319223985891e-6), /* [3] = 1/9!  */
-    ffloat(2.5052108385441718e-8), /* [4] = 1/11! */
-    ffloat(1.6059043836821614e-10), /* [5] = 1/13! */
-    ffloat(7.6471637318198164e-13), /* [6] = 1/15! */
-    ffloat(2.8114572543455207e-15), /* [7] = 1/17! (last ff term) */
+    __ffloat(1.6666666666666666e-1), /* [0] = 1/3!  = 1/6 */
+    __ffloat(8.3333333333333333e-3), /* [1] = 1/5!  */
+    __ffloat(1.9841269841269841e-4), /* [2] = 1/7!  */
+    __ffloat(2.7557319223985891e-6), /* [3] = 1/9!  */
+    __ffloat(2.5052108385441718e-8), /* [4] = 1/11! */
+    __ffloat(1.6059043836821614e-10), /* [5] = 1/13! */
+    __ffloat(7.6471637318198164e-13), /* [6] = 1/15! */
+    __ffloat(2.8114572543455207e-15), /* [7] = 1/17! (last ff term) */
     /* high-order M = 3 entries: .lo() == 0 by construction */
-    ffloat(8.220635246624329e-18f), /* [8] = 1/19! */
-    ffloat(1.957294106339126e-20f), /* [9] = 1/21! */
-    ffloat(3.866968596927381e-23f), /* [10] = 1/23! (leading) */
+    __ffloat(8.220635246624329e-18f), /* [8] = 1/19! */
+    __ffloat(1.957294106339126e-20f), /* [9] = 1/21! */
+    __ffloat(3.866968596927381e-23f), /* [10] = 1/23! (leading) */
   };
 
-  ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 3>(__a2, __sinh_c);
+  __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
+  __ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 3>(__a2, __sinh_c);
 
   /* sinh(x) = x + x * x^2 * P(x^2).  Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
-  ffloat __result = renormalize(__x + __x * (__a2 * __q));
-  *__res_hi       = __result.hi();
-  *__res_lo       = __result.lo();
+  __ffloat __result = renormalize(__x + __x * (__a2 * __q));
+  *__res_hi         = __result.hi();
+  *__res_lo         = __result.lo();
 } // __internal_fpmp2_sinh
 
 /*
@@ -314,7 +314,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(sinh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* NaN propagation. */
   if (__x_hi != __x_hi || __x_lo != __x_lo)
@@ -326,18 +326,18 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
 
   const bool __is_neg = __x_hi < 0.f;
-  ffloat __x(__x_hi, __x_lo);
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x(__x_hi, __x_lo);
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   float __u_hi;
   float __u_lo;
   __fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
-  ffloat __e(__u_hi, __u_lo);
+  __ffloat __e(__u_hi, __u_lo);
 
   /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
-  ffloat __half_e     = __e * ffloat(0.5f);
-  ffloat __half_inv_e = ffloat(0.5f) / __e;
-  ffloat __result     = renormalize(__half_e + __half_inv_e);
+  __ffloat __half_e     = __e * __ffloat(0.5f);
+  __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+  __ffloat __result     = renormalize(__half_e + __half_inv_e);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -413,7 +413,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cosh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* NaN propagation. */
   if (__x_hi != __x_hi || __x_lo != __x_lo)
@@ -444,8 +444,8 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  ffloat __x(__x_hi, __x_lo);
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x(__x_hi, __x_lo);
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   /* Crossover threshold: above 2^25 we switch to the asymptotic
    * form
@@ -464,14 +464,14 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
    * is exact to fp32mp2 ulp throughout [2^25, FLT_MAX]. */
   constexpr float __large_asinh = 0x1.0p+25f;
 
-  ffloat __result;
+  __ffloat __result;
   if (__abs_hi > __large_asinh)
   {
-    constexpr ffloat __ln2(0x1.62e42fefa39efp-1);
+    constexpr __ffloat __ln2(0x1.62e42fefa39efp-1);
     float __l_hi;
     float __l_lo;
     __fpmp2_log<float>(__abs_a.hi(), __abs_a.lo(), &__l_hi, &__l_lo);
-    __result = renormalize(ffloat(__l_hi, __l_lo) + __ln2);
+    __result = renormalize(__ffloat(__l_hi, __l_lo) + __ln2);
   }
   else
   {
@@ -485,19 +485,19 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
      * Use accurate add for x^2+1: when |x| is small the +1
      * dominates and we want the lo to carry x^2 to full
      * fp32mp2 precision -- the same reasoning as in log1p. */
-    ffloat __a2   = __abs_a * __abs_a;
-    ffloat __a2p1 = add<fpmp2_accuracy::high>(__a2, 1.0f);
+    __ffloat __a2   = __abs_a * __abs_a;
+    __ffloat __a2p1 = add<fpmp2_accuracy::high>(__a2, 1.0f);
     float __s_hi;
     float __s_lo;
     __fpmp2_sqrt<float>(__a2p1.hi(), __a2p1.lo(), &__s_hi, &__s_lo);
-    ffloat __s     = ffloat(__s_hi, __s_lo);
-    ffloat __denom = add<fpmp2_accuracy::high>(__s, 1.0f);
-    ffloat __t     = renormalize(__abs_a + __a2 / __denom);
+    __ffloat __s     = __ffloat(__s_hi, __s_lo);
+    __ffloat __denom = add<fpmp2_accuracy::high>(__s, 1.0f);
+    __ffloat __t     = renormalize(__abs_a + __a2 / __denom);
 
     float __r_hi;
     float __r_lo;
     __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
-    __result = ffloat(__r_hi, __r_lo);
+    __result = __ffloat(__r_hi, __r_lo);
   }
 
   if (__is_neg)
@@ -535,7 +535,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(asinh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* NaN propagation. */
   if (__x_hi != __x_hi || __x_lo != __x_lo)
@@ -572,7 +572,7 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  ffloat __x(__x_hi, __x_lo);
+  __ffloat __x(__x_hi, __x_lo);
 
   /* Crossover threshold: above 2^25 we switch to the asymptotic
    * form
@@ -587,16 +587,16 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
    * this early restores fp32mp2 ulp throughout [2^25, FLT_MAX]. */
   constexpr float __large_acosh = 0x1.0p+25f;
 
-  ffloat __result;
+  __ffloat __result;
   if (__x_hi > __large_acosh)
   {
     /* Asymptotic form: acosh(x) ~= log(2x) = log(x) + ln(2).
      * O(1/x^2) correction is below fp32mp2 ulp at crossover. */
-    constexpr ffloat __ln2(0x1.62e42fefa39efp-1);
+    constexpr __ffloat __ln2(0x1.62e42fefa39efp-1);
     float __l_hi;
     float __l_lo;
     __fpmp2_log<float>(__x.hi(), __x.lo(), &__l_hi, &__l_lo);
-    __result = renormalize(ffloat(__l_hi, __l_lo) + __ln2);
+    __result = renormalize(__ffloat(__l_hi, __l_lo) + __ln2);
   }
   else
   {
@@ -613,19 +613,19 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
      * the bits that drive the log1p argument near the branch
      * point
      */
-    ffloat __xm1  = sub<fpmp2_accuracy::high>(__x, 1.0f);
-    ffloat __xp1  = add<fpmp2_accuracy::high>(__x, 1.0f);
-    ffloat __x2m1 = __xm1 * __xp1;
+    __ffloat __xm1  = sub<fpmp2_accuracy::high>(__x, 1.0f);
+    __ffloat __xp1  = add<fpmp2_accuracy::high>(__x, 1.0f);
+    __ffloat __x2m1 = __xm1 * __xp1;
     float __s_hi;
     float __s_lo;
     __fpmp2_sqrt<float>(__x2m1.hi(), __x2m1.lo(), &__s_hi, &__s_lo);
-    ffloat __s = ffloat(__s_hi, __s_lo);
-    ffloat __t = renormalize(__xm1 + __s);
+    __ffloat __s = __ffloat(__s_hi, __s_lo);
+    __ffloat __t = renormalize(__xm1 + __s);
 
     float __r_hi;
     float __r_lo;
     __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
-    __result = ffloat(__r_hi, __r_lo);
+    __result = __ffloat(__r_hi, __r_lo);
   }
 
   *__res_hi = __result.hi();
@@ -659,7 +659,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(acosh)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* NaN propagation. */
   if (__x_hi != __x_hi || __x_lo != __x_lo)
@@ -697,8 +697,8 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  ffloat __x(__x_hi, __x_lo);
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x(__x_hi, __x_lo);
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   /* Small-|x| polynomial branch.
    *
@@ -729,27 +729,27 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
      * are full ff (their contributions stay above fp32mp2 ulp at
      * the branch point), top 4 entries are plain float (.lo == 0
      * by construction; their contributions sit below 0.5 ulp). */
-    constexpr ffloat __atanh_poly_c[12] = {
-      ffloat(3.3333333333333333e-1), /* [ 0] 1/3  */
-      ffloat(2.0e-1), /* [ 1] 1/5  */
-      ffloat(1.4285714285714286e-1), /* [ 2] 1/7  */
-      ffloat(1.1111111111111111e-1), /* [ 3] 1/9  */
-      ffloat(9.0909090909090909e-2), /* [ 4] 1/11 */
-      ffloat(7.6923076923076923e-2), /* [ 5] 1/13 */
-      ffloat(6.6666666666666667e-2), /* [ 6] 1/15 */
-      ffloat(5.8823529411764706e-2), /* [ 7] 1/17  (last ff term) */
+    constexpr __ffloat __atanh_poly_c[12] = {
+      __ffloat(3.3333333333333333e-1), /* [ 0] 1/3  */
+      __ffloat(2.0e-1), /* [ 1] 1/5  */
+      __ffloat(1.4285714285714286e-1), /* [ 2] 1/7  */
+      __ffloat(1.1111111111111111e-1), /* [ 3] 1/9  */
+      __ffloat(9.0909090909090909e-2), /* [ 4] 1/11 */
+      __ffloat(7.6923076923076923e-2), /* [ 5] 1/13 */
+      __ffloat(6.6666666666666667e-2), /* [ 6] 1/15 */
+      __ffloat(5.8823529411764706e-2), /* [ 7] 1/17  (last ff term) */
       /* high-order M = 4 entries: .lo() == 0 by construction */
-      ffloat(5.263158e-2f), /* [ 8] 1/19 */
-      ffloat(4.761905e-2f), /* [ 9] 1/21 */
-      ffloat(4.347826e-2f), /* [10] 1/23 */
-      ffloat(4.0e-2f), /* [11] 1/25  (leading) */
+      __ffloat(5.263158e-2f), /* [ 8] 1/19 */
+      __ffloat(4.761905e-2f), /* [ 9] 1/21 */
+      __ffloat(4.347826e-2f), /* [10] 1/23 */
+      __ffloat(4.0e-2f), /* [11] 1/25  (leading) */
     };
 
-    ffloat __y      = __x * __x; /* x^2 (sign of x cancels) */
-    ffloat __q      = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
-    ffloat __result = renormalize(__x + __x * (__y * __q));
-    *__res_hi       = __result.hi();
-    *__res_lo       = __result.lo();
+    __ffloat __y      = __x * __x; /* x^2 (sign of x cancels) */
+    __ffloat __q      = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
+    __ffloat __result = renormalize(__x + __x * (__y * __q));
+    *__res_hi         = __result.hi();
+    *__res_lo         = __result.lo();
     return;
   }
 
@@ -761,15 +761,15 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
    *
    * Use accurate sub for 1 - |x| to capture full precision when
    * |x| is close to 1. */
-  ffloat __one_minus = sub<fpmp2_accuracy::high>(ffloat(1.0f), __abs_a);
-  ffloat __two_abs   = __abs_a + __abs_a;
-  ffloat __t         = __two_abs / __one_minus;
+  __ffloat __one_minus = sub<fpmp2_accuracy::high>(__ffloat(1.0f), __abs_a);
+  __ffloat __two_abs   = __abs_a + __abs_a;
+  __ffloat __t         = __two_abs / __one_minus;
 
   float __l_hi;
   float __l_lo;
   __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__l_hi, &__l_lo);
 
-  ffloat __result = ffloat(__l_hi, __l_lo) * ffloat(0.5f);
+  __ffloat __result = __ffloat(__l_hi, __l_lo) * __ffloat(0.5f);
   if (__is_neg)
   {
     __result = -__result;

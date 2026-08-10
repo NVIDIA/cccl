@@ -49,7 +49,7 @@ namespace cuda::experimental
  * the running value never exceeds 2^63.  No native fp64 is touched,
  * so this runs at full fp32 throughput on GPUs where double is 1:32
  * or worse, and it is *more* accurate than the old
- * `::fmod(double, double)` round-trip for fp32mp2 values whose two
+ * `::cuda::std::fmod(double, double)` round-trip for fp32mp2 values whose two
  * limbs straddle a wide exponent gap (the double cast collapsed lo
  * into hi).
  *
@@ -353,7 +353,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* (hi + lo) != (hi + lo) also catches a degenerate (+inf, -inf) limb
    * pair, which the fp128 reference widens to inf + (-inf) = NaN. */
@@ -430,9 +430,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     } /* r = x */
 
     /* 2|x| > |y|: r = |x| - |y|  (negative in the |x| frame) */
-    const ffloat __r = sub<fpmp2_accuracy::high>(ffloat(__axh, __axl), ffloat(__ayh, __ayl));
-    float __rh       = __r.hi();
-    float __rl       = __r.lo();
+    const __ffloat __r = sub<fpmp2_accuracy::high>(__ffloat(__axh, __axl), __ffloat(__ayh, __ayl));
+    float __rh         = __r.hi();
+    float __rl         = __r.lo();
     if (__xneg)
     {
       __rh = -__rh;
@@ -737,7 +737,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llrint)
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::llrint(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::llrint(__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
@@ -762,7 +762,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llround)
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::llround(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::llround(__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llround)
@@ -787,7 +787,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETL(lrint)
  */
 _CCCL_FPMP_CORE_API long int __internal_fpmp2_lrint(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::lrint(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::lrint(__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETL(lrint)
@@ -812,7 +812,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETL(lround)
  */
 _CCCL_FPMP_CORE_API long int __internal_fpmp2_lround(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::lround(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::lround(__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETL(lround)
@@ -974,9 +974,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remquo(
   float* __res_lo,
   int* __quo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = ::remquo(static_cast<double>(mp2_t(__x_hi, __x_lo)), static_cast<double>(mp2_t(__y_hi, __y_lo)), __quo);
-  mp2_t __result(__r);
+  using __mp2_t = fpmp2<float>;
+  double __r    = ::cuda::std::remquo(
+    static_cast<double>(__mp2_t(__x_hi, __x_lo)), static_cast<double>(__mp2_t(__y_hi, __y_lo)), __quo);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -995,8 +996,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remquo(
   double* __res_lo,
   int* __quo) noexcept
 {
-  __fpmp2_from_double(
-    ::remquo(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo), __quo), __res_hi, __res_lo);
+  __fpmp2_from_double(::cuda::std::remquo(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo), __quo),
+                      __res_hi,
+                      __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A_QUO(remquo)

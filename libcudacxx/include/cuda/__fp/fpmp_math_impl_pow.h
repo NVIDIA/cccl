@@ -247,7 +247,7 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   // 1/3 in single precision (round-to-nearest); the exact 1/3 is not
   // representable in any binary float, but ulp(1/3) is well below the
@@ -317,22 +317,22 @@ __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, f
    * with a single rounding error followed by an exact correction,
    * preserving the small difference that drives the iteration.
    */
-  const ffloat __r(__r_hi, __r_lo);
-  const ffloat __t(__s);
+  const __ffloat __r(__r_hi, __r_lo);
+  const __ffloat __t(__s);
 
-  const ffloat __t2 = __t * __t; // t^2
+  const __ffloat __t2 = __t * __t; // t^2
   // numer = r - t^3 (computed as fma(-t^2, t, r) with accurate ff fma)
-  const ffloat __numer = fma<fpmp2_accuracy::high>(-__t2, __t, __r);
+  const __ffloat __numer = fma<fpmp2_accuracy::high>(-__t2, __t, __r);
   // denom = 2 t^3 + r ~= 3 r, well-conditioned so fast add suffices
-  const ffloat __t3    = __t2 * __t;
-  const ffloat __denom = (__t3 + __t3) + __r;
+  const __ffloat __t3    = __t2 * __t;
+  const __ffloat __denom = (__t3 + __t3) + __r;
 
   /* Single-precision reciprocal of denom.hi() is enough: the
    * correction u_corr ~ 2^-23 contributes t * u_corr ~ 2^-46 to
    * t_new -- exactly fp32mp2 precision. */
   const float __inv_denom = __fpmp_rcp_rn(__denom.hi());
-  const ffloat __u_corr   = __numer * __inv_denom;
-  const ffloat __t_new    = __t + __t * __u_corr;
+  const __ffloat __u_corr = __numer * __inv_denom;
+  const __ffloat __t_new  = __t + __t * __u_corr;
 
   /* Scale back by 2^(nexpo - denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in a range that keeps the
@@ -366,7 +366,7 @@ __internal_fpmp2_cbrt(const double __x_hi, const double __x_lo, double* __res_hi
   __fpmp_fp128 __res = _CCCL_FPMP_CBRTQ(__fpmp2_to_quad(__x_hi, __x_lo));
   __fpmp2_from_quad(__res, __res_hi, __res_lo);
 #  else
-  double __res = ::cbrt(__fpmp2_to_double(__x_hi, __x_lo));
+  double __res = ::cuda::std::cbrt(__fpmp2_to_double(__x_hi, __x_lo));
   __fpmp2_from_double(__res, __res_hi, __res_lo);
 #  endif
 }
@@ -420,7 +420,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cbrt)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   // 1/3 and 2/9 in single precision (round-to-nearest); ulp at this
   // scale is far below the SFU lg2/ex2 estimate's accuracy.
@@ -501,21 +501,21 @@ __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, 
    * everything else (t^2, t^3, the Halley quadratic, the final
    * combination) is well conditioned in fast fp32mp2 arithmetic.
    */
-  const ffloat __r(__r_hi, __r_lo);
-  const ffloat __t(__s);
+  const __ffloat __r(__r_hi, __r_lo);
+  const __ffloat __t(__s);
 
-  const ffloat __t2 = __t * __t; // t^2
-  const ffloat __t3 = __t2 * __t; // t^3
+  const __ffloat __t2 = __t * __t; // t^2
+  const __ffloat __t3 = __t2 * __t; // t^3
 
   // u = 1 - r*t^3 (accurate fma to preserve catastrophic cancellation)
-  const ffloat __u = fma<fpmp2_accuracy::high>(-__r, __t3, 1.0f);
+  const __ffloat __u = fma<fpmp2_accuracy::high>(-__r, __t3, 1.0f);
 
   // Halley quadratic factor:  hf = 1/3 + (2/9) u   (no cancellation)
-  const ffloat __hf = fma<fpmp2_accuracy::def>(__two_ninths_f, __u, __third_f);
+  const __ffloat __hf = fma<fpmp2_accuracy::def>(__two_ninths_f, __u, __third_f);
 
   // delta = u * t * hf,  then  t_new = t + delta
-  const ffloat __ut    = __u * __t;
-  const ffloat __t_new = __t + __hf * __ut;
+  const __ffloat __ut    = __u * __t;
+  const __ffloat __t_new = __t + __hf * __ut;
 
   /* Scale back by 2^(-nexpo + denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in [-43, +49] for all valid
@@ -547,7 +547,7 @@ __internal_fpmp2_rcbrt(const double __x_hi, const double __x_lo, double* __res_h
   double __xd = __fpmp2_to_double(__x_hi, __x_lo);
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__fpmp2_from_double(::rcbrt(__xd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(1.0 / ::cbrt(__xd), __res_hi, __res_lo);))
+                    (__fpmp2_from_double(1.0 / ::cuda::std::cbrt(__xd), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
@@ -580,7 +580,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::hypot(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
+  __fpmp2_from_double(
+    ::cuda::std::hypot(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(hypot)
@@ -606,14 +607,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm3d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __ad = static_cast<double>(mp2_t(__a_hi, __a_lo));
-  double __bd = static_cast<double>(mp2_t(__b_hi, __b_lo));
-  double __cd = static_cast<double>(mp2_t(__c_hi, __c_lo));
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__r = ::norm3d(__ad, __bd, __cd);), (__r = ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd);))
-  mp2_t __result(__r);
+  using __mp2_t = fpmp2<float>;
+  double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
+  double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
+  double __cd   = static_cast<double>(__mp2_t(__c_hi, __c_lo));
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (__r = ::norm3d(__ad, __bd, __cd);),
+                    (__r = ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd);))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -635,9 +637,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm3d(
 {
   double __ad = __fpmp2_to_double(__a_hi, __a_lo), __bd = __fpmp2_to_double(__b_hi, __b_lo),
          __cd = __fpmp2_to_double(__c_hi, __c_lo);
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (__fpmp2_from_double(::norm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (__fpmp2_from_double(::norm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
+    (__fpmp2_from_double(::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_3A(norm3d)
@@ -665,16 +668,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm4d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __ad = static_cast<double>(mp2_t(__a_hi, __a_lo));
-  double __bd = static_cast<double>(mp2_t(__b_hi, __b_lo));
-  double __cd = static_cast<double>(mp2_t(__c_hi, __c_lo));
-  double __dd = static_cast<double>(mp2_t(__d_hi, __d_lo));
-  double __r  = 0.0;
+  using __mp2_t = fpmp2<float>;
+  double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
+  double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
+  double __cd   = static_cast<double>(__mp2_t(__c_hi, __c_lo));
+  double __dd   = static_cast<double>(__mp2_t(__d_hi, __d_lo));
+  double __r    = 0.0;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__r = ::norm4d(__ad, __bd, __cd, __dd);),
-                    (__r = ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd);))
-  mp2_t __result(__r);
+                    (__r = ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd);))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -701,7 +704,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm4d(
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (__fpmp2_from_double(::norm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
-    (__fpmp2_from_double(::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
+    (__fpmp2_from_double(::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_4A(norm4d)
@@ -727,14 +730,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm3d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __ad = static_cast<double>(mp2_t(__a_hi, __a_lo));
-  double __bd = static_cast<double>(mp2_t(__b_hi, __b_lo));
-  double __cd = static_cast<double>(mp2_t(__c_hi, __c_lo));
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__r = ::rnorm3d(__ad, __bd, __cd);), (__r = 1.0 / ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd);))
-  mp2_t __result(__r);
+  using __mp2_t = fpmp2<float>;
+  double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
+  double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
+  double __cd   = static_cast<double>(__mp2_t(__c_hi, __c_lo));
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (__r = ::rnorm3d(__ad, __bd, __cd);),
+                    (__r = 1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd);))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -756,9 +760,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm3d(
 {
   double __ad = __fpmp2_to_double(__a_hi, __a_lo), __bd = __fpmp2_to_double(__b_hi, __b_lo),
          __cd = __fpmp2_to_double(__c_hi, __c_lo);
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (__fpmp2_from_double(::rnorm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(1.0 / ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (__fpmp2_from_double(::rnorm3d(__ad, __bd, __cd), __res_hi, __res_lo);),
+    (__fpmp2_from_double(1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_3A(rnorm3d)
@@ -786,16 +791,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm4d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __ad = static_cast<double>(mp2_t(__a_hi, __a_lo));
-  double __bd = static_cast<double>(mp2_t(__b_hi, __b_lo));
-  double __cd = static_cast<double>(mp2_t(__c_hi, __c_lo));
-  double __dd = static_cast<double>(mp2_t(__d_hi, __d_lo));
-  double __r  = 0.0;
+  using __mp2_t = fpmp2<float>;
+  double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
+  double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
+  double __cd   = static_cast<double>(__mp2_t(__c_hi, __c_lo));
+  double __dd   = static_cast<double>(__mp2_t(__d_hi, __d_lo));
+  double __r    = 0.0;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__r = ::rnorm4d(__ad, __bd, __cd, __dd);),
-                    (__r = 1.0 / ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd);))
-  mp2_t __result(__r);
+                    (__r = 1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd);))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -822,7 +827,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm4d(
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (__fpmp2_from_double(::rnorm4d(__ad, __bd, __cd, __dd), __res_hi, __res_lo);),
-    (__fpmp2_from_double(1.0 / ::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
+    (__fpmp2_from_double(
+       1.0 / ::cuda::std::sqrt(__ad * __ad + __bd * __bd + __cd * __cd + __dd * __dd), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_4A(rnorm4d)
@@ -846,13 +852,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (__r = ::rhypot(static_cast<double>(mp2_t(__x_hi, __x_lo)), static_cast<double>(mp2_t(__y_hi, __y_lo)));),
-    (__r = 1.0 / ::hypot(static_cast<double>(mp2_t(__x_hi, __x_lo)), static_cast<double>(mp2_t(__y_hi, __y_lo)));))
-  mp2_t __result(__r);
+    (__r = ::rhypot(static_cast<double>(__mp2_t(__x_hi, __x_lo)), static_cast<double>(__mp2_t(__y_hi, __y_lo)));),
+    (__r = 1.0
+         / ::cuda::std::hypot(static_cast<double>(__mp2_t(__x_hi, __x_lo)),
+                              static_cast<double>(__mp2_t(__y_hi, __y_lo)));))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -874,8 +882,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
     NV_IS_DEVICE,
     (__fpmp2_from_double(
        ::rhypot(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);),
-    (__fpmp2_from_double(
-       1.0 / ::hypot(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);))
+    (__fpmp2_from_double(1.0 / ::cuda::std::hypot(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)),
+                         __res_hi,
+                         __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(rhypot)

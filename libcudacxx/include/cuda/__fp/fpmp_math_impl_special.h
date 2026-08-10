@@ -27,6 +27,7 @@
 */
 
 #include <cuda/__fp/fpmp_math_impl.h>
+#include <cuda/std/numbers>
 // Sibling families whose kernels this family calls (log from exp, rcbrt from pow, fabs from manip).
 #include <cuda/__fp/fpmp_math_impl_exp.h>
 #include <cuda/__fp/fpmp_math_impl_manip.h>
@@ -139,7 +140,7 @@ namespace cuda::experimental
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* expm1(r) polynomial: u(r) = m2 + m3*r + m4*r^2 + ... + m11*r^9,
    * packed in ascending degree (m_c[0] = m2 = constant, m_c[9] =
@@ -152,27 +153,27 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * was `uf * r + m7` (float * full-ff + ff).  This is the same
    * sub-ULP shift the exp refactor produced -- well below the
    * polynomial truncation noise floor. */
-  constexpr ffloat __m_c[10] = {
-    ffloat(0.50000000000000056), // [0] (= m2, constant)
-    ffloat(0.16666666666666607), // [1] (= m3)
-    ffloat(4.1666666666573884e-2), // [2] (= m4)
-    ffloat(8.3333333333771645e-3), // [3] (= m5)
-    ffloat(1.3888888932264757e-3), // [4] (= m6)
-    ffloat(1.9841269746984988e-4), // [5] (= m7, last ff term)
+  constexpr __ffloat __m_c[10] = {
+    __ffloat(0.50000000000000056), // [0] (= m2, constant)
+    __ffloat(0.16666666666666607), // [1] (= m3)
+    __ffloat(4.1666666666573884e-2), // [2] (= m4)
+    __ffloat(8.3333333333771645e-3), // [3] (= m5)
+    __ffloat(1.3888888932264757e-3), // [4] (= m6)
+    __ffloat(1.9841269746984988e-4), // [5] (= m7, last ff term)
     /* high-order M = 4 entries: .lo() == 0 by construction */
-    ffloat(2.4801505e-5f), // [6] (= m8)
-    ffloat(2.7557382e-6f), // [7] (= m9)
-    ffloat(2.7626265e-7f), // [8] (= m10)
-    ffloat(2.5062102e-8f) // [9] (= m11, leading)
+    __ffloat(2.4801505e-5f), // [6] (= m8)
+    __ffloat(2.7557382e-6f), // [7] (= m9)
+    __ffloat(2.7626265e-7f), // [8] (= m10)
+    __ffloat(2.5062102e-8f) // [9] (= m11, leading)
   };
 
-  constexpr ffloat __L2E(1.4426950408889634);
-  constexpr ffloat __ln2_hi(0.6931471805599453);
+  constexpr __ffloat __L2E(1.4426950408889634);
+  constexpr __ffloat __ln2_hi(0.6931471805599453);
 
-  ffloat __x     = renormalize(ffloat(__x_hi, __x_lo));
-  bool __is_neg  = __x.hi() < 0.f;
-  uint32_t __xhi = ::cuda::std::bit_cast<uint32_t>(__x.hi()) & 0x7fffffffU;
-  ffloat __abs_a = __is_neg ? -__x : __x;
+  __ffloat __x     = renormalize(__ffloat(__x_hi, __x_lo));
+  bool __is_neg    = __x.hi() < 0.f;
+  uint32_t __xhi   = ::cuda::std::bit_cast<uint32_t>(__x.hi()) & 0x7fffffffU;
+  __ffloat __abs_a = __is_neg ? -__x : __x;
 
   /* |x| >= saturation_bound (~5.92) or Inf -> erf = +-1 */
   if (__xhi >= 0x40bd7da4U && __xhi <= 0x7f800000U)
@@ -196,48 +197,48 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
    */
   constexpr float __x_star = 2.1134011f;
 
-  constexpr ffloat __dc_left[18] = {
-    ffloat(1.2837916709551273e-01), // [ 0] constant
-    ffloat(6.3661977236753761e-01), // [ 1]
-    ffloat(1.0277260330382626e-01), // [ 2]
-    ffloat(-1.9128447038837399e-02), // [ 3]
-    ffloat(-2.0919443027514459e-04), // [ 4]
-    ffloat(1.6962054283924491e-03), // [ 5]
-    ffloat(-5.9012551064862781e-04), // [ 6]
-    ffloat(2.5894044204962638e-05), // [ 7]
-    ffloat(6.4414111344269855e-05), // [ 8]
-    ffloat(-2.9502940222999094e-05), // [ 9]
-    ffloat(2.9772044480981463e-06), // [10]
-    ffloat(3.4470407727555699e-06), // [11]
-    ffloat(-2.3997080766216321e-06), // [12]
-    ffloat(8.8126532430964285e-07), // [13]
-    ffloat(-2.1347246296037766e-07), // [14]
-    ffloat(3.4395369235060941e-08), // [15]
-    ffloat(-3.3767065506818252e-09), // [16]
-    ffloat(1.5374576174679341e-10) // [17] leading
+  constexpr __ffloat __dc_left[18] = {
+    __ffloat(1.2837916709551273e-01), // [ 0] constant
+    __ffloat(6.3661977236753761e-01), // [ 1]
+    __ffloat(1.0277260330382626e-01), // [ 2]
+    __ffloat(-1.9128447038837399e-02), // [ 3]
+    __ffloat(-2.0919443027514459e-04), // [ 4]
+    __ffloat(1.6962054283924491e-03), // [ 5]
+    __ffloat(-5.9012551064862781e-04), // [ 6]
+    __ffloat(2.5894044204962638e-05), // [ 7]
+    __ffloat(6.4414111344269855e-05), // [ 8]
+    __ffloat(-2.9502940222999094e-05), // [ 9]
+    __ffloat(2.9772044480981463e-06), // [10]
+    __ffloat(3.4470407727555699e-06), // [11]
+    __ffloat(-2.3997080766216321e-06), // [12]
+    __ffloat(8.8126532430964285e-07), // [13]
+    __ffloat(-2.1347246296037766e-07), // [14]
+    __ffloat(3.4395369235060941e-08), // [15]
+    __ffloat(-3.3767065506818252e-09), // [16]
+    __ffloat(1.5374576174679341e-10) // [17] leading
   };
 
-  constexpr ffloat __dc_right[17] = {
-    ffloat(1.2838182329753376e-01), // [ 0] constant
-    ffloat(6.3664135493147287e-01), // [ 1]
-    ffloat(1.0262001147255973e-01), // [ 2]
-    ffloat(-1.8718159485718171e-02), // [ 3]
-    ffloat(-8.6902967978178309e-04), // [ 4]
-    ffloat(2.4246233937155400e-03), // [ 5]
-    ffloat(-1.1769573995400237e-03), // [ 6]
-    ffloat(3.7914816346061311e-04), // [ 7]
-    ffloat(-9.2599432840590657e-05), // [ 8]
-    ffloat(1.7765977912059822e-05), // [ 9]
-    ffloat(-2.6957054726382021e-06), // [10]
-    ffloat(3.2096938307796375e-07), // [11]
-    ffloat(-2.9400887323643838e-08), // [12]
-    ffloat(2.0010667763467461e-09), // [13]
-    ffloat(-9.5320838658187351e-11), // [14]
-    ffloat(2.8357961123952052e-12), // [15]
-    ffloat(-3.9648740890296208e-14) // [16] leading
+  constexpr __ffloat __dc_right[17] = {
+    __ffloat(1.2838182329753376e-01), // [ 0] constant
+    __ffloat(6.3664135493147287e-01), // [ 1]
+    __ffloat(1.0262001147255973e-01), // [ 2]
+    __ffloat(-1.8718159485718171e-02), // [ 3]
+    __ffloat(-8.6902967978178309e-04), // [ 4]
+    __ffloat(2.4246233937155400e-03), // [ 5]
+    __ffloat(-1.1769573995400237e-03), // [ 6]
+    __ffloat(3.7914816346061311e-04), // [ 7]
+    __ffloat(-9.2599432840590657e-05), // [ 8]
+    __ffloat(1.7765977912059822e-05), // [ 9]
+    __ffloat(-2.6957054726382021e-06), // [10]
+    __ffloat(3.2096938307796375e-07), // [11]
+    __ffloat(-2.9400887323643838e-08), // [12]
+    __ffloat(2.0010667763467461e-09), // [13]
+    __ffloat(-9.5320838658187351e-11), // [14]
+    __ffloat(2.8357961123952052e-12), // [15]
+    __ffloat(-3.9648740890296208e-14) // [16] leading
   };
 
-  ffloat __poly;
+  __ffloat __poly;
   if (__abs_a.hi() < __x_star)
   {
     __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, __dc_left);
@@ -252,45 +253,45 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * Well-conditioned uniform Horner is the case where
    * compensated evaluation wins on both accuracy and SASS
    * footprint at this polynomial length. */
-  constexpr ffloat d1(0.12837916709551259);
-  constexpr ffloat d2(0.6366197723675876);
-  constexpr ffloat d3(0.10277260330144233);
-  constexpr ffloat d4(-1.9128446995328407e-2);
-  constexpr ffloat d5(-2.0919483164788562e-4);
-  constexpr ffloat d6(1.696207528729842e-3);
-  constexpr ffloat d7(-5.901318195328236e-4);
-  constexpr ffloat d8(2.5902605702646151e-5);
-  constexpr ffloat d9(6.4424832324704525e-5);
-  constexpr ffloat d10(-2.9583306728241582e-5);
-  constexpr ffloat d11(3.1800461703546548e-6);
-  constexpr ffloat d12(3.1218939658311085e-6);
-  constexpr ffloat d13(-2.0278249778025215e-6);
-  constexpr ffloat d14(5.643145203798444e-7);
-  constexpr ffloat d15(-8.299332548682465e-9);
-  constexpr ffloat d16(-6.7203270800518394e-8);
-  constexpr ffloat d17(3.5089011868220468e-8);
-  constexpr ffloat d18(-1.0909760903049583e-8);
-  constexpr ffloat d19(2.389211325400646e-9);
-  constexpr ffloat d20(-3.806599039253438e-10);
-  constexpr ffloat d21(4.3555974045566826e-11);
-  constexpr ffloat d22(-3.4079297100747907e-12);
-  constexpr ffloat d23(1.6366247078834561e-13);
-  constexpr ffloat d24(-3.642577040697121e-15);
+  constexpr __ffloat d1(0.12837916709551259);
+  constexpr __ffloat d2(0.6366197723675876);
+  constexpr __ffloat d3(0.10277260330144233);
+  constexpr __ffloat d4(-1.9128446995328407e-2);
+  constexpr __ffloat d5(-2.0919483164788562e-4);
+  constexpr __ffloat d6(1.696207528729842e-3);
+  constexpr __ffloat d7(-5.901318195328236e-4);
+  constexpr __ffloat d8(2.5902605702646151e-5);
+  constexpr __ffloat d9(6.4424832324704525e-5);
+  constexpr __ffloat d10(-2.9583306728241582e-5);
+  constexpr __ffloat d11(3.1800461703546548e-6);
+  constexpr __ffloat d12(3.1218939658311085e-6);
+  constexpr __ffloat d13(-2.0278249778025215e-6);
+  constexpr __ffloat d14(5.643145203798444e-7);
+  constexpr __ffloat d15(-8.299332548682465e-9);
+  constexpr __ffloat d16(-6.7203270800518394e-8);
+  constexpr __ffloat d17(3.5089011868220468e-8);
+  constexpr __ffloat d18(-1.0909760903049583e-8);
+  constexpr __ffloat d19(2.389211325400646e-9);
+  constexpr __ffloat d20(-3.806599039253438e-10);
+  constexpr __ffloat d21(4.3555974045566826e-11);
+  constexpr __ffloat d22(-3.4079297100747907e-12);
+  constexpr __ffloat d23(1.6366247078834561e-13);
+  constexpr __ffloat d24(-3.642577040697121e-15);
 
-  constexpr ffloat dc[24] = {
+  constexpr __ffloat dc[24] = {
     d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17, d18, d19, d20, d21, d22, d23, d24};
-  ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, dc);
+  __ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, dc);
 #  endif // _CCCL_FPMP_USE_FAST_ERF == 0
 
   /* arg = |x| * P(|x|) + |x| (replaces polyHi/polyLo splitting) */
-  ffloat __arg = renormalize(__poly * __abs_a + __abs_a);
+  __ffloat __arg = renormalize(__poly * __abs_a + __abs_a);
 
   /* Compute -expm1(-arg): argument reduction */
-  ffloat __neg_arg    = -__arg;
+  __ffloat __neg_arg  = -__arg;
   float __neg_arg_l2e = (__neg_arg * __L2E).hi();
   int __n             = __fpmp_fp2int_rn(__neg_arg_l2e);
-  ffloat __fn         = __fpmp_int2fp_rn<float>(__n);
-  ffloat __r          = __neg_arg - __fn * __ln2_hi;
+  __ffloat __fn       = __fpmp_int2fp_rn<float>(__n);
+  __ffloat __r        = __neg_arg - __fn * __ln2_hi;
 
   /* Evaluate u(r) = m2 + m3*r + ... + m11*r^9 via the mixed-precision
    * dispatcher (4 high-order float coeffs m8..m11, 6 low-order ff
@@ -298,7 +299,7 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * because the high terms contribute below the noise floor and
    * don't need error tracking.
    */
-  ffloat __u = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__r, __m_c);
+  __ffloat __u = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__r, __m_c);
 
   /* expm1(r) = u*r^2 + r (no separate alo needed, r carries full precision) */
   __u = __u * __r;
@@ -315,11 +316,11 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   {
     __en = 254;
   }
-  float __scale    = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__en) << 23);
-  ffloat __scalem1 = ffloat(1.f, 0.f) - ffloat(__scale, 0.f);
+  float __scale      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__en) << 23);
+  __ffloat __scalem1 = __ffloat(1.f, 0.f) - __ffloat(__scale, 0.f);
 
   /* result = -expm1(-arg) = -u*scale + scalem1 */
-  ffloat __result = renormalize(-__u * ffloat(__scale, 0.f) + __scalem1);
+  __ffloat __result = renormalize(-__u * __ffloat(__scale, 0.f) + __scalem1);
 
   /* Apply sign */
   if (__is_neg)
@@ -346,7 +347,7 @@ __internal_fpmp2_erf(const double __x_hi, const double __x_lo, double* __res_hi,
 #  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1) && _CCCL_FPMP_FP128_QUAD_ERF
   _CCCL_FPMP_CALL_FP64MP2_MATH(erf, _CCCL_FPMP_ERFQ, __x_hi, __x_lo, __res_hi, __res_lo);
 #  else
-  __fpmp2_from_double(::erf(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  __fpmp2_from_double(::cuda::std::erf(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 #  endif
 }
 
@@ -376,7 +377,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erf)
  *   5. For negative x, apply erfc(-x) = 2 - erfc(x).
  *
  * Coefficient layout: lower-order Chebyshev/exp terms use single float
- * (negligible contribution), higher-order terms use fp32mp2 (ffloat).
+ * (negligible contribution), higher-order terms use fp32mp2 (__ffloat).
  * Saturates to 0 or 2 for |x| > 27.5.
  * All arithmetic is in fp32mp2 (no double-precision operations).
  * --------------------------------------------------------------------
@@ -388,7 +389,7 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
    * erfc(x) = erfcx(|x|) * exp(-x^2); erfcx = (1+2*x)*exp(x^2)*erfc(x)
    * from Chebyshev approx.
    */
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
   /* erfcx polynomial (Chebyshev coefficients), ascending degree:
    *   cheb[0]  = constant term (= original c22)
@@ -397,61 +398,61 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
    * float literals -- their .lo() parts are zero by construction --
    * so `poly_eval<poly_method::horner_mixed, 7>` evaluates them
    * in plain float and transitions to ff arithmetic at cheb[15]. */
-  constexpr ffloat __cheb[23] = {
-    ffloat(1.2329951186255526E+000), // [ 0] (= c22, constant)
-    ffloat(-1.3962111684056291E-001), // [ 1] (= c21)
-    ffloat(1.5379652102605428E-002), // [ 2] (= c20)
-    ffloat(6.8097054254735140E-002), // [ 3] (= c19)
-    ffloat(-1.0103906603555676E-001), // [ 4] (= c18)
-    ffloat(9.3732834997115544E-002), // [ 5] (= c17)
-    ffloat(-6.6330365827532434E-002), // [ 6] (= c16)
-    ffloat(3.7167515553018733E-002), // [ 7] (= c15)
-    ffloat(-1.6197733895953217E-002), // [ 8] (= c14)
-    ffloat(5.0319698792599572E-003), // [ 9] (= c13)
-    ffloat(-7.5777429182785833E-004), // [10] (= c12)
-    ffloat(-1.9925637684786154E-004), // [11] (= c11)
-    ffloat(1.5062557169571788E-004), // [12] (= c10)
-    ffloat(-2.4399558857200190E-005), // [13] (= c9)
-    ffloat(-1.1231787437600085E-005), // [14] (= c8)
-    ffloat(5.7087871844325649E-006), // [15] (= c7, last ff term)
+  constexpr __ffloat __cheb[23] = {
+    __ffloat(1.2329951186255526E+000), // [ 0] (= c22, constant)
+    __ffloat(-1.3962111684056291E-001), // [ 1] (= c21)
+    __ffloat(1.5379652102605428E-002), // [ 2] (= c20)
+    __ffloat(6.8097054254735140E-002), // [ 3] (= c19)
+    __ffloat(-1.0103906603555676E-001), // [ 4] (= c18)
+    __ffloat(9.3732834997115544E-002), // [ 5] (= c17)
+    __ffloat(-6.6330365827532434E-002), // [ 6] (= c16)
+    __ffloat(3.7167515553018733E-002), // [ 7] (= c15)
+    __ffloat(-1.6197733895953217E-002), // [ 8] (= c14)
+    __ffloat(5.0319698792599572E-003), // [ 9] (= c13)
+    __ffloat(-7.5777429182785833E-004), // [10] (= c12)
+    __ffloat(-1.9925637684786154E-004), // [11] (= c11)
+    __ffloat(1.5062557169571788E-004), // [12] (= c10)
+    __ffloat(-2.4399558857200190E-005), // [13] (= c9)
+    __ffloat(-1.1231787437600085E-005), // [14] (= c8)
+    __ffloat(5.7087871844325649E-006), // [15] (= c7, last ff term)
     /* high-order M = 7 entries: .lo() == 0 by construction */
-    ffloat(3.095641e-7f), // [16] (= c6)
-    ffloat(-8.214741e-7f), // [17] (= c5)
-    ffloat(5.88067e-8f), // [18] (= c4)
-    ffloat(1.0404431e-7f), // [19] (= c3)
-    ffloat(-8.935022e-9f), // [20] (= c2)
-    ffloat(-9.723912e-9f), // [21] (= c1)
-    ffloat(-3.5602695e-10f) // [22] (= c0, leading)
+    __ffloat(3.095641e-7f), // [16] (= c6)
+    __ffloat(-8.214741e-7f), // [17] (= c5)
+    __ffloat(5.88067e-8f), // [18] (= c4)
+    __ffloat(1.0404431e-7f), // [19] (= c3)
+    __ffloat(-8.935022e-9f), // [20] (= c2)
+    __ffloat(-9.723912e-9f), // [21] (= c1)
+    __ffloat(-3.5602695e-10f) // [22] (= c0, leading)
   };
 
   /* exp polynomial coefficients, ascending degree:
    *   exp_c[0]  = constant term (= original ep11)
    *   exp_c[11] = leading coeff (= original ep0)
    * M = 5 highest-degree entries (exp_c[7..11]) run in float. */
-  constexpr ffloat __exp_c[12] = {
-    ffloat(1.0E+000), // [ 0] (= ep11, constant)
-    ffloat(1.0E+000), // [ 1] (= ep10)
-    ffloat(5.0000000000000122E-001), // [ 2] (= ep9)
-    ffloat(1.6666666666666477E-001), // [ 3] (= ep8)
-    ffloat(4.1666666666519754E-002), // [ 4] (= ep7)
-    ffloat(8.3333333334550432E-003), // [ 5] (= ep6)
-    ffloat(1.3888888945916380E-003), // [ 6] (= ep5, last ff term)
+  constexpr __ffloat __exp_c[12] = {
+    __ffloat(1.0E+000), // [ 0] (= ep11, constant)
+    __ffloat(1.0E+000), // [ 1] (= ep10)
+    __ffloat(5.0000000000000122E-001), // [ 2] (= ep9)
+    __ffloat(1.6666666666666477E-001), // [ 3] (= ep8)
+    __ffloat(4.1666666666519754E-002), // [ 4] (= ep7)
+    __ffloat(8.3333333334550432E-003), // [ 5] (= ep6)
+    __ffloat(1.3888888945916380E-003), // [ 6] (= ep5, last ff term)
     /* high-order M = 5 entries: .lo() == 0 by construction */
-    ffloat(1.984127e-4f), // [ 7] (= ep4)
-    ffloat(2.480149e-5f), // [ 8] (= ep3)
-    ffloat(2.7557515e-6f), // [ 9] (= ep2)
-    ffloat(2.76309e-7f), // [10] (= ep1)
-    ffloat(2.5022323e-8f) // [11] (= ep0, leading)
+    __ffloat(1.984127e-4f), // [ 7] (= ep4)
+    __ffloat(2.480149e-5f), // [ 8] (= ep3)
+    __ffloat(2.7557515e-6f), // [ 9] (= ep2)
+    __ffloat(2.76309e-7f), // [10] (= ep1)
+    __ffloat(2.5022323e-8f) // [11] (= ep0, leading)
   };
 
-  constexpr ffloat __L2E(1.4426950408889634e+0);
-  constexpr ffloat __ln2_hi(6.9314718055994529e-1);
-  constexpr ffloat __LN2_LO(2.3190468138462996e-17);
+  constexpr __ffloat __L2E(1.4426950408889634e+0);
+  constexpr __ffloat __ln2_hi(6.9314718055994529e-1);
+  constexpr __ffloat __LN2_LO(2.3190468138462996e-17);
 
-  ffloat __x     = renormalize(ffloat(__x_hi, __x_lo));
+  __ffloat __x   = renormalize(__ffloat(__x_hi, __x_lo));
   bool __is_neg  = __x.hi() < 0.f;
   uint32_t __xhi = ::cuda::std::bit_cast<uint32_t>(__x.hi()) & 0x7fffffffU;
-  ffloat __a     = (__is_neg) ? -__x : __x;
+  __ffloat __a   = (__is_neg) ? -__x : __x;
 
   // handle x > 27.5 && <= Inf
   if ((__xhi > 0x41dc0000U) && (__xhi <= 0x7f800000U))
@@ -462,37 +463,37 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
 
   /* erfcx kernel: (1+2*a)*exp(a^2)*erfc(a) on a = |x|, transform (a-4)/(a+4) */
-  ffloat __t1 = __a - ffloat(4.0);
-  ffloat __t2 = __a + ffloat(4.0);
-  __t2        = ffloat(1.0) / __t2;
-  ffloat __t3 = (__t1 * __t2);
-  ffloat __t4 = __t3 + ffloat(1.0);
-  __t1        = (ffloat(-4.0) * __t4 + __a);
-  __t1        = __t1 - __t3 * __a;
-  __t2        = (__t2 * __t1 + __t3);
+  __ffloat __t1 = __a - __ffloat(4.0);
+  __ffloat __t2 = __a + __ffloat(4.0);
+  __t2          = __ffloat(1.0) / __t2;
+  __ffloat __t3 = (__t1 * __t2);
+  __ffloat __t4 = __t3 + __ffloat(1.0);
+  __t1          = (__ffloat(-4.0) * __t4 + __a);
+  __t1          = __t1 - __t3 * __a;
+  __t2          = (__t2 * __t1 + __t3);
 
   // Chebyshev polynomial: 7 high-order terms in float, remaining 16 in ff
   __t1 = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__t2, __cheb);
 
   /* (1+2*a)*exp(a^2)*erfc(a) / (1+2*a) -> exp(a^2)*erfc(a) = erfcx */
-  __t2 = (ffloat(2.0) * __a + ffloat(1.0));
-  __t2 = ffloat(1.0) / __t2;
+  __t2 = (__ffloat(2.0) * __a + __ffloat(1.0));
+  __t2 = __ffloat(1.0) / __t2;
   __t3 = __t1 * __t2;
-  __t4 = __a * (ffloat(-2.0) * __t3) + __t1;
+  __t4 = __a * (__ffloat(-2.0) * __t3) + __t1;
   __t4 = (__t4 - __t3);
   __t1 = (__t4 * __t2 + __t3);
 
   /* erfc(x) = erfcx * exp(-x^2) */
-  ffloat __xx = renormalize(-__a * __a);
+  __ffloat __xx = renormalize(-__a * __a);
 
   /* i = round(xx * L2E); t = exp_mantissa(xx); t3 = accurate_scale(t, i) */
-  float __prod_hi = (__xx * __L2E).hi();
-  int __i         = __fpmp_fp2int_rn(__prod_hi);
-  ffloat __t_rint = __fpmp_int2fp_rn<float>(__i);
-  ffloat __z      = renormalize(__xx - __t_rint * __ln2_hi - __t_rint * __LN2_LO);
+  float __prod_hi   = (__xx * __L2E).hi();
+  int __i           = __fpmp_fp2int_rn(__prod_hi);
+  __ffloat __t_rint = __fpmp_int2fp_rn<float>(__i);
+  __ffloat __z      = renormalize(__xx - __t_rint * __ln2_hi - __t_rint * __LN2_LO);
 
   // exp polynomial: 5 high-order terms in float, remaining 7 in ff
-  ffloat __t = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
+  __ffloat __t = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
 
   /* accurate_scale(t, i): t * 2^i in fp32mp2 (split exponent for large |i|)*/
   int __k   = __i / 2;
@@ -507,18 +508,18 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
     __ek2 = 1;
   }
 
-  float __scale_lo    = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek) << 23);
-  float __scale_hi    = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
-  ffloat __exp_scaled = ffloat(__t.hi() * __scale_lo * __scale_hi, __t.lo() * __scale_lo * __scale_hi);
+  float __scale_lo      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek) << 23);
+  float __scale_hi      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
+  __ffloat __exp_scaled = __ffloat(__t.hi() * __scale_lo * __scale_hi, __t.lo() * __scale_lo * __scale_hi);
 
   /* Correction: exp(-x^2) = exp_scaled * (1 + (-x^2 - xx)) same as double fma(t3, -x*x - xx, t3) */
-  ffloat __remainder = renormalize(-__a * __a - __xx);
-  ffloat __exp_xx    = __exp_scaled * __remainder + __exp_scaled;
-  ffloat __erfc_val  = renormalize(__t1 * __exp_xx);
+  __ffloat __remainder = renormalize(-__a * __a - __xx);
+  __ffloat __exp_xx    = __exp_scaled * __remainder + __exp_scaled;
+  __ffloat __erfc_val  = renormalize(__t1 * __exp_xx);
 
   if (__is_neg)
   {
-    __erfc_val = renormalize(ffloat(2.0) - __erfc_val);
+    __erfc_val = renormalize(__ffloat(2.0) - __erfc_val);
   }
 
   *__res_hi = __erfc_val.hi();
@@ -536,7 +537,7 @@ __internal_fpmp2_erfc(const double __x_hi, const double __x_lo, double* __res_hi
 #  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1) && _CCCL_FPMP_FP128_QUAD_ERF
   _CCCL_FPMP_CALL_FP64MP2_MATH(erfc, _CCCL_FPMP_ERFCQ, __x_hi, __x_lo, __res_hi, __res_lo);
 #  else
-  __fpmp2_from_double(::erfc(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  __fpmp2_from_double(::cuda::std::erfc(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 #  endif
 }
 
@@ -556,10 +557,10 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erfc)
 _CCCL_FPMP_INTERNAL_CUSTOM_DECL void
 __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fpmp2<float, _CCCL_FPMP_METHOD>;
+  using __ffloat = fpmp2<float, _CCCL_FPMP_METHOD>;
 
-  ffloat __a(__a_hi, __a_lo);
-  ffloat __r;
+  __ffloat __a(__a_hi, __a_lo);
+  __ffloat __r;
 
   if (__a_hi >= 0x1.6ebc6ap3f) // a >= 11.46
   {
@@ -568,8 +569,8 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
 
   if (__a_hi > 34.3816f)
   {
-    constexpr ffloat __sqrt_pi_4(0x1.c5bf891b4ef6bp-1);
-    ffloat __result = __sqrt_pi_4 * __r;
+    constexpr __ffloat __sqrt_pi_4(0x1.c5bf891b4ef6bp-1);
+    __ffloat __result = __sqrt_pi_4 * __r;
     _CCCL_FPMP_RENORMALIZE(__result);
     *__res_hi = __result.hi();
     *__res_lo = __result.lo();
@@ -601,28 +602,28 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
      * just barely surfaces above the precision floor.  M = 4 is the
      * sweet spot.
      */
-    ffloat __x               = _CCCL_FPMP_SUB(ffloat(0x1.8p1), __a);
-    constexpr ffloat __c[17] = {
-      ffloat(0x1.023951b248d32p-1),
-      ffloat(0x1.364f8131f82eap-4),
-      ffloat(0x1.e4ab5374f7553p-7),
-      ffloat(0x1.65408fedfe46fp-9),
-      ffloat(0x1.d70cd2ae22daap-12),
-      ffloat(0x1.133abad3c99dp-14),
-      ffloat(0x1.1e134e84b9a2ap-17),
-      ffloat(0x1.0a6cf9d0cf714p-20),
-      ffloat(0x1.c039bccbce7dep-24),
-      ffloat(0x1.572c0936d0dcp-27),
-      ffloat(0x1.e19e5b3b8b31bp-31),
-      ffloat(0x1.37ce8ea919fd3p-34),
-      ffloat(0x1.76402f1b7e023p-38),
-      ffloat(0x1.99cd5cbd06043p-42),
-      ffloat(0x1.03356d73ab25fp-45),
-      ffloat(0x1.887a5d0c86047p-52),
-      ffloat(0x1.07f3442d6af1ep-52)};
-    ffloat __v = __fpmp_poly_eval<__fpmp_poly_method::horner_comp, 4>(__x, __c);
-    *__res_hi  = __v.hi();
-    *__res_lo  = __v.lo();
+    __ffloat __x               = _CCCL_FPMP_SUB(__ffloat(0x1.8p1), __a);
+    constexpr __ffloat __c[17] = {
+      __ffloat(0x1.023951b248d32p-1),
+      __ffloat(0x1.364f8131f82eap-4),
+      __ffloat(0x1.e4ab5374f7553p-7),
+      __ffloat(0x1.65408fedfe46fp-9),
+      __ffloat(0x1.d70cd2ae22daap-12),
+      __ffloat(0x1.133abad3c99dp-14),
+      __ffloat(0x1.1e134e84b9a2ap-17),
+      __ffloat(0x1.0a6cf9d0cf714p-20),
+      __ffloat(0x1.c039bccbce7dep-24),
+      __ffloat(0x1.572c0936d0dcp-27),
+      __ffloat(0x1.e19e5b3b8b31bp-31),
+      __ffloat(0x1.37ce8ea919fd3p-34),
+      __ffloat(0x1.76402f1b7e023p-38),
+      __ffloat(0x1.99cd5cbd06043p-42),
+      __ffloat(0x1.03356d73ab25fp-45),
+      __ffloat(0x1.887a5d0c86047p-52),
+      __ffloat(0x1.07f3442d6af1ep-52)};
+    __ffloat __v = __fpmp_poly_eval<__fpmp_poly_method::horner_comp, 4>(__x, __c);
+    *__res_hi    = __v.hi();
+    *__res_lo    = __v.lo();
     return;
   } // if (a_hi < 0x1p2f)
 
@@ -632,31 +633,31 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
      * Standard ff-Horner with periodic renormalization -- the
      * compensated variant loses accuracy here because the
      * coefficients span ~22 orders of magnitude. */
-    ffloat __x = _CCCL_FPMP_SUB(ffloat(0x1.baf1a8p1), __a);
-    ffloat __v = ffloat(0x1.95402da668f4fp-73);
-    __v        = __v * __x + ffloat(0x1.43744ab1a0e5ap-66);
-    __v        = __v * __x + ffloat(0x1.f70f3953813b1p-61);
-    __v        = __v * __x + ffloat(0x1.00b2c5aae06a1p-55);
-    __v        = __v * __x + ffloat(0x1.87ddc6a10f513p-51);
-    __v        = __v * __x + ffloat(0x1.e450e0340da6fp-47);
-    __v        = __v * __x + ffloat(0x1.ffc73283f2e3dp-43);
-    __v        = __v * __x + ffloat(0x1.dff8a98149ce4p-39);
-    __v        = __v * __x + ffloat(0x1.98aa56613b23p-35);
+    __ffloat __x = _CCCL_FPMP_SUB(__ffloat(0x1.baf1a8p1), __a);
+    __ffloat __v = __ffloat(0x1.95402da668f4fp-73);
+    __v          = __v * __x + __ffloat(0x1.43744ab1a0e5ap-66);
+    __v          = __v * __x + __ffloat(0x1.f70f3953813b1p-61);
+    __v          = __v * __x + __ffloat(0x1.00b2c5aae06a1p-55);
+    __v          = __v * __x + __ffloat(0x1.87ddc6a10f513p-51);
+    __v          = __v * __x + __ffloat(0x1.e450e0340da6fp-47);
+    __v          = __v * __x + __ffloat(0x1.ffc73283f2e3dp-43);
+    __v          = __v * __x + __ffloat(0x1.dff8a98149ce4p-39);
+    __v          = __v * __x + __ffloat(0x1.98aa56613b23p-35);
     _CCCL_FPMP_RENORMALIZE(__v);
-    __v = __v * __x + ffloat(0x1.3f3d23359c3f4p-31);
-    __v = __v * __x + ffloat(0x1.ca89e4f410357p-28);
-    __v = __v * __x + ffloat(0x1.2ddf249b49215p-24);
+    __v = __v * __x + __ffloat(0x1.3f3d23359c3f4p-31);
+    __v = __v * __x + __ffloat(0x1.ca89e4f410357p-28);
+    __v = __v * __x + __ffloat(0x1.2ddf249b49215p-24);
     _CCCL_FPMP_RENORMALIZE(__v);
-    __v = __v * __x + ffloat(0x1.6a60fc5c32d39p-21);
-    __v = __v * __x + ffloat(0x1.8a0af8927f728p-18);
-    __v = __v * __x + ffloat(0x1.81949bbc35f76p-15);
+    __v = __v * __x + __ffloat(0x1.6a60fc5c32d39p-21);
+    __v = __v * __x + __ffloat(0x1.8a0af8927f728p-18);
+    __v = __v * __x + __ffloat(0x1.81949bbc35f76p-15);
     _CCCL_FPMP_RENORMALIZE(__v);
-    __v = __v * __x + ffloat(0x1.51d1e0119bf15p-12);
-    __v = __v * __x + ffloat(0x1.090a189fdb05bp-9);
+    __v = __v * __x + __ffloat(0x1.51d1e0119bf15p-12);
+    __v = __v * __x + __ffloat(0x1.090a189fdb05bp-9);
     _CCCL_FPMP_RENORMALIZE(__v);
-    __v = __v * __x + ffloat(0x1.7a16985c09ba2p-7);
-    __v = __v * __x + ffloat(0x1.04f3fb31bb071p-4);
-    __v = __v * __x + ffloat(0x1.e3ae966b0f402p-2);
+    __v = __v * __x + __ffloat(0x1.7a16985c09ba2p-7);
+    __v = __v * __x + __ffloat(0x1.04f3fb31bb071p-4);
+    __v = __v * __x + __ffloat(0x1.e3ae966b0f402p-2);
     _CCCL_FPMP_RENORMALIZE(__v);
     *__res_hi = __v.hi();
     *__res_lo = __v.lo();
@@ -666,30 +667,30 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
   /* 11.46 <= a <= 34.38: 19-term minimax in x = rsqrt(a)^2 - offset
    * (degree 18), evaluated via compensated Horner. Coefficients are
    * in ascending order (c[0] = constant, c[18] = leading). */
-  ffloat __x               = _CCCL_FPMP_SUB(__r * __r, ffloat(0x1.dc88f0479694p-5));
-  constexpr ffloat __c[19] = {
-    ffloat(0x1.fffffed709646p-1),
-    ffloat(-0x1.71471b65714a8p-20),
-    ffloat(-0x1.85179c0504089p-13),
-    ffloat(-0x1.d99f05bac9192p-7),
-    ffloat(-0x1.681ebc0bfc87p-1),
-    ffloat(-0x1.531388eeb3e37p4),
-    ffloat(-0x1.56423d3c9aee8p8),
-    ffloat(-0x1.55574adbabed4p9),
-    ffloat(0x1.fc17297038ab6p15),
-    ffloat(0x1.5d36617bab8fep18),
-    ffloat(-0x1.c1e691926af02p23),
-    ffloat(-0x1.d06f6451b9b99p24),
-    ffloat(0x1.baa02bef66d96p31),
-    ffloat(-0x1.35636d415d49bp34),
-    ffloat(-0x1.61bc3c687e6ffp39),
-    ffloat(0x1.39af9c72a5c92p43),
-    ffloat(0x1.3f351ae8d044ap46),
-    ffloat(-0x1.ba4d5cfd521a5p50),
-    ffloat(-0x1.6d64bf85e3416p50)};
-  ffloat __v      = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__x, __c);
-  __r             = __r * ffloat(0x1.c5bf8ap-1);
-  ffloat __result = __v * __r;
+  __ffloat __x               = _CCCL_FPMP_SUB(__r * __r, __ffloat(0x1.dc88f0479694p-5));
+  constexpr __ffloat __c[19] = {
+    __ffloat(0x1.fffffed709646p-1),
+    __ffloat(-0x1.71471b65714a8p-20),
+    __ffloat(-0x1.85179c0504089p-13),
+    __ffloat(-0x1.d99f05bac9192p-7),
+    __ffloat(-0x1.681ebc0bfc87p-1),
+    __ffloat(-0x1.531388eeb3e37p4),
+    __ffloat(-0x1.56423d3c9aee8p8),
+    __ffloat(-0x1.55574adbabed4p9),
+    __ffloat(0x1.fc17297038ab6p15),
+    __ffloat(0x1.5d36617bab8fep18),
+    __ffloat(-0x1.c1e691926af02p23),
+    __ffloat(-0x1.d06f6451b9b99p24),
+    __ffloat(0x1.baa02bef66d96p31),
+    __ffloat(-0x1.35636d415d49bp34),
+    __ffloat(-0x1.61bc3c687e6ffp39),
+    __ffloat(0x1.39af9c72a5c92p43),
+    __ffloat(0x1.3f351ae8d044ap46),
+    __ffloat(-0x1.ba4d5cfd521a5p50),
+    __ffloat(-0x1.6d64bf85e3416p50)};
+  __ffloat __v      = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__x, __c);
+  __r               = __r * __ffloat(0x1.c5bf8ap-1);
+  __ffloat __result = __v * __r;
   _CCCL_FPMP_RENORMALIZE(__result);
 
   *__res_hi = __result.hi();
@@ -712,7 +713,8 @@ __internal_fpmp2_boys_f0(const double __x_hi, const double __x_lo, double* __res
   }
   else
   {
-    __r = 0.5 * ::sqrt(3.14159265358979323846 / __x) * ::erf(::sqrt(__x));
+    __r = 0.5 * ::cuda::std::sqrt(::cuda::std::__numbers<double>::__pi() / __x)
+        * ::cuda::std::erf(::cuda::std::sqrt(__x));
   }
   __fpmp2_from_double(__r, __res_hi, __res_lo);
 }
@@ -746,9 +748,9 @@ _CCCL_FPMP_MATH_DISPATCH_1A(boys_f0)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using ffloat = fp32mp2_low;
+  using __ffloat = fp32mp2_low;
 
-  constexpr ffloat __sqrt2(0x1.6a09e667f3bcdp+0);
+  constexpr __ffloat __sqrt2(0x1.6a09e667f3bcdp+0);
 
   /* Central polynomial: rc(tc) = c22 + c21*tc + ... + c0*tc^22,
    * tc = w - 3.125  (>99.9% of inputs land here).
@@ -758,31 +760,31 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
    * matches the previous hand-rolled float*float + ff step
    * bit-for-bit, so this refactor is numerically identical.
    */
-  constexpr ffloat __rc_c[23] = {
-    ffloat(1.6536545626831027e+00), // [ 0] (= c22, constant)
-    ffloat(2.4015818242558962e-01), // [ 1] (= c21)
-    ffloat(-6.0336708714301491e-03), // [ 2] (= c20)
-    ffloat(-7.4070253416626698e-04), // [ 3] (= c19)
-    ffloat(1.8673420803405714e-04), // [ 4] (= c18)
-    ffloat(-1.3882523362786469e-05), // [ 5] (= c17)
-    ffloat(-1.3654692000834679e-06), // [ 6] (= c16)
-    ffloat(4.2347877827932404e-07), // [ 7] (= c15)
-    ffloat(-2.9070369957882005e-08), // [ 8] (= c14)
-    ffloat(-4.1126339803469837e-09), // [ 9] (= c13)
-    ffloat(1.0512122733215323e-09), // [10] (= c12)
-    ffloat(-5.4154120542946279e-11), // [11] (= c11)
-    ffloat(-1.2975133253453532e-11), // [12] (= c10)
-    ffloat(2.6335093153082323e-12), // [13] (= c9, last ff term)
+  constexpr __ffloat __rc_c[23] = {
+    __ffloat(1.6536545626831027e+00), // [ 0] (= c22, constant)
+    __ffloat(2.4015818242558962e-01), // [ 1] (= c21)
+    __ffloat(-6.0336708714301491e-03), // [ 2] (= c20)
+    __ffloat(-7.4070253416626698e-04), // [ 3] (= c19)
+    __ffloat(1.8673420803405714e-04), // [ 4] (= c18)
+    __ffloat(-1.3882523362786469e-05), // [ 5] (= c17)
+    __ffloat(-1.3654692000834679e-06), // [ 6] (= c16)
+    __ffloat(4.2347877827932404e-07), // [ 7] (= c15)
+    __ffloat(-2.9070369957882005e-08), // [ 8] (= c14)
+    __ffloat(-4.1126339803469837e-09), // [ 9] (= c13)
+    __ffloat(1.0512122733215323e-09), // [10] (= c12)
+    __ffloat(-5.4154120542946279e-11), // [11] (= c11)
+    __ffloat(-1.2975133253453532e-11), // [12] (= c10)
+    __ffloat(2.6335093153082323e-12), // [13] (= c9, last ff term)
     /* high-order M = 9 entries: .lo() == 0 by construction */
-    ffloat(-8.1519342e-14f), // [14] (= c8)
-    ffloat(-4.0545663e-14f), // [15] (= c7)
-    ffloat(6.6376381e-15f), // [16] (= c6)
-    ffloat(2.0972768e-17f), // [17] (= c5)
-    ffloat(-1.3331717e-16f), // [18] (= c4)
-    ffloat(1.1157878e-17f), // [19] (= c3)
-    ffloat(1.2858481e-18f), // [20] (= c2)
-    ffloat(-1.6850591e-19f), // [21] (= c1)
-    ffloat(-3.6444121e-21f) // [22] (= c0, leading)
+    __ffloat(-8.1519342e-14f), // [14] (= c8)
+    __ffloat(-4.0545663e-14f), // [15] (= c7)
+    __ffloat(6.6376381e-15f), // [16] (= c6)
+    __ffloat(2.0972768e-17f), // [17] (= c5)
+    __ffloat(-1.3331717e-16f), // [18] (= c4)
+    __ffloat(1.1157878e-17f), // [19] (= c3)
+    __ffloat(1.2858481e-18f), // [20] (= c2)
+    __ffloat(-1.6850591e-19f), // [21] (= c1)
+    __ffloat(-3.6444121e-21f) // [22] (= c0, leading)
   };
 
   /* Tail 1 polynomial: rt(tt) = t18 + t17*tt + ... + t0*tt^18,
@@ -791,27 +793,27 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
    * original t0..t8) are plain float.  Transition is float*float
    * + ff at rt_c[9] = t9 -- bit-identical to the previous chain.
    */
-  constexpr ffloat __rt_c[19] = {
-    ffloat(3.0838856104922208e+00), // [ 0] (= t18, constant)
-    ffloat(1.0052589676941592e+00), // [ 1] (= t17)
-    ffloat(5.3709145535900636e-03), // [ 2] (= t16)
-    ffloat(-3.7512085075692412e-03), // [ 3] (= t15)
-    ffloat(2.4914420961078508e-03), // [ 4] (= t14)
-    ffloat(-1.6882755560235047e-03), // [ 5] (= t13)
-    ffloat(9.5328937973738050e-04), // [ 6] (= t12)
-    ffloat(-3.5503752036284748e-04), // [ 7] (= t11)
-    ffloat(2.4031110387097894e-05), // [ 8] (= t10)
-    ffloat(6.8284851459573175e-05), // [ 9] (= t9, last ff term)
+  constexpr __ffloat __rt_c[19] = {
+    __ffloat(3.0838856104922208e+00), // [ 0] (= t18, constant)
+    __ffloat(1.0052589676941592e+00), // [ 1] (= t17)
+    __ffloat(5.3709145535900636e-03), // [ 2] (= t16)
+    __ffloat(-3.7512085075692412e-03), // [ 3] (= t15)
+    __ffloat(2.4914420961078508e-03), // [ 4] (= t14)
+    __ffloat(-1.6882755560235047e-03), // [ 5] (= t13)
+    __ffloat(9.5328937973738050e-04), // [ 6] (= t12)
+    __ffloat(-3.5503752036284748e-04), // [ 7] (= t11)
+    __ffloat(2.4031110387097894e-05), // [ 8] (= t10)
+    __ffloat(6.8284851459573175e-05), // [ 9] (= t9, last ff term)
     /* high-order M = 9 entries: .lo() == 0 by construction */
-    ffloat(-4.7318229e-05f), // [10] (= t8)
-    ffloat(1.2475304e-05f), // [11] (= t7)
-    ffloat(2.9234449e-06f), // [12] (= t6)
-    ffloat(-4.0138675e-06f), // [13] (= t5)
-    ffloat(1.5027404e-06f), // [14] (= t4)
-    ffloat(1.8239629e-08f), // [15] (= t3)
-    ffloat(-2.7517406e-07f), // [16] (= t2)
-    ffloat(9.0756562e-08f), // [17] (= t1)
-    ffloat(2.2137377e-09f) // [18] (= t0, leading)
+    __ffloat(-4.7318229e-05f), // [10] (= t8)
+    __ffloat(1.2475304e-05f), // [11] (= t7)
+    __ffloat(2.9234449e-06f), // [12] (= t6)
+    __ffloat(-4.0138675e-06f), // [13] (= t5)
+    __ffloat(1.5027404e-06f), // [14] (= t4)
+    __ffloat(1.8239629e-08f), // [15] (= t3)
+    __ffloat(-2.7517406e-07f), // [16] (= t2)
+    __ffloat(9.0756562e-08f), // [17] (= t1)
+    __ffloat(2.2137377e-09f) // [18] (= t0, leading)
   };
 
   /* Tail 2 polynomial: rt2(tt2) = u24 + u23*tt2 + ... + u0*tt2^24,
@@ -826,36 +828,36 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
    * thus included tt2.lo() in the transition product); the
    * change is well inside the polynomial truncation noise.
    */
-  constexpr ffloat __rt2_c[25] = {
-    ffloat(7.12113663660053842e+00), // [ 0] (= u24, constant)
-    ffloat(1.00834082079167930e+00), // [ 1] (= u23)
-    ffloat(-5.05906408540271685e-04), // [ 2] (= u22)
-    ffloat(1.14184074807230187e-05), // [ 3] (= u21)
-    ffloat(4.29790660561751423e-06), // [ 4] (= u20)
-    ffloat(-1.21177482126504764e-06), // [ 5] (= u19)
-    ffloat(2.33428873326838655e-07), // [ 6] (= u18)
-    ffloat(-3.92578613880982197e-08), // [ 7] (= u17)
-    ffloat(6.14877480871698432e-09), // [ 8] (= u16)
-    ffloat(-9.24007580865063697e-10), // [ 9] (= u15)
-    ffloat(1.34759296085592452e-10), // [10] (= u14)
-    ffloat(-1.76387252450593334e-11), // [11] (= u13, last ff term)
+  constexpr __ffloat __rt2_c[25] = {
+    __ffloat(7.12113663660053842e+00), // [ 0] (= u24, constant)
+    __ffloat(1.00834082079167930e+00), // [ 1] (= u23)
+    __ffloat(-5.05906408540271685e-04), // [ 2] (= u22)
+    __ffloat(1.14184074807230187e-05), // [ 3] (= u21)
+    __ffloat(4.29790660561751423e-06), // [ 4] (= u20)
+    __ffloat(-1.21177482126504764e-06), // [ 5] (= u19)
+    __ffloat(2.33428873326838655e-07), // [ 6] (= u18)
+    __ffloat(-3.92578613880982197e-08), // [ 7] (= u17)
+    __ffloat(6.14877480871698432e-09), // [ 8] (= u16)
+    __ffloat(-9.24007580865063697e-10), // [ 9] (= u15)
+    __ffloat(1.34759296085592452e-10), // [10] (= u14)
+    __ffloat(-1.76387252450593334e-11), // [11] (= u13, last ff term)
     /* high-order M = 13 entries: .lo() == 0 by construction */
-    ffloat(2.09393731e-12f), // [12] (= u12)
-    ffloat(-6.91218317e-13f), // [13] (= u11)
-    ffloat(1.95788733e-13f), // [14] (= u10)
-    ffloat(4.98296865e-14f), // [15] (= u9)
-    ffloat(-2.64007334e-14f), // [16] (= u8)
-    ffloat(-5.68006053e-15f), // [17] (= u7)
-    ffloat(3.21120849e-15f), // [18] (= u6)
-    ffloat(2.6060760e-16f), // [19] (= u5)
-    ffloat(-2.2467865e-16f), // [20] (= u4)
-    ffloat(1.9526573e-18f), // [21] (= u3)
-    ffloat(7.8681698e-18f), // [22] (= u2)
-    ffloat(-6.7040324e-19f), // [23] (= u1)
-    ffloat(-2.2357236e-20f) // [24] (= u0, leading)
+    __ffloat(2.09393731e-12f), // [12] (= u12)
+    __ffloat(-6.91218317e-13f), // [13] (= u11)
+    __ffloat(1.95788733e-13f), // [14] (= u10)
+    __ffloat(4.98296865e-14f), // [15] (= u9)
+    __ffloat(-2.64007334e-14f), // [16] (= u8)
+    __ffloat(-5.68006053e-15f), // [17] (= u7)
+    __ffloat(3.21120849e-15f), // [18] (= u6)
+    __ffloat(2.6060760e-16f), // [19] (= u5)
+    __ffloat(-2.2467865e-16f), // [20] (= u4)
+    __ffloat(1.9526573e-18f), // [21] (= u3)
+    __ffloat(7.8681698e-18f), // [22] (= u2)
+    __ffloat(-6.7040324e-19f), // [23] (= u1)
+    __ffloat(-2.2357236e-20f) // [24] (= u0, leading)
   };
 
-  ffloat __p = renormalize(ffloat(__x_hi, __x_lo));
+  __ffloat __p = renormalize(__ffloat(__x_hi, __x_lo));
 
   /* Standard mathematical convention: normcdfinv(0) = -inf, normcdfinv(1) = +inf */
   if (__p.hi() <= 0.0f)
@@ -872,31 +874,31 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   }
 
   /* a = 2p - 1, accurate subtraction for p ~= 0.5 */
-  ffloat __two_p = __p + __p;
-  ffloat __a     = sub<fpmp2_accuracy::high>(__two_p, 1.0f);
+  __ffloat __two_p = __p + __p;
+  __ffloat __a     = sub<fpmp2_accuracy::high>(__two_p, 1.0f);
 
   /* w = -log(1 - a^2) = -log(4p(1-p))
    * Compute 1-p with accurate subtraction to handle p near 0 or 1
    */
-  ffloat __omp = sub<fpmp2_accuracy::high>(1.0f, __p);
-  ffloat __arg = 4.0f * __p * __omp;
+  __ffloat __omp = sub<fpmp2_accuracy::high>(1.0f, __p);
+  __ffloat __arg = 4.0f * __p * __omp;
 
   if (__arg.hi() <= 0.0f)
   {
-    __arg = ffloat(0x1.0p-126f);
+    __arg = __ffloat(0x1.0p-126f);
   }
 
   float __log_hi;
   float __log_lo;
   __fpmp2_log(__arg.hi(), __arg.lo(), &__log_hi, &__log_lo);
-  ffloat __w = -ffloat(__log_hi, __log_lo);
+  __ffloat __w = -__ffloat(__log_hi, __log_lo);
 
   /* Central region (w < 6.125, |z| < ~3.3 sigma, >99.9% of inputs):
    * Horner in tc = w - 3.125 via the mixed-precision dispatcher
    * (9 high-order float coeffs c0..c8, 14 low-order ff coeffs c9..c22).
    */
-  ffloat __tc   = __w - ffloat(3.125f);
-  ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tc, __rc_c);
+  __ffloat __tc   = __w - __ffloat(3.125f);
+  __ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tc, __rc_c);
 
   /* Tail regions (w >= 6.125): branched since <0.1% of inputs.
    * sqrt(w) is also deferred into this branch.
@@ -906,14 +908,14 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
     float __sw_hi;
     float __sw_lo;
     __fpmp2_sqrt(__w.hi(), __w.lo(), &__sw_hi, &__sw_lo);
-    ffloat __sw(__sw_hi, __sw_lo);
+    __ffloat __sw(__sw_hi, __sw_lo);
 
     /* Tail 1 (6.125 <= w < 16, |z| ~ 3.3 to 5.5 sigma):
      * Horner in tt = sqrt(w) - 3.25 via the dispatcher
      * (9 high-order float coeffs t0..t8, 10 low-order ff coeffs t9..t18).
      */
-    ffloat __tt = __sw - ffloat(3.25f);
-    __poly      = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tt, __rt_c);
+    __ffloat __tt = __sw - __ffloat(3.25f);
+    __poly        = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tt, __rt_c);
 
     /* Tail 2 (w >= 16, |z| > 5.5 sigma):
      * Horner in tt2 = sqrt(w) - 7.25 via the dispatcher
@@ -927,13 +929,13 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
      */
     if (__w.hi() >= 16.0f)
     {
-      ffloat __tt2 = __sw - ffloat(7.25f);
-      __poly       = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__tt2, __rt2_c);
+      __ffloat __tt2 = __sw - __ffloat(7.25f);
+      __poly         = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__tt2, __rt2_c);
     }
   }
 
   /* Scale: result = poly * a * sqrt(2) */
-  ffloat __result = renormalize(__poly * __a * __sqrt2);
+  __ffloat __result = renormalize(__poly * __a * __sqrt2);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -1074,7 +1076,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A(lgamma)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_lgamma(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::lgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  __fpmp2_from_double(::cuda::std::lgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(lgamma)
@@ -1100,7 +1102,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A(tgamma)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_tgamma(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::tgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  __fpmp2_from_double(::cuda::std::tgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(tgamma)
@@ -1118,17 +1120,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tgamma)
  * Device only: the CUDA intrinsic carries it, the host build asserts and
  * returns 0.
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_j0(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_j0(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::j0(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "j0: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::j0(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "j0: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1138,14 +1138,15 @@ __internal_fpmp2_j0(const float __x_hi, const float __x_lo, float* __res_hi, flo
  * Bessel j0(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_j0(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_j0(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::j0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "j0: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "j0: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1164,17 +1165,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(j0)
  * Bessel j1(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_j1(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_j1(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::j1(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "j1: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::j1(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "j1: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1184,14 +1183,15 @@ __internal_fpmp2_j1(const float __x_hi, const float __x_lo, float* __res_hi, flo
  * Bessel j1(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_j1(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_j1(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::j1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "j1: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "j1: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1210,17 +1210,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(j1)
  * Bessel y0(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_y0(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_y0(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::y0(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "y0: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::y0(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "y0: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1230,14 +1228,15 @@ __internal_fpmp2_y0(const float __x_hi, const float __x_lo, float* __res_hi, flo
  * Bessel y0(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_y0(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_y0(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::y0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "y0: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "y0: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1256,17 +1255,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(y0)
  * Bessel y1(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_y1(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_y1(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::y1(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "y1: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::y1(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "y1: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1276,14 +1273,15 @@ __internal_fpmp2_y1(const float __x_hi, const float __x_lo, float* __res_hi, flo
  * Bessel y1(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_y1(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_y1(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::y1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "y1: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "y1: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1304,17 +1302,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(y1)
  * Device only: the CUDA intrinsic carries it, the host build asserts and
  * returns 0.
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_cyl_bessel_i0(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i0(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::cyl_bessel_i0(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "cyl_bessel_i0: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::cyl_bessel_i0(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "cyl_bessel_i0: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1324,14 +1320,15 @@ __internal_fpmp2_cyl_bessel_i0(const float __x_hi, const float __x_lo, float* __
  * Modified Bessel cyl_bessel_i0(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_cyl_bessel_i0(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i0(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::cyl_bessel_i0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "cyl_bessel_i0: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "cyl_bessel_i0: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1350,17 +1347,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cyl_bessel_i0)
  * Modified Bessel cyl_bessel_i1(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_cyl_bessel_i1(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i1(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::cyl_bessel_i1(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "cyl_bessel_i1: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::cyl_bessel_i1(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "cyl_bessel_i1: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1370,14 +1365,15 @@ __internal_fpmp2_cyl_bessel_i1(const float __x_hi, const float __x_lo, float* __
  * Modified Bessel cyl_bessel_i1(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_cyl_bessel_i1(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i1(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::cyl_bessel_i1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "cyl_bessel_i1: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "cyl_bessel_i1: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1398,18 +1394,19 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cyl_bessel_i1)
  * Device only: the CUDA intrinsic carries it, the host build asserts and
  * returns 0.
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_jn(const int __n, const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_jn(
+  [[maybe_unused]] const int __n,
+  [[maybe_unused]] const float __x_hi,
+  [[maybe_unused]] const float __x_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::jn(__n, static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __n;
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "jn: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::jn(__n, static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "jn: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1419,15 +1416,16 @@ __internal_fpmp2_jn(const int __n, const float __x_hi, const float __x_lo, float
  * Bessel jn(n, x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_jn(int __n, const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_jn(
+  [[maybe_unused]] int __n,
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::jn(__n, __fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __n;
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "jn: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "jn: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1446,18 +1444,19 @@ _CCCL_FPMP_MATH_DISPATCH_INT_FP(jn)
  * Bessel yn(n, x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_yn(const int __n, const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_yn(
+  [[maybe_unused]] const int __n,
+  [[maybe_unused]] const float __x_hi,
+  [[maybe_unused]] const float __x_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::yn(__n, static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __n;
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "yn: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::yn(__n, static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "yn: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1467,15 +1466,16 @@ __internal_fpmp2_yn(const int __n, const float __x_hi, const float __x_lo, float
  * Bessel yn(n, x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_yn(int __n, const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_yn(
+  [[maybe_unused]] int __n,
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::yn(__n, __fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __n;
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "yn: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "yn: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1497,11 +1497,12 @@ _CCCL_FPMP_MATH_DISPATCH_INT_FP(yn)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_normcdf(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __xd = static_cast<double>(mp2_t(__x_hi, __x_lo));
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::normcdf(__xd);), (__r = 0.5 * ::erfc(-__xd * 0.70710678118654752440);))
-  mp2_t __result(__r);
+  using __mp2_t = fpmp2<float>;
+  double __xd   = static_cast<double>(__mp2_t(__x_hi, __x_lo));
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (__r = ::normcdf(__xd);), (__r = 0.5 * ::cuda::std::erfc(-__xd * 0.70710678118654752440);))
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1526,7 +1527,7 @@ __internal_fpmp2_normcdf(const double __x_hi, const double __x_lo, double* __res
   double __xd = __fpmp2_to_double(__x_hi, __x_lo);
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__fpmp2_from_double(::normcdf(__xd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(0.5 * ::erfc(-__xd * 0.70710678118654752440), __res_hi, __res_lo);))
+                    (__fpmp2_from_double(0.5 * ::cuda::std::erfc(-__xd * 0.70710678118654752440), __res_hi, __res_lo);))
 #  endif
 }
 
@@ -1547,17 +1548,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(normcdf)
  * Device only: the CUDA intrinsic carries it, the host build asserts and
  * returns 0.
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfcinv(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfcinv(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfcinv(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "erfcinv: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfcinv(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "erfcinv: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1567,14 +1566,15 @@ __internal_fpmp2_erfcinv(const float __x_hi, const float __x_lo, float* __res_hi
  * Inverse complementary error function erfcinv(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfcinv(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfcinv(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::erfcinv(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "erfcinv: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "erfcinv: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1593,17 +1593,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erfcinv)
  * Inverse error function erfinv(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfinv(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfinv(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "erfinv: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfinv(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "erfinv: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1613,14 +1611,15 @@ __internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi,
  * Inverse error function erfinv(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfinv(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfinv(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::erfinv(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "erfinv: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "erfinv: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
@@ -1639,17 +1638,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erfinv)
  * Scaled complementary error function erfcx(x) (fp32mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfcx(
+  [[maybe_unused]] const float __x_hi, [[maybe_unused]] const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using mp2_t = fpmp2<float>;
-  double __r  = 0.0;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfcx(static_cast<double>(mp2_t(__x_hi, __x_lo)));), ({
-                      (void) __x_hi;
-                      (void) __x_lo;
-                      assert(0 && "erfcx: no host fallback, returning 0");
+  using __mp2_t = fpmp2<float>;
+  double __r    = 0.0;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__r = ::erfcx(static_cast<double>(__mp2_t(__x_hi, __x_lo)));), ({
+                      _CCCL_ASSERT(false, "erfcx: no host fallback, returning 0");
                     }))
-  mp2_t __result(__r);
+  __mp2_t __result(__r);
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
 }
@@ -1659,14 +1656,15 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
  * Scaled complementary error function erfcx(x) (fp64mp2) - double fallback
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_erfcx(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_erfcx(
+  [[maybe_unused]] const double __x_hi,
+  [[maybe_unused]] const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (__fpmp2_from_double(::erfcx(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      (void) __x_hi;
-      (void) __x_lo;
-      assert(0 && "erfcx: no host fallback, returning 0");
+      _CCCL_ASSERT(false, "erfcx: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
     }))
