@@ -3,21 +3,21 @@ libcudacxx_add_pretty_printer_test(
   SOURCES source.cu
   CASES
     # gersemi: off
-    --case inspect_basic 1 tuple.basic basic_values
-    --case inspect_empty 1 tuple.empty empty_values
-    --case inspect_single 1 tuple.single single_values
-    --case inspect_ebco 1 tuple.ebco ebco_values
-    --case inspect_ebco_first 1 tuple.ebco_first ebco_first_values
-    --case inspect_ebco_last 1 tuple.ebco_last ebco_last_values
-    --case inspect_ebco_adjacent 1 tuple.ebco_adjacent ebco_adjacent_values
-    --case inspect_pointer 1 tuple.pointer pointer_values
-    --case inspect_nested_empty 1 tuple.nested_empty nested_empty_values
-    --case inspect_nested 1 tuple.nested nested_values
-    --case inspect_reference 1 tuple.reference reference_values
-    --case inspect_const 1 tuple.const const_values
-    --case inspect_vector 1 tuple.vector.0 "tuple_vector[0]"
-    --case inspect_vector 1 tuple.vector.1 "tuple_vector[1]"
-    --case inspect_before_update 1 tuple.update.before mutable_values
-    --case inspect_after_update 1 tuple.update.after mutable_values
+    --case inspect_basic tuple.basic values
+    --case inspect_empty tuple.empty values
+    --case inspect_single tuple.single values
+    --case inspect_ebco tuple.ebco values
+    --case inspect_ebco_first tuple.ebco_first values
+    --case inspect_ebco_last tuple.ebco_last values
+    --case inspect_ebco_adjacent tuple.ebco_adjacent values
+    --case inspect_pointer tuple.pointer values
+    --case inspect_nested_empty tuple.nested_empty values
+    --case inspect_nested tuple.nested values
+    --case inspect_reference tuple.reference values
+    --case inspect_const tuple.const values
+    --case inspect_vector tuple.vector.0 "values[0]"
+    --case inspect_vector tuple.vector.1 "values[1]"
+    --case inspect_before_update tuple.update.before values
+    --case inspect_after_update tuple.update.after values
     # gersemi: on
 )
