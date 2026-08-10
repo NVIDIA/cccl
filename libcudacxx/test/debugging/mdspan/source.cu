@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include <cuda_runtime_api.h>
+
 // Give the inspected parameter a stack location that survives optimization, so the
 // debugger can read it in this frame. Without this the parameter stays in a
 // caller-clobbered register and reads as unavailable at -O3.
@@ -96,6 +98,14 @@ inspect_rank0_layout_stride(const cuda::std::mdspan<int, cuda::std::extents<int>
 
 // No elements expected: device memory isn't host-dereferenceable.
 [[gnu::noinline]] void inspect_device_mdspan(const cuda::device_mdspan<int, cuda::std::extents<int, 2>>& values)
+{
+  KEEP_FOR_DEBUGGER(values);
+}
+
+// Same as above, but backed by a real cudaMalloc'd allocation (not host memory, and not the
+// invalidity-detection bypass)
+[[gnu::noinline]] void
+inspect_device_mdspan_real_memory(const cuda::device_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
@@ -236,6 +246,24 @@ int main()
   int device_mdspan_data[2] = {51, 52};
   const cuda::device_mdspan<int, cuda::std::extents<int, 2>> device_mdspan_span(device_mdspan_data);
   inspect_device_mdspan(device_mdspan_span);
+
+  int* device_mdspan_real_data = nullptr;
+  if (cudaMalloc(&device_mdspan_real_data, 2 * sizeof(int)) != cudaSuccess)
+  {
+    return 1;
+  }
+  const int device_mdspan_real_host_data[2] = {91, 92};
+  if (cudaMemcpy(device_mdspan_real_data,
+                 device_mdspan_real_host_data,
+                 sizeof(device_mdspan_real_host_data),
+                 cudaMemcpyHostToDevice)
+      != cudaSuccess)
+  {
+    return 1;
+  }
+  const cuda::device_mdspan<int, cuda::std::extents<int, 2>> device_mdspan_real_span(device_mdspan_real_data);
+  inspect_device_mdspan_real_memory(device_mdspan_real_span);
+  cudaFree(device_mdspan_real_data);
 
   int managed_mdspan_data[2] = {61, 62};
   const cuda::managed_mdspan<int, cuda::std::extents<int, 2>> managed_mdspan_span(managed_mdspan_data);

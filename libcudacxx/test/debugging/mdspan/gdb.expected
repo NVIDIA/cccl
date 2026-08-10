@@ -124,6 +124,9 @@ cuda::host_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<ad
 =============== mdspan.device_mdspan begin ===============
 cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address>
 =============== mdspan.device_mdspan end ===============
+=============== mdspan.device_mdspan_real_memory begin ===============
+cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address>
+=============== mdspan.device_mdspan_real_memory end ===============
 =============== mdspan.managed_mdspan begin ===============
 cuda::managed_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
   [0] = 61,
