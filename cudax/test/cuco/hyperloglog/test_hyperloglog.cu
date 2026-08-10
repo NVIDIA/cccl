@@ -12,6 +12,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/cmath>
