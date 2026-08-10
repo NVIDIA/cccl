@@ -890,10 +890,10 @@ public:
   }
 
   //! @rst
-  //! Transposes data items from **striped** arrangement to **blocked** arrangement in-place.
+  //! Convenience overload of `StripedToBlocked(input_items, output_items)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -961,10 +961,10 @@ public:
   }
 
   //! @rst
-  //! Transposes data items from **blocked** arrangement to **striped** arrangement in-place.
+  //! Convenience overload of `BlockedToStriped(input_items, output_items)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1032,10 +1032,10 @@ public:
   }
 
   //! @rst
-  //! Transposes data items from **warp-striped** arrangement to **blocked** arrangement in-place.
+  //! Convenience overload of `WarpStripedToBlocked(input_items, output_items)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1106,10 +1106,10 @@ public:
   }
 
   //! @rst
-  //! Transposes data items from **blocked** arrangement to **warp-striped** arrangement in-place.
+  //! Convenience overload of `BlockedToWarpStriped(input_items, output_items)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1153,10 +1153,10 @@ public:
   }
 
   //! @rst
-  //! Exchanges data items annotated by rank into **blocked** arrangement in-place.
+  //! Convenience overload of `ScatterToBlocked(input_items, output_items, ranks)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1204,10 +1204,10 @@ public:
   }
 
   //! @rst
-  //! Exchanges data items annotated by rank into **striped** arrangement in-place.
+  //! Convenience overload of `ScatterToStriped(input_items, output_items, ranks)` that performs the exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1280,11 +1280,11 @@ public:
   }
 
   //! @rst
-  //! Exchanges data items annotated by rank into **striped** arrangement in-place. Items with rank -1 are not
-  //! exchanged.
+  //! Convenience overload of `ScatterToStripedGuarded(input_items, output_items, ranks)` that performs the exchange
+  //! in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1367,10 +1367,11 @@ public:
   }
 
   //! @rst
-  //! Exchanges valid data items annotated by rank into **striped** arrangement in-place.
+  //! Convenience overload of `ScatterToStripedFlagged(input_items, output_items, ranks, is_valid)` that performs the
+  //! exchange in-place.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - @smemreuse
   //! @endrst
