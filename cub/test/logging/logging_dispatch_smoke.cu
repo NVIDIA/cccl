@@ -9,6 +9,10 @@
 
 #include <iostream>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 int main()
 {
   thrust::device_vector<int> in{1, 2, 3, 4, 5};
@@ -19,5 +23,5 @@ int main()
     std::cerr << "cub::DeviceReduce::Sum failed: " << cudaGetErrorString(status) << '\n';
     return 1;
   }
-  return out[0] == 15;
+  return out[0] == 15 ? 0 : 1;
 }
