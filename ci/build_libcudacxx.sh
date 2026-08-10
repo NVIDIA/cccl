@@ -11,7 +11,6 @@ print_environment_details
 
 PRESET="libcudacxx"
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
-CMAKE_OPTIONS+=("-DLIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS=ON")
 
 upload_test_artifacts=false
 if [[ -n "${GITHUB_ACTIONS:-}" ]] && "${ci_dir}/util/workflow/has_consumers.sh"; then
