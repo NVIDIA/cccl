@@ -11,6 +11,7 @@
 #include <cuda/argument>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
@@ -77,6 +78,64 @@ void do_reduce_deferred(
   }
 }
 } // namespace
+
+MULTI_GPU_TEST("reduce deferred documentation example", c2h::type_list<int>)
+{
+  auto comms = this->communicators();
+
+  if (comms.size() != 2)
+  {
+    SKIP("The reduce documentation example requires exactly two local GPUs");
+  }
+
+  auto streams_owned = nccl_test_util::make_streams();
+  // Convert to stream_ref directly, cuda::stream on their own cant be passed directly to CUB
+  auto streams = std::vector<cuda::stream_ref>{streams_owned.begin(), streams_owned.end()};
+
+  //! [reduce_deferred]
+  constexpr cuda::std::array input_values{1, 2, 3, 4};
+  // Only the first two elements take part in the reduction. A real caller would have a
+  // preceding device-side step write this count.
+  constexpr cuda::std::array count_values{2};
+
+  std::vector<cuda::device_buffer<int>> inputs;
+  std::vector<cuda::device_buffer<int>> counts;
+  std::vector<cuda::device_buffer<int>> outputs;
+
+  for (cuda::std::size_t i = 0; i < comms.size(); ++i)
+  {
+    const auto device = comms[i].logical_device().underlying_device();
+
+    inputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values));
+    counts.emplace_back(cuda::make_device_buffer<int>(streams[i], device, count_values));
+    outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, 1, cuda::no_init));
+  }
+
+  cudax::reduce(
+    cudax::broadcasted,
+    comms,
+    streams,
+    inputs | cuda::std::views::transform(cuda::std::ranges::begin),
+    // The count is read on the device in stream order, so it need not be known on the host
+    // when `reduce` is called.
+    counts | cuda::std::views::transform([](auto& buf) {
+      return cuda::args::deferred{buf.begin()};
+    }),
+    outputs | cuda::std::views::transform(cuda::std::ranges::begin),
+    /*__init=*/0);
+
+  // Every rank contributes the first two of its four values, so every output holds
+  // `(1 + 2) * nranks`.
+  const auto expected_value = 3 * comms.front().size();
+  //! [reduce_deferred]
+
+  const auto expected_0 =
+    cuda::make_buffer<int>(outputs[0].stream(), cuda::mr::legacy_pinned_memory_resource{}, 1, expected_value);
+  const auto expected_1 =
+    cuda::make_buffer<int>(outputs[1].stream(), cuda::mr::legacy_pinned_memory_resource{}, 1, expected_value);
+  REQUIRE_THAT(outputs[0], Equals(expected_0));
+  REQUIRE_THAT(outputs[1], Equals(expected_1));
+}
 
 MULTI_GPU_TEST("reduce with deferred counts, one element per rank", value_types, operators)
 {

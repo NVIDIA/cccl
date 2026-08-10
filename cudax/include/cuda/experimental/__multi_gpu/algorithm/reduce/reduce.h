@@ -184,8 +184,15 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
 //! length, but this should not be relied upon and may change at any time, for any reason. So
 //! differing lengths is effectively undefined behavior.
 //!
-//! After this call returns, all local output iterators will hold the same value. In that sense
-//! this routine is similar to an "all reduce".
+//! Each size in `__num_items_range` may be a plain integral value, or a deferred argument such
+//! as `cuda::args::deferred`. A deferred size holds a pointer or iterator to device memory and
+//! is read in stream order when the reduction runs, so its value need not be known on the host
+//! at the time of the call. This lets a preceding device-side computation produce the number of
+//! items to reduce:
+//!
+//! @snippet reduce/range_deferred.cu reduce_deferred
+//!
+//! A deferred size must be valid and reachable in stream order on the device that reduces it.
 //!
 //! The identity element should survive reduction with any other value, returning the original
 //! value unchanged. For example, for integers/floats and `cuda::std::plus`, the identity
@@ -197,7 +204,8 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
 //! @param[in] __envs The range of execution environments. The execution environment must
 //!                   contain a stream.
 //! @param[in] __input_iters The range of per-communicator input iterators to reduce.
-//! @param[in] __num_items_range A range of sizes per input iterator to reduce.
+//! @param[in] __num_items_range A range of sizes per input iterator to reduce. Each size may be
+//!                              an integral value or a deferred argument.
 //! @param[out] __output_iters The range of output iterators receiving the per-communicator results.
 //! @param[in] __init The initial value seeding each reduction.
 //! @param[in] __op The binary reduction operator.
@@ -285,11 +293,19 @@ _CCCL_HOST_API void reduce(
 //!
 //! @snippet reduce/single_comm_basic.cu reduce_single_range
 //!
+//! `__num_items` may be a plain integral value, or a deferred argument such as
+//! `cuda::args::deferred`. A deferred size holds a pointer or iterator to device memory and is
+//! read in stream order when the reduction runs, so its value need not be known on the host at
+//! the time of the call:
+//!
+//! @snippet reduce/single_comm_deferred.cu reduce_single_range_deferred
+//!
 //! @param[in] __policy The result policy object. Currently must be `cudax::broadcasted`.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
 //! @param[in] __input_iter The input iterator to reduce.
-//! @param[in] __num_items The number of items in `__input_iter` to reduce.
+//! @param[in] __num_items The number of items in `__input_iter` to reduce. May be an integral
+//!                        value or a deferred argument.
 //! @param[out] __output_iter The output iterator receiving the result.
 //! @param[in] __init The initial value seeding the reduction.
 //! @param[in] __op The binary reduction operator.

@@ -11,6 +11,7 @@
 #include <cuda/argument>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
@@ -19,7 +20,10 @@
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
 
 #include <algorithm>
+#include <exception>
+#include <future>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include <algorithm_common.h>
@@ -77,6 +81,74 @@ void do_reduce_deferred_threaded(
   }
 }
 } // namespace
+
+MULTI_GPU_TEST("reduce single-comm deferred documentation example", c2h::type_list<int>)
+{
+  auto comms = this->communicators();
+
+  if (comms.size() != 2)
+  {
+    SKIP("The reduce documentation example requires exactly two local GPUs");
+  }
+
+  auto streams_owned = nccl_test_util::make_streams();
+  auto streams       = std::vector<cuda::stream_ref>{streams_owned.begin(), streams_owned.end()};
+
+  // Must be pre-allocated since it is written to by threads
+  std::vector<std::string> failed(comms.front().size());
+
+  // Every communicator rank must invoke the collective concurrently.
+  run_threaded(comms.size(), [&](cuda::std::size_t i) {
+    auto& communicator = comms[i];
+    auto& stream       = streams[i];
+    // Rename the stream to env for the example
+    auto& env = stream;
+
+    //! [reduce_single_range_deferred]
+    constexpr cuda::std::array input_values{1, 2, 3, 4};
+    // Only the first two elements take part in the reduction. A real caller would have a
+    // preceding device-side step write this count.
+    constexpr cuda::std::array count_values{2};
+    const auto device = communicator.logical_device().underlying_device();
+
+    auto input  = cuda::make_device_buffer<int>(stream, device, input_values);
+    auto count  = cuda::make_device_buffer<int>(stream, device, count_values);
+    auto output = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+
+    // The count is read on the device in stream order, so it need not be known on the host
+    // when `reduce` is called.
+    cudax::reduce(
+      cudax::broadcasted,
+      communicator,
+      env,
+      input.begin(),
+      cuda::args::deferred{count.begin()},
+      output.begin(),
+      /*__init=*/0);
+
+    // Every rank contributes the first two of its four values, so the reduction over all ranks
+    // is `(1 + 2) * nranks`. `reduce` broadcasts the result, so every rank sees the same value.
+    const auto expected =
+      cuda::make_buffer<int>(output.stream(), cuda::mr::legacy_pinned_memory_resource{}, 1, 3 * communicator.size());
+    //! [reduce_single_range_deferred]
+
+    // catch2 isn't thread safe by default, so we can't use the usual requires expression. So
+    // we roll a hacky version of it ourselves
+    if (const auto matcher = Equals(expected); !matcher.match(output))
+    {
+      failed[communicator.rank()] = matcher.describe();
+    }
+  });
+
+  for (cuda::std::size_t i = 0; i < failed.size(); ++i)
+  {
+    if (const auto& err_str = failed[i]; !err_str.empty())
+    {
+      INFO("rank: " << i);
+      REQUIRE(err_str == ""); // Should print the full error string
+    }
+  }
+}
 
 MULTI_GPU_TEST("reduce single-comm with a deferred count, one element per rank", value_types, operators)
 {
