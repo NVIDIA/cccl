@@ -25,6 +25,7 @@
 #pragma once
 
 #include <cuda/experimental/__places/cute_partition.cuh>
+#include <cuda/experimental/__places/exec/locality_domain.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/machine.cuh>
@@ -65,7 +66,11 @@ using ::cuda::experimental::places::exec_place_resources;
 using ::cuda::experimental::places::get_device_from_stream;
 using ::cuda::experimental::places::is_stream_capturing;
 using ::cuda::experimental::places::k_no_stream_id;
+using ::cuda::experimental::places::locality_domain_count;
+using ::cuda::experimental::places::locality_domain_helper;
+using ::cuda::experimental::places::locality_domain_view;
 using ::cuda::experimental::places::localized_array;
+using ::cuda::experimental::places::make_locality_domain_grid;
 using ::cuda::experimental::places::partition_fn_t;
 using ::cuda::experimental::places::stream_pool;
 using ::cuda::experimental::places::tiled;
@@ -80,5 +85,10 @@ struct hash<::cuda::experimental::places::exec_place>
 template <>
 struct hash<::cuda::experimental::places::data_place>
     : ::cuda::experimental::places::hash<::cuda::experimental::places::data_place>
+{};
+
+template <>
+struct hash<::cuda::experimental::places::locality_domain_view>
+    : ::cuda::experimental::places::hash<::cuda::experimental::places::locality_domain_view>
 {};
 } // namespace cuda::experimental::stf
