@@ -225,7 +225,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   cudaStream_t stream,
   const TuningEnvT& = {})
 {
-  using input_value_t             = detail::it_value_t<InputIteratorT>;
+  using input_value_t = detail::it_value_t<InputIteratorT>;
+  // TODO(bgruber): we should use the input_value_t in the accumulator and for comparison, and only covert when writing
+  // the final result
   using output_extremum_t         = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
   using default_policy_selector_t = detail::reduce::
     policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, ReductionOpT>;
@@ -416,8 +418,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
   const TuningEnvT& = {})
 {
   using input_value_t         = it_value_t<InputIteratorT>;
-  using output_extremum_t     = non_void_value_t<MinExtremumOutIteratorT, input_value_t>;
-  using per_partition_accum_t = argminmax_accum_t<output_extremum_t, PerPartitionOffsetT>;
+  using per_partition_accum_t = argminmax_accum_t<input_value_t, PerPartitionOffsetT>;
   using default_policy_selector_t =
     policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, ReductionOpT>;
   using policy_selector_t =
@@ -450,10 +451,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
                                MaxExtremumOutIteratorT,
                                MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
-  auto d_indexed_in = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>(d_in);
+  auto d_indexed_in = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT>(d_in);
 
   // reduction operator type that enables accumulating per-partition results to a global reduction result
-  using global_accum_t = argminmax_accum_t<output_extremum_t, GlobalOffsetT>;
+  using global_accum_t = argminmax_accum_t<input_value_t, GlobalOffsetT>;
   auto accumulating_out_op =
     accumulating_transform_output_op<global_accum_t, decltype(local_to_global_op), ReductionOpT, decltype(d_result_out)>{
       true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
