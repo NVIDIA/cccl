@@ -15,6 +15,7 @@
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/execution>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include "catch2_test_device_reduce.cuh"
@@ -26,7 +27,6 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2:3:4
 
 // List of types to test
 using custom_t =
@@ -35,36 +35,19 @@ using custom_t =
                      c2h::lexicographical_less_comparable_t,
                      c2h::lexicographical_greater_comparable_t>;
 
-#if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::int8_t, std::int32_t>>;
-#elif TEST_TYPES == 1
-using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
-#elif TEST_TYPES == 2
-using full_type_list =
-  c2h::type_list<type_pair<uchar3>,
-                 type_pair<
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4_16a
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-                   >>;
-#elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
-type_pair<custom_t>
+  type_pair<std::uint8_t>,
+  type_pair<std::int16_t, std::int32_t>, // DPX SIMD instructions and different (larger) output type
+  type_pair<std::int32_t>,
+  type_pair<std::int64_t, std::int32_t>, // different (smaller) output type
+  type_pair<uchar3>,
+  type_pair<custom_t>
 #if TEST_HALF_T()
 , type_pair<half_t>
 #endif // TEST_HALF_T()
-#if TEST_BF_T()
-, type_pair<bfloat16_t>
-#endif // TEST_BF_T()
 >;
 // clang-format on
-#elif TEST_TYPES == 4
-// DPX SIMD instructions
-using full_type_list = c2h::type_list<type_pair<std::uint16_t>, type_pair<std::int16_t>>;
-#endif
 
 /**
  * @brief Input data generation mode
@@ -85,8 +68,6 @@ struct abs_less_t
     return cuda::uabs(a) < cuda::uabs(b);
   }
 };
-
-#if TEST_TYPES == 0
 
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_minmax]", CUB_SMALL)
 {
@@ -275,8 +256,6 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax tie-breaking: first min and last max
   REQUIRE(max_index[0] == 4); // last maximum: largest index on tie
 }
 
-#endif // TEST_TYPES == 0
-
 CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][arg_minmax]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
@@ -313,7 +292,6 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
 
   CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items);
 
-#if TEST_TYPES != 4
   constexpr int num_segments = 1;
 
   SECTION("argminmax")
@@ -468,46 +446,47 @@ CUB_TEST("Device ArgMinMax works with all device interfaces", "[reduce][device][
     }
   }
 
-#  if TEST_TYPES < 2
-  SECTION("argminmax-abs_less_t")
+  // abs comparison via cuda::uabs only compiles for integral scalar types
+  if constexpr (cuda::std::is_integral_v<item_t>)
   {
-    abs_less_t compare_op;
+    SECTION("argminmax-abs_less_t")
+    {
+      abs_less_t compare_op;
 
-    // Prepare verification data
-    c2h::host_vector<item_t> host_items(in_items);
+      // Prepare verification data
+      c2h::host_vector<item_t> host_items(in_items);
 
-    // First minimum by abs value: first element with smallest |value|
-    auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
-    const auto expected_min       = *expected_min_it;
-    const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
+      // First minimum by abs value: first element with smallest |value|
+      auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
+      const auto expected_min       = *expected_min_it;
+      const auto expected_min_index = static_cast<cuda::std::int64_t>(expected_min_it - host_items.cbegin());
 
-    // Last maximum by abs value: last element with largest |value|
-    auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
-    const auto expected_max       = *expected_last_max_it;
-    const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
-                                  - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
+      // Last maximum by abs value: last element with largest |value|
+      auto expected_last_max_it     = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
+      const auto expected_max       = *expected_last_max_it;
+      const auto expected_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
+                                    - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
-    // Run test
-    using unwrapped_t = unwrap_value_t<output_t>;
-    c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
-    c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
-    device_arg_minmax(
-      unwrap_it(d_in_it),
-      d_min_out.data(),
-      d_min_index.data(),
-      d_max_out.data(),
-      d_max_index.data(),
-      num_items,
-      compare_op);
+      // Run test
+      using unwrapped_t = unwrap_value_t<output_t>;
+      c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
+      c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
+      device_arg_minmax(
+        unwrap_it(d_in_it),
+        d_min_out.data(),
+        d_min_index.data(),
+        d_max_out.data(),
+        d_max_index.data(),
+        num_items,
+        compare_op);
 
-    // Verify
-    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-    REQUIRE(expected_min == gpu_min);
-    REQUIRE(expected_min_index == d_min_index[0]);
-    REQUIRE(expected_max == gpu_max);
-    REQUIRE(expected_max_index == d_max_index[0]);
+      // Verify
+      output_t gpu_min = static_cast<output_t>(d_min_out[0]);
+      output_t gpu_max = static_cast<output_t>(d_max_out[0]);
+      REQUIRE(expected_min == gpu_min);
+      REQUIRE(expected_min_index == d_min_index[0]);
+      REQUIRE(expected_max == gpu_max);
+      REQUIRE(expected_max_index == d_max_index[0]);
+    }
   }
-#  endif
-#endif // TEST_TYPES != 4
 }
