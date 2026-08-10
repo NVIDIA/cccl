@@ -72,7 +72,7 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    cuda::std::array<int, 5> v{};
+    cuda::std::array<int, 5> v{1, 2, 3, 4, 5};
 
     auto indices_view = cuda::std::ranges::views::indices(cuda::std::ranges::size(v));
     static_assert(cuda::std::ranges::range<decltype(indices_view)>);
@@ -87,7 +87,7 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    cuda::std::array<SomeInt, 5> v;
+    cuda::std::array<SomeInt, 5> v{SomeInt{1}, SomeInt{2}, SomeInt{3}, SomeInt{4}, SomeInt{5}};
 
     auto indices_view = cuda::std::ranges::views::indices(cuda::std::ranges::size(v));
     static_assert(cuda::std::ranges::range<decltype(indices_view)>);
