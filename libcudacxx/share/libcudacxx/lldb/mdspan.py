@@ -19,8 +19,7 @@ _EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
 _EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
 # Not host-dereferenceable; never index through these accessors.
-_DEVICE_ONLY_ACCESSOR_MARKERS = (
-    "__device_accessor<", "__shared_memory_accessor<")
+_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
 # cuda:: accessibility wrappers around cuda::std::mdspan.
 _WRAPPER_MDSPAN_NAMES = frozenset(
     {
@@ -133,8 +132,7 @@ def _ebco_element(
             if error.Fail():
                 return None
             return ebco_value.CreateValueFromData(name, data, element_type)
-        impl = ebco_value.CreateChildAtOffset(
-            name, base.GetOffsetInBytes(), impl_type)
+        impl = ebco_value.CreateChildAtOffset(name, base.GetOffsetInBytes(), impl_type)
         return impl.GetChildMemberWithName("__elem_")
     return None
 
@@ -215,8 +213,7 @@ def _offset(
             return 0
         return sum(index * stride for index, stride in zip(indices, strides))
     positions = (
-        range(len(extents)) if kind == "layout_right" else reversed(
-            range(len(extents)))
+        range(len(extents)) if kind == "layout_right" else reversed(range(len(extents)))
     )
     result = 0
     for pos in positions:
@@ -284,8 +281,7 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     static_values = _static_extents(extents_type)
     if static_values is None:
         return MdspanInfo(type_name, None, None, None, None, accessor_name)
-    rank_dynamic = sum(
-        1 for value_ in static_values if value_ == dynamic_extent)
+    rank_dynamic = sum(1 for value_ in static_values if value_ == dynamic_extent)
 
     mapping_ebco = _find_ebco_base(mapping)
     dynamic_values: list[int] = []
@@ -377,8 +373,7 @@ class MdspanSyntheticProvider:
         stripped = name.strip("[]")
         try:
             parsed = (
-                tuple(int(index)
-                      for index in stripped.split(",")) if stripped else ()
+                tuple(int(index) for index in stripped.split(",")) if stripped else ()
             )
         except ValueError:
             return -1
