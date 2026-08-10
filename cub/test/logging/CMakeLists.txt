@@ -20,52 +20,45 @@ target_compile_definitions(
   PRIVATE CCCL_DISABLE_LOGGING
 )
 
-# Environment variable unset -> logging disabled, log() must stay silent.
+# Environment variable unset -> logging disabled: log() must stay silent, but log_always() must still fire.
 add_test(
   NAME cub.test.logging.unset
   COMMAND
-    "${CMAKE_COMMAND}" -E env --unset=CCCL_EXPERIMENTAL_LOGGING
+    "${CMAKE_COMMAND}" -E env --unset=CCCL_EXPERIMENTAL_LOGGING --
     "$<TARGET_FILE:cub.test.logging>" --expect-disabled
 )
 set_tests_properties(
   cub.test.logging.unset
-  PROPERTIES FAIL_REGULAR_EXPRESSION "${log_sentinel}"
+  PROPERTIES
+    FAIL_REGULAR_EXPRESSION "${log_sentinel}"
+    PASS_REGULAR_EXPRESSION "${log_always_sentinel}"
 )
 
-# Environment variable set to 0 -> logging disabled, log() must stay silent
+# Environment variable set to 0 -> logging disabled: log() must stay silent, but log_always() must still fire.
 add_test(
   NAME cub.test.logging.zero
   COMMAND
-    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=0
+    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=0 --
     "$<TARGET_FILE:cub.test.logging>" --expect-disabled
 )
 set_tests_properties(
   cub.test.logging.zero
-  PROPERTIES FAIL_REGULAR_EXPRESSION "${log_sentinel}"
+  PROPERTIES
+    FAIL_REGULAR_EXPRESSION "${log_sentinel}"
+    PASS_REGULAR_EXPRESSION "${log_always_sentinel}"
 )
 
-# Environment variable set to 1 -> logging enabled and log() emits its sentinel
+# Environment variable set to 1 -> logging enabled: log() emits its sentinel and log_always() fires too.
+# The sentinels are printed on consecutive lines, so a single regex asserts both are present.
 add_test(
   NAME cub.test.logging.enabled
   COMMAND
-    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=1
+    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=1 --
     "$<TARGET_FILE:cub.test.logging>" --expect-enabled
 )
 set_tests_properties(
   cub.test.logging.enabled
-  PROPERTIES PASS_REGULAR_EXPRESSION "${log_sentinel}"
-)
-
-# log_always() must emit its sentinel regardless of the environment variable.
-add_test(
-  NAME cub.test.logging.always
-  COMMAND
-    "${CMAKE_COMMAND}" -E env --unset=CCCL_EXPERIMENTAL_LOGGING
-    "$<TARGET_FILE:cub.test.logging>" --expect-disabled
-)
-set_tests_properties(
-  cub.test.logging.always
-  PROPERTIES PASS_REGULAR_EXPRESSION "${log_always_sentinel}"
+  PROPERTIES PASS_REGULAR_EXPRESSION "${log_sentinel}.*${log_always_sentinel}"
 )
 
 # Compiled with CCCL_DISABLE_LOGGING: logging_enabled() is always false and neither log() nor
@@ -73,7 +66,7 @@ set_tests_properties(
 add_test(
   NAME cub.test.logging.compile_disabled
   COMMAND
-    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=1
+    "${CMAKE_COMMAND}" -E env CCCL_EXPERIMENTAL_LOGGING=1 --
     "$<TARGET_FILE:cub.test.logging.disabled>" --expect-disabled
 )
 set_tests_properties(
@@ -81,28 +74,18 @@ set_tests_properties(
   PROPERTIES FAIL_REGULAR_EXPRESSION "${log_sentinel}|${log_always_sentinel}"
 )
 
-# Smoke test that a real algorithm dispatch actually logs when logging is enabled
-cccl_add_executable(
-  cub.test.logging.dispatch
-  SOURCES "logging_dispatch_smoke.cu"
-)
-target_link_libraries(cub.test.logging.dispatch PRIVATE cub.compiler_interface)
-# We must use rapids_test_add instead of cub_add_test because the latter compiles non-Catch2 tests with CUB_DEBUG_SYNC,
-# which enables CUB_DEBUG_LOG, which in turn compiles out the new experimental logging
-rapids_test_add(
-        NAME cub.test.logging.dispatch
-        COMMAND
-        "${CMAKE_COMMAND}"
-        "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
-        "-DTEST=$<TARGET_FILE:cub.test.logging.dispatch>"
-        -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
-        GPUS 1
-        PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
-)
+# Smoke test that a real algorithm dispatch actually logs when logging is enabled. We reuse
+# cub_add_test() for consistency with the rest of the CUB test suite. That helper compiles non-Catch2
+# tests with CUB_DEBUG_SYNC, which enables CUB_DEBUG_LOG and would compile out the new experimental
+# logging, so we undo it again with -UCUB_DEBUG_SYNC. If that ever stops working, the experimental
+# logging line is not emitted and the PASS_REGULAR_EXPRESSION below fails the test.
+cub_add_test(dispatch_test_target "logging.dispatch" "" "logging_dispatch_smoke.cu" 0)
+cub_configure_cuda_target(${dispatch_test_target} RDC OFF)
+target_compile_options(${dispatch_test_target} PRIVATE -UCUB_DEBUG_SYNC)
 set_tests_properties(
-  cub.test.logging.dispatch
+  ${dispatch_test_target}
   PROPERTIES
-    ENVIRONMENT "CCCL_EXPERIMENTAL_LOGGING=1;SCCACHE_NO_CACHE=1"
+    ENVIRONMENT "CCCL_EXPERIMENTAL_LOGGING=1"
     PASS_REGULAR_EXPRESSION
       "Dispatching DeviceReduce on compute capability [0-9]+\\.[0-9]+ with tuning: ReducePolicy \\{"
 )
