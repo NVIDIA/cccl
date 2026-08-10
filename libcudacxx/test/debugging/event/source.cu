@@ -5,62 +5,61 @@
 #include <cuda/std/array>
 #include <cuda/stream>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using event_ref_alias = cuda::event_ref;
 
 [[gnu::noinline]] void inspect_ref(const cuda::event_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_owning(const cuda::event& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_timed(const cuda::timed_event& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_alias(const event_ref_alias& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_null_ref(const cuda::event_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_no_init(const cuda::event& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_timed_no_init(const cuda::timed_event& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::array<cuda::event_ref, 2>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::event_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::event_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 int main()

@@ -147,7 +147,7 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Tp>
-_CCCL_HOST_DEVICE runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 template <class _Tp>

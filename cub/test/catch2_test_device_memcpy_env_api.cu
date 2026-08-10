@@ -85,16 +85,16 @@ struct BatchedMemcpyPolicySelector
     return {
       .algorithm = cub::BatchedCopyAlgorithm::lookback,
       .lookback  = {
-         .small_buffer = {.threads_per_block     = 128,
-                          .buffers_per_thread    = 4,
-                          .bytes_per_thread      = 8,
-                          .prefer_pow2_bits      = false,
-                          .block_level_tile_size = 256 * 32,
-                          .warp_level_threshold  = 128,
-                          .block_level_threshold = 8 * 1024,
-                          .buffer_lookback_delay = {},
-                          .block_lookback_delay  = {}},
-         .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
+        .small_buffer = {.threads_per_block     = 128,
+                         .buffers_per_thread    = 4,
+                         .bytes_per_thread      = 8,
+                         .prefer_pow2_bits      = false,
+                         .block_level_tile_size = 256 * 32,
+                         .warp_level_threshold  = 128,
+                         .block_level_threshold = 8 * 1024,
+                         .buffer_lookback_delay = {},
+                         .block_lookback_delay  = {}},
+        .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
   }
 };
 // example-end memcpy-batched-policy-selector

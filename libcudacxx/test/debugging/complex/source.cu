@@ -6,47 +6,46 @@
 #include <cuda/std/array>
 #include <cuda/std/complex>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using complex_alias = cuda::std::complex<float>;
 
 [[gnu::noinline]] void inspect_std_default(const cuda::std::complex<float>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_std_double(const cuda::std::complex<double>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_float(const cuda::complex<float>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_alias(const complex_alias& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::array<cuda::std::complex<float>, 2>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::std::complex<double>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::std::complex<double>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 int main()

@@ -49,7 +49,8 @@ struct flag_intra_segment_duplicates
 };
 
 template <typename ItemItT, typename SegIdItT>
-flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES flag_intra_segment_duplicates(ItemItT, SegIdItT)
+  -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputItItT,
