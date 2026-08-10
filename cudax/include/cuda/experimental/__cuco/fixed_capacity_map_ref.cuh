@@ -30,6 +30,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -249,13 +250,21 @@ public:
   template <class _NewKeyEqual>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_key_eq(const _NewKeyEqual& __predicate) const noexcept
   {
-    return fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
-      empty_key<_Key>{empty_key_sentinel()},
-      empty_value<_Tp>{empty_value_sentinel()},
-      erased_key<_Key>{erased_key_sentinel()},
-      __predicate,
-      probing_scheme(),
-      storage_span()};
+    using __rebound_ref =
+      fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+
+    return ::cuda::experimental::cuco::detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           __predicate,
+                           probing_scheme(),
+                           storage_span()}
+           : __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           erased_key<_Key>{erased_key_sentinel()},
+                           __predicate,
+                           probing_scheme(),
+                           storage_span()};
   }
 
   //! @brief Makes a copy of this ref with the given hash function.
@@ -269,19 +278,27 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
     const auto __probing_scheme = probing_scheme().rebind_hash_function(__hash);
-    return fixed_capacity_map_ref<_Key,
-                                  _Tp,
-                                  _Scope,
-                                  _KeyEqual,
-                                  ::cuda::std::decay_t<decltype(__probing_scheme)>,
-                                  _BucketSize,
-                                  _Capacity>{
-      empty_key<_Key>{empty_key_sentinel()},
-      empty_value<_Tp>{empty_value_sentinel()},
-      erased_key<_Key>{erased_key_sentinel()},
-      key_eq(),
-      __probing_scheme,
-      storage_span()};
+    using __rebound_ref =
+      fixed_capacity_map_ref<_Key,
+                             _Tp,
+                             _Scope,
+                             _KeyEqual,
+                             ::cuda::std::decay_t<decltype(__probing_scheme)>,
+                             _BucketSize,
+                             _Capacity>;
+
+    return ::cuda::experimental::cuco::detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           key_eq(),
+                           __probing_scheme,
+                           storage_span()}
+           : __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           erased_key<_Key>{erased_key_sentinel()},
+                           key_eq(),
+                           __probing_scheme,
+                           storage_span()};
   }
 
   //! @brief Returns a const iterator to one past the last slot (the end sentinel).

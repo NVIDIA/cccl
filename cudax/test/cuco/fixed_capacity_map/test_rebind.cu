@@ -13,6 +13,7 @@
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
+#include <cuda/__cccl_config>
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -46,11 +47,11 @@ struct original_hash
 {
   int seed;
 
-  __host__ __device__ constexpr original_hash(int seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr original_hash(int seed = 0) noexcept
       : seed{seed}
   {}
 
-  [[nodiscard]] __host__ __device__ constexpr ::cuda::std::size_t operator()(int key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
   {
     return static_cast<::cuda::std::size_t>(key) * 33 + static_cast<::cuda::std::size_t>(seed);
   }
@@ -61,12 +62,12 @@ struct offset_hash
   int offset;
   int seed;
 
-  __host__ __device__ constexpr offset_hash(int offset, int seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr offset_hash(int offset, int seed) noexcept
       : offset{offset}
       , seed{seed}
   {}
 
-  [[nodiscard]] __host__ __device__ constexpr ::cuda::std::size_t operator()(int key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
   {
     return original_hash{seed}(key - offset);
   }
@@ -76,7 +77,7 @@ struct offset_equal
 {
   int offset;
 
-  [[nodiscard]] __host__ __device__ constexpr bool operator()(int probe_key, int slot_key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator()(int probe_key, int slot_key) const noexcept
   {
     return probe_key - offset == slot_key;
   }
@@ -85,7 +86,7 @@ struct offset_equal
 template <class Pair>
 struct iota_pair
 {
-  [[nodiscard]] __host__ __device__ constexpr Pair operator()(int key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr Pair operator()(int key) const noexcept
   {
     return Pair{key, key};
   }
@@ -93,14 +94,14 @@ struct iota_pair
 
 struct is_nonzero
 {
-  [[nodiscard]] __device__ bool operator()(int value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
   {
     return value != 0;
   }
 };
 
 template <class Ref>
-[[nodiscard]] __host__ __device__ constexpr auto make_rebound_ref(Ref ref, int offset)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_rebound_ref(Ref ref, int offset)
 {
   const auto predicate_ref = ref.rebind_key_eq(offset_equal{offset});
   if constexpr (::cuda::std::is_same_v<typename Ref::hasher, original_hash>)
@@ -169,7 +170,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   constexpr int keys_per_block   = threads / cg_size;
 
   ::cuda::stream stream{::cuda::device_ref{0}};
-  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+  const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   const probing_type probing_scheme = [&] {
     if constexpr (probing == 0)
@@ -236,7 +237,9 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   contains_with_rebound_ref<<<(num_keys + keys_per_block - 1) / keys_per_block, threads, 0, stream.get()>>>(
     ref, offset, num_keys, found.data());
   REQUIRE(cudaGetLastError() == cudaSuccess);
-  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+  const auto policy =
+    ::cuda::execution::gpu.with(::cuda::get_stream, stream)
+      .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));
 
   REQUIRE(::cuda::std::all_of(policy, found.data(), found.data() + num_keys, is_nonzero{}));
 }
@@ -248,14 +251,32 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   using map_type          = cudax::cuco::
     fixed_capacity_map<int, int, capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing_type>;
 
+  constexpr int num_keys = 32;
+  constexpr int offset   = 1000;
+  constexpr int threads  = 128;
+
   ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
   map_type map{stream, mr, cudax::cuco::empty_key{-1}, cudax::cuco::empty_value{-1}};
 
-  const auto rebound_ref = make_rebound_ref(map.ref(), 1000);
+  const auto pairs =
+    ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<typename map_type::value_type>{});
+  map.insert(stream, pairs, pairs + num_keys);
+
+  const auto ref         = map.ref();
+  const auto rebound_ref = make_rebound_ref(ref, offset);
   static_assert(decltype(rebound_ref)::capacity_v == capacity);
   REQUIRE(rebound_ref.capacity() == capacity);
   REQUIRE(rebound_ref.empty_key_sentinel() == -1);
   REQUIRE(rebound_ref.erased_key_sentinel() == -1);
-  REQUIRE(rebound_ref.storage_span().data() == map.ref().storage_span().data());
+  REQUIRE(rebound_ref.storage_span().data() == ref.storage_span().data());
+
+  auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
+  contains_with_rebound_ref<<<1, threads, 0, stream.get()>>>(ref, offset, num_keys, found.data());
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+  const auto policy =
+    ::cuda::execution::gpu.with(::cuda::get_stream, stream)
+      .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));
+
+  REQUIRE(::cuda::std::all_of(policy, found.data(), found.data() + num_keys, is_nonzero{}));
 }
