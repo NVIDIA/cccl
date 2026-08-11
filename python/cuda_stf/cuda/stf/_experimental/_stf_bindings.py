@@ -45,6 +45,7 @@ _BINDING_EXPORTS = (
     "green_context_helper",
     "green_ctx_view",
     "logical_data",
+    "locality_domain_count",
     "machine_init",
     "partition_fn_blocked",
     "partition_fn_cyclic",

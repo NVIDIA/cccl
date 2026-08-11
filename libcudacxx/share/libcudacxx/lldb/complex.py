@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _COMPLEX_PATTERN = re.compile(r"^cuda::(?:std::)?complex<.+>$")
@@ -16,9 +18,7 @@ InternalDict = dict[str, object]
 
 
 def is_cuda_complex(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _COMPLEX_PATTERN.fullmatch(type_name) is not None
 
 
@@ -26,6 +26,7 @@ class ComplexSyntheticProvider:
     """Expose complex real and imaginary parts as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.update()
 

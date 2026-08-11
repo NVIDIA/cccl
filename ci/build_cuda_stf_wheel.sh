@@ -34,7 +34,7 @@ nvcc --version
 # shellcheck source=ci/pyenv_helper.sh
 source /workspace/ci/pyenv_helper.sh
 # shellcheck disable=SC2154
-setup_python_env "${py_version}"
+setup_python_env "${py_version}" ".cccl-stf-venv"
 command -v python
 python --version
 echo "Done setting up python env"

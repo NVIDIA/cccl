@@ -29,16 +29,16 @@ struct SizedView : cuda::std::ranges::view_base
 {
   int* begin_ = nullptr;
   int* end_   = nullptr;
-  TEST_HOST_DEVICE_FUNC constexpr SizedView(int* begin, int* end)
+  TEST_FUNC constexpr SizedView(int* begin, int* end)
       : begin_(begin)
       , end_(end)
   {}
 
-  TEST_HOST_DEVICE_FUNC constexpr auto begin() const
+  TEST_FUNC constexpr auto begin() const
   {
     return forward_iterator<int*>(begin_);
   }
-  TEST_HOST_DEVICE_FUNC constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sized_sentinel<forward_iterator<int*>>(forward_iterator<int*>(end_));
   }
@@ -48,7 +48,7 @@ static_assert(cuda::std::ranges::sized_range<SizedView>);
 static_assert(cuda::std::ranges::view<SizedView>);
 
 template <class T>
-TEST_HOST_DEVICE_FUNC constexpr void test_small_range(const T& input)
+TEST_FUNC constexpr void test_small_range(const T& input)
 {
   constexpr int N = 100;
   auto size       = cuda::std::ranges::size(input);
@@ -60,7 +60,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_small_range(const T& input)
 
 struct Pred
 {
-  TEST_HOST_DEVICE_FUNC int operator()(int i) const noexcept
+  TEST_FUNC int operator()(int i) const noexcept
   {
     return i;
   }
@@ -70,7 +70,7 @@ struct Pred
 using result_subrange       = cuda::std::ranges::subrange<int*>;
 using result_subrange_sized = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
 
-TEST_HOST_DEVICE_FUNC constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int N = 8;
   int buf[N]      = {1, 2, 3, 4, 5, 6, 7, 8};

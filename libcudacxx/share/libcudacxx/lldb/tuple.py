@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _TUPLE_PATTERN = re.compile(r"^cuda::std::tuple<.*>$")
@@ -16,15 +18,17 @@ InternalDict = dict[str, object]
 
 
 def is_cuda_tuple(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _TUPLE_PATTERN.fullmatch(type_name) is not None
 
 
 def _has_elements(value: lldb.SBValue) -> bool:
     # cuda::std::tuple<> can compile with no debug-visible __base_ member.
-    base = value.GetNonSyntheticValue().GetChildMemberWithName("__base_")
+    base = (
+        cccl_common.strip_reference_value(value)
+        .GetNonSyntheticValue()
+        .GetChildMemberWithName("__base_")
+    )
     return base.IsValid() and bool(_leaf_bases(base.GetType()))
 
 
@@ -136,6 +140,7 @@ class TupleSyntheticProvider:
     """Expose cuda::std::tuple elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.leaves: list[tuple[int, lldb.SBTypeMember]] = []
         self.base: lldb.SBValue = lldb.SBValue()

@@ -173,11 +173,16 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place_handle stf_data_place_device(int dev_id)
     stf_data_place_handle stf_data_place_managed()
     stf_data_place_handle stf_data_place_affine()
+    uint32_t stf_locality_domain_count(int dev_id)
+    stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+    stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
     stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
     stf_data_place_handle stf_data_place_replicated_deferred()
     int stf_data_place_is_replicated(stf_data_place_handle h)
     stf_data_place_handle stf_data_place_current_device()
     stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
+    stf_get_executor_fn stf_partition_fn_blocked(int dim)
     stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
     stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
     void stf_data_place_destroy(stf_data_place_handle h)
@@ -1148,6 +1153,17 @@ def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
 def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
 def rw(ld, dplace=None):     return dep(ld, AccessMode.RW.value, dplace)
 
+def locality_domain_count(int dev_id=0):
+    """Number of locality domains of a device. Never 0: without native
+    locality-domain support (pre-13.4 toolkit or driver) the device reports
+    a single domain covering the whole device. Raises for an invalid
+    device ordinal."""
+    cdef uint32_t n = stf_locality_domain_count(dev_id)
+    if n == 0:
+        raise ValueError(f"invalid device ordinal {dev_id} (see stderr)")
+    return int(n)
+
+
 def machine_init():
     """Initialize machine topology (P2P access, device memory pools).
 
@@ -1303,6 +1319,47 @@ cdef class exec_place_resources:
             self._h = NULL
 
 
+# Public shapes are C order (dimension 0 outermost/slowest). The C ABI and
+# the C++ implementation remain dimension-0-fastest; the helpers below are
+# the only place the two conventions meet. Rank is always explicit: it is
+# never inferred by trimming extent-1 dimensions, which are legitimate.
+
+def _validate_extents(dims, what="shape"):
+    """Validate an int or a sequence of 1 to 4 positive integral extents and
+    return it as a tuple (public C order, untouched)."""
+    if isinstance(dims, bool):
+        raise TypeError(f"{what} must be an int or a sequence of ints")
+    if isinstance(dims, int):
+        dims = (dims,)
+    dims = tuple(dims)
+    if not 1 <= len(dims) <= 4:
+        raise ValueError(f"{what} must have 1 to 4 dimensions, got {len(dims)}")
+    for e in dims:
+        if isinstance(e, bool) or not isinstance(e, int):
+            raise TypeError(f"{what} extents must be ints, got {e!r}")
+        if e <= 0:
+            raise ValueError(f"{what} extents must be positive, got {e}")
+    return dims
+
+
+cdef int _fill_dim4_c_order(object dims, stf_dim4* out, str what=u"shape") except -1:
+    """Convert a public C-order shape into a native dimension-0-fastest
+    stf_dim4: reverse the active dimensions, then pad with trailing 1s."""
+    rev = _validate_extents(dims, what)[::-1]
+    padded = rev + (1,) * (4 - len(rev))
+    out.x = <uint64_t>padded[0]
+    out.y = <uint64_t>padded[1]
+    out.z = <uint64_t>padded[2]
+    out.t = <uint64_t>padded[3]
+    return 0
+
+
+def _native_to_public(native, int rank):
+    """Convert a native (x, y, z, t) tuple back to a public C-order tuple of
+    the stored rank."""
+    return tuple(native[:rank])[::-1]
+
+
 cdef class exec_place:
     cdef stf_exec_place_handle _h
     cdef stf_exec_place_scope_handle _scope
@@ -1342,6 +1399,17 @@ cdef class exec_place:
         p._h = stf_exec_place_device(dev_id)
         if p._h == NULL:
             raise RuntimeError(f"failed to create exec_place for device {dev_id}")
+        return p
+
+    @staticmethod
+    def locality_domain(int dev_id, int domain_id):
+        """Execution place pinned to one locality domain of a device (the
+        whole device with the fallback backend). Ordinals are identity
+        tokens, validated lazily at use."""
+        cdef exec_place p = exec_place.__new__(exec_place)
+        p._h = stf_exec_place_locality_domain(dev_id, domain_id)
+        if p._h == NULL:
+            raise RuntimeError("failed to create locality-domain exec place")
         return p
 
     @staticmethod
@@ -1617,6 +1685,71 @@ cdef class exec_place_grid(exec_place):
         return self._grid_rank
 
     @staticmethod
+    def machine(granularity="device"):
+        """Grid covering the current machine at a chosen granularity.
+
+        ``granularity="device"``: one execution place per CUDA device
+        (equivalent to ``from_devices(range(ndevs))``).
+
+        ``granularity="locality_domain"``: one place per locality domain of
+        every device, device-major order (device 0's domains, then device
+        1's, ...). A device without native locality-domain support
+        contributes a single whole-device domain, so this degrades to the
+        device granularity exactly where domains are unavailable.
+        """
+        from cuda.bindings import runtime as _rt  # noqa: PLC0415
+
+        err, ndevs = _rt.cudaGetDeviceCount()
+        if int(err) != 0 or ndevs == 0:
+            raise RuntimeError("no CUDA device available")
+        cdef exec_place_grid g
+        cdef data_place affine
+        if granularity == "device":
+            g = <exec_place_grid?>exec_place_grid.from_devices(list(range(ndevs)))
+            nplaces = ndevs
+        elif granularity == "locality_domain":
+            places = []
+            for d in range(ndevs):
+                for i in range(locality_domain_count(d)):
+                    places.append(exec_place.locality_domain(d, i))
+            g = <exec_place_grid?>exec_place_grid.create(places)
+            nplaces = len(places)
+        else:
+            raise ValueError(
+                f"unknown granularity {granularity!r}; expected 'device' or 'locality_domain'"
+            )
+        # Default affine: data blocked along dimension 0 over the grid --
+        # the natural strategy for a machine-level grid, and it makes bare
+        # dependencies (lX.rw() without an explicit data place) resolve
+        # instead of failing for lack of an affine.
+        #
+        # NEVER on a single-place machine: make_grid degenerates size-1
+        # grids to the place itself, which for the device granularity is
+        # the process-shared exec_place::device(0) -- mutating ITS affine
+        # to a composite poisons every later activate/deactivate restore
+        # path (cudaSetDevice on the composite ordinal; found on GB300).
+        # A scalar place's own device affine already resolves bare deps.
+        if nplaces > 1:
+            affine = data_place.__new__(data_place)
+            affine._h = stf_data_place_composite(g._h, stf_partition_fn_blocked(0))
+            if affine._h == NULL:
+                raise RuntimeError("failed to create the default blocked affine")
+            affine._add_owner(g)
+            g.set_affine_data_place(affine)
+            g._mapper_keep_alive = affine
+        return g
+
+    @staticmethod
+    def locality_domains(int dev_id=0):
+        """Grid with one execution place per locality domain of a device
+        (a single whole-device place with the fallback backend)."""
+        cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
+        g._h = stf_exec_place_locality_domain_grid(dev_id)
+        if g._h == NULL:
+            raise RuntimeError("failed to create locality-domain grid")
+        return g
+
+    @staticmethod
     def from_devices(device_ids):
         """Create a 1-D grid with one place per device.
 
@@ -1721,52 +1854,6 @@ cdef int _exec_place_grid_rank(exec_place place):
     if isinstance(place, exec_place_grid):
         return (<exec_place_grid>place)._grid_rank
     return 1
-
-
-# -- C-order boundary -------------------------------------------------------
-#
-# The Python contract is C/row-major: public shapes, per-dimension
-# specifications, callback coordinates, and grid axes all use C order (axis 0
-# outermost/slowest). The C ABI and the C++ implementation remain
-# dimension-0-fastest; the helpers below are the only place the two
-# conventions meet. Rank is always explicit (stored on wrapper objects or
-# passed as an argument): it is never inferred by trimming extent-1
-# dimensions, which are legitimate.
-
-def _validate_extents(dims, what="shape"):
-    """Validate an int or a sequence of 1 to 4 positive integral extents and
-    return it as a tuple (public C order, untouched)."""
-    if isinstance(dims, bool):
-        raise TypeError(f"{what} must be an int or a sequence of ints")
-    if isinstance(dims, int):
-        dims = (dims,)
-    dims = tuple(dims)
-    if not 1 <= len(dims) <= 4:
-        raise ValueError(f"{what} must have 1 to 4 dimensions, got {len(dims)}")
-    for e in dims:
-        if isinstance(e, bool) or not isinstance(e, int):
-            raise TypeError(f"{what} extents must be ints, got {e!r}")
-        if e <= 0:
-            raise ValueError(f"{what} extents must be positive, got {e}")
-    return dims
-
-
-cdef int _fill_dim4_c_order(object dims, stf_dim4* out, str what=u"shape") except -1:
-    """Convert a public C-order shape into a native dimension-0-fastest
-    stf_dim4: reverse the active dimensions, then pad with trailing 1s."""
-    rev = _validate_extents(dims, what)[::-1]
-    padded = rev + (1,) * (4 - len(rev))
-    out.x = <uint64_t>padded[0]
-    out.y = <uint64_t>padded[1]
-    out.z = <uint64_t>padded[2]
-    out.t = <uint64_t>padded[3]
-    return 0
-
-
-def _native_to_public(native, int rank):
-    """Convert a native (x, y, z, t) tuple back to a public C-order tuple of
-    the stored rank."""
-    return tuple(native[:rank])[::-1]
 
 
 def _public_axis_to_native(axis, int rank, what="axis"):
@@ -2193,6 +2280,17 @@ cdef class data_place:
         p._h = stf_data_place_device(dev_id)
         if p._h == NULL:
             raise RuntimeError(f"failed to create data_place for device {dev_id}")
+        return p
+
+    @staticmethod
+    def locality_domain(int dev_id, int domain_id):
+        """Data place whose allocations are localized to one locality
+        domain of a device (plain device memory with the fallback
+        backend)."""
+        cdef data_place p = data_place.__new__(data_place)
+        p._h = stf_data_place_locality_domain(dev_id, domain_id)
+        if p._h == NULL:
+            raise RuntimeError("failed to create locality-domain data place")
         return p
 
     @staticmethod

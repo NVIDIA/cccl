@@ -589,6 +589,45 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+uint32_t stf_locality_domain_count(int dev_id)
+{
+  try
+  {
+    return static_cast<uint32_t>(::cuda::experimental::places::locality_domain_count(dev_id));
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_locality_domain_count: %s\n", e.what());
+    return 0;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_locality_domain_count: unknown error\n");
+    return 0;
+  }
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id));
+  }));
+}
+
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new data_place(data_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
 stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
 {
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");

@@ -230,8 +230,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__cccl_basic_sv_compatible_range<_Range, _CharT, _Traits>)
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
-      : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
-      , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
+      : __data_{::cuda::std::ranges::data(__r)}
+      , __size_{::cuda::std::ranges::size(__r)}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
@@ -386,6 +386,11 @@ public:
       _CCCL_THROW(::std::out_of_range, "string_view::substr");
     }
     return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr basic_string_view subview(size_type __pos = 0, size_type __n = npos) const
+  {
+    return substr(__pos, __n);
   }
 
   // compare

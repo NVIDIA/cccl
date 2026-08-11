@@ -20,6 +20,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -27,19 +30,19 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Equality on the full multi-precision value, not just its double image, so a
 // wrong low word cannot pass unnoticed.
 template <class T>
-TEST_FUNC bool same(const T& __a, const T& __b)
+TEST_HOST_DEVICE_FUNC bool same(const T& __a, const T& __b)
 {
   return !(__a != __b);
 }
 
 // ---- increment / decrement ------------------------------------------------
 template <class T>
-TEST_FUNC void test_incdec()
+TEST_HOST_DEVICE_FUNC void test_incdec()
 {
   const T start(2.5);
   const T one(1.0);
@@ -95,7 +98,7 @@ TEST_FUNC void test_incdec()
   // The increment must land in the low word when the high word cannot hold it:
   // 2^30 + 1 is not representable in fp32, so a double-float that dropped the
   // low word would come back as 2^30 exactly.
-  if constexpr (::cuda::std::is_same_v<T, fp32mp2> || ::cuda::std::is_same_v<T, fp64mp2>)
+  if constexpr (::cuda::std::is_same_v<T, cudax::fp32mp2> || ::cuda::std::is_same_v<T, cudax::fp64mp2>)
   {
     T x(1073741824.0); // 2^30
     ++x;
@@ -107,7 +110,7 @@ TEST_FUNC void test_incdec()
 
 // ---- unary minus ---------------------------------------------------------
 template <class T>
-TEST_FUNC void test_neg()
+TEST_HOST_DEVICE_FUNC void test_neg()
 {
   const T x(2.5);
   assert(static_cast<double>(-x) == -2.5);
@@ -132,7 +135,7 @@ TEST_FUNC void test_neg()
 
 // ---- compound assignment -------------------------------------------------
 template <class T>
-TEST_FUNC void test_compound()
+TEST_HOST_DEVICE_FUNC void test_compound()
 {
   const T a(6.25);
   const T b(1.5);
@@ -184,7 +187,7 @@ TEST_FUNC void test_compound()
 // These take _FpType and go through the accumulate path rather than the full
 // add, so they are checked against the same operation spelled with fpmp2.
 template <class T, class Scalar>
-TEST_FUNC void test_compound_scalar()
+TEST_HOST_DEVICE_FUNC void test_compound_scalar()
 {
   {
     T x(6.25);
@@ -210,27 +213,27 @@ TEST_FUNC void test_compound_scalar()
 }
 
 template <class T>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_incdec<T>();
   test_neg<T>();
   test_compound<T>();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
-  test_type<fp32mp2>();
-  test_type<fp32mp2_low>();
-  test_type<fp32mp2_mid>();
-  test_type<fp32mp2_high>();
+  test_type<cudax::fp32mp2>();
+  test_type<cudax::fp32mp2_low>();
+  test_type<cudax::fp32mp2_mid>();
+  test_type<cudax::fp32mp2_high>();
 
-  test_type<fp64mp2>();
-  test_type<fp64mp2_low>();
-  test_type<fp64mp2_mid>();
-  test_type<fp64mp2_high>();
+  test_type<cudax::fp64mp2>();
+  test_type<cudax::fp64mp2_low>();
+  test_type<cudax::fp64mp2_mid>();
+  test_type<cudax::fp64mp2_high>();
 
-  test_compound_scalar<fp32mp2, float>();
-  test_compound_scalar<fp64mp2, double>();
+  test_compound_scalar<cudax::fp32mp2, float>();
+  test_compound_scalar<cudax::fp64mp2, double>();
 }
 
 int main(int, char**)

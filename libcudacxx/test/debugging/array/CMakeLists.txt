@@ -3,11 +3,11 @@ libcudacxx_add_pretty_printer_test(
   SOURCES source.cu
   CASES
     # gersemi: off
-    --case inspect_normal 1 array.normal normal
-    --case inspect_empty 1 array.empty empty
-    --case inspect_nested 1 array.nested nested
-    --case inspect_alias 1 array.alias alias
-    --case inspect_before_update 1 array.update.before updated_values
-    --case inspect_after_update 1 array.update.after updated_values
+    --case inspect_normal array.normal values
+    --case inspect_empty array.empty values
+    --case inspect_nested array.nested values
+    --case inspect_alias array.alias values
+    --case inspect_before_update array.update.before values
+    --case inspect_after_update array.update.after values
     # gersemi: on
 )

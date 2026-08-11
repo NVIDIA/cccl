@@ -11,7 +11,6 @@ strided 32-bit memsets for 8-byte types, so no optional third-party package
 """
 
 import numpy as np
-
 from cuda.core import Buffer, Stream
 
 

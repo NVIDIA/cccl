@@ -40,17 +40,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Source access order for copy_bytes
 enum class source_access_order
 {
-#  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Access source in stream order
-  stream = ::cudaMemcpySrcAccessOrderStream,
+  stream = 0x1,
   //! @brief Access source during the copy call, source can be destroyed after the API returns
-  during_api_call = ::cudaMemcpySrcAccessOrderDuringApiCall,
+  during_api_call = 0x2,
   //! @brief Access source in any order, the order can change across CUDA releases
-  any = ::cudaMemcpySrcAccessOrderAny,
-#  else
   any = 0x3,
-#  endif // _CCCL_CTK_BELOW(13, 0)
 };
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+static_assert(::cuda::std::to_underlying(source_access_order::stream) == ::cudaMemcpySrcAccessOrderStream);
+static_assert(::cuda::std::to_underlying(source_access_order::during_api_call)
+              == ::cudaMemcpySrcAccessOrderDuringApiCall);
+static_assert(::cuda::std::to_underlying(source_access_order::any) == ::cudaMemcpySrcAccessOrderAny);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //! @brief Configuration for copy_bytes
 struct copy_configuration
