@@ -146,7 +146,7 @@ private:
     __config.src_access_order = ::cuda::source_access_order::stream;
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-    ::cuda::std::span<__size_type> __result_span{&__result, 1};
+    const ::cuda::std::span<__size_type> __result_span{&__result, 1};
     ::cuda::copy_bytes(__stream, __counter, __result_span, __config);
     __stream.sync();
     return __result;
