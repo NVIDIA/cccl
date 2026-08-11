@@ -306,12 +306,16 @@ public:
             && (sample_size_bytes == 1 || sample_size_bytes == 2 || sample_size_bytes == 4 || sample_size_bytes == 8)
           ? 2048
           : 0;
+      // The larger compile-time-sized histogram regresses the tuned RANGE kernels even when the runtime histogram
+      // has at most 256 bins. Keep their static allocation at 256 bins and use the runtime-sized tier above it.
+      const int max_privatized_static_smem_single_channel_bytes =
+        (range_multi_static || range_u64_static ? 256 : 512) * counter_size_bytes;
 
       return HistogramPolicy{
         gmem,
         static_smem,
         gmem,
-        512 * counter_size_bytes,
+        max_privatized_static_smem_single_channel_bytes,
         max_privatized_dynamic_smem_single_channel_bytes,
         range_multi_static || range_u64_static ? 3 : 0,
         has_dynamic_smem_tuning ? 2048 * counter_size_bytes * num_active_channels : 0,
