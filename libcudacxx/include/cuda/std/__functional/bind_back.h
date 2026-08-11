@@ -42,18 +42,27 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t _NBound, class = make_index_sequence<_NBound>>
 struct __bind_back_op;
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <size_t _NBound, size_t... _Ip>
 struct __bind_back_op<_NBound, index_sequence<_Ip...>>
 {
   // clang-format off
   template <class _Fn, class _BoundArgs, class... _Args>
   _CCCL_API constexpr auto
-  operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
+  _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args)
   noexcept(noexcept(::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...)))
   -> decltype(      ::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...))
   { return          ::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...); }
   // clang-format on
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Fn, class _BoundArgs>
 struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>

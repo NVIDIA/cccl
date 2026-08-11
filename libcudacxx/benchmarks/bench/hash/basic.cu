@@ -1,17 +1,22 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-
-#include <cuda/experimental/__cuco/hash_functions.cuh>
+#include <cuda/std/utility>
 
 #include <nvbench/nvbench.cuh>
 #include <nvbench/range.cuh>
-
-namespace cudax = cuda::experimental;
 
 // repeat hash computation n times
 static constexpr auto n_repeats = 100;
@@ -32,20 +37,20 @@ private:
 };
 
 template <cuda::std::int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>
-__global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool materialize_result)
+__global__ void hash_bench_kernel(Hasher hash, cuda::std::size_t n, OutputIt out, bool materialize_result)
 {
-  size_t const gid         = static_cast<size_t>(BlockSize) * blockIdx.x + threadIdx.x;
-  size_t const loop_stride = static_cast<size_t>(gridDim.x) * BlockSize;
-  size_t idx               = gid;
-  using result_t           = decltype(hash(0));
+  const cuda::std::size_t gid         = static_cast<cuda::std::size_t>(BlockSize) * blockIdx.x + threadIdx.x;
+  const cuda::std::size_t loop_stride = static_cast<cuda::std::size_t>(gridDim.x) * BlockSize;
+  cuda::std::size_t idx               = gid;
+  using result_t                      = decltype(hash(0));
 
   result_t agg{};
 
   while (idx < n)
   {
-    Key key(idx);
+    const Key key(static_cast<cuda::std::int32_t>(idx));
     for (cuda::std::int32_t i = 0; i < n_repeats; ++i)
-    { // execute hash func n times
+    {
       agg += hash(key);
     }
     idx += loop_stride;
@@ -61,13 +66,14 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
 template <typename HasherTag, typename Key>
 void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
 {
-  using Hash = typename HasherTag::template fn<Key>;
+  using hash_t = typename HasherTag::template fn<Key>;
 
-  bool const materialize_result = false;
+  const bool materialize_result = false;
   constexpr auto block_size     = 128;
-  auto const num_keys           = state.get_int64("NumInputs");
-  auto const grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
-  using result_t                = decltype(std::declval<Hash>()(std::declval<cuda::std::int32_t>()));
+  const auto num_keys           = state.get_int64("NumInputs");
+  const auto grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
+
+  using result_t = decltype(cuda::std::declval<hash_t>()(cuda::std::declval<cuda::std::int32_t>()));
 
   thrust::device_vector<result_t> hash_values((materialize_result) ? num_keys : 1);
 
@@ -75,26 +81,26 @@ void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
 
   state.exec([&](nvbench::launch& launch) {
     hash_bench_kernel<block_size, Key>
-      <<<grid_size, block_size, 0, launch.get_stream()>>>(Hash{}, num_keys, hash_values.begin(), materialize_result);
+      <<<grid_size, block_size, 0, launch.get_stream()>>>(hash_t{}, num_keys, hash_values.begin(), materialize_result);
   });
 }
 
 struct xxhash_32_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_32>;
+  using fn = cuda::hash<Key, cuda::hash_algorithm::xxhash_32>;
 };
 
 struct xxhash_64_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_64>;
+  using fn = cuda::hash<Key, cuda::hash_algorithm::xxhash_64>;
 };
 
 struct murmurhash3_32_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_32>;
+  using fn = cuda::hash<Key, cuda::hash_algorithm::murmurhash3_32>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -102,13 +108,13 @@ struct murmurhash3_32_tag
 struct murmurhash3_x86_128_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_x86_128>;
+  using fn = cuda::hash<Key, cuda::hash_algorithm::murmurhash3_x86_128>;
 };
 
 struct murmurhash3_x64_128_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_x64_128>;
+  using fn = cuda::hash<Key, cuda::hash_algorithm::murmurhash3_x64_128>;
 };
 
 #endif // _CCCL_HAS_INT128()

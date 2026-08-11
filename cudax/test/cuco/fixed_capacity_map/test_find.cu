@@ -17,6 +17,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
@@ -105,7 +106,7 @@ C2H_TEST("fixed_capacity_map find", "[container]", key_types, cg_sizes, bucket_s
   [[maybe_unused]] constexpr int bucket_size = c2h::get<2, TestType>::value;
   [[maybe_unused]] constexpr int probing     = c2h::get<3, TestType>::value;
 
-  using hasher = cudax::cuco::hash<key_type>;
+  using hasher = cuda::hash<key_type>;
   using probing_type =
     ::cuda::std::conditional_t<probing == 0,
                                cudax::cuco::linear_probing<cg_size, hasher>,

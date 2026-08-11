@@ -28,6 +28,7 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/data_exchange.h>
@@ -51,12 +52,13 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! the algorithm defined in "Histogram Sort with Sampling" by Harsh
 //! et. al. (arxiv.org/abs/1803.01237, alternatively dl.acm.org/doi/10.1145/3323165.3323184)
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
+template <class _Policy, class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
   const __result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   _BinaryOp __cmp)
 {
   static_assert(::cuda::std::same_as<_Policy, distributed_t>,
@@ -64,15 +66,18 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
 
+  static_assert(::cuda::std::is_arithmetic_v<::cuda::std::ranges::range_value_t<_SizeTRange>>,
+                "Non arithmetic size types not yet supported. Please open an issue at "
+                "github.com/NVIDIA/cccl/issue requesting support for your specified type.");
+
   // TODO(jfaibussowit):
   //
-  // We should consider supporting random-access ranges too, but then we need temp buffers for
+  // We should consider supporting random-access iterators too, but then we need temp buffers for
   // the various comms calls.
   //
   // We cannot assert the following because thrust iterators don't play nice with it.
 #if 0
-  using __base_iter =
-    ::cuda::std::ranges::iterator_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
+  using __base_iter = ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputIterRange>>;
 
   static_assert(::cuda::std::__has_contiguous_traversal<__base_iter>);
 #endif
@@ -82,16 +87,17 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
     auto __comm_it                = ::cuda::std::ranges::begin(__comms);
     auto __env_it                 = ::cuda::std::ranges::begin(__envs);
-    auto __input_it               = ::cuda::std::ranges::begin(__local_inputs);
+    auto __input_it               = ::cuda::std::ranges::begin(__input_iters);
+    auto __num_items_it           = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm_it->logical_device(),
         CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
-        ::cuda::std::ranges::begin(*__input_it),
-        ::cuda::std::ranges::size(*__input_it),
+        *__input_it,
+        *__num_items_it,
         __cmp,
         *__env_it);
     }
@@ -105,7 +111,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
     return;
   }
 
-  const auto __setup = __local_setup(__comms, __envs, __local_inputs, __comm_size);
+  const auto __setup = __local_setup(__comms, __envs, __num_items_range, __comm_size);
 
   // 0 global elements, or all global elements are on the local rank
   if (__setup.__N == 0)
@@ -114,12 +120,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
   }
 
   auto __exchange_result = [&] {
-    auto __hist_results = __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
+    auto __hist_results = __histogramming_phase(__setup, __comms, __envs, __input_iters, __num_items_range, __cmp);
 
-    return __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __hist_results);
+    return __data_exchange(__setup, __comms, __envs, __input_iters, __num_items_range, __cmp, __hist_results);
   }();
 
-  __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs, __exchange_result);
+  __rebalance_to_original_counts(__setup, __comms, __envs, __input_iters, __num_items_range, __exchange_result);
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
