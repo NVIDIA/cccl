@@ -9,24 +9,19 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_shared_resource(value_type: gdb.Type) -> bool:
-    # strip_typedefs resolves aliases that can hide the public class name.
-    value_type = value_type.strip_typedefs().unqualified()
-    type_name = memory_resource.public_type_name(value_type)
-    template_name = _template_name(value_type)
+    value_type = cccl_common.canonical_type(value_type)
+    type_name = cccl_common.public_type_name(value_type)
     return (
         type_name.startswith("cuda::mr::")
-        and template_name.rsplit("::", 1)[-1] == "shared_resource"
+        and cccl_common.template_name(value_type).rsplit("::", 1)[-1]
+        == "shared_resource"
     )
 
 
@@ -34,7 +29,7 @@ class SharedResourcePrinter:
     """Print the ownership state and the owned resource of a shared resource."""
 
     def __init__(self, value: gdb.Value) -> None:
-        self.value = value
+        self.value = cccl_common.strip_reference_value(value)
 
     def _control_block(self) -> gdb.Value | None:
         """Return the control block, or None if this handle is empty."""
@@ -46,8 +41,7 @@ class SharedResourcePrinter:
         return control_block.dereference()
 
     def to_string(self) -> str:
-        value_type = self.value.type.strip_typedefs().unqualified()
-        type_name = memory_resource.public_type_name(value_type)
+        type_name = cccl_common.canonical_type_name(self.value.type)
         block = self._control_block()
         if block is None:
             return f"{type_name} use_count=0, resource=nullptr"

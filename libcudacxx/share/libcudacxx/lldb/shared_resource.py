@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _SHARED_RESOURCE_PATTERN = re.compile(r"^cuda::mr::shared_resource<.+>$")
@@ -15,16 +17,12 @@ InternalDict = dict[str, object]
 
 
 def is_shared_resource(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _SHARED_RESOURCE_PATTERN.fullmatch(type_name) is not None
 
 
 def _display_type_name(value: lldb.SBValue) -> str:
-    type_name = (
-        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
-    )
+    type_name = cccl_common.canonical_type_name(value.GetType())
     return type_name or "cuda::mr::shared_resource"
 
 
@@ -33,7 +31,8 @@ def _block_pointer(value: lldb.SBValue) -> lldb.SBValue:
     # shared_resource holds a __shared_block_ptr, and both the wrapper and the
     # pointer spell their member __block_.
     return (
-        value.GetNonSyntheticValue()
+        cccl_common.strip_reference_value(value)
+        .GetNonSyntheticValue()
         .GetChildMemberWithName("__block_")
         .GetChildMemberWithName("__block_")
     )
@@ -69,9 +68,12 @@ def shared_resource_summary(
 
     block = block_pointer.Dereference()
     payload = _payload(value)
-    # cuda::std::atomic<int> keeps its value in __a.__a_value.
+    # cuda::std::atomic<int> keeps its value in __a.__a_value. Read the raw
+    # members: the atomic formatter replaces that layout with a synthetic
+    # "value" child, and one formatter should not depend on another's output.
     reference_count = (
         block.GetChildMemberWithName("__ref_count")
+        .GetNonSyntheticValue()
         .GetChildMemberWithName("__a")
         .GetChildMemberWithName("__a_value")
     )
@@ -94,7 +96,7 @@ class SharedResourceSyntheticProvider:
     """Expose the owned resource as an LLDB synthetic child."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
-        self.value = value.GetNonSyntheticValue()
+        self.value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
         self.resource = lldb.SBValue()
         self.update()
 
