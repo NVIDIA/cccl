@@ -207,6 +207,38 @@ runs:
         exit $exitCode
         EOF
 
+        declare -a extra_launch_args="(
+          ${ENVARGS:-}
+        )"
+
+        # Set up build cluster auth
+        if grep -q 'USE_SCCACHE_DIST=true' <<< "${ENVARGS:-}"; then
+          SCCACHE_DIST_URL="https://amd64.windows.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
+          export SCCACHE_DIST_AUTH_TOKEN;
+
+          extra_launch_args+=(
+            --env "SCCACHE_DIST_AUTH_TOKEN"
+            --env "SCCACHE_DIST_AUTH_TYPE=token"
+            --env "SCCACHE_DIST_MAX_RETRIES=2"
+            --env "SCCACHE_DIST_REQUEST_TIMEOUT=7140"
+            --env "SCCACHE_DIST_SCHEDULER_URL=$SCCACHE_DIST_URL"
+          )
+
+          echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
+        fi
+
         docker_exit=0
         set +e
         docker run \
@@ -247,7 +279,7 @@ runs:
           --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
-          ${ENVARGS:-} \
+          "${extra_launch_args[@]}" \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 

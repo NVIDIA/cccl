@@ -633,8 +633,6 @@ def annotate_job_for_build_cluster(matrix_job, job_type, use_build_cluster_if_po
         and job_prefix == "build"
         # Only use the build cluster for CPU jobs
         and not job_info["gpu"]
-        # Only use the build cluster for Linux jobs
-        and not is_windows(matrix_job)
         # Only use the build cluster for cudax, CUB, Thrust, and libcu++ jobs
         and project["id"] in ["cudax", "cub", "thrust", "libcudacxx"]
     ):
