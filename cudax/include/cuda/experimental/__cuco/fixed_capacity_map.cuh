@@ -320,6 +320,55 @@ public:
     __impl->insert_async(__stream, __first, __last, ref());
   }
 
+  //! @brief Inserts keys in `[__first, __last)` whose stencil satisfies `__pred`.
+  //!
+  //! The key-value pair `__first[i]` is inserted when `__pred(__stencil[i])` is true.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `insert_if_async`.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator whose value type is
+  //! convertible to the map's `value_type`
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //!
+  //! @param __stream CUDA stream used for insert
+  //! @param __first Beginning of the sequence of key-value pairs
+  //! @param __last End of the sequence of key-value pairs
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which elements to insert
+  //!
+  //! @return Number of successful insertions
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  size_type
+  insert_if(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    return __impl->insert_if(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
+  //! @brief Asynchronously inserts keys in `[__first, __last)` whose stencil satisfies `__pred`.
+  //!
+  //! The key-value pair `__first[i]` is inserted when `__pred(__stencil[i])` is true.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator whose value type is
+  //! convertible to the map's `value_type`
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //!
+  //! @param __stream CUDA stream used for insert
+  //! @param __first Beginning of the sequence of key-value pairs
+  //! @param __last End of the sequence of key-value pairs
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which elements to insert
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  void insert_if_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred) noexcept
+  {
+    __impl->insert_if_async(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
   // ===== Contains =====
 
   //! @brief Indicates whether each key in `[__first, __last)` is contained in the map.

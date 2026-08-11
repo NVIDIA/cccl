@@ -241,6 +241,22 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST_API __size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
+    return this->insert_if(
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+  }
+
+  //! @brief Inserts keys in `[first, last)` whose stencil satisfies `pred`.
+  //!
+  //! @return Number of successful insertions
+  template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
+  _CCCL_HOST_API __size_type insert_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _Ref __container_ref)
+  {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
@@ -253,12 +269,7 @@ public:
 
     __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-        __first,
-        __num_keys,
-        ::cuda::constant_iterator<bool>{true},
-        ::cuda::std::identity{},
-        __counter.data(),
-        __container_ref);
+        __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
@@ -269,6 +280,22 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
+    this->insert_if_async(
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+  }
+
+  //! @brief Asynchronously inserts keys in `[first, last)` whose stencil satisfies `pred`.
+  //!
+  //! @throws cuda_error if the insert operation fails to launch
+  template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
+  _CCCL_HOST_API void insert_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _Ref __container_ref)
+  {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
@@ -277,8 +304,7 @@ public:
 
     if constexpr (__cg_size == 1)
     {
-      __open_addressing::__insert_if_fn __op{
-        __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref};
+      __open_addressing::__insert_if_fn __op{__first, __stencil, __pred, __container_ref};
       _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to insert keys", __num_keys, __op, __stream);
     }
     else
@@ -287,7 +313,7 @@ public:
 
       __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
         <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+          __first, __num_keys, __stencil, __pred, __container_ref);
     }
   }
 

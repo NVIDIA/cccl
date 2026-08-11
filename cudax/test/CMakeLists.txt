@@ -114,6 +114,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${
     cuco/fixed_capacity_map/test_insert_and_contains.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_if ${cudax_target}
+    cuco/fixed_capacity_map/test_insert_if.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.find ${cudax_target}
     cuco/fixed_capacity_map/test_find.cu
 )
