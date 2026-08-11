@@ -10,82 +10,81 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 [[gnu::noinline]] void inspect_owning(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_without_context(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_ref(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 using stream_ref_alias = cuda::stream_ref;
 
 [[gnu::noinline]] void inspect_alias(const stream_ref_alias& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_default(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_legacy(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_per_thread(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_invalid(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_moved_from(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_summary(const std::vector<cuda::stream_ref>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_capturing(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_capture(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 int main()
@@ -154,6 +153,6 @@ int main()
   }
   inspect_after_capture(capture_stream);
 
-  keep_for_debugger(moved_to_stream);
+  KEEP_FOR_DEBUGGER(moved_to_stream);
   return 0;
 }

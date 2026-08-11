@@ -11,6 +11,10 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
+* :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
+  logical data and tasks with read/write annotations; STF orchestrates execution
+  and data movement.
+
 These libraries expose the generic, highly-optimized algorithms from the
 `CCCL C++ libraries <https://nvidia.github.io/cccl/cpp.html>`_,
 which have been tuned to provide optimal performance across GPU architectures.
@@ -30,5 +34,6 @@ Who is this for?
 
    setup
    compute/index
+   stf
    resources
    api_reference

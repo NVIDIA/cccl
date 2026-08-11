@@ -67,6 +67,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
@@ -128,8 +133,8 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   }
 
   template <class _Policy, class _Iter, class _Size, class _Tp, class _BinaryOp>
-  [[nodiscard]] _CCCL_HOST_API _Tp
-  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __count, _Tp __init, _BinaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _Tp _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __count, _Tp __init, _BinaryOp __func)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
@@ -161,13 +166,18 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   }
 
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
-  [[nodiscard]] _CCCL_HOST_API _Tp
-  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _Tp _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
     const auto __count = ::cuda::std::distance(__first, __last);
-    return (*this)(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
+    return __pstl_dispatch{}(
+      __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

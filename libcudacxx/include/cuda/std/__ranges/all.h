@@ -48,33 +48,43 @@ _CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
   requires(!__to_ref_view<_Tp>),
   (::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}));
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::ranges::view<decay_t<_Tp>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
-      -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
+    -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
   {
     return _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_ref_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)};
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_owning_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)};
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

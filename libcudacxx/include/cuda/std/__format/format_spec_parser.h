@@ -99,10 +99,15 @@ template <size_t _IdSize>
   ::cuda::std::__throw_format_error(__msg);
 }
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fmt_substitute_arg_id_visitor
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t operator()([[maybe_unused]] _Tp __arg)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
@@ -144,6 +149,10 @@ struct __fmt_substitute_arg_id_visitor
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Context>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t __fmt_substitute_arg_id(basic_format_arg<_Context> __format_arg)

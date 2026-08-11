@@ -79,17 +79,28 @@ _CCCL_API constexpr bool operator>=(monostate, monostate) noexcept
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #ifndef __cuda_std__
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
 {
   using argument_type = monostate;
   using result_type   = size_t;
 
-  _CCCL_API inline result_type operator()(const argument_type&) const noexcept
+  _CCCL_API inline result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type&) noexcept
   {
     return 66740831; // return a fundamentally attractive random value.
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

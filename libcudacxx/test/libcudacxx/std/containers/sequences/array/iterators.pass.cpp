@@ -61,8 +61,7 @@ TEST_FUNC
 #if !TEST_COMPILER(GCC, <, 8)
 constexpr
 #endif // !TEST_COMPILER(GCC, <, 8)
-  bool
-  tests()
+  bool tests()
 {
   {
     using C = cuda::std::array<int, 5>;
@@ -148,27 +147,27 @@ constexpr
 
       C c = {};
       check_noexcept(c);
-      assert(c.begin() == cuda::std::__begin_cpo{}(c));
-      assert(c.cbegin() == cuda::std::__cbegin_cpo{}(c));
+      assert(c.begin() == cuda::std::begin(c));
+      assert(c.cbegin() == cuda::std::cbegin(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(c.rbegin() == cuda::std::__rbegin_cpo{}(c));
-        assert(c.crbegin() == cuda::std::__crbegin_cpo{}(c));
+        assert(c.rbegin() == cuda::std::rbegin(c));
+        assert(c.crbegin() == cuda::std::crbegin(c));
       }
-      assert(c.end() == cuda::std::__end_cpo{}(c));
-      assert(c.cend() == cuda::std::__cend_cpo{}(c));
+      assert(c.end() == cuda::std::end(c));
+      assert(c.cend() == cuda::std::cend(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(c.rend() == cuda::std::__rend_cpo{}(c));
-        assert(c.crend() == cuda::std::__crend_cpo{}(c));
+        assert(c.rend() == cuda::std::rend(c));
+        assert(c.crend() == cuda::std::crend(c));
       }
 
-      assert(cuda::std::__begin_cpo{}(c) != cuda::std::__end_cpo{}(c));
-      assert(cuda::std::__cbegin_cpo{}(c) != cuda::std::__cend_cpo{}(c));
+      assert(cuda::std::begin(c) != cuda::std::end(c));
+      assert(cuda::std::cbegin(c) != cuda::std::cend(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(cuda::std::__rbegin_cpo{}(c) != cuda::std::__rend_cpo{}(c));
-        assert(cuda::std::__crbegin_cpo{}(c) != cuda::std::__crend_cpo{}(c));
+        assert(cuda::std::rbegin(c) != cuda::std::rend(c));
+        assert(cuda::std::crbegin(c) != cuda::std::crend(c));
       }
     }
     {
@@ -202,27 +201,27 @@ constexpr
 
       C c = {};
       check_noexcept(c);
-      assert(c.begin() == cuda::std::__begin_cpo{}(c));
-      assert(c.cbegin() == cuda::std::__cbegin_cpo{}(c));
+      assert(c.begin() == cuda::std::begin(c));
+      assert(c.cbegin() == cuda::std::cbegin(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(c.rbegin() == cuda::std::__rbegin_cpo{}(c));
-        assert(c.crbegin() == cuda::std::__crbegin_cpo{}(c));
+        assert(c.rbegin() == cuda::std::rbegin(c));
+        assert(c.crbegin() == cuda::std::crbegin(c));
       }
-      assert(c.end() == cuda::std::__end_cpo{}(c));
-      assert(c.cend() == cuda::std::__cend_cpo{}(c));
+      assert(c.end() == cuda::std::end(c));
+      assert(c.cend() == cuda::std::cend(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(c.rend() == cuda::std::__rend_cpo{}(c));
-        assert(c.crend() == cuda::std::__crend_cpo{}(c));
+        assert(c.rend() == cuda::std::rend(c));
+        assert(c.crend() == cuda::std::crend(c));
       }
 
-      assert(cuda::std::__begin_cpo{}(c) == cuda::std::__end_cpo{}(c));
-      assert(cuda::std::__cbegin_cpo{}(c) == cuda::std::__cend_cpo{}(c));
+      assert(cuda::std::begin(c) == cuda::std::end(c));
+      assert(cuda::std::cbegin(c) == cuda::std::cend(c));
       if (!TEST_IS_CONSTANT_EVALUATED())
       {
-        assert(cuda::std::__rbegin_cpo{}(c) == cuda::std::__rend_cpo{}(c));
-        assert(cuda::std::__crbegin_cpo{}(c) == cuda::std::__crend_cpo{}(c));
+        assert(cuda::std::rbegin(c) == cuda::std::rend(c));
+        assert(cuda::std::crbegin(c) == cuda::std::crend(c));
       }
     }
   }

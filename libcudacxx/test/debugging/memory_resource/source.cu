@@ -4,11 +4,10 @@
 
 #include <cuda/memory_resource>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using device_resource_type      = cuda::mr::any_resource<cuda::mr::device_accessible>;
 using host_device_resource_type = cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible>;
@@ -16,17 +15,17 @@ using resource_alias            = device_resource_type;
 
 [[gnu::noinline]] void inspect_device(const device_resource_type& resource)
 {
-  keep_for_debugger(resource);
+  KEEP_FOR_DEBUGGER(resource);
 }
 
 [[gnu::noinline]] void inspect_host_device(const host_device_resource_type& resource)
 {
-  keep_for_debugger(resource);
+  KEEP_FOR_DEBUGGER(resource);
 }
 
 [[gnu::noinline]] void inspect_alias(const resource_alias& resource)
 {
-  keep_for_debugger(resource);
+  KEEP_FOR_DEBUGGER(resource);
 }
 
 int main()

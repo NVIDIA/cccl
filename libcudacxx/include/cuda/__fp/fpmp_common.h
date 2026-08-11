@@ -34,8 +34,10 @@
           * CCCL_FPMP_EXPLICIT_CASTS                    (strict narrowing conversions)
           * CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP          (integer-only double -> fpmp2)
           * CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE          (integer-only fpmp2 -> double)
+          * CCCL_FPMP_FP128_MATH_FALLBACK               (binary128 fp64mp2 math)
         together with their mapping to the internal switches (_CCCL_FPMP_USE_LIB,
-        _CCCL_FPMP_EXPLICIT, _CCCL_FPMP_USE_OPT_FROM_DOUBLE, _CCCL_FPMP_USE_OPT_TO_DOUBLE).
+        _CCCL_FPMP_EXPLICIT, _CCCL_FPMP_USE_OPT_FROM_DOUBLE, _CCCL_FPMP_USE_OPT_TO_DOUBLE,
+        _CCCL_FPMP_FP128_MATH_FALLBACK).
 
     All library-internal machinery (decorator/ABI/declaration macros, the fp128
     detection/typedef, the bit-cast plumbing, the tuning knobs, and the __fpmp_*
@@ -133,6 +135,35 @@
 #endif
 #ifndef _CCCL_FPMP_USE_OPT_TO_DOUBLE
 #  define _CCCL_FPMP_USE_OPT_TO_DOUBLE CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE
+#endif
+
+// CCCL_FPMP_FP128_MATH_FALLBACK: whether the fp64mp2 math functions compute in binary128
+// (~113-bit) instead of double. Unset by default, in which case the library decides per
+// compilation pass: a host-only build takes the quad path wherever fp128 is available,
+// while in a CUDA compilation only the device pass does, and only where every targeted
+// architecture can run fp128 (sm_100 and later). A .cu file therefore does not silently
+// acquire a libquadmath dependency its host-only counterpart never had.
+//
+// Set it to 1 to put both passes on the quad path, which is what a program wants when the
+// host and the device halves of a computation have to agree to the last bits:
+//
+//   nvcc -arch=sm_100 -DCCCL_FPMP_FP128_MATH_FALLBACK=1 app.cu -lquadmath
+//
+// -lquadmath is the host side of that bargain on x86_64 GCC, where the quad entry points
+// (expq, sinq, ...) live in libquadmath; hosts whose long double is IEEE binary128
+// (AArch64, PPC64LE, s390x) call libm's *l entry points and need nothing extra. Setting it
+// to 1 for a target whose device cannot run fp128 makes the device pass fail to compile,
+// since its bodies then ask for quad arithmetic the architecture does not have. Setting it
+// to 0 keeps every pass on double.
+//
+// Every translation unit in a program has to agree on the value, as does the library build
+// in library mode: it selects which implementation the fp64mp2 entry points get. The
+// derivation, including the automatic case, lives with those bodies in
+// <cuda/__fp/fpmp_math_impl.h>.
+#ifdef CCCL_FPMP_FP128_MATH_FALLBACK
+#  ifndef _CCCL_FPMP_FP128_MATH_FALLBACK
+#    define _CCCL_FPMP_FP128_MATH_FALLBACK CCCL_FPMP_FP128_MATH_FALLBACK
+#  endif
 #endif
 
 #include <cuda/std/__cccl/prologue.h>

@@ -22,27 +22,27 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // bool and character types must be constructible (mirrors double), while 128-bit
 // integers remain deleted.
-static_assert(::cuda::std::is_constructible_v<fp32mp2, bool>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, char>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, signed char>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, unsigned char>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, wchar_t>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, char16_t>, "");
-static_assert(::cuda::std::is_constructible_v<fp32mp2, char32_t>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, bool>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, char>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, signed char>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, unsigned char>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, wchar_t>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, char16_t>, "");
-static_assert(::cuda::std::is_constructible_v<fp64mp2, char32_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, bool>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, signed char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, unsigned char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, wchar_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, char16_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp32mp2, char32_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, bool>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, signed char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, unsigned char>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, wchar_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, char16_t>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, char32_t>, "");
 
 template <class FP>
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   const double tol = 1e-5;
 
@@ -86,8 +86,8 @@ _CCCL_HOST_DEVICE void run_test()
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  run_test<fp32mp2>();
-  run_test<fp64mp2>();
+  run_test<cudax::fp32mp2>();
+  run_test<cudax::fp64mp2>();
 }
 
 int main(int, char**)

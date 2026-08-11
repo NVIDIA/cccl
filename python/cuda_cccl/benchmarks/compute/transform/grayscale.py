@@ -19,11 +19,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 from utils import FLOAT_TYPES as TYPE_MAP
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 from cuda.compute import gpu_struct, make_unary_transform
 
 
