@@ -17,7 +17,11 @@ $ErrorActionPreference = "Stop"
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+if ($env:PARALLEL_LEVEL -ne $null) {
+    $script:PARALLEL_LEVEL = $env:PARALLEL_LEVEL
+} else {
+    $script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+}
 
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"

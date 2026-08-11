@@ -234,6 +234,7 @@ runs:
             --env "SCCACHE_DIST_MAX_RETRIES=2"
             --env "SCCACHE_DIST_REQUEST_TIMEOUT=7140"
             --env "SCCACHE_DIST_SCHEDULER_URL=$SCCACHE_DIST_URL"
+            --env "PARALLEL_LEVEL=200"
           )
 
           echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
