@@ -105,7 +105,8 @@ CACHE_DIR="$OUT_DIR/.pch-cache"
 CSV="$OUT_DIR/timings.csv"
 
 cleanup() {
-  [[ "$KEEP_HARNESS" -eq 1 ]] || rm -f "$HARNESS"
+  # HARNESS_SRC is assigned further down, so it may be unset if we exit early.
+  [[ "$KEEP_HARNESS" -eq 1 ]] || rm -f "$HARNESS" "${HARNESS_SRC:-}"
   rm -rf "$CACHE_DIR"
 }
 trap cleanup EXIT
@@ -286,12 +287,14 @@ run_case() {
   fi
   mkdir -p "$CACHE_DIR"
 
-  local ms
-  if ! ms="$(CCCL_PCH_CACHE_DIR="$CACHE_DIR" "$HARNESS" "$algo" "$pch" "$CC_MAJOR" "$CC_MINOR" "$n" 2>/dev/null)"; then
-    printf '    %-14s %-12s FAILED\n' "$algo" "$label" >&2
+  # Keep the harness's stderr: a bare FAILED with no diagnostics is unusable.
+  local ms err_log="$OUT_DIR/${algo}-${label}.stderr"
+  if ! ms="$(CCCL_PCH_CACHE_DIR="$CACHE_DIR" "$HARNESS" "$algo" "$pch" "$CC_MAJOR" "$CC_MINOR" "$n" 2>"$err_log")"; then
+    printf '    %-14s %-12s FAILED (stderr: %s)\n' "$algo" "$label" "$err_log" >&2
     FAILURES=$((FAILURES + 1))
     return 1
   fi
+  rm -f "$err_log"
   printf '    %-14s %-12s %8.1f ms\n' "$algo" "$label" "$ms" >&2
   echo "$algo,$label,$ms" >> "$CSV"
 }

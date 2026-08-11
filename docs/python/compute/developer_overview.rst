@@ -830,9 +830,12 @@ Environment variables:
   explicitly disabled it). ``cuda.compute`` enables PCH itself and needs neither.
 
 ``CCCL_PCH_CACHE_DIR``
-  Cache location, used verbatim. Defaults to ``$XDG_CACHE_HOME/cccl/hostjit_pch``,
-  then ``~/.cache/cccl/hostjit_pch``, then a uid-scoped directory under the
-  system temp directory. Set this in CI, or in tests, to avoid touching the
+  Cache location, used verbatim. When unset, the default differs by platform.
+  On Linux and macOS: ``$XDG_CACHE_HOME/cccl/hostjit_pch``, then
+  ``~/.cache/cccl/hostjit_pch``, then a uid-scoped directory under the system
+  temp directory. On Windows: ``%LOCALAPPDATA%\cccl\hostjit_pch``, then a
+  directory under the system temp directory — ``XDG_CACHE_HOME`` and ``HOME``
+  are not consulted there. Set this in CI, or in tests, to avoid touching the
   shared user cache.
 
 ``CCCL_PCH_CACHE_MAXSIZE``

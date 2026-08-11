@@ -10,15 +10,11 @@
 
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <string>
 
 #include <cccl/c/pch.h>
-#include <hostjit/codegen/cub_call.hpp>
-#include <hostjit/config.hpp>
 #include <hostjit/jit_compiler.hpp>
-#include <util/build_utils.h>
-
-using namespace hostjit::codegen;
 
 size_t cccl_hostjit_pch_cache_dir(char* out, size_t out_size)
 try
