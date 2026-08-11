@@ -1170,15 +1170,6 @@ private:
           case 4:
             switch (value_size)
             {
-              case 1:
-                // ipt_21.tpb_256.ns_828.dcid_0.l2w_330.trp_1.ld_0  1.089427  0.946015  1.107724  1.254658
-                return {256,
-                        21,
-                        BLOCK_LOAD_WARP_TRANSPOSE,
-                        LOAD_DEFAULT,
-                        BLOCK_STORE_WARP_TRANSPOSE,
-                        BLOCK_SCAN_WARP_SCANS,
-                        lookback_delay_policy_from_type<no_delay_constructor_t<330>>};
               case 2:
                 // ipt_20.tpb_224.ns_460.dcid_0.l2w_1195.trp_1.ld_0  1.307715  1.206044  1.337792  1.636066
                 return {224,
@@ -1231,15 +1222,6 @@ private:
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backoff_constructor_t<16, 520>>};
-              case 2:
-                // ipt_13.tpb_320.ns_96.dcid_1.l2w_785.trp_1.ld_0  1.206540  0.970813  1.235699  1.457944
-                return {320,
-                        13,
-                        BLOCK_LOAD_WARP_TRANSPOSE,
-                        LOAD_DEFAULT,
-                        BLOCK_STORE_WARP_TRANSPOSE,
-                        BLOCK_SCAN_WARP_SCANS,
-                        lookback_delay_policy_from_type<fixed_delay_constructor_t<96, 785>>};
               case 4:
                 // ipt_13.tpb_320.ns_436.dcid_1.l2w_770.trp_1.ld_1  1.044204  0.996841  1.052216  1.115132
                 return {320,
