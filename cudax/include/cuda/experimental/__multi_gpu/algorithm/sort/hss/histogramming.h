@@ -131,10 +131,11 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
 
 //! @brief Launch the sampling kernel to draw sample keys from each rank's local input.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _InputRange>
+template <class _CommRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
   _CommRange&& __comms,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   ::cuda::std::int32_t __j,
   double __sampling_probability,
   const _BinaryOp& __cmp,
@@ -150,11 +151,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
 
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
   auto __comm_it                = ::cuda::std::ranges::begin(__comms);
-  auto __input_it               = ::cuda::std::ranges::begin(__local_inputs);
+  auto __input_it               = ::cuda::std::ranges::begin(__input_iters);
+  auto __num_items_it           = ::cuda::std::ranges::begin(__num_items_range);
   auto& __scratch               = *__local_scratch;
 
   for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-       (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
+       (void) ++__idx, (void) ++__comm_it, (void) ++__input_it, (void) ++__num_items_it)
   {
     const auto __rank   = __comm_it->rank();
     auto& __all_samples = __scratch[__idx].__all_samples;
@@ -167,7 +169,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
     const auto __seed =
       (static_cast<::cuda::std::uint64_t>(__j) * 0x129381294235245ULL) ^ static_cast<::cuda::std::uint64_t>(__rank);
 
-    const auto& __I_j = __local_hist_results[__idx].__splitters.__I_j;
+    const auto& __I_j  = __local_hist_results[__idx].__splitters.__I_j;
+    const auto* __keys = ::cuda::std::to_address(*__input_it);
 
     ::cuda::launch(
       // All inputs should be on the same stream here
@@ -177,8 +180,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
         __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__launch_config)>, _Tp, _BinaryOp>,
       ::cuda::std::philox4x64{__seed},
       __sampling_probability,
-      ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)),
-      ::cuda::std::to_address(::cuda::std::ranges::end(*__input_it)),
+      __keys,
+      __keys + *__num_items_it,
       __I_j,
       __cmp,
       // Each rank samples directly into its own slot of `__all_samples` so that we can
@@ -413,41 +416,39 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
 
 //! @brief Compute and globally reduce the per-probe histogram of the local keys.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __range_of_local_keys,
+  _InputIterRange&& __key_iters,
+  _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
   ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   {
-    auto __comm_it = ::cuda::std::ranges::begin(__comms);
-    auto __env_it  = ::cuda::std::ranges::begin(__envs);
-    auto __keys_it = ::cuda::std::ranges::begin(__range_of_local_keys);
+    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
+    auto __env_it       = ::cuda::std::ranges::begin(__envs);
+    auto __keys_it      = ::cuda::std::ranges::begin(__key_iters);
+    auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__keys_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
     {
       auto& __hist               = (*__local_hist_results)[__idx].__hist;
       auto& __probes             = (*__local_hist_results)[__idx].__splitters.__probes;
       const auto __num_probes    = __probes.size();
       const auto __num_buckets   = __num_probes + 1;
-      const auto* __keys_first   = ::cuda::std::to_address(::cuda::std::ranges::begin(*__keys_it));
+      const auto* __keys_first   = ::cuda::std::to_address(*__keys_it);
       const auto* __probes_first = __probes.data();
 
       __hist.resize_discard(__hist.stream(), __num_buckets, ::cuda::no_init);
 
-      auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
-                                    ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
-                                    _BinaryOp>{
-        __keys_first,
-        ::cuda::std::to_address(::cuda::std::ranges::end(*__keys_it)),
-        __probes_first,
-        __num_probes,
-        __cmp};
+      auto __op =
+        __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
+                          ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
+                          _BinaryOp>{__keys_first, __keys_first + *__num_items_it, __probes_first, __num_probes, __cmp};
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm_it->logical_device(),
@@ -515,14 +516,15 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
 }
 
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 [[nodiscard]]
 _CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp)
 {
   const auto __comm_size                       = __setup.__comm_size;
@@ -583,14 +585,23 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
       __cap_displs[__r + 1] = __cap_displs[__r] + ::cuda::std::max(__cap, ::cuda::std::size_t{1});
     }
 
-    __local_sampling(__comms, __local_inputs, __j, __prob, __cmp, __local_hist_results, __cap_displs, &__local_scratch);
+    __local_sampling(
+      __comms,
+      __input_iters,
+      __num_items_range,
+      __j,
+      __prob,
+      __cmp,
+      __local_hist_results,
+      __cap_displs,
+      &__local_scratch);
 
     __exchange_sample_counts(__comms, /*mut ref*/ __recvcounts, &__local_scratch);
 
     __gather_and_merge_probes(
       __comms, __envs, __cmp, __recvcounts, __cap_displs, &__local_scratch, &__local_hist_results);
 
-    __compute_histogram(__comms, __envs, __local_inputs, __cmp, &__local_hist_results);
+    __compute_histogram(__comms, __envs, __input_iters, __num_items_range, __cmp, &__local_hist_results);
 
     // Tighten the brackets, which are also the next round's sampling intervals
     __update_intervals(__comms, __envs, __N, &__local_hist_results);

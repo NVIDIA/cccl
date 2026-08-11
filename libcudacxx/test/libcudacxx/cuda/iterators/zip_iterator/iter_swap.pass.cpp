@@ -44,7 +44,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     cuda::zip_iterator iter1{a, b};
     cuda::zip_iterator iter2{a + 1, b + 1};
 
-    cuda::std::ranges::__iter_swap_cpo{}(iter1, iter2);
+    cuda::std::ranges::iter_swap(iter1, iter2);
 
     assert(a[0] == 2);
     assert(a[1] == 1);
@@ -78,20 +78,20 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     using Iter = cuda::zip_iterator<adltest::iter_move_swap_iterator, adltest::iter_move_swap_iterator>;
     Iter iter1{{iter_move_called_times1, iter_swap_called_times1, 0},
                {iter_move_called_times2, iter_swap_called_times2, 0}};
-    Iter iter2 = cuda::std::ranges::__next_cpo{}(iter1, 3);
+    Iter iter2 = cuda::std::ranges::next(iter1, 3);
 
     assert(iter_move_called_times1 == 0);
     assert(iter_move_called_times2 == 0);
     assert(iter_swap_called_times1 == 0);
     assert(iter_swap_called_times2 == 0);
 
-    cuda::std::ranges::__iter_swap_cpo{}(iter1, iter2);
+    cuda::std::ranges::iter_swap(iter1, iter2);
     assert(iter_move_called_times1 == 0);
     assert(iter_move_called_times2 == 0);
     assert(iter_swap_called_times1 == 2);
     assert(iter_swap_called_times2 == 2);
 
-    cuda::std::ranges::__iter_swap_cpo{}(iter1, iter2);
+    cuda::std::ranges::iter_swap(iter1, iter2);
     assert(iter_move_called_times1 == 0);
     assert(iter_move_called_times2 == 0);
     assert(iter_swap_called_times1 == 4);

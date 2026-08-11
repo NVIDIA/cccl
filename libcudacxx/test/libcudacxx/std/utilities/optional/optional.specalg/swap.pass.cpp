@@ -185,8 +185,7 @@ struct NonSwappable
   NonSwappable(NonSwappable const&) = delete;
 };
 TEST_FUNC // what in the world, nvrtc?!
-  void
-  swap(NonSwappable&, NonSwappable&) = delete;
+  void swap(NonSwappable&, NonSwappable&) = delete;
 
 TEST_FUNC void test_swap_sfinae()
 {

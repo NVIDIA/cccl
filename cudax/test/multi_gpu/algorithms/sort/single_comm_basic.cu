@@ -53,7 +53,7 @@ void check_sort_case(
   auto device_vec     = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i], cmp);
+    cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
   });
 
   sort_test_util::check_rank_sizes(comms, device_vec, host_inputs);
@@ -113,7 +113,7 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
 
     auto input = cuda::make_device_buffer<int>(environment, device, {high, high - 1});
 
-    cudax::sort(cudax::distributed, communicator, environment, input);
+    cudax::sort(cudax::distributed, communicator, environment, input.begin(), input.size());
 
     // The sort is in place and each rank keeps its original element count, so rank r ends up with
     // its two-element slice of the globally sorted sequence.

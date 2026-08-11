@@ -31,10 +31,10 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Type alias for the multi-precision floating-point type.
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 #if _CCCL_CUDA_COMPILATION()
 // Each thread adds then subtracts 1.0; the accumulator must cancel to ~0.

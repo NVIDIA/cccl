@@ -46,13 +46,18 @@ _CCCL_CONCEPT __readable_swappable =
   _CCCL_REQUIRES_EXPR((_ForwardIterator1, _ForwardIterator2), _ForwardIterator1 __a, _ForwardIterator2 __b)(
     requires(!__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>), swap(*__a, *__b));
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>)
-  _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
   {
     (void) iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b));
   }
@@ -60,12 +65,16 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__readable_swappable<_ForwardIterator1, _ForwardIterator2>)
-  _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
   {
     swap(*__a, *__b);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 
@@ -73,9 +82,6 @@ inline namespace __cpo
 {
 // This is a global constant to avoid breaking types that pull in `::std::iter_swap` via ADL
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __iter_swap_cpo = __iter_swap::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD
