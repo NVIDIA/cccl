@@ -172,10 +172,112 @@ or composed with other properties:
 
 Temporary storage is allocated from the memory resource on the algorithm's stream before
 execution and released on the same stream afterwards. When no memory resource is present
-in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFree``  allocator
-(see :ref:`Default behavior <cub-environment-fallback>`).
+in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFreeAsync``
+allocator (see :ref:`Default behavior <cub-environment-fallback>`).
 
 .. TODO: Add Guarantees sub-section after #9278 is merged.
+
+.. _cub-env-memory-resource-precondition:
+
+Devices without ``cudaMallocAsync`` support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+   The environment-based API assumes the device supports ``cudaMallocAsync``, which the
+   default memory resource uses to allocate temporary storage. Where that is not the
+   case (e.g. TCC driver mode on Windows), the default resource fails with
+   ``cudaErrorNotSupported``.
+
+CUB deliberately does not fall back to ``cudaMalloc``/``cudaFree`` on such devices.
+``cudaFree`` synchronizes the entire device, so a hidden fallback would silently change
+the synchronization semantics of every algorithm call depending on the machine it runs
+on, with no indication in the calling code.
+
+On devices without ``cudaMallocAsync`` support, pass a memory resource explicitly. The
+example below defines a synchronous memory resource on top of ``cudaMalloc``/``cudaFree``
+and selects between it and the default memory pool based on device support. Passing the
+resulting resource through the environment makes the synchronization behavior a visible,
+deliberate choice:
+
+.. code-block:: c++
+
+   #include <cuda/devices>
+   #include <cuda/memory_pool>
+   #include <cuda/memory_resource>
+
+   #include <cuda_runtime_api.h>
+
+   #include <stdexcept>
+
+   struct legacy_device_memory_resource : cuda::mr::memory_resource_base<legacy_device_memory_resource>
+   {
+     [[nodiscard]] void* allocate_sync(size_t bytes, size_t alignment = cuda::mr::default_cuda_malloc_alignment)
+     {
+       if (alignment > cuda::mr::default_cuda_malloc_alignment
+           || cuda::mr::default_cuda_malloc_alignment % alignment != 0)
+       {
+         throw std::invalid_argument("invalid alignment for legacy_device_memory_resource");
+       }
+
+       void* ptr          = nullptr;
+       cudaError_t status = cudaMalloc(&ptr, bytes);
+       if (status != cudaSuccess)
+       {
+         throw std::runtime_error(cudaGetErrorString(status));
+       }
+
+       return ptr;
+     }
+
+     void deallocate_sync(
+       void* ptr,
+       [[maybe_unused]] size_t bytes,
+       [[maybe_unused]] size_t alignment = cuda::mr::default_cuda_malloc_alignment) noexcept
+     {
+       cudaFree(ptr);
+     }
+
+     friend constexpr void get_property(legacy_device_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+
+     friend constexpr bool operator==(legacy_device_memory_resource, legacy_device_memory_resource) noexcept
+     {
+       return true;
+     }
+
+   #if _CCCL_STD_VER <= 2017
+     friend constexpr bool operator!=(legacy_device_memory_resource, legacy_device_memory_resource) noexcept
+     {
+       return false;
+     }
+   #endif
+   };
+
+   cuda::mr::any_resource<cuda::mr::device_accessible> make_device_resource(cuda::device_ref dev)
+   {
+     if (dev.attribute(cuda::device_attributes::memory_pools_supported))
+     {
+       return cuda::mr::any_resource<cuda::mr::device_accessible>{cuda::device_default_memory_pool(dev)};
+     }
+
+     return cuda::mr::make_any_resource<
+       cuda::mr::synchronous_resource_adapter<legacy_device_memory_resource>,
+       cuda::mr::device_accessible>(legacy_device_memory_resource{});
+   }
+
+The resource returned by ``make_device_resource`` can be passed to any algorithm that
+accepts an environment:
+
+.. code-block:: c++
+
+   auto mr  = make_device_resource(cuda::devices[0]);
+   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, mr};
+
+   cub::DeviceReduce::Sum(d_input, d_output, num_items, env);
+
+On devices without memory pool support, every allocation and deallocation made through
+this resource blocks the calling thread and synchronizes the device. That cost is
+inherent to ``cudaMalloc``/``cudaFree``; the explicit opt-in only makes it visible.
 
 .. _cub-environment-reuse:
 
@@ -228,7 +330,9 @@ is passed at all):
      - The default CUDA stream (``cudaStream_t{}``).
    * - Memory resource
      - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
-       allocated on the stream the algorithm runs on.
+       allocated on the stream the algorithm runs on. Requires device support for
+       ``cudaMallocAsync``; see
+       :ref:`Devices without cudaMallocAsync support <cub-env-memory-resource-precondition>`.
    * - Determinism
      - Algorithm-specific. See :ref:`cub-determinism`.
    * - Policy selector
