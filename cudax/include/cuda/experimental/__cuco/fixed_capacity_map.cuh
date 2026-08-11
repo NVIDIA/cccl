@@ -414,7 +414,7 @@ public:
     _InputIt __last,
     _StencilIt __stencil,
     _Predicate __pred,
-    _OutputIt __output_begin) const noexcept
+    _OutputIt __output_begin) const
   {
     __impl->contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
   }

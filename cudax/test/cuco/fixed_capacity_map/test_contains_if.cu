@@ -42,7 +42,7 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 template <class Pair>
 struct iota_pair
 {
-  _CCCL_HOST_DEVICE_API Pair operator()(typename Pair::first_type key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API Pair operator()(typename Pair::first_type key) const noexcept
   {
     return Pair{key, key};
   }
@@ -50,7 +50,7 @@ struct iota_pair
 
 struct is_even
 {
-  _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
   {
     return value % 2 == 0;
   }
@@ -58,7 +58,7 @@ struct is_even
 
 struct is_odd
 {
-  _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
   {
     return value % 2 != 0;
   }
@@ -69,7 +69,7 @@ struct matches_even_present_keys
   const int* results;
   int num_present;
 
-  _CCCL_DEVICE_API bool operator()(int index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int index) const noexcept
   {
     return static_cast<bool>(results[index]) == (index < num_present && index % 2 == 0);
   }
@@ -79,9 +79,19 @@ struct matches_odd_keys
 {
   const int* results;
 
-  _CCCL_DEVICE_API bool operator()(int index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int index) const noexcept
   {
     return static_cast<bool>(results[index]) == (index % 2 != 0);
+  }
+};
+
+struct equals_value
+{
+  int expected;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  {
+    return value == expected;
   }
 };
 
@@ -110,8 +120,8 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
   constexpr key_type empty_key_sentinel = key_type{-1};
 
   ::cuda::stream stream{::cuda::device_ref{0}};
-  auto mr     = ::cuda::device_default_memory_pool(stream.device());
-  auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+  auto mr           = ::cuda::device_default_memory_pool(stream.device());
+  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
 
   map_type map{stream,
                mr,
@@ -151,6 +161,8 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
     ::cuda::counting_iterator<int>{num_present},
     matches_odd_keys{results.data()}));
 
+  constexpr int unchanged_value = 42;
+  ::cuda::std::fill(policy, results.begin(), results.end(), unchanged_value);
   map.contains_if(
     stream,
     ::cuda::counting_iterator<key_type>{0},
@@ -158,4 +170,6 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
     ::cuda::counting_iterator<int>{0},
     is_even{},
     results.begin());
+
+  REQUIRE(::cuda::std::all_of(policy, results.begin(), results.end(), equals_value{unchanged_value}));
 }
