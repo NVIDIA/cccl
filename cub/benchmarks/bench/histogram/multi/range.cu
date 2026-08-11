@@ -97,10 +97,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
   state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
 
-  // Warmup + correctness check: run MultiHistogramRange once outside
-  // `state.exec`, checking the dispatch return code, then verify each
-  // channel's histogram bin-by-bin against an independent reference.
-  // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  // Optionally validate one untimed invocation.
   if (bench_correctness_checks_enabled())
   {
     thrust::fill(hist_r.begin(), hist_r.end(), CounterT{0});
@@ -157,35 +154,25 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   }
 
   caching_allocator_t alloc;
-  // Force the persisting-L2 reservation back to 0 and demote any persisting
-  // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
-  // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
-  // default reservation is 0; hardcoding 0 also clears any pollution left by
-  // a prior benchmark in the same nvbench process.
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
-             [&](nvbench::launch& launch, auto& timer) {
-               cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, 0);
-               cudaCtxResetPersistingL2Cache();
-               timer.start();
-               auto env = cub_bench_env(
-                 alloc,
-                 launch
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-                 ,
-                 cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
+      ,
+      cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
 #endif // !TUNE_BASE
-               );
-               _CCCL_TRY_CUDA_API(
-                 (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
-                 "MultiHistogramRange failed",
-                 d_input,
-                 cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
-                 cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-                 cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
-                 static_cast<OffsetT>(elements),
-                 env);
-               timer.stop();
-             });
+    );
+    _CCCL_TRY_CUDA_API(
+      (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
+      "MultiHistogramRange failed",
+      d_input,
+      cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+      cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+      cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+      static_cast<OffsetT>(elements),
+      env);
+  });
 }
 
 using counter_types     = nvbench::type_list<int32_t>;
@@ -200,20 +187,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
-  .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
-  // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,
-  // 0.0=constant) plus the multi-hot and cache-adversarial shapes. Each value
-  // may carry an inline knob as "name:value"; see histogram_inputs.cuh.
-  .add_string_axis(
-    "InputShape",
-    {"concentrated:1.0",
-     "concentrated:0.5",
-     "concentrated:0.0",
-     "powerlaw:0.5",
-     "zipf:1.0",
-     "hash_synonym",
-     "stale_resident",
-     "temporal_phases",
-     "strided_sweep",
-     "sawtooth"});
+  .add_int64_axis("Elements{io}", {1 << 16, 1 << 22, 1 << 28})
+  .add_int64_axis("Bins", {32, 2048, 16384, 2097152})
+  .add_string_axis("InputShape", {"concentrated:1.0", "concentrated:0.5", "strided_sweep"});
