@@ -210,14 +210,14 @@ deliberate choice:
 
    #include <stdexcept>
 
-   struct legacy_device_memory_resource : cuda::mr::memory_resource_base<legacy_device_memory_resource>
+   struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_memory_resource>
    {
      [[nodiscard]] void* allocate_sync(size_t bytes, size_t alignment = cuda::mr::default_cuda_malloc_alignment)
      {
        if (alignment > cuda::mr::default_cuda_malloc_alignment
            || cuda::mr::default_cuda_malloc_alignment % alignment != 0)
        {
-         throw std::invalid_argument("invalid alignment for legacy_device_memory_resource");
+         throw std::invalid_argument("invalid alignment for synchronous_memory_resource");
        }
 
        void* ptr          = nullptr;
@@ -238,15 +238,15 @@ deliberate choice:
        cudaFree(ptr);
      }
 
-     friend constexpr void get_property(legacy_device_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+     friend constexpr void get_property(synchronous_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 
-     friend constexpr bool operator==(legacy_device_memory_resource, legacy_device_memory_resource) noexcept
+     friend constexpr bool operator==(synchronous_memory_resource, synchronous_memory_resource) noexcept
      {
        return true;
      }
 
    #if _CCCL_STD_VER <= 2017
-     friend constexpr bool operator!=(legacy_device_memory_resource, legacy_device_memory_resource) noexcept
+     friend constexpr bool operator!=(synchronous_memory_resource, synchronous_memory_resource) noexcept
      {
        return false;
      }
@@ -261,8 +261,8 @@ deliberate choice:
      }
 
      return cuda::mr::make_any_resource<
-       cuda::mr::synchronous_resource_adapter<legacy_device_memory_resource>,
-       cuda::mr::device_accessible>(legacy_device_memory_resource{});
+       cuda::mr::synchronous_resource_adapter<synchronous_memory_resource>,
+       cuda::mr::device_accessible>(synchronous_memory_resource{});
    }
 
 The resource returned by ``make_device_resource`` can be passed to any algorithm that
