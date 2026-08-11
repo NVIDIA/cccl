@@ -15,7 +15,7 @@
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
 #endif // !CCCL_C_EXPERIMENTAL
 
-#include <cuda.h>
+#include <stddef.h>
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>

@@ -34,6 +34,12 @@ pytestmark = pytest.mark.skipif(
 # tests/ root, so subprocesses can import _utils the way the suite does.
 TESTS_ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 
+# Permission-based cases cannot be expressed on every platform: Windows chmod
+# does not make a directory unwritable, and root bypasses the check outright
+# (CI runs as root, so this is the common case, not an exotic one).
+IS_WINDOWS = sys.platform == "win32"
+IS_ROOT = hasattr(os, "geteuid") and os.geteuid() == 0
+
 
 def subprocess_env(cache_dir, **overrides):
     """Environment for a child interpreter: scratch cache + importable _utils."""
@@ -121,8 +127,30 @@ def test_corrupt_pch_falls_back(tmp_path):
             )
 
 
+def test_uncreatable_cache_dir_still_builds(tmp_path):
+    """An unusable cache location degrades to building without a PCH.
+
+    The cache path is nested under a regular file, so creating it fails with
+    ENOTDIR. Unlike a chmod, that holds for any uid and on Windows, so this
+    covers the degradation path in CI (which runs as root) as well.
+    """
+    blocker = tmp_path / "regular_file"
+    blocker.write_text("not a directory")
+
+    proc = run_python(BUILD_SNIPPET, blocker / "cache")
+    assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.skipif(
+    IS_WINDOWS or IS_ROOT,
+    reason="chmod cannot make a directory unwritable on Windows or for root",
+)
 def test_unwritable_cache_dir_still_builds(tmp_path):
-    """An unusable cache location degrades to building without a PCH."""
+    """A cache directory that exists but cannot be written to is also survivable.
+
+    This is the permission-denied counterpart to the ENOTDIR case above: it
+    reaches the write probe rather than failing at create_directories.
+    """
     cache = tmp_path / "readonly"
     cache.mkdir()
     cache.chmod(0o500)
@@ -160,9 +188,17 @@ def test_concurrent_cold_builds_generate_once(tmp_path):
         )
         for _ in range(4)
     ]
-    for p in procs:
-        out, err = p.communicate(timeout=900)
-        assert p.returncode == 0, err
+    # A failing assert mid-loop would otherwise strand the remaining children,
+    # which keep running a full build well past the end of the test.
+    try:
+        for p in procs:
+            _, err = p.communicate(timeout=900)
+            assert p.returncode == 0, err
+    finally:
+        for p in procs:
+            if p.poll() is None:
+                p.kill()
+                p.wait()
 
     names = pch_files(tmp_path)
     assert len(names) == 2, f"expected exactly one device and one host PCH, got {names}"
@@ -279,20 +315,27 @@ def test_cache_dir_and_clear(tmp_path):
     assert "ok" in proc.stdout
 
 
+CACHE_DIR_SNIPPET = "import cuda.compute as cc; print(cc.pch_cache_dir())"
+
+
 def test_cache_dir_follows_env(tmp_path):
     """The reported directory tracks the resolution chain, not a fixed path."""
-    code = "import cuda.compute as cc; print(cc.pch_cache_dir())"
-
-    proc = run_python(code, tmp_path)
+    proc = run_python(CACHE_DIR_SNIPPET, tmp_path)
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == str(tmp_path)
 
-    # With CCCL_PCH_CACHE_DIR unset, XDG_CACHE_HOME takes over.
+
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="the C layer resolves LOCALAPPDATA on Windows and never consults XDG_CACHE_HOME",
+)
+def test_cache_dir_falls_back_to_xdg(tmp_path):
+    """With CCCL_PCH_CACHE_DIR unset, XDG_CACHE_HOME takes over."""
     env = subprocess_env(
         tmp_path, CCCL_PCH_CACHE_DIR=None, XDG_CACHE_HOME=str(tmp_path / "xdg")
     )
     proc = subprocess.run(
-        [sys.executable, "-c", code],
+        [sys.executable, "-c", CACHE_DIR_SNIPPET],
         env=env,
         capture_output=True,
         text=True,

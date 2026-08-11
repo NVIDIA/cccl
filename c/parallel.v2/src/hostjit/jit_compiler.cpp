@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -6,6 +8,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -61,9 +64,12 @@ std::uintmax_t pch_cache_max_size()
     return default_bytes;
   }
 
+  errno                 = 0;
   char* end             = nullptr;
   const long long value = std::strtoll(v, &end, 10);
-  if (end == v || value < 0)
+  // strtoll signals overflow with ERANGE and still returns LLONG_MAX, which
+  // would otherwise be scaled by the suffix below and wrap.
+  if (end == v || value < 0 || errno == ERANGE)
   {
     return default_bytes;
   }
@@ -90,7 +96,16 @@ std::uintmax_t pch_cache_max_size()
         return default_bytes;
     }
   }
-  return static_cast<std::uintmax_t>(value) * multiplier;
+  // The scaled value must not wrap: a product of exactly 2^64 comes back as 0,
+  // which this function's callers read as "eviction disabled" and would let the
+  // cache grow without bound. Treat anything that does not fit as a typo and
+  // fall back to the default, the same as unparsable input.
+  const auto scalar = static_cast<std::uintmax_t>(value);
+  if (multiplier > 1 && scalar > std::numeric_limits<std::uintmax_t>::max() / multiplier)
+  {
+    return default_bytes;
+  }
+  return scalar * multiplier;
 }
 
 // Evict least-recently-used entries until the cache fits under its size cap,
@@ -211,13 +226,21 @@ void evict_pch_cache(const std::filesystem::path& dir, const std::vector<std::st
   }
 }
 
-// Resolve the PCH cache directory, once per process. Precedence:
-//   1. CCCL_PCH_CACHE_DIR    -- used verbatim, no subdirectory appended, so a
-//      caller (CI, a test's tmp_path) gets exactly the path it asked for.
-//   2. $XDG_CACHE_HOME/cccl/hostjit_pch
-//   3. ~/.cache/cccl/hostjit_pch  (%LOCALAPPDATA%\cccl\hostjit_pch on Windows)
-//   4. <temp>/hostjit_pch_<uid>  -- uid-scoped, so two users on one machine
+// Resolve the PCH cache directory, once per process. CCCL_PCH_CACHE_DIR wins on
+// every platform and is used verbatim, with no subdirectory appended, so a
+// caller (CI, a test's tmp_path) gets exactly the path it asked for. The
+// remaining candidates differ by platform.
+//
+// POSIX:
+//   1. $XDG_CACHE_HOME/cccl/hostjit_pch
+//   2. $HOME/.cache/cccl/hostjit_pch
+//   3. <temp>/hostjit_pch_<uid>  -- uid-scoped, so two users on one machine
 //      cannot land on the same directory and fight over its permissions.
+//
+// Windows (XDG_CACHE_HOME and HOME are not consulted):
+//   1. %LOCALAPPDATA%\cccl\hostjit_pch
+//   2. <temp>\hostjit_pch  -- no uid suffix; the per-user temp directory
+//      already scopes it.
 //
 // This is a persistent cache of tens of megabytes, not scratch, so the system
 // temp directory is a poor default: it is shared, and whoever creates it first
@@ -268,7 +291,11 @@ const std::filesystem::path& get_pch_cache_dir()
     {
       std::error_code ec;
       std::filesystem::create_directories(dir, ec);
-      if (ec && !std::filesystem::is_directory(dir))
+      // Both overloads must be the non-throwing ones: this runs in a static
+      // initializer, so an escaping filesystem_error would both fail the build
+      // and leave the static uninitialized for the next caller to retry.
+      std::error_code is_dir_ec;
+      if (ec && !std::filesystem::is_directory(dir, is_dir_ec))
       {
         continue;
       }
