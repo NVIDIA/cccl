@@ -89,6 +89,25 @@ private:
 public:
   using __base_t::__base_t;
 
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
+  _CCCL_HOST_API __resizable_buffer(::cuda::stream_ref __stream, _Resource&& __resource, const _Env& __env = {})
+      : __base_t(__stream, ::cuda::std::forward<_Resource>(__resource), __env)
+  {}
+
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
+  _CCCL_HOST_API explicit __resizable_buffer(
+    ::cuda::stream_ref __stream,
+    _Resource&& __resource,
+    const size_type __size,
+    ::cuda::no_init_t,
+    const _Env& __env = {})
+      : __base_t(__stream, ::cuda::std::forward<_Resource>(__resource), __size, ::cuda::no_init, __env)
+  {}
+
   //! @brief Constructs a resizable buffer by taking over an existing
   //! `cuda::buffer` allocation.
   //!

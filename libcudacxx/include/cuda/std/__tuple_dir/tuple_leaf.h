@@ -377,6 +377,7 @@ struct __tuple_like_constructor_tag
 
 // __tuple_impl
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& __source, __tuple_indices<_Indices...>)
 {
@@ -384,6 +385,7 @@ _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& 
   ((void) (get<_Indices>(__dest) = get<_Indices>(__source)), ...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, class... _Up, size_t... _Indices>
 _CCCL_API constexpr void
 __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up...>, __tuple_indices<_Indices...>)
@@ -392,6 +394,7 @@ __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up..
   ((void) (get<_Indices>(__dest) = ::cuda::std::forward<_Up>(get<_Indices>(__source))), ...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_tuple_assign(_Dest& __dest, _Source&& __source, __tuple_indices<_Indices...>)
 {

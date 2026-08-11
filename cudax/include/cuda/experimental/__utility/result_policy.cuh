@@ -28,7 +28,7 @@
 namespace cuda::experimental
 {
 template <class _Derived>
-struct __result_policy_base
+struct __result_policy_base // NOLINT(bugprone-crtp-constructor-accessibility)
 {
   using __derived_type _CCCL_NODEBUG_ALIAS = _Derived;
 };

@@ -45,10 +45,15 @@ _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 template <class _Type>
 _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
-struct __conj_if_needed
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
+struct __fn
 {
   template <class _Type>
-  _CCCL_API constexpr auto operator()(const _Type& __t) const
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Type& __t)
   {
     if constexpr (is_arithmetic_v<_Type> || !_HasConj<_Type>)
     {
@@ -61,11 +66,15 @@ struct __conj_if_needed
   }
 };
 
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{};
+_CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__fn{};
 } // namespace __cpo
 } // end namespace linalg
 

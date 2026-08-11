@@ -1,5 +1,11 @@
 setup_python_env() {
     local py_version=$1
+    # Optional venv directory name (under $HOME). Callers whose job runs
+    # several build scripts (e.g. the combined cuda-stf producer) pass their
+    # own name so the setups don't collide on one venv: uv errors on an
+    # existing venv instead of reusing it.
+    local venv_name="${2:-.cccl-venv}"
+    local venv_path="${HOME}/${venv_name}"
 
     # Source pretty_printing.sh for begin_group/end_group helpers
     local script_dir
@@ -17,35 +23,61 @@ setup_python_env() {
 
     # Create a venv with the requested Python version.
     # uv downloads a pre-built CPython binary automatically — no compilation needed.
-    uv venv --seed --python "${py_version}" "${HOME}/.cccl-venv"
+    uv venv --seed --python "${py_version}" "${venv_path}"
 
     # Windows venvs use Scripts/, Linux/macOS use bin/
-    if [[ -f "${HOME}/.cccl-venv/Scripts/activate" ]]; then
+    if [[ -f "${venv_path}/Scripts/activate" ]]; then
         #shellcheck disable=SC1091
-        source "${HOME}/.cccl-venv/Scripts/activate"
+        source "${venv_path}/Scripts/activate"
     else
         #shellcheck disable=SC1091
-        source "${HOME}/.cccl-venv/bin/activate"
+        source "${venv_path}/bin/activate"
     fi
 
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
 
 # Pin the cuda-toolkit wheels to the container's CTK major.minor (read from nvcc)
-# via PIP_CONSTRAINT, unless the lane opts out with CCCL_PYTHON_TEST_LATEST_CTK=1
-# -- in which case pip resolves whatever the latest minor is (what a plain
-# `pip install` with no lockfile would get). Sets and exports cuda_version and
-# cuda_major_version for the caller (e.g. the [test-cuNN] extra).
+# via PIP_CONSTRAINT when the mode ($1) is "pinned" (the default; empty also means
+# pinned). "latest" and "sysctk" leave it unpinned; any other value is a hard
+# error. This is the lane's mode gate -- it runs before ctk_extra_flavor in every
+# script, so ctk_extra_flavor can assume the mode is already valid. Also sets and
+# exports cuda_version / cuda_major_version; the caller uses cuda_major_version in
+# the pip-extra name (e.g. minimal-cu${cuda_major_version}).
 pin_cuda_toolkit() {
     cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1-2 | cut -d 'V' -f 2)
     cuda_major_version=$(echo "$cuda_version" | cut -d '.' -f 1)
     export cuda_version cuda_major_version
 
-    if [[ "${CCCL_PYTHON_TEST_LATEST_CTK:-}" != "1" ]]; then
-        export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
-        echo "cuda-toolkit==${cuda_version}.*" > "${PIP_CONSTRAINT}"
+    local mode="${1:-pinned}"
+    case "${mode,,}" in
+        pinned)
+            export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
+            echo "cuda-toolkit==${cuda_version}.*" > "${PIP_CONSTRAINT}"
+            ;;
+        latest | sysctk)
+            # No pin. Clear any inherited constraint so it cannot affect the
+            # resolve (latest tests the newest minor; sysctk installs no
+            # cuda-toolkit wheel at all).
+            unset PIP_CONSTRAINT
+            ;;
+        *)
+            echo "ERROR: invalid ctk mode '${mode}' (expected pinned|latest|sysctk)" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Echoes the pip-extra toolkit "flavor" for the mode ($1): "sysctk" when the mode
+# is sysctk (rely on the system-provided CUDA toolkit) or "cu" otherwise
+# (pip-installed toolkit). The mode is validated by pin_cuda_toolkit, which every
+# lane calls first. Combine with the CUDA major, e.g.
+# "minimal-$(ctk_extra_flavor "${ctk_mode}")${cuda_major_version}" -> minimal-sysctk12.
+ctk_extra_flavor() {
+    local mode="${1:-}"
+    if [[ "${mode,,}" == "sysctk" ]]; then
+        echo "sysctk"
     else
-        # Clear any inherited constraint so this lane truly tests the latest minor.
-        unset PIP_CONSTRAINT
+        echo "cu"
     fi
 }

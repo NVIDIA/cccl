@@ -133,7 +133,7 @@ CUB_TEST_CASE("Device scan inclusive-scan-by-key works with default environment"
 template <int BlockThreads>
 struct scan_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanByKeyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanByKeyPolicy
   {
     return {cub::ScanByKeyAlgorithm::lookback,
             {BlockThreads,
@@ -373,14 +373,14 @@ CUB_TEST("Test ScanByKeyPolicy properties", "[scan][by_key][device]", CUB_SMALL)
   constexpr auto p2 = cub::ScanByKeyPolicy{
     .algorithm = cub::ScanByKeyAlgorithm::lookback,
     .lookback  = cub::ScanByKeyLookbackPolicy{
-       .threads_per_block = 256,
-       .items_per_thread  = 11,
-       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-       .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
-       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+      .threads_per_block = 256,
+      .items_per_thread  = 11,
+      .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+      .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
+      .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+      .lookback_delay    = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

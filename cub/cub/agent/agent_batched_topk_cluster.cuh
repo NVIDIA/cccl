@@ -1050,9 +1050,9 @@ private:
       // seed is the only runtime modulo left in these consume loops in release builds (the per-visit ones became the
       // rolling step; a debug-only assert still evaluates one): a runtime, not compile-time-constant, divisor, at most
       // once per pass and cold. Lowest priority. `consume_overflow_visit` then steps the pointer with compare-select.
-      int stage       = stream_is_forward
-                        ? 0
-                        : static_cast<int>((layout.num_local_overflow_chunks - 1) % static_cast<offset_t>(num_stream_stages));
+      int stage = stream_is_forward
+                  ? 0
+                  : static_cast<int>((layout.num_local_overflow_chunks - 1) % static_cast<offset_t>(num_stream_stages));
       bool is_stopped = false;
       const offset_t num_phase1_chunks =
         (::cuda::std::min) (static_cast<offset_t>(num_stream_stages), layout.num_local_overflow_chunks);

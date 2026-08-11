@@ -409,6 +409,7 @@ public:
     return mapping()(__indices[_Idxs]...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
                    is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
@@ -418,6 +419,7 @@ public:
     return accessor().access(data_handle(), __op_bracket(__indices, make_index_sequence<rank()>()));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
                    is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
@@ -427,6 +429,7 @@ public:
   }
 
   //! Nonstandard extension to no break our users too hard
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES(__mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
   [[nodiscard]] _CCCL_API constexpr reference operator()(_Indices... __indices) const
@@ -441,7 +444,6 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    bool __result = true;
     if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
       size_t __prod = 1;
@@ -450,12 +452,11 @@ public:
         const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
         if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
         {
-          __result = false;
-          break;
+          return false;
         }
       }
     }
-    return __result;
+    return true;
   }
 
   template <size_t... _Idxs>

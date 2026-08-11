@@ -34,7 +34,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -60,7 +60,7 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -82,7 +82,7 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -99,7 +99,7 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator sample(
+_CCCL_HOST_DEVICE_API _SampleIterator sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,

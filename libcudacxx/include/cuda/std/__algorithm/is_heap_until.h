@@ -43,19 +43,17 @@ __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Co
     _RandomAccessIterator __cp = __first + __c;
     if (__comp(*__pp, *__cp))
     {
-      __last = __cp;
-      break;
+      return __cp;
     }
     ++__c;
     ++__cp;
     if (__c == __len)
     {
-      break;
+      return __last;
     }
     if (__comp(*__pp, *__cp))
     {
-      __last = __cp;
-      break;
+      return __cp;
     }
     ++__p;
     ++__pp;

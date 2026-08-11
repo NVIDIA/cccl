@@ -1143,7 +1143,7 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
   {
     using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy                            = default_selector_t{}(cc);
@@ -1168,8 +1168,8 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   size_t bytes_allocated   = 0;
   size_t bytes_deallocated = 0;
   auto env                 = stdexec::env{device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated},
-                          stream,
-                          cuda::execution::tune(policy_selector)};
+                                          stream,
+                                          cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
@@ -1628,13 +1628,13 @@ CUB_TEST("Test RadixSortPolicy properties", "[radix_sort][device]", CUB_SMALL)
     .threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8};
   constexpr auto p2_exclusive_sum = cub::RadixSortExclusiveSumPolicy{.threads_per_block = 256, .radix_bits = 8};
   constexpr auto p2_onesweep      = cub::RadixSortOnesweepPolicy{
-         .threads_per_block       = 256,
-         .items_per_thread        = 21,
-         .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
-         .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-         .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-         .rank_private_partitions = 1,
-         .radix_bits              = 8};
+    .threads_per_block       = 256,
+    .items_per_thread        = 21,
+    .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+    .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+    .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+    .rank_private_partitions = 1,
+    .radix_bits              = 8};
   constexpr auto p2_scan = cub::ScanPolicy{
     .algorithm = cub::ScanAlgorithm::lookback,
     .lookback =

@@ -65,7 +65,8 @@ struct flag_intra_segment_duplicates
 };
 
 template <typename ItemItT, typename SegIdItT>
-flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES flag_intra_segment_duplicates(ItemItT, SegIdItT)
+  -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
 // Routes the key-value (pairs) top-k through the public `cub::DeviceBatchedTopK` API, threading the requested
 // determinism/tie-break into the environment via `require`. The dispatch selects the backend from the architecture and

@@ -35,26 +35,39 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr char __fmt_hex_to_upper(char __c) noexcept
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
+// Needs to be a functor for tile mode
+struct __fmt_hex_to_upper
 {
-  switch (__c)
+  [[nodiscard]] _CCCL_API constexpr char _CCCL_STATIC_CALL_OPERATOR(char __c) noexcept
   {
-    case 'a':
-      return 'A';
-    case 'b':
-      return 'B';
-    case 'c':
-      return 'C';
-    case 'd':
-      return 'D';
-    case 'e':
-      return 'E';
-    case 'f':
-      return 'F';
-    default:
-      return __c;
+    switch (__c)
+    {
+      case 'a':
+        return 'A';
+      case 'b':
+        return 'B';
+      case 'c':
+        return 'C';
+      case 'd':
+        return 'D';
+      case 'e':
+        return 'E';
+      case 'f':
+        return 'F';
+      default:
+        return __c;
+    }
   }
-}
+};
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 struct __fmt_padding_size_result
 {
@@ -130,6 +143,23 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
   return ::cuda::std::__fmt_copy(basic_string_view{::cuda::std::to_address(__first), __n}, ::cuda::std::move(__out_it));
 }
 
+// Needed to ensure the tile compiler does break trying to
+template <class _UnaryOp>
+struct __transform_wrapper
+{
+  _UnaryOp& __op_;
+
+  _CCCL_API constexpr __transform_wrapper(_UnaryOp& __op) noexcept
+      : __op_(__op)
+  {}
+
+  template <class _Arg>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Arg&& __arg) const noexcept
+  {
+    return ::cuda::std::invoke(__op_, ::cuda::std::forward<_Arg>(__arg));
+  }
+};
+
 //! Transform wrapper.
 //!
 //! This uses a "mass output function" of __fmt_output_buffer when possible.
@@ -145,7 +175,7 @@ __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
   }
   else
   {
-    return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __operation);
+    return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __transform_wrapper{__operation});
   }
 }
 

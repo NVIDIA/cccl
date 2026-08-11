@@ -212,7 +212,8 @@ struct get_output_size_op
 };
 
 template <typename OffsetItT, typename KSizesItT>
-get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t) -> get_output_size_op<OffsetItT, KSizesItT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t)
+  -> get_output_size_op<OffsetItT, KSizesItT>;
 
 template <typename IteratorT, typename OffsetItT>
 struct offset_iterator_op

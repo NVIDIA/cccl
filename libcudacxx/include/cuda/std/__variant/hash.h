@@ -35,6 +35,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...>, remove_const_t<_Types>...>>
 {
@@ -64,7 +69,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(const argument_type& __v) const
+  [[nodiscard]] _CCCL_API constexpr result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type& __v)
   {
     size_t __res = __v.valueless_by_exception()
                    ? 299792458 // Random value chosen by the universe upon creation
@@ -72,6 +77,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     return ::cuda::std::__hash_combine(__res, hash<size_t>{}(__v.index()));
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

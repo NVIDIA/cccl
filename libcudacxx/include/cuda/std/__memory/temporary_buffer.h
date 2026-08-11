@@ -36,7 +36,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-[[nodiscard]] _CCCL_NO_CFI _CCCL_API inline pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
+[[nodiscard]] _CCCL_NO_CFI _CCCL_HOST_DEVICE_API inline pair<_Tp*, ptrdiff_t>
+get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
   const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
@@ -78,19 +79,28 @@ template <class _Tp>
 }
 
 template <class _Tp>
-_CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
+_CCCL_HOST_DEVICE_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
   ::cuda::std::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __return_temporary_buffer
 {
   template <class _Tp>
-  _CCCL_API void operator()(_Tp* __p) const noexcept
+  _CCCL_HOST_DEVICE_API void _CCCL_STATIC_CALL_OPERATOR(_Tp* __p) noexcept
   {
     ::cuda::std::return_temporary_buffer(__p);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
