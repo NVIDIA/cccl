@@ -122,17 +122,26 @@ cuda::host_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<ad
 }
 =============== mdspan.host_mdspan end ===============
 =============== mdspan.device_mdspan begin ===============
-cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address>
+cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
+  [0] = 51,
+  [1] = 52
+}
 =============== mdspan.device_mdspan end ===============
 =============== mdspan.device_mdspan_real_memory begin ===============
-cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address>
+cuda::device_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
+  [0] = 91,
+  [1] = 92
+}
 =============== mdspan.device_mdspan_real_memory end ===============
 =============== mdspan.device_backed begin ===============
 cuda::std::mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
-  [0] = 0,
-  [1] = 0
+  [0] = 93,
+  [1] = 94
 }
 =============== mdspan.device_backed end ===============
+=============== mdspan.copy_failure begin ===============
+cuda::std::mdspan<int, cuda::std::extents<long long, dynamic_extent>> rank=1, extents=[1099511627776], data=<address> <error: Cannot access memory at address <address>>
+=============== mdspan.copy_failure end ===============
 =============== mdspan.managed_mdspan begin ===============
 cuda::managed_mdspan<int, cuda::std::extents<int, 2>> rank=1, extents=[2], data=<address> = {
   [0] = 61,

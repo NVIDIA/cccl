@@ -20,6 +20,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_device_mdspan mdspan.device_mdspan values
     --case inspect_device_mdspan_real_memory mdspan.device_mdspan_real_memory values
     --case inspect_mdspan_device_backed mdspan.device_backed values
+    --case inspect_mdspan_copy_failure mdspan.copy_failure values
     --case inspect_managed_mdspan mdspan.managed_mdspan values
     --case inspect_restrict_mdspan mdspan.restrict_mdspan values
     --case inspect_vector mdspan.vector values

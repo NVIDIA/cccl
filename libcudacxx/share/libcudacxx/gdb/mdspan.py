@@ -19,8 +19,8 @@ _EBCO_PATTERN = re.compile(r"__mdspan_ebco<")
 _EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
 _EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
-# Not host-dereferenceable; never index through these accessors.
-_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
+# cudaMemcpyDefault: infer host/device direction from the pointers themselves.
+_CUDA_MEMCPY_DEFAULT = 4
 # cuda:: accessibility wrappers around cuda::std::mdspan.
 _WRAPPER_MDSPAN_NAMES = frozenset(
     {
@@ -65,11 +65,7 @@ def _direct_bases(value_type: gdb.Type) -> list[gdb.Field]:
 def _find_ebco_base(value: gdb.Value) -> gdb.Value | None:
     """Descend through transparent wrapper bases to an ``__mdspan_ebco<...>``.
 
-    ``mdspan`` and ``layout_right``/``layout_left``'s ``mapping`` privately
-    inherit ``__mdspan_ebco<...>`` directly. ``layout_stride``'s ``mapping``
-    inherits it through one intermediate ``__mapping_base<...>`` wrapper
-    base, which this recurses through (also handles a ``cuda::`` wrapper
-    like ``host_mdspan``).
+    Recurses through layout_stride's ``__mapping_base<...>`` and cuda:: wrappers like ``host_mdspan``.
     """
     bases = _direct_bases(value.type)
     for field in bases:
@@ -83,10 +79,7 @@ def _find_ebco_base(value: gdb.Value) -> gdb.Value | None:
 def _ebco_element(ebco_value: gdb.Value, index: int) -> gdb.Value | None:
     """Extract element ``index`` from an ``__mdspan_ebco<...>`` value.
 
-    Each element is stored via an ``__mdspan_ebco_impl<index, T>`` base,
-    which either holds the element in an ``__elem_`` data member, or (empty
-    base class optimization, for empty types) privately inherits it
-    directly.
+    Held in an ``__elem_`` member, or (EBCO) inherited directly for empty types.
     """
     for field in _direct_bases(ebco_value.type):
         match = _EBCO_IMPL_PATTERN.search(str(field.type))
@@ -200,6 +193,27 @@ def _strides(mapping_ebco: gdb.Value, rank: int) -> list[int] | None:
     return [int(vals[i]) for i in range(rank)]
 
 
+def _required_span_size(
+    kind: str | None, extents: list[int], strides: list[int] | None
+) -> int:
+    """Return the element count spanned by the mapping, mirroring
+    layout::mapping::required_span_size()."""
+    if not extents:
+        return 1
+    if any(extent == 0 for extent in extents):
+        return 0
+    if kind == "layout_stride":
+        if strides is None:
+            return 0
+        return 1 + sum(
+            (extent - 1) * stride for extent, stride in zip(extents, strides)
+        )
+    size = 1
+    for extent in extents:
+        size *= extent
+    return size
+
+
 def _offset(
     kind: str, extents: list[int], strides: list[int] | None, indices: tuple[int, ...]
 ) -> int:
@@ -229,24 +243,27 @@ class MdspanPrinter:
         self.data: gdb.Value | None = None
         self.layout: str | None = None
         self.strides: list[int] | None = None
-        self.accessor_name: str | None = None
+        self.host_copy: gdb.Value | None = None
+        self.copy_failed = False
 
         self._resolve()
+        self._copy_to_host()
 
         self.type_name = self._build_type_name()
 
-    def _build_type_name(self) -> str:
-        """Build the displayed type name, eliding a trailing LayoutPolicy/
-        AccessorPolicy pair that just holds mdspan's defaults (layout_right,
-        default_accessor<ElementType>) -- matching how the type is normally
-        spelled out by hand, and how LLDB's own display name already elides
-        them.
+    def __del__(self) -> None:
+        """Release the inferior-heap copy staged by _copy_to_host."""
+        if self.host_copy is None:
+            return
+        try:
+            gdb.parse_and_eval(f"(void)free((void*){int(self.host_copy):#x})")
+        except gdb.error:
+            pass
+        self.host_copy = None
 
-        Slices the already-rendered 4-argument text (rather than
-        re-rendering each gdb.Type individually) so kept arguments keep
-        GDB's own spelling verbatim -- gdb.Type.__str__ on an extracted
-        sub-type can format qualifiers/pointers differently in isolation
-        (e.g. "const int" vs. "int const", "int *" vs. "int*").
+    def _build_type_name(self) -> str:
+        """Elide LayoutPolicy/AccessorPolicy when they're mdspan's defaults,
+        matching LLDB's own elided display name.
         """
         dynamic_extent = _dynamic_extent()
         type_name = cccl_common.public_type_name(self.type)
@@ -288,8 +305,6 @@ class MdspanPrinter:
             mdspan_type = bases[0].type
         extents_type = mdspan_type.template_argument(1)
         layout_type = mdspan_type.template_argument(2)
-        accessor_type = mdspan_type.template_argument(3)
-        self.accessor_name = cccl_common.public_type_name(accessor_type)
 
         dynamic_extent = _dynamic_extent()
         static_values = _static_extents(extents_type)
@@ -322,17 +337,39 @@ class MdspanPrinter:
         if data_handle.type.strip_typedefs().code == gdb.TYPE_CODE_PTR:
             self.data = data_handle
 
-    def _can_index(self) -> bool:
+    def _copy_to_host(self) -> None:
+        """Stage addressed elements into host memory via an inferior
+        cudaMemcpy call (mirrors cuda::buffer's printer), since the data
+        handle may be device memory GDB would silently read as zeros.
+        """
         if self.extents is None or self.data is None or self.layout is None:
-            return False
-        # device_mdspan/shared_memory_mdspan: never index, see marker comment above.
-        if self.accessor_name is not None and any(
-            marker in self.accessor_name for marker in _DEVICE_ONLY_ACCESSOR_MARKERS
-        ):
-            return False
-        if self.layout != "layout_stride":
-            return True
-        return len(self.extents) == 0 or self.strides is not None
+            return
+        span = _required_span_size(self.layout, self.extents, self.strides)
+        if span == 0:
+            return
+        element_type = self.data.type.target()
+        byte_count = span * element_type.sizeof
+        try:
+            host_copy = gdb.parse_and_eval(f"(void*)malloc({byte_count})")
+            if int(host_copy) == 0:
+                self.copy_failed = True
+                return
+            status = gdb.parse_and_eval(
+                "(int)cudaMemcpy((void*)"
+                f"{int(host_copy):#x}, (const void*){int(self.data):#x}, {byte_count}, "
+                f"{_CUDA_MEMCPY_DEFAULT})"
+            )
+            if int(status) != 0:
+                gdb.parse_and_eval(f"(void)free((void*){int(host_copy):#x})")
+                self.copy_failed = True
+                return
+        except gdb.error:
+            self.copy_failed = True
+            return
+        self.host_copy = host_copy.cast(element_type.pointer())
+
+    def _can_index(self) -> bool:
+        return self.host_copy is not None
 
     def _size(self) -> int:
         size = 1
@@ -342,7 +379,7 @@ class MdspanPrinter:
 
     def _element_at(self, indices: tuple[int, ...]) -> gdb.Value:
         offset = _offset(self.layout, self.extents, self.strides, indices)
-        return (self.data + offset).dereference()
+        return (self.host_copy + offset).dereference()
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
         if not self._can_index():
@@ -363,7 +400,11 @@ class MdspanPrinter:
             details.append(f"rank={len(self.extents)}")
             details.append(f"extents=[{extents_text}]")
         if self.data is not None:
-            details.append(f"data={int(self.data):#x}")
+            address = int(self.data)
+            data_text = f"data={address:#x}"
+            if self.copy_failed:
+                data_text += f" <error: Cannot access memory at address {address:#x}>"
+            details.append(data_text)
         if not details:
             return self.type_name
         return f"{self.type_name} {', '.join(details)}"

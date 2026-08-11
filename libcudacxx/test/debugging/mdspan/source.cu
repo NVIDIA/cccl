@@ -117,6 +117,13 @@ inspect_device_mdspan_real_memory(const cuda::device_mdspan<int, cuda::std::exte
   KEEP_FOR_DEBUGGER(values);
 }
 
+// A dynamic extent so large the printer's element-copy malloc call inevitably fails
+[[gnu::noinline]] void
+inspect_mdspan_copy_failure(const cuda::std::mdspan<int, cuda::std::dextents<long long, 1>>& values)
+{
+  KEEP_FOR_DEBUGGER(values);
+}
+
 // Unified memory is host-readable: full element display, like host_mdspan.
 [[gnu::noinline]] void inspect_managed_mdspan(const cuda::managed_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
@@ -289,6 +296,10 @@ int main()
   const cuda::std::mdspan<int, cuda::std::extents<int, 2>> mdspan_device_backed_span(mdspan_device_backed_data);
   inspect_mdspan_device_backed(mdspan_device_backed_span);
   cudaFree(mdspan_device_backed_data);
+
+  int copy_failure_data[1] = {0};
+  const cuda::std::mdspan<int, cuda::std::dextents<long long, 1>> copy_failure_span(copy_failure_data, 1LL << 40);
+  inspect_mdspan_copy_failure(copy_failure_span);
 
   int managed_mdspan_data[2] = {61, 62};
   const cuda::managed_mdspan<int, cuda::std::extents<int, 2>> managed_mdspan_span(managed_mdspan_data);

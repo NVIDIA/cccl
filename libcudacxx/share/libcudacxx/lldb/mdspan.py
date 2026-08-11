@@ -18,8 +18,8 @@ _EBCO_PATTERN = re.compile(r"__mdspan_ebco<")
 _EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
 _EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
-# Not host-dereferenceable; never index through these accessors.
-_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
+# cudaMemcpyDefault: infer host/device direction from the pointers themselves.
+_CUDA_MEMCPY_DEFAULT = 4
 # cuda:: accessibility wrappers around cuda::std::mdspan.
 _WRAPPER_MDSPAN_NAMES = frozenset(
     {
@@ -77,11 +77,7 @@ def _mdspan_base_type(sb_type: lldb.SBType) -> lldb.SBType | None:
 def _find_ebco_base(value: lldb.SBValue) -> lldb.SBValue | None:
     """Descend through transparent wrapper bases to an ``__mdspan_ebco<...>``.
 
-    ``mdspan`` and ``layout_right``/``layout_left``'s ``mapping`` privately
-    inherit ``__mdspan_ebco<...>`` directly. ``layout_stride``'s ``mapping``
-    inherits it through one intermediate ``__mapping_base<...>`` wrapper
-    base, which this recurses through (also handles a ``cuda::`` wrapper
-    like ``host_mdspan``).
+    Recurses through layout_stride's ``__mapping_base<...>`` and cuda:: wrappers like ``host_mdspan``.
     """
     bases = _direct_bases(value.GetType())
     for base in bases:
@@ -103,14 +99,8 @@ def _ebco_element(
 ) -> lldb.SBValue | None:
     """Extract element ``index`` from an ``__mdspan_ebco<...>`` value.
 
-    Each element is stored via an ``__mdspan_ebco_impl<index, T>`` base,
-    which either holds the element in an ``__elem_`` data member, or (empty
-    base class optimization, for empty types) privately inherits it
-    directly. An empty element shares its offset with whatever follows it,
-    but LLDB's ``CreateChildAtOffset`` caches values by (parent, offset) and
-    returns the first type ever requested there, mismatching later requests
-    at that offset. Building the empty element from freestanding data
-    instead avoids poisoning that cache.
+    Held in ``__elem_``, or (EBCO) built from freestanding data to dodge
+    ``CreateChildAtOffset``'s cache colliding on a shared empty-element offset.
     """
     for base in _direct_bases(ebco_value.GetType()):
         match = _EBCO_IMPL_PATTERN.search(base.GetName() or "")
@@ -204,6 +194,71 @@ def _strides(mapping_ebco: lldb.SBValue, rank: int) -> list[int] | None:
     return [vals.GetChildAtIndex(i).GetValueAsSigned(0) for i in range(rank)]
 
 
+def _required_span_size(
+    kind: str | None, extents: list[int], strides: list[int] | None
+) -> int:
+    """Return the element count spanned by the mapping, mirroring
+    layout::mapping::required_span_size(). This can exceed the element count
+    (product of extents) for a padded layout_stride mapping."""
+    if not extents:
+        return 1
+    if any(extent == 0 for extent in extents):
+        return 0
+    if kind == "layout_stride":
+        if strides is None:
+            return 0
+        return 1 + sum(
+            (extent - 1) * stride for extent, stride in zip(extents, strides)
+        )
+    size = 1
+    for extent in extents:
+        size *= extent
+    return size
+
+
+def _stage_host_copy(
+    frame: lldb.SBFrame, data_address: int, byte_count: int
+) -> lldb.SBValue | None:
+    """Copy byte_count bytes from data_address into inferior-heap memory
+    (mirrors cuda::buffer's printer), since it may be device memory LLDB
+    would silently read as zeros. Returns a void* SBValue, or None on failure.
+    """
+    if not frame.IsValid():
+        return None
+    options = lldb.SBExpressionOptions()
+    options.SetIgnoreBreakpoints(True)
+    options.SetUnwindOnError(True)
+    host_copy = frame.EvaluateExpression(f"(void*)malloc({byte_count})", options)
+    if not host_copy.IsValid() or host_copy.GetError().Fail():
+        return None
+    host_address = host_copy.GetValueAsUnsigned(0)
+    if not host_address:
+        return None
+    result = frame.EvaluateExpression(
+        "(int)cudaMemcpy((void*)"
+        f"{host_address:#x}, (const void*){data_address:#x}, {byte_count}, "
+        f"{_CUDA_MEMCPY_DEFAULT})",
+        options,
+    )
+    if (
+        not result.IsValid()
+        or result.GetError().Fail()
+        or result.GetValueAsSigned(-1) != 0
+    ):
+        _release_host_copy(frame, host_address)
+        return None
+    return host_copy
+
+
+def _release_host_copy(frame: lldb.SBFrame, address: int) -> None:
+    if not frame.IsValid() or not address:
+        return
+    options = lldb.SBExpressionOptions()
+    options.SetIgnoreBreakpoints(True)
+    options.SetUnwindOnError(True)
+    frame.EvaluateExpression(f"(void)free((void*){address:#x})", options)
+
+
 def _offset(
     kind: str, extents: list[int], strides: list[int] | None, indices: tuple[int, ...]
 ) -> int:
@@ -227,19 +282,6 @@ class MdspanInfo(NamedTuple):
     data: lldb.SBValue | None
     layout: str | None
     strides: list[int] | None
-    accessor_name: str | None
-
-    def can_index(self) -> bool:
-        if self.extents is None or self.data is None or self.layout is None:
-            return False
-        # device_mdspan/shared_memory_mdspan: never index, see marker comment above.
-        if self.accessor_name is not None and any(
-            marker in self.accessor_name for marker in _DEVICE_ONLY_ACCESSOR_MARKERS
-        ):
-            return False
-        if self.layout != "layout_stride":
-            return True
-        return len(self.extents) == 0 or self.strides is not None
 
     def size(self) -> int:
         size = 1
@@ -263,37 +305,33 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     data_handle = _ebco_element(top_ebco, 0, "__data_handle")
     mapping = _ebco_element(top_ebco, 1, "__mapping")
     if data_handle is None or mapping is None:
-        return MdspanInfo(type_name, None, None, None, None, None)
+        return MdspanInfo(type_name, None, None, None, None)
 
     mdspan_type = _mdspan_base_type(
         value.GetType().GetCanonicalType().GetUnqualifiedType()
     )
     if mdspan_type is None:
-        return MdspanInfo(type_name, None, None, None, None, None)
+        return MdspanInfo(type_name, None, None, None, None)
     extents_type = mdspan_type.GetTemplateArgumentType(1)
     layout_type = mdspan_type.GetTemplateArgumentType(2)
-    accessor_type = mdspan_type.GetTemplateArgumentType(3)
-    accessor_name = (
-        accessor_type.GetDisplayTypeName() or accessor_type.GetName() or None
-    )
 
     dynamic_extent = _dynamic_extent(value.GetTarget())
     static_values = _static_extents(extents_type)
     if static_values is None:
-        return MdspanInfo(type_name, None, None, None, None, accessor_name)
+        return MdspanInfo(type_name, None, None, None, None)
     rank_dynamic = sum(1 for value_ in static_values if value_ == dynamic_extent)
 
     mapping_ebco = _find_ebco_base(mapping)
     dynamic_values: list[int] = []
     if rank_dynamic > 0:
         if mapping_ebco is None:
-            return MdspanInfo(type_name, None, None, None, None, accessor_name)
+            return MdspanInfo(type_name, None, None, None, None)
         extents_value = _ebco_element(mapping_ebco, 0, "__extents")
         if extents_value is None:
-            return MdspanInfo(type_name, None, None, None, None, accessor_name)
+            return MdspanInfo(type_name, None, None, None, None)
         values = _dynamic_values(extents_value, rank_dynamic)
         if values is None:
-            return MdspanInfo(type_name, None, None, None, None, accessor_name)
+            return MdspanInfo(type_name, None, None, None, None)
         dynamic_values = values
     extents = _combined_extents(static_values, dynamic_values, dynamic_extent)
 
@@ -301,18 +339,19 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     strides = None
     if layout == "layout_stride" and len(extents) > 0:
         if mapping_ebco is None:
-            return MdspanInfo(type_name, extents, None, layout, None, accessor_name)
+            return MdspanInfo(type_name, extents, None, layout, None)
         strides = _strides(mapping_ebco, len(extents))
 
     data = None
     if data_handle.GetType().GetCanonicalType().IsPointerType():
         data = data_handle
 
-    return MdspanInfo(type_name, extents, data, layout, strides, accessor_name)
+    return MdspanInfo(type_name, extents, data, layout, strides)
 
 
 def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
-    info = _mdspan_info(value)
+    stripped = cccl_common.strip_reference_value(value)
+    info = _mdspan_info(stripped)
     if info is None:
         return None
     details = []
@@ -321,7 +360,22 @@ def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | N
         details.append(f"rank={len(info.extents)}")
         details.append(f"extents=[{extents_text}]")
     if info.data is not None:
-        details.append(f"data={info.data.GetValueAsUnsigned(0):#x}")
+        data_address = info.data.GetValueAsUnsigned(0)
+        data_text = f"data={data_address:#x}"
+        span = _required_span_size(info.layout, info.extents, info.strides)
+        if span > 0:
+            frame = stripped.GetFrame()
+            element_type = info.data.GetType().GetPointeeType()
+            byte_count = span * element_type.GetByteSize()
+            host_copy = _stage_host_copy(frame, data_address, byte_count)
+            if host_copy is None:
+                # Mirrors GDB's own wording for an unreadable pointee.
+                data_text += (
+                    f" <error: Cannot access memory at address {data_address:#x}>"
+                )
+            else:
+                _release_host_copy(frame, host_copy.GetValueAsUnsigned(0))
+        details.append(data_text)
     if not details:
         return None
     return ", ".join(details)
@@ -334,19 +388,67 @@ class MdspanSyntheticProvider:
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.info: MdspanInfo | None = None
+        self.host_copy: lldb.SBValue = lldb.SBValue()
+        self.stop_id: int | None = None
         self.update()
 
+    def __del__(self) -> None:
+        self._clear_copy()
+
+    def _clear_copy(self) -> None:
+        if self.host_copy.IsValid():
+            _release_host_copy(
+                self.value.GetFrame(), self.host_copy.GetValueAsUnsigned(0)
+            )
+        self.host_copy = lldb.SBValue()
+
+    def _current_stop_id(self) -> int | None:
+        process = self.value.GetProcess()
+        return process.GetStopID() if process.IsValid() else None
+
+    def _copy_to_host(self) -> None:
+        """Stage the mapping's addressed elements into debugger-owned host
+        memory via an inferior cudaMemcpy call. See _stage_host_copy for the
+        rationale (real device memory reads as zeros, not an error)."""
+        if (
+            self.info is None
+            or self.info.data is None
+            or self.info.extents is None
+            or self.info.layout is None
+        ):
+            return
+        span = _required_span_size(
+            self.info.layout, self.info.extents, self.info.strides
+        )
+        if span == 0:
+            return
+        element_type = self.info.data.GetType().GetPointeeType()
+        byte_count = span * element_type.GetByteSize()
+        host_copy = _stage_host_copy(
+            self.value.GetFrame(), self.info.data.GetValueAsUnsigned(0), byte_count
+        )
+        if host_copy is None:
+            return
+        self.host_copy = host_copy.Cast(element_type.GetPointerType())
+
     def update(self) -> bool:
+        # Recopy only when the process has stopped again since the last
+        # copy: update() runs before every read (mirrors BufferSyntheticProvider).
+        if self.stop_id is not None and self._current_stop_id() == self.stop_id:
+            return True
+        self._clear_copy()
         self.info = _mdspan_info(self.value)
+        self._copy_to_host()
+        self.stop_id = self._current_stop_id()
         return True
 
     def _element_at(self, indices: tuple[int, ...]) -> lldb.SBValue:
-        element_type = self.info.data.GetType().GetPointeeType()
+        element_type = self.host_copy.GetType().GetPointeeType()
         offset = _offset(
             self.info.layout, self.info.extents, self.info.strides, indices
         )
         byte_offset = offset * element_type.GetByteSize()
-        return self.info.data.CreateChildAtOffset(
+        return self.host_copy.CreateChildAtOffset(
             self._label(indices), byte_offset, element_type
         )
 
@@ -355,7 +457,7 @@ class MdspanSyntheticProvider:
         return "[" + ",".join(str(index) for index in indices) + "]"
 
     def num_children(self) -> int:
-        if self.info is None or not self.info.can_index():
+        if self.info is None or not self.host_copy.IsValid():
             return 0
         return self.info.size()
 
@@ -368,7 +470,7 @@ class MdspanSyntheticProvider:
         return _readable_type_name(name, dynamic_extent)
 
     def get_child_index(self, name: str) -> int:
-        if self.info is None or not self.info.can_index():
+        if self.info is None or not self.host_copy.IsValid():
             return -1
         stripped = name.strip("[]")
         try:
@@ -390,7 +492,7 @@ class MdspanSyntheticProvider:
         return flat
 
     def get_child_at_index(self, index: int) -> lldb.SBValue | None:
-        if self.info is None or not self.info.can_index():
+        if self.info is None or not self.host_copy.IsValid():
             return None
         if index < 0 or index >= self.info.size():
             return None
