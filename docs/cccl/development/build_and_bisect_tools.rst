@@ -89,15 +89,16 @@ Documentation builds
 --------------------
 
 Use :file:`docs/gen_docs.bash` for local documentation builds. It generates
-Doxygen XML, regenerates API reference pages, builds Sphinx HTML, and writes the
-versioned output under :file:`docs/_build/html/`. The script runs Doxygen builds
-in parallel and builds Sphinx with ``-j auto``::
+Doxygen XML, regenerates API reference pages, builds Sphinx HTML, and writes
+directly to the versioned output directory under :file:`docs/_build/html/`. The
+version defaults to ``unstable`` and can be overridden with ``SPHINX_CCCL_VER``.
+The script runs Doxygen builds in parallel and builds Sphinx with ``-j auto``::
 
   ./docs/gen_docs.bash
 
 For repeated edits to hand-written RST files, set
-``CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1`` to skip the expensive automatic API page
-regeneration step::
+``CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1`` to reuse existing Doxygen XML and API
+reference pages::
 
   CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1 ./docs/gen_docs.bash
 

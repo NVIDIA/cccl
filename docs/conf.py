@@ -73,6 +73,8 @@ breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
 cpp_index_common_prefix = ["cub::"]
+toc_object_entries_show_parents = "domain"
+maximum_signature_line_length = None
 
 # Preprocessor definitions for Breathe to handle CCCL macros
 cpp_id_attributes = [
