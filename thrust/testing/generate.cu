@@ -171,7 +171,7 @@ void TestGenerateNToDiscardIterator(const size_t n)
   thrust::discard_iterator<thrust::device_system_tag> d_result =
     thrust::generate_n(thrust::discard_iterator<thrust::device_system_tag>(), n, f);
 
-  thrust::discard_iterator<> reference(n);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

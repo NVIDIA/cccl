@@ -417,7 +417,7 @@ C2H_TEST("graph insert_child_graph with ownership transfer", "[graph][child_grap
 
   // Move the child graph into the parent — child_g is null afterwards.
   cudax::insert_child_graph(pb, std::move(child_g));
-  REQUIRE(child_g.get() == nullptr);
+  REQUIRE(child_g.get() == nullptr); // NOLINT(bugprone-use-after-move)
 
   cudax::launch(pb, test::one_thread_dims, test::verify_42{}, val);
 

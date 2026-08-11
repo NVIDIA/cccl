@@ -43,7 +43,7 @@ nvjitlink_link(const void** blobs, const size_t* sizes, size_t num, int cc_major
     {
       if (blobs[i] && sizes[i] > 0)
       {
-        check(nvJitLinkAddData(h, NVJITLINK_INPUT_ANY, blobs[i], sizes[i], "aot_input"));
+        check(nvJitLinkAddData(h, NVJITLINK_INPUT_ANY, blobs[i], sizes[i], "serialization_input"));
       }
     }
 

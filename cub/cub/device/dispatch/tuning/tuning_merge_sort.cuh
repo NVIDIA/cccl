@@ -44,6 +44,7 @@ struct agent_merge_sort_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
@@ -61,15 +62,23 @@ struct MergeSortPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  //! Whether to unroll the loops inside the block merge sort and serial merge implementation
+  // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+  bool unroll = false;
+#else // CCCL_AVOID_SORT_UNROLL
+  bool unroll = true;
+#endif // CCCL_AVOID_SORT_UNROLL
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm;
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.unroll == rhs.unroll;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return !(lhs == rhs);
@@ -78,9 +87,10 @@ struct MergeSortPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
   {
-    return os << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os
+        << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .store_algorithm = " << p.store_algorithm << ", .unroll = " << p.unroll << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -93,7 +103,7 @@ struct policy_hub
 {
   using KeyT = it_value_t<KeyIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
@@ -107,7 +117,7 @@ struct policy_hub
 #if defined(_NVHPC_CUDA)
   using Policy520 = Policy500;
 #else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<512,
@@ -118,7 +128,7 @@ struct policy_hub
   };
 #endif
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy520>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,

@@ -61,6 +61,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend::__cuda>
 {
@@ -130,13 +135,13 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _Size, class _Tp, class _ReductionOp, class _TransformOp)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _Tp operator()(
+  [[nodiscard]] _CCCL_HOST_API _Tp _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _Size __count,
     _Tp __init,
     _ReductionOp __reduction_op,
-    _TransformOp __transform_op) const
+    _TransformOp __transform_op)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
@@ -178,6 +183,10 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

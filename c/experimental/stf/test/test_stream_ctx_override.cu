@@ -32,7 +32,7 @@ __device__ unsigned g_busy_sink;
 // ctx1 is still running when ctx2's kernel races in.
 __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
 {
-  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid >= n)
   {
     return;

@@ -45,6 +45,12 @@ TEST_FUNC constexpr void test_isinf(const T pos, bool expected)
     {
       neg = -pos;
     }
+#if _CCCL_HAS_FLOAT128()
+    else if constexpr (cuda::std::is_same_v<T, __float128>)
+    {
+      neg = -pos;
+    }
+#endif // _CCCL_HAS_FLOAT128()
     else // nvfp types
     {
       neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
@@ -97,6 +103,9 @@ TEST_FUNC constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_HAS_NVFP16()
   test_type<__half>();
 #endif // _CCCL_HAS_NVFP16()

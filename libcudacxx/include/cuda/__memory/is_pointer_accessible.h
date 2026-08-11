@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,8 +23,10 @@
 
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -183,7 +185,12 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
   {
     return false;
   }
-  // (2) check if a memory pool is associated with the pointer
+  // (2) check if the pointer is managed memory
+  if (__is_managed)
+  {
+    return true;
+  }
+  // (3) check if a memory pool is associated with the pointer
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __ptr_dev_id};
@@ -191,8 +198,8 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
     const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
     return (__status2 == ::cudaSuccess) && (static_cast<bool>(__pool_flags));
   }
-  // (3) check if the pointer is a device accessible pointer or managed memory
-  return __is_managed || __memory_type == ::CU_MEMORYTYPE_DEVICE;
+  // (4) check if the pointer is device memory
+  return __memory_type == ::CU_MEMORYTYPE_DEVICE;
 }
 
 template <bool _IsNothrow>
@@ -200,51 +207,23 @@ template <bool _IsNothrow>
 _CCCL_HOST_API inline bool __is_device_accessible(
   const void* __p, device_ref __device, ::cuda::std::bool_constant<_IsNothrow>) noexcept(_IsNothrow)
 {
+  static_assert(!_IsNothrow, "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
   if (__p == nullptr)
   {
     return false;
   }
-  ::CUpointer_attribute __attrs[4] = {
-    ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-    ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
-    ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
-    ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
-  auto __memory_type       = static_cast<::CUmemorytype>(0);
-  int __is_managed         = 0;
-  int __ptr_dev_id         = 0;
-  ::CUmemoryPool __mempool = nullptr;
-  void* __results[4]       = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
-  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+
+  const ::cuda::__ensure_current_context __ctx_setter{__device};
+
+  void* __device_ptr = nullptr;
+  const auto __status =
+    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
+  if (__status == ::cudaErrorInvalidValue)
+  {
+    return false;
+  }
   _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
-  // (1) check if the pointer is unregistered
-  if (__memory_type == static_cast<::CUmemorytype>(0))
-  {
-    return false;
-  }
-  // (2) check if the pointer is a device accessible pointer or managed memory
-  if (!__is_managed && __memory_type != ::CU_MEMORYTYPE_DEVICE)
-  {
-    return false;
-  }
-  // (3) check if a memory pool is associated with the pointer
-  if (__mempool != nullptr)
-  {
-    ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-    ::CUmemAccess_flags __pool_flags;
-    const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
-    _CCCL_THROW_OR_RETURN(__status2, "Failed to get access of a memory pool");
-    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
-  }
-  // (4) check if the pointer is allocated on the specified device
-  if (__ptr_dev_id == __device.get())
-  {
-    return true;
-  }
-  // (5) check if the pointer is peer accessible from the specified device
-  int __result         = 0;
-  const auto __status3 = ::cuda::__driver::__deviceCanAccessPeerNoThrow(__result, __device.get(), __ptr_dev_id);
-  _CCCL_THROW_OR_RETURN(__status3, "Failed to check if the pointer is peer accessible from the specified device");
-  return static_cast<bool>(__result);
+  return __device_ptr != nullptr;
 }
 
 /**
@@ -260,10 +239,13 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   return ::cuda::__is_device_accessible(__p, __device, ::cuda::std::false_type{});
 }
 
+template <class _Dependent = void>
 [[nodiscard]]
-_CCCL_HOST_API inline bool __is_device_accessible_nothrow(const void* __p, device_ref __device) noexcept
+_CCCL_HOST_API inline bool __is_device_accessible_nothrow(const void*, device_ref) noexcept
 {
-  return ::cuda::__is_device_accessible(__p, __device, ::cuda::std::true_type{});
+  static_assert(::cuda::std::__always_false_v<_Dependent>,
+                "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
+  return false;
 }
 
 #  undef _CCCL_THROW_OR_RETURN

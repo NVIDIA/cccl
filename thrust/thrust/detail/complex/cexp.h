@@ -70,7 +70,7 @@ _CCCL_HOST_DEVICE inline double frexp_exp(double x, int* expt)
    */
   exp_x = ::cuda::std::exp(x - kln2);
   get_high_word(hx, exp_x);
-  *expt = (hx >> 20) - (0x3ff + 1023) + k;
+  *expt = static_cast<int>((hx >> 20) - (0x3ff + 1023) + k);
   set_high_word(exp_x, (hx & 0xfffff) | ((0x3ff + 1023) << 20));
   return (exp_x);
 }

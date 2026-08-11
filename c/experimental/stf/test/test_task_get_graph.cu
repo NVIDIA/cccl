@@ -18,8 +18,8 @@
 
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
-  const int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   for (int i = tid; i < cnt; i += nthreads)
   {
     data[i] *= factor;

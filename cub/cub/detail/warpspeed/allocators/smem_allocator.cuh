@@ -56,7 +56,7 @@ struct SmemAllocator
     ::cuda::std::uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
 
     // Move base pointer and update allocated size
-    mAllocatedSize += size + ptrAllocation32 - mPtrSmem32;
+    mAllocatedSize += static_cast<int>(size + ptrAllocation32 - mPtrSmem32);
     mPtrSmem32 = ptrAllocation32 + size;
 
     // we only need the pointer at runtime in device code

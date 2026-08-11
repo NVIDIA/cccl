@@ -190,7 +190,7 @@ struct block_size_recording_constant_iterator
   {
     if (threadIdx.x == 0)
     {
-      *block_size_ptr = blockDim.x;
+      *block_size_ptr = static_cast<int>(blockDim.x);
     }
     return value;
   }
@@ -199,7 +199,7 @@ struct block_size_recording_constant_iterator
   {
     if (threadIdx.x == 0)
     {
-      *block_size_ptr = blockDim.x;
+      *block_size_ptr = static_cast<int>(blockDim.x);
     }
     return value;
   }

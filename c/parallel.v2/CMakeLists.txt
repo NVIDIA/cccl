@@ -65,6 +65,13 @@ if (CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+if (UNIX AND NOT APPLE)
+  set_target_properties(
+    cccl.c.parallel.v2
+    PROPERTIES BUILD_RPATH_USE_ORIGIN ON INSTALL_RPATH "$ORIGIN"
+  )
+endif()
+
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_thrust()
@@ -85,6 +92,15 @@ target_link_libraries(
 
 if (WIN32)
   target_link_libraries(cccl.c.parallel.v2 PRIVATE Dbghelp)
+  # We are shadowing a lot of variables with the globals like num_items
+  target_compile_options(
+    cccl.c.parallel.v2
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4459>
+  )
+  target_compile_definitions(
+    cccl.c.parallel.v2
+    PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH
+  )
 endif()
 
 target_compile_definitions(

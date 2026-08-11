@@ -34,7 +34,7 @@ struct inc_t
     }
     else
     {
-      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / num_item;
+      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / static_cast<double>(num_item);
     }
   }
 
@@ -79,7 +79,8 @@ struct get_output_size_op
 };
 
 template <typename OffsetItT, typename KSizesItT>
-get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t) -> get_output_size_op<OffsetItT, KSizesItT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t)
+  -> get_output_size_op<OffsetItT, KSizesItT>;
 
 template <typename IteratorT, typename OffsetItT>
 struct offset_iterator_op
@@ -202,7 +203,7 @@ class check_unordered_output_helper
   // Checks whether all results have been written correctly
   void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector)
   {
-    auto correctness_flags_end = flag_vector.cbegin() + (num_elements / bits_per_element);
+    auto correctness_flags_end = flag_vector.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
       thrust::equal(flag_vector.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
@@ -219,7 +220,7 @@ class check_unordered_output_helper
       {
         if (((mismatch_value >> i) & 0x01u) == 0)
         {
-          bit_index = i;
+          bit_index = static_cast<int>(i);
           break;
         }
       }
@@ -433,7 +434,9 @@ void fixed_size_segmented_sort_keys(
 
   // We materialize the offsets to reduce the number of kernel template specializations
   c2h::device_vector<cuda::std::int64_t> d_segment_offsets(num_segments + 1);
-  thrust::copy(segment_offsets_it, segment_offsets_it + (num_segments + 1), d_segment_offsets.begin());
+  thrust::copy(segment_offsets_it,
+               segment_offsets_it + (num_segments + 1), // NOLINT(bugprone-misplaced-widening-cast)
+               d_segment_offsets.begin());
 
   // Perform segmented sort
   auto d_segment_offsets_begin_it = d_segment_offsets.cbegin();

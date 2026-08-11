@@ -60,6 +60,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend::__cuda>
 {
@@ -88,7 +93,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
@@ -102,7 +107,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __count,
         ::cuda::always_true{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
       _CCCL_TRY_CUDA_API(
@@ -115,7 +120,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
@@ -138,8 +143,8 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
@@ -169,6 +174,10 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

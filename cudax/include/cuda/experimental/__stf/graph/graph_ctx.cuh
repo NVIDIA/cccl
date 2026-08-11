@@ -558,17 +558,30 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      host_launch(ldata.read()).set_symbol("wait")->*[]() {};
 
-    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
-      out = owning_container_of<T>::get_value(data);
-    };
+      /* This forces the completion of the host callback, so that the host
+       * thread can use it as a synchronization point for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(fence()));
+      host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      /* This forces the completion of the host callback, so that the host
+       * thread can use the content for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+
+      return out;
+    }
   }
 
 private:
@@ -603,12 +616,18 @@ private:
   // Instantiate a CUDA graph
   static ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   {
-    // Custom deleter specifically for cudaGraphExec_t
+    // Custom deleter specifically for cudaGraphExec_t. The handle is
+    // value-initialized and stays null if instantiation throws: do not
+    // destroy it in that case (that would mask the instantiation error).
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-      cudaGraphExecDestroy(*pGraphExec);
+      if (*pGraphExec)
+      {
+        cudaGraphExecDestroy(*pGraphExec);
+      }
+      delete pGraphExec;
     };
 
-    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t{}, cudaGraphExecDeleter);
 
     cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 

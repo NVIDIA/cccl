@@ -81,7 +81,11 @@ private:
 
 public:
   // TODO (elstehle): extend support for variable-size segments
-  static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
+  static_assert(selected_index >= 0,
+                "cub::DeviceBatchedTopK currently supports only segments small enough to be processed by a single "
+                "thread block (one worker per segment). No policy could cover the statically-known maximum segment "
+                "size within the shared-memory limit. Reduce the maximum segment size encoded in the segment-size "
+                "argument annotation.");
   static constexpr policy_t policy = {
     active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 

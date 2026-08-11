@@ -47,6 +47,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -646,6 +647,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   using __base1 = __compressed_box<0, _Elem1>;
 
   _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
   _CCCL_REQUIRES(is_default_constructible_v<_Elem1_>)
   _CCCL_API constexpr __compressed_movable_box() noexcept(is_nothrow_default_constructible_v<_Elem1_>)
@@ -690,6 +700,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   using __base2 = __compressed_box<1, _Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
   _CCCL_REQUIRES(is_default_constructible_v<_Elem1_> _CCCL_AND is_default_constructible_v<_Elem2_>)
   _CCCL_API constexpr __compressed_movable_box() noexcept(
@@ -706,6 +725,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
@@ -713,6 +733,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
       : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -779,6 +800,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   using __base3 = __compressed_box<2, _Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(__compressed_movable_box&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(const __compressed_movable_box&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box& operator=(__compressed_movable_box&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
   _CCCL_REQUIRES(is_default_constructible_v<_Elem1_> _CCCL_AND is_default_constructible_v<_Elem2_> _CCCL_AND
                    is_default_constructible_v<_Elem3_>)
@@ -799,6 +829,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
     && is_nothrow_default_constructible_v<_Elem3>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
@@ -807,6 +838,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
       , __base2()
       , __base3()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =

@@ -74,11 +74,11 @@ struct __fmt_formatter_char
 
     if constexpr (sizeof(_CharT) <= sizeof(unsigned))
     {
-      return ::cuda::std::__fmt_format_int(static_cast<unsigned>(static_cast<_Up>(__value)), __ctx, __specs);
+      return ::cuda::std::__fmt_format_int(static_cast<unsigned>(static_cast<_Up>(__value)), __ctx.out(), __specs);
     }
     else
     {
-      return ::cuda::std::__fmt_format_int(static_cast<_Up>(__value), __ctx, __specs);
+      return ::cuda::std::__fmt_format_int(static_cast<_Up>(__value), __ctx.out(), __specs);
     }
   }
 

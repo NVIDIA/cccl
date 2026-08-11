@@ -10,6 +10,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_radix_sort.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -145,6 +152,25 @@ inline constexpr bool __can_use_radix_sort =
 //!
 //! @linear_performance{radix sort}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceRadixSort that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::RadixSortPolicy`, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin radix-sort-keys-policy-selector
+//!      :end-before: example-end radix-sort-keys-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin radix-sort-keys-tuning
+//!      :end-before: example-end radix-sort-keys-tuning
+//!
 //! @endrst
 struct DeviceRadixSort
 {
@@ -172,8 +198,8 @@ private:
     TuningEnvT             = {})
   {
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
-    using policy_selector_t         = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
     return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
@@ -509,9 +535,9 @@ public:
     const ValueT* d_values_in,
     ValueT* d_values_out,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -758,7 +784,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -977,7 +1003,7 @@ public:
     ValueT* d_values_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -1205,9 +1231,9 @@ public:
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1415,7 +1441,7 @@ public:
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -1632,7 +1658,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -1871,9 +1897,9 @@ public:
     const ValueT* d_values_in,
     ValueT* d_values_out,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2373,9 +2399,9 @@ public:
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2700,7 +2726,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -2775,7 +2801,7 @@ public:
     ValueT* d_values_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -2835,7 +2861,7 @@ public:
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -2900,7 +2926,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -3113,9 +3139,9 @@ public:
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -3322,7 +3348,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -3502,7 +3528,7 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+  SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -3719,7 +3745,11 @@ public:
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
-    DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8, EnvT env = {})
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -3894,7 +3924,7 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+  SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -4071,7 +4101,12 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
-    DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -4280,9 +4315,9 @@ public:
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -4735,7 +4770,11 @@ public:
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
-    DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8, EnvT env = {})
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -5029,7 +5068,7 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -5094,7 +5133,7 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
-    const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+    const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -5155,7 +5194,7 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+  SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -5211,7 +5250,12 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
-    DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

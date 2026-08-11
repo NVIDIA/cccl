@@ -17,7 +17,10 @@
 #include <iostream>
 #include <memory>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 bool g_verbose = false;
 cub::CachingDeviceAllocator g_allocator(true);
@@ -287,7 +290,7 @@ void Test()
   Test<cub::RadixRankAlgorithm::RADIX_RANK_BASIC, ThreadsPerBlock>();
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MEMOIZE, ThreadsPerBlock>();
 
-  Test<ThreadsPerBlock>(cuda::std::bool_constant < (ThreadsPerBlock % 32) == 0 > {});
+  Test<ThreadsPerBlock>(cuda::std::bool_constant<(ThreadsPerBlock % 32) == 0>{});
 }
 
 int main(int argc, char** argv)

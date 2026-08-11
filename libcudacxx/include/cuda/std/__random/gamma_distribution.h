@@ -52,26 +52,29 @@ public:
   public:
     using distribution_type = gamma_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __alpha = result_type{1}, result_type __beta = result_type{1})
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(
+      result_type __alpha = result_type{1}, result_type __beta = result_type{1})
         : __alpha_{__alpha}
         , __beta_{__beta}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type alpha() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type alpha() const noexcept
     {
       return __alpha_;
     }
-    [[nodiscard]] _CCCL_API constexpr result_type beta() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type beta() const noexcept
     {
       return __beta_;
     }
 
-    [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__alpha_ == __y.__alpha_ && __x.__beta_ == __y.__beta_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -84,22 +87,23 @@ private:
 public:
   // constructors and reset functions
   constexpr gamma_distribution() = default;
-  _CCCL_API constexpr explicit gamma_distribution(result_type __alpha, result_type __beta = result_type{1}) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit gamma_distribution(
+    result_type __alpha, result_type __beta = result_type{1}) noexcept
       : __p_{param_type{__alpha, __beta}}
   {}
-  _CCCL_API constexpr explicit gamma_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit gamma_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     const result_type __a = __p.alpha();
@@ -167,40 +171,40 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type alpha() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type alpha() const noexcept
   {
     return __p_.alpha();
   }
-  [[nodiscard]] _CCCL_API constexpr result_type beta() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type beta() const noexcept
   {
     return __p_.beta();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return result_type{0};
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator==(const gamma_distribution& __x, const gamma_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator!=(const gamma_distribution& __x, const gamma_distribution& __y) noexcept
   {
     return !(__x == __y);

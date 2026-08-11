@@ -5,7 +5,7 @@
 
 #include <climits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
@@ -189,7 +189,8 @@ struct min_init_value_aggregate_op_t
       scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid == m_target_thread_id)
     {
@@ -218,7 +219,8 @@ struct sum_aggregate_op_t
       scan.InclusiveSum(thread_data, thread_data, block_aggregate);
     }
 
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
 
     if (tid == m_target_thread_id)
     {
@@ -253,7 +255,8 @@ struct sum_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -294,7 +297,8 @@ struct min_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -390,8 +394,15 @@ struct params_t
   static constexpr scan_mode mode                    = c2h::get<5, TestType>::value;
 };
 
-C2H_TEST(
-  "Block scan works with sum", "[scan][block]", types, block_dim_x, block_dim_yz, items_per_thread, algorithm, modes)
+CUB_TEST("Block scan works with sum",
+         "[scan][block]",
+         CUB_SMALL,
+         types,
+         block_dim_x,
+         block_dim_yz,
+         items_per_thread,
+         algorithm,
+         modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -409,8 +420,9 @@ C2H_TEST(
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Block scan works with sum single",
+CUB_TEST("Block scan works with sum single",
          "[scan][block]",
+         CUB_SMALL,
          types,
          block_dim_x,
          block_dim_yz,
@@ -434,7 +446,7 @@ C2H_TEST("Block scan works with sum single",
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Block scan works with vec types", "[scan][block]", vec_types, algorithm, modes)
+CUB_TEST("Block scan works with vec types", "[scan][block]", CUB_SMALL, vec_types, algorithm, modes)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 256;
@@ -458,7 +470,7 @@ C2H_TEST("Block scan works with vec types", "[scan][block]", vec_types, algorith
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Block scan works with custom types", "[scan][block]", algorithm, modes)
+CUB_TEST("Block scan works with custom types", "[scan][block]", CUB_SMALL, algorithm, modes)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 256;
@@ -482,7 +494,7 @@ C2H_TEST("Block scan works with custom types", "[scan][block]", algorithm, modes
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Block scan returns valid block aggregate", "[scan][block]", algorithm, modes, block_dim_yz)
+CUB_TEST("Block scan returns valid block aggregate", "[scan][block]", CUB_SMALL, algorithm, modes, block_dim_yz)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 64;
@@ -512,7 +524,7 @@ C2H_TEST("Block scan returns valid block aggregate", "[scan][block]", algorithm,
   REQUIRE(block_aggregate == d_block_aggregate[0]);
 }
 
-C2H_TEST("Block scan supports prefix op", "[scan][block]", algorithm, modes, block_dim_yz)
+CUB_TEST("Block scan supports prefix op", "[scan][block]", CUB_SMALL, algorithm, modes, block_dim_yz)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 64;
@@ -540,7 +552,7 @@ C2H_TEST("Block scan supports prefix op", "[scan][block]", algorithm, modes, blo
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
+CUB_TEST("Block scan supports custom scan op", "[scan][block]", CUB_SMALL, algorithm, modes, block_dim_yz)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 64;
@@ -578,7 +590,7 @@ C2H_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Block custom op scan works with initial value", "[scan][block]", algorithm, modes, block_dim_yz)
+CUB_TEST("Block custom op scan works with initial value", "[scan][block]", CUB_SMALL, algorithm, modes, block_dim_yz)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 64;
@@ -612,8 +624,9 @@ C2H_TEST("Block custom op scan works with initial value", "[scan][block]", algor
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Block custom op scan with initial value returns valid block aggregate",
+CUB_TEST("Block custom op scan with initial value returns valid block aggregate",
          "[scan][block]",
+         CUB_SMALL,
          algorithm,
          modes,
          block_dim_yz)
@@ -658,7 +671,7 @@ C2H_TEST("Block custom op scan with initial value returns valid block aggregate"
   REQUIRE(h_block_aggregate == d_block_aggregate[0]);
 }
 
-C2H_TEST("Block scan supports prefix op and custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
+CUB_TEST("Block scan supports prefix op and custom scan op", "[scan][block]", CUB_SMALL, algorithm, modes, block_dim_yz)
 {
   constexpr int items_per_thread              = 3;
   constexpr int block_dim_x                   = 64;

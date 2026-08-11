@@ -328,7 +328,7 @@ struct ReduceByKeyAgent
 
       __syncthreads();
 
-      for (int item = threadIdx.x; item < num_tile_segments; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
       {
         size_type idx         = num_tile_segments_prefix + item;
         key_value_pair_t pair = storage.raw_exchange[item];
@@ -594,7 +594,7 @@ struct ReduceByKeyAgent
       // Blocks are launched in increasing order,
       // so just assign one tile per block
       //
-      int tile_idx       = blockIdx.x;
+      int tile_idx       = static_cast<int>(blockIdx.x);
       Size tile_offset   = static_cast<Size>(tile_idx) * ITEMS_PER_TILE;
       Size num_remaining = num_items - tile_offset;
 

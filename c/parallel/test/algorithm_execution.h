@@ -118,8 +118,8 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
   if (cache_and_key)
   {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
+    auto& cache_v     = cache.value(); // NOLINT(bugprone-unchecked-optional-access)
+    const auto& key_v = lookup_key.value(); // NOLINT(bugprone-unchecked-optional-access)
     if (cache_v.contains(key_v))
     {
       build = cache_v.get(key_v).get();
@@ -142,8 +142,8 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
     if (cache_and_key)
     {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
+      auto& cache_v     = cache.value(); // NOLINT(bugprone-unchecked-optional-access)
+      const auto& key_v = lookup_key.value(); // NOLINT(bugprone-unchecked-optional-access)
       cache_v.insert(key_v, build);
     }
   }

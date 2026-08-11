@@ -21,6 +21,10 @@
 
 #include <cuda/experimental/__places/places.cuh>
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
+#  include <cuda/experimental/__places/exec/green_context.cuh>
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
 #include <cstdio>
 
 using namespace cuda::experimental::places;
@@ -114,6 +118,7 @@ void test_device_vmm_allocation()
 
   // Initialize on device
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
 
   // Allocate result flag for checking
   int* d_result;
@@ -122,6 +127,7 @@ void test_device_vmm_allocation()
 
   // Check on device
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
 
   // Copy result back
   int h_result = 0;
@@ -263,12 +269,14 @@ void test_multi_segment_vmm()
 
   // Initialize the entire contiguous range
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
 
   // Check the entire range
   int* d_result;
   cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
 
   int h_result = 0;
   cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
@@ -290,6 +298,75 @@ void test_multi_segment_vmm()
   printf("  Multi-segment VMM allocation test PASSED\n");
 }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
+// Green context data places override mem_create() to allocate device-pinned
+// physical memory bound to the green context's device. This exercises that
+// override end-to-end through the VMM map/access/kernel path.
+void test_green_ctx_vmm_allocation()
+{
+  int dev_id = 0;
+  cuda_try(cudaSetDevice(dev_id));
+
+  // Split the device into green contexts (8 SMs each).
+  green_context_helper gc_helper(8, dev_id);
+
+  auto gc_view = gc_helper.get_view(0);
+  auto place   = data_place::green_ctx(gc_view);
+
+  size_t granularity      = get_granularity(dev_id);
+  const size_t alloc_size = granularity;
+  const size_t n          = alloc_size / sizeof(int);
+  const int test_value    = 55;
+
+  // Create physical memory using the green context data place's mem_create().
+  CUmemGenericAllocationHandle handle;
+  CUresult result = place.mem_create(&handle, alloc_size);
+  EXPECT(result == CUDA_SUCCESS);
+
+  // Reserve virtual address space and map the physical allocation into it.
+  CUdeviceptr va_ptr;
+  cuda_try(cuMemAddressReserve(&va_ptr, alloc_size, 0, 0, 0));
+  cuda_try(cuMemMap(va_ptr, alloc_size, 0, handle, 0));
+
+  // Green context memory is pinned on the underlying device, so grant device
+  // access accordingly.
+  CUmemAccessDesc accessDesc = {};
+  accessDesc.location.type   = CU_MEM_LOCATION_TYPE_DEVICE;
+  accessDesc.location.id     = dev_id;
+  accessDesc.flags           = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
+  cuda_try(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
+
+  int* d_ptr = reinterpret_cast<int*>(va_ptr); // NOLINT(performance-no-int-to-ptr)
+
+  cudaStream_t stream;
+  cuda_try(cudaStreamCreate(&stream));
+
+  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
+
+  int* d_result;
+  cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
+  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
+
+  int h_result = 0;
+  cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
+
+  EXPECT(h_result == 0);
+
+  // Cleanup
+  cuda_try(cudaFreeAsync(d_result, stream));
+  cuda_try(cudaStreamSynchronize(stream));
+  cuda_try(cudaStreamDestroy(stream));
+
+  cuda_try(cuMemUnmap(va_ptr, alloc_size));
+  cuda_try(cuMemRelease(handle));
+  cuda_try(cuMemAddressFree(va_ptr, alloc_size));
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
 int main()
 {
   printf("=== Testing data_place VMM allocation (mem_create) ===\n\n");
@@ -309,6 +386,9 @@ int main()
   test_host_vmm_allocation();
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
   test_multi_segment_vmm();
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  test_green_ctx_vmm_allocation();
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   printf("\n=== All VMM tests PASSED ===\n");
   return 0;

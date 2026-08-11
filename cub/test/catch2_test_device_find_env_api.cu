@@ -13,7 +13,7 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin find-if-predicate
 struct is_greater_than_t
@@ -26,7 +26,7 @@ struct is_greater_than_t
 };
 // example-end find-if-predicate
 
-C2H_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]")
+CUB_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]", CUB_SMALL)
 {
   // example-begin find-if-env
   constexpr int num_items         = 8;
@@ -51,7 +51,7 @@ C2H_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]")
   REQUIRE(d_out[0] == expected);
 }
 
-C2H_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]")
+CUB_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]", CUB_SMALL)
 {
   // example-begin lower-bound-env
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -82,7 +82,7 @@ C2H_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]")
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]")
+CUB_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]", CUB_SMALL)
 {
   // example-begin upper-bound-env
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -118,7 +118,7 @@ C2H_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]")
 // example-begin find-if-policy-selector
 struct FindPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::FindPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::FindIfPolicy
   {
     return {.threads_per_block = 128,
             .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 7,
@@ -128,7 +128,7 @@ struct FindPolicySelector
 };
 // example-end find-if-policy-selector
 
-C2H_TEST("cub::DeviceFind::FindIf env-based API with tuning", "[find][env]")
+CUB_TEST("cub::DeviceFind::FindIf accepts a custom policy selector", "[find][env]", CUB_SMALL)
 {
   // example-begin find-if-tuning
   auto d_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};

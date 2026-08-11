@@ -58,7 +58,7 @@ template <typename BufferOffsetScanTileStateT, typename BlockOffsetScanTileState
 _CCCL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
-  _CCCL_GRID_CONSTANT const TileOffsetT num_tiles)
+  const TileOffsetT num_tiles)
 {
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);
@@ -81,17 +81,16 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferTileOffsetItT buffer_tile_offsets,
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferTileOffsetItT buffer_tile_offsets,
     TileT buffer_offset_tile,
-    _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
+    const TileOffsetT last_tile_offset)
 {
-  static constexpr BatchMemcpyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
-  using StatusWord                                     = typename TileT::StatusWord;
+  static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().lookback.large_buffer;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
@@ -103,7 +102,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
 
   constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
-  constexpr BufferSizeT TILE_SIZE     = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
+  constexpr BufferSizeT TILE_SIZE     = BufferSizeT{BLOCK_THREADS} * ITEMS_PER_THREAD;
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 
@@ -153,8 +152,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
-                     InputBufferT > (input_buffer_it[buffer_id], thread_offset);
+          const auto value =
+            read_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
           write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }
@@ -211,25 +210,23 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferOffsetT num_buffers,
-    _CCCL_GRID_CONSTANT const BlevBufferSrcsOutItT blev_buffer_srcs,
-    _CCCL_GRID_CONSTANT const BlevBufferDstsOutItT blev_buffer_dsts,
-    _CCCL_GRID_CONSTANT const BlevBufferSizesOutItT blev_buffer_sizes,
-    _CCCL_GRID_CONSTANT const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
-    _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
-    _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferOffsetT num_buffers,
+    const BlevBufferSrcsOutItT blev_buffer_srcs,
+    const BlevBufferDstsOutItT blev_buffer_dsts,
+    const BlevBufferSizesOutItT blev_buffer_sizes,
+    const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
+    const BLevBufferOffsetTileState blev_buffer_scan_state,
+    const BLevBlockOffsetTileState blev_block_scan_state)
 {
-  static constexpr BatchMemcpySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
-  // Internal type used for storing a buffer's size
-  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
+  static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().lookback.small_buffer;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
-  using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
+  using agent_policy_t = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
     policy.bytes_per_thread,
@@ -246,7 +243,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
 
   // Block-level specialization
   using AgentBatchMemcpyT = AgentBatchMemcpy<
-    AgentBatchMemcpyPolicyT,
+    agent_policy_t,
     InputBufferIt,
     OutputBufferIt,
     BufferSizeIteratorT,
@@ -315,7 +312,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const BatchedMemcpyPolicy active_policy = policy_selector(cc);
+  const BatchedCopyPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -348,8 +345,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   };
 
   constexpr BlockOffsetT init_kernel_threads = 128U;
-  const auto tile_size                       = static_cast<uint32_t>(active_policy.small_buffer.threads_per_block)
-                       * static_cast<uint32_t>(active_policy.small_buffer.buffers_per_thread);
+  const auto tile_size = static_cast<uint32_t>(active_policy.lookback.small_buffer.threads_per_block)
+                       * static_cast<uint32_t>(active_policy.lookback.small_buffer.buffers_per_thread);
 
   constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
   static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
@@ -448,7 +445,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     BlockOffsetT,
     MemcpyOpt>;
 
-  const auto blev_threads_per_block = static_cast<uint32_t>(active_policy.large_buffer.threads_per_block);
+  const auto blev_threads_per_block = static_cast<uint32_t>(active_policy.lookback.large_buffer.threads_per_block);
 
   int device_ordinal;
   if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
@@ -508,7 +505,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            batch_memcpy_grid_size, active_policy.small_buffer.threads_per_block, 0, stream)
+            batch_memcpy_grid_size, active_policy.lookback.small_buffer.threads_per_block, 0, stream)
             .doit(batch_memcpy_non_blev_kernel,
                   input_buffer_it + current_buffer_offset,
                   output_buffer_it + current_buffer_offset,

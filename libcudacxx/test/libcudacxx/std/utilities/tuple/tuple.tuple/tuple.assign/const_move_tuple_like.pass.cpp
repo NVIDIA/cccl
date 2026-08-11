@@ -101,13 +101,13 @@ TEST_FUNC constexpr bool test()
     static_assert(!cuda::std::is_assignable_v<const cuda::std::tuple<float, double>&, cuda::std::complex<double>&&>);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(
     NV_IS_HOST, ({
       static_assert(!cuda::std::is_assignable_v<const cuda::std::tuple<float, float>&, std::complex<float>&&>);
       static_assert(!cuda::std::is_assignable_v<const cuda::std::tuple<float, double>&, std::complex<double>&&>);
     }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
 #if _CCCL_HAS_HOST_STD_LIB()
   NV_IF_TARGET(

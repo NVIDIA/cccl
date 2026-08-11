@@ -4,4 +4,8 @@
 
 #include <cstdlib>
 
+#ifdef _WIN32
+extern "C" int _fltused = 0;
+#endif // _WIN32
+
 #endif // _HOSTJIT_STDLIB_H

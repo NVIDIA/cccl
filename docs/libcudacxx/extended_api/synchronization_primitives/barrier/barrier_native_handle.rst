@@ -22,7 +22,7 @@ If ``bar`` is not in ``__shared__`` memory, the behavior is undefined.
 Return Value
 ------------
 
-A pointer to the PTX “mbarrier” subobject of the :ref:`cuda::barrier <libcudacxx-extended-api-synchronization-barrier>`
+A pointer to the PTX "mbarrier" subobject of the :ref:`cuda::barrier <libcudacxx-extended-api-synchronization-barrier>`
 object.
 
 Example

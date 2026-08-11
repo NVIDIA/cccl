@@ -4,7 +4,6 @@ project(nvbench_helper LANGUAGES CXX CUDA)
 
 include(CMakeDependentOption)
 
-cccl_get_catch2()
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_libcudacxx()
@@ -36,6 +35,13 @@ if (CUDAToolkit_VERSION VERSION_LESS "12.5.0")
   target_compile_options(cccl.nvbench_helper PUBLIC -diag-suppress 20011)
 endif()
 
+if (CCCL_ENABLE_TILE)
+  target_compile_options(
+    cccl.nvbench_helper
+    PUBLIC "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+  )
+endif()
+
 # Don't enable tests when pulled in as an internal dependency.
 # Require CCCL_ENABLE_NVBENCH_HELPER to be explicitly enabled.
 cmake_dependent_option(
@@ -48,6 +54,7 @@ cmake_dependent_option(
 mark_as_advanced(nvbench_helper_ENABLE_TESTING)
 
 if (nvbench_helper_ENABLE_TESTING)
+  cccl_get_catch2()
   cccl_get_boost()
 
   thrust_create_target(cccl.nvbench_helper.test.Thrust.cpp.cuda DEVICE CUDA)

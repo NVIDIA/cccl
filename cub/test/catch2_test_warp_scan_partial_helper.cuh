@@ -19,7 +19,8 @@ warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT acti
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LogicalWarpThreads;
@@ -65,7 +66,8 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action, int valid_items)
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LogicalWarpThreads;

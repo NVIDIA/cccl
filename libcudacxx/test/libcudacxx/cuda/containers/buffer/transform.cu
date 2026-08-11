@@ -70,7 +70,8 @@ struct add_kernel
   template <typename T>
   TEST_DEVICE_FUNC void operator()(cuda::std::span<T> a, cuda::std::span<const T> b)
   {
-    for (int i = cuda::gpu_thread.rank(cuda::grid); i < a.size(); i += cuda::gpu_thread.count(cuda::grid))
+    for (int i = static_cast<int>(cuda::gpu_thread.rank(cuda::grid)); i < a.size();
+         i += static_cast<int>(cuda::gpu_thread.count(cuda::grid)))
     {
       a[i] += b[i];
     }

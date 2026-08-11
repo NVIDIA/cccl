@@ -27,8 +27,10 @@
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
 #include <cccl/c/histogram.h>
+#include <cccl/c/serialization.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
 
@@ -236,7 +238,7 @@ CUresult cccl_device_histogram_compile(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -254,7 +256,7 @@ try
   const cuda::compute_capability cc{cc_major, cc_minor};
   const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
   const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-  const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
+  const auto level_cpp   = cccl_type_enum_to_name(level_type.type);
 
   const std::string offset_cpp =
     ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
@@ -402,7 +404,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
 
   build_ptr->cc                  = cc.get();
   build_ptr->counter_type        = d_output_histograms.value_type;
-  build_ptr->level_type          = lower_level.type;
+  build_ptr->level_type          = level_type;
   build_ptr->sample_type         = d_samples.value_type;
   build_ptr->num_active_channels = num_active_channels;
   build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
@@ -475,7 +477,7 @@ CUresult cccl_device_histogram_build_ex(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -494,7 +496,7 @@ CUresult cccl_device_histogram_build_ex(
     d_samples,
     num_output_levels_val,
     d_output_histograms,
-    lower_level,
+    level_type,
     num_rows,
     row_stride_samples,
     is_evenly_segmented,
@@ -647,7 +649,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -665,7 +667,7 @@ CUresult cccl_device_histogram_build(
     d_samples,
     num_output_levels_val,
     d_output_histograms,
-    lower_level,
+    level_type,
     num_rows,
     row_stride_samples,
     is_evenly_segmented,
@@ -746,5 +748,111 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_histogram_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_histogram_serialize(const cccl_device_histogram_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_writer w;
+  write_header(w, CCCL_SERIALIZATION_ALGO_HISTOGRAM, build_ptr->payload_kind, build_ptr->cc);
+  write_type_info(w, build_ptr->counter_type);
+  write_type_info(w, build_ptr->level_type);
+  write_type_info(w, build_ptr->sample_type);
+  w.write_pod<int32_t>(build_ptr->num_active_channels);
+  w.write_pod<uint8_t>(build_ptr->may_overflow ? 1 : 0);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->init_kernel_lowered_name);
+  w.write_cstring(build_ptr->sweep_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_histogram_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_histogram_deserialize(cccl_device_histogram_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_HISTOGRAM);
+
+  const auto counter_t  = read_type_info(r);
+  const auto level_t    = read_type_info(r);
+  const auto sample_t   = read_type_info(r);
+  const int32_t nac     = r.read_pod<int32_t>();
+  const bool overflow_b = r.read_pod<uint8_t>() != 0;
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("serialization blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::histogram::policy_selector, decltype(&std::free)> policy(
+    static_cast<cub::detail::histogram::policy_selector*>(std::malloc(sizeof(cub::detail::histogram::policy_selector))),
+    std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), sizeof(cub::detail::histogram::policy_selector));
+
+  std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_sweep{r.read_cstring_dup()};
+
+  cccl_device_histogram_build_result_t result{};
+  result.cc                        = static_cast<int>(h.cc);
+  result.payload_kind              = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.counter_type              = counter_t;
+  result.level_type                = level_t;
+  result.sample_type               = sample_t;
+  result.num_active_channels       = nac;
+  result.may_overflow              = overflow_b;
+  result.payload                   = payload_owner.release();
+  result.payload_size              = payload_size;
+  result.runtime_policy            = policy.release();
+  result.runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
+  result.init_kernel_lowered_name  = n_init.release();
+  result.sweep_kernel_lowered_name = n_sweep.release();
+  *build_ptr                       = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_histogram_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

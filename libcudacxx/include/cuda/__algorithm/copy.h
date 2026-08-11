@@ -40,17 +40,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Source access order for copy_bytes
 enum class source_access_order
 {
-#  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Access source in stream order
-  stream = ::cudaMemcpySrcAccessOrderStream,
+  stream = 0x1,
   //! @brief Access source during the copy call, source can be destroyed after the API returns
-  during_api_call = ::cudaMemcpySrcAccessOrderDuringApiCall,
+  during_api_call = 0x2,
   //! @brief Access source in any order, the order can change across CUDA releases
-  any = ::cudaMemcpySrcAccessOrderAny,
-#  else
   any = 0x3,
-#  endif // _CCCL_CTK_BELOW(13, 0)
 };
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+static_assert(::cuda::std::to_underlying(source_access_order::stream) == ::cudaMemcpySrcAccessOrderStream);
+static_assert(::cuda::std::to_underlying(source_access_order::during_api_call)
+              == ::cudaMemcpySrcAccessOrderDuringApiCall);
+static_assert(::cuda::std::to_underlying(source_access_order::any) == ::cudaMemcpySrcAccessOrderAny);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //! @brief Configuration for copy_bytes
 struct copy_configuration
@@ -65,21 +68,35 @@ struct copy_configuration
 
 namespace __detail
 {
-template <typename _SrcTy, typename _DstTy>
+template <typename _SrcTy, ::cuda::std::size_t _SrcSize, typename _DstTy, ::cuda::std::size_t _DstSize>
 _CCCL_HOST_API void __copy_bytes_impl(
   stream_ref __stream,
-  ::cuda::std::span<_SrcTy> __src,
-  ::cuda::std::span<_DstTy> __dst,
+  ::cuda::std::span<_SrcTy, _SrcSize> __src,
+  ::cuda::std::span<_DstTy, _DstSize> __dst,
   [[maybe_unused]] copy_configuration __config)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
   static_assert(::cuda::is_trivially_copyable_v<_SrcTy> && ::cuda::is_trivially_copyable_v<_DstTy>);
 
-  if (__src.size_bytes() > __dst.size_bytes())
+  // If neither are dynamic_extent then they are a number, and in that case we can check at compile-time
+  if constexpr ((_SrcSize != ::cuda::std::dynamic_extent) && (_DstSize != ::cuda::std::dynamic_extent))
   {
-    _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+    // Can't use size_bytes() here because while the sizes are statically determinable, __src
+    // and __dest are not core constexpr expressions due to be function arguments.
+    constexpr auto __src_size  = _SrcSize * sizeof(_SrcTy);
+    constexpr auto __dest_size = _DstSize * sizeof(_DstTy);
+
+    static_assert(__dest_size >= __src_size, "Copy destination is too small to fit the source data");
   }
-  if (__src.size_bytes() == 0)
+  else
+  {
+    if (__src.size_bytes() > __dst.size_bytes())
+    {
+      _CCCL_THROW(::std::invalid_argument, "Copy destination is too small to fit the source data");
+    }
+  }
+
+  if (__src.empty())
   {
     return;
   }

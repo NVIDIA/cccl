@@ -50,7 +50,7 @@ __shuffle_down_impl(const _Group& __group, const _Tp& __value, unsigned __offset
   const auto& __mapping_result = __group.__mapping_result();
 
   const auto __lane_mask       = __mapping_result.lane_mask();
-  const auto __offset_is_valid = (__offset < __mapping_result.count() - __mapping_result.rank());
+  const auto __offset_is_valid = (__offset < __mapping_result.unit_count() - __mapping_result.unit_rank());
 
   if constexpr (_MappingResult::is_always_contiguous())
   {
@@ -72,7 +72,7 @@ __shuffle_down_impl(const _Group& __group, const _Tp& __value, unsigned __offset
 //! @brief Gets the values from a unit with a greater rank by the specified offset.
 //! @param[in] __group The group.
 //! @param[in] __value This thread's value.
-//! @param[in] __offset The offset of the source rank from this unit's rank.
+//! @param[in] __offset The offset of the source unit rank from this unit's rank.
 //! @return The source's value or empty optional if no such rank exists.
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>

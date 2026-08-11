@@ -30,10 +30,9 @@
 template <typename KeyT>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::merge::merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
   {
-    return cub::detail::merge::merge_policy{
+    return cub::MergePolicy{
       (1 << TUNE_THREADS_PER_BLOCK_POW2),
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       TUNE_LOAD_MODIFIER,
@@ -100,10 +99,11 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
   // selected for lhs and *all* items after the pivot point.
   constexpr std::size_t num_pivot_points = 1;
   thrust::device_vector<offset_t> pivot_point(num_pivot_points);
-  auto counting_it = thrust::make_counting_iterator(offset_t{0});
+  auto counting_it            = thrust::make_counting_iterator(offset_t{0});
+  using counting_difference_t = typename decltype(counting_it)::difference_type;
   thrust::copy_if(
     counting_it,
-    counting_it + elements,
+    counting_it + static_cast<counting_difference_t>(elements),
     rnd_selector_val.begin(),
     cuda::make_tabulate_output_iterator(write_pivot_point_t<offset_t>{
       static_cast<offset_t>(num_items_lhs), thrust::raw_pointer_cast(pivot_point.data())}),

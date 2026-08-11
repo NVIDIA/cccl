@@ -22,7 +22,7 @@
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
-//! C2H_TEST("Reduce test", "[device][reduce]")
+//! CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and
@@ -188,9 +188,11 @@ void launch(ActionT action, Args... args)
 
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  // randomly offset the temporary storage address by one byte
+  const int offset = GENERATE(take(1, random(0, 1)));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes + offset, thrust::no_init);
 
-  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);
+  error = action(thrust::raw_pointer_cast(temp_storage.data()) + offset, temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);

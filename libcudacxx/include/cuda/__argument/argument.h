@@ -200,22 +200,22 @@ _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_lowest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
-  return __static_lowest > __runtime_bounds.lower() ? __static_lowest : __runtime_bounds.lower();
+  const auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
+  return __static_lowest < __runtime_bounds.lower() ? __runtime_bounds.lower() : __static_lowest;
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_highest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
+  const auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
   return __static_highest < __runtime_bounds.upper() ? __static_highest : __runtime_bounds.upper();
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr bool __has_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  return __effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds)
-      <= __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds);
+  return __bounds_less_equal(__effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds),
+                             __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds));
 }
 
 template <class _ElementType, class _StaticBounds>
@@ -233,9 +233,9 @@ _CCCL_API constexpr void __validate_static_element_bounds([[maybe_unused]] const
 {
   if constexpr (!::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    _CCCL_ASSERT((__val >= __wrapper_static_lowest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_greater_equal(__val, __wrapper_static_lowest<_ElementType, _StaticBounds>())),
                  "immediate argument value is below static lowest bound");
-    _CCCL_ASSERT((__val <= __wrapper_static_highest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_less_equal(__val, __wrapper_static_highest<_ElementType, _StaticBounds>())),
                  "immediate argument value is above static highest bound");
   }
 }
@@ -244,8 +244,10 @@ template <class _ElementType>
 _CCCL_API constexpr void __validate_runtime_element_bounds(
   [[maybe_unused]] const _ElementType& __val, [[maybe_unused]] runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  _CCCL_ASSERT((__val >= __runtime_bounds.lower()), "immediate argument value is below runtime lower bound");
-  _CCCL_ASSERT((__val <= __runtime_bounds.upper()), "immediate argument value is above runtime upper bound");
+  _CCCL_ASSERT((__bounds_greater_equal(__val, __runtime_bounds.lower())),
+               "immediate argument value is below runtime lower bound");
+  _CCCL_ASSERT((__bounds_less_equal(__val, __runtime_bounds.upper())),
+               "immediate argument value is above runtime upper bound");
 }
 
 // =====================================================================
@@ -295,7 +297,7 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE immediate(_Arg, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES immediate(_Arg, static_bounds<_Lowest, _Highest>)
   -> immediate<_Arg, static_bounds<_Lowest, _Highest>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -391,15 +393,15 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE __immediate_sequence(_Arg, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __immediate_sequence(_Arg, static_bounds<_Lowest, _Highest>)
   -> __immediate_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
-_CCCL_HOST_DEVICE __immediate_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __immediate_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
   -> __immediate_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE __immediate_sequence(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __immediate_sequence(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
   -> __immediate_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -472,20 +474,21 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg>
-_CCCL_HOST_DEVICE deferred(_Arg) -> deferred<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg) -> deferred<_Arg>;
 
 template <class _Arg, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE deferred(_Arg, static_bounds<_Lowest, _Highest>) -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>)
+  -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp>
-_CCCL_HOST_DEVICE deferred(_Arg, runtime_bounds<_Tp>) -> deferred<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>) -> deferred<_Arg>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
-_CCCL_HOST_DEVICE deferred(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
   -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE deferred(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
   -> deferred<_Arg, static_bounds<_Lowest, _Highest>>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -502,21 +505,21 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg>
-_CCCL_HOST_DEVICE deferred_sequence(_Arg) -> deferred_sequence<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg) -> deferred_sequence<_Arg>;
 
 template <class _Arg, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>)
   -> deferred_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp>
-_CCCL_HOST_DEVICE deferred_sequence(_Arg, runtime_bounds<_Tp>) -> deferred_sequence<_Arg>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, runtime_bounds<_Tp>) -> deferred_sequence<_Arg>;
 
 template <class _Arg, auto _Lowest, auto _Highest, class _Tp>
-_CCCL_HOST_DEVICE deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, static_bounds<_Lowest, _Highest>, runtime_bounds<_Tp>)
   -> deferred_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 
 template <class _Arg, class _Tp, auto _Lowest, auto _Highest>
-_CCCL_HOST_DEVICE deferred_sequence(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred_sequence(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Highest>)
   -> deferred_sequence<_Arg, static_bounds<_Lowest, _Highest>>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -885,9 +888,16 @@ struct __traits : __traits_impl<::cuda::std::remove_cvref_t<_Tp>>
 //! @brief Returns the effective lowest bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp __arg) noexcept
 {
-  return __type_lowest<__element_type_of_t<_Tp>>();
+  if constexpr (__is_sequence_v<_Tp>)
+  {
+    return __type_lowest<__element_type_of_t<_Tp>>();
+  }
+  else
+  {
+    return __arg;
+  }
 }
 
 template <auto _Value, class _Tp>
@@ -938,9 +948,16 @@ template <class _Arg, class _StaticBounds>
 //! @brief Returns the effective highest bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp __arg) noexcept
 {
-  return __type_highest<__element_type_of_t<_Tp>>();
+  if constexpr (__is_sequence_v<_Tp>)
+  {
+    return __type_highest<__element_type_of_t<_Tp>>();
+  }
+  else
+  {
+    return __arg;
+  }
 }
 
 template <auto _Value, class _Tp>

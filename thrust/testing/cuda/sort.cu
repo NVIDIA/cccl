@@ -267,12 +267,13 @@ void TestSortWithMagnitude(int magnitude)
     thrust::device_vector<std::uint8_t> vec(num_items);
     auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
     auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
-    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
-    thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
+    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + static_cast<std::ptrdiff_t>(num_items));
+    thrust::copy(rev_sorted_it, rev_sorted_it + static_cast<std::ptrdiff_t>(num_items), vec.begin());
     thrust::sort(vec.begin(), vec.end());
     auto expected_result_it = thrust::make_transform_iterator(
       thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
-    const bool ok = thrust::equal(expected_result_it, expected_result_it + num_items, vec.cbegin());
+    const bool ok =
+      thrust::equal(expected_result_it, expected_result_it + static_cast<std::ptrdiff_t>(num_items), vec.cbegin());
     ASSERT_EQUAL(ok, true);
   }
   catch (std::bad_alloc&)

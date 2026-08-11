@@ -151,7 +151,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 
   // Verify the source node is still valid (moving a node ref does not zero out the source)
   REQUIRE(node3.get() == node1_handle);
-  REQUIRE(node2.get() == node1_handle);
+  REQUIRE(node2.get() == node1_handle); // NOLINT(bugprone-use-after-move)
 }
 
 C2H_TEST("Path builder with kernel nodes", "[graph]")

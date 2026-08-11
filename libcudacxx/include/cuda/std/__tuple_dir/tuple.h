@@ -95,8 +95,10 @@ public:
   _CCCL_API explicit constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI tuple(tuple const&) = default;
-  _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI tuple(tuple&&) = default;
 
   template <class _Alloc,
             __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
@@ -186,6 +188,14 @@ public:
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            enable_if_t<sizeof...(_Tp) != 0, int>  = 0, // Help Clang disambiguate for CTAD
+            __select_constructor _Trait            = _VariadicConstraints<_UTypes...>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr tuple(_UTypes&&...) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class _Alloc,
             class... _UTypes,
             __select_constructor _Trait                          = _VariadicConstraints<_UTypes...>::value,
@@ -204,6 +214,14 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Alloc,
+            class... _UTypes,
+            __select_constructor _Trait            = _VariadicConstraints<_UTypes...>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr tuple(allocator_arg_t, const _Alloc&, _UTypes&&...) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class... _UTypes>
   using _VariadicConstraintsLessRank = integral_constant<
     __select_constructor,
@@ -218,27 +236,29 @@ public:
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int> = 0,
+            enable_if_t<(sizeof...(_UTypes) != 0), int>             = 0,
+            __select_constructor _Trait                             = _VariadicConstraintsLessRank<_UTypes...>::value,
+            enable_if_t<__is_deleted<_Trait>, int>                  = 0>
+  constexpr tuple(_UTypes&&...) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   // Horrible hack to make tuple_of_iterator_references work
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _TupleOfIteratorReferences,
             // clang-tidy has fallen off its rocker and claims we can use the non-existent
             // __tuple_of_iterato_references_v here.
             // NOLINTBEGIN(modernize-type-traits)
-            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0,
+            enable_if_t<__is_tuple_of_iterator_references_v<remove_cvref_t<_TupleOfIteratorReferences>>, int> = 0,
             // NOLINTEND(modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
-      : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
+      : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
-private:
-  template <class _TupleOfIteratorReferences,
-            size_t... _Indices,
-            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0>
-  _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
-      : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
-  {}
-
-public:
   template <class _UTuple>
   using _TupleLikeConstraints = integral_constant<
     __select_constructor,
@@ -262,6 +282,13 @@ public:
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            __select_constructor _Trait            = _TupleLikeConstraints<tuple<_UTypes...>&>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr tuple(tuple<_UTypes...>&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class... _UTypes,
             __select_constructor _Trait = _TupleLikeConstraints<const tuple<_UTypes...>&>::value,
             enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
@@ -276,6 +303,14 @@ public:
     _NothrowTupleLike<const tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            __select_constructor _Trait            = _TupleLikeConstraints<const tuple<_UTypes...>&>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  _CCCL_API constexpr tuple(const tuple<_UTypes...>&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class... _UTypes,
             __select_constructor _Trait                          = _TupleLikeConstraints<tuple<_UTypes...>&&>::value,
             enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
@@ -289,6 +324,13 @@ public:
   _CCCL_API explicit constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            __select_constructor _Trait            = _TupleLikeConstraints<tuple<_UTypes...>&&>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr tuple(tuple<_UTypes...>&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class... _UTypes,
             __select_constructor _Trait = _TupleLikeConstraints<const tuple<_UTypes...>&&>::value,
@@ -305,12 +347,20 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _UTypes,
+            __select_constructor _Trait            = _TupleLikeConstraints<const tuple<_UTypes...>&&>::value,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr tuple(const tuple<_UTypes...>&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
   // We need to SFINAE the constructor away before instantiating the traits
   template <class _Tuple>
   using __disambiguate_tuple_like =
     bool_constant<!is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
             __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
@@ -326,6 +376,15 @@ public:
   _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Tuple,
+            enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
+            __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
+            enable_if_t<__is_deleted<_Trait>, int>                     = 0>
+  constexpr tuple(_Tuple&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Alloc,
             class _Tuple,
@@ -345,6 +404,15 @@ public:
     _NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Alloc,
+            class _Tuple,
+            enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
+            __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
+            enable_if_t<__is_deleted<_Trait>, int>                     = 0>
+  constexpr tuple(allocator_arg_t, const _Alloc&, _Tuple&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // [tuple.assign]
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
@@ -371,7 +439,7 @@ public:
 
   // [tuple.assign]-15
   template <class... _UTypes,
-            __select_assignment _Trait             = __tuple_select_converting_assignable_v</*__is_const=*/false,
+            __select_assignment _Trait = __tuple_select_converting_assignable_v</*__is_const=*/false,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __tuple_types<const _UTypes&...>>,
             enable_if_t<__can_assign<_Trait>, int> = 0>
@@ -383,7 +451,7 @@ public:
 
   // [tuple.assign]-18
   template <class... _UTypes,
-            __select_assignment _Trait             = __tuple_select_converting_assignable_v</*__is_const=*/true,
+            __select_assignment _Trait = __tuple_select_converting_assignable_v</*__is_const=*/true,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __tuple_types<const _UTypes&...>>,
             enable_if_t<__can_assign<_Trait>, int> = 0>
@@ -422,7 +490,7 @@ public:
   // [tuple.assign]-39
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            __select_assignment _Trait             = __tuple_select_tuple_like_assignable_v</*__is_const=*/false,
+            __select_assignment _Trait = __tuple_select_tuple_like_assignable_v</*__is_const=*/false,
                                                                                 _UTuple,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __make_tuple_indices_t<sizeof...(_Tp)>>,
@@ -437,7 +505,7 @@ public:
   // [tuple.assign]-42
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            __select_assignment _Trait             = __tuple_select_tuple_like_assignable_v</*__is_const=*/true,
+            __select_assignment _Trait = __tuple_select_tuple_like_assignable_v</*__is_const=*/true,
                                                                                 _UTuple,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __make_tuple_indices_t<sizeof...(_Tp)>>,
@@ -677,7 +745,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+_CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
   piecewise_construct_t,
   tuple<_Args1...>& __first_args,
   tuple<_Args2...>& __second_args,

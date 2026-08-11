@@ -21,6 +21,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
+#  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -73,7 +75,7 @@ int main(int, char**)
 
   {
     using T = cuda::std::tuple<int, short>;
-    cuda::std::pair<long, long> t0{1337, 42};
+    const cuda::std::pair<long, long> t0{1337, 42};
     T t = t0;
     assert(cuda::std::get<0>(t) == 1337);
     assert(cuda::std::get<1>(t) == 42);
@@ -82,7 +84,7 @@ int main(int, char**)
 #if _CCCL_HAS_HOST_STD_LIB()
   NV_IF_TARGET(NV_IS_HOST, ({
                  using T = cuda::std::tuple<int, short>;
-                 std::pair<long, long> t0{1337, 42};
+                 const std::pair<long, long> t0{1337, 42};
                  T t = t0;
                  assert(cuda::std::get<0>(t) == 1337);
                  assert(cuda::std::get<1>(t) == 42);
@@ -91,25 +93,25 @@ int main(int, char**)
 
   {
     using T = cuda::std::tuple<float, double>;
-    cuda::std::complex<double> t0{0.0, 1.0};
+    const cuda::std::complex<double> t0{0.0, 1.0};
     T t = t0;
     assert(cuda::std::get<0>(t) == 0.0f);
     assert(cuda::std::get<1>(t) == 1.0);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(NV_IS_HOST, ({
                  using T = cuda::std::tuple<float, double>;
-                 cuda::std::complex<double> t0{0.0, 1.0};
+                 const std::complex<double> t0{0.0, 1.0};
                  T t = t0;
                  assert(cuda::std::get<0>(t) == 0.0f);
                  assert(cuda::std::get<1>(t) == 1.0);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
   {
     using T = cuda::std::tuple<int, long, double>;
-    cuda::std::array<int, 3> t0{42, 1337, 0};
+    const cuda::std::array<int, 3> t0{42, 1337, 0};
     T t = t0;
     assert(cuda::std::get<0>(t) == 42);
     assert(cuda::std::get<1>(t) == 1337);

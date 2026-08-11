@@ -913,6 +913,9 @@ public:
     };
   }
 
+  // Forwards to the active backend. For a token (logical_data<void_interface>)
+  // the backend wait() returns void and only blocks on the token's
+  // dependencies, so `auto` deduces void here as well.
   template <typename T>
   auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
@@ -1861,6 +1864,20 @@ UNITTEST("token vector")
   ctx.task(tokens[0].read(), tokens[1].write())->*[](cudaStream_t) {};
   ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
   ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
+
+  ctx.finalize();
+};
+
+// Blocking wait on a token returns void and only synchronizes the host
+UNITTEST("wait on token")
+{
+  context ctx;
+
+  auto tok = ctx.token();
+  ctx.task(tok.write())->*[](cudaStream_t) {};
+
+  static_assert(::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
+  ctx.wait(tok);
 
   ctx.finalize();
 };

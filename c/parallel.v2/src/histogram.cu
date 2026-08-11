@@ -39,7 +39,7 @@ CUresult cccl_device_histogram_build_ex(
   cccl_iterator_t d_samples,
   int /*num_output_levels_val*/,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t /*num_rows*/,
   int64_t /*row_stride_samples*/,
   bool /*is_evenly_segmented*/,
@@ -66,10 +66,8 @@ try
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 
-  // level_t comes from the lower_level value's type at build time. CUB infers
+  // level_t comes from the build-time type info. CUB infers
   // sample_t / counter_t from the iterator and output pointer respectively.
-  cccl_type_info level_type = lower_level.type;
-
   CubCallResult result =
     CubCall::from("cub/device/device_histogram.cuh")
       .run("cub::DeviceHistogram::HistogramEven")
@@ -92,7 +90,7 @@ try
   build_ptr->jit_compiler        = result.compiler;
   build_ptr->histogram_fn        = result.fn_ptr;
   build_ptr->counter_type        = d_output_histograms.value_type;
-  build_ptr->level_type          = lower_level.type;
+  build_ptr->level_type          = level_type;
   build_ptr->sample_type         = d_samples.value_type;
   build_ptr->num_channels        = num_channels;
   build_ptr->num_active_channels = num_active_channels;
@@ -112,7 +110,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -130,7 +128,7 @@ CUresult cccl_device_histogram_build(
     d_samples,
     num_output_levels_val,
     d_output_histograms,
-    lower_level,
+    level_type,
     num_rows,
     row_stride_samples,
     is_evenly_segmented,

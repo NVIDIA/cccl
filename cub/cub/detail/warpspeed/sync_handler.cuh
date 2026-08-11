@@ -121,7 +121,7 @@ struct SyncHandler
         uint64_t* ptrBar     = mPtrBar[ri][pi];
         int numOwningThreads = mNumOwningThreads[ri][pi];
         // use block strided iteration to vectorize setup of barriers
-        for (int si = sr.threadIdxX; si < numStages; si += NumThreads)
+        for (int si = static_cast<int>(sr.threadIdxX); si < numStages; si += NumThreads)
         {
           ::cuda::ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
         }

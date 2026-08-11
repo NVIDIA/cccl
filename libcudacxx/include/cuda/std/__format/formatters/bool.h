@@ -64,7 +64,7 @@ struct __fmt_formatter_bool
     {
       case __fmt_spec_type::__default:
       case __fmt_spec_type::__string:
-        return ::cuda::std::__fmt_format_bool(__value, __ctx, __parser_.__get_parsed_std_spec(__ctx));
+        return ::cuda::std::__fmt_format_bool(__value, __ctx.out(), __parser_.__get_parsed_std_spec(__ctx));
       case __fmt_spec_type::__binary_lower_case:
       case __fmt_spec_type::__binary_upper_case:
       case __fmt_spec_type::__octal:
@@ -74,7 +74,7 @@ struct __fmt_formatter_bool
         // Promotes bool to an integral type. This reduces the number of
         // instantiations of __format_integer reducing code size.
         return ::cuda::std::__fmt_format_int(
-          static_cast<unsigned>(__value), __ctx, __parser_.__get_parsed_std_spec(__ctx));
+          static_cast<unsigned>(__value), __ctx.out(), __parser_.__get_parsed_std_spec(__ctx));
       default:
         _CCCL_UNREACHABLE();
     }

@@ -17,8 +17,8 @@
 
 __global__ void fill_kernel(int cnt, double* data, double value)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < cnt; i += nthreads)
   {
@@ -51,7 +51,7 @@ static void verify_callback(stf_host_launch_deps_handle deps)
   auto* data = static_cast<double*>(stf_host_launch_deps_get(deps, 0));
   for (size_t i = 0; i < v->N; i++)
   {
-    if (fabs(data[i] - (42.0 + i)) > 1e-10)
+    if (fabs(data[i] - (42.0 + static_cast<double>(i))) > 1e-10)
     {
       *v->passed = false;
       return;

@@ -71,6 +71,11 @@ struct __rotate_fn
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
 {
@@ -105,7 +110,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      nullptr);
+      __policy);
 
     {
       // Allocate memory for result
@@ -131,9 +136,9 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         __storage.template __get_raw_ptr<1>(),
         ::cuda::transform_iterator{::cuda::counting_iterator<size_t>{0}, __rotate_fn{__count1}},
         ::cuda::std::move(__output_wrapper),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
@@ -142,11 +147,8 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __middle,
-    _InputIterator __last) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __middle, _InputIterator __last)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
@@ -174,6 +176,10 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

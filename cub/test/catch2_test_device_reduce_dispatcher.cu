@@ -4,6 +4,9 @@
 // TODO(bgruber): Drop this entire test in CCCL 4.0 when we drop all CUB dispatchers
 // This file tests calling cub::DispatchReduce directly
 
+// disable deprecation warnings for DispatchReduce and AgentReducePolicy
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_reduce.cuh>
@@ -11,14 +14,14 @@
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using value_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
 template <typename AccumT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  struct policy_t : cub::detail::chained_policy<300, policy_t, policy_t>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;
@@ -39,7 +42,7 @@ struct policy_hub_t
   using MaxPolicy = policy_t;
 };
 
-C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", value_types)
+CUB_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", CUB_SMALL, value_types)
 {
   using T            = c2h::get<0, TestType>;
   using offset_t     = int32_t;

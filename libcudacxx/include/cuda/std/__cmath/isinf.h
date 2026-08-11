@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
@@ -44,13 +45,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {
-  static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  static_assert(is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>,
+                "Only floating-point types are supported");
+  if constexpr (is_floating_point_v<_Tp>)
   {
-    return ::isinf(__x);
-  }
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      return ::isinf(__x);
+    }
 #endif // !_CCCL_TILE_COMPILATION()
+  }
   if (::cuda::std::isnan(__x))
   {
     return false;
@@ -195,6 +200,17 @@ template <class _Tp>
   return false;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr bool isinf(__float128 __x) noexcept
+{
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fabs(__x) == ::cuda::std::__fp_inf<__float128>();))
+  }
+  return ::cuda::std::__isinf_impl(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

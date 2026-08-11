@@ -59,6 +59,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
 {
@@ -77,19 +82,18 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
     _OffsetType __ret;
 
     // Determine temporary device storage requirements
-    void* __temp_storage = nullptr;
-    size_t __num_bytes   = 0;
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
-      __temp_storage,
+      static_cast<void*>(nullptr),
       __num_bytes,
       __first,
       __result,
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
@@ -102,17 +106,17 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
         __num_bytes,
         ::cuda::std::move(__first),
         __result,
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());
@@ -124,12 +128,12 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _UnaryPredicate)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     iter_difference_t<_InputIterator> __count,
     _OutputIterator __result,
-    _UnaryPredicate __pred) const
+    _UnaryPredicate __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
@@ -162,6 +166,10 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

@@ -218,6 +218,10 @@ public:
   void add_deps(task_dep_vector_untyped input_deps)
   {
     EXPECT(get_task_phase() == phase::setup);
+    for (const auto& d : input_deps)
+    {
+      validate_dep_place(d);
+    }
     if (pimpl->deps.empty())
     {
       // Frequent case
@@ -230,10 +234,25 @@ public:
     }
   }
 
+  //! Replicated data places are read-only: every replica must stay a copy
+  //! of the same value, so mutation happens at another place and the next
+  //! replicated read re-broadcasts.
+  static void validate_dep_place(const task_dep_untyped& d)
+  {
+    const data_place& dp = d.get_dplace();
+    if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
+    {
+      throw ::std::invalid_argument(
+        "replicated data places only support read access (mutate the data at another place; the next replicated "
+        "read re-broadcasts)");
+    }
+  }
+
   /// Add a set of dependencies
   template <typename... Pack>
   void add_deps(task_dep_untyped first, Pack&&... pack)
   {
+    validate_dep_place(first);
     EXPECT(get_task_phase() == phase::setup);
     pimpl->deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)

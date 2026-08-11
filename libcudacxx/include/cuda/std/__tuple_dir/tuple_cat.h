@@ -116,20 +116,30 @@ struct __tuple_cat_return_ref
 template <class _Types, class _I0, class _J0>
 struct __tuple_cat;
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <class... _Types, size_t... _I0, size_t... _J0>
 struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J0...>>
 {
   template <class _Tuple0>
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&>::type
-  operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
   {
-    return ::cuda::std::forward_as_tuple(::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
-                                         ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...);
+    return ::cuda::std::forward_as_tuple(
+      ::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
+      // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
+      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
+      // overload for a distinct element.
+      // NOLINTNEXTLINE(bugprone-use-after-move)
+      ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...);
   }
 
   template <class _Tuple0, class _Tuple1, class... _Tuples>
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&, _Tuple1&&, _Tuples&&...>::type
-  operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
   {
     using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
     using _T1 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple1>;
@@ -137,11 +147,19 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
       ::cuda::std::forward_as_tuple(::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
+                                    // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
+                                    // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
+                                    // overload for a distinct element.
+                                    // NOLINTNEXTLINE(bugprone-use-after-move)
                                     ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...),
       ::cuda::std::forward<_Tuple1>(__t1),
       ::cuda::std::forward<_Tuples>(__tpls)...);
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Tuple0, class... _Tuples>
 _CCCL_API constexpr typename __tuple_cat_return<_Tuple0, _Tuples...>::type tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)

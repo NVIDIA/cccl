@@ -93,7 +93,7 @@ struct BlockReduceWarpReductions
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
-      , lane_id(::cuda::ptx::get_sreg_laneid())
+      , lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
   {}
 
   //! @rst

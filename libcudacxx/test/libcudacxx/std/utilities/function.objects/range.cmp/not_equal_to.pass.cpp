@@ -57,7 +57,7 @@ struct PtrAndNotEqOperator
 
 TEST_FUNC constexpr bool test()
 {
-  auto fn = cuda::std::ranges::not_equal_to();
+  [[maybe_unused]] auto fn = cuda::std::ranges::not_equal_to();
 
   assert(fn(MoveOnly(41), MoveOnly(42)));
 

@@ -6,14 +6,14 @@
 #include <cuda/std/tuple>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
 
   if (i < num_items)
   {
@@ -24,7 +24,7 @@ __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_ite
 template <class T>
 __global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
 
   if (i < num_items)
   {
@@ -108,7 +108,7 @@ struct cub_api_example_t
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
 
-C2H_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
+CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB_SMALL)
 {
   INFO("Launch = " << TEST_LAUNCH);
 
@@ -168,7 +168,7 @@ struct custom_x0_5_invocable
   }
 };
 
-C2H_TEST("Launch wrapper works with custom invocables", "[test][utils]")
+CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMALL)
 {
   int n = 42;
   c2h::device_vector<int> in(n, 21);

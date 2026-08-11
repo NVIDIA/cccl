@@ -79,6 +79,12 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__advance)
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
 private:
@@ -97,7 +103,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  _CCCL_API constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_Ip& __i, iter_difference_t<_Ip> __n)
   {
     _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
@@ -138,7 +144,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _CCCL_API constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_Ip& __i, _Sp __bound_sentinel)
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
     if constexpr (assignable_from<_Ip&, _Sp>)
@@ -149,7 +155,7 @@ public:
     // equivalent to `ranges::advance(i, bound_sentinel - i)`.
     else if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {
-      (*this)(__i, __bound_sentinel - __i);
+      __fn{}(__i, __bound_sentinel - __i);
     }
     // Otherwise, while `bool(i != bound_sentinel)` is true, increments `i`.
     else
@@ -170,7 +176,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  _CCCL_API constexpr iter_difference_t<_Ip>
+  _CCCL_STATIC_CALL_OPERATOR(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel)
   {
     _CCCL_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
                  "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
@@ -182,12 +189,12 @@ public:
       const auto __M = __bound_sentinel - __i;
       if (__magnitude_geq(__n, __M))
       {
-        (*this)(__i, __bound_sentinel);
+        __fn{}(__i, __bound_sentinel);
         return __n - __M;
       }
 
       // Otherwise, equivalent to `ranges::advance(i, n)`.
-      (*this)(__i, __n);
+      __fn{}(__i, __n);
       return 0;
     }
     else
@@ -213,14 +220,16 @@ public:
     }
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __advance_cpo = __advance::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

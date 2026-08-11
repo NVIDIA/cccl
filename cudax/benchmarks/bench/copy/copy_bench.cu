@@ -22,7 +22,7 @@ template <size_t Rank, typename idx_t>
 size_t
 compute_alloc(size_t offset, const cuda::std::array<idx_t, Rank>& shape, const cuda::std::array<idx_t, Rank>& strides)
 {
-  int64_t max_pos = offset;
+  int64_t max_pos = static_cast<int64_t>(offset);
   for (size_t i = 0; i < Rank; ++i)
   {
     auto delta = static_cast<ptrdiff_t>(shape[i] - 1) * strides[i];

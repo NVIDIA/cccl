@@ -33,8 +33,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr segmented_radix_sort_policy policy = current_policy<PolicySelector>();
-  return AltDigitBits ? policy.alt_segmented.threads_per_block : policy.segmented.threads_per_block;
+  constexpr SegmentedRadixSortPolicy policy = current_policy<PolicySelector>();
+  return AltDigitBits ? policy.alternate_pass.threads_per_block : policy.regular_pass.threads_per_block;
 }
 
 /**
@@ -111,40 +111,40 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int pass_bits,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
+    const BeginOffsetIteratorT d_begin_offsets,
+    const EndOffsetIteratorT d_end_offsets,
+    const int current_bit,
+    const int pass_bits,
+    const DecomposerT decomposer = {})
 {
   //
   // Constants
   //
 
-  static constexpr segmented_radix_sort_policy policy        = current_policy<PolicySelector>();
-  static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
+  static constexpr SegmentedRadixSortPolicy policy        = current_policy<PolicySelector>();
+  static constexpr RadixSortDownsweepPolicy active_policy = AltDigitBits ? policy.alternate_pass : policy.regular_pass;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;
   static constexpr int radix_bits        = active_policy.radix_bits;
   static constexpr int radix_digits      = 1 << radix_bits;
 
-  using ActiveUpsweepPolicyT =
-    AgentRadixSortUpsweepPolicy<active_policy.threads_per_block,
-                                active_policy.items_per_thread,
-                                void,
-                                active_policy.load_modifier,
-                                active_policy.radix_bits,
-                                NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
+  using ActiveUpsweepPolicyT = detail::agent_radix_sort_upsweep_policy<
+    active_policy.threads_per_block,
+    active_policy.items_per_thread,
+    void,
+    active_policy.load_modifier,
+    active_policy.radix_bits,
+    NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
 
   using BlockUpsweepT = radix_sort::AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
   using DigitScanT = BlockScan<SegmentSizeT, threads_per_block>;
 
-  using ActiveDownsweepPolicyT = AgentRadixSortDownsweepPolicy<
+  using ActiveDownsweepPolicyT = detail::agent_radix_sort_downsweep_policy<
     active_policy.threads_per_block,
     active_policy.items_per_thread,
     void,

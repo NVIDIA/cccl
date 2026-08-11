@@ -216,7 +216,7 @@ struct agent_batched_topk_worker_per_segment
     else
     {
       // Process small segment
-      const auto k         = (::cuda::std::min) (params::get_param(k_param, segment_id),
+      const auto k = (::cuda::std::min) (params::get_param(k_param, segment_id),
                                          static_cast<decltype(params::get_param(k_param, segment_id))>(segment_size));
       const auto direction = select_directions.get_param(segment_id);
 

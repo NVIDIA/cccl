@@ -117,6 +117,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 using ::cuda::std::ranges::get;
 
 // Explicitly rely on ADL, mostly for constructors of host STL types, where we cannot squeze using ::cuda::std::get; in
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _TupleLike>
 [[nodiscard]] _CCCL_API constexpr decltype(auto) __adl_get(_TupleLike&& __t) noexcept
 {

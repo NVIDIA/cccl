@@ -31,13 +31,13 @@ struct epilogue_policy
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -61,14 +61,14 @@ struct worker_policy
 
   epilogue_policy epilogue;
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
         && lhs.epilogue == rhs.epilogue;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -88,12 +88,12 @@ struct multi_worker_policy
   int threads_per_block;
   int items_per_thread;
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -114,13 +114,13 @@ struct batched_topk_policy
   ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
   multi_worker_policy multi_worker_per_segment_policy;
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
     return lhs.worker_per_segment_policies == rhs.worker_per_segment_policies
         && lhs.multi_worker_per_segment_policy == rhs.multi_worker_per_segment_policy;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
     return !(lhs == rhs);
   }

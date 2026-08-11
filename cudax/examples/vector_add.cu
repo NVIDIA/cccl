@@ -57,7 +57,7 @@ using cudax::out;
  */
 __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
-  int i = blockDim.x * blockIdx.x + threadIdx.x;
+  int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
 
   if (i < A.size())
   {
@@ -86,8 +86,8 @@ try
   // Initialize the host input vectors
   for (int i = 0; i < numElements; ++i)
   {
-    A[i] = rand() / (float) RAND_MAX;
-    B[i] = rand() / (float) RAND_MAX;
+    A[i] = static_cast<float>(rand()) / (float) RAND_MAX;
+    B[i] = static_cast<float>(rand()) / (float) RAND_MAX;
   }
 
   // Define the kernel launch parameters

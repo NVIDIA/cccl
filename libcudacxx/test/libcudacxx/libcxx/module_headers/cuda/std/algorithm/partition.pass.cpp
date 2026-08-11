@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 #include <cuda/std/algorithm.partition.h>
 #include <cuda/std/cassert>
 
