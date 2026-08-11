@@ -635,6 +635,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         break;
       }
 
+      error = CubDebug(detail::validate_stream_device(stream));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
       // Create dispatch functor
       DispatchSegmentedRadixSort dispatch(
         d_temp_storage,
@@ -941,6 +947,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

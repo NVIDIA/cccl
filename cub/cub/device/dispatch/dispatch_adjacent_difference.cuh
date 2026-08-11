@@ -297,6 +297,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         break;
       }
 
+      error = CubDebug(detail::validate_stream_device(stream));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
       // Create dispatch functor
       DispatchAdjacentDifference dispatch(
         d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -354,7 +360,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   const AdjacentDifferencePolicy active_policy = policy_selector(cc);
+
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;

@@ -891,6 +891,11 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     // Create dispatch functor
     DispatchScan dispatch(
       d_temp_storage,
@@ -1390,6 +1395,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
