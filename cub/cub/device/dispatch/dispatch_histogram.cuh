@@ -148,7 +148,7 @@ struct DeviceHistogramKernelSource
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
       const IntArithmeticT range =
-        TransformsT::ScaleTransform::UnsignedDifference(upper_level[channel], lower_level[channel]);
+        TransformsT::ScaleTransform::unsigned_difference(upper_level[channel], lower_level[channel]);
       return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else

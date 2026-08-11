@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 // Exercises the thread_local detection-stream / detection-buffer cache used by
 // dispatch_range's uniform-levels detection path: sequential calls on multiple
@@ -13,16 +13,28 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iterator>
 #include <random>
 #include <thread>
 #include <vector>
 
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 namespace
 {
 using sample_t  = int;
 using counter_t = int;
+
+struct device_restore_guard
+{
+  int device;
+
+  ~device_restore_guard()
+  {
+    static_cast<void>(cudaSetDevice(device));
+  }
+};
 
 // Jittered uniform spacing keeps DispatchRange on the SearchTransform path,
 // which is where the thread_local detection cache is exercised. Fixed seed
@@ -102,8 +114,9 @@ void run_histogram_range(cudaStream_t stream,
 }
 } // namespace
 
-C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls on multiple user streams",
-         "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls on multiple user streams",
+         "[histogram][device]",
+         CUB_SMALL)
 {
   constexpr int num_bins    = 32;
   constexpr int num_samples = 4096;
@@ -137,8 +150,9 @@ C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls o
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream_b));
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: concurrent threads on the same device",
-         "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: concurrent threads on the same device",
+         "[histogram][device]",
+         CUB_SMALL)
 {
   constexpr int num_bins    = 64;
   constexpr int num_samples = 8192;
@@ -155,13 +169,21 @@ C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: concurrent threads
   thrust::device_vector<sample_t> d_samples = h_samples;
   thrust::device_vector<sample_t> d_levels  = h_levels;
 
+  int device = -1;
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+
   std::atomic<int> failures{0};
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
 
   for (int t = 0; t < num_threads; ++t)
   {
-    threads.emplace_back([&]() {
+    threads.emplace_back([&, device]() {
+      if (cudaSetDevice(device) != cudaSuccess)
+      {
+        failures.fetch_add(1);
+        return;
+      }
       cudaStream_t stream;
       if (cudaStreamCreate(&stream) != cudaSuccess)
       {
@@ -223,8 +245,9 @@ C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: concurrent threads
   CHECK(failures.load() == 0);
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: same thread switches devices between calls",
-         "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: same thread switches devices between calls",
+         "[histogram][device]",
+         CUB_SMALL)
 {
   int num_devices = 0;
   REQUIRE(cudaSuccess == cudaGetDeviceCount(&num_devices));
@@ -232,6 +255,10 @@ C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: same thread switch
   {
     SKIP("Requires >= 2 CUDA devices");
   }
+
+  int original_device = -1;
+  REQUIRE(cudaSuccess == cudaGetDevice(&original_device));
+  const device_restore_guard restore_device{original_device};
 
   constexpr int num_bins    = 32;
   constexpr int num_samples = 4096;
@@ -256,5 +283,5 @@ C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: same thread switch
     INFO("device " << dev);
     CHECK(h_got == h_ref);
   }
-  REQUIRE(cudaSuccess == cudaSetDevice(0));
+  REQUIRE(cudaSuccess == cudaSetDevice(original_device));
 }
