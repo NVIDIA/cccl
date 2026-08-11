@@ -169,3 +169,18 @@ struct TestReverseCopyToDiscardIterator
   }
 };
 VariableUnitTest<TestReverseCopyToDiscardIterator, ReverseTypes> TestReverseCopyToDiscardIteratorInstance;
+
+void TestReverseZippedHost()
+{
+  thrust::host_vector<int> a{1, 2, 3, 4};
+  thrust::host_vector<int> b{10, 20, 30, 40};
+  auto zip = thrust::zip_iterator{a.begin(), b.begin()};
+  thrust::reverse(zip, zip + 4);
+
+  const thrust::host_vector<int> expected_a{4, 3, 2, 1};
+  const thrust::host_vector<int> expected_b{40, 30, 20, 10};
+
+  ASSERT_EQUAL(a, expected_a);
+  ASSERT_EQUAL(b, expected_b);
+}
+DECLARE_UNITTEST(TestReverseZippedHost);
