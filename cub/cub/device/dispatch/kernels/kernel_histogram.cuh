@@ -105,6 +105,14 @@ struct Transforms
 #endif // !_CCCL_HAS_INT128()
       >;
 
+    template <typename T>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static IntArithmeticT UnsignedDifference(T upper, T lower)
+    {
+      using UT      = ::cuda::std::make_unsigned_t<T>;
+      const UT diff = static_cast<UT>(static_cast<UT>(upper) - static_cast<UT>(lower));
+      return static_cast<IntArithmeticT>(diff);
+    }
+
   private:
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
@@ -117,13 +125,7 @@ struct Transforms
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
 
-    // Storage type for the precomputed `range = max_level - min_level` and
-    // `bins = num_levels - 1` used by the integer ComputeBin path. For
-    // narrow integer CommonT (e.g. int8_t with full range), `max - min`
-    // overflows CommonT and would silently produce wrong bins; widening to
-    // `IntArithmeticT` (uint32_t / uint64_t) holds the difference without
-    // overflow. For 128-bit and non-integer types, IntArithmeticT == CommonT
-    // (or wider), so this is also correct.
+    // Widen integral scaling operands before multiplication.
     using FractionStorageT = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
     union ScaleT
@@ -159,24 +161,9 @@ struct Transforms
     {
       ScaleT result;
       result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
-      // Compute `max - min` without overflowing T. For signed integer T
-      // with full range (e.g. int8_t with [-128, 127]), the signed
-      // difference `127 - (-128) = 255` overflows int8_t. Cast each
-      // operand to its unsigned counterpart of the same width and
-      // subtract, then assign back to that unsigned type to truncate via
-      // modular wrap-around: e.g. for int8_t with max=127, min=-128, the
-      // unsigned reinterpretations are uint8_t(127)=127 and
-      // uint8_t(-128)=128 (two's complement bit pattern). C++ integer
-      // promotion lifts the subtraction to int (127 - 128 = -1), and
-      // truncating that back to uint8_t yields 255 — the correct
-      // difference in [0, 2^N - 1]. The intermediate ULevelT is required
-      // because casting the int result directly to FractionStorageT (a
-      // wider unsigned type) would sign-extend -1 into a giant value.
       if constexpr (::cuda::std::is_integral_v<T>)
       {
-        using UT              = ::cuda::std::make_unsigned_t<T>;
-        const UT diff         = static_cast<UT>(static_cast<UT>(max_level) - static_cast<UT>(min_level));
-        result.fraction.range = static_cast<FractionStorageT>(diff);
+        result.fraction.range = static_cast<FractionStorageT>(UnsignedDifference(max_level, min_level));
       }
       else
       {
@@ -261,23 +248,11 @@ struct Transforms
       return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
     }
 
-    //! @brief Bin computation for integral types of up to 64-bit types.
-    //!
-    //! Compute `sample - min_level` via the unsigned representation of T,
-    //! mirroring `ComputeScale`. For signed integer T with negative
-    //! `min_level` (e.g. `min_level = INT_MIN`), the signed difference
-    //! `sample - min_level` overflows T and is undefined behaviour; the
-    //! resulting numerator on two's complement is a wildly wrong magnitude
-    //! and produces an incorrect bin (the sample is dropped from the output
-    //! histogram). The unsigned subtraction wraps modularly and yields the
-    //! correct non-negative difference exactly the way `ComputeScale`
-    //! computes `max_level - min_level`.
+    //! @brief Bin computation for integral types of up to 64 bits.
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      using UT = ::cuda::std::make_unsigned_t<T>;
-      const IntArithmeticT diff =
-        static_cast<IntArithmeticT>(static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
+      const IntArithmeticT diff = UnsignedDifference(sample, min_level);
       return static_cast<int>(
         (diff * static_cast<IntArithmeticT>(scale.fraction.bins)) / static_cast<IntArithmeticT>(scale.fraction.range));
     }
@@ -346,11 +321,6 @@ struct Transforms
     {
       if (valid)
       {
-        // The byte-sample privatized histogram has 256 bins indexed by the
-        // sample's unsigned byte value. For signed integer samples this
-        // reinterprets the bit pattern: int8_t(-128..127) -> uint8_t(128..255, 0..127).
-        // Without this reinterpretation, negative samples cast directly to
-        // `int` produce negative bin indices and are silently dropped.
         if constexpr (::cuda::std::is_integral_v<_SampleT>)
         {
           using UT = ::cuda::std::make_unsigned_t<_SampleT>;

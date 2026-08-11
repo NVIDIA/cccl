@@ -23,11 +23,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   const auto num_bins  = state.get_int64("Bins");
   const int num_levels = static_cast<int>(num_bins) + 1;
 
-  // Skip invalid configurations where the SampleT range can't hold enough
-  // strictly-monotonic levels: bins + 1 levels require bins + 1 distinct
-  // SampleT values, and the bench's `[get_lower_level, get_upper_level]`
-  // range spans at most `max_representable_bins<SampleT>() + 1` distinct
-  // values.
+  // Each bin requires a distinct SampleT interval.
   if (num_bins > max_representable_bins<SampleT>())
   {
     state.skip("Number of bins exceeds what SampleT can represent");
@@ -48,12 +44,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_reads<SampleT>(elements);
   state.add_global_memory_writes<CounterT>(num_bins);
 
-  // Warmup + correctness check: run HistogramEven once outside `state.exec`,
-  // checking the dispatch return code, then verify the produced histogram
-  // bin-by-bin against an independent reference. A failure here throws
-  // before any timed iteration runs, so a silent dispatch failure or a
-  // sample-loss bug can't inflate the measured bandwidth. Skipped when
-  // CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  // Optionally validate one untimed invocation.
   if (bench_correctness_checks_enabled())
   {
     thrust::fill(hist.begin(), hist.end(), CounterT{0});
@@ -95,41 +86,29 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
 
   caching_allocator_t alloc;
 
-  // Force the persisting-L2 reservation back to 0 and demote any persisting
-  // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
-  // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
-  // default reservation is 0; hardcoding 0 also clears any pollution left by
-  // a prior benchmark in the same nvbench process.
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
-             [&](nvbench::launch& launch, auto& timer) {
-               cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, 0);
-               cudaCtxResetPersistingL2Cache();
-               timer.start();
-               auto env = cub_bench_env(
-                 alloc,
-                 launch
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-                 ,
-                 cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
+      ,
+      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
 #endif // !TUNE_BASE
-               );
-               _CCCL_TRY_CUDA_API(
-                 cub::DeviceHistogram::HistogramEven,
-                 "HistogramEven failed",
-                 d_input,
-                 d_histogram,
-                 num_levels,
-                 lower_level,
-                 upper_level,
-                 static_cast<OffsetT>(elements),
-                 env);
-               timer.stop();
-             });
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceHistogram::HistogramEven,
+      "HistogramEven failed",
+      d_input,
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<OffsetT>(elements),
+      env);
+  });
 }
 
-// CounterT / OffsetT overridable for the 64-bit-counter / 64-bit-offset baseline build
-// (matches the feature branch's bench guards). Inert when undefined -> baseline dispatch
-// semantics unchanged. A 64-bit OffsetT is required for >2^31 elements.
+// Allow dedicated builds to select 64-bit counters and offsets.
 #ifdef TUNE_CounterT
 using counter_types = nvbench::type_list<TUNE_CounterT>;
 #else
@@ -150,20 +129,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
-  .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
-  // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,
-  // 0.0=constant) plus the multi-hot and cache-adversarial shapes. Each value
-  // may carry an inline knob as "name:value"; see histogram_inputs.cuh.
-  .add_string_axis(
-    "InputShape",
-    {"concentrated:1.0",
-     "concentrated:0.5",
-     "concentrated:0.0",
-     "powerlaw:0.5",
-     "zipf:1.0",
-     "hash_synonym",
-     "stale_resident",
-     "temporal_phases",
-     "strided_sweep",
-     "sawtooth"});
+  .add_int64_axis("Elements{io}", {1 << 16, 1 << 22, 1 << 28})
+  .add_int64_axis("Bins", {32, 2048, 16384, 2097152})
+  .add_string_axis("InputShape", {"concentrated:1.0", "concentrated:0.5", "strided_sweep"});
