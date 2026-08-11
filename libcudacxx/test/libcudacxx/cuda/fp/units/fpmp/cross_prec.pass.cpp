@@ -16,7 +16,7 @@
 //    - Round trip fp32mp2 -> fp64mp2 -> fp32mp2 is bit-exact.
 //    - Every explicit-conversion form and the assignment overload agree.
 //  The convertibility/assignability matrix is pinned by static_asserts. The same
-//  _CCCL_HOST_DEVICE run_test() runs on the host and, under CUDA, on the device.
+//  TEST_HOST_DEVICE_FUNC run_test() runs on the host and, under CUDA, on the device.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,7 +31,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // ---------------------------------------------------------------------------
 // Compile-time contract.
@@ -39,53 +39,57 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Upconvert (fp32mp2 -> fp64mp2): implicit and lossless while the accuracy tag
 // is preserved. Note that fpmp2_accuracy::def aliases mid, so fp32mp2 -> fp64mp2
 // is tag-preserving.
-static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2>::value, "");
-static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_high>::value, "");
-static_assert(::cuda::std::is_constructible<fp64mp2_low, fp32mp2>::value, "");
-static_assert(::cuda::std::is_constructible<fp64mp2_high, fp32mp2>::value, "");
-static_assert(::cuda::std::is_convertible<fp32mp2, fp64mp2>::value, "fp32mp2 -> fp64mp2 must be implicit");
-static_assert(::cuda::std::is_convertible<fp32mp2_low, fp64mp2_low>::value, "");
-static_assert(::cuda::std::is_convertible<fp32mp2_high, fp64mp2_high>::value, "");
-static_assert(::cuda::std::is_assignable<fp64mp2&, fp32mp2>::value, "");
-static_assert(::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_high>::value, "");
-static_assert(::cuda::std::is_same<decltype(fp64mp2_low(::cuda::std::declval<fp32mp2_high>())), fp64mp2_low>::value,
+static_assert(::cuda::std::is_constructible<cudax::fp64mp2, cudax::fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp64mp2, cudax::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp64mp2, cudax::fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp64mp2_low, cudax::fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp64mp2_high, cudax::fp32mp2>::value, "");
+static_assert(::cuda::std::is_convertible<cudax::fp32mp2, cudax::fp64mp2>::value,
+              "fp32mp2 -> fp64mp2 must be implicit");
+static_assert(::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_assignable<cudax::fp64mp2&, cudax::fp32mp2>::value, "");
+static_assert(::cuda::std::is_assignable<cudax::fp64mp2_low&, cudax::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<cudax::fp64mp2_high&, cudax::fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_same<decltype(cudax::fp64mp2_low(::cuda::std::declval<cudax::fp32mp2_high>())),
+                                   cudax::fp64mp2_low>::value,
               "");
 
 // A widening that also switches the accuracy tag is explicit-only: the tag picks
 // the arithmetic algorithm, so it must be opt-in just like the same-precision
 // cross-accuracy conversion. Assignment is not offered across tags at all, which
 // leaves an explicit cast as the only spelling.
-static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp64mp2_high>::value,
+static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp64mp2_high>::value,
               "cross-accuracy upconvert must NOT be implicit");
-static_assert(!::cuda::std::is_convertible<fp32mp2_high, fp64mp2_low>::value,
+static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp64mp2_low>::value,
               "cross-accuracy upconvert must NOT be implicit");
-static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp64mp2>::value, "");
-static_assert(!::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_high>::value, "");
-static_assert(!::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp64mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<cudax::fp64mp2_low&, cudax::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cudax::fp64mp2_high&, cudax::fp32mp2_low>::value, "");
 
 // Downconvert (fp64mp2 -> fp32mp2): explicit-macro-driven when the accuracy tag
 // is preserved, always explicit when it changes.
-static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2>::value, "");
-static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_low>::value, "");
-static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_high>::value, "");
-static_assert(::cuda::std::is_constructible<fp32mp2_low, fp64mp2>::value, "");
-static_assert(::cuda::std::is_constructible<fp32mp2_high, fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp32mp2, cudax::fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp32mp2, cudax::fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp32mp2, cudax::fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp32mp2_low, cudax::fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cudax::fp32mp2_high, cudax::fp64mp2>::value, "");
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
+static_assert(!::cuda::std::is_convertible<cudax::fp64mp2, cudax::fp32mp2>::value,
               "downconvert must NOT be implicit under EXPLICIT_CASTS=1");
 #else
-static_assert(::cuda::std::is_convertible<fp64mp2, fp32mp2>::value, "downconvert is implicit under EXPLICIT_CASTS=0");
+static_assert(::cuda::std::is_convertible<cudax::fp64mp2, cudax::fp32mp2>::value,
+              "downconvert is implicit under EXPLICIT_CASTS=0");
 #endif
-static_assert(!::cuda::std::is_convertible<fp64mp2_low, fp32mp2_high>::value,
+static_assert(!::cuda::std::is_convertible<cudax::fp64mp2_low, cudax::fp32mp2_high>::value,
               "cross-accuracy downconvert must NOT be implicit");
-static_assert(!::cuda::std::is_convertible<fp64mp2_high, fp32mp2>::value, "");
-static_assert(::cuda::std::is_assignable<fp32mp2&, fp64mp2>::value, "");
-static_assert(::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_low>::value, "");
-static_assert(!::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
-static_assert(!::cuda::std::is_assignable<fp32mp2_high&, fp64mp2_low>::value, "");
-static_assert(::cuda::std::is_same<decltype(fp32mp2_high(::cuda::std::declval<fp64mp2_low>())), fp32mp2_high>::value,
+static_assert(!::cuda::std::is_convertible<cudax::fp64mp2_high, cudax::fp32mp2>::value, "");
+static_assert(::cuda::std::is_assignable<cudax::fp32mp2&, cudax::fp64mp2>::value, "");
+static_assert(::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_high&, cudax::fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_same<decltype(cudax::fp32mp2_high(::cuda::std::declval<cudax::fp64mp2_low>())),
+                                   cudax::fp32mp2_high>::value,
               "");
 
 // ---------------------------------------------------------------------------
@@ -102,7 +106,7 @@ struct F64
 
 // Upconvert must be bit-exact vs an inlined fast_two_sum reference and produce a
 // renormalized (|lo| <= ulp(hi)/2) fp64mp2 pair.
-_CCCL_HOST_DEVICE static void check_upconvert(const F32& src, const F64& dst)
+TEST_HOST_DEVICE_FUNC static void check_upconvert(const F32& src, const F64& dst)
 {
   const double a      = (double) src.hi;
   const double b      = (double) src.lo;
@@ -124,7 +128,7 @@ _CCCL_HOST_DEVICE static void check_upconvert(const F32& src, const F64& dst)
   }
 }
 
-_CCCL_HOST_DEVICE static void check_downconvert(const F64& src, const F32& dst, double tol)
+TEST_HOST_DEVICE_FUNC static void check_downconvert(const F64& src, const F32& dst, double tol)
 {
   const double ref     = (double) src.hi + (double) src.lo;
   const double got     = (double) dst.hi + (double) dst.lo;
@@ -133,7 +137,7 @@ _CCCL_HOST_DEVICE static void check_downconvert(const F64& src, const F32& dst, 
   assert(rel_err <= tol);
 }
 
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   // Upconvert inputs spanning the renormalization spectrum.
   const F32 in32[8] = {
@@ -148,17 +152,17 @@ _CCCL_HOST_DEVICE void run_test()
   };
   for (int i = 0; i < 8; ++i)
   {
-    fp32mp2 src(in32[i].hi, in32[i].lo);
-    fp64mp2 dst = src; // implicit upconvert
-    F64 o       = {dst.hi(), dst.lo()};
+    cudax::fp32mp2 src(in32[i].hi, in32[i].lo);
+    cudax::fp64mp2 dst = src; // implicit upconvert
+    F64 o              = {dst.hi(), dst.lo()};
     check_upconvert(in32[i], o);
   }
 
   // Residual must survive in dst.lo for the non-single-double inputs (1, 3, 4).
   for (int i : {1, 3, 4})
   {
-    fp32mp2 src(in32[i].hi, in32[i].lo);
-    fp64mp2 dst = src;
+    cudax::fp32mp2 src(in32[i].hi, in32[i].lo);
+    cudax::fp64mp2 dst = src;
     assert(dst.lo() != 0.0);
   }
 
@@ -172,8 +176,8 @@ _CCCL_HOST_DEVICE void run_test()
   const double tols[4] = {1.5e-14, 1.5e-14, 1.5e-14, 0.0};
   for (int i = 0; i < 4; ++i)
   {
-    fp64mp2 src(in64[i].hi, in64[i].lo);
-    fp32mp2 dst(src); // explicit downconvert (direct-init)
+    cudax::fp64mp2 src(in64[i].hi, in64[i].lo);
+    cudax::fp32mp2 dst(src); // explicit downconvert (direct-init)
     F32 o = {dst.hi(), dst.lo()};
     check_downconvert(in64[i], o, tols[i]);
   }
@@ -186,21 +190,21 @@ _CCCL_HOST_DEVICE void run_test()
   };
   for (int i = 0; i < 3; ++i)
   {
-    fp32mp2 a(rt[i].hi, rt[i].lo);
-    fp64mp2 b = a; // implicit upconvert
-    fp32mp2 c = static_cast<fp32mp2>(b); // explicit downconvert
+    cudax::fp32mp2 a(rt[i].hi, rt[i].lo);
+    cudax::fp64mp2 b = a; // implicit upconvert
+    cudax::fp32mp2 c = static_cast<cudax::fp32mp2>(b); // explicit downconvert
     assert((c.hi() == rt[i].hi) && (c.lo() == rt[i].lo));
   }
 
   // Every explicit conversion form (and operator=) must produce the same pair.
   {
-    fp64mp2 src(1.234567890123456, 1.0e-18);
-    fp32mp2 a(src); // direct-init
-    fp32mp2 b = fp32mp2(src); // functional cast
-    fp32mp2 c = static_cast<fp32mp2>(src); // static_cast
-    fp32mp2 d;
-    d = static_cast<fp32mp2>(src); // assign via cast
-    fp32mp2 e;
+    cudax::fp64mp2 src(1.234567890123456, 1.0e-18);
+    cudax::fp32mp2 a(src); // direct-init
+    cudax::fp32mp2 b = cudax::fp32mp2(src); // functional cast
+    cudax::fp32mp2 c = static_cast<cudax::fp32mp2>(src); // static_cast
+    cudax::fp32mp2 d;
+    d = static_cast<cudax::fp32mp2>(src); // assign via cast
+    cudax::fp32mp2 e;
     e = src; // operator= overload
     assert((a.hi() == b.hi() && a.lo() == b.lo()) && (a.hi() == c.hi() && a.lo() == c.lo())
            && (a.hi() == d.hi() && a.lo() == d.lo()) && (a.hi() == e.hi() && a.lo() == e.lo()));

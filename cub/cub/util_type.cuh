@@ -245,7 +245,7 @@ private:
 };
 
 template <typename IterT>
-FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {

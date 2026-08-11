@@ -39,12 +39,17 @@ using for_each_n_result = in_fun_result<_Iter, _Func>;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__for_each_n)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   _CCCL_TEMPLATE(class _Iter, class _Func, class _Proj = identity)
   _CCCL_REQUIRES(input_iterator<_Iter> _CCCL_AND indirectly_unary_invocable<_Func, projected<_Iter, _Proj>>)
   _CCCL_API constexpr for_each_n_result<_Iter, _Func>
-  operator()(_Iter __first, iter_difference_t<_Iter> __count, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, iter_difference_t<_Iter> __count, _Func __func, _Proj __proj = {})
   {
     while (__count-- > 0)
     {
@@ -54,6 +59,11 @@ struct __fn
     return {::cuda::std::move(__first), ::cuda::std::move(__func)};
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

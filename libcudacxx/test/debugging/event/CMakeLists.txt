@@ -3,15 +3,15 @@ libcudacxx_add_pretty_printer_test(
   SOURCES source.cu
   CASES
     # gersemi: off
-    --case inspect_ref 1 event.ref event_reference
-    --case inspect_owning 1 event.owning owning_event
-    --case inspect_timed 1 event.timed timed_event
-    --case inspect_alias 1 event.alias aliased_event
-    --case inspect_null_ref 1 event.null_ref null_reference
-    --case inspect_no_init 1 event.no_init no_init_event
-    --case inspect_timed_no_init 1 event.timed_no_init no_init_timed_event
-    --case inspect_nested 1 event.nested nested_events
-    --case inspect_before_update 1 event.update.before updated_event
-    --case inspect_after_update 1 event.update.after updated_event
+    --case inspect_ref event.ref value
+    --case inspect_owning event.owning value
+    --case inspect_timed event.timed value
+    --case inspect_alias event.alias value
+    --case inspect_null_ref event.null_ref value
+    --case inspect_no_init event.no_init value
+    --case inspect_timed_no_init event.timed_no_init value
+    --case inspect_nested event.nested values
+    --case inspect_before_update event.update.before value
+    --case inspect_after_update event.update.after value
     # gersemi: on
 )

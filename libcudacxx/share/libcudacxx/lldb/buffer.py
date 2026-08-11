@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+import cccl_common
 import memory_resource
 
 import lldb
@@ -32,13 +33,12 @@ class BufferInfo(NamedTuple):
 
 
 def is_cuda_buffer(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _BUFFER_PATTERN.fullmatch(type_name) is not None
 
 
 def _buffer_info(value: lldb.SBValue) -> BufferInfo | None:
+    value = cccl_common.strip_reference_value(value)
     value = value.GetNonSyntheticValue()
     storage = value.GetChildMemberWithName("__buf_")
     if not storage.IsValid():
@@ -106,8 +106,11 @@ class BufferSyntheticProvider:
     """Expose cuda::buffer elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.declared_type = value.GetType()
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.host_copy = lldb.SBValue()
+        self.stop_id: int | None = None
         self.clear()
         self.update()
 
@@ -130,6 +133,7 @@ class BufferSyntheticProvider:
             if address:
                 self._evaluate(f"(void)free((void*){address:#x})")
         self.host_copy = lldb.SBValue()
+        self.stop_id = None
         self.size = 0
         self.data_address = 0
         self.value_type = lldb.SBType()
@@ -159,7 +163,20 @@ class BufferSyntheticProvider:
             return False
         return True
 
+    def _current_stop_id(self) -> int | None:
+        process = self.value.GetProcess()
+        return process.GetStopID() if process.IsValid() else None
+
     def update(self) -> bool:
+        # LLDB calls update() before every read of a synthetic value, so one
+        # print causes hundreds of calls. Copy the device memory only when the
+        # process has stopped again since the last copy. Anything that changes
+        # target memory must resume and re-stop the process, which includes a
+        # cudaMemcpy the user runs at this breakpoint, so this cannot report
+        # stale data.
+        if self.stop_id is not None and self._current_stop_id() == self.stop_id:
+            return True
+
         self.clear()
 
         info = _buffer_info(self.value)
@@ -171,6 +188,9 @@ class BufferSyntheticProvider:
         self.value_type = info.value_type
         self.value_size = self.value_type.GetByteSize()
         self._copy_to_host()
+        # The copy itself runs inferior calls that advance the stop ID, so
+        # record the value the next update() will see.
+        self.stop_id = self._current_stop_id()
         return True
 
     def num_children(self) -> int:
@@ -183,8 +203,7 @@ class BufferSyntheticProvider:
         # STL element access can preserve an alloc_traits::value_type typedef.
         # Report the canonical display name so LLDB shows cuda::buffer instead.
         return (
-            self.value.GetType()
-            .GetCanonicalType()
+            self.declared_type.GetCanonicalType()
             .GetUnqualifiedType()
             .GetDisplayTypeName()
             or ""

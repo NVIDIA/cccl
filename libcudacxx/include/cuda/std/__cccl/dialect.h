@@ -141,13 +141,16 @@
 #endif // ^^^ no static operator[] ^^^
 
 // nvcc 13+, clang 16+ and gcc 13+ backport the static call operator back to c++17.
-#if __cpp_static_call_operator >= 202207L                                              \
-  || ((_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13)                    \
-       || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13))) \
-      && (!_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVCC, >=, 13, 0) || _CCCL_CUDA_COMPILER(CLANG)))
+#if __cpp_static_call_operator >= 202207L                                                                   \
+  || ((_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13)                                         \
+       || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13)))                      \
+      && (!_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVCC, >=, 13, 0) || _CCCL_CUDA_COMPILER(CLANG))) \
+  || (_CCCL_DEVICE_COMPILATION() && _CCCL_TILE_COMPILATION())
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 1
+#  define _CCCL_STATIC_CALL_OPERATOR(...)  static operator()(__VA_ARGS__)
 #else // ^^^ has static operator() ^^^ / vvv no static operator() vvv
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
+#  define _CCCL_STATIC_CALL_OPERATOR(...)  operator()(__VA_ARGS__) const
 #endif // ^^^ no static operator() ^^^
 
 // if consteval requires C++23, but most compilers support it even in C++20 mode while emitting some warnings. Those are
