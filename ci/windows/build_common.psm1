@@ -116,7 +116,11 @@ function configure_preset {
     }
 
     Write-Host $configure_command
+
+    $env:SCCACHE_NO_DIST_COMPILE="1"
     Invoke-Expression $configure_command
+    Remove-Item Env:\SCCACHE_NO_DIST_COMPILE
+
     $test_result = $LastExitCode
 
     If ($test_result -ne 0) {
