@@ -158,6 +158,18 @@ public:
   _CCCL_HIDE_FROM_ABI fpemu(const fpemu& __other) = default;
 
   /*
+  // Volatile support: the constructor and assignment operators below cover storage
+  // only, i.e. load, store and a bit-preserving round-trip, which is what the legacy
+  // pattern of keeping shared-memory scalars in volatile variables needs.
+  //
+  // A volatile object cannot be an operand of arithmetic, comparison
+  // or bit_cast: those take const fpemu&, and a volatile lvalue never binds to it, not
+  // even through the converting constructor below, because reference-related types are
+  // required to bind directly. Copy into a non-volatile local, compute there, store the
+  // result back.
+  */
+
+  /*
   // Copy constructor from volatile fpemu
   // Template so it is NOT a copy constructor per the C++ standard.
   // The volatile overloads are wrapped in dummy templates
@@ -193,6 +205,18 @@ public:
   {
     __bits_ = __other.__bits_;
     return *this;
+  }
+
+  /*
+  // Assignment operator from volatile to volatile fpemu, e.g. a shared-memory to
+  // shared-memory copy
+  // Template so it is NOT a copy assignment operator per the C++ standard
+  // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
+  */
+  template <typename _Dummy = void>
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpemu& __other) volatile noexcept
+  {
+    __bits_ = __other.__bits_;
   }
 
   /*
@@ -506,6 +530,10 @@ public:
   _CCCL_HIDE_FROM_ABI fpemu_unpacked(const fpemu_unpacked& __other) = default;
 
   /*
+  // Volatile support covers storage only, exactly as for the packed fpemu above.
+  */
+
+  /*
   // Copy constructor from volatile fpemu_unpacked
   // Template so it is NOT a copy constructor per the C++ standard.
   // The volatile overloads are wrapped in dummy templates
@@ -548,6 +576,20 @@ public:
     __bits_.exponent = __other.__bits_.exponent;
     __bits_.mantissa = __other.__bits_.mantissa;
     return *this;
+  }
+
+  /*
+  // Assignment operator from volatile to volatile fpemu_unpacked, e.g. a shared-memory
+  // to shared-memory copy
+  // Template so it is NOT a copy assignment operator per the C++ standard
+  // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
+  */
+  template <typename _Dummy = void>
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpemu_unpacked& __other) volatile noexcept
+  {
+    __bits_.sign     = __other.__bits_.sign;
+    __bits_.exponent = __other.__bits_.exponent;
+    __bits_.mantissa = __other.__bits_.mantissa;
   }
   /*
   // Conversion operators
