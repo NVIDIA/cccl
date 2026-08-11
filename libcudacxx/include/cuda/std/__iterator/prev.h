@@ -47,12 +47,18 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__prev)
+
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x)
   {
     --__x;
     return __x;
@@ -61,29 +67,31 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n)
   {
-    ::cuda::std::ranges::__advance_cpo{}(__x, -__n);
+    ::cuda::std::ranges::advance(__x, -__n);
     return __x;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter)
   {
-    ::cuda::std::ranges::__advance_cpo{}(__x, -__n, __bound_iter);
+    ::cuda::std::ranges::advance(__x, -__n, __bound_iter);
     return __x;
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __prev_cpo = __prev::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

@@ -257,7 +257,7 @@ public:
     static_assert(__has_convert_flag_v<_Flags...>
                     || __is_value_preserving_v<::cuda::std::ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
-    const auto __data = ::cuda::std::ranges::__data_cpo{}(__range);
+    const auto __data = ::cuda::std::ranges::data(__range);
     ::cuda::std::simd::__assert_load_store_alignment<basic_vec, ::cuda::std::ranges::range_value_t<_Range>, _Flags...>(
       __data);
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -275,7 +275,7 @@ public:
     static_assert(__has_convert_flag_v<_Flags...>
                     || __is_value_preserving_v<::cuda::std::ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
-    const auto __data = ::cuda::std::ranges::__data_cpo{}(__range);
+    const auto __data = ::cuda::std::ranges::data(__range);
     ::cuda::std::simd::__assert_load_store_alignment<basic_vec, ::cuda::std::ranges::range_value_t<_Range>, _Flags...>(
       __data);
     _CCCL_PRAGMA_UNROLL_FULL()

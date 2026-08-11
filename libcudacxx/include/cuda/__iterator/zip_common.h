@@ -45,6 +45,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
@@ -63,7 +68,7 @@ struct __zip_iter_constraints
     (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...) || __all_random_access;
 
   static constexpr bool __all_nothrow_iter_movable =
-    (noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iterators&>())) && ...)
+    (noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iterators&>())) && ...)
     && (::cuda::std::is_nothrow_move_constructible_v<::cuda::std::iter_rvalue_reference_t<_Iterators>> && ...);
 
   static constexpr bool __all_indirectly_swappable = (::cuda::std::indirectly_swappable<_Iterators> && ...);
@@ -109,8 +114,8 @@ struct __zip_op_star
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Iterators&... __iters) const
-    noexcept(noexcept(reference<_Iterators...>{*__iters...}))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(const _Iterators&... __iters) noexcept(noexcept(reference<_Iterators...>{*__iters...}))
   {
     return reference<_Iterators...>{*__iters...};
   }
@@ -120,7 +125,7 @@ struct __zip_op_increment
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
-  _CCCL_API constexpr void operator()(_Iterators&... __iters) const noexcept(noexcept(((void) ++__iters, ...)))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_Iterators&... __iters) noexcept(noexcept(((void) ++__iters, ...)))
   {
     ((void) ++__iters, ...);
   }
@@ -130,7 +135,7 @@ struct __zip_op_decrement
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
-  _CCCL_API constexpr void operator()(_Iterators&... __iters) const noexcept(noexcept(((void) --__iters, ...)))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_Iterators&... __iters) noexcept(noexcept(((void) --__iters, ...)))
   {
     ((void) --__iters, ...);
   }
@@ -143,10 +148,10 @@ struct __zip_iter_move
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Iterators&... __iters) const
-    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Iterators&... __iters) noexcept(
+    noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...}))
   {
-    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...};
+    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...};
   }
 };
 
@@ -165,16 +170,19 @@ struct __zip_op_eq
   }
 
   template <class _Tuple1, class _Tuple2, ::cuda::std::size_t... _Indices>
-  [[nodiscard]] _CCCL_API constexpr bool
-  operator()(const _Tuple1& __tuple1, const _Tuple2& __tuple2, ::cuda::std::index_sequence<_Indices...> __seq) const
-    noexcept(noexcept(::cuda::__zip_op_eq::__do_it(__tuple1, __tuple2, __seq)))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(
+    const _Tuple1& __tuple1,
+    const _Tuple2& __tuple2,
+    ::cuda::std::index_sequence<_Indices...>
+      __seq) noexcept(noexcept(::cuda::__zip_op_eq::__do_it(__tuple1, __tuple2, __seq)))
   {
     return ::cuda::__zip_op_eq::__do_it(__tuple1, __tuple2, __seq);
   }
 
   template <class _Tuple1, class _Tuple2>
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tuple1& __tuple1, const _Tuple2& __tuple2) const
-    noexcept(noexcept(::cuda::__zip_op_eq::__do_it(
+  [[nodiscard]] _CCCL_API constexpr bool
+  _CCCL_STATIC_CALL_OPERATOR(const _Tuple1& __tuple1, const _Tuple2& __tuple2) noexcept(
+    noexcept(::cuda::__zip_op_eq::__do_it(
       __tuple1,
       __tuple2,
       ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_cvref_t<_Tuple1>>>{})))
@@ -203,8 +211,8 @@ struct __zip_op_minus
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr bool operator()(const _Diff& __x, const _Diff& __y) const
-      noexcept(noexcept(__op_comp_abs::__abs(__x) < __op_comp_abs::__abs(__y)))
+    [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Diff& __x, const _Diff& __y) noexcept(
+      noexcept(__op_comp_abs::__abs(__x) < __op_comp_abs::__abs(__y)))
     {
       return __op_comp_abs::__abs(__x) < __op_comp_abs::__abs(__y);
     }
@@ -228,25 +236,27 @@ struct __zip_op_minus
     }
 
     const _Diff __temp[] = {__first, ::cuda::std::get<_Indices>(__tuple1) - ::cuda::std::get<_Indices>(__tuple2)...};
-    return *::cuda::std::ranges::__min_element_cpo{}(__temp, __op_comp_abs{});
+    return *::cuda::std::ranges::min_element(__temp, __op_comp_abs{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple1, class _Tuple2, ::cuda::std::size_t... _Indices>
-  [[nodiscard]] _CCCL_API constexpr _Diff
-  operator()(const _Tuple1& __tuple1, const _Tuple2& __tuple2, ::cuda::std::index_sequence<_Indices...> __seq) const
-    noexcept(noexcept(__zip_op_minus::__do_it(__tuple1, __tuple2, __seq)))
+  [[nodiscard]] _CCCL_API constexpr _Diff _CCCL_STATIC_CALL_OPERATOR(
+    const _Tuple1& __tuple1,
+    const _Tuple2& __tuple2,
+    ::cuda::std::index_sequence<_Indices...>
+      __seq) noexcept(noexcept(__zip_op_minus::__do_it(__tuple1, __tuple2, __seq)))
   {
     return __zip_op_minus::__do_it(__tuple1, __tuple2, __seq);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple1, class _Tuple2>
-  [[nodiscard]] _CCCL_API constexpr _Diff operator()(const _Tuple1& __tuple1, const _Tuple2& __tuple2) const
-    noexcept(noexcept(__zip_op_minus::__do_it(
-      __tuple1,
-      __tuple2,
-      ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_cvref_t<_Tuple1>>>{})))
+  [[nodiscard]] _CCCL_API constexpr _Diff
+  _CCCL_STATIC_CALL_OPERATOR(const _Tuple1& __tuple1, const _Tuple2& __tuple2) noexcept(noexcept(__zip_op_minus::__do_it(
+    __tuple1,
+    __tuple2,
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<::cuda::std::remove_cvref_t<_Tuple1>>>{})))
   {
     return __zip_op_minus::__do_it(
       __tuple1,
@@ -274,6 +284,10 @@ template <class _Iter>
 using __zip_maybe_proxy_reference_t = typename __zip_maybe_proxy_helper<_Iter>::reference;
 template <class _Iter>
 using __zip_maybe_proxy_value_type_t = typename __zip_maybe_proxy_helper<_Iter>::value_type;
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 
