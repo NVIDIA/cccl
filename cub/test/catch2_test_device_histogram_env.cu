@@ -1630,6 +1630,27 @@ struct histogram_tuning
   }
 };
 
+template <cub::HistogramHighBinAlgorithm Algorithm,
+          cub::HistogramCacheAlgorithm Cache,
+          cub::HistogramSpillAlgorithm Spill,
+          cub::HistogramAggregationAlgorithm Aggregation>
+struct high_bin_histogram_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
+  {
+    auto policy                               = histogram_tuning<128>{}(cuda::compute_capability{});
+    policy.high_bin_algorithm                 = Algorithm;
+    policy.high_bin_cache                     = Cache;
+    policy.high_bin_spill                     = Spill;
+    policy.high_bin_aggregation               = Aggregation;
+    policy.high_bin_cache_entries_per_channel = 512;
+    policy.high_bin_cache_count_replicas      = 2;
+    policy.high_bin_cache_cuckoo_max_bins     = 4096;
+    policy.high_bin_pixels_per_thread         = 2;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -1740,6 +1761,47 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels = 1026;
+  c2h::device_vector<int> d_samples{0, 1, 1, 1024};
+  c2h::device_vector<int> expected(num_levels - 1, 0);
+  expected[0]    = 1;
+  expected[1]    = 2;
+  expected[1024] = 1;
+
+  const auto run = [&](auto tuning) {
+    c2h::device_vector<int> d_histogram(num_levels - 1, 0);
+    auto env = cuda::execution::tune(tuning);
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      0,
+      num_levels - 1,
+      static_cast<int>(d_samples.size()),
+      env);
+    REQUIRE(d_histogram == expected);
+  };
+
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::global_memory_privatized,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::rle>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+}
+
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
@@ -1777,9 +1839,17 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+  REQUIRE(
+    to_string(p1)
+    == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
+       ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+       ", .high_bin_algorithm = HistogramHighBinAlgorithm::cooperative"
+       ", .high_bin_cache = HistogramCacheAlgorithm::cuckoo"
+       ", .high_bin_spill = HistogramSpillAlgorithm::output"
+       ", .high_bin_aggregation = HistogramAggregationAlgorithm::warp_coalesced"
+       ", .high_bin_cache_entries_per_channel = 2048"
+       ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_bins = 262144"
+       ", .high_bin_pixels_per_thread = 4 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
