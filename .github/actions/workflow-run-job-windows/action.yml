@@ -233,6 +233,7 @@ runs:
             --env "SCCACHE_DIST_AUTH_TYPE=token"
             --env "SCCACHE_DIST_MAX_RETRIES=2"
             --env "SCCACHE_DIST_REQUEST_TIMEOUT=7140"
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL"
             --env "SCCACHE_DIST_SCHEDULER_URL=$SCCACHE_DIST_URL"
           )
 
