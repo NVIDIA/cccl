@@ -51,7 +51,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
   // Jittered uniform spacing keeps DispatchRange on the SearchTransform path
-  // while keeping bin widths within ~2x of each other. Fixed seed makes the
+  // while keeping bin widths within ~3x of each other. Fixed seed makes the
   // levels reproducible across runs.
   thrust::host_vector<SampleT> h_levels(num_bins + 1);
   const double L    = static_cast<double>(lower_level);
@@ -66,12 +66,28 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     SampleT lvl = static_cast<SampleT>(L + i * step + step * jitter(rng));
     if (lvl <= h_levels[i - 1])
     {
+      if constexpr (::cuda::std::is_integral_v<SampleT>)
+      {
+        if (h_levels[i - 1] == ::cuda::std::numeric_limits<SampleT>::max())
+        {
+          state.skip("SampleT range exhausted while constructing levels");
+          return;
+        }
+      }
       lvl = static_cast<SampleT>(h_levels[i - 1] + SampleT{1});
     }
     h_levels[i] = lvl;
   }
   if (h_levels[num_bins] <= h_levels[num_bins - 1])
   {
+    if constexpr (::cuda::std::is_integral_v<SampleT>)
+    {
+      if (h_levels[num_bins - 1] == ::cuda::std::numeric_limits<SampleT>::max())
+      {
+        state.skip("SampleT range exhausted while constructing levels");
+        return;
+      }
+    }
     h_levels[num_bins] = static_cast<SampleT>(h_levels[num_bins - 1] + SampleT{1});
   }
   thrust::device_vector<SampleT> levels_r = h_levels;
@@ -115,7 +131,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
         cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
         static_cast<OffsetT>(elements))),
       "warmup MultiHistogramRange temp-size");
-    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
+    thrust::device_vector<unsigned char> warmup_tmp(std::max(temp_storage_bytes, size_t{1}));
     d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
     bench_check_cuda(
       (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>(
@@ -187,6 +203,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_axis("Elements{io}", {1 << 16, 1 << 22, 1 << 28})
-  .add_int64_axis("Bins", {32, 2048, 16384, 2097152})
+  .add_int64_axis("Elements{io}", {65536, 4000000, 67000000})
+  .add_int64_axis("Bins", {33, 2048, 16384, 2000003})
   .add_string_axis("InputShape", {"concentrated:1.0", "concentrated:0.5", "strided_sweep"});

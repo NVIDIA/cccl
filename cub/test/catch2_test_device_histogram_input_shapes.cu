@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "../benchmarks/bench/histogram/histogram_inputs.cuh"
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 namespace
@@ -85,7 +86,7 @@ inline constexpr int32_t lower_bound = 0;
 inline constexpr int32_t upper_bound = 4096;
 } // namespace
 
-C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]")
+CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
 
@@ -111,26 +112,23 @@ C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
   }
 }
 
-C2H_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][input_shapes]")
+CUB_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
-  // As the entropy knob falls, the top-bin share must rise monotonically.
-  double prev_share = -1.0;
-  for (double e : {1.0, 0.75, 0.5, 0.25, 0.0})
+  // The measured entropy should follow the requested descending sequence.
+  double previous_entropy = 2.0;
+  for (double target : {1.0, 0.75, 0.5, 0.25, 0.0})
   {
     auto counts = bin_counts_even<int32_t>(
-      parse_input_shape("concentrated:" + std::to_string(e)), input_size, num_bins, lower_bound, upper_bound);
-    const double share = static_cast<double>(top_count(counts)) / input_size;
-    if (prev_share >= 0.0)
-    {
-      REQUIRE(share >= prev_share - 0.02); // non-decreasing (small tolerance)
-    }
-    prev_share = share;
+      parse_input_shape("concentrated:" + std::to_string(target)), input_size, num_bins, lower_bound, upper_bound);
+    const double entropy = normalized_entropy_counts(counts, input_size);
+    REQUIRE(entropy <= previous_entropy + 0.01);
+    REQUIRE(std::abs(entropy - target) < 0.05);
+    previous_entropy = entropy;
   }
-  REQUIRE(prev_share > 0.99); // entropy 0 ends at ~100% top share
 }
 
-C2H_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_shapes]")
+CUB_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
   // Different seeds should move the hot bin (spike-slab at entropy 0.3).
@@ -143,11 +141,13 @@ C2H_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_sh
     ++argmax_seen[arg];
   }
   // The mode is not always bin 0, and varies across seeds.
-  REQUIRE(argmax_seen.count(0) < 5);
+  const auto zero_it  = argmax_seen.find(0);
+  const int zero_hits = zero_it == argmax_seen.end() ? 0 : zero_it->second;
+  REQUIRE(zero_hits < 5);
   REQUIRE(argmax_seen.size() >= 2);
 }
 
-C2H_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_shapes]")
+CUB_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   auto counts =
@@ -168,12 +168,12 @@ C2H_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_
   REQUIRE(top1 < 0.99); // but not a single spike
 }
 
-C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][input_shapes]")
+CUB_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   // Entropy decreases across the loop, so the top-bin share must RISE
   // (non-decreasing): lower target entropy -> higher concentration.
-  double prev_top = -1.0;
+  double prev_top = 0.0;
   for (double e : {0.8, 0.6, 0.4, 0.2})
   {
     auto counts = bin_counts_even<int32_t>(
@@ -181,12 +181,15 @@ C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
     std::vector<long long> sorted(counts);
     std::sort(sorted.rbegin(), sorted.rend());
     const double top1 = static_cast<double>(sorted[0]) / input_size;
-    REQUIRE(top1 >= prev_top - 0.02); // non-decreasing as entropy falls
+    if (prev_top > 0.0)
+    {
+      REQUIRE(top1 >= prev_top * 0.95);
+    }
     prev_top = top1;
   }
 }
 
-C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]")
+CUB_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins                     = 256;
   const int phases                       = 4;
@@ -203,7 +206,7 @@ C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "
     std::map<int, long long> c;
     for (int64_t i = p * per; i < (p + 1) * per; ++i)
     {
-      int bin = static_cast<int>(static_cast<double>(h[i]) * scale);
+      int bin = static_cast<int>((static_cast<double>(h[i]) - lower_bound) * scale);
       if (bin >= num_bins)
       {
         bin = num_bins - 1;
@@ -229,7 +232,7 @@ C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "
   }
 }
 
-C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]")
+CUB_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   auto counts =
@@ -239,7 +242,23 @@ C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "
   REQUIRE(normalized_entropy_counts(counts, input_size) > 0.98);
 }
 
-C2H_TEST("histogram input: RANGE path maps bins into level intervals", "[histogram][input_shapes]")
+CUB_TEST("histogram input: zipf and sawtooth shapes are covered", "[histogram][input_shapes]", CUB_SMALL)
+{
+  const int num_bins = 256;
+
+  auto zipf_counts =
+    bin_counts_even<int32_t>(parse_input_shape("zipf:1.2"), input_size, num_bins, lower_bound, upper_bound);
+  std::sort(zipf_counts.rbegin(), zipf_counts.rend());
+  REQUIRE(zipf_counts.front() > zipf_counts.back());
+  REQUIRE(nonzero_bins(zipf_counts) == num_bins);
+
+  const auto sawtooth_counts =
+    bin_counts_even<int32_t>(parse_input_shape("sawtooth:7"), input_size, num_bins, lower_bound, upper_bound);
+  REQUIRE(nonzero_bins(sawtooth_counts) == 7);
+  REQUIRE(top_count(sawtooth_counts) == (input_size + 6) / 7);
+}
+
+CUB_TEST("histogram input: RANGE path maps bins into level intervals", "[histogram][input_shapes]", CUB_SMALL)
 {
   // Build a simple strictly-increasing level array and check that a constant
   // (entropy 0) input lands every sample inside one [levels[b], levels[b+1]).
@@ -264,4 +283,19 @@ C2H_TEST("histogram input: RANGE path maps bins into level intervals", "[histogr
   // v0 must sit within some [levels[b], levels[b+1]).
   REQUIRE(v0 >= h_levels[0]);
   REQUIRE(v0 < h_levels[num_bins]);
+
+  d_input = generate_histogram_input_range<int32_t>(
+    parse_input_shape("strided_sweep"), input_size, num_bins, thrust::raw_pointer_cast(d_levels.data()));
+  h = d_input;
+  std::vector<int64_t> interval_counts(num_bins, 0);
+  for (int32_t value : h)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), value);
+    REQUIRE(upper != h_levels.begin());
+    REQUIRE(upper != h_levels.end());
+    ++interval_counts[static_cast<std::size_t>(std::distance(h_levels.begin(), upper) - 1)];
+  }
+  REQUIRE(std::all_of(interval_counts.begin(), interval_counts.end(), [](int64_t count) {
+    return count > 0;
+  }));
 }
