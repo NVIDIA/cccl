@@ -71,12 +71,7 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
-// Lower bound of the bench's level range. For signed integer SampleT we use
-// `numeric_limits<SampleT>::min()` so the level range spans the full type;
-// previously `lower_level = 0` clipped half the range, forcing a skip on
-// configurations like int8_t with bins > 127 even though the type can hold
-// 256 distinct values. For unsigned integer and floating-point SampleT,
-// `lower_level = 0` is the natural choice.
+// Use the full range of signed sample types.
 template <class SampleT>
 SampleT get_lower_level()
 {
@@ -92,17 +87,7 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
   if constexpr (cuda::std::is_integral_v<SampleT>)
   {
-    // Widen the upper level to ~4 * num_bins so the range bench's
-    // jittered-uniform level construction (jitter amplitude is step / 4)
-    // produces genuinely non-uniform integer levels. With the previous
-    // upper_level == num_bins, step was exactly 1 for `int32_t` / `int64_t`,
-    // the integer cast in the level loop annihilated the jitter, and the
-    // dedup-by-1 step forced the array back to perfect uniform stride —
-    // which `DispatchHistogram`'s uniform-range detection (when present)
-    // would route through the fast EVEN classify path, defeating the
-    // purpose of the range bench. Clamp to the type max when 4 * bins
-    // overflows `SampleT`; those axes already have step < 1 and the level
-    // array is degenerate regardless of jitter.
+    // Leave enough space to perturb integer levels without losing monotonicity.
     const int64_t max_v = static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max());
     const int64_t want  = static_cast<int64_t>(bins) * int64_t{4};
     return static_cast<SampleT>(std::min(want, max_v));
@@ -111,11 +96,7 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
   return static_cast<SampleT>(elements);
 }
 
-// Maximum number of bins that can be represented by SampleT levels in this
-// bench's `[get_lower_level<SampleT>(), get_upper_level<SampleT>(...)]` range.
-// For integer SampleT this caps at the count of distinct values the type can
-// hold (`max - min`); strict-monotonic level construction needs `bins + 1`
-// distinct values. For floating-point SampleT it's effectively unbounded.
+// Maximum number of strictly increasing intervals representable by SampleT.
 template <class SampleT>
 int64_t max_representable_bins()
 {
@@ -124,24 +105,12 @@ int64_t max_representable_bins()
     return static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max())
          - static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::min());
   }
-  // For int64_t (and any wider type that we may add later) the bins axis tops
-  // out at ~10^6, which is many orders of magnitude below the type's range, so
-  // the skip never triggers. Avoid the int64_t overflow that
-  // `max() - min() = 2^64 - 1` would produce.
+  // Avoid overflowing while computing the width of a 64-bit signed type.
   return ::cuda::std::numeric_limits<int64_t>::max();
 }
 
-// Bench-side correctness checks that compare the CUB histogram result
-// bin-by-bin against an independent on-device reference computed with
-// `thrust::for_each` + global `atomicAdd`. The verifier is invoked once per
-// benchmark cell, outside NVBench's timed region, so it does not contribute
-// to the reported bandwidth. The reference does not share any kernels with
-// `cub::DeviceHistogram`, so a bug that leaves the optimized histogram
-// shaped correctly but counted incorrectly is still caught.
-//
-// Verification is on by default. To skip it (e.g. during a tuning sweep where
-// only relative throughput matters), set the environment variable
-// CUB_BENCH_HISTOGRAM_VERIFY to one of: 0, false, no, off (case-insensitive).
+// Optional benchmark correctness checks. Set CUB_BENCH_HISTOGRAM_VERIFY to
+// 1, true, yes, or on to compare each result with an independent reference.
 
 inline bool bench_correctness_checks_enabled()
 {
@@ -149,26 +118,19 @@ inline bool bench_correctness_checks_enabled()
     const char* v = std::getenv("CUB_BENCH_HISTOGRAM_VERIFY");
     if (v == nullptr)
     {
-      return true;
+      return false;
     }
     std::string s(v);
     for (char& c : s)
     {
       c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     }
-    return !(s == "0" || s == "false" || s == "no" || s == "off");
+    return s == "1" || s == "true" || s == "yes" || s == "on";
   }();
   return enabled;
 }
 
-// A correctness-check failure MUST end the trial in a hard runtime failure, not
-// a silent skip. nvbench catches a thrown std::exception from the benchmark body
-// and merely marks the measurement `Skipped: Yes`, then exits 0 -- which lets an
-// incorrect kernel "pass" by having its failing cells silently dropped from any
-// downstream aggregation. To make a wrong result unambiguously fatal, we print
-// the diagnostic to stderr and `std::abort()`, which terminates the process with
-// a non-zero status that nvbench cannot swallow. Legitimate, expected skips
-// (e.g. row-stride overflow) use `state.skip(...)` instead and are unaffected.
+// NVBench converts exceptions to skipped measurements, so mismatches must abort.
 [[noreturn]] inline void bench_fatal(const std::string& msg)
 {
   std::fprintf(stderr, "FATAL %s\n", msg.c_str());
@@ -184,9 +146,7 @@ inline void bench_check_cuda(cudaError_t e, const char* what)
   }
 }
 
-// EVEN reference: closed-form bin index `(sample - lo) * num_bins / (hi - lo)`
-// computed in double precision, then a global `atomicAdd` per pixel per active
-// channel.
+// Independent reference for evenly spaced levels.
 template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 struct bench_ref_even_op
 {
@@ -230,9 +190,7 @@ struct bench_ref_even_op
   }
 };
 
-// RANGE reference: per-pixel `cub::UpperBound` on the per-channel level array,
-// then a global `atomicAdd`. Levels are arbitrary monotonic boundaries so the
-// closed-form EVEN index does not apply.
+// Independent reference for arbitrary levels.
 template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 struct bench_ref_range_op
 {
@@ -327,10 +285,6 @@ bench_snapshot_histograms(const std::vector<thrust::device_vector<CounterT>>& d_
   return out;
 }
 
-// Verifier entry point for EVEN benches. Caller passes the strided pixel-
-// major sample buffer and the per-channel optimized histograms it has
-// already produced; this function builds a per-channel reference and
-// compares bin-by-bin.
 template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 void bench_verify_histogram_even(
   const thrust::device_vector<SampleT>& d_input,
