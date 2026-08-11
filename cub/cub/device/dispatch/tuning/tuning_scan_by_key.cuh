@@ -1197,15 +1197,6 @@ private:
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<fixed_delay_constructor_t<104, 985>>};
-              case 16:
-                // ipt_11.tpb_256.ns_944.dcid_0.l2w_830.trp_1.ld_1  1.125931  1.031977  1.120437  1.184802
-                return {256,
-                        11,
-                        BLOCK_LOAD_WARP_TRANSPOSE,
-                        LOAD_CA,
-                        BLOCK_STORE_WARP_TRANSPOSE,
-                        BLOCK_SCAN_WARP_SCANS,
-                        lookback_delay_policy_from_type<no_delay_constructor_t<830>>};
               default:
                 break;
             }
@@ -1240,15 +1231,6 @@ private:
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<92, 515>>};
-              case 16:
-                // ipt_19.tpb_160.ns_1284.dcid_7.l2w_340.trp_1.ld_1  1.062141  1.017252  1.068521  1.118243
-                return {160,
-                        19,
-                        BLOCK_LOAD_WARP_TRANSPOSE,
-                        LOAD_CA,
-                        BLOCK_STORE_WARP_TRANSPOSE,
-                        BLOCK_SCAN_WARP_SCANS,
-                        lookback_delay_policy_from_type<exponential_backon_constructor_t<1284, 340>>};
               default:
                 break;
             }
