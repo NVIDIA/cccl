@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
-#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#ifndef _CUDA_STD___CONCEPTS_REFERENCEABLE_H
+#define _CUDA_STD___CONCEPTS_REFERENCEABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,16 +28,16 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class = void>
-inline constexpr bool __is_referenceable_v = false;
+inline constexpr bool __is_referenceable_impl = false;
 
 template <class _Tp>
-inline constexpr bool __is_referenceable_v<_Tp, void_t<_Tp&>> = true;
+inline constexpr bool __is_referenceable_impl<_Tp, void_t<_Tp&>> = true;
 
 template <class _Tp>
-_CCCL_CONCEPT __referenceable = __is_referenceable_v<_Tp>;
+_CCCL_CONCEPT __referenceable = __is_referenceable_impl<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#endif // _CUDA_STD___CONCEPTS_REFERENCEABLE_H
