@@ -115,23 +115,22 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
                   && ::cuda::__detail::__can_mdspan_copy_bytes<T_In, E_In, L_In, T_Out, E_Out, L_Out>
                   && ::cuda::std::__is_callable_v<::cuda::get_stream_t, const EnvT&>)
     {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        ({
-          auto __stream = ::cuda::get_stream(env);
+      NV_IF_TARGET(NV_IS_HOST,
+                   ({
+                     auto __stream = ::cuda::get_stream(env);
 
-          // cuda::copy_bytes() builds an __ensure_current_context(stream_ref), which calls
-          // cuStreamGetCtx(). That driver call rejects the NULL stream with
-          // CUDA_ERROR_INVALID_VALUE. Use the transform path, which goes through the runtime
-          // API and accepts the NULL stream.
-          if (__stream.get() == nullptr)
-          {
-            return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);
-          }
+                     // cuda::copy_bytes() builds an __ensure_current_context(stream_ref), which calls
+                     // cuStreamGetCtx(). That driver call rejects the NULL stream with
+                     // CUDA_ERROR_INVALID_VALUE. Use the transform path, which goes through the runtime
+                     // API and accepts the NULL stream.
+                     if (__stream.get() == nullptr)
+                     {
+                       return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);
+                     }
 
-          return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_mdspan_bytes(__stream, mdspan_in, mdspan_out, env);
-        }),
-        (return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);))
+                     return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_mdspan_bytes(__stream, mdspan_in, mdspan_out);
+                   }),
+                   (return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);))
     }
     else
     {
