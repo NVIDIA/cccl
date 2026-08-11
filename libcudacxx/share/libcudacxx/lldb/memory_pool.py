@@ -13,14 +13,13 @@ import cccl_common
 import lldb
 
 _POOL_PATTERN = re.compile(
-    r"^cuda::(?:shared_)?(?:device|managed|pinned)_memory_pool(?:_ref)?$"
+    r"^cuda::(?:(?:device|managed|pinned)_memory_pool(?:_ref)?"
+    r"|shared_(?:device|managed|pinned)_memory_pool)$"
 )
 _SHARED_POOL_PATTERN = re.compile(
     r"^cuda::shared_(?:device|managed|pinned)_memory_pool$"
 )
-# Attribute names in the order the snapshot expression returns them. Every one
-# is a cuuint64_t and has existed since CUDA 11.2, so the rendered output does
-# not vary across supported toolkits.
+# Attribute names in the order the snapshot expression returns them.
 _POOL_ATTRIBUTE_NAMES = (
     "release_threshold",
     "reserved_mem_current",
@@ -30,18 +29,16 @@ _POOL_ATTRIBUTE_NAMES = (
 )
 _SNAPSHOT_LANES = len(_POOL_ATTRIBUTE_NAMES) + 1
 _ATTRIBUTE_TYPE = "unsigned long long"
+# A driver call still running after this long is wedged; print only the handle.
+_EXPRESSION_TIMEOUT_US = 1_000_000
 _MAX_BASE_DEPTH = 4
 InternalDict = dict[str, object]
 
 
-# LLDB cannot materialize a locally declared struct returned by an expression.
-# A Clang vector keeps this to one inferior call and exposes six stable lanes:
-# the five pool attributes and a validity mask.
-#
-# CCCL reaches pool attributes through the driver, so cuMemPoolGetAttribute is
-# the entry point guaranteed to be loaded. Unlike the CUDA runtime spelling it
-# also never creates a primary context, so querying it from a formatter cannot
-# perturb the inferior.
+# LLDB cannot materialize a locally declared struct returned by an expression, so
+# a Clang vector keeps this to one inferior call: five attributes plus a validity
+# mask. cuMemPoolGetAttribute is the driver entry point CCCL itself uses, and
+# unlike the runtime spelling it never creates a primary context.
 _POOL_SNAPSHOT_EXPRESSION = """
 (unsigned long long __attribute__((ext_vector_type(6))))(([](void* pool) {
   using Snapshot = unsigned long long __attribute__((ext_vector_type(6)));
@@ -85,6 +82,12 @@ _POOL_SNAPSHOT_EXPRESSION = """
 })((void*)%#x))
 """
 
+# The expression hardcodes its lane count, so extending _POOL_ATTRIBUTE_NAMES
+# requires rewriting it by hand.
+assert _POOL_SNAPSHOT_EXPRESSION.count(f"ext_vector_type({_SNAPSHOT_LANES})") == 2, (
+    "_POOL_SNAPSHOT_EXPRESSION lane count must match _POOL_ATTRIBUTE_NAMES"
+)
+
 
 def _pool_type_name(value_type: lldb.SBType) -> str | None:
     type_name = cccl_common.canonical_type_name(value_type)
@@ -103,11 +106,7 @@ def _is_shared_pool(value_type: lldb.SBType) -> bool:
 
 
 def _find_member(value: lldb.SBValue, name: str, depth: int = 0) -> lldb.SBValue:
-    """Return a member of value or of one of its base classes.
-
-    The pool handle lives on cuda::__memory_pool_base, two levels below the
-    shared pool types, so the search has to walk the whole base chain.
-    """
+    """Return a member of value or of one of its base classes."""
     value = value.GetNonSyntheticValue()
     member = value.GetChildMemberWithName(name)
     if member.IsValid():
@@ -150,11 +149,9 @@ def _pool_use_count(value: lldb.SBValue) -> int | None:
     block = reference.GetNonSyntheticValue().GetChildMemberWithName("__block_")
     if not block.IsValid() or block.GetError().Fail():
         return None
-    # A no_init shared pool never allocates a control block.
     if block.GetValueAsUnsigned(0) == 0:
         return 0
-    # The count is a cuda::std::atomic<int>, whose value sits behind the
-    # __a/__a_value storage pair rather than being a direct child.
+    # The count is a cuda::std::atomic<int>, stored behind __a/__a_value.
     stored = _nested_member(block.Dereference(), "__ref_count", "__a", "__a_value")
     if not stored.IsValid() or stored.GetError().Fail():
         return None
@@ -168,6 +165,9 @@ def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
     options = lldb.SBExpressionOptions()
     options.SetIgnoreBreakpoints(True)
     options.SetUnwindOnError(True)
+    # Never resume other threads or hang the debugger on a wedged driver call.
+    options.SetTryAllThreads(False)
+    options.SetTimeoutInMicroSeconds(_EXPRESSION_TIMEOUT_US)
     return frame.EvaluateExpression(expression, options)
 
 
@@ -202,8 +202,6 @@ def _pool_attributes(value: lldb.SBValue) -> tuple[tuple[str, int], ...]:
         return ()
 
     raw_handle = handle.GetValueAsUnsigned(0)
-    # A null handle is a legitimate state for a no_init or released pool.
-    # Querying the driver with it would only produce errors.
     if raw_handle == 0:
         return ()
     return _query_pool_attributes(value, raw_handle)
@@ -235,9 +233,8 @@ class MemoryPoolSyntheticProvider:
         self.initialized = False
 
     def update(self) -> bool:
-        # LLDB calls update() before every read of a synthetic value, so one
-        # print causes hundreds of calls. Query the driver only when the
-        # process has stopped again since the last snapshot.
+        # LLDB calls update() before every read, so only query the driver once
+        # per stop.
         process = self.value.GetProcess()
         stop_id = process.GetStopID() if process.IsValid() else None
         if self.initialized and stop_id == self.stop_id:
@@ -249,8 +246,7 @@ class MemoryPoolSyntheticProvider:
         if not self.children:
             return True
 
-        # The new children invalidate LLDB's cache. Subsequent update calls at
-        # this stop return True above so LLDB can reuse them.
+        # New children invalidate LLDB's cache; later calls at this stop reuse them.
         return False
 
     def num_children(self) -> int:

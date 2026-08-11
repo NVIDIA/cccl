@@ -1,0 +1,18 @@
+=============== memory_pool_pinned.owning begin ===============
+(const cuda::pinned_memory_pool &) <address> handle=<address>: {
+  release_threshold = 1048576
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool_pinned.owning end ===============
+=============== memory_pool_pinned.shared begin ===============
+(const cuda::shared_pinned_memory_pool &) <address> handle=<address>, use_count=1: {
+  release_threshold = 2097152
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool_pinned.shared end ===============

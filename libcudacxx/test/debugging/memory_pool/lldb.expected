@@ -85,27 +85,21 @@
   used_mem_high = 0
 }
 =============== memory_pool.update.after end ===============
-=============== memory_pool.pinned begin ===============
-(const cuda::pinned_memory_pool &) <address> handle=<address>: {
+=============== memory_pool.in_use begin ===============
+(const cuda::device_memory_pool &) <address> handle=<address>: {
   release_threshold = 8388608
-  reserved_mem_current = 0
-  reserved_mem_high = 0
-  used_mem_current = 0
-  used_mem_high = 0
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
+  used_mem_current = <nonzero>
+  used_mem_high = <nonzero>
 }
-=============== memory_pool.pinned end ===============
-=============== memory_pool.pinned_shared begin ===============
-(const cuda::shared_pinned_memory_pool &) <address> handle=<address>, use_count=1: {
-  release_threshold = 9437184
+=============== memory_pool.in_use end ===============
+=============== memory_pool.after_release begin ===============
+(const cuda::device_memory_pool &) <address> handle=<address>: {
+  release_threshold = 0
   reserved_mem_current = 0
-  reserved_mem_high = 0
+  reserved_mem_high = <nonzero>
   used_mem_current = 0
-  used_mem_high = 0
+  used_mem_high = <nonzero>
 }
-=============== memory_pool.pinned_shared end ===============
-=============== memory_pool.managed_no_init begin ===============
-(const cuda::managed_memory_pool &) <address> handle=0x0
-=============== memory_pool.managed_no_init end ===============
-=============== memory_pool.managed_shared_no_init begin ===============
-(const cuda::shared_managed_memory_pool &) <address> handle=0x0, use_count=0
-=============== memory_pool.managed_shared_no_init end ===============
+=============== memory_pool.after_release end ===============

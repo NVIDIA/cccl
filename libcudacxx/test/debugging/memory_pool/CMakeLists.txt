@@ -13,14 +13,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_nested memory_pool.nested values
     --case inspect_before_update memory_pool.update.before value
     --case inspect_after_update memory_pool.update.after value
-    --case inspect_pinned memory_pool.pinned value
-    --case inspect_pinned_shared memory_pool.pinned_shared value
-    --case inspect_managed_no_init memory_pool.managed_no_init value
-    --case inspect_managed_shared_no_init memory_pool.managed_shared_no_init value
+    --case inspect_in_use memory_pool.in_use value
+    --case inspect_after_release memory_pool.after_release value
     # gersemi: on
-)
-
-target_link_libraries(
-  libcudacxx.test.debugging.memory_pool
-  PRIVATE CUDA::cuda_driver
 )

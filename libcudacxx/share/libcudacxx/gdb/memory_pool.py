@@ -37,8 +37,6 @@ _POOL_NAMES = (
 )
 # These are the public values of the CUmemPool_attribute enumerators. The
 # debugger expression parser does not necessarily expose the enumerators.
-# Every attribute listed here is a cuuint64_t and has existed since CUDA 11.2,
-# so the rendered output does not vary across supported toolkits.
 _POOL_ATTRIBUTES = (
     ("release_threshold", 4),
     ("reserved_mem_current", 5),
@@ -53,7 +51,6 @@ _ATTRIBUTE_TYPE = "unsigned long long"
 class PoolInfo(NamedTuple):
     handle: int
     use_count: int | None
-    attributes: tuple[tuple[str, int], ...]
 
 
 def _pool_type_name(value_type: gdb.Type) -> str | None:
@@ -64,11 +61,7 @@ def _pool_type_name(value_type: gdb.Type) -> str | None:
 
 
 def _find_member(value: gdb.Value, name: str) -> gdb.Value | None:
-    """Return a member of value or of one of its base classes.
-
-    The pool handle lives on cuda::__memory_pool_base, two levels below the
-    shared pool types, so the search has to walk the whole base chain.
-    """
+    """Return a member of value or of one of its base classes."""
     value_type = cccl_common.canonical_type(value.type)
     value = value.cast(value_type)
     for field in value_type.fields():
@@ -93,7 +86,6 @@ def _pool_use_count(value: gdb.Value) -> int | None:
         return None
     try:
         block = reference["__block_"]
-        # A no_init shared pool never allocates a control block.
         if int(block) == 0:
             return 0
         return int(block["__ref_count"]["__a"]["__a_value"])
@@ -102,11 +94,7 @@ def _pool_use_count(value: gdb.Value) -> int | None:
 
 
 def _query_pool_attributes(handle: int) -> tuple[tuple[str, int], ...]:
-    """Read every pool attribute through a single scratch buffer.
-
-    Inferior calls are expensive, so the buffer is allocated once and reused
-    rather than staged per attribute.
-    """
+    """Read every pool attribute through a single reused scratch buffer."""
     attributes: list[tuple[str, int]] = []
     output: gdb.Value | None = None
     try:
@@ -137,29 +125,47 @@ def _query_pool_attributes(handle: int) -> tuple[tuple[str, int], ...]:
     return tuple(attributes)
 
 
+# GDB builds a new printer per display, so cache one snapshot per handle until
+# the inferior runs again.
+_ATTRIBUTE_CACHE: dict[int, tuple[tuple[str, int], ...]] = {}
+
+
+def _clear_attribute_cache(_event: object) -> None:
+    _ATTRIBUTE_CACHE.clear()
+
+
+gdb.events.stop.connect(_clear_attribute_cache)
+gdb.events.exited.connect(_clear_attribute_cache)
+
+
+def _pool_attributes(handle: int) -> tuple[tuple[str, int], ...]:
+    """Return the driver-reported attributes of a pool, cached per stop."""
+    if handle == 0:
+        return ()
+    if handle not in _ATTRIBUTE_CACHE:
+        _ATTRIBUTE_CACHE[handle] = _query_pool_attributes(handle)
+    return _ATTRIBUTE_CACHE[handle]
+
+
 def _pool_info(value: gdb.Value, shared: bool) -> PoolInfo:
     handle_value = _find_member(value, "__pool_")
     if handle_value is None:
         raise gdb.error("cuda memory pool handle not found")
-
-    handle = int(handle_value)
-    use_count = _pool_use_count(value) if shared else None
-    if handle == 0:
-        return PoolInfo(handle, use_count, ())
-    return PoolInfo(handle, use_count, _query_pool_attributes(handle))
+    return PoolInfo(int(handle_value), _pool_use_count(value) if shared else None)
 
 
 class MemoryPoolPrinter:
     """Expose CUDA memory pool metadata to GDB."""
 
     def __init__(self, value: gdb.Value, type_name: str) -> None:
+        # Only touch inferior memory here so the lookup can fall back to
+        # default rendering; the driver queries wait for children().
         value = cccl_common.strip_reference_value(value)
-        self.value = value
         self.type_name = type_name
         self.info = _pool_info(value, type_name in _SHARED_POOL_NAMES)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
-        for name, attribute_value in self.info.attributes:
+        for name, attribute_value in _pool_attributes(self.info.handle):
             try:
                 yield (
                     name,

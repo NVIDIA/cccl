@@ -4,12 +4,14 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using pool_ref_alias = cuda::device_memory_pool_ref;
 
-[[nodiscard]] constexpr cuda::memory_pool_properties properties(const size_t release_threshold) noexcept
+[[nodiscard]] constexpr cuda::memory_pool_properties properties(const cuda::std::size_t release_threshold) noexcept
 {
   cuda::memory_pool_properties props{};
   props.release_threshold = release_threshold;
@@ -66,29 +68,15 @@ using pool_ref_alias = cuda::device_memory_pool_ref;
   KEEP_FOR_DEBUGGER(value);
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 9)
-[[gnu::noinline]] void inspect_pinned(const cuda::pinned_memory_pool& value)
+[[gnu::noinline]] void inspect_in_use(const cuda::device_memory_pool& value)
 {
   KEEP_FOR_DEBUGGER(value);
 }
 
-[[gnu::noinline]] void inspect_pinned_shared(const cuda::shared_pinned_memory_pool& value)
+[[gnu::noinline]] void inspect_after_release(const cuda::device_memory_pool& value)
 {
   KEEP_FOR_DEBUGGER(value);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 9)
-
-#if _CCCL_CTK_AT_LEAST(13, 0)
-[[gnu::noinline]] void inspect_managed_no_init(const cuda::managed_memory_pool& value)
-{
-  KEEP_FOR_DEBUGGER(value);
-}
-
-[[gnu::noinline]] void inspect_managed_shared_no_init(const cuda::shared_managed_memory_pool& value)
-{
-  KEEP_FOR_DEBUGGER(value);
-}
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 int main()
 {
@@ -126,24 +114,23 @@ int main()
   updated_reference = cuda::device_memory_pool_ref{update_after_pool.get()};
   inspect_after_update(updated_reference);
 
-#if _CCCL_CTK_AT_LEAST(12, 9)
-  const cuda::pinned_memory_pool pinned_pool{0, properties(8 * 1024 * 1024)};
-  const cuda::shared_pinned_memory_pool shared_pinned_pool{0, properties(9 * 1024 * 1024)};
-  inspect_pinned(pinned_pool);
-  inspect_pinned_shared(shared_pinned_pool);
-#endif // _CCCL_CTK_AT_LEAST(12, 9)
+  constexpr cuda::std::size_t allocation_size = 1024 * 1024;
+  cuda::stream stream{device};
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  // Managed pools are only inspected in their no_init state. Creating one needs
-  // a 13.0+ driver and a device with concurrent managed access, and the harness
-  // compares golden output exactly, so it has no way to skip a case whose
-  // environment cannot supply it. A no_init pool never calls into the driver,
-  // which keeps these two cases runnable everywhere the type exists.
-  const cuda::managed_memory_pool managed_no_init_pool{cuda::no_init};
-  const cuda::shared_managed_memory_pool shared_managed_no_init_pool{cuda::no_init};
-  inspect_managed_no_init(managed_no_init_pool);
-  inspect_managed_shared_no_init(shared_managed_no_init_pool);
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  cuda::device_memory_pool in_use_pool{device, properties(8 * 1024 * 1024)};
+  void* in_use_allocation = in_use_pool.allocate(stream, allocation_size);
+  stream.sync();
+  inspect_in_use(in_use_pool);
+
+  // A zero release threshold returns the memory to the driver on synchronization.
+  cuda::device_memory_pool released_pool{device, properties(0)};
+  void* released_allocation = released_pool.allocate(stream, allocation_size);
+  released_pool.deallocate(stream, released_allocation, allocation_size);
+  stream.sync();
+  inspect_after_release(released_pool);
+
+  in_use_pool.deallocate(stream, in_use_allocation, allocation_size);
+  stream.sync();
 
   return 0;
 }
