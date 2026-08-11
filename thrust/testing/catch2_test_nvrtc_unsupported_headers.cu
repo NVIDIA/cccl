@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include <nvrtc.h>
 #include <nvrtc_args.h>
@@ -57,10 +58,14 @@ TEST_CASE("Unsupported headers emit an NVRTC diagnostic", "[nvrtc]")
     "thrust/universal_vector.h"};
 
   const std::string standard = std::string{"-std=c++"} + std::to_string(_CCCL_STD_VER - 2000);
-  const std::array<const char*, 5> options{
-    nvrtc_cub_path, nvrtc_thrust_path, nvrtc_libcudacxx_path, nvrtc_ctk_path, standard.c_str()};
+  std::vector<const char*> options{nvrtc_cub_path, nvrtc_thrust_path, nvrtc_libcudacxx_path};
+  for (const char* const nvrtc_ctk_path : nvrtc_ctk_paths)
+  {
+    options.push_back(nvrtc_ctk_path);
+  }
+  options.push_back(standard.c_str());
 
-  for (const char* header : unsupported_headers)
+  for (const char* const header : unsupported_headers)
   {
     INFO("header = " << header);
 
@@ -75,15 +80,24 @@ TEST_CASE("Unsupported headers emit an NVRTC diagnostic", "[nvrtc]")
     const nvrtcResult compile_result = nvrtcCompileProgram(program, static_cast<int>(options.size()), options.data());
 
     std::size_t log_size{};
-    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(program, &log_size));
+    const nvrtcResult get_log_size_result = nvrtcGetProgramLogSize(program, &log_size);
 
-    std::string log(log_size, '\0');
-    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(program, log.data()));
+    std::string log;
+    nvrtcResult get_log_result = get_log_size_result;
+    if (NVRTC_SUCCESS == get_log_size_result)
+    {
+      log.resize(log_size);
+      get_log_result = nvrtcGetProgramLog(program, log.data());
+    }
+
+    const nvrtcResult destroy_result = nvrtcDestroyProgram(&program);
+
+    REQUIRE(NVRTC_SUCCESS == get_log_size_result);
+    REQUIRE(NVRTC_SUCCESS == get_log_result);
+    REQUIRE(NVRTC_SUCCESS == destroy_result);
 
     INFO("NVRTC log = " << log);
     CHECK(NVRTC_ERROR_COMPILATION == compile_result);
     CHECK(log.find(expected_diagnostic) != std::string::npos);
-
-    REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&program));
   }
 }

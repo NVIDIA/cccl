@@ -1,7 +1,11 @@
 cccl_get_cudatoolkit()
 
 get_filename_component(nvrtc_cccl_source_dir "${Thrust_SOURCE_DIR}" DIRECTORY)
-list(GET CUDAToolkit_INCLUDE_DIRS 0 nvrtc_ctk_include_dir)
+
+set(nvrtc_ctk_paths)
+foreach (nvrtc_ctk_include_dir IN LISTS CUDAToolkit_INCLUDE_DIRS)
+  string(APPEND nvrtc_ctk_paths "  \"-I${nvrtc_ctk_include_dir}\",\n")
+endforeach()
 
 configure_file(
   "${Thrust_SOURCE_DIR}/testing/cmake/nvrtc_args.h.in"

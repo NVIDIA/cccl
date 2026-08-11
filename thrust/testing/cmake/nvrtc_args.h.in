@@ -6,4 +6,5 @@
 inline constexpr char nvrtc_cub_path[]        = "-I@nvrtc_cccl_source_dir@/cub";
 inline constexpr char nvrtc_thrust_path[]     = "-I@Thrust_SOURCE_DIR@";
 inline constexpr char nvrtc_libcudacxx_path[] = "-I@nvrtc_cccl_source_dir@/libcudacxx/include";
-inline constexpr char nvrtc_ctk_path[]        = "-I@nvrtc_ctk_include_dir@";
+inline constexpr const char* nvrtc_ctk_paths[] = {
+@nvrtc_ctk_paths@};
