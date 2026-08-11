@@ -14,10 +14,6 @@ import memory_resource
 import gdb
 import gdb.printing
 
-# cuda::std::dynamic_extent, spelled out because GDB reports the extent as the
-# raw template argument value.
-_DYNAMIC_EXTENT = 2**64 - 1
-
 
 def _template_name(value_type: gdb.Type) -> str:
     return str(value_type).split("<", 1)[0]
@@ -33,9 +29,16 @@ def _is_cuda_span(value_type: gdb.Type) -> bool:
     )
 
 
+def _dynamic_extent(value_type: gdb.Type) -> int:
+    # size_t(-1), with size_t's width read from the extent argument's type
+    # rather than assumed to be 64 bits.
+    extent_type = value_type.template_argument(1).type
+    return (1 << (8 * extent_type.sizeof)) - 1
+
+
 def _public_span_name(value_type: gdb.Type) -> str:
     name = memory_resource.public_type_name(value_type)
-    return name.replace(f", {_DYNAMIC_EXTENT}>", ", dynamic_extent>")
+    return name.replace(f", {_dynamic_extent(value_type)}>", ", dynamic_extent>")
 
 
 class SpanPrinter:

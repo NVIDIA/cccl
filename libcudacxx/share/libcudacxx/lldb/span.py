@@ -12,9 +12,6 @@ import lldb
 
 _SPAN_PATTERN = re.compile(r"^cuda::std::span<.+>$")
 _ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
-# cuda::std::dynamic_extent, spelled out because LLDB reports the extent as the
-# raw template argument value.
-_DYNAMIC_EXTENT = 2**64 - 1
 InternalDict = dict[str, object]
 
 
@@ -30,6 +27,14 @@ def is_cuda_span(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     return _SPAN_PATTERN.fullmatch(_canonical_type_name(value_type)) is not None
 
 
+def _dynamic_extent(span_type: lldb.SBType, target: lldb.SBTarget) -> int:
+    # size_t(-1), with size_t's width read from the extent argument's type,
+    # falling back to the pointer width.
+    extent_type = span_type.GetTemplateArgumentType(1)
+    byte_size = extent_type.GetByteSize() if extent_type.IsValid() else 0
+    return (1 << (8 * (byte_size or target.GetAddressByteSize()))) - 1
+
+
 class SpanSyntheticProvider:
     """Expose cuda::std::span elements as LLDB synthetic children."""
 
@@ -41,7 +46,8 @@ class SpanSyntheticProvider:
         span_type = self.value.GetType().GetCanonicalType().GetUnqualifiedType()
         canonical_name = _canonical_type_name(self.value.GetType())
         self.type_name = canonical_name.replace(
-            f", {_DYNAMIC_EXTENT}>", ", dynamic_extent>"
+            f", {_dynamic_extent(span_type, self.value.GetTarget())}>",
+            ", dynamic_extent>",
         )
         self.size = 0
         self.value_size = 0
