@@ -186,7 +186,7 @@ struct range_bin_to_value
     }
     const double lo = static_cast<double>(levels[bin]);
     const double hi = static_cast<double>(levels[bin + 1]);
-    double v        = 0.5 * (lo + hi);
+    const double v  = 0.5 * (lo + hi);
     SampleT s;
     if constexpr (::cuda::std::is_integral_v<SampleT>)
     {
@@ -306,7 +306,7 @@ __host__ __device__ inline uint64_t permute_index(uint64_t i, uint64_t n, uint64
     return 0;
   }
   int32_t bits = 0;
-  while ((n - 1) >> bits)
+  while (bits < 64 && ((n - 1) >> bits))
   {
     ++bits; // bits == ceil(log2(n)) for n >= 2
   }
@@ -430,7 +430,8 @@ inline std::vector<double> softmax_logits(int32_t num_bins, uint64_t seed)
   return g;
 }
 
-inline std::vector<double> softmax_pmf(const std::vector<double>& logits, double temperature)
+// Fill pmf with softmax(logits / temperature) and return its normalized entropy.
+inline double softmax_pmf_into(const std::vector<double>& logits, double temperature, std::vector<double>& pmf)
 {
   const int32_t num_bins = static_cast<int32_t>(logits.size());
   double max_logit       = logits[0];
@@ -438,29 +439,35 @@ inline std::vector<double> softmax_pmf(const std::vector<double>& logits, double
   {
     max_logit = value > max_logit ? value : max_logit;
   }
-  std::vector<double> pmf(num_bins);
+  pmf.resize(num_bins);
   double sum = 0.0;
   for (int32_t b = 0; b < num_bins; ++b)
   {
     pmf[b] = std::exp((logits[b] - max_logit) / temperature);
     sum += pmf[b];
   }
-  for (double& v : pmf)
+  double entropy = 0.0;
+  for (double& value : pmf)
   {
-    v /= sum;
+    value /= sum;
+    if (value > 0.0)
+    {
+      entropy -= value * std::log2(value);
+    }
   }
-  return pmf;
+  return num_bins <= 1 ? 0.0 : entropy / std::log2(static_cast<double>(num_bins));
 }
 
 inline std::vector<double> solve_softmax_pmf(int32_t num_bins, double target, uint64_t seed)
 {
   const std::vector<double> logits = softmax_logits(num_bins, seed);
+  std::vector<double> pmf;
   // Bisect in log-space: entropy increases with T.
   double lo = 1e-3, hi = 1e3;
-  for (int32_t it = 0; it < 80; ++it)
+  for (int32_t it = 0; it < 40; ++it)
   {
     const double mid = std::sqrt(lo * hi);
-    if (normalized_entropy(softmax_pmf(logits, mid)) < target)
+    if (softmax_pmf_into(logits, mid, pmf) < target)
     {
       lo = mid; // too concentrated -> raise T
     }
@@ -469,7 +476,8 @@ inline std::vector<double> solve_softmax_pmf(int32_t num_bins, double target, ui
       hi = mid;
     }
   }
-  return softmax_pmf(logits, std::sqrt(lo * hi));
+  softmax_pmf_into(logits, std::sqrt(lo * hi), pmf);
+  return pmf;
 }
 
 // Build the probability mass function for a distribution shape.
@@ -500,18 +508,11 @@ inline std::vector<double> build_pmf(const ShapeSpec& spec, int32_t num_bins, ui
       }
       break;
     }
-    case InputShape::powerlaw: {
-      const double target         = knob_or(spec, default_powerlaw_entropy);
-      const double s              = solve_powerlaw_exponent(num_bins, target);
-      const std::vector<double> w = ranked_powerlaw(num_bins, s);
-      for (int32_t r = 0; r < num_bins; ++r)
-      {
-        pmf[scatter_bin(static_cast<uint64_t>(r), num_bins, offset)] = w[r];
-      }
-      break;
-    }
+    case InputShape::powerlaw:
     case InputShape::zipf: {
-      const double s              = knob_or(spec, default_zipf_exponent);
+      const double s              = spec.shape == InputShape::powerlaw
+                                    ? solve_powerlaw_exponent(num_bins, knob_or(spec, default_powerlaw_entropy))
+                                    : knob_or(spec, default_zipf_exponent);
       const std::vector<double> w = ranked_powerlaw(num_bins, s);
       for (int32_t r = 0; r < num_bins; ++r)
       {
@@ -542,7 +543,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
   const uint64_t offset = seed % static_cast<uint64_t>(num_bins);
 
   // Use a permutation of round-robin bins for exact uniform counts.
-  if (spec.shape == InputShape::concentrated && spec.has_knob && spec.knob >= 1.0)
+  if (spec.shape == InputShape::concentrated && knob_or(spec, default_concentrated_entropy) >= 1.0)
   {
     shuffled_uniform_functor<SampleT, Mapper> fn{static_cast<uint64_t>(n), num_bins, seed, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);

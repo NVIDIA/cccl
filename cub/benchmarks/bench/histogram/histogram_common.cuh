@@ -7,16 +7,19 @@
 #include <cub/thread/thread_search.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -146,7 +149,23 @@ inline void bench_check_cuda(cudaError_t e, const char* what)
   }
 }
 
+template <typename CounterT>
+_CCCL_DEVICE_API void bench_atomic_add(CounterT* address, CounterT value)
+{
+  if constexpr (::cuda::std::is_integral_v<CounterT> && ::cuda::std::is_signed_v<CounterT>
+                && sizeof(CounterT) == sizeof(unsigned long long))
+  {
+    atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(value));
+  }
+  else
+  {
+    atomicAdd(address, value);
+  }
+}
+
 // Independent reference for evenly spaced levels.
+// Integral benchmark inputs are bin centers, so the floating-point mapping
+// checks aggregate correctness but does not exercise exact bin boundaries.
 template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 struct bench_ref_even_op
 {
@@ -184,7 +203,7 @@ struct bench_ref_even_op
       }
       if (bin >= 0)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        bench_atomic_add(d_hist[c] + bin, CounterT{1});
       }
     }
   }
@@ -218,7 +237,7 @@ struct bench_ref_range_op
       const int bin   = idx - 1;
       if (bin >= 0 && bin < num_bins)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        bench_atomic_add(d_hist[c] + bin, CounterT{1});
       }
     }
   }
@@ -285,6 +304,7 @@ bench_snapshot_histograms(const std::vector<thrust::device_vector<CounterT>>& d_
   return out;
 }
 
+// All active channels must use the same EVEN bounds.
 template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 void bench_verify_histogram_even(
   const thrust::device_vector<SampleT>& d_input,
@@ -310,7 +330,8 @@ void bench_verify_histogram_even(
     op.d_hist[c] = thrust::raw_pointer_cast(ref_hists_d[c].data());
   }
 
-  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  thrust::for_each(
+    thrust::device, thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
   bench_check_cuda(cudaGetLastError(), "ref-even launch");
   bench_check_cuda(cudaDeviceSynchronize(), "ref-even sync");
 
@@ -344,7 +365,8 @@ void bench_verify_histogram_range(
     op.d_levels[c] = thrust::raw_pointer_cast(d_levels_per_channel[c].data());
   }
 
-  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  thrust::for_each(
+    thrust::device, thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
   bench_check_cuda(cudaGetLastError(), "ref-range launch");
   bench_check_cuda(cudaDeviceSynchronize(), "ref-range sync");
 
