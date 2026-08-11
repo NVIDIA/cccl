@@ -6,6 +6,9 @@ cudax/ @nvidia/cccl-cudax-codeowners
 c/ @nvidia/cccl-c-codeowners
 python/ @nvidia/cccl-python-codeowners
 cudax/include/cuda/experimental/__cuco @nvidia/cccl-cuco-codeowners
+# STF C and Python bindings are maintained by the cudax/STF team
+c/experimental/stf/ @nvidia/cccl-cudax-codeowners
+python/cuda_stf/ @nvidia/cccl-cudax-codeowners
 
 # Infrastructure
 .github/ @nvidia/cccl-infra-codeowners
@@ -30,6 +33,9 @@ cudax/test/stf/static_error_checks/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 # make an exception for places cmake files
 cudax/test/places/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 cudax/examples/places/CMakeLists.txt @nvidia/cccl-cudax-codeowners
+# make an exception for STF C and Python binding cmake files
+c/experimental/stf/**/CMakeLists.txt @nvidia/cccl-cudax-codeowners
+python/cuda_stf/**/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 
 # benchmarks
 benchmarks/ @nvidia/cccl-benchmark-codeowners
