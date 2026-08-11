@@ -90,7 +90,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
         cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
         static_cast<OffsetT>(elements))),
       "warmup MultiHistogramEven temp-size");
-    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
+    thrust::device_vector<unsigned char> warmup_tmp(std::max(temp_storage_bytes, size_t{1}));
     d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
     bench_check_cuda(
       (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
@@ -160,6 +160,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_axis("Elements{io}", {1 << 16, 1 << 22, 1 << 28})
-  .add_int64_axis("Bins", {32, 2048, 16384, 2097152})
+  .add_int64_axis("Elements{io}", {65536, 4000000, 67000000})
+  .add_int64_axis("Bins", {33, 2048, 16384, 2000003})
   .add_string_axis("InputShape", {"concentrated:1.0", "concentrated:0.5", "strided_sweep"});

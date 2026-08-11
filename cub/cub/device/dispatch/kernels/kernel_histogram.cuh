@@ -106,11 +106,18 @@ struct Transforms
       >;
 
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static IntArithmeticT UnsignedDifference(T upper, T lower)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static IntArithmeticT unsigned_difference(T upper, T lower)
     {
-      using UT      = ::cuda::std::make_unsigned_t<T>;
-      const UT diff = static_cast<UT>(static_cast<UT>(upper) - static_cast<UT>(lower));
-      return static_cast<IntArithmeticT>(diff);
+      if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cv_t<T>, bool>)
+      {
+        return static_cast<IntArithmeticT>(upper) - static_cast<IntArithmeticT>(lower);
+      }
+      else
+      {
+        using UT      = ::cuda::std::make_unsigned_t<T>;
+        const UT diff = static_cast<UT>(static_cast<UT>(upper) - static_cast<UT>(lower));
+        return static_cast<IntArithmeticT>(diff);
+      }
     }
 
   private:
@@ -126,7 +133,7 @@ struct Transforms
 #endif // !_CCCL_HAS_INT128()
 
     // Widen integral scaling operands before multiplication.
-    using FractionStorageT = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
+    using fraction_storage_t = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
     union ScaleT
     {
@@ -134,8 +141,8 @@ struct Transforms
       // rounding errors (see NVIDIA/cub#489).
       struct FractionT
       {
-        FractionStorageT bins;
-        FractionStorageT range;
+        fraction_storage_t bins;
+        fraction_storage_t range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -160,14 +167,14 @@ struct Transforms
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
-      result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
+      result.fraction.bins = static_cast<fraction_storage_t>(num_levels - 1);
       if constexpr (::cuda::std::is_integral_v<T>)
       {
-        result.fraction.range = static_cast<FractionStorageT>(UnsignedDifference(max_level, min_level));
+        result.fraction.range = static_cast<fraction_storage_t>(unsigned_difference(max_level, min_level));
       }
       else
       {
-        result.fraction.range = static_cast<FractionStorageT>(max_level - min_level);
+        result.fraction.range = static_cast<fraction_storage_t>(max_level - min_level);
       }
       return result;
     }
@@ -252,7 +259,7 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      const IntArithmeticT diff = UnsignedDifference(sample, min_level);
+      const IntArithmeticT diff = unsigned_difference(sample, min_level);
       return static_cast<int>(
         (diff * static_cast<IntArithmeticT>(scale.fraction.bins)) / static_cast<IntArithmeticT>(scale.fraction.range));
     }
@@ -321,7 +328,8 @@ struct Transforms
     {
       if (valid)
       {
-        if constexpr (::cuda::std::is_integral_v<_SampleT>)
+        if constexpr (::cuda::std::is_integral_v<_SampleT>
+                      && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<_SampleT>, bool>)
         {
           using UT = ::cuda::std::make_unsigned_t<_SampleT>;
           bin      = static_cast<int>(static_cast<UT>(sample));
