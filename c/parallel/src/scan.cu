@@ -409,15 +409,10 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   // the warpspeed/lookahead scan for the JIT as well. The other direction cannot diverge as long as this library is
   // built with a CUDA compiler below 13.4: every NVRTC version able to target the architectures for which the host
   // then selects lookahead also selects lookahead.
-  // Commented out to unblock CTK 13.4 builds: the divergence needs a host
-  // compiler >= 13.4 selecting lookahead for sm_120 while the JIT NVRTC is
-  // < 13.4. We build and run with matching 13.4 host/NVRTC (and pre-sm_120
-  // devices), so the lookback forcing below stays sufficient. Revisit
-  // NVBug 6235538 for a real fix.
-  // static_assert(_CCCL_CUDACC_BELOW(13, 4),
-  //               "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
-  //               "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
-  //               "before lifting this assert.");
+  static_assert(_CCCL_CUDACC_BELOW(13, 4),
+                "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
+                "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
+                "before lifting this assert.");
   if (active_policy.algorithm == cub::ScanAlgorithm::lookback)
   {
     args.push_back("-DCCCL_DISABLE_WARPSPEED_SCAN");
