@@ -17,11 +17,56 @@ $ErrorActionPreference = "Stop"
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-if ($env:PARALLEL_LEVEL -ne $null) {
-    $script:PARALLEL_LEVEL = $env:PARALLEL_LEVEL
+
+# Get the number of logical processors
+$N_CPUS = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+if (-not $N_CPUS) { $N_CPUS = [Environment]::ProcessorCount } # Fallback for cross-platform
+if (-not $N_CPUS) { $N_CPUS = $env:NUMBER_OF_PROCESSORS } # Fallback for cross-platform
+$N_CPUS_MINUS_1 = if ($N_CPUS -gt 1) { $N_CPUS - 1 } else { 1 }
+
+# Set variables as read-only constants
+Set-Variable -Name N_CPUS -Value $N_CPUS -Option ReadOnly -Force
+Set-Variable -Name N_CPUS_MINUS_1 -Value $N_CPUS_MINUS_1 -Option ReadOnly -Force
+
+# Provide a default value for PARALLEL_LEVEL if it does not exist in the environment
+if (-not $env:PARALLEL_LEVEL) {
+    $PARALLEL_LEVEL = $N_CPUS_MINUS_1
 } else {
-    $script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+    $PARALLEL_LEVEL = [int]$env:PARALLEL_LEVEL
 }
+
+# Safely check environment variables with defaults
+$USE_SCCACHE_DIST = if ($env:USE_SCCACHE_DIST) { [bool]::Parse($env:USE_SCCACHE_DIST) } else { $false }
+$SCCACHE_DIST_URL_SET = -not [string]::IsNullOrEmpty($env:SCCACHE_DIST_URL)
+
+# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# concurrent preprocessor calls we think we can do without OOM'ing the machine
+if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
+    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+    # * 1.5Mb for the shell launched by ninja
+    # * 6MiB for each sccache client process
+    # * round up to 10MiB
+    $mem_per_job = 10 * 1024
+    # Assume preprocessor invocations take ~300Mb or so
+    $mem_for_preprocessing = $N_CPUS * 300 * 1024
+    # It's usually around 400-600MiB, but be conservative
+    # and assume the sccache daemon will use 1GiB of RAM
+    $mem_for_sccache_daemon = 1 * 1024 * 1024
+    # Available memory (in KB) using CIM/WMI
+    $mem_available = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory
+    # Stay under 95% for CI
+    $mem_available = [math]::Floor($mem_available * 95 / 100)
+    # Total job count is available memory after accounting for `nproc` concurrent preprocessor
+    # calls divided by the amount of memory required to invoke the sccache thin client process
+    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job)
+}
+
+if ($PARALLEL_LEVEL -le 0) {
+    $PARALLEL_LEVEL = $N_CPUS_MINUS_1
+}
+
+# Export to environment block
+$env:PARALLEL_LEVEL = $PARALLEL_LEVEL
 
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
