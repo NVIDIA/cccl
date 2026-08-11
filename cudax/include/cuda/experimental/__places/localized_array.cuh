@@ -28,6 +28,7 @@
 
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__places/places.cuh>
 
@@ -70,8 +71,12 @@ struct localized_stats
   size_t nblocks     = 0; //!< number of placement blocks
   size_t nallocs     = 0; //!< physical allocations after merging same-owner runs
 
-  size_t total_samples    = 0; //!< probes drawn by the block-owner sampler
-  size_t matching_samples = 0; //!< probes agreeing with the chosen block owner
+  //! Placement-evidence counters. Units depend on how owners were computed:
+  //! sampled tier -- probes drawn / probes agreeing with the chosen owner;
+  //! analytic tiers (exact runs, census majority) -- total bytes / bytes
+  //! placed on their true owner (closed form, so accuracy() is exact).
+  size_t total_samples    = 0;
+  size_t matching_samples = 0;
 
   //! Bytes backed by each place, keyed by data_place::to_string()
   ::std::unordered_map<::std::string, size_t> bytes_per_place;
@@ -80,9 +85,9 @@ struct localized_stats
   //! (dim4::get_index of the pos4; friendlier than strings across FFI)
   ::std::unordered_map<size_t, size_t> bytes_per_grid_index;
 
-  //! Fraction of sampled elements whose owner matches the block-majority
-  //! owner: an estimate of the fraction of bytes that end up local to their
-  //! owner once ownership is quantized to blocks.
+  //! Fraction of bytes local to their owner once ownership is quantized to
+  //! placement blocks: exact on the analytic tiers, a sampled estimate on
+  //! the fallback tier (see total_samples).
   double accuracy() const
   {
     return total_samples == 0 ? 1.0 : static_cast<double>(matching_samples) / static_cast<double>(total_samples);
@@ -194,6 +199,20 @@ template <typename OwnerFn>
 }
 
 /**
+ * @brief A maximal run of consecutive placement blocks with one owner: the
+ * common currency between placement computations and allocation. The exact
+ * analytic tier emits runs directly (cute_partition_descriptor::
+ * try_block_runs); the sampled and census tiers produce one owner per block
+ * and convert (owners_to_block_runs).
+ */
+struct block_run
+{
+  pos4 owner;
+  size_t first_block;
+  size_t num_blocks;
+};
+
+/**
  * @brief Call `fn(owner, first_block, num_blocks)` for each maximal run of
  * consecutive blocks with the same owner.
  */
@@ -211,6 +230,16 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
     fn(p, i, j);
     i += j;
   }
+}
+
+//! Merge a one-owner-per-block vector into maximal block runs.
+inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
+{
+  ::std::vector<block_run> runs;
+  for_each_owner_run(owners, [&](pos4 o, size_t first, size_t count) {
+    runs.push_back(block_run{o, first, count});
+  });
+  return runs;
 }
 
 /**
@@ -285,6 +314,32 @@ public:
     init(owner_of, total_size, probes);
   }
 
+  /**
+   * @brief Construct from a placement PROVIDER: a callable
+   * `(size_t block_size_bytes, size_t nblocks, localized_stats&) ->
+   * std::vector<block_run>` producing the maximal same-owner block runs of
+   * the allocation, in increasing block order.
+   *
+   * Runs are the allocation's natural currency (one physical allocation and
+   * one mapping per run). The exact analytic tier emits them directly (see
+   * cute_partition_descriptor::try_block_runs); sampled/census tiers return
+   * one owner per block and convert via owners_to_block_runs (see
+   * make_partition_placement_provider).
+   */
+  template <
+    typename PlacementProvider,
+    typename = ::cuda::std::enable_if_t<
+      ::cuda::std::is_invocable_r_v<::std::vector<block_run>, PlacementProvider, size_t, size_t, localized_stats&>>>
+  localized_array(
+    exec_place grid, PlacementProvider&& placement_provider, size_t total_size, size_t elemsize, dim4 data_dims)
+      : grid(mv(grid))
+      , total_size_bytes(total_size * elemsize)
+      , data_dims(data_dims)
+      , elemsize(elemsize)
+  {
+    init(::cuda::std::forward<PlacementProvider>(placement_provider), total_size);
+  }
+
   localized_array()                                  = delete;
   localized_array(const localized_array&)            = delete;
   localized_array(localized_array&&)                 = delete;
@@ -339,6 +394,19 @@ public:
 private:
   void init(const ::std::function<pos4(size_t)>& owner_of, size_t total_size, size_t probes)
   {
+    init(
+      [&](size_t block_size_bytes_, size_t nblocks_, localized_stats& stats_) {
+        return owners_to_block_runs(
+          compute_block_owners(owner_of, nblocks_, block_size_bytes_, elemsize, total_size, probes, stats_));
+      },
+      total_size);
+  }
+
+  //! Shared allocation body: `placement_provider(block_size_bytes, nblocks,
+  //! stats)` returns the allocation's maximal same-owner block runs.
+  template <typename PlacementProvider>
+  void init(PlacementProvider&& placement_provider, [[maybe_unused]] size_t total_size)
+  {
     if (elemsize == 0)
     {
       throw ::std::invalid_argument("localized_array requires an element size of at least 1 byte");
@@ -366,8 +434,6 @@ private:
 
     size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
 
-    base_ptr = cuda_try<cuMemAddressReserve>(vm_total_size_bytes, 0ULL, 0ULL, 0ULL);
-
     ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
     for (int d = 0; d < ndevs; d++)
     {
@@ -381,57 +447,102 @@ private:
     stats.block_size  = block_size_bytes;
     stats.nblocks     = nblocks;
 
-    const ::std::vector<pos4> owners =
-      compute_block_owners(owner_of, nblocks, block_size_bytes, elemsize, total_size, probes, stats);
+    const ::std::vector<block_run> runs = placement_provider(block_size_bytes, nblocks, stats);
+    // The provider is caller-supplied through a public constructor: validate
+    // the full contract and throw (asserts vanish in release, and a gap,
+    // overlap, or zero-length run would surface as unmapped holes or a
+    // double cuMemMap far from its cause).
+    size_t cursor = 0;
+    for (const auto& r : runs)
+    {
+      if (r.num_blocks == 0 || r.first_block != cursor)
+      {
+        throw ::std::invalid_argument("placement runs must be non-empty, ordered, and tile the blocks exactly");
+      }
+      cursor += r.num_blocks;
+    }
+    if (cursor != nblocks)
+    {
+      throw ::std::invalid_argument("placement runs must cover every placement block");
+    }
 
-    meta.reserve(nblocks);
+    // Reserve the virtual range only once the placement plan is validated:
+    // a throw above must not leak the reservation.
+    base_ptr = cuda_try<cuMemAddressReserve>(vm_total_size_bytes, 0ULL, 0ULL, 0ULL);
 
-    for_each_owner_run(owners, [&](pos4 p, size_t first_block, size_t num_blocks) {
-      data_place place  = grid_pos_to_place(p);
-      size_t alloc_size = num_blocks * block_size_bytes;
+    meta.reserve(runs.size());
+
+    for (const auto& r : runs)
+    {
+      data_place place  = grid_pos_to_place(r.owner);
+      size_t alloc_size = r.num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
-      stats.bytes_per_grid_index[this->grid.get_dims().get_index(p)] += alloc_size;
-      meta.emplace_back(mv(place), alloc_size, first_block * block_size_bytes);
-    });
+      stats.bytes_per_grid_index[this->grid.get_dims().get_index(r.owner)] += alloc_size;
+      meta.emplace_back(mv(place), alloc_size, r.first_block * block_size_bytes);
+    }
 
     stats.nallocs = meta.size();
 
     if (localized_alloc_stats_enabled())
     {
-      print_stats(owners);
+      print_stats(runs);
     }
 
-    for (auto& item : meta)
+    // Pre-existing gap made visible by the validation reorder above: a
+    // failure while creating/mapping physical blocks would otherwise leak
+    // the VA reservation and every block mapped so far (a throwing
+    // constructor never runs the destructor).
+    size_t mapped = 0;
+    try
     {
-      int item_dev = device_ordinal(item.place);
-
-      cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
-
-      _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
-      cuda_try(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
-
-      for (int d = 0; d < ndevs; d++)
+      for (auto& item : meta)
       {
-        int set_access = 1;
-        if (item_dev != d)
-        {
-          set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
+        int item_dev = device_ordinal(item.place);
 
-          if (!set_access)
+        cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
+
+        _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
+        cuda_try(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
+        mapped++;
+
+        for (int d = 0; d < ndevs; d++)
+        {
+          int set_access = 1;
+          if (item_dev != d)
           {
-            fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
-          }
-        }
+            set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
 
-        if (set_access == 1)
-        {
-          cuda_try(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
+            if (!set_access)
+            {
+              fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
+            }
+          }
+
+          if (set_access == 1)
+          {
+            cuda_try(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
+          }
         }
       }
     }
+    catch (...)
+    {
+      for (size_t i = 0; i < mapped; i++)
+      {
+        cuMemUnmap(base_ptr + meta[i].offset, meta[i].size);
+        cuMemRelease(meta[i].alloc_handle);
+      }
+      // a created-but-unmapped handle on the failing item
+      if (mapped < meta.size() && meta[mapped].alloc_handle != CUmemGenericAllocationHandle{})
+      {
+        cuMemRelease(meta[mapped].alloc_handle);
+      }
+      cuMemAddressFree(base_ptr, vm_total_size_bytes);
+      throw;
+    }
   }
 
-  void print_stats(const ::std::vector<pos4>& owners)
+  void print_stats(const ::std::vector<block_run>& runs)
   {
     fprintf(stderr, "\n=== Localized Array Allocation Statistics ===\n");
     fprintf(stderr, "Total size: %zu bytes (%.2f MB)\n", stats.total_bytes, stats.total_bytes / (1024.0 * 1024.0));
@@ -482,9 +593,10 @@ private:
     fprintf(stderr, "\nBlock ownership map (each char = 1 block, 0-9/a-z = place index):\n  ");
     ::std::unordered_map<::std::string, char> place_to_char;
     char next_char = '0';
-    for (size_t i = 0; i < owners.size(); i++)
+    size_t i       = 0;
+    for (const auto& r : runs)
     {
-      ::std::string place_str = grid_pos_to_place(owners[i]).to_string();
+      ::std::string place_str = grid_pos_to_place(r.owner).to_string();
       if (place_to_char.find(place_str) == place_to_char.end())
       {
         place_to_char[place_str] = next_char;
@@ -497,10 +609,13 @@ private:
           next_char++;
         }
       }
-      fprintf(stderr, "%c", place_to_char[place_str]);
-      if ((i + 1) % 80 == 0)
+      for (size_t b = 0; b < r.num_blocks; b++, i++)
       {
-        fprintf(stderr, "\n  ");
+        fprintf(stderr, "%c", place_to_char[place_str]);
+        if ((i + 1) % 80 == 0)
+        {
+          fprintf(stderr, "\n  ");
+        }
       }
     }
     fprintf(stderr, "\n");

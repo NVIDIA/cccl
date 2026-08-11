@@ -14,9 +14,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-env
   // Source data: 3 buffers of different sizes laid out contiguously
@@ -85,23 +85,23 @@ struct BatchedMemcpyPolicySelector
     return {
       .algorithm = cub::BatchedCopyAlgorithm::lookback,
       .lookback  = {
-         .small_buffer = {.threads_per_block     = 128,
-                          .buffers_per_thread    = 4,
-                          .bytes_per_thread      = 8,
-                          .prefer_pow2_bits      = false,
-                          .block_level_tile_size = 256 * 32,
-                          .warp_level_threshold  = 128,
-                          .block_level_threshold = 8 * 1024,
-                          .buffer_lookback_delay = {},
-                          .block_lookback_delay  = {}},
-         .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
+        .small_buffer = {.threads_per_block     = 128,
+                         .buffers_per_thread    = 4,
+                         .bytes_per_thread      = 8,
+                         .prefer_pow2_bits      = false,
+                         .block_level_tile_size = 256 * 32,
+                         .warp_level_threshold  = 128,
+                         .block_level_threshold = 8 * 1024,
+                         .buffer_lookback_delay = {},
+                         .block_lookback_delay  = {}},
+        .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
   }
 };
 // example-end memcpy-batched-policy-selector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-tuning
   // Source data: 3 buffers laid out contiguously

@@ -52,14 +52,23 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __AlwaysFalse
 {
   template <class... _Args>
-  _CCCL_API constexpr bool operator()(_Args&&...) const noexcept
+  _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Args&&...) noexcept
   {
     return false;
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _ForwardIterator>
 struct __simple_rollback
@@ -651,8 +660,8 @@ template <class _Alloc,
           class _Type = typename iterator_traits<_Iter1>::value_type,
           class       = enable_if_t<is_trivially_move_constructible_v<_Type> && is_trivially_move_assignable_v<_Type>
                                     && __allocator_has_trivial_move_construct<_Alloc, _Type>>>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
-__uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20
+_Iter2 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
   _CCCL_IF_CONSTEVAL
   {

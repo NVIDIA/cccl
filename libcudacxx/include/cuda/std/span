@@ -179,9 +179,9 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr explicit span(_Range&& __r)
-      : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
+      : __data_{::cuda::std::ranges::data(__r)}
   {
-    _CCCL_ASSERT(::cuda::std::ranges::__size_cpo{}(__r) == _Extent, "size mismatch in span's constructor (range)");
+    _CCCL_ASSERT(::cuda::std::ranges::size(__r) == _Extent, "size mismatch in span's constructor (range)");
   }
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
@@ -438,8 +438,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr span(_Range&& __r)
-      : __data_(::cuda::std::ranges::__data_cpo{}(__r))
-      , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
+      : __data_(::cuda::std::ranges::data(__r))
+      , __size_{::cuda::std::ranges::size(__r)}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 

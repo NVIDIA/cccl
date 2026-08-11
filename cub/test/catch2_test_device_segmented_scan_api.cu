@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "catch2_test_device_scan.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
@@ -28,8 +28,9 @@ void check_execution_status(cudaError_t status, const std::string& algo_name)
   }
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets works",
-         "[segmented][exclusive_sum][two_offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets works",
+         "[segmented][exclusive_sum][two_offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[2 offsets]";
 
@@ -79,8 +80,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets works",
-         "[segmented][exclusive_sum][three_offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets works",
+         "[segmented][exclusive_sum][three_offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[3 offsets]";
 
@@ -145,8 +147,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets works inplace",
-         "[segmented][inclusive_sum][two_offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets works inplace",
+         "[segmented][inclusive_sum][two_offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[2 offsets]";
   // example-begin inclusive-segmented-sum-two-offsets
@@ -195,8 +198,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
   REQUIRE(input == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets works",
-         "[segmented][inclusive_sum][three_offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets works",
+         "[segmented][inclusive_sum][three_offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[3 offsets]";
   // example-begin inclusive-segmented-sum-three-offsets
@@ -267,8 +271,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offsets works",
-         "[segmented][inclusive_scan_init][two_offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offsets works",
+         "[segmented][inclusive_scan_init][two_offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
@@ -329,8 +334,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   REQUIRE(expected == output);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets works",
-         "[segmented][exclusive_scan][two-offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets works",
+         "[segmented][exclusive_scan][two-offsets]",
+         CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedScan[2 offsets]";
   auto input                   = thrust::device_vector<unsigned>{
@@ -356,7 +362,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
    * over boolean values stored as bits in unsigned integer, where addition is bitwise XOR.
    * Each unsigned integer represents 32-long tuple of GF(2) values
    */
-  auto scan_op        = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned { return v1 ^ v2; };
+  auto scan_op = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned {
+    return v1 ^ v2;
+  };
   unsigned init_value = 0u;
 
   // 128 input elements
@@ -404,8 +412,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   REQUIRE(output == h_input);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offsets works",
-         "[segmented][exclusive_scan][three-offsets]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offsets works",
+         "[segmented][exclusive_scan][three-offsets]",
+         CUB_SMALL)
 
 {
   /*
@@ -432,7 +441,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   auto d_in  = input.begin();
   auto d_out = output.begin();
 
-  auto scan_op = [] __host__ __device__(float v1, float v2) noexcept -> float { return cuda::maximum<>{}(v1, v2); };
+  auto scan_op = [] __host__ __device__(float v1, float v2) noexcept -> float {
+    return cuda::maximum<>{}(v1, v2);
+  };
 
   void* temp_storage = nullptr;
   size_t temp_storage_bytes;
@@ -466,8 +477,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   REQUIRE(status == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -477,8 +489,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -496,8 +509,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
     1);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -515,8 +529,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
     5);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -536,8 +551,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
     5);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -547,8 +563,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -566,8 +583,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
     1);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -577,8 +595,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, cuda::std::plus<>{});
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -597,8 +616,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
     cuda::std::plus<>{});
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (2 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (2 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);
@@ -616,8 +636,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
     5);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (3 offsets)",
-         "[segmented_scan][device]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (3 offsets)",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   thrust::device_vector<int> in(1);
   thrust::device_vector<int> out(1);

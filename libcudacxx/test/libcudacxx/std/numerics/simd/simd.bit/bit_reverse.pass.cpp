@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.bit], bit_reverse
@@ -23,7 +26,7 @@
 template <typename T, int N>
 struct test_bit_reverse
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
 
@@ -53,7 +56,7 @@ struct has_simd_bit_reverse<V, cuda::std::void_t<decltype(simd::bit_reverse(cuda
     : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
 {
   using int_vec   = simd::basic_vec<int, simd::fixed_size<4>>;
   using uint_vec  = simd::basic_vec<unsigned, simd::fixed_size<4>>;

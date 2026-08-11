@@ -43,9 +43,6 @@ using ::malloc;
 {
   void* __ptr{};
 
-#  if _CCCL_TILE_COMPILATION() // dynamic allocations are not supported in tile mode
-  _CCCL_VERIFY(false, "dynamimc allocation is not supported in tile programs");
-#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
   // check for overflow through a hypothetical larger integer
   // TODO (miscco): use `mul_overflow` once implemented
   if (::cuda::mul_hi(__n, __size) == 0)
@@ -57,13 +54,12 @@ using ::malloc;
       ::cuda::std::memset(__ptr, 0, __nbytes);
     }
   }
-#  endif // !_CCCL_TILE_COMPILATION()
 
   return __ptr;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _CCCL_API inline void* calloc(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return ::cuda::std::__calloc_device(__n, __size);))
 }

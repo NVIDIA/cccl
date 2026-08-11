@@ -15,7 +15,7 @@
 #include <numeric>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 
@@ -31,7 +31,10 @@ struct custom_policy_selector
   }
 };
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
+CUB_TEST("Deterministic Device reduce works with float and double on gpu",
+         "[reduce][deterministic]",
+         CUB_SMALL,
+         float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
   const int num_items = 1 << 20;
@@ -76,8 +79,9 @@ struct cyclic_chunk_accessor
 };
 
 using large_offset_type_list = c2h::type_list<double>;
-C2H_TEST("Deterministic Device reduce works with float and double on gpu with large offset types and num_items",
+CUB_TEST("Deterministic Device reduce works with float and double on gpu with large offset types and num_items",
          "[reduce][deterministic]",
+         CUB_SMALL,
          large_offset_type_list)
 {
   using type                    = typename c2h::get<0, TestType>;
@@ -120,8 +124,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
   REQUIRE_APPROX_EQ_ABS(h_expected, h_output, type{1e-10});
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
+CUB_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
          "[reduce][deterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type              = typename c2h::get<0, TestType>;
@@ -171,8 +176,9 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   REQUIRE(d_output_p1 == d_output_p2);
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu with different iterators",
+CUB_TEST("Deterministic Device reduce works with float and double on gpu with different iterators",
          "[reduce][deterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -231,8 +237,9 @@ struct square_t
   }
 };
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu with different transform operators",
+CUB_TEST("Deterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][deterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -259,8 +266,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu with different init values",
+CUB_TEST("Deterministic Device reduce works with float and double on gpu with different init values",
          "[reduce][deterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -302,8 +310,9 @@ using test_types =
 #endif
                  >;
 
-C2H_TEST("Deterministic Device reduce works with integral types on gpu with different reduction operators",
+CUB_TEST("Deterministic Device reduce works with integral types on gpu with different reduction operators",
          "[reduce][deterministic]",
+         CUB_SMALL,
          test_types)
 {
   using type         = typename c2h::get<0, TestType>;

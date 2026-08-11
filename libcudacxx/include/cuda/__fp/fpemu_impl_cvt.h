@@ -639,8 +639,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_double_to_f
 // cores (shr_jam64 + round_to_*) are shared with the packed path, so results
 // match bit-for-bit (incl. NaN->indefinite and inf/overflow saturation).
 // ------------------------------------------------------------------------
-static constexpr int32_t __fp64emu_cvt_nan_exp = 0x0007ff00;
-static constexpr int32_t __fp64emu_cvt_inf_exp = 0x00007ff0;
+inline constexpr int32_t __fp64emu_cvt_nan_exp = 0x0007ff00;
+inline constexpr int32_t __fp64emu_cvt_inf_exp = 0x00007ff0;
 
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __internal_fp64emu_fpbits64_unpacked_to_int(__fpbits64_unpacked __x) noexcept
