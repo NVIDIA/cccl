@@ -76,7 +76,7 @@ MULTI_GPU_TEST("sort single-comm, overloads default values", )
     auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i]);
+      cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size());
     });
 
     check_sorted(device_vec);
@@ -87,7 +87,7 @@ MULTI_GPU_TEST("sort single-comm, overloads default values", )
     auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i], cmp);
+      cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
     });
 
     check_sorted(device_vec);
