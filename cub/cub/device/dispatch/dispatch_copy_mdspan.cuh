@@ -53,9 +53,9 @@ struct copy_mdspan_t
   }
 };
 
-template <class _MDSpanIn, class _MDSpanOut, class _Env>
+template <class _MDSpanIn, class _MDSpanOut>
 [[nodiscard]] _CCCL_HOST_API ::cudaError_t
-__copy_mdspan_bytes(::cuda::stream_ref __stream, _MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
+__copy_mdspan_bytes(::cuda::stream_ref __stream, _MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out)
 {
   _CCCL_TRY
   {
