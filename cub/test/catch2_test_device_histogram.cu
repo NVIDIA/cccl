@@ -574,7 +574,7 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
   test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 256 + 1, 128, 32);
 }
 
-C2H_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]")
+CUB_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]", CUB_SMALL)
 {
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
@@ -675,7 +675,7 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
   }
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]")
+CUB_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]", CUB_SMALL)
 {
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
