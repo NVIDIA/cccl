@@ -44,6 +44,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
@@ -73,6 +74,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -114,8 +116,8 @@ struct smem_block_tile_layout
     return static_cast<::cuda::std::uint32_t>(num_slots * max_chunk_items);
   }
 
-  // Number of chunk-sized slots spanned by `items` keys (the segment's chunk count). Encapsulates the `max_chunk_items`
-  // granularity so callers size segments/clusters without inlining chunk arithmetic.
+  // Number of chunk-sized slots spanned by `num_items` keys (the segment's chunk count). Encapsulates the
+  // `max_chunk_items` granularity so callers size segments/clusters without inlining chunk arithmetic.
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint64_t
   num_chunks_from_num_items(::cuda::std::uint64_t num_items) noexcept
   {
@@ -250,7 +252,7 @@ struct agent_batched_topk_cluster
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
   // leader at the last logical rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
-  // `leader_rank` computed in `run`.
+  // `leader_rank` computed in `compute_segment_layout`.
   static constexpr bool is_scan_descending = !(needs_set_determinism && !is_tie_reversed);
 
   // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
@@ -295,7 +297,7 @@ struct agent_batched_topk_cluster
 
   // Clamp a per-thread unroll down to the segment's bounded round count (only when `should_clamp_items_to_segment`);
   // larger/unbounded segments keep the full tuning width, and the guard keeps the rounds arithmetic in `int`.
-  [[nodiscard]] static constexpr int clamp_unroll(int rounds, int tuning)
+  [[nodiscard]] static _CCCL_CONSTEVAL int clamp_unroll(int rounds, int tuning)
   {
     return should_clamp_items_to_segment ? ::cuda::std::clamp(rounds, 1, tuning) : tuning;
   }
@@ -409,8 +411,6 @@ struct agent_batched_topk_cluster
     // pass + the final filter. Block-local (never reached through DSMEM).
     key_t edge_keys[2 * num_load_align_items];
   };
-  // Split point of `edge_keys`: head edge in `[0, num_load_align_items)`, tail edge in `[num_load_align_items, 2 *
-  // num_load_align_items)`.
 
   struct chunk_desc
   {
@@ -427,8 +427,8 @@ struct agent_batched_topk_cluster
   // (its trailing `< num_load_align_items` items). The block-load path reports the aligned bulk `round_down(raw,
   // num_load_align_items)` in `num_items` (that suffix is peeled into `edge_keys`); the generic path reports the full
   // raw count.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
-  get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t num_cluster_head_items) const
+  [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
+  get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t num_cluster_head_items)
   {
     const offset_t offset = num_cluster_head_items + chunk_idx * offset_t{max_chunk_items};
     // Callers pass a chunk index `< num_cluster_chunks`, so the chunk is non-empty and unsigned `remaining` below can't
@@ -763,7 +763,8 @@ private:
 
   // Weak `ld.shared::cluster` read of a field (or an 8-byte sub-struct) of the leader's cluster-merged `state`, at
   // `leader_state32 + offset` (remapped once in `compute_segment_layout`). The `result` pair is read once per pass; the
-  // `size` pair (`len`, `k`) once in the post-pass final filter. The load is a plain `u32`/`u64`; `bit_cast`
+  // `size` pair (`num_cluster_candidates`, `leftover_k`) once in the post-pass final filter. The load is a plain
+  // `u32`/`u64`; `bit_cast`
   // reinterprets it as `FieldT`, so packed sub-structs come back typed without shifts or masks
   // (endianness-independent). Every read follows a cluster/block barrier that orders the leader's publish, so the weak
   // load is enough; `volatile` keeps it from being hoisted or CSE'd across passes (`result` changes each pass).
@@ -1090,7 +1091,7 @@ private:
       _CCCL_PRAGMA_NOUNROLL()
       while (stream_inflight_mask != ::cuda::std::uint32_t{0})
       {
-        const int drain_stage = __ffs(static_cast<int>(stream_inflight_mask)) - 1;
+        const int drain_stage = ::cuda::std::countr_zero(stream_inflight_mask);
         wait_stage(drain_stage);
         stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << drain_stage);
       }
@@ -1212,6 +1213,11 @@ private:
     }
   }
 
+  struct cross_cta_prefixes
+  {
+    offset_t selected_prefix; // exclusive selected prefix across CTAs
+    offset_t tie_prefix; // exclusive tie prefix across CTAs (candidate-rank space)
+  };
   // Exclusive cross-CTA prefix scan fused with priming the final-filter placement counters. Each working CTA pushes its
   // `num_local_selected_for_scan`/`num_local_tied_for_scan` counts into every successor's selected/tie counter in
   // `is_scan_descending` order (the leader is last and pushes to nobody, so it holds the full predecessor sum) and
@@ -1224,11 +1230,6 @@ private:
   // only `selected_prefix`); `is_single_cta` yields both zero (selected stays 0, tie is just
   // `num_cluster_selected`). The successor pushes are lane-parallel (each thread owns a strided slice); all threads
   // see CTA-uniform counts, so the guard and the barrier stay uniform.
-  struct cross_cta_prefixes
-  {
-    offset_t selected_prefix; // exclusive selected prefix across CTAs
-    offset_t tie_prefix; // exclusive tie prefix across CTAs (candidate-rank space)
-  };
   _CCCL_DEVICE _CCCL_FORCEINLINE cross_cta_prefixes prime_placement_counters(
     offset_t num_local_selected_for_scan, offset_t num_local_tied_for_scan, offset_t num_cluster_selected)
   {
@@ -1435,7 +1436,7 @@ private:
   // the lazy crossing tile is overwritten in index order later. `do_arrival == false` (terminal tile only) skips
   // candidates here and leaves them to `emit_indexed`; the lazy path passes `true` and its crossing tile is later
   // overwritten by `emit_indexed`.
-  template <bool Reversed, bool Blocked, int ItemsPerThread, class State>
+  template <bool Reversed, bool Blocked, int ItemsPerThread, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void place_tile(
     State& state,
     const key_t (&keys)[ItemsPerThread],
@@ -1464,7 +1465,7 @@ private:
   // `num_cluster_tie_winners`) lands at forward output slot `num_cluster_selected + rank`, matching `place_tile`.
   // Returns the tile's candidate total. Used where the K-boundary falls in this tile (terminal tile, or the lazy
   // path's crossing tile).
-  template <bool Reversed, int ItemsPerThread, class State>
+  template <bool Reversed, int ItemsPerThread, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE offset_t emit_indexed(
     State& state,
     const key_t (&keys)[ItemsPerThread],
@@ -1509,7 +1510,7 @@ private:
   // Load and 3-way classify one tile's items into `keys`/`flags` (see `flag_*`), re-run by `place_tile`/`emit_indexed`
   // without touching `identify_op` again. `Blocked` picks the thread->element arrangement (`tile_item_pos`); the source
   // is `smem_src` (folded in-region position) or gmem `block_keys_in`. Out-of-range lanes stay `flag_none`.
-  template <bool Blocked, int ItemsPerThread, bool FromSmem, bool Reversed, class State>
+  template <bool Blocked, int ItemsPerThread, bool FromSmem, bool Reversed, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void classify_tile(
     State& state,
     [[maybe_unused]] const key_t* smem_src,
@@ -1557,7 +1558,7 @@ private:
   // `Blocked` is the *entry* arrangement (`tile_item_pos`). The blocked deterministic path is two-phase: it loads
   // blocked only while ties remain (phase A, `emit_indexed`'s scan needs it) and switches once to striped for the
   // remaining strictly-selected/rejected keys (phase B).
-  template <int ItemsPerThread, bool FromSmem, bool Reversed, bool Deterministic, bool Blocked, class State>
+  template <int ItemsPerThread, bool FromSmem, bool Reversed, bool Deterministic, bool Blocked, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_tiles(
     State& state,
     [[maybe_unused]] const key_t* smem_src,
@@ -1676,9 +1677,8 @@ private:
   }
 
   // Resident-front region. Direction is the compile-time `is_residency_reversed` (== `is_tie_reversed` in
-  // deterministic mode): ascending walks the low-index window forward, descending walks the high-index window
-  // (`resident_base`) in reverse, so a single `process_tiles` call per span with the index folded at compile time
-  // replaces the old fwd/rev pair.
+  // deterministic mode): ascending walks the low-index window forward, descending the high-index window
+  // (`resident_base`) in reverse. One `process_tiles` call per span handles both, folding the index at compile time.
   template <bool Blocked, detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_resident(det_filter_state<SelectDirection>& state)
   {
@@ -1788,7 +1788,11 @@ private:
   // factor 1 (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
   template <bool Blocked, detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_edge(
-    det_filter_state<SelectDirection>& state, const key_t* keys, offset_t seg_base, int num_keys, bool is_terminal)
+    [[maybe_unused]] det_filter_state<SelectDirection>& state,
+    [[maybe_unused]] const key_t* keys,
+    [[maybe_unused]] offset_t seg_base,
+    [[maybe_unused]] int num_keys,
+    [[maybe_unused]] bool is_terminal)
   {
     if constexpr (use_block_load_to_shared)
     {
@@ -1873,8 +1877,8 @@ private:
   // reading the keys already staged in `edge_keys`. Used by the histogram passes; both final filters consume the edges
   // through `process_tiles` instead (as separate regions for the deterministic filter, via `nondet_consume_resident`).
   template <class Apply>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  consume_boundary_edges(int num_head_edge_keys, int num_tail_edge_keys, Apply&& apply)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_boundary_edges(
+    [[maybe_unused]] int num_head_edge_keys, [[maybe_unused]] int num_tail_edge_keys, [[maybe_unused]] Apply&& apply)
   {
     if constexpr (use_block_load_to_shared)
     {
@@ -3187,8 +3191,8 @@ private:
 
     // Publish the final pass's per-rank `num_local_strictly_selected`/`num_local_candidates` (written by one lane after
     // the last cluster barrier) block-wide before the final-filter scan below reads them. Each filter loads the
-    // leader's remaining `k` itself (the deterministic one also its `len`, in a single 64-bit load), still within this
-    // barrier epoch.
+    // leader's `size` pair (`leftover_k` + `num_cluster_candidates`) in a single 64-bit load, still within this barrier
+    // epoch.
     __syncthreads();
     if constexpr (needs_set_determinism)
     {
