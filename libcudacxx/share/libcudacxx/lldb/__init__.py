@@ -13,6 +13,7 @@ import atomic
 import buffer
 import complex
 import event
+import hierarchy
 import inplace_vector
 import memory_resource
 import std_array
@@ -32,6 +33,7 @@ _FORMATTERS = (
     tuple,
     inplace_vector,
     event,
+    hierarchy,
 )
 InternalDict = dict[str, object]
 

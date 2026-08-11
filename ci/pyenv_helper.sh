@@ -1,5 +1,11 @@
 setup_python_env() {
     local py_version=$1
+    # Optional venv directory name (under $HOME). Callers whose job runs
+    # several build scripts (e.g. the combined cuda-stf producer) pass their
+    # own name so the setups don't collide on one venv: uv errors on an
+    # existing venv instead of reusing it.
+    local venv_name="${2:-.cccl-venv}"
+    local venv_path="${HOME}/${venv_name}"
 
     # Source pretty_printing.sh for begin_group/end_group helpers
     local script_dir
@@ -17,15 +23,15 @@ setup_python_env() {
 
     # Create a venv with the requested Python version.
     # uv downloads a pre-built CPython binary automatically — no compilation needed.
-    uv venv --seed --python "${py_version}" "${HOME}/.cccl-venv"
+    uv venv --seed --python "${py_version}" "${venv_path}"
 
     # Windows venvs use Scripts/, Linux/macOS use bin/
-    if [[ -f "${HOME}/.cccl-venv/Scripts/activate" ]]; then
+    if [[ -f "${venv_path}/Scripts/activate" ]]; then
         #shellcheck disable=SC1091
-        source "${HOME}/.cccl-venv/Scripts/activate"
+        source "${venv_path}/Scripts/activate"
     else
         #shellcheck disable=SC1091
-        source "${HOME}/.cccl-venv/bin/activate"
+        source "${venv_path}/bin/activate"
     fi
 
     end_group "🐍 Setting up Python ${py_version} (uv)"

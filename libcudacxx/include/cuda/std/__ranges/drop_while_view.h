@@ -128,7 +128,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return ::cuda::std::ranges::__end_cpo{}(__base_);
+    return ::cuda::std::ranges::end(__base_);
   }
 };
 
@@ -144,24 +144,33 @@ _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__drop_while)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   template <class _Range, class _Pred>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Pred&& __pred) const
-    noexcept(noexcept(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)}))
-      -> decltype(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)})
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Pred&& __pred) noexcept(
+    noexcept(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)}))
+    -> decltype(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)})
   {
     return drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)};
   }
 
   _CCCL_TEMPLATE(class _Pred)
   _CCCL_REQUIRES(::cuda::std::constructible_from<::cuda::std::decay_t<_Pred>, _Pred>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Pred&& __pred) const
-    noexcept(::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Pred>, _Pred>)
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Pred>, _Pred>)
   {
-    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(*this, ::cuda::std::forward<_Pred>(__pred))};
+    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred))};
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

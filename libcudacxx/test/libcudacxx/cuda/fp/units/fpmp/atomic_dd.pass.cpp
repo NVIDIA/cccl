@@ -36,10 +36,10 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Type alias for the double-double multi-precision floating-point type.
-using dfloat = fp64mp2;
+using dfloat = cudax::fp64mp2;
 
 // Skip the test if the PTX ISA is insufficient for the 128-bit compare-exchange
 #if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 840
