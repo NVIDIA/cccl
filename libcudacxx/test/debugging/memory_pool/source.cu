@@ -118,13 +118,13 @@ int main()
   cuda::stream stream{device};
 
   cuda::device_memory_pool in_use_pool{device, properties(8 * 1024 * 1024)};
-  void* in_use_allocation = in_use_pool.allocate(stream, allocation_size);
+  void* const in_use_allocation = in_use_pool.allocate(stream, allocation_size);
   stream.sync();
   inspect_in_use(in_use_pool);
 
   // A zero release threshold returns the memory to the driver on synchronization.
   cuda::device_memory_pool released_pool{device, properties(0)};
-  void* released_allocation = released_pool.allocate(stream, allocation_size);
+  void* const released_allocation = released_pool.allocate(stream, allocation_size);
   released_pool.deallocate(stream, released_allocation, allocation_size);
   stream.sync();
   inspect_after_release(released_pool);

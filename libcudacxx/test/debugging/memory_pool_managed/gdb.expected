@@ -1,6 +1,9 @@
 =============== memory_pool_managed.no_init begin ===============
 cuda::managed_memory_pool handle=0x0
 =============== memory_pool_managed.no_init end ===============
+=============== memory_pool_managed.ref begin ===============
+cuda::managed_memory_pool_ref handle=0x0
+=============== memory_pool_managed.ref end ===============
 =============== memory_pool_managed.shared_no_init begin ===============
 cuda::shared_managed_memory_pool handle=0x0, use_count=0
 =============== memory_pool_managed.shared_no_init end ===============

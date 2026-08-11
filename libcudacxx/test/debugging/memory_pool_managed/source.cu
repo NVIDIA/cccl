@@ -15,6 +15,11 @@
   KEEP_FOR_DEBUGGER(value);
 }
 
+[[gnu::noinline]] void inspect_ref(const cuda::managed_memory_pool_ref& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
 [[gnu::noinline]] void inspect_shared_no_init(const cuda::shared_managed_memory_pool& value)
 {
   KEEP_FOR_DEBUGGER(value);
@@ -25,7 +30,10 @@ int main()
   const cuda::managed_memory_pool no_init_pool{cuda::no_init};
   const cuda::shared_managed_memory_pool shared_no_init_pool{cuda::no_init};
 
+  const cuda::managed_memory_pool_ref pool_reference{no_init_pool.get()};
+
   inspect_no_init(no_init_pool);
+  inspect_ref(pool_reference);
   inspect_shared_no_init(shared_no_init_pool);
 
   return 0;
