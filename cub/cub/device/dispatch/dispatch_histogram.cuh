@@ -1489,9 +1489,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
   {
     static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
     using policy_selector_t                   = ::cuda::std::_If<
-                        uses_default_policy,
-                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
-                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+      uses_default_policy,
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
+      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1577,9 +1577,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
   {
     static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
     using policy_selector_t                   = ::cuda::std::_If<
-                        uses_default_policy,
-                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
-                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+      uses_default_policy,
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
+      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
