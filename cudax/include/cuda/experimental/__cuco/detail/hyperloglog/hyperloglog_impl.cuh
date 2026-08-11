@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
@@ -40,7 +41,6 @@
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
-#include <cuda/experimental/__cuco/detail/utility/memcpy_async.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
@@ -455,8 +455,12 @@ public:
 
     ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __num_regs, ::cuda::no_init};
 
-    ::cuda::experimental::cuco::detail::__memcpy_async(
-      __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream);
+    ::cuda::copy_configuration __config{};
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    __config.src_access_order = ::cuda::source_access_order::stream;
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+    ::cuda::copy_bytes(__stream, __sketch, __host_sketch_buf, __config);
     __stream.sync();
 
     __fp_type __sum               = 0;
