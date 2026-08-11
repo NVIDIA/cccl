@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_referenceable.h>
+#include <cuda/std/__concepts/can_reference.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,7 +33,7 @@ using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFE
 
 #else // ^^^ _CCCL_BUILTIN_ADD_LVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE vvv
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __can_reference<_Tp>>
 struct __add_lvalue_reference_impl
 {
   using type _CCCL_NODEBUG_ALIAS = _Tp;

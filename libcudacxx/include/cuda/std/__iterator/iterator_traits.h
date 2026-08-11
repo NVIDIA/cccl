@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/can_reference.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
@@ -78,12 +79,6 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <class _Tp>
-using __with_reference = _Tp&;
-
-template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__with_reference<_Tp>));
 
 // [iterator.traits]
 #if _CCCL_HAS_CONCEPTS()
@@ -157,50 +152,50 @@ using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 #if _CCCL_HOSTED()
 #  if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
-_CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #  endif // _GLIBCXX_DEBUG
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
-_CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
 #  if _CCCL_HOST_STD_LIB(LIBCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
-_CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::std::__wrap_iter<_Ty*>>)
 _CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
 #  elif _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Array_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Array_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Vector_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Vector_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_view_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_view_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Span_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 #  endif // _CCCL_HOST_STD_LIB(STL)
 #endif // _CCCL_HOSTED()
 
 _CCCL_TEMPLATE(class _Iter, class _Ty)
-_CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, _Ty*>)
 _CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
 
 template <class _Iter>

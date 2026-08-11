@@ -1,3 +1,4 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
-#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#ifndef _CUDA_STD___CONCEPTS_CAN_REFERENCE_H
+#define _CUDA_STD___CONCEPTS_CAN_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,36 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+template <class _Tp>
+using __with_reference = _Tp&;
 
 template <class _Tp>
-struct __cccl_is_referenceable : public integral_constant<bool, _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp)>
-{};
-
-#else
-struct __cccl_is_referenceable_impl
-{
-  template <class _Tp>
-  _CCCL_HOST_DEVICE static _Tp& __test(int);
-  template <class _Tp>
-  _CCCL_HOST_DEVICE static false_type __test(...);
-};
-
-template <class _Tp>
-struct __cccl_is_referenceable
-    : integral_constant<bool, _IsNotSame<decltype(__cccl_is_referenceable_impl::__test<_Tp>(0)), false_type>::value>
-{};
-#endif // defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), )(typename(__with_reference<_Tp>));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#endif // _CUDA_STD___CONCEPTS_CAN_REFERENCE_H
