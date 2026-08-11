@@ -44,9 +44,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 class legacy_managed_memory_resource : public memory_resource_base<legacy_managed_memory_resource>
 {
 private:
-  unsigned int __flags_ = ::cudaMemAttachGlobal;
+  unsigned int __flags_ = cudaMemAttachGlobal;
 
-  static constexpr unsigned int __available_flags = ::cudaMemAttachGlobal | ::cudaMemAttachHost;
+  static constexpr unsigned int __available_flags = cudaMemAttachGlobal | cudaMemAttachHost;
 
 public:
   //! @brief Construct a new legacy_managed_memory_resource.
