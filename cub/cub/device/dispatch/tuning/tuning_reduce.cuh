@@ -427,18 +427,6 @@ struct policy_selector
         const ReducePassPolicy rp{512, 8, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
         return {rp, rp};
       }
-      if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 8)
-      {
-        // ipt_8.tpb_608.ipv_1 ()  1.173605  1.013928  1.190121  1.316964
-        const ReducePassPolicy rp{608, 4, 2, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
-        return {rp, rp};
-      }
-      if ((accum_t == type_t::int32 || accum_t == type_t::uint32) && offset_size == 4)
-      {
-        // ipt_16.tpb_512.ipv_2 ()  1.037805  1.009311  1.044515  1.102439
-        const ReducePassPolicy rp{512, 16, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
-        return {rp, rp};
-      }
     }
 
     // if we don't have a tuning for sm100, fall through
