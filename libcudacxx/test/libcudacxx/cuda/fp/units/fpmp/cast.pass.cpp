@@ -11,17 +11,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 // double -> fp32mp2 -> double must be idempotent after the first round trip.
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   const double tv[10] = {
     1234.567890123456777,
@@ -45,7 +48,7 @@ _CCCL_HOST_DEVICE void run_test()
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   run_test();
 }

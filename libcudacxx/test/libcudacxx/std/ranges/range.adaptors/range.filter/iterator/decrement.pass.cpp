@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // constexpr iterator& operator--() requires bidirectional_range<V>;
 // constexpr iterator operator--(int) requires bidirectional_range<V>;
 
@@ -27,7 +24,7 @@
 struct EqualTo
 {
   int x;
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int y) const
+  TEST_FUNC constexpr bool operator()(int y) const
   {
     return x == y;
   }
@@ -45,14 +42,14 @@ using FilterIteratorFor = cuda::std::ranges::iterator_t<
 
 // needs to be a standalone function for NVRTC
 template <class FilterView, class View, class Iter, class Sent, class T, class U, class V>
-TEST_HOST_DEVICE_FUNC constexpr FilterView make_filter_view(T begin, U end, V pred)
+TEST_FUNC constexpr FilterView make_filter_view(T begin, U end, V pred)
 {
   View view{Iter(begin), Sent(Iter(end))};
   return FilterView(cuda::std::move(view), pred);
 }
 
 template <class Iter, class Sent = sentinel_wrapper<Iter>>
-TEST_HOST_DEVICE_FUNC constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using View           = minimal_view<Iter, Sent>;
   using FilterView     = cuda::std::ranges::filter_view<View, EqualTo>;
@@ -130,7 +127,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test()
   }
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();

@@ -133,6 +133,12 @@ public:
   /**
    * @brief Allocate memory at this place
    *
+   * This is a standalone entry point: callers are not required to activate
+   * this place or make any particular device current beforehand, so
+   * implementations must not assume the calling thread's current device (or
+   * context) matches this place. An implementation that needs to switch must
+   * restore the caller's current device before returning.
+   *
    * @param size Size of the allocation in bytes
    * @param stream CUDA stream for stream-ordered allocations
    * @return Pointer to allocated memory
@@ -152,6 +158,10 @@ public:
    * dim4::get_index() (the STF slice convention). Row-major callers should
    * present reversed extents (and a coordinate-reversing partitioner).
    *
+   * The standalone contract of allocate() applies here as well: the caller's
+   * current device is unspecified on entry and must be left unchanged on
+   * return.
+   *
    * @param data_dims Extents of the tensor
    * @param elemsize Size of one element in bytes
    * @param stream CUDA stream for stream-ordered allocations
@@ -164,6 +174,9 @@ public:
 
   /**
    * @brief Deallocate memory at this place
+   *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return.
    *
    * @param ptr Pointer to memory to deallocate
    * @param size Size of the allocation
@@ -181,6 +194,11 @@ public:
    *
    * Default implementation returns CUDA_ERROR_NOT_SUPPORTED.
    * Subclasses that support VMM should override this.
+   *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return. Placement must
+   * come from the explicit allocation properties (CUmemAllocationProp), not
+   * from the current device.
    *
    * @param handle Output parameter for the allocation handle
    * @param size Size of the allocation in bytes

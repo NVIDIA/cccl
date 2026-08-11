@@ -7,18 +7,13 @@ source "$ci_dir/pyenv_helper.sh"
 
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-if ! command -v nvcc >/dev/null 2>&1; then
-  echo "nvcc not found on PATH; cannot determine the CUDA version for cuda-stf extras" >&2
-  exit 1
-fi
-# 'nvcc --version' prints e.g. "Cuda compilation tools, release 13.1, V13.1.1".
-cuda_release=$(nvcc --version | sed -n 's/.*release \([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -1)
-cuda_major_version="${cuda_release%%.*}"
-if [[ -z "${cuda_major_version}" ]]; then
-  echo "Failed to detect CUDA major version from 'nvcc --version' output:" >&2
-  nvcc --version >&2
-  exit 1
-fi
+
+# Pin the cuda-toolkit wheels to the container CTK (and export
+# cuda_version / cuda_major_version), honoring the lane's ctk mode --
+# the same first step as every other python test lane.
+pin_cuda_toolkit "${ctk_mode}"
+ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
+
 case "${cuda_major_version}" in
   12 | 13) ;;
   *)
@@ -27,7 +22,7 @@ case "${cuda_major_version}" in
     ;;
 esac
 
-setup_python_env "${py_version}"
+setup_python_env "${py_version}" ".cccl-stf-venv"
 
 # Locate exactly one wheel matching the given glob under the shared wheelhouse.
 find_one_wheel() {
@@ -71,14 +66,16 @@ fi
 
 # Install both local wheels in a single resolver invocation so pip binds the
 # local cuda_cccl to satisfy cuda-stf's dependency instead of resolving it
-# from PyPI.
+# from PyPI. The test extra follows the lane's ctk mode (test-cuNN or
+# test-sysctkNN), as in test_cuda_compute_python.sh.
 CUDA_CCCL_WHEEL_PATH="$(find_one_wheel 'cuda_cccl-*.whl')"
 CUDA_STF_WHEEL_PATH="$(find_one_wheel 'cuda_stf-*.whl')"
 python -m pip install \
     "${CUDA_CCCL_WHEEL_PATH}" \
-    "${CUDA_STF_WHEEL_PATH}[test-cu${cuda_major_version}]"
+    "${CUDA_STF_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
-# Run STF tests and examples
+# Run STF tests and examples. Fixed -n 6 (not auto): bound the number of
+# concurrent CUDA contexts on shared runners, matching the other GPU lanes.
 cd "/home/coder/cccl/python/cuda_stf/tests/"
-python -m pytest -n auto -v stf/
+python -m pytest -n 6 -v stf/
 python -m pytest -n 6 -v test_examples.py

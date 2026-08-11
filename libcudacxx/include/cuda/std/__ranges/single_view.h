@@ -131,16 +131,27 @@ _CCCL_BEGIN_NAMESPACE_CPO(__single_view)
 template <class _Tp>
 _CCCL_CONCEPT __can_single_view = _CCCL_REQUIRES_EXPR((_Tp))(typename(single_view<decay_t<_Tp>>));
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_single_view<_Tp>) // MSVC breaks without it
-  _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
+  _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t))))
+    -> single_view<decay_t<_Tp>>
   {
     return single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t));
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

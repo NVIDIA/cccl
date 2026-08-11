@@ -7,7 +7,14 @@
 from __future__ import annotations
 
 import importlib
+import importlib.metadata
 from typing import TYPE_CHECKING, Any
+
+# Installed distribution version (matches cuda_cccl's convention).
+try:
+    __version__ = importlib.metadata.version("cuda-stf")
+except Exception:  # noqa: BLE001 - not installed (e.g. in-tree import)
+    __version__ = "0.0.0"
 
 from . import paths
 from .paths import (
@@ -36,6 +43,7 @@ _LAZY_SYMBOLS = {
     "green_context_helper": "._stf_bindings",
     "green_ctx_view": "._stf_bindings",
     "green_places": ".green_places",
+    "locality_domain_count": "._stf_bindings",
     "machine_init": "._stf_bindings",
     "partition_fn_blocked": "._stf_bindings",
     "partition_fn_cyclic": "._stf_bindings",
@@ -103,9 +111,12 @@ __all__ = [
     "CudaStream",
     "DeviceArray",
     "TaskGraph",
+    "__version__",
     "async_resources",
     "cond",
     "context",
+    "cute_partition",
+    "data_place",
     "dep",
     "exec_place",
     "exec_place_grid",
@@ -117,8 +128,6 @@ __all__ = [
     "green_context_helper",
     "green_ctx_view",
     "green_places",
-    "cute_partition",
-    "data_place",
     "machine_init",
     "partition_fn_blocked",
     "partition_fn_cyclic",

@@ -50,6 +50,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 //! @addtogroup iterators
 //! @{
 
@@ -432,14 +437,12 @@ public:
   struct __zip_op_iter_swap
   {
     template <size_t... _Indices>
-    _CCCL_API constexpr void operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
+    _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(
+      const ::cuda::std::tuple<_Iterators...>& __iters1,
+      const ::cuda::std::tuple<_Iterators...>& __iters2,
+      ::cuda::std::index_sequence<_Indices...>) noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
     {
-      (::cuda::std::ranges::__iter_swap_cpo{}(
-         ::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)),
-       ...);
+      (::cuda::std::ranges::iter_swap(::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)), ...);
     }
   };
 
@@ -490,6 +493,10 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __
 }
 
 //! @}
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -11,10 +11,13 @@ examples directory to ensure they execute without errors.
 """
 
 import importlib
+import importlib.util
 import inspect
 import sys
 import traceback
 from pathlib import Path
+
+import pytest
 
 
 def discover_examples():
@@ -91,7 +94,7 @@ def run_example_module(module_name, display_name):
         # Check if module has a main function - if so, run it
         if hasattr(module, "main") or hasattr(module, "__main__"):
             # Call main if it exists, otherwise the module's __main__ entry.
-            entry = getattr(module, "main", None) or getattr(module, "__main__")
+            entry = getattr(module, "main", None) or module.__main__
             entry()
         else:
             # Find and run all example functions (those ending with _example)
@@ -157,6 +160,13 @@ def create_test_functions():
         globals()[test_name] = make_test_func(module_name, display_name)
         globals()[test_name].__name__ = test_name
         globals()[test_name].__doc__ = f"Test {display_name} examples"
+        # Some examples use optional dependencies (cupy for the dense linear
+        # algebra ones); skip rather than fail when they are absent, as
+        # cuda_cccl's test_examples.py does.
+        globals()[test_name] = pytest.mark.skipif(
+            importlib.util.find_spec("cupy") is None,
+            reason="STF examples require the optional CuPy dependency",
+        )(globals()[test_name])
 
 
 # Create test functions for pytest

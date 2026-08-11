@@ -212,6 +212,22 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
 stf_exec_place_handle
 stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims);
 
+//! \brief Return a grid with new dimensions and the same linear place order.
+//!
+//! Every extent in \p grid_dims must be positive and their product must equal
+//! the size of \p grid. The returned handle owns an independent grid wrapper;
+//! destroying either handle does not invalidate the other.
+//! \return A new execution-place handle, or NULL if the dimensions are invalid.
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims);
+
+//! \brief Collapse a contiguous inclusive range of grid axes.
+//!
+//! Axes in [\p first_axis, \p last_axis] are replaced by one axis whose
+//! extent is their product. Later axes shift left, trailing extents become
+//! one, and linear place order is preserved.
+//! \return A new execution-place handle, or NULL if the axis range is invalid.
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis);
+
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
@@ -283,6 +299,26 @@ stf_data_place_handle stf_data_place_current_device(void);
 
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
+
+//! \brief Number of locality domains of a device. Never 0 for a valid
+//! device: without native locality-domain support (pre-13.4 toolkit, or a
+//! driver that cannot answer the query) the device reports a single domain
+//! covering the whole device. Returns 0 only on error (invalid device;
+//! detail on stderr).
+uint32_t stf_locality_domain_count(int dev_id);
+
+//! \brief Execution place pinned to one locality domain of a device (the
+//! whole device with the fallback backend). Ordinals are identity tokens,
+//! validated lazily at use (native backend).
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Grid with one execution place per locality domain of \p dev_id
+//! (a single whole-device place with the fallback backend).
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
+
+//! \brief Data place whose allocations are localized to one locality
+//! domain of a device (plain device memory with the fallback backend).
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id);
 
 //! \brief Replicated placement: one copy of the data in the affine memory of
 //! every member of \p grid. Read-only at the place: mutate the data at

@@ -301,6 +301,21 @@ Places
   the read-only ``place.backing_context`` property and keep it alive for the place's
   lifetime.
 
+  ``exec_place_grid.create(places, grid_dims=...)`` arranges places into a
+  C-order processor grid (the last axis enumerates fastest, like a NumPy
+  shape). Existing grids can be viewed with new dimensions without
+  reordering, replicating, or removing places::
+
+      grid = exec_place_grid.create(places, grid_dims=(2, 3, 4))
+      flat = grid.reshape((24,))
+      grid_6x4 = grid.collapse_axes(0, 1)
+
+  ``reshape()`` requires the new extents to have the same product as
+  ``grid.size``. ``collapse_axes(first, last)`` merges a contiguous inclusive
+  range of C-order axes; for example, collapsing axes 0 and 1 above produces
+  dimensions ``(6, 4)``. Both return independently owned grid wrappers with
+  the same linear place order.
+
 .. _stf-data-place:
 
 * **Data place** (``data_place``) -- where logical data lives:
