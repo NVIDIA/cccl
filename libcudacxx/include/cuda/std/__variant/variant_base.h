@@ -216,6 +216,11 @@ protected:
   }
 };
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
 __dtor<__traits<_Types...>, _Trait::_Available> : public __base<_Trait::_Available, _Types...>
@@ -224,7 +229,7 @@ __dtor<__traits<_Types...>, _Trait::_Available> : public __base<_Trait::_Availab
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
-    _CCCL_API void operator()(_Alt& __alt) const noexcept
+    _CCCL_API void _CCCL_STATIC_CALL_OPERATOR(_Alt& __alt) noexcept
     {
       using __alt_type = remove_cvref_t<decltype(__alt)>;
       __alt.~__alt_type();
@@ -273,6 +278,10 @@ private:
     _CCCL_UNREACHABLE();
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT

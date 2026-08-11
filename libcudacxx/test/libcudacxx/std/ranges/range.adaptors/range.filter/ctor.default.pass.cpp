@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// UNSUPPORTED: enable-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // filter_view() requires cuda::std::default_initializable<View> &&
@@ -21,15 +24,15 @@ _CCCL_GLOBAL_CONSTANT int buff[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
 struct DefaultConstructibleView : cuda::std::ranges::view_base
 {
-  TEST_FUNC constexpr DefaultConstructibleView()
+  TEST_HOST_DEVICE_FUNC constexpr DefaultConstructibleView()
       : begin_(buff)
       , end_(buff + 8)
   {}
-  TEST_FUNC constexpr const int* begin() const
+  TEST_HOST_DEVICE_FUNC constexpr const int* begin() const
   {
     return begin_;
   }
-  TEST_FUNC constexpr const int* end() const
+  TEST_HOST_DEVICE_FUNC constexpr const int* end() const
   {
     return end_;
   }
@@ -43,7 +46,7 @@ struct DefaultConstructiblePredicate
 {
   DefaultConstructiblePredicate() = default;
 
-  TEST_FUNC constexpr bool operator()(int i) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
   {
     return i % 2 == 0;
   }
@@ -52,11 +55,11 @@ struct DefaultConstructiblePredicate
 struct NoDefaultView : cuda::std::ranges::view_base
 {
   NoDefaultView() = delete;
-  TEST_FUNC int* begin() const
+  TEST_HOST_DEVICE_FUNC int* begin() const
   {
     return nullptr;
   }
-  TEST_FUNC int* end() const
+  TEST_HOST_DEVICE_FUNC int* end() const
   {
     return nullptr;
   }
@@ -65,7 +68,7 @@ struct NoDefaultView : cuda::std::ranges::view_base
 struct NoDefaultPredicate
 {
   NoDefaultPredicate() = delete;
-  TEST_FUNC constexpr bool operator()(int) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int) const
   {
     return true;
   }
@@ -74,11 +77,11 @@ struct NoDefaultPredicate
 struct NoexceptView : cuda::std::ranges::view_base
 {
   constexpr NoexceptView() noexcept = default;
-  TEST_FUNC int const* begin() const
+  TEST_HOST_DEVICE_FUNC int const* begin() const
   {
     return nullptr;
   }
-  TEST_FUNC int const* end() const
+  TEST_HOST_DEVICE_FUNC int const* end() const
   {
     return nullptr;
   }
@@ -87,13 +90,13 @@ struct NoexceptView : cuda::std::ranges::view_base
 struct NoexceptPredicate
 {
   constexpr NoexceptPredicate() noexcept = default;
-  TEST_FUNC bool operator()(int) const
+  TEST_HOST_DEVICE_FUNC bool operator()(int) const
   {
     return true;
   }
 };
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   {
     using View = cuda::std::ranges::filter_view<DefaultConstructibleView, DefaultConstructiblePredicate>;

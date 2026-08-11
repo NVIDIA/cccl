@@ -38,6 +38,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CPO(__counted)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
 struct __fn
 {
   _CCCL_TEMPLATE(class _It)
@@ -68,13 +73,17 @@ struct __fn
 
   _CCCL_TEMPLATE(class _It, class _Diff)
   _CCCL_REQUIRES(convertible_to<_Diff, iter_difference_t<_It>> _CCCL_AND input_or_output_iterator<decay_t<_It>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_It&& __it, _Diff&& __count) const
-    noexcept(noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
-      -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_It&& __it, _Diff&& __count) noexcept(
+    noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
+    -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
   {
     return __go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count));
   }
 };
+
+_CCCL_DIAG_POP
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 
