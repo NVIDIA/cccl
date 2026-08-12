@@ -99,24 +99,20 @@ std::string get_pch_source_path(const std::filesystem::path& dir, const std::str
 }
 
 // Record that an entry was used, so whoever prunes the cache can order entries
-// by recency. Every use refreshes the timestamp: skipping recent ones would
-// make an entry rebuilt and then hammered look older than one touched once and
-// abandoned, which inverts the ordering exactly where it matters. Two timestamp
-// writes are immaterial next to the compile they accompany.
+// by recency. Every use refreshes the timestamp: skipping recent ones would make
+// an entry rebuilt and then hammered look older than one touched once and
+// abandoned, which inverts the ordering exactly where it matters. One timestamp
+// write is immaterial next to the compile it accompanies.
 //
-// Touching the .pch is safe: clang validates the mtimes of the headers a PCH
-// depends on, not of the PCH file itself. The preamble must be touched
-// alongside it -- a PCH records its preamble as an input, so pruning the
-// preamble invalidates the PCH, and refreshing only the .pch would let one in
-// active use survive while the preamble underneath it aged out.
-void touch_pch_entry(const std::string& pch_path, const std::string& preamble_path)
+// Only the .pch is touched. A PCH records its preamble as an input and clang
+// validates that input's mtime, so rewriting the preamble's timestamp would
+// invalidate the very entry this is trying to keep alive. The preamble needs no
+// timestamp of its own: it is evicted with its .pch, never independently.
+void touch_pch_entry(const std::string& pch_path)
 {
   const auto now = std::filesystem::file_time_type::clock::now();
-  for (const auto& path : {std::cref(pch_path), std::cref(preamble_path)})
-  {
-    std::error_code ec;
-    std::filesystem::last_write_time(path.get(), now, ec);
-  }
+  std::error_code ec;
+  std::filesystem::last_write_time(pch_path, now, ec);
 }
 
 // Best-effort exclusive guard around PCH generation, held across processes and
@@ -238,7 +234,7 @@ bool create_pch_if_needed(
 
   if (present())
   {
-    touch_pch_entry(pch_path, source_path);
+    touch_pch_entry(pch_path);
     return true;
   }
 
@@ -250,7 +246,7 @@ bool create_pch_if_needed(
     // The holder may have finished between the check above and here.
     if (present())
     {
-      touch_pch_entry(pch_path, source_path);
+      touch_pch_entry(pch_path);
       return true;
     }
     diagnostics += kind_name + " PCH generation already in progress elsewhere; building without PCH\n";
@@ -262,7 +258,7 @@ bool create_pch_if_needed(
   // we were acquiring it.
   if (present())
   {
-    touch_pch_entry(pch_path, source_path);
+    touch_pch_entry(pch_path);
     return true;
   }
 

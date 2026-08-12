@@ -108,10 +108,63 @@ def resolve_cache_dir() -> Path | None:
     for directory in _candidates():
         try:
             if _writable(directory):
+                # Clear debris up front, not only after a build. A lock left by a
+                # killed process makes the entry it guards unbuildable until it is
+                # reclaimed, so waiting until after the build would mean this
+                # process builds without the very entry it was about to generate.
+                _sweep_debris(directory)
                 return directory
         except OSError:
             continue
     return None
+
+
+def _sweep_debris(directory: Path) -> int:
+    """Reclaim what a killed build leaves behind. Returns bytes freed.
+
+    Anything still in use must survive, so age is the only safe discriminator:
+    a live lock belongs to a build in flight, and a fresh temp file is an entry
+    being written right now.
+    """
+    reclaimed = 0
+
+    # A generation lock is a directory taken before writing an entry and removed
+    # after. One whose holder died would suppress that entry forever.
+    lock_cutoff = time.time() - _LOCK_STALE_SECONDS
+    for lock in directory.glob("*.lock"):
+        try:
+            if lock.is_dir() and lock.stat().st_mtime < lock_cutoff:
+                lock.rmdir()
+        except OSError:
+            continue
+
+    # Entries are written to a temp file and renamed into place; a generation
+    # killed midway leaves one behind, at tens of megabytes a time.
+    temp_cutoff = time.time() - _TEMP_STALE_SECONDS
+    for tmp in directory.glob("*.tmp"):
+        try:
+            if tmp.is_file() and tmp.stat().st_mtime < temp_cutoff:
+                size = tmp.stat().st_size
+                tmp.unlink()
+                reclaimed += size
+        except OSError:
+            continue
+
+    # A preamble whose header is gone is dead weight -- it is only ever an input
+    # to that header. Nothing else would find it: entries are enumerated by
+    # header, so an orphan is invisible to that scan and would linger forever.
+    for preamble in directory.glob("*_preamble.cu"):
+        pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
+        if pch.exists():
+            continue
+        try:
+            size = preamble.stat().st_size
+            preamble.unlink()
+            reclaimed += size
+        except OSError:
+            continue
+
+    return reclaimed
 
 
 def _max_bytes() -> int:
@@ -154,46 +207,10 @@ def evict(exempt: set[Path] | None = None) -> int:
         return 0
 
     exempt = exempt or set()
-    reclaimed = 0
+    reclaimed = _sweep_debris(directory)
 
-    # Reclaim generation locks whose holder died. A live lock belongs to a build
-    # in flight and must be left alone, so only clearly stale ones go.
-    cutoff = time.time() - _LOCK_STALE_SECONDS
-    for lock in directory.glob("*.lock"):
-        try:
-            if lock.is_dir() and lock.stat().st_mtime < cutoff:
-                lock.rmdir()
-        except OSError:
-            continue
-
-    # Temp files left by a generation that was killed before its rename.
-    temp_cutoff = time.time() - _TEMP_STALE_SECONDS
-    for tmp in directory.glob("*.tmp"):
-        try:
-            if tmp.is_file() and tmp.stat().st_mtime < temp_cutoff:
-                size = tmp.stat().st_size
-                tmp.unlink()
-                reclaimed += size
-        except OSError:
-            continue
-
-    # A preamble whose header is gone is dead weight -- it is only ever an input
-    # to that header. Sweep those too, since nothing below would find them:
-    # entries are enumerated by header, so an orphan is invisible to the scan
-    # and would occupy the cache indefinitely.
-    for preamble in directory.glob("*_preamble.cu"):
-        pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
-        if pch.exists():
-            continue
-        try:
-            size = preamble.stat().st_size
-            preamble.unlink()
-            reclaimed += size
-        except OSError:
-            continue
-
-    # Debris above is reclaimed unconditionally; a disabled size cap means "keep
-    # every entry", not "let dead locks and orphans accumulate".
+    # Debris is reclaimed unconditionally; a disabled size cap means "keep every
+    # entry", not "let dead locks and orphans accumulate".
     cap = _max_bytes()
     if cap == 0:
         return reclaimed
