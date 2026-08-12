@@ -35,31 +35,31 @@ if (-not $env:PARALLEL_LEVEL) {
     $PARALLEL_LEVEL = [int]$env:PARALLEL_LEVEL
 }
 
-# Safely check environment variables with defaults
-$USE_SCCACHE_DIST = if ($env:USE_SCCACHE_DIST) { [bool]::Parse($env:USE_SCCACHE_DIST) } else { $false }
-$SCCACHE_DIST_URL_SET = -not [string]::IsNullOrEmpty($env:SCCACHE_DIST_URL)
+# # Safely check environment variables with defaults
+# $USE_SCCACHE_DIST = if ($env:USE_SCCACHE_DIST) { [bool]::Parse($env:USE_SCCACHE_DIST) } else { $false }
+# $SCCACHE_DIST_URL_SET = -not [string]::IsNullOrEmpty($env:SCCACHE_DIST_URL)
 
-# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
-# concurrent preprocessor calls we think we can do without OOM'ing the machine
-if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
-    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
-    # * 1.5Mb for the shell launched by ninja
-    # * 6MiB for each sccache client process
-    # * round up to 10MiB
-    $mem_per_job = 10 * 1024
-    # Assume preprocessor invocations take ~300Mb or so
-    $mem_for_preprocessing = $N_CPUS * 300 * 1024
-    # It's usually around 400-600MiB, but be conservative
-    # and assume the sccache daemon will use 1GiB of RAM
-    $mem_for_sccache_daemon = 1 * 1024 * 1024
-    # Available memory (in KB) using CIM/WMI
-    $mem_available = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory
-    # Stay under 95% for CI
-    $mem_available = [math]::Floor($mem_available * 95 / 100)
-    # Total job count is available memory after accounting for `nproc` concurrent preprocessor
-    # calls divided by the amount of memory required to invoke the sccache thin client process
-    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job / 10)
-}
+# # If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# # concurrent preprocessor calls we think we can do without OOM'ing the machine
+# if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
+#     # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+#     # * 1.5Mb for the shell launched by ninja
+#     # * 6MiB for each sccache client process
+#     # * round up to 10MiB
+#     $mem_per_job = 10 * 1024
+#     # Assume preprocessor invocations take ~300Mb or so
+#     $mem_for_preprocessing = $N_CPUS * 300 * 1024
+#     # It's usually around 400-600MiB, but be conservative
+#     # and assume the sccache daemon will use 1GiB of RAM
+#     $mem_for_sccache_daemon = 1 * 1024 * 1024
+#     # Available memory (in KB) using CIM/WMI
+#     $mem_available = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory
+#     # Stay under 95% for CI
+#     $mem_available = [math]::Floor($mem_available * 95 / 100)
+#     # Total job count is available memory after accounting for `nproc` concurrent preprocessor
+#     # calls divided by the amount of memory required to invoke the sccache thin client process
+#     $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job / 10)
+# }
 
 if ($PARALLEL_LEVEL -le 0) {
     $PARALLEL_LEVEL = $N_CPUS_MINUS_1
