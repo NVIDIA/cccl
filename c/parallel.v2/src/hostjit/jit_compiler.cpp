@@ -135,6 +135,11 @@ void touch_pch_entry(const std::string& pch_path, const std::string& preamble_pa
 //
 // A directory is the lock: create_directory is atomic on POSIX and Windows and
 // reports whether it did the creating, which is precisely test-and-set.
+//
+// A lock left behind by a killed process is reclaimed by whoever prunes the
+// cache, not here. How long to wait before presuming a holder dead is a
+// judgment about the cache rather than a property of taking a lock, and it
+// belongs with the rest of the pruning rules.
 class PCHGenerationLock
 {
 public:
@@ -143,26 +148,6 @@ public:
   {
     std::error_code ec;
     held_ = std::filesystem::create_directory(path_, ec) && !ec;
-    if (held_)
-    {
-      return;
-    }
-
-    // A lock left behind by a crashed process would otherwise disable PCH
-    // generation forever, so treat a sufficiently old one as abandoned. The
-    // threshold only has to exceed a legitimate generation (seconds).
-    const auto mtime = std::filesystem::last_write_time(path_, ec);
-    if (ec)
-    {
-      return;
-    }
-    if (std::filesystem::file_time_type::clock::now() - mtime > std::chrono::minutes(10))
-    {
-      std::error_code remove_ec;
-      std::filesystem::remove(path_, remove_ec);
-      std::error_code retry_ec;
-      held_ = std::filesystem::create_directory(path_, retry_ec) && !retry_ec;
-    }
   }
 
   ~PCHGenerationLock()
