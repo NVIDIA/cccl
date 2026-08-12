@@ -96,11 +96,23 @@ def test_build_populates_cache(tmp_path):
     assert any(n.startswith("device_sm") for n in names), names
     assert any(n.startswith("host_sm") for n in names), names
 
-    before = {p.name: p.stat().st_mtime_ns for p in tmp_path.glob("*.pch")}
+    # Reuse is identity, not timestamp. A build refreshes the mtime of every
+    # entry it uses, so that cannot distinguish reuse from regeneration;
+    # regeneration writes a new file through an atomic rename and so lands on a
+    # different inode.
+    before = {p.name: p.stat().st_ino for p in tmp_path.glob("*.pch")}
+    stale = time.time() - 48 * 3600
+    for p in tmp_path.glob("*.pch"):
+        os.utime(p, (stale, stale))
+
     proc = run_python(BUILD_SNIPPET, tmp_path)
     assert proc.returncode == 0, proc.stderr
-    after = {p.name: p.stat().st_mtime_ns for p in tmp_path.glob("*.pch")}
+
+    after = {p.name: p.stat().st_ino for p in tmp_path.glob("*.pch")}
     assert before == after, "second build regenerated the cache instead of reusing it"
+    # Recency drives eviction order, so a reused entry must not keep looking old.
+    for p in tmp_path.glob("*.pch"):
+        assert p.stat().st_mtime > stale, f"{p.name} was reused without recording it"
 
 
 def test_corrupt_pch_falls_back(tmp_path):

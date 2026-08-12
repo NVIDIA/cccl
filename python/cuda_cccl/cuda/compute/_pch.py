@@ -143,6 +143,23 @@ def evict(exempt: set[Path] | None = None) -> int:
         return 0
 
     exempt = exempt or set()
+
+    # A preamble whose header is gone is dead weight -- it is only ever an input
+    # to that header. Sweep those first, since nothing below would find them:
+    # entries are enumerated by header, so an orphan is invisible to the scan
+    # and would occupy the cache indefinitely.
+    reclaimed = 0
+    for preamble in directory.glob("*_preamble.cu"):
+        pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
+        if pch.exists():
+            continue
+        try:
+            size = preamble.stat().st_size
+            preamble.unlink()
+            reclaimed += size
+        except OSError:
+            continue
+
     entries = []
     total = 0
     for pch in directory.glob("*.pch"):
@@ -166,19 +183,24 @@ def evict(exempt: set[Path] | None = None) -> int:
             pass
 
     if total <= cap:
-        return 0
+        return reclaimed
 
-    reclaimed = 0
-    for _mtime, size, pch, preamble in sorted(entries):
+    for _mtime, _size, pch, preamble in sorted(entries):
         if total <= cap:
             break
+        # Count only what actually went away. A file that refuses to delete is
+        # still occupying the cache, so charging it against the total would
+        # leave the cache over its cap while reporting otherwise.
+        freed = 0
         for path in (pch, preamble):
             try:
+                size = path.stat().st_size
                 path.unlink()
+                freed += size
             except OSError:
-                pass
-        total -= size
-        reclaimed += size
+                continue
+        total -= freed
+        reclaimed += freed
     return reclaimed
 
 
