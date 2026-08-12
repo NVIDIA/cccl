@@ -56,13 +56,11 @@ find_and_copy_job_artifact_from() {
   fi
 }
 
-tmp="${TMP:-${TEMP:-${TMPDIR:-/tmp}}}"
-
-find_and_copy_job_artifact_from "$tmp" "sccache*.log"       || : # Nonfatal if not found
-find_and_copy_job_artifact_from build  "sccache_stats.json" || : # Nonfatal if not found
-find_and_copy_job_artifact_from build  ".ninja_log"         || : # Nonfatal if not found
-find_and_copy_job_artifact_from build  "build.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build  "rules.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build  "ctest.log"          || : # Nonfatal if not found
+find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
+find_and_copy_job_artifact_from build ".ninja_log"         || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

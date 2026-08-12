@@ -261,6 +261,7 @@ runs:
           --env "JOB_ID=$JOB_ID" \
           --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
           --env "RUNNER_TEMP=$RUNNER_TEMP" \
+          --env "RUST_LOG_STYLE=never" \
           "${extra_launch_args[@]}" \
           --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
           --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
