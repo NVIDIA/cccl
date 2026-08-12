@@ -198,86 +198,29 @@ On devices without ``cudaMallocAsync`` support, pass a memory resource explicitl
 example below defines a synchronous memory resource on top of ``cudaMalloc``/``cudaFree``
 and selects between it and the default memory pool based on device support. Passing the
 resulting resource through the environment makes the synchronization behavior a visible,
-deliberate choice:
+deliberate choice (the required declarations are provided by ``<cuda/devices>``,
+``<cuda/memory_pool>``, ``<cuda/memory_resource>``, and ``<cuda/stream>``):
 
-.. code-block:: c++
-
-   #include <cuda/devices>
-   #include <cuda/memory_pool>
-   #include <cuda/memory_resource>
-
-   #include <cuda_runtime_api.h>
-
-   #include <stdexcept>
-
-   struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_memory_resource>
-   {
-     [[nodiscard]] void* allocate_sync(size_t bytes, size_t alignment = cuda::mr::default_cuda_malloc_alignment)
-     {
-       if (alignment > cuda::mr::default_cuda_malloc_alignment
-           || cuda::mr::default_cuda_malloc_alignment % alignment != 0)
-       {
-         throw std::invalid_argument("invalid alignment for synchronous_memory_resource");
-       }
-
-       void* ptr          = nullptr;
-       cudaError_t status = cudaMalloc(&ptr, bytes);
-       if (status != cudaSuccess)
-       {
-         throw std::runtime_error(cudaGetErrorString(status));
-       }
-
-       return ptr;
-     }
-
-     void deallocate_sync(
-       void* ptr,
-       [[maybe_unused]] size_t bytes,
-       [[maybe_unused]] size_t alignment = cuda::mr::default_cuda_malloc_alignment) noexcept
-     {
-       cudaFree(ptr);
-     }
-
-     friend constexpr void get_property(synchronous_memory_resource const&, cuda::mr::device_accessible) noexcept {}
-
-     friend constexpr bool operator==(synchronous_memory_resource, synchronous_memory_resource) noexcept
-     {
-       return true;
-     }
-
-   #if _CCCL_STD_VER <= 2017
-     friend constexpr bool operator!=(synchronous_memory_resource, synchronous_memory_resource) noexcept
-     {
-       return false;
-     }
-   #endif
-   };
-
-   cuda::mr::any_resource<cuda::mr::device_accessible> make_device_resource(cuda::device_ref dev)
-   {
-     if (dev.attribute(cuda::device_attributes::memory_pools_supported))
-     {
-       return cuda::mr::any_resource<cuda::mr::device_accessible>{cuda::device_default_memory_pool(dev)};
-     }
-
-     return cuda::mr::make_any_resource<
-       cuda::mr::synchronous_resource_adapter<synchronous_memory_resource>,
-       cuda::mr::device_accessible>(synchronous_memory_resource{});
-   }
+.. literalinclude:: ../../cub/examples/device/example_device_env_memory_resource.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-mr-fallback-definition
+   :end-before: example-end env-mr-fallback-definition
 
 The resource returned by ``make_device_resource`` can be passed to any algorithm that
 accepts an environment:
 
-.. code-block:: c++
-
-   auto mr  = make_device_resource(cuda::devices[0]);
-   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, mr};
-
-   cub::DeviceReduce::Sum(d_input, d_output, num_items, env);
+.. literalinclude:: ../../cub/examples/device/example_device_env_memory_resource.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-mr-fallback-run
+   :end-before: example-end env-mr-fallback-run
 
 On devices without memory pool support, every allocation and deallocation made through
 this resource blocks the calling thread and synchronizes the device. That cost is
 inherent to ``cudaMalloc``/``cudaFree``; the explicit opt-in only makes it visible.
+Note that ``cudaMalloc`` allocates on the device that is *current* at the time of the
+call, so use the resource on the device it was created for.
 
 .. _cub-environment-reuse:
 
