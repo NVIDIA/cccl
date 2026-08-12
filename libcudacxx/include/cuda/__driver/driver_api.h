@@ -778,6 +778,15 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
   return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::CUstreamCaptureStatus __streamIsCapturing(::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamIsCapturing);
+  ::CUstreamCaptureStatus __ret{};
+
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get the capture status of a stream", __stream, &__ret);
+  return __ret;
+}
+
 // Event management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUevent __eventCreate(unsigned __flags)

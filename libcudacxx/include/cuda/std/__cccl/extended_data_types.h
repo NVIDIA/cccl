@@ -116,8 +116,7 @@ struct __nv_fp4x4_e2m1;
  * __float128
  **********************************************************************************************************************/
 
-#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_HOST_ARCH(ARM64) \
-  && !_CCCL_TILE_COMPILATION()
+#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_HOST_ARCH(ARM64)
 // Detect host compiler support
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__))
 #    if _CCCL_DEVICE_COMPILATION()
