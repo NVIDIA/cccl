@@ -130,6 +130,7 @@ int main()
   inspect_invalid(invalid_stream);
   inspect_moved_from(moved_from_stream);
   inspect_summary(summarized_streams);
+  KEEP_FOR_DEBUGGER(summarized_streams);
   inspect_before_update(updated_stream);
   updated_stream = owning_stream;
   inspect_after_update(updated_stream);
