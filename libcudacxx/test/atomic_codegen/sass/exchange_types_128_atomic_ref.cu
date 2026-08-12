@@ -16,14 +16,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_exchange(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
 {
   return atom.exchange(value, ORDER);
 }
 
 /*
 
-; SM90-PLUS-LABEL: {{[[:space:]]*}}Function : {{.*atomic_exchange.*}}
+; SM90-PLUS-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH.STRONG{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}

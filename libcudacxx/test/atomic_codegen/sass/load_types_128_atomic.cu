@@ -16,7 +16,7 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_load(cuda::atomic<TYPE, SCOPE>& atom)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom)
 {
   return atom.load(ORDER);
 }
@@ -24,7 +24,7 @@ __device__ auto atomic_load(cuda::atomic<TYPE, SCOPE>& atom)
 // clang-format off
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_load.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}MEMBAR.SC.{{.*}}
 ; SMXX: {{.*}}BSSY [[SYNC:B[0-9]+]], {{.*}}
 ; BLOCK: {{.*}}ATOM.E.EXCH.STRONG.{{CTA|SM}} PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}

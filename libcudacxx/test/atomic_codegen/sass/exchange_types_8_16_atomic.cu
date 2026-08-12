@@ -19,14 +19,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_exchange(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 {
   return atom.exchange(value, ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_exchange.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}

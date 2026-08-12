@@ -19,14 +19,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_load(cuda::atomic<TYPE, SCOPE>& atom)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom)
 {
   return atom.load(ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_load.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; NON_SC-NOT: {{.*}}MEMBAR.{{.*}}

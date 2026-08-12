@@ -19,14 +19,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ void atomic_store(volatile cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ void atomic_codegen_test(volatile cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 {
   atom.store(value, ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_store.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SMXX-NOT: {{.*}}ST.E{{.*}}.STRONG{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}

@@ -16,14 +16,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ void atomic_store(cuda::atomic_ref<volatile TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ void atomic_codegen_test(cuda::atomic_ref<volatile TYPE, SCOPE>& atom, TYPE value)
 {
   atom.store(value, ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_store.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}
 ; SMXX-NOT: {{.*}}ST.E{{.*\[}}[[ATOM_ADDR]]{{(\.64)?(\+0x[0-9a-f]+)?\].*}}

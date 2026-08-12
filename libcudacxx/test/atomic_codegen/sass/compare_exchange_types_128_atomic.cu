@@ -17,7 +17,7 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ bool atomic_compare_exchange(cuda::atomic<TYPE, SCOPE>& atom, TYPE& expected, TYPE desired)
+extern "C" __device__ bool atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, TYPE& expected, TYPE desired)
 {
   return atom.CAS(expected, desired, SUCCESS_ORDER, FAILURE_ORDER);
 }
@@ -25,7 +25,7 @@ __device__ bool atomic_compare_exchange(cuda::atomic<TYPE, SCOPE>& atom, TYPE& e
 // clang-format off
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_compare_exchange.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}MEMBAR.SC.{{.*}}
 ; SMXX: {{.*}}BSSY [[SYNC:B[0-9]+]], {{.*}}
 ; BLOCK: {{.*}}ATOM.E.EXCH.STRONG.{{CTA|SM}} PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}
