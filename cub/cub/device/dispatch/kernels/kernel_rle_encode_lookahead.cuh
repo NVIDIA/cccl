@@ -61,7 +61,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void wait_parity(::cuda::std::uint64_t* bar, 
 
 // stages is a runtime value now (we pick the ring depths at launch). now a runtime divide is super expensive
 // and costs ~3-6% BWUtil, so now we have to maintain a "cursor" that is far more cheaper.
-struct RingCursorT
+struct ring_cursor_t
 {
   int slot        = 0;
   unsigned parity = 0;
@@ -84,7 +84,7 @@ struct RingCursorT
 // 2. to use the same layout as warpspeed scan
 constexpr ::cuda::std::uint32_t tile_published = 1u;
 
-struct TilePartialStateT
+struct tile_partial_state_t
 {
   ::cuda::std::uint64_t dword;
 
@@ -103,7 +103,7 @@ struct TilePartialStateT
     return static_cast<int>((dword >> 16) & 0xffffu);
   }
 
-  static _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT pack(int run_count, int open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE tile_partial_state_t pack(int run_count, int open_len)
   {
     return {(static_cast<::cuda::std::uint64_t>(tile_published) << 32)
             | (static_cast<::cuda::std::uint64_t>(static_cast<unsigned>(open_len)) << 16)
@@ -112,9 +112,9 @@ struct TilePartialStateT
 };
 
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
+publish_state(tile_partial_state_t* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
-  ::cuda::std::uint64_t packed = TilePartialStateT::pack(run_count, open_len).dword;
+  ::cuda::std::uint64_t packed = tile_partial_state_t::pack(run_count, open_len).dword;
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
   __nv_atomic_store(&tile_state_arr[tile_idx].dword, &packed, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
@@ -125,7 +125,7 @@ publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, in
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
-_CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE tile_partial_state_t load_state(tile_partial_state_t* tile_state_arr, int tile_idx)
 {
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
   ::cuda::std::uint64_t dword;
@@ -140,14 +140,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT load_state(TilePartialState
 // CRITICAL: from choose_signed_offset, it is guaranteed that OffT covers the whole index space.
 // Therefore, in the kernel, the type of the prefix (run_count, open_len) should always be OffT.
 template <class OffT, bool = (sizeof(OffT) > 4)>
-struct PrefixT;
+struct prefix_t;
 
 template <class OffT>
-struct PrefixT<OffT, false>
+struct prefix_t<OffT, false>
 {
   ::cuda::std::uint64_t dword;
 
-  static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE prefix_t pack(OffT run_count, OffT open_len)
   {
     return {(static_cast<::cuda::std::uint64_t>(static_cast<unsigned>(open_len)) << 32)
             | static_cast<unsigned>(run_count)};
@@ -165,12 +165,12 @@ struct PrefixT<OffT, false>
 };
 
 template <class OffT>
-struct alignas(16) PrefixT<OffT, true>
+struct alignas(16) prefix_t<OffT, true>
 {
   ::cuda::std::uint64_t packed_run_count;
   ::cuda::std::uint64_t packed_open_len;
 
-  static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE prefix_t pack(OffT run_count, OffT open_len)
   {
     return {static_cast<::cuda::std::uint64_t>(run_count), static_cast<::cuda::std::uint64_t>(open_len)};
   }
@@ -232,7 +232,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
   return bit_position;
 }
 
-struct WarpTileRunScanT
+struct warp_tile_run_scan_t
 {
   int lane_run_count;
   int lane_runs_before;
@@ -240,7 +240,7 @@ struct WarpTileRunScanT
 
 // we need this because STORE and BOOKKEEPER both recalculate from slot_warp_run_counts
 template <int compute_warps>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE WarpTileRunScanT
+_CCCL_DEVICE_API _CCCL_FORCEINLINE warp_tile_run_scan_t
 scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
 {
   const int lane_run_count = (lane_id < compute_warps) ? slot_warp_run_counts[lane_id] : 0;
@@ -359,7 +359,7 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
 
 template <int compute_warps>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
-  TilePartialStateT* tile_partial_states,
+  tile_partial_state_t* tile_partial_states,
   int tile_id,
   int tile_len,
   const int* slot_warp_run_counts,
@@ -417,7 +417,7 @@ stage_head_positions(unsigned my_flags, position_t* pos_dst, int warp_tile_offse
   }
 }
 
-struct RunSpanT
+struct run_span_t
 {
   int head_pos_in_warp_tile;
   int next_head_pos;
@@ -428,13 +428,13 @@ struct RunSpanT
 // one warp tile is 32 chunks x 32 elements, so lane i owns word i.
 // This buys 2.5% BWUtil in the MaxSegSize{2^4, 2^6, 2^8}
 template <int ItemsPerThread>
-struct HeadFlagDecodeT
+struct head_flag_decode_t
 {
   unsigned lane_head_flag_word;
   int lane_runs_before_word;
   int lane_first_head_from_word;
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE HeadFlagDecodeT(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE head_flag_decode_t(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
   {
     lane_head_flag_word           = slot_head_flags[warp_tile_id * 32 + lane_id];
     const int lane_word_run_count = __popc(lane_head_flag_word);
@@ -458,7 +458,7 @@ struct HeadFlagDecodeT
     // now, lane i holds the next head in [i, 32). we precalculate this in parallel
   }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE RunSpanT decode_run(int run_idx) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE run_span_t decode_run(int run_idx) const
   {
     // first question: which head_flag word contains my run's (run_idx) head?
     // lane_runs_before_word's row i = number of heads in words [0, i)
@@ -502,7 +502,7 @@ struct HeadFlagDecodeT
 
 template <int window_size_cap, class PolicySelector, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
-  TilePartialStateT* tile_partial_states,
+  tile_partial_state_t* tile_partial_states,
   int tile_id,
   int& last_seen_tile_id,
   OffT& last_seen_prefix_run_count,
@@ -517,10 +517,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   {
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
-    const int window_size                               = remain < window_size_cap ? remain : window_size_cap;
-    const int lane_first_tile_id                        = last_seen_tile_id + lane_id;
-    const int lane_tile_count                           = (window_size - lane_id + 31) >> 5;
-    TilePartialStateT packed_words[poll_loads_per_lane] = {}; // must zero initialize
+    const int window_size                                  = remain < window_size_cap ? remain : window_size_cap;
+    const int lane_first_tile_id                           = last_seen_tile_id + lane_id;
+    const int lane_tile_count                              = (window_size - lane_id + 31) >> 5;
+    tile_partial_state_t packed_words[poll_loads_per_lane] = {}; // must zero initialize
 
     bool ready;
     // first, all tile state in window must be ready
@@ -588,7 +588,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
 
 template <class PolicySelector, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
-  TilePartialStateT* tile_partial_states,
+  tile_partial_state_t* tile_partial_states,
   int tile_id,
   int& last_seen_tile_id,
   OffT& last_seen_prefix_run_count,
@@ -638,7 +638,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   KeyT* __restrict__ d_unique,
   LenT* __restrict__ d_counts,
   NumRunsT* __restrict__ d_num_runs,
-  TilePartialStateT* __restrict__ tile_partial_states,
+  tile_partial_state_t* __restrict__ tile_partial_states,
   OffT num_items,
   int num_tiles,
   int key_ring_stages,
@@ -694,7 +694,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr int tile_size      = policy.tile_size();
   constexpr int slot_pad       = policy.slot_pad(static_cast<int>(sizeof(KeyT)));
   constexpr int slot_stride    = policy.slot_stride(static_cast<int>(sizeof(KeyT)), static_cast<int>(alignof(KeyT)));
-  using PrefixT                = rle::encode::PrefixT<OffT>;
+  using prefix_t               = rle::encode::prefix_t<OffT>;
   // [key_ring_stages][tile_size] input keys
   // [key_ring_stages][tile_size] int16 staged head positions
   extern __shared__ char smem_raw[];
@@ -710,7 +710,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   __shared__ int warp_last_heads[max_key_ring_stages][compute_warps]; // per compute warp last head idx (-1 if none)
 
   // for POLL to pass STORE packed [open_len_prefix:32][run_count_prefix:32]
-  __shared__ PrefixT prefix_packed[max_key_ring_stages];
+  __shared__ prefix_t prefix_packed[max_key_ring_stages];
 
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
   // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
@@ -797,7 +797,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
           ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
         }
-        RingCursorT key_ring;
+        ring_cursor_t key_ring;
         for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
           const int slot_id = key_ring.slot; // which slot is this?
@@ -844,8 +844,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       {
         const int compute_warp_id  = squad.warpRank();
         const int warp_tile_offset = compute_warp_id * warp_tile_size;
-        RingCursorT key_ring;
-        RingCursorT pos_ring;
+        ring_cursor_t key_ring;
+        ring_cursor_t pos_ring;
         for (int pipeline_gen = 0;;
              ++pipeline_gen, key_ring.advance(key_ring_stages), pos_ring.advance(pos_ring_stages))
         {
@@ -969,7 +969,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         OffT last_seen_prefix_run_count   = 0;
         OffT last_seen_prefix_open_length = 0;
         int poll_dense_mode               = 1;
-        RingCursorT key_ring;
+        ring_cursor_t key_ring;
         for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
           const int slot_id = key_ring.slot;
@@ -1001,7 +1001,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // hand the prefix to the STORE warps and the bookkeeper
           if (lane_id == 0)
           {
-            prefix_packed[slot_id] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
+            prefix_packed[slot_id] = prefix_t::pack(curr_prefix_run_count, curr_prefix_open_length);
             // CRITICAL: POLL doesn't participate in empty. This arrive gates STORE -> empty -> LOAD's
             // rewrite of the slot, so all reads of slot_id must precede it. Same chain bounds full's phase.
             ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed
@@ -1012,8 +1012,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       else if (squad == squadStore)
       {
         const int store_warp_idx = squad.warpRank();
-        RingCursorT key_ring;
-        RingCursorT pos_ring;
+        ring_cursor_t key_ring;
+        ring_cursor_t pos_ring;
         for (int pipeline_gen = 0;;
              ++pipeline_gen, key_ring.advance(key_ring_stages), pos_ring.advance(pos_ring_stages))
         {
@@ -1051,7 +1051,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             int buf_run_length[buf_per_lane];
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
-            const HeadFlagDecodeT<items_per_thread> dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
+            const head_flag_decode_t<items_per_thread> dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int it = 0; it < buf_per_lane; ++it)
@@ -1060,9 +1060,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               {
                 break;
               }
-              const int run_idx  = it * 32 + lane_id;
-              const RunSpanT run = dec.decode_run(run_idx);
-              buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
+              const int run_idx    = it * 32 + lane_id;
+              const run_span_t run = dec.decode_run(run_idx);
+              buf_key[it]          = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
               // note: this is garbage for the last run head
               buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
@@ -1169,7 +1169,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       // if you are the bookkeeper
       else
       {
-        RingCursorT key_ring;
+        ring_cursor_t key_ring;
         for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
           const int slot_id = key_ring.slot;
@@ -1194,7 +1194,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(full_mask, lane_warp_tile_run_count > 0);
           // wait for prefixed
           wait_parity(&prefixed[slot_id], key_ring.parity);
-          const PrefixT packed_prefix        = prefix_packed[slot_id];
+          const prefix_t packed_prefix       = prefix_packed[slot_id];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
           // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's irst head.
@@ -1275,7 +1275,7 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
     KeyT* __restrict__ d_unique,
     LenT* __restrict__ d_counts,
     NumRunsT* __restrict__ d_num_runs,
-    TilePartialStateT* tile_partial_states,
+    tile_partial_state_t* tile_partial_states,
     OffT num_items,
     int num_tiles,
     int key_ring_stages,

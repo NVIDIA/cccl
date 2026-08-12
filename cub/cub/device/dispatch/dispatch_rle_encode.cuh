@@ -196,7 +196,7 @@ template <typename PolicySelector, typename KeyT, typename LengthT, typename Num
 struct DeviceRleEncodeKernelSource
 {
 #if __cccl_ptx_isa >= 920
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceRleEncodeLookaheadInitKernel<PolicySelector, TilePartialStateT>)
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceRleEncodeLookaheadInitKernel<PolicySelector, tile_partial_state_t>)
 
   CUB_DEFINE_KERNEL_GETTER(LookaheadKernel,
                            DeviceRleEncodeLookaheadKernel<PolicySelector, KeyT, LengthT, NumRunsT, OffsetT>)
@@ -273,7 +273,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
     static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
 
   void* allocations[1]       = {};
-  size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT)};
+  size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(tile_partial_state_t)};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -283,7 +283,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   {
     return cudaSuccess;
   }
-  auto* tile_partial_states = static_cast<TilePartialStateT*>(allocations[0]);
+  auto* tile_partial_states = static_cast<tile_partial_state_t*>(allocations[0]);
 
   int key_ring_stages   = lookahead_policy.key_ring_stages;
   int pos_ring_stages   = lookahead_policy.pos_ring_stages;
