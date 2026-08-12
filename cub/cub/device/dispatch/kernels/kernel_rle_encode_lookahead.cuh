@@ -192,42 +192,17 @@ struct alignas(16) prefix_t<OffT, true>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
 {
   // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
-  int bit_position         = 0;
-  int set_bits_in_low_half = __popc(flag_mask & 0xffffu);
-  if (rank >= set_bits_in_low_half)
+  int bit_position = 0;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int half_width = 16; half_width >= 1; half_width /= 2)
   {
-    rank -= set_bits_in_low_half;
-    bit_position += 16;
-    flag_mask >>= 16;
-  }
-
-  set_bits_in_low_half = __popc(flag_mask & 0xffu);
-  if (rank >= set_bits_in_low_half)
-  {
-    rank -= set_bits_in_low_half;
-    bit_position += 8;
-    flag_mask >>= 8;
-  }
-
-  set_bits_in_low_half = __popc(flag_mask & 0xfu);
-  if (rank >= set_bits_in_low_half)
-  {
-    rank -= set_bits_in_low_half;
-    bit_position += 4;
-    flag_mask >>= 4;
-  }
-
-  set_bits_in_low_half = __popc(flag_mask & 0x3u);
-  if (rank >= set_bits_in_low_half)
-  {
-    rank -= set_bits_in_low_half;
-    bit_position += 2;
-    flag_mask >>= 2;
-  }
-
-  if (rank >= static_cast<int>(flag_mask & 1u))
-  {
-    bit_position += 1;
+    const int set_bits_in_low_half = __popc(flag_mask & ((1u << half_width) - 1u));
+    if (rank >= set_bits_in_low_half)
+    {
+      rank -= set_bits_in_low_half;
+      bit_position += half_width;
+      flag_mask >>= half_width;
+    }
   }
   return bit_position;
 }
