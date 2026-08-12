@@ -53,11 +53,6 @@ _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
   requires(::cuda::std::execution::__queryable_with<const _Env&, __get_memory_resource_t>));
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
 struct __get_memory_resource_t
@@ -96,10 +91,6 @@ _CCCL_GLOBAL_CONSTANT auto __get_memory_resource = __get_memory_resource_t{};
 using get_memory_resource_t = __get_memory_resource_t;
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

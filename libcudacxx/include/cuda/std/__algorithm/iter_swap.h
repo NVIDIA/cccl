@@ -46,11 +46,6 @@ _CCCL_CONCEPT __readable_swappable =
   _CCCL_REQUIRES_EXPR((_ForwardIterator1, _ForwardIterator2), _ForwardIterator1 __a, _ForwardIterator2 __b)(
     requires(!__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>), swap(*__a, *__b));
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -71,10 +66,6 @@ struct __fn
     swap(*__a, *__b);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 
