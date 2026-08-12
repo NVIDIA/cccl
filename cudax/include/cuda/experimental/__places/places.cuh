@@ -2061,7 +2061,7 @@ public:
 
   //! Instance index of a linear grid place: mixed radix over the
   //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
-  size_t instance_of(size_t place_index) const
+  size_t instance_of(size_t place_index) const override
   {
     if (deferred_)
     {
@@ -2079,6 +2079,12 @@ public:
       }
     }
     return idx;
+  }
+
+  //! The r-th instance's place: the representative member's affine place
+  ::std::shared_ptr<data_place_interface> member_impl(size_t r) const override
+  {
+    return grid_.get_place(representative_place(r)).affine_data_place().get_impl();
   }
 
   //! Linear grid place of the instance's representative (shared coords = 0)
@@ -2208,13 +2214,22 @@ private:
 //! Whether this replicated data place still needs its grid bound
 inline bool replicated_is_deferred(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+  // Only the axis-replicated place has a deferred form; other replicated
+  // places (e.g. a composite place with replicated partition axes) are
+  // always concrete.
+  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep != nullptr && rep->is_deferred();
 }
 
-//! Grid of a replicated data place
+//! Grid of an axis-replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
+  if (rep == nullptr)
+  {
+    throw ::std::invalid_argument("replicated_grid: not an axis-replicated data place");
+  }
+  return rep->get_grid();
 }
 
 inline bool data_place::is_composite() const
@@ -2235,21 +2250,16 @@ inline size_t data_place::instance_count() const
 inline data_place data_place::member(size_t r) const
 {
   _CCCL_ASSERT(r < instance_count(), "member index out of range");
-  if (instance_count() == 1)
+  if (auto m = pimpl_->member_impl(r))
   {
-    return *this;
+    return data_place(mv(m));
   }
-  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
-  return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+  return *this;
 }
 
 inline size_t data_place::instance_of(size_t place_index) const
 {
-  if (!is_replicated())
-  {
-    return 0;
-  }
-  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
+  return pimpl_->instance_of(place_index);
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
