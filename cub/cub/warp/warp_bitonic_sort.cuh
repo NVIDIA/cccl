@@ -233,7 +233,10 @@ public:
   //! - All threads in the calling logical warp must invoke this collective.
   //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
-  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
+  //!   every key within the `valid_items` boundaries is ordered strictly before `oob_default`. If a key compares
+  //!   equivalent to `oob_default`, the sort may place an out-of-bound key, along with its default-constructed value,
+  //!   within the `valid_items` boundaries and displace the equivalent key past them. Use the
+  //!   `Sort(keys, values, compare_op, valid_items)` overload if keys may compare equivalent to `oob_default`.
   //! - Values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
