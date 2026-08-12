@@ -65,6 +65,13 @@ public:
     return library_.isLoaded();
   }
 
+  // Absolute path of the currently-loaded JIT module as the OS sees it, or empty
+  // if nothing is loaded. Lets callers learn the module's real name at runtime.
+  std::string getLoadedModulePath() const
+  {
+    return library_.getLoadedModulePath();
+  }
+
   // Get the path to compiled artifacts (object file, shared library, etc.)
   // Only valid after successful compile() and if keep_artifacts is set
   std::string getArtifactsPath() const
