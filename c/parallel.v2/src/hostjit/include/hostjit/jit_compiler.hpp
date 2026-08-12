@@ -13,7 +13,6 @@ namespace hostjit
 // usable (in which case PCH is inactive). Resolved once per process; see the
 // definition for the precedence chain. Exposed so callers can inspect or clear
 // the cache without reimplementing that chain.
-std::string pchCacheDir();
 
 class JITCompiler
 {

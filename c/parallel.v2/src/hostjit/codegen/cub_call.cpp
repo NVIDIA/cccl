@@ -609,6 +609,10 @@ hostjit::CompilerConfig CubCall::make_jit_config(
     }
     jit_config.enable_pch = config->enable_pch != 0;
     jit_config.verbose    = config->verbose != 0;
+    if (config->pch_cache_dir && config->pch_cache_dir[0] != '\0')
+    {
+      jit_config.pch_cache_dir = config->pch_cache_dir;
+    }
   }
 
   return jit_config;

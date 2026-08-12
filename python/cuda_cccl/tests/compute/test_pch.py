@@ -149,7 +149,7 @@ def test_unwritable_cache_dir_still_builds(tmp_path):
     """A cache directory that exists but cannot be written to is also survivable.
 
     This is the permission-denied counterpart to the ENOTDIR case above: it
-    reaches the write probe rather than failing at create_directories.
+    reaches the write probe, where the directory exists but cannot be written.
     """
     cache = tmp_path / "readonly"
     cache.mkdir()
@@ -162,7 +162,7 @@ def test_unwritable_cache_dir_still_builds(tmp_path):
 
 
 def test_enable_pch_0_disables(tmp_path):
-    """CCCL_ENABLE_PCH=0 is a kill switch, even though Python asks for PCH."""
+    """CCCL_ENABLE_PCH=0 disables the cache outright."""
     proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_ENABLE_PCH="0")
     assert proc.returncode == 0, proc.stderr
     assert pch_files(tmp_path) == [], "PCH was generated despite CCCL_ENABLE_PCH=0"
@@ -327,7 +327,7 @@ def test_cache_dir_follows_env(tmp_path):
 
 @pytest.mark.skipif(
     IS_WINDOWS,
-    reason="the C layer resolves LOCALAPPDATA on Windows and never consults XDG_CACHE_HOME",
+    reason="LOCALAPPDATA is the Windows default; XDG_CACHE_HOME is not consulted there",
 )
 def test_cache_dir_falls_back_to_xdg(tmp_path):
     """With CCCL_PCH_CACHE_DIR unset, XDG_CACHE_HOME takes over."""

@@ -1,14 +1,15 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Inspecting and clearing the HostJIT precompiled-header cache.
+"""Policy for the precompiled-header cache.
 
-The cache itself is populated lazily by the first build that needs an entry —
-there is no warm-up. Generating an entry costs a few seconds and happens once
-per (install, architecture, flag-set), so front-loading it was not worth the
-machinery: doing it at import meant initializing the CUDA driver as a side
-effect of importing this package, which is a far larger behavioral change than
-the one-time cost it avoided.
+This module decides where the cache lives, whether it is enabled, and when it
+is pruned. The backend generates and loads entries at the location it is given;
+it chooses nothing, so a build writes only where this module points it.
+
+The cache fills lazily: the first build needing an entry generates it, which
+costs a few seconds and happens once per (install, architecture, flag-set).
+Builds after that read it.
 
 Environment:
     CCCL_ENABLE_PCH=0             Disable precompiled headers entirely.
@@ -18,16 +19,174 @@ Environment:
 
 from __future__ import annotations
 
+import os
 import shutil
+import sys
+import tempfile
 from pathlib import Path
+
+_DEFAULT_MAX_BYTES = 1024**3  # 1 GiB
+_SUFFIXES = {"k": 1024, "m": 1024**2, "g": 1024**3}
+
+_FALSEY = {"0", "false", "off", "no"}
+
+
+def _enabled() -> bool:
+    """CCCL_ENABLE_PCH as a kill switch. Anything unset or unrecognized is on."""
+    return os.environ.get("CCCL_ENABLE_PCH", "").strip().lower() not in _FALSEY
+
+
+def _candidates() -> list[Path]:
+    """Cache locations to try, best first.
+
+    ``CCCL_PCH_CACHE_DIR`` is used verbatim with no subdirectory appended, so CI
+    and tests get exactly the path they asked for. Otherwise this is a
+    persistent cache of tens of megabytes, not scratch, so the system temp
+    directory is a poor first choice: it is shared, and whoever creates it first
+    owns it.
+    """
+    explicit = os.environ.get("CCCL_PCH_CACHE_DIR", "").strip()
+    if explicit:
+        return [Path(explicit)]
+
+    out: list[Path] = []
+    if sys.platform == "win32":
+        if local := os.environ.get("LOCALAPPDATA", "").strip():
+            out.append(Path(local) / "cccl" / "hostjit_pch")
+        out.append(Path(tempfile.gettempdir()) / "hostjit_pch")
+        return out
+
+    if xdg := os.environ.get("XDG_CACHE_HOME", "").strip():
+        out.append(Path(xdg) / "cccl" / "hostjit_pch")
+    if home := os.environ.get("HOME", "").strip():
+        out.append(Path(home) / ".cache" / "cccl" / "hostjit_pch")
+    # uid-scoped, so two users on one machine cannot land on the same directory
+    # and fight over its permissions.
+    out.append(Path(tempfile.gettempdir()) / f"hostjit_pch_{os.getuid()}")
+    return out
+
+
+def _writable(directory: Path) -> bool:
+    """Can we actually write here? Creating a directory does not prove it."""
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        if not directory.is_dir():
+            return False
+    probe = directory / ".cccl_write_probe"
+    try:
+        probe.touch()
+        probe.unlink()
+    except OSError:
+        return False
+    return True
+
+
+def resolve_cache_dir() -> Path | None:
+    """The cache directory to build against, or None to build without a PCH.
+
+    Resolved once per process. None means precompiled headers are off, either
+    because they were disabled or because no candidate was writable. An unusable
+    cache can never fail a build, only fail to speed one up.
+    """
+    if not _enabled():
+        return None
+    for directory in _candidates():
+        try:
+            if _writable(directory):
+                return directory
+        except OSError:
+            continue
+    return None
+
+
+def _max_bytes() -> int:
+    """CCCL_PCH_CACHE_MAXSIZE in bytes. 0 disables eviction.
+
+    The default holds roughly a dozen configurations. CUDA's analogous
+    CUDA_CACHE_MAXSIZE defaults to 256 MiB, but its entries are cubins measured
+    in kilobytes; a single PCH here is tens of megabytes, so the same default
+    would hold three configurations and thrash.
+    """
+    raw = os.environ.get("CCCL_PCH_CACHE_MAXSIZE", "").strip().lower()
+    if not raw:
+        return _DEFAULT_MAX_BYTES
+    multiplier = 1
+    if raw and raw[-1].isalpha():
+        raw = raw.removesuffix("ib") if raw.endswith("ib") else raw
+        if not raw or raw[-1] not in _SUFFIXES:
+            return _DEFAULT_MAX_BYTES
+        multiplier = _SUFFIXES[raw[-1]]
+        raw = raw[:-1].strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        return _DEFAULT_MAX_BYTES
+    return max(0, value) * multiplier
+
+
+def evict(exempt: set[Path] | None = None) -> int:
+    """Trim the cache to its size cap, least-recently-used first.
+
+    The bound is on total size rather than entry age: a dozen configurations all
+    used within any age window still costs a gigabyte. Recency is mtime, which a
+    build refreshes on the entries it uses.
+
+    A precompiled header and its preamble are evicted together, since the header
+    records the preamble as an input. Returns the number of bytes reclaimed.
+    """
+    cap = _max_bytes()
+    if cap == 0:
+        return 0
+    directory = cache_dir()
+    if directory is None or not directory.is_dir():
+        return 0
+
+    exempt = exempt or set()
+    entries = []
+    total = 0
+    for pch in directory.glob("*.pch"):
+        if pch in exempt:
+            continue
+        preamble = pch.with_name(pch.name[: -len(".pch")] + "_preamble.cu")
+        try:
+            size = pch.stat().st_size + (
+                preamble.stat().st_size if preamble.exists() else 0
+            )
+            entries.append((pch.stat().st_mtime, size, pch, preamble))
+        except OSError:
+            continue
+        total += size
+    # Everything in the directory counts toward the cap, including entries this
+    # build is using, so measure them even though they cannot be evicted.
+    for pch in exempt:
+        try:
+            total += pch.stat().st_size
+        except OSError:
+            pass
+
+    if total <= cap:
+        return 0
+
+    reclaimed = 0
+    for _mtime, size, pch, preamble in sorted(entries):
+        if total <= cap:
+            break
+        for path in (pch, preamble):
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        total -= size
+        reclaimed += size
+    return reclaimed
 
 
 def cache_dir() -> Path | None:
     """Where the precompiled-header cache lives, or None if there is none.
 
-    The location depends on ``CCCL_PCH_CACHE_DIR``, ``XDG_CACHE_HOME``, and the
-    platform, so ask rather than assume. Returns None on the v1 (NVRTC) backend,
-    which has no PCH cache, and when no writable location could be resolved.
+    Returns None on the v1 (NVRTC) backend, which has no PCH cache, and when no
+    writable location could be resolved.
     """
     try:
         from ._bindings import pch_cache_dir  # type: ignore[attr-defined]

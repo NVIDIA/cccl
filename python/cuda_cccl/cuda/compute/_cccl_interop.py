@@ -301,6 +301,17 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
         temp_cubin_file_name = _check_compile_result(cubin)
         os.unlink(temp_cubin_file_name)
 
+    # Keep the on-disk precompiled-header cache within its size cap, after the
+    # build that may have added to it. Stat'ing a handful of files costs far
+    # less than the build itself, and a failed prune must never fail a build
+    # that already succeeded.
+    try:
+        from ._pch import evict
+
+        evict()
+    except Exception:
+        pass
+
     return result
 
 

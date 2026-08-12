@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <cctype>
-#include <cerrno>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -8,7 +6,6 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -46,277 +43,6 @@ static constexpr const char* pch_preamble_source =
   "#include <cub/device/device_segmented_sort.cuh>\n"
   "#include <cub/device/device_select.cuh>\n"
   "#include <cub/device/device_transform.cuh>\n";
-
-// Parse CCCL_PCH_CACHE_MAXSIZE. Accepts a byte count with an optional binary
-// suffix (K/M/G, or KiB/MiB/GiB). 0 disables eviction.
-//
-// The default is 1 GiB, which holds roughly a dozen configurations. CUDA's
-// analogous CUDA_CACHE_MAXSIZE defaults to 256 MiB, but its entries are cubins
-// measured in kilobytes; a single PCH here is tens of megabytes, so the same
-// default would hold only three configurations and thrash.
-std::uintmax_t pch_cache_max_size()
-{
-  constexpr std::uintmax_t default_bytes = 1024ull * 1024 * 1024;
-
-  const char* v = std::getenv("CCCL_PCH_CACHE_MAXSIZE");
-  if (!v || v[0] == '\0')
-  {
-    return default_bytes;
-  }
-
-  errno                 = 0;
-  char* end             = nullptr;
-  const long long value = std::strtoll(v, &end, 10);
-  // strtoll signals overflow with ERANGE and still returns LLONG_MAX, which
-  // would otherwise be scaled by the suffix below and wrap.
-  if (end == v || value < 0 || errno == ERANGE)
-  {
-    return default_bytes;
-  }
-
-  std::uintmax_t multiplier = 1;
-  while (end && *end == ' ')
-  {
-    ++end;
-  }
-  if (end && *end != '\0')
-  {
-    switch (std::tolower(static_cast<unsigned char>(*end)))
-    {
-      case 'k':
-        multiplier = 1024ull;
-        break;
-      case 'm':
-        multiplier = 1024ull * 1024;
-        break;
-      case 'g':
-        multiplier = 1024ull * 1024 * 1024;
-        break;
-      default:
-        return default_bytes;
-    }
-  }
-  // The scaled value must not wrap: a product of exactly 2^64 comes back as 0,
-  // which this function's callers read as "eviction disabled" and would let the
-  // cache grow without bound. Treat anything that does not fit as a typo and
-  // fall back to the default, the same as unparsable input.
-  const auto scalar = static_cast<std::uintmax_t>(value);
-  if (multiplier > 1 && scalar > std::numeric_limits<std::uintmax_t>::max() / multiplier)
-  {
-    return default_bytes;
-  }
-  return scalar * multiplier;
-}
-
-// Evict least-recently-used entries until the cache fits under its size cap,
-// and drop temp files abandoned by a killed generation.
-//
-// Bounding disk rather than age follows CUDA's JIT cache (CUDA_CACHE_MAXSIZE)
-// and ccache (max_size): size is the resource users care about, and an age
-// limit bounds nothing -- a dozen configurations used inside the window still
-// costs a gigabyte. Recency is mtime, refreshed on use by touch_pch_entry, so
-// this is LRU in the same approximate sense ccache documents.
-//
-// Called once per build that generated something, never on cache-directory
-// resolution. Generation is the only moment the cache grows, and a directory
-// scan is free beside the multi-second compile that just finished; doing it per
-// process would put a scan in the hot path of every import.
-//
-// `in_use` holds the entries this build is about to compile against. They must
-// be excluded: evicting one after its path has been handed to the in-flight
-// build makes that build fail its PCH lookup, fall into the retry path, and
-// discard the *other* entry too -- so a cap that should have dropped one entry
-// empties the cache instead.
-//
-// Best-effort throughout: failing to evict is never a reason to fail a build.
-void evict_pch_cache(const std::filesystem::path& dir, const std::vector<std::string>& in_use)
-{
-  // A .pch and the _preamble.cu it was built from are one logical entry: the
-  // PCH records the preamble's path, so evicting them separately would leave
-  // an entry that clang rejects on the next build.
-  struct Entry
-  {
-    std::filesystem::path pch;
-    std::filesystem::path preamble;
-    std::filesystem::file_time_type mtime;
-    std::uintmax_t bytes;
-  };
-
-  std::vector<Entry> entries;
-  std::uintmax_t total = 0;
-
-  // Temp files older than an hour belong to a generation that died; a live one
-  // is seconds old. Sweeping them here rather than in a separate pass keeps the
-  // cache to a single maintenance point.
-  const auto temp_cutoff = std::filesystem::file_time_type::clock::now() - std::chrono::hours(1);
-
-  std::error_code ec;
-  for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
-  {
-    std::error_code entry_ec;
-    if (!it->is_regular_file(entry_ec) || entry_ec)
-    {
-      continue;
-    }
-    const auto& path = it->path();
-
-    if (path.extension() == ".tmp")
-    {
-      const auto mtime = it->last_write_time(entry_ec);
-      if (!entry_ec && mtime < temp_cutoff)
-      {
-        std::error_code remove_ec;
-        std::filesystem::remove(path, remove_ec);
-      }
-      continue;
-    }
-
-    if (path.extension() != ".pch")
-    {
-      continue; // preambles are accounted for with their .pch
-    }
-
-    const auto mtime = it->last_write_time(entry_ec);
-    if (entry_ec)
-    {
-      continue;
-    }
-    const auto size = it->file_size(entry_ec);
-    if (entry_ec)
-    {
-      continue;
-    }
-
-    auto preamble = path;
-    preamble.replace_extension();
-    preamble += "_preamble.cu";
-
-    std::error_code preamble_ec;
-    const auto preamble_size   = std::filesystem::file_size(preamble, preamble_ec);
-    const std::uintmax_t bytes = size + (preamble_ec ? 0 : preamble_size);
-
-    total += bytes;
-    const bool protected_entry = std::find(in_use.begin(), in_use.end(), path.string()) != in_use.end();
-    if (!protected_entry)
-    {
-      entries.push_back(Entry{path, preamble, mtime, bytes});
-    }
-  }
-
-  const std::uintmax_t cap = pch_cache_max_size();
-  if (cap == 0 || total <= cap)
-  {
-    return;
-  }
-
-  std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) {
-    return a.mtime < b.mtime;
-  });
-
-  for (const auto& entry : entries)
-  {
-    if (total <= cap)
-    {
-      break;
-    }
-    std::error_code remove_ec;
-    std::filesystem::remove(entry.pch, remove_ec);
-    std::filesystem::remove(entry.preamble, remove_ec);
-    total -= entry.bytes;
-  }
-}
-
-// Resolve the PCH cache directory, once per process. CCCL_PCH_CACHE_DIR wins on
-// every platform and is used verbatim, with no subdirectory appended, so a
-// caller (CI, a test's tmp_path) gets exactly the path it asked for. The
-// remaining candidates differ by platform.
-//
-// POSIX:
-//   1. $XDG_CACHE_HOME/cccl/hostjit_pch
-//   2. $HOME/.cache/cccl/hostjit_pch
-//   3. <temp>/hostjit_pch_<uid>  -- uid-scoped, so two users on one machine
-//      cannot land on the same directory and fight over its permissions.
-//
-// Windows (XDG_CACHE_HOME and HOME are not consulted):
-//   1. %LOCALAPPDATA%\cccl\hostjit_pch
-//   2. <temp>\hostjit_pch  -- no uid suffix; the per-user temp directory
-//      already scopes it.
-//
-// This is a persistent cache of tens of megabytes, not scratch, so the system
-// temp directory is a poor default: it is shared, and whoever creates it first
-// owns it.
-//
-// Returns an empty path when nothing is usable. Callers treat that as "PCH
-// unavailable" and build without one; this never throws, because an unwritable
-// cache location must not be able to fail a build.
-const std::filesystem::path& get_pch_cache_dir()
-{
-  static const std::filesystem::path resolved = [] {
-    std::vector<std::filesystem::path> candidates;
-
-    if (const char* explicit_dir = std::getenv("CCCL_PCH_CACHE_DIR"); explicit_dir && explicit_dir[0] != '\0')
-    {
-      candidates.emplace_back(explicit_dir);
-    }
-    else
-    {
-#ifdef _WIN32
-      if (const char* local_app = std::getenv("LOCALAPPDATA"); local_app && local_app[0] != '\0')
-      {
-        candidates.emplace_back(std::filesystem::path(local_app) / "cccl" / "hostjit_pch");
-      }
-#else
-      if (const char* xdg = std::getenv("XDG_CACHE_HOME"); xdg && xdg[0] != '\0')
-      {
-        candidates.emplace_back(std::filesystem::path(xdg) / "cccl" / "hostjit_pch");
-      }
-      if (const char* home = std::getenv("HOME"); home && home[0] != '\0')
-      {
-        candidates.emplace_back(std::filesystem::path(home) / ".cache" / "cccl" / "hostjit_pch");
-      }
-#endif
-      std::error_code temp_ec;
-      const auto temp = std::filesystem::temp_directory_path(temp_ec);
-      if (!temp_ec)
-      {
-#ifdef _WIN32
-        candidates.emplace_back(temp / "hostjit_pch");
-#else
-        candidates.emplace_back(temp / ("hostjit_pch_" + std::to_string(static_cast<unsigned>(::getuid()))));
-#endif
-      }
-    }
-
-    for (const auto& dir : candidates)
-    {
-      std::error_code ec;
-      std::filesystem::create_directories(dir, ec);
-      // Both overloads must be the non-throwing ones: this runs in a static
-      // initializer, so an escaping filesystem_error would both fail the build
-      // and leave the static uninitialized for the next caller to retry.
-      std::error_code is_dir_ec;
-      if (ec && !std::filesystem::is_directory(dir, is_dir_ec))
-      {
-        continue;
-      }
-      // create_directories succeeding does not prove we can write into an
-      // already-existing directory owned by someone else, so probe.
-      const auto probe = dir / ".cccl_write_probe";
-      {
-        std::ofstream f(probe, std::ios::binary);
-        if (!f)
-        {
-          continue;
-        }
-      }
-      std::error_code remove_ec;
-      std::filesystem::remove(probe, remove_ec);
-      return dir;
-    }
-    return std::filesystem::path{};
-  }();
-  return resolved;
-}
 
 // 64-bit FNV-1a over everything that determines the contents of a PCH: the
 // preamble text, the PCH kind, and every option handed to libnvcc.
@@ -372,10 +98,11 @@ std::string get_pch_source_path(const std::filesystem::path& dir, const std::str
   return (dir / (kind + "_" + key + "_preamble.cu")).string();
 }
 
-// Refresh a cache entry's mtime so evict_pch_cache treats it as recently used,
-// but only when it is already more than a day stale -- otherwise every build
-// would pay a pointless write. Touching the .pch is safe: clang validates the
-// mtimes of the headers a PCH depends on, not of the PCH file itself.
+// Record that an entry was used, so whoever prunes the cache can order entries
+// by recency. Only rewritten when already more than a day stale, since
+// otherwise every build would pay a pointless write. Touching the .pch is safe:
+// clang validates the mtimes of the headers a PCH depends on, not of the PCH
+// file itself.
 //
 // The preamble must be touched alongside it. A PCH records its preamble as an
 // input, so pruning the preamble invalidates the PCH; refreshing only the .pch
@@ -472,10 +199,22 @@ bool create_pch_if_needed(
 {
   pch_path.clear();
 
-  const auto& cache_dir = get_pch_cache_dir();
+  // The caller supplies the location; this library never picks one. An empty
+  // path means "no PCH", which is how a caller that does not want the feature
+  // (or could not resolve a writable directory) turns it off.
+  const std::filesystem::path cache_dir{config.pch_cache_dir};
   if (cache_dir.empty())
   {
-    diagnostics += "PCH cache directory unavailable; building without PCH\n";
+    diagnostics += "no PCH cache directory supplied; building without PCH\n";
+    return false;
+  }
+
+  std::error_code mkdir_ec;
+  std::filesystem::create_directories(cache_dir, mkdir_ec);
+  std::error_code is_dir_ec;
+  if (mkdir_ec && !std::filesystem::is_directory(cache_dir, is_dir_ec))
+  {
+    diagnostics += "PCH cache directory is unusable; building without PCH\n";
     return false;
   }
 
@@ -614,18 +353,6 @@ hostjit::CompilerConfig prepare_pch_config(const hostjit::CompilerConfig& config
     prepared.host_pch_path = std::move(host_pch_path);
   }
 
-  // Evict only when this build actually added to the cache, and only once both
-  // entries are known, so neither can be evicted out from under the compile
-  // that is about to use them.
-  if (generated)
-  {
-    const auto& cache_dir = get_pch_cache_dir();
-    if (!cache_dir.empty())
-    {
-      evict_pch_cache(cache_dir, {prepared.device_pch_path, prepared.host_pch_path});
-    }
-  }
-
   return prepared;
 }
 
@@ -643,11 +370,6 @@ bool read_file(const std::string& path, std::vector<char>& out)
 
 namespace hostjit
 {
-std::string pchCacheDir()
-{
-  return get_pch_cache_dir().string();
-}
-
 JITCompiler::JITCompiler()
     : config_(detectDefaultConfig())
 {}
