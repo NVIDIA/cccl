@@ -41,6 +41,21 @@ compile_time:
           top: 15
           threshold: 0.2
 
+# Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
+# the author to run the benchmarks when the generated code changed.
+#
+# We should almost always run this on latest CTK and compiler since that compiles the most
+# amount of arches.
+sass:
+  pull_request:
+    - id: cub-benchmarks
+      gpu: h100
+      ctk: '13.X'
+      cxx: 'gcc13'
+      preset: cub-benchmark
+      archs: all-major-cccl
+      target_filters: ["^cub\\.bench\\."]
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
