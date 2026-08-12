@@ -35,11 +35,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp>
 _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
 
@@ -304,10 +299,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

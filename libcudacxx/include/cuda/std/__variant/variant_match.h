@@ -67,11 +67,6 @@ using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp, size_t _Idx>
 struct __overload
 {
@@ -86,10 +81,6 @@ struct __overload_bool
   _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(bool, _Up&&)
     -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <size_t _Idx>
 struct __overload<bool, _Idx> : __overload_bool<bool, _Idx>
