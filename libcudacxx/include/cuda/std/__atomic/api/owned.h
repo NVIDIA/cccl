@@ -33,6 +33,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#define _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()
+
 template <typename _Tp, typename _Sco>
 struct __atomic_common
 {
@@ -128,6 +130,8 @@ using __atomic_impl = _If<
   _If<is_floating_point_v<_Tp>,
       __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
       _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
+
+#undef _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
