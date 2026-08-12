@@ -99,25 +99,23 @@ std::string get_pch_source_path(const std::filesystem::path& dir, const std::str
 }
 
 // Record that an entry was used, so whoever prunes the cache can order entries
-// by recency. Only rewritten when already more than a day stale, since
-// otherwise every build would pay a pointless write. Touching the .pch is safe:
-// clang validates the mtimes of the headers a PCH depends on, not of the PCH
-// file itself.
+// by recency. Every use refreshes the timestamp: skipping recent ones would
+// make an entry rebuilt and then hammered look older than one touched once and
+// abandoned, which inverts the ordering exactly where it matters. Two timestamp
+// writes are immaterial next to the compile they accompany.
 //
-// The preamble must be touched alongside it. A PCH records its preamble as an
-// input, so pruning the preamble invalidates the PCH; refreshing only the .pch
-// would let one in daily use survive while the preamble underneath it aged out.
+// Touching the .pch is safe: clang validates the mtimes of the headers a PCH
+// depends on, not of the PCH file itself. The preamble must be touched
+// alongside it -- a PCH records its preamble as an input, so pruning the
+// preamble invalidates the PCH, and refreshing only the .pch would let one in
+// active use survive while the preamble underneath it aged out.
 void touch_pch_entry(const std::string& pch_path, const std::string& preamble_path)
 {
   const auto now = std::filesystem::file_time_type::clock::now();
   for (const auto& path : {std::cref(pch_path), std::cref(preamble_path)})
   {
     std::error_code ec;
-    const auto mtime = std::filesystem::last_write_time(path.get(), ec);
-    if (!ec && now - mtime > std::chrono::hours(24))
-    {
-      std::filesystem::last_write_time(path.get(), now, ec);
-    }
+    std::filesystem::last_write_time(path.get(), now, ec);
   }
 }
 
