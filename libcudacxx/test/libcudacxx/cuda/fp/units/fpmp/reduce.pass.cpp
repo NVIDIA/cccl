@@ -28,7 +28,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <cooperative_groups.h>
@@ -67,10 +67,10 @@ __global__ void test_reduce_kernel(unsigned int seed)
 void run_reduce()
 {
   const unsigned int seed = 10;
-  test_reduce_kernel<4, fp32mp2><<<1, 4>>>(seed);
-  test_reduce_kernel<32, fp32mp2><<<1, 64>>>(seed);
-  test_reduce_kernel<4, fp64mp2><<<1, 4>>>(seed);
-  test_reduce_kernel<32, fp64mp2><<<1, 64>>>(seed);
+  test_reduce_kernel<4, cudax::fp32mp2><<<1, 4>>>(seed);
+  test_reduce_kernel<32, cudax::fp32mp2><<<1, 64>>>(seed);
+  test_reduce_kernel<4, cudax::fp64mp2><<<1, 4>>>(seed);
+  test_reduce_kernel<32, cudax::fp64mp2><<<1, 64>>>(seed);
   assert(cudaGetLastError() == cudaSuccess);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }

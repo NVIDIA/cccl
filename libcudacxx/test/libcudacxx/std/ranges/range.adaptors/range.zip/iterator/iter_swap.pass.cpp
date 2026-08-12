@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // friend constexpr void iter_swap(const iterator& l, const iterator& r) noexcept(see below)
 //   requires (indirectly_swappable<iterator_t<maybe-const<Const, Views>>> && ...);
 
@@ -23,14 +20,14 @@
 struct ThrowingMove
 {
   ThrowingMove() = default;
-  TEST_HOST_DEVICE_FUNC ThrowingMove(ThrowingMove&&) {};
-  TEST_HOST_DEVICE_FUNC ThrowingMove& operator=(ThrowingMove&&)
+  TEST_FUNC ThrowingMove(ThrowingMove&&) {};
+  TEST_FUNC ThrowingMove& operator=(ThrowingMove&&)
   {
     return *this;
   }
 };
 
-TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     cuda::std::array<int, 4> a1{1, 2, 3, 4};

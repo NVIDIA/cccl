@@ -107,8 +107,8 @@ void TestZipIteratorTraits()
     using traits     = cuda::std::iterator_traits<it>;
     using value_type = cuda::std::tuple<int, int>;
     using reference  = thrust::detail::tuple_of_iterator_references<
-       int&,
-       cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>;
+      int&,
+      cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>;
 
     static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);

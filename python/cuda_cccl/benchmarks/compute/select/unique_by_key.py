@@ -21,11 +21,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import INTEGRAL_TYPES, SIGNED_TYPES, as_cupy_stream, generate_key_segments
 
-import cuda.bench as bench
 from cuda.compute import OpKind, make_unique_by_key
 
 KEY_TYPE_MAP = INTEGRAL_TYPES

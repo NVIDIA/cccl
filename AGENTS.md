@@ -206,6 +206,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.stf._experimental** — Sequential Task Flow (CUDASTF) Python bindings in the `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -255,13 +256,15 @@ include_paths = headers.get_include_paths()
 ./ci/test_cuda_compute_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
 
 * `tests/compute` — Algorithms and iterators
 * `tests/headers` — Header integration
-* `test_examples.py` — Runs compute examples
+* `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
+* `test_examples.py` — Runs compute examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 

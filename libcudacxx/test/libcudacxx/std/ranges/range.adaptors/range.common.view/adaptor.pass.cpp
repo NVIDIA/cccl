@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // cuda::std::views::common
 
 #include <cuda/std/array>
@@ -26,7 +23,7 @@ template <class View, class T>
 _CCCL_CONCEPT CanBePiped =
   _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
 
-TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 
@@ -62,6 +59,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   {
     using SomeView = NonCommonView;
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     // Test `v | views::common`
     {
       SomeView view(buf, buf + 3);
@@ -70,6 +68,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
       assert(result.base().begin_ == buf);
       assert(result.base().end_ == buf + 3);
     }
+#endif // !_CCCL_TILE_COMPILATION()
 
     // Test `adaptor | views::common`
     {

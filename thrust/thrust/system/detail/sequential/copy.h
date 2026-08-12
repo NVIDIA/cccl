@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE OutputIterator
 copy(InputIterator first,
      InputIterator last,
      OutputIterator result,
-     thrust::detail::true_type) // is_indirectly_trivially_relocatable_to
+     thrust::detail::true_type) // is_indirectly_trivially_copyable_to
 {
   using Size = thrust::detail::it_difference_t<InputIterator>;
 
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE OutputIterator
 copy(InputIterator first,
      InputIterator last,
      OutputIterator result,
-     thrust::detail::false_type) // is_indirectly_trivially_relocatable_to
+     thrust::detail::false_type) // is_indirectly_trivially_copyable_to
 {
   return thrust::system::detail::sequential::general_copy(first, last, result);
 } // end copy()
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
   InputIterator first,
   Size n,
   OutputIterator result,
-  thrust::detail::true_type) // is_indirectly_trivially_relocatable_to
+  thrust::detail::true_type) // is_indirectly_trivially_copyable_to
 {
   thrust::system::detail::sequential::trivial_copy_n(::cuda::std::to_address(first), n, ::cuda::std::to_address(result));
   return result + n;
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
   InputIterator first,
   Size n,
   OutputIterator result,
-  thrust::detail::false_type) // is_indirectly_trivially_relocatable_to
+  thrust::detail::false_type) // is_indirectly_trivially_copyable_to
 {
   return thrust::system::detail::sequential::general_copy_n(first, n, result);
 } // end copy_n()
@@ -87,7 +87,10 @@ _CCCL_HOST_DEVICE OutputIterator
 copy(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, OutputIterator result)
 {
   return thrust::system::detail::sequential::copy_detail::copy(
-    first, last, result, typename thrust::is_indirectly_trivially_relocatable_to<InputIterator, OutputIterator>::type());
+    first,
+    last,
+    result,
+    ::cuda::std::bool_constant<thrust::detail::is_indirectly_trivially_copyable_to_v<InputIterator, OutputIterator>>{});
 } // end copy()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -96,7 +99,10 @@ _CCCL_HOST_DEVICE OutputIterator
 copy_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, OutputIterator result)
 {
   return thrust::system::detail::sequential::copy_detail::copy_n(
-    first, n, result, typename thrust::is_indirectly_trivially_relocatable_to<InputIterator, OutputIterator>::type());
+    first,
+    n,
+    result,
+    ::cuda::std::bool_constant<thrust::detail::is_indirectly_trivially_copyable_to_v<InputIterator, OutputIterator>>{});
 } // end copy_n()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
