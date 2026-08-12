@@ -8,23 +8,18 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _SPAN_PATTERN = re.compile(r"^cuda::std::span<.+>$")
-_ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
 InternalDict = dict[str, object]
 
 
-def _canonical_type_name(value_type: lldb.SBType) -> str:
-    # GetName, not GetDisplayTypeName: the display name elides defaulted template
-    # arguments, so a dynamic-extent span would lose its extent entirely. The full
-    # name always keeps it, at the cost of spelling out the ABI inline namespace.
-    name = value_type.GetCanonicalType().GetUnqualifiedType().GetName() or ""
-    return _ABI_NAMESPACE_PATTERN.sub("", name)
-
-
 def is_cuda_span(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    return _SPAN_PATTERN.fullmatch(_canonical_type_name(value_type)) is not None
+    # public_type_name, not canonical_type_name: the display name elides the
+    # defaulted extent argument, but the full name is what update() parses.
+    return _SPAN_PATTERN.fullmatch(cccl_common.public_type_name(value_type)) is not None
 
 
 def _dynamic_extent(span_type: lldb.SBType, target: lldb.SBTarget) -> int:
@@ -39,12 +34,13 @@ class SpanSyntheticProvider:
     """Expose cuda::std::span elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.update()
 
     def update(self) -> bool:
-        span_type = self.value.GetType().GetCanonicalType().GetUnqualifiedType()
-        canonical_name = _canonical_type_name(self.value.GetType())
+        span_type = cccl_common.strip_reference(self.value.GetType())
+        canonical_name = cccl_common.public_type_name(self.value.GetType())
         self.type_name = canonical_name.replace(
             f", {_dynamic_extent(span_type, self.value.GetTarget())}>",
             ", dynamic_extent>",
@@ -59,7 +55,7 @@ class SpanSyntheticProvider:
 
         # The dynamic-extent specialization stores its size; the static-extent
         # one carries it in the type name, which is the only place LLDB exposes
-        # a non-type template argument.
+        # a non-type template argument's value.
         size = self.value.GetChildMemberWithName("__size_")
         self.size = (
             size.GetValueAsUnsigned(0)

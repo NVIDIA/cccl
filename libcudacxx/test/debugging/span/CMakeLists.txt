@@ -3,14 +3,14 @@ libcudacxx_add_pretty_printer_test(
   SOURCES source.cu
   CASES
     # gersemi: off
-    --case inspect_static 1 span.static static_extent
-    --case inspect_dynamic 1 span.dynamic dynamic
-    --case inspect_static_empty 1 span.static_empty static_empty
-    --case inspect_default 1 span.default default_constructed
-    --case inspect_const 1 span.const const_elements
-    --case inspect_nested 1 span.nested nested
-    --case inspect_alias 1 span.alias alias
-    --case inspect_before_update 1 span.update.before updated
-    --case inspect_after_update 1 span.update.after updated
+    --case inspect_static span.static values
+    --case inspect_dynamic span.dynamic values
+    --case inspect_static_empty span.static_empty values
+    --case inspect_default span.default values
+    --case inspect_const span.const values
+    --case inspect_nested span.nested values
+    --case inspect_alias span.alias values
+    --case inspect_before_update span.update.before values
+    --case inspect_after_update span.update.after values
     # gersemi: on
 )

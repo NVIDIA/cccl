@@ -9,20 +9,14 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_cuda_span(value_type: gdb.Type) -> bool:
-    # strip_typedefs resolves aliases that can hide accessibility properties.
-    value_type = value_type.strip_typedefs().unqualified()
-    template_name = _template_name(value_type)
+    template_name = cccl_common.template_name(cccl_common.canonical_type(value_type))
     return (
         template_name.startswith("cuda::std::")
         and template_name.rsplit("::", 1)[-1] == "span"
@@ -37,7 +31,7 @@ def _dynamic_extent(value_type: gdb.Type) -> int:
 
 
 def _public_span_name(value_type: gdb.Type) -> str:
-    name = memory_resource.public_type_name(value_type)
+    name = cccl_common.public_type_name(value_type)
     return name.replace(f", {_dynamic_extent(value_type)}>", ", dynamic_extent>")
 
 
@@ -45,8 +39,9 @@ class SpanPrinter:
     """Expose cuda::std::span metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = cccl_common.canonical_type(value.type)
         self.type_name = _public_span_name(self.type)
         self.data = value["__data_"]
         # The dynamic-extent specialization stores its size; the static-extent

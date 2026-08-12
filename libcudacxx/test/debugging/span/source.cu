@@ -5,57 +5,56 @@
 #include <cuda/std/array>
 #include <cuda/std/span>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using span_alias = cuda::std::span<int, 4>;
 
 [[gnu::noinline]] void inspect_static(const cuda::std::span<int, 3>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_dynamic(const cuda::std::span<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_static_empty(const cuda::std::span<int, 0>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_default(const cuda::std::span<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_const(const cuda::std::span<const int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::span<cuda::std::array<int, 2>>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_alias(const span_alias& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::std::span<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::std::span<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 int main()
