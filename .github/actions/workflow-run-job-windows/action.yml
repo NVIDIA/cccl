@@ -179,6 +179,8 @@ runs:
 
         git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
 
+        $env:SCCACHE_ERROR_LOG="$env:TEMP\sccache.log"
+
         # We've been seeing intermittent sccache auth issues on Windows. Make a few attempts to
         # start the server and authenticate:
         sccache --version
@@ -271,6 +273,7 @@ runs:
           --env "JOB_ID=${{inputs.id}}" \
           --env "NVCC_APPEND_FLAGS=-t=100" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
+          --env "SCCACHE_SERVER_LOG=sccache=debug" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
           --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
