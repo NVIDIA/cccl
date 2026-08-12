@@ -32,7 +32,10 @@ cdef bytes _pch_cache_dir_bytes = b""
 
 cdef inline void _init_build_config():
     global _pch_cache_dir_bytes
-    from ._pch import resolve_cache_dir
+    # Absolute: this file is compiled into the per-CTK bindings subpackage, so a
+    # relative import would look for `_pch` beside the extension rather than in
+    # `cuda.compute`.
+    from cuda.compute._pch import resolve_cache_dir
 
     directory = resolve_cache_dir()
     _pch_cache_dir_bytes = b"" if directory is None else str(directory).encode("utf-8")
