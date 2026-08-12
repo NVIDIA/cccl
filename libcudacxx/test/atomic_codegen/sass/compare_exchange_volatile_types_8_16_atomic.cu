@@ -13,7 +13,9 @@
 // %PARAM% TYPE type int8_t:uint8_t:int16_t:uint16_t:f16:bf16
 // Strong compare-exchange may retry internally using weak compare-exchange; only the weak overload must contain one CAS.
 // %PARAM% CAS,FILECHECK_PREFIX_SINGLE_CAS cas compare_exchange_weak=compare_exchange_weak,single_cas:compare_exchange_strong=compare_exchange_strong,smxx
-// %PARAM% SUCCESS_ORDER,FAILURE_ORDER,SASS_MEMBAR,FILECHECK_PREFIX_ORDER order rr=mor,mor,,no_membar:ar=moa,mor,,no_membar:aa=moa,moa,,no_membar:er=more,mor,ALL,membar:br=moar,mor,ALL,membar:ba=moar,moa,ALL,membar:sr=mosc,mor,SC,membar:sa=mosc,moa,SC,membar:ss=mosc,mosc,SC,membar
+// %PARAM% SUCCESS_ORDER,FAILURE_ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order rr=mor,mor,,non_seq_cst,no_acquire,no_membar:ar=moa,mor,,non_seq_cst,acquire,no_membar:aa=moa,moa,,non_seq_cst,acquire,no_membar:er=more,mor,ALL,non_seq_cst,no_acquire,membar:br=moar,mor,ALL,non_seq_cst,acquire,membar:ba=moar,moa,ALL,non_seq_cst,acquire,membar:sr=mosc,mor,SC,seq_cst,acquire,membar:sa=mosc,moa,SC,seq_cst,acquire,membar:ss=mosc,mosc,SC,seq_cst,acquire,membar
+// %FILECHECK% PREFIX_COMBINE non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
 
 #include <cuda_bf16.h>
@@ -31,12 +33,20 @@ extern "C" __device__ bool atomic_codegen_test(volatile cuda::atomic<TYPE, SCOPE
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SINGLE_CAS-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}

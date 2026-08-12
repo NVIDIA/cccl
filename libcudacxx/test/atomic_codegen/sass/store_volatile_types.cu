@@ -11,7 +11,8 @@
 // clang-format off
 // %PARAM% TEMPLATE,SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE api vcad=vca,tsd,GPU,non_block:vcard=vcar,tsd,GPU,non_block
 // %PARAM% TYPE,SASS_SIZE type i32=int32_t,:u32=uint32_t,:i64=int64_t,.64:u64=uint64_t,.64:f32=float,:f64=double,.64:ptr1=char*,.64:ptr4=int32_t*,.64
-// %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_ORDER order relaxed=mor,,no_membar:release=more,ALL,membar:seq_cst=mosc,SC,membar
+// %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_membar:release=more,ALL,non_seq_cst,membar:seq_cst=mosc,SC,seq_cst,membar
+// %FILECHECK% PREFIX_COMBINE non_block,seq_cst
 // clang-format on
 
 #include "atomic_codegen_helpers.h"
@@ -26,13 +27,19 @@ extern "C" __device__ void atomic_codegen_test(TEMPLATE<TYPE, SCOPE>& atom, TYPE
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SMXX-NOT: {{.*}}ST.E{{.*}}.STRONG{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SMXX-NOT: {{.*}}ST.E{{.*}}.STRONG{{.*}}
 ; BLOCK: {{.*}}ST.E[[SASS_SIZE]].STRONG.{{CTA|SM}} {{.*}}, R6{{.*}}
 ; NON_BLOCK: {{.*}}ST.E[[SASS_SIZE]].STRONG.[[SASS_SCOPE]] {{.*}}, R6{{.*}}
 ; SMXX-NOT: {{.*}}ST.E{{.*}}.STRONG{{.*}}
+; SMXX-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NEXT: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
