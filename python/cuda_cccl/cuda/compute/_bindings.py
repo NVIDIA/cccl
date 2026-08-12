@@ -90,9 +90,12 @@ except ImportError as e:
 if _BINDINGS_AVAILABLE:
     # Point builds at the precompiled-header cache. Done here rather than inside
     # the extension because resolving it needs `cuda.compute._pch`, which is not
-    # importable while the extension itself is still initializing. Failing to
-    # resolve one only means building without a PCH, never failing to import.
-    from ._pch import resolve_cache_dir
+    # importable while the extension itself is still initializing.
+    #
+    # Imported absolutely: the `globals().update()` above copies the extension's
+    # `__package__` into this module, so a relative import here would resolve
+    # into the per-CTK subpackage rather than beside this file.
+    from cuda.compute._pch import resolve_cache_dir
 
     try:
         bindings_module.set_pch_cache_dir(resolve_cache_dir())
