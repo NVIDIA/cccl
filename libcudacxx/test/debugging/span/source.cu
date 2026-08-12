@@ -72,7 +72,7 @@ int main()
   const cuda::std::span<const int> const_elements{const_storage, 2};
   const cuda::std::span<cuda::std::array<int, 2>> nested{nested_storage, 2};
   const span_alias alias{wide_storage};
-  cuda::std::span<int> updated{mutable_storage, 3};
+  const cuda::std::span<int> updated{mutable_storage, 3};
 
   inspect_static(static_extent);
   inspect_dynamic(dynamic);
