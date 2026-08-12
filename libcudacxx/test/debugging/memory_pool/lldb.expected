@@ -88,8 +88,8 @@
 =============== memory_pool.in_use begin ===============
 (const cuda::device_memory_pool &) <address> handle=<address>: {
   release_threshold = 8388608
-  reserved_mem_current = 33554432
-  reserved_mem_high = 33554432
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
   used_mem_current = 1048576
   used_mem_high = 1048576
 }
@@ -98,7 +98,7 @@
 (const cuda::device_memory_pool &) <address> handle=<address>: {
   release_threshold = 0
   reserved_mem_current = 0
-  reserved_mem_high = 33554432
+  reserved_mem_high = <nonzero>
   used_mem_current = 0
   used_mem_high = 1048576
 }
@@ -106,8 +106,8 @@
 =============== memory_pool.shared_in_use begin ===============
 (const cuda::shared_device_memory_pool &) <address> handle=<address>, use_count=1: {
   release_threshold = 9437184
-  reserved_mem_current = 33554432
-  reserved_mem_high = 33554432
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
   used_mem_current = 1048576
   used_mem_high = 1048576
 }

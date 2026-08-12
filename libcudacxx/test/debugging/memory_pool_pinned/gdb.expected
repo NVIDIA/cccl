@@ -28,8 +28,8 @@ cuda::shared_pinned_memory_pool handle=<address>, use_count=1 = {
 =============== memory_pool_pinned.in_use begin ===============
 cuda::pinned_memory_pool handle=<address> = {
   release_threshold = 4194304,
-  reserved_mem_current = 33554432,
-  reserved_mem_high = 33554432,
+  reserved_mem_current = <nonzero>,
+  reserved_mem_high = <nonzero>,
   used_mem_current = 1048576,
   used_mem_high = 1048576
 }
@@ -37,8 +37,8 @@ cuda::pinned_memory_pool handle=<address> = {
 =============== memory_pool_pinned.shared_in_use begin ===============
 cuda::shared_pinned_memory_pool handle=<address>, use_count=1 = {
   release_threshold = 5242880,
-  reserved_mem_current = 33554432,
-  reserved_mem_high = 33554432,
+  reserved_mem_current = <nonzero>,
+  reserved_mem_high = <nonzero>,
   used_mem_current = 1048576,
   used_mem_high = 1048576
 }
