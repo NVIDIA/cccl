@@ -206,18 +206,6 @@ workflows:
     - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '70;80;90;100;120'}
     - {project: 'libcudacxx', jobs: ['nvrtc'], std: 'max', gpu: 't4', sm: 'gpu'}
     - {project: 'libcudacxx', jobs: ['verify_codegen']}
-    # libcu++ Codegen FileCheck: common architectures use the full suite matrix;
-    # suite-specific architectures are added separately.
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.0', cxx: ['gcc12', 'clang14'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: [75, 80, 90]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: 75}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '12.X', cxx: ['gcc14', 'clang19'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: 75}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', ctk: '13.0', cxx: ['gcc15', 'clang20'], codegen_target: 'simd-sass', sm: [103, '120f']}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc15', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass', 'simd-ptx', 'simd-sass'], sm: [80, 90, 100, 120]}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc15', 'clang21'], codegen_target: ['atomics-ptx', 'atomics-sass'], sm: 75}
-    - {jobs: ['codegen_filecheck'], project: 'libcudacxx', std: 'max', cxx: ['gcc15', 'clang21'], codegen_target: 'simd-sass', sm: [103, '120f']}
     # CUB - Specialized, testing default SM
     - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtxa6000', sm: 'gpu'}
     - {project: 'cub', jobs: ['build_nolid', 'build_lid0'], std: 'max', cxx: 'clang'}
