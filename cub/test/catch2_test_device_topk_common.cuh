@@ -75,7 +75,7 @@ bool batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size
 // batched_topk_backend_unavailable() (or batched_topk_cluster_backend_unavailable() when the request is already known
 // to require the cluster backend); `dispatch` forwards to the direct-API entry point (host-side; the runtime error is
 // backend-selection driven and independent of the launch variant under test).
-template <class DispatchFn>
+template <typename DispatchFn>
 void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
 {
   cuda::std::size_t temp_storage_bytes = 0;

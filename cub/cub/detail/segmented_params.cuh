@@ -45,11 +45,11 @@ namespace detail::params
 
 // A `deferred` is read by dereferencing its handle (`*handle`, see the get_param overload below), so the handle must
 // be indirectly readable (a pointer or other dereferenceable handle); use `deferred_sequence` for per-segment values.
-template <class _Handle>
+template <typename _Handle>
 inline constexpr bool __is_valid_deferred_handle_v = ::cuda::std::indirectly_readable<_Handle>;
 
 // A `deferred_sequence` is indexed per segment (`handle[index]`), so its handle must be a random-access iterator.
-template <class _Handle>
+template <typename _Handle>
 inline constexpr bool __is_valid_deferred_sequence_handle_v = ::cuda::std::random_access_iterator<_Handle>;
 
 // =====================================================================
@@ -63,7 +63,7 @@ inline constexpr bool __is_valid_deferred_sequence_handle_v = ::cuda::std::rando
 // the struct runs the layered static_asserts below (each gated on the previous so a single misuse yields one targeted
 // diagnostic); `all_ok` lets the caller gate the downstream dispatch to avoid follow-on cascades. Any argument-specific
 // range/bound check is left to the caller.
-template <class _Param>
+template <typename _Param>
 struct __validate_uniform_or_per_segment_integral_param
 {
   using args_traits = ::cuda::args::__traits<_Param>;
@@ -112,7 +112,7 @@ struct __validate_uniform_or_per_segment_integral_param
 // everything else directly (`value_type`). A caller that additionally needs the value on the host (e.g. num_segments,
 // which sizes the launch) checks `!args_traits::is_deferred` separately. Instantiating the struct runs the layered
 // static_asserts (one diagnostic per misuse).
-template <class _Param>
+template <typename _Param>
 struct __validate_uniform_integral_param
 {
   using args_traits = ::cuda::args::__traits<_Param>;
@@ -158,7 +158,7 @@ struct __validate_uniform_integral_param
 // ::cuda::args::__lowest_/__highest_. A value outside them breaks the caller's promise and is otherwise undefined
 // behavior. Compiled out when assertions are disabled (the bounds are not even computed). Gated on the argument's
 // integer element type: `bool` and character types are excluded, matching the `cmp_*` comparators.
-template <class _Arg, class _Value>
+template <typename _Arg, typename _Value>
 _CCCL_HOST_DEVICE constexpr void
 __assert_param_in_bounds([[maybe_unused]] const _Arg& __arg, [[maybe_unused]] const _Value& __value) noexcept
 {
@@ -195,21 +195,21 @@ _CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>)
   }
 }
 
-template <auto _Value, class _Tp, class _SegmentIndexT>
+template <auto _Value, typename _Tp, typename _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::constant<_Value, _Tp>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
   return ::cuda::args::__unwrap(__arg);
 }
 
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
+template <typename _Arg, typename _StaticBounds, typename _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::immediate<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
   return ::cuda::args::__unwrap(__arg);
 }
 
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
+template <typename _Arg, typename _StaticBounds, typename _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
@@ -223,7 +223,7 @@ get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unus
   return __value;
 }
 
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
+template <typename _Arg, typename _StaticBounds, typename _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
 {
@@ -241,7 +241,7 @@ get_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg, _Se
 // element type -- before any widening/narrowing cast, so a caller that later widens the result cannot reinterpret a
 // negative value as a huge unsigned one. A negative count thus becomes "no work". Deferred forms are range-checked
 // against their declared bounds by `get_param` in debug builds.
-template <class _Arg, class _SegmentIndexT>
+template <typename _Arg, typename _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 __get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) noexcept
 {
@@ -267,7 +267,7 @@ __get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) 
 //! Smallest unsigned CUB offset type (>= 32-bit) covering @p _ParamT's declared static upper bound (from
 //! @c cuda::args), via @c detail::choose_offset_for_max_t. The bound is taken as given, never clamped: a bound the
 //! algorithm cannot support is a caller contract violation for its own static/runtime checks to surface.
-template <class _ParamT>
+template <typename _ParamT>
 using bounded_offset_t =
   detail::choose_offset_for_max_t<static_cast<::cuda::std::uint64_t>(::cuda::args::__traits<_ParamT>::highest)>;
 

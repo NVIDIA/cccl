@@ -72,7 +72,7 @@ namespace detail::batched_topk
 // The selection direction is compile-time only: callers pass `::cuda::args::constant<Dir>`, which maps to a
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
-template <detail::topk::select Dir, class _Tp>
+template <detail::topk::select Dir, typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, _Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
@@ -103,7 +103,7 @@ template <typename SelectDirectionT>
 // per-segment tile counts that we exclusive-scan to obtain per-segment tile
 // offsets.
 // -----------------------------------------------------------------------------
-template <class SegmentSizeParameterT, class TotalNumItemsValueType>
+template <typename SegmentSizeParameterT, typename TotalNumItemsValueType>
 struct segment_size_to_tile_count_op
 {
   SegmentSizeParameterT segment_sizes;
@@ -123,21 +123,21 @@ struct segment_size_to_tile_count_op
 // Stateless selector built purely from the compile-time request facts. It owns the entire backend decision, including
 // computing `baseline_can_cover` from the concrete agent types -- the reason it lives here (where
 // `baseline_can_cover_v` and the baseline agent are visible) rather than in the tuning header.
-template <class KeyT,
-          class ValueT,
+template <typename KeyT,
+          typename ValueT,
           ::cuda::std::int64_t MaxK,
           ::cuda::std::int64_t StaticMaxSegSize,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
-          class SegmentSizeParameterT,
-          class KeyInputItItT,
-          class KeyOutputItItT,
-          class ValueInputItItT,
-          class ValueOutputItItT,
-          class KParameterT,
-          class SelectDirectionParameterT,
-          class NumSegmentsParameterT,
-          class LargeSegmentTileOffsetT>
+          typename SegmentSizeParameterT,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
 struct policy_selector_from_types
 {
   // TODO(bgruber): to let the baseline policy vary per CC, move this coverage check into operator() and evaluate it for
@@ -210,7 +210,7 @@ struct policy_selector_from_types
 // under-reporting the budget by ~`reserved` (~1 KiB) -- enough to drop the cluster kernel's top table tier (see the
 // TODO in MaxPotentialDynamicSmemBytes). TODO: once that facility is fixed, delete this and call
 // `launcher_factory.max_dynamic_smem_size_for(...)` directly.
-template <class KernelPtr>
+template <typename KernelPtr>
 _CCCL_HOST_API cudaError_t max_dynamic_smem_size_for_fixed(int& max_dynamic_smem_bytes, KernelPtr kernel_ptr)
 {
   max_dynamic_smem_bytes = -1;
@@ -238,7 +238,7 @@ _CCCL_HOST_API cudaError_t max_dynamic_smem_size_for_fixed(int& max_dynamic_smem
 // Largest number of CTA blocks per cluster the kernel/architecture admits at `dynamic_smem_bytes` of dynamic SMEM. The
 // config's cluster dimension is ignored by the query (placeholder here); the non-portable opt-in must already be set
 // for it to report sizes beyond the portable ceiling.
-template <class KernelPtr>
+template <typename KernelPtr>
 _CCCL_HOST_API ::cuda::std::expected<int, cudaError_t>
 probe_max_cluster_blocks(KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int dynamic_smem_bytes)
 {
@@ -266,7 +266,7 @@ probe_max_cluster_blocks(KernelPtr kernel_ptr, cudaStream_t stream, int threads_
 // Device-wide count of `cluster_blocks`-CTA clusters that can be co-resident at `dynamic_smem_bytes` of dynamic SMEM
 // (clusters per wave). `cudaOccupancyMaxActiveClusters` rejects a grid that is not a multiple of the cluster, so the
 // grid is set to exactly one cluster; the returned capacity is independent of the actual grid size.
-template <class KernelPtr>
+template <typename KernelPtr>
 _CCCL_HOST_API ::cuda::std::expected<int, cudaError_t> probe_clusters_per_wave(
   KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int cluster_blocks, int dynamic_smem_bytes)
 {
@@ -301,7 +301,7 @@ struct cluster_launch_shape
 // Chooses the cluster launch shape for the statically-bounded max segment size. Probes occupancy through the CUDA
 // runtime; the caller has already set the kernel's dynamic-SMEM opt-in to the maximum, so every probed config and the
 // final launch run under one consistent opt-in.
-template <class LayoutT, class KernelPtr>
+template <typename LayoutT, typename KernelPtr>
 _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_cluster_launch_shape(
   ::cuda::std::uint64_t max_segment_size,
   ::cuda::std::uint64_t num_segments,
@@ -460,21 +460,21 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
 // `select_directions` arrives already wrapped; the cluster tuning comes from `policy_getter` (the resolved-CC policy)
 // and the requested `Determinism`/`TieBreak` from the dispatch. The kernel launch goes through `launcher_factory`; the
 // cluster occupancy / shared-memory setup queries still use the CUDA runtime directly.
-template <class PolicySelector,
-          class LargeSegmentTileOffsetT,
+template <typename PolicySelector,
+          typename LargeSegmentTileOffsetT,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           bool UserProvidedTuning,
-          class PolicyGetter,
-          class KeyInputItItT,
-          class KeyOutputItItT,
-          class ValueInputItItT,
-          class ValueOutputItItT,
-          class SegmentSizeParameterT,
-          class KParameterT,
-          class SelectDirectionParameterT,
-          class NumSegmentsParameterT,
-          class KernelLauncherFactory>
+          typename PolicyGetter,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT,
+          typename KernelLauncherFactory>
 _CCCL_HOST_API cudaError_t launch_cluster_arm(
   PolicyGetter policy_getter,
   void* d_temp_storage,
@@ -656,20 +656,20 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
 // `cluster_kernel_args`). `select_directions` arrives already wrapped and the baseline tuning is taken from the
 // `PolicySelector`. All kernel launches, memsets and nested scans go through
 // `launcher_factory`.
-template <class PolicySelector,
-          class PolicyGetter,
-          class LargeSegmentTileOffsetT,
+template <typename PolicySelector,
+          typename PolicyGetter,
+          typename LargeSegmentTileOffsetT,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
-          class KeyInputItItT,
-          class KeyOutputItItT,
-          class ValueInputItItT,
-          class ValueOutputItItT,
-          class SegmentSizeParameterT,
-          class KParameterT,
-          class SelectDirectionParameterT,
-          class NumSegmentsParameterT,
-          class KernelLauncherFactory>
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT,
+          typename KernelLauncherFactory>
 _CCCL_HOST_API cudaError_t launch_baseline_arm(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -892,7 +892,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
 // `::cuda::__target_compute_capabilities()`) resolves to the `unsupported` backend for `PolicySelector` -- e.g. a
 // deterministic request while a pre-SM90 target is present in the list. Used to turn a would-be runtime
 // `cudaErrorNotSupported` into a compile-time diagnostic (see the static_assert in `dispatch`).
-template <class PolicySelector>
+template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool any_target_cc_unsupported()
 {
   bool any = false;
@@ -918,17 +918,17 @@ template <
   ::cuda::execution::determinism::__determinism_t Determinism =
     ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
   ::cuda::execution::tie_break::__tie_break_t TieBreak = ::cuda::execution::tie_break::__tie_break_t::__unspecified,
-  class KeyInputItItT,
-  class KeyOutputItItT,
-  class ValueInputItItT,
-  class ValueOutputItItT,
-  class SegmentSizeParameterT,
-  class KParameterT,
-  class SelectDirectionT,
-  class NumSegmentsParameterT,
-  class TotalNumItemsGuaranteeT,
-  class TuningEnvT            = ::cuda::std::execution::env<>,
-  class KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  typename KeyInputItItT,
+  typename KeyOutputItItT,
+  typename ValueInputItItT,
+  typename ValueOutputItItT,
+  typename SegmentSizeParameterT,
+  typename KParameterT,
+  typename SelectDirectionT,
+  typename NumSegmentsParameterT,
+  typename TotalNumItemsGuaranteeT,
+  typename TuningEnvT            = ::cuda::std::execution::env<>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 _CCCL_HOST_API cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,

@@ -768,7 +768,7 @@ private:
   // reinterprets it as `FieldT`, so packed sub-structs come back typed without shifts or masks
   // (endianness-independent). Every read follows a cluster/block barrier that orders the leader's publish, so the weak
   // load is enough; `volatile` keeps it from being hoisted or CSE'd across passes (`result` changes each pass).
-  template <class FieldT>
+  template <typename FieldT>
   _CCCL_DEVICE _CCCL_FORCEINLINE FieldT leader_state_load(::cuda::std::size_t byte_offset)
   {
     const ::cuda::std::uint32_t addr = layout.leader_state32 + static_cast<::cuda::std::uint32_t>(byte_offset);
@@ -1388,7 +1388,7 @@ private:
   // returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops losing candidates but
   // always accepts selected keys; pairs builds also copy the key's value from `seg_idx`. (Deterministic index-ordered
   // tie resolution goes through `emit_indexed` instead.)
-  template <class KeyOutIt>
+  template <typename KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   place_one(KeyOutIt block_keys_out, bool is_tied, const key_t& key, offset_t seg_idx)
   {
@@ -1876,7 +1876,7 @@ private:
   // Consume the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
   // reading the keys already staged in `edge_keys`. Used by the histogram passes; both final filters consume the edges
   // through `process_tiles` instead (as separate regions for the deterministic filter, via `nondet_consume_resident`).
-  template <class Apply>
+  template <typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_boundary_edges(
     [[maybe_unused]] int num_head_edge_keys, [[maybe_unused]] int num_tail_edge_keys, [[maybe_unused]] Apply&& apply)
   {
@@ -1902,7 +1902,7 @@ private:
   // `process_tiles<..., Deterministic=false>` (arrival-order placement, no scan/tie-state/barrier). Since order is
   // irrelevant, `write_nondeterministic_topk` consumes the resident keys as the overflow stream's `overlap_work`
   // (overlapping the first reloads) and bails out of the overflow stream once its contribution is fully placed.
-  template <class IdentifyOp, class KeyOutIt>
+  template <typename IdentifyOp, typename KeyOutIt>
   struct nondet_filter_state
   {
     IdentifyOp identify_op;
@@ -1918,7 +1918,7 @@ private:
   // `overlap_work` so they overlap the first overflow reloads. Placement uses order-independent atomics into slots
   // disjoint from the streaming slots, so this never races the overflow apply. Each chunk's `chunk.offset` is passed as
   // the region's segment base (used for the pair value fetch; elided in keys-only).
-  template <class IdentifyOp, class KeyOutIt>
+  template <typename IdentifyOp, typename KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_consume_resident(nondet_filter_state<IdentifyOp, KeyOutIt>& state)
   {
     if constexpr (use_block_load_to_shared)
@@ -1995,7 +1995,7 @@ private:
   // `tie_offset_counter`); overflow keys then stream through `run_overflow_pass` (resident keys consumed as its
   // `overlap_work`) and place into block-local SMEM atomics. `run_overflow_pass` breaks the stream once this CTA's
   // contribution is fully placed (all its selected keys in the front, and its tie counter reached the region end `k`).
-  template <class IdentifyOp, class KeyOutIt>
+  template <typename IdentifyOp, typename KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   write_nondeterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
@@ -2089,7 +2089,7 @@ private:
   // on the single boundary-crossing (straddling) CTA. `prime_placement_counters` gives this block its disjoint
   // selected/tie bases and lets it detect whether all/none/some of its candidates win. This member computes the
   // `det_filter_state` inputs and hands them to `run_filter`, which drives the per-region sweeps.
-  template <detail::topk::select SelectDirection, class IdentifyOp, class KeyOutIt>
+  template <detail::topk::select SelectDirection, typename IdentifyOp, typename KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   write_deterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {

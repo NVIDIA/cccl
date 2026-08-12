@@ -88,7 +88,7 @@ static_assert(selected_backend != topk_backend::device
 // `automatic`, and `device` builds never construct it). The struct is still compiled everywhere, so the baseline knob
 // branch stays gated on `!TUNE_BASE && (TUNE_BACKEND == 0 || 1)` -- a base/device/automatic build defines no TUNE_*
 // knobs. The cluster sub-policy is always the default (no cluster knobs are exposed here).
-template <class KeyT, class ValueT, class OffsetT, cuda::std::int64_t MaxK>
+template <typename KeyT, typename ValueT, typename OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const

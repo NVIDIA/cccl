@@ -173,7 +173,7 @@ public:
 
 // Backend-specific kernel arguments. The unused struct is passed default-constructed (all-null / zero) to the arm the
 // selector does not pick; passing it costs nothing (a few grid-constant scalars) and keeps a single kernel signature.
-template <class NumSegmentsValueT, class LargeSegmentTileOffsetT>
+template <typename NumSegmentsValueT, typename LargeSegmentTileOffsetT>
 struct baseline_kernel_args
 {
   batched_topk_counters<NumSegmentsValueT>* d_counters   = nullptr;
@@ -195,7 +195,7 @@ struct cluster_kernel_args
 // inside the `backend == baseline` branch, so an oversize bound routed to the cluster/unsupported backend never trips
 // it.
 _CCCL_EXEC_CHECK_DISABLE
-template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
@@ -216,7 +216,7 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class PolicySelector>
+template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_min_blocks_per_sm_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
@@ -235,7 +235,7 @@ template <class PolicySelector>
 // host arm launches a dynamic cluster width, so this is the only compile-time width hint `ptxas` sees, and
 // `launch_cluster_arm` clamps the launch to `<= max_blocks_per_cluster`. `0` disables the cap.
 _CCCL_EXEC_CHECK_DISABLE
-template <class PolicySelector>
+template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_max_blocks_per_cluster_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
@@ -252,19 +252,19 @@ template <class PolicySelector>
 
 // Variable templates force constant evaluation of the helpers, otherwise nvcc reports a "bad attribute argument
 // substitution" error on the `__launch_bounds__` below (same pattern as `transform_kernel`).
-template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 inline constexpr int topk_threads_per_block =
   topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
 
-template <class PolicySelector>
+template <typename PolicySelector>
 inline constexpr int topk_min_blocks_per_sm = topk_min_blocks_per_sm_helper<PolicySelector>();
 
-template <class PolicySelector>
+template <typename PolicySelector>
 inline constexpr int topk_max_blocks_per_cluster = topk_max_blocks_per_cluster_helper<PolicySelector>();
 
 // Hands the cluster agent its resolved sub-policy as a type (C++17 has no class-type NTTP).
 // TODO(bgruber): drop this in C++20 and pass `policy.cluster` by value.
-template <class PolicySelector>
+template <typename PolicySelector>
 struct cluster_policy_getter
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()() const

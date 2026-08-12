@@ -108,7 +108,7 @@ inline constexpr auto selected_tie_break =
 // Policy selector passed to the tuning environment; instantiated only for a forced baseline/cluster backend (base and
 // `automatic` builds never construct it). The struct is still compiled everywhere, so each knob-driven branch stays
 // gated on `!TUNE_BASE && TUNE_BACKEND == <that backend>` -- a base build defines no TUNE_* knobs.
-template <class KeyT, class ValueT, class OffsetT, cuda::std::int64_t MaxK>
+template <typename KeyT, typename ValueT, typename OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
