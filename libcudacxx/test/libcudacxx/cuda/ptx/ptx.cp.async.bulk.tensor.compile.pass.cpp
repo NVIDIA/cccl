@@ -20,6 +20,7 @@
 
 #include "generated/cp_async_bulk_tensor.h"
 #include "generated/cp_async_bulk_tensor_gather_scatter.h"
+#include "generated/cp_async_bulk_tensor_multicast.h"
 
 int main(int, char**)
 {
