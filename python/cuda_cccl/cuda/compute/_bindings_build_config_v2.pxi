@@ -2,13 +2,16 @@
 # Selected at CMake configure time and configure_file'd to the build dir as
 # `_bindings_build_config.pxi`.
 #
-# Precompiled headers are enabled here. Parsing the CUB / libcudacxx / Thrust
-# bundle dominates a build, and one cached header pair serves every algorithm.
-# Leaving them on is safe: an unusable cache or a stale entry falls back to
-# building without one.
+# Precompiled headers are enabled once a cache directory is supplied. Parsing
+# the CUB / libcudacxx / Thrust bundle dominates a build, and one cached header
+# pair serves every algorithm. Leaving them on is safe: an unusable cache or a
+# stale entry falls back to building without one.
 #
-# The cache location and the CCCL_ENABLE_PCH switch come from `_pch.py`, which
-# owns that policy; this file only carries the decision across.
+# The directory is pushed in by `_bindings.py` once this extension has finished
+# importing, rather than resolved here. Resolving it during module
+# initialization would mean importing `cuda.compute._pch` while `cuda.compute`
+# is still initializing, and the surrounding package is not yet importable at
+# that point.
 
 cdef extern from "cccl/c/types.h":
     cdef struct cccl_build_config:
@@ -29,31 +32,29 @@ cdef cccl_build_config _shared_build_config
 # Keeps the encoded cache path alive for as long as the config points at it.
 cdef bytes _pch_cache_dir_bytes = b""
 
+_shared_build_config.extra_compile_flags = NULL
+_shared_build_config.num_extra_compile_flags = 0
+_shared_build_config.extra_include_dirs = NULL
+_shared_build_config.num_extra_include_dirs = 0
+_shared_build_config.pch_cache_dir = NULL
+_shared_build_config.enable_pch = 0
+_shared_build_config.verbose = 0
 
-cdef inline void _init_build_config():
+
+def set_pch_cache_dir(path):
+    """Build against the precompiled-header cache at `path`.
+
+    Passing None or an empty path disables precompiled headers, which is also
+    the state before this is called.
+    """
     global _pch_cache_dir_bytes
-    # Absolute: this file is compiled into the per-CTK bindings subpackage, so a
-    # relative import would look for `_pch` beside the extension rather than in
-    # `cuda.compute`.
-    from cuda.compute._pch import resolve_cache_dir
-
-    directory = resolve_cache_dir()
-    _pch_cache_dir_bytes = b"" if directory is None else str(directory).encode("utf-8")
-
-    _shared_build_config.extra_compile_flags = NULL
-    _shared_build_config.num_extra_compile_flags = 0
-    _shared_build_config.extra_include_dirs = NULL
-    _shared_build_config.num_extra_include_dirs = 0
-    # An unresolvable directory is itself the "off" signal: an empty path means
-    # build without a precompiled header.
-    _shared_build_config.enable_pch = 0 if directory is None else 1
-    _shared_build_config.pch_cache_dir = (
-        NULL if not _pch_cache_dir_bytes else <const char*>_pch_cache_dir_bytes
-    )
-    _shared_build_config.verbose = 0
-
-
-_init_build_config()
+    _pch_cache_dir_bytes = b"" if not path else str(path).encode("utf-8")
+    if _pch_cache_dir_bytes:
+        _shared_build_config.pch_cache_dir = <const char*>_pch_cache_dir_bytes
+        _shared_build_config.enable_pch = 1
+    else:
+        _shared_build_config.pch_cache_dir = NULL
+        _shared_build_config.enable_pch = 0
 
 
 cdef inline cccl_build_config* _get_build_config() noexcept nogil:
@@ -61,5 +62,4 @@ cdef inline cccl_build_config* _get_build_config() noexcept nogil:
 
 
 cdef inline str _pch_cache_dir_impl():
-    # Report the path this module resolved.
     return _pch_cache_dir_bytes.decode("utf-8") if _pch_cache_dir_bytes else None
