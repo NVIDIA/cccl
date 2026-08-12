@@ -10,6 +10,7 @@
 
 #include <vector>
 
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -103,6 +104,20 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
 
 C2H_TEST("shaped allocation on composite data places", "[places][placement][allocate]")
 {
+  // Composite shaped allocation builds a localized_array, which requires
+  // CUDA VMM; on devices without it the C layer reports failure (nullptr)
+  // by design, so the allocation checks below would fail rather than skip.
+  int supports_vmm = 0;
+  REQUIRE(cuInit(0) == CUDA_SUCCESS);
+  CUdevice dev0;
+  REQUIRE(cuDeviceGet(&dev0, 0) == CUDA_SUCCESS);
+  REQUIRE(cuDeviceGetAttribute(&supports_vmm, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev0)
+          == CUDA_SUCCESS);
+  if (!supports_vmm)
+  {
+    SKIP("device 0 does not support CUDA VMM (virtual address management)");
+  }
+
   stf_exec_place_handle grid = make_dev0_grid(2);
 
   const uint64_t n = MiB; // ints

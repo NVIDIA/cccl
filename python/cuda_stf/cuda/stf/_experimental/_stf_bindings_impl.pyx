@@ -1861,9 +1861,14 @@ def partition_fn_blocked(int axis=0, data_rank=None):
     axis, as an int usable wherever a mapper is expected (no FFI callback
     cost).
 
-    ``axis`` 0 (the outermost dimension) needs no ``data_rank``: it always
-    maps to the native highest-rank dimension. Any other axis requires
-    ``data_rank`` so the public axis can be mapped to the native dimension.
+    ``axis`` 0 (the outermost dimension) without ``data_rank`` uses the
+    native adaptive default: it splits along the outermost dimension whose
+    extent is greater than one. Whenever the public outermost extent is > 1
+    this is exactly public axis 0; for a degenerate tensor whose outermost
+    extent is 1 it distributes along the outermost non-unit axis instead of
+    producing a single chunk. Pass ``data_rank`` to pin public axis 0
+    exactly. Any other axis requires ``data_rank`` so the public axis can
+    be mapped to the native dimension.
     """
     if axis == 0 and data_rank is None:
         # Native -1 selects the highest-rank dimension, which is always the
@@ -2349,6 +2354,11 @@ cdef class data_place:
         p._h = stf_data_place_composite_cute(grid._h, partition._h)
         if p._h == NULL:
             raise RuntimeError("failed to create cute composite data_place")
+        # The C++ place copies the exec_place (a shared handle) and the
+        # partition descriptor by value, so no retain is strictly required;
+        # keep the grid alive anyway so both composite constructors share
+        # the same lifetime story.
+        p._add_owner(grid)
         return p
 
     @property

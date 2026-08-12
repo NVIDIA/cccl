@@ -765,6 +765,10 @@ stf_cute_partition_handle stf_cute_partition_create(
     ::std::vector<::cuda::experimental::places::dim_spec> cpp_spec(rank);
     for (size_t d = 0; d < rank; d++)
     {
+      if (spec[d].policy < STF_DIM_WHOLE || spec[d].policy > STF_DIM_BLOCK_CYCLIC)
+      {
+        throw ::std::invalid_argument("stf_cute_partition_create: dimension policy out of range");
+      }
       cpp_spec[d].policy    = static_cast<::cuda::experimental::places::dim_policy>(spec[d].policy);
       cpp_spec[d].mesh_axis = spec[d].mesh_axis;
       cpp_spec[d].block     = spec[d].block;

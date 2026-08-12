@@ -384,14 +384,13 @@ undistributed (``None``)::
     tiles = (16, 16)          # tile grid, distributed
     tile = (512, 1024)        # per-tile payload, 2 MiB of float32: page-exact
     shape = tiles + tile
+    spec = (("blocked", 0), ("blocked", 1))   # how the TILE GRID is distributed
 
-    grid = stf.exec_place_grid.create(places, grid_dims=(2, 2))
+    grid = stf.exec_place_grid.from_devices([0, 1, 2, 3]).reshape((2, 2))
 
-    partition = stf.cute_partition.from_spec(
-        shape,
-        (("blocked", 0), ("blocked", 1), None, None),
-        grid.dims,
-    )
+    # the data partition is the same spec, with the per-tile payload
+    # dimensions undistributed
+    partition = stf.cute_partition.from_spec(shape, (*spec, None, None), grid.dims)
 
     place = stf.data_place.composite_cute(grid, partition)
     ptr = place.allocate(shape, elemsize=4)

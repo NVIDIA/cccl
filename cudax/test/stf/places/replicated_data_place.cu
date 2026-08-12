@@ -222,7 +222,6 @@ int main()
     }
     EXPECT(thrown_merged);
 
-    ctx.finalize();
     // ---- mutation cycle: "mutate the data at another place; the next
     // replicated read re-broadcasts" -- the coherence claim itself. Read at
     // the replicated place, mutate at the affine place, read replicated
@@ -253,6 +252,7 @@ int main()
         EXPECT(o2(i) == 42.0);
       }
     };
+    ctx.finalize();
 
     printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
   }
