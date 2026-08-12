@@ -221,8 +221,8 @@ scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
   const int lane_run_count = (lane_id < compute_warps) ? slot_warp_run_counts[lane_id] : 0;
   typename WarpScan<int>::TempStorage warp_scan_storage;
   int lane_scan;
-  WarpScan<int>(warp_scan_storage).InclusiveSum(lane_run_count, lane_scan);
-  return {lane_run_count, lane_scan - lane_run_count};
+  WarpScan<int>(warp_scan_storage).ExclusiveSum(lane_run_count, lane_scan);
+  return {lane_run_count, lane_scan};
 }
 
 template <int tile_size, int slot_pad, class KeyT>
