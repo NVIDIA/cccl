@@ -23,6 +23,11 @@ cdef inline cccl_build_config* _get_build_config() noexcept nogil:
 
 
 
+def set_pch_cache_dir(path):
+    # NVRTC has no precompiled-header cache, so there is nothing to point at.
+    pass
+
+
 cdef inline str _pch_cache_dir_impl():
     # No PCH cache exists on this backend, so there is no directory to report.
     return None

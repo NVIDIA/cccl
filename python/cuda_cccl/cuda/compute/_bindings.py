@@ -86,3 +86,15 @@ except ImportError as e:
         f"CUDA CCCL bindings for CUDA {cuda_version} not available: {e}",
         RuntimeWarning,
     )
+
+if _BINDINGS_AVAILABLE:
+    # Point builds at the precompiled-header cache. Done here rather than inside
+    # the extension because resolving it needs `cuda.compute._pch`, which is not
+    # importable while the extension itself is still initializing. Failing to
+    # resolve one only means building without a PCH, never failing to import.
+    from ._pch import resolve_cache_dir
+
+    try:
+        bindings_module.set_pch_cache_dir(resolve_cache_dir())
+    except Exception:  # pragma: no cover - cache is an optimization, not a
+        pass  # requirement, so never let it break the import
