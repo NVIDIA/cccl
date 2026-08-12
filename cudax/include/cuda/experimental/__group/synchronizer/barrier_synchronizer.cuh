@@ -102,12 +102,9 @@ public:
     return __barriers_;
   }
 
-  template <class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&,
-    const _ParentGroup& __parent,
-    const _Mapping& __mapping,
-    const _MappingResult& __mapping_result) const noexcept
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const noexcept
   {
     using _Level = typename _ParentGroup::level_type;
 

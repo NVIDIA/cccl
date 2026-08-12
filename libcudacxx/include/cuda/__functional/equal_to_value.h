@@ -36,11 +36,13 @@ struct equal_to_value
 {
   _Tp __value_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API explicit constexpr equal_to_value(const _Tp& __value) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
       : __value_(__value)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(::cuda::std::__is_cpp17_equality_comparable_v<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(const _Up& __lhs) const

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // void* memcpy(void* dst, const void* src, size_t count);
 
@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_FUNC void test(T obj)
+TEST_HOST_DEVICE_FUNC void test(T obj)
 {
   unsigned char buf[sizeof(T)]{};
   assert(cuda::std::memcpy(buf, &obj, sizeof(T)) == buf);

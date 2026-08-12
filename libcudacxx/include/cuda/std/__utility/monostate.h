@@ -85,11 +85,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
   using argument_type = monostate;
   using result_type   = size_t;
 
-  _CCCL_API inline result_type operator()(const argument_type&) const noexcept
+  _CCCL_API inline result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type&) noexcept
   {
     return 66740831; // return a fundamentally attractive random value.
   }
 };
+
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

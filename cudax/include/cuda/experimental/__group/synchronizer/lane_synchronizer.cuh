@@ -71,9 +71,9 @@ public:
 
   _CCCL_HIDE_FROM_ABI explicit lane_synchronizer() = default;
 
-  template <class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&, const _ParentGroup&, const _Mapping&, const _MappingResult& __mapping_result) const noexcept
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const noexcept
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
     static_assert(__group_mapping_result<_MappingResult>);

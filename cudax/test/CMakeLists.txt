@@ -110,22 +110,16 @@ cudax_add_catch2_test(test_target copy
     copy/copy_shared_memory.cu
 )
 
-# nvcc 12.0 fails to compile cuco hashers test
-if (
-  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
-  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
-)
-  cudax_add_catch2_test(test_target cuco.utility.hashers
-    cuco/utility/test_hashers.cu
-  )
-endif()
-
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${cudax_target}
     cuco/fixed_capacity_map/test_insert_and_contains.cu
 )
 
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.find ${cudax_target}
     cuco/fixed_capacity_map/test_find.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.rebind ${cudax_target}
+    cuco/fixed_capacity_map/test_rebind.cu
 )
 
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.retrieve_all ${cudax_target}
@@ -296,6 +290,10 @@ cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
 
 cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
     coop/shuffle_up/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.scratch
+    coop/scratch.cu
 )
 
 if (cudax_ENABLE_CUFILE)

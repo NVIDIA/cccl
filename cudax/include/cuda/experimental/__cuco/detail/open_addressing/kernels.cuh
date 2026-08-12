@@ -61,7 +61,8 @@ struct __insert_if_fn
 };
 
 template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-__insert_if_fn(_InputIt, _StencilIt, _Predicate, _Ref) -> __insert_if_fn<_InputIt, _StencilIt, _Predicate, _Ref>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __insert_if_fn(_InputIt, _StencilIt, _Predicate, _Ref)
+  -> __insert_if_fn<_InputIt, _StencilIt, _Predicate, _Ref>;
 
 //! @brief Scalar (cooperative-group size 1) functor writing `pred(stencil[i]) ? contains(first[i]) : false`.
 template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
@@ -80,7 +81,7 @@ struct __contains_if_fn
 };
 
 template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-__contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
   -> __contains_if_fn<_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
 
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of

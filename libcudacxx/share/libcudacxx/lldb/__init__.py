@@ -13,9 +13,12 @@ import atomic
 import buffer
 import complex
 import event
+import hierarchy
 import inplace_vector
+import mdspan
 import memory_resource
 import std_array
+import stream
 import tuple
 
 import lldb
@@ -27,9 +30,12 @@ _FORMATTERS = (
     buffer,
     std_array,
     complex,
+    stream,
     tuple,
     inplace_vector,
     event,
+    hierarchy,
+    mdspan,
 )
 InternalDict = dict[str, object]
 
