@@ -339,6 +339,7 @@ function(
       "${test_src}" MATCHES "test_future_arch\\.cu$"
       AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
       AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+      AND NOT "$ENV{CCCL_TEST_MODE}" MATCHES "^compute-sanitizer"
     )
       # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
       # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
