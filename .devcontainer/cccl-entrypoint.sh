@@ -9,8 +9,8 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
 fi
 
 devcontainer-utils-post-create-command;
-# Install latest sccache client
-devcontainer-utils-install-sccache --version rapids;
+# # Install latest sccache client
+# devcontainer-utils-install-sccache --version rapids;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
 
