@@ -16,7 +16,8 @@
 //   - store, exchange, compare_exchange_*, fetch_*, notify_* are NOT available
 //
 // atomic_ref<volatile T>:
-//   - only valid when is_always_lock_free is true
+//   - P3323R1 requires is_always_lock_free, but we intentionally allow
+//     conditionally-lock-free types like __int128 to remain well-formed
 //   - all operations work normally (load, store, exchange, etc.)
 
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60

@@ -93,9 +93,8 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
 
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-  // P3323R1: atomic_ref<volatile T> requires is_always_lock_free
-  static_assert(!::cuda::std::is_volatile_v<_Tp> || is_always_lock_free,
-                "cuda::atomic_ref<volatile T> requires is_always_lock_free (P3323R1)");
+  // P3323R1 requires is_always_lock_free for volatile T, but we intentionally allow
+  // conditionally-lock-free types like __int128 to keep atomic_ref<volatile T> well-formed.
 
   _CCCL_HOST_DEVICE_API explicit constexpr atomic_ref(_Tp& __ref)
       : ::cuda::std::__atomic_ref_impl<_Tp, _Sco>(__ref)

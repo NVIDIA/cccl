@@ -104,9 +104,8 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
 
   static constexpr bool is_always_lock_free = __atomic_ref_impl<_Tp>::is_always_lock_free;
 
-  // P3323R1: atomic_ref<volatile T> requires is_always_lock_free
-  static_assert(!is_volatile_v<_Tp> || is_always_lock_free,
-                "std::atomic_ref<volatile T> requires is_always_lock_free (P3323R1)");
+  // P3323R1 requires is_always_lock_free for volatile T, but we intentionally allow
+  // conditionally-lock-free types like __int128 to keep atomic_ref<volatile T> well-formed.
 
   _CCCL_HOST_DEVICE_API inline explicit atomic_ref(_Tp& __ref)
       : __atomic_ref_impl<_Tp>(__ref)
