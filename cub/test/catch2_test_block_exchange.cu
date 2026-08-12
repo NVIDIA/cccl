@@ -232,11 +232,11 @@ void require_valid_scatter_outputs(
   }
 }
 
-// %PARAM% ITEMS_PER_THREAD ipt 1:4:8
+// %PARAM% TEST_ITEMS_PER_THREAD ipt 1:4:8
 
 using types            = c2h::type_list<std::int32_t, std::int64_t>;
 using block_threads    = c2h::enum_type_list<int, 32, 128>;
-using items_per_thread = c2h::enum_type_list<int, ITEMS_PER_THREAD>;
+using items_per_thread = c2h::enum_type_list<int, TEST_ITEMS_PER_THREAD>;
 
 template <typename TestType>
 struct params_t
