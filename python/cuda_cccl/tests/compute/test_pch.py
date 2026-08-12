@@ -221,11 +221,11 @@ def test_concurrent_cold_builds_generate_once(tmp_path):
 def test_abandoned_generation_debris_is_swept(tmp_path):
     """Debris from a killed generation must not outlive its window.
 
-    A build interrupted partway through generation leaves its lock directory
-    and libnvcc's partially written temp file behind: the destructor that would
-    have released the lock never runs. The lock is reclaimed by
-    PCHGenerationLock's ten-minute steal; the temp file is swept by the eviction
-    pass. Orphaned temps are tens of megabytes each, one per abandoned attempt.
+    A build interrupted partway through generation leaves its lock directory and
+    a partially written temp file behind, because the release that would have
+    cleaned them up never runs. Both are reclaimed by the pruning pass once they
+    are old enough to be presumed abandoned. Orphaned temps are tens of
+    megabytes each, one per abandoned attempt.
     """
     proc = subprocess.Popen(
         [sys.executable, "-c", textwrap.dedent(BUILD_SNIPPET)],
@@ -248,7 +248,7 @@ def test_abandoned_generation_debris_is_swept(tmp_path):
     for entry in locks + temps:
         os.utime(entry, (old, old))
 
-    # Any subsequent process sweeps on cache-dir resolution.
+    # Any subsequent build prunes the cache once it completes.
     proc = run_python(BUILD_SNIPPET, tmp_path)
     assert proc.returncode == 0, proc.stderr
 

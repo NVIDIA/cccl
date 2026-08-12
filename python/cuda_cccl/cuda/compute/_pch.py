@@ -23,10 +23,24 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 _DEFAULT_MAX_BYTES = 1024**3  # 1 GiB
 _SUFFIXES = {"k": 1024, "m": 1024**2, "g": 1024**3}
+
+# How long a generation lock may sit before its holder is presumed dead. A lock
+# is a directory created next to the entry it guards, released when generation
+# finishes; one left by a killed process would otherwise suppress generation
+# forever. The threshold only has to exceed a legitimate generation, which takes
+# seconds.
+_LOCK_STALE_SECONDS = 600
+
+# How long a partially written entry may sit before it is presumed abandoned.
+# Entries are written to a temp file and renamed into place, so a generation
+# killed midway leaves one behind -- tens of megabytes each, one per attempt.
+# The window is generous because a live generation must never be swept.
+_TEMP_STALE_SECONDS = 3600
 
 _FALSEY = {"0", "false", "off", "no"}
 
@@ -135,20 +149,38 @@ def evict(exempt: set[Path] | None = None) -> int:
     A precompiled header and its preamble are evicted together, since the header
     records the preamble as an input. Returns the number of bytes reclaimed.
     """
-    cap = _max_bytes()
-    if cap == 0:
-        return 0
     directory = cache_dir()
     if directory is None or not directory.is_dir():
         return 0
 
     exempt = exempt or set()
+    reclaimed = 0
+
+    # Reclaim generation locks whose holder died. A live lock belongs to a build
+    # in flight and must be left alone, so only clearly stale ones go.
+    cutoff = time.time() - _LOCK_STALE_SECONDS
+    for lock in directory.glob("*.lock"):
+        try:
+            if lock.is_dir() and lock.stat().st_mtime < cutoff:
+                lock.rmdir()
+        except OSError:
+            continue
+
+    # Temp files left by a generation that was killed before its rename.
+    temp_cutoff = time.time() - _TEMP_STALE_SECONDS
+    for tmp in directory.glob("*.tmp"):
+        try:
+            if tmp.is_file() and tmp.stat().st_mtime < temp_cutoff:
+                size = tmp.stat().st_size
+                tmp.unlink()
+                reclaimed += size
+        except OSError:
+            continue
 
     # A preamble whose header is gone is dead weight -- it is only ever an input
-    # to that header. Sweep those first, since nothing below would find them:
+    # to that header. Sweep those too, since nothing below would find them:
     # entries are enumerated by header, so an orphan is invisible to the scan
     # and would occupy the cache indefinitely.
-    reclaimed = 0
     for preamble in directory.glob("*_preamble.cu"):
         pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
         if pch.exists():
@@ -159,6 +191,12 @@ def evict(exempt: set[Path] | None = None) -> int:
             reclaimed += size
         except OSError:
             continue
+
+    # Debris above is reclaimed unconditionally; a disabled size cap means "keep
+    # every entry", not "let dead locks and orphans accumulate".
+    cap = _max_bytes()
+    if cap == 0:
+        return reclaimed
 
     entries = []
     total = 0
