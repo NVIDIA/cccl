@@ -39,11 +39,11 @@ template <class AtomicRef>
 struct has_store
 {
   template <class A>
-  static auto test(int)
+  TEST_HOST_DEVICE_FUNC static auto test(int)
     -> decltype(cuda::std::declval<const A&>().store(cuda::std::declval<typename A::value_type>()),
                 cuda::std::true_type{});
   template <class>
-  static auto test(...) -> cuda::std::false_type;
+  TEST_HOST_DEVICE_FUNC static auto test(...) -> cuda::std::false_type;
 
   static constexpr bool value = decltype(test<AtomicRef>(0))::value;
 };
@@ -52,11 +52,11 @@ template <class AtomicRef>
 struct has_exchange
 {
   template <class A>
-  static auto test(int)
+  TEST_HOST_DEVICE_FUNC static auto test(int)
     -> decltype(cuda::std::declval<const A&>().exchange(cuda::std::declval<typename A::value_type>()),
                 cuda::std::true_type{});
   template <class>
-  static auto test(...) -> cuda::std::false_type;
+  TEST_HOST_DEVICE_FUNC static auto test(...) -> cuda::std::false_type;
 
   static constexpr bool value = decltype(test<AtomicRef>(0))::value;
 };
