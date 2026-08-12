@@ -219,7 +219,13 @@ function(
   test_path
   check_prefixes
 )
-  cmake_parse_arguments(arg "" "DUMP_MODE" "CHECK_DEFINITIONS" ${ARGN})
+  cmake_parse_arguments(
+    arg
+    ""
+    "DUMP_MODE;DUMP_FUNCTIONS"
+    "CHECK_DEFINITIONS"
+    ${ARGN}
+  )
 
   string(REGEX REPLACE "[^A-Za-z0-9_]" "_" check_suffix "${check_prefixes}")
   set(check_target_name "${target_path}.${check_suffix}.check")
@@ -236,6 +242,7 @@ function(
     COMMAND
       "${CMAKE_COMMAND}" -E env
         "CUOBJDUMP=${libcudacxx_codegen_cuobjdump}"
+        "CUOBJDUMP_FUNCTIONS=${arg_DUMP_FUNCTIONS}"
         "FILECHECK=${libcudacxx_codegen_filecheck}"
         "${libcudacxx_codegen_bash}"
         "${libcudacxx_codegen_dump_and_check}"
@@ -259,6 +266,7 @@ function(libcudacxx_codegen_add_test)
     ARCH
     TEST
     VARIANT
+    DUMP_FUNCTIONS
   )
   set(multi_value_args CHECK_PREFIXES CHECK_DEFINITIONS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
@@ -324,6 +332,7 @@ function(libcudacxx_codegen_add_test)
       "${arg_TEST}"
       "${check_prefix}"
       DUMP_MODE "${dump_mode}"
+      DUMP_FUNCTIONS "${arg_DUMP_FUNCTIONS}"
       CHECK_DEFINITIONS ${arg_CHECK_DEFINITIONS}
     )
   endforeach()
@@ -393,7 +402,7 @@ endfunction()
 
 function(libcudacxx_codegen_add_sass_tests)
   set(options)
-  set(one_value_args AGGREGATE_TARGET TARGET_PREFIX)
+  set(one_value_args AGGREGATE_TARGET TARGET_PREFIX DUMP_FUNCTIONS)
   set(multi_value_args ARCHITECTURES CHECK_PREFIXES TESTS COMPILE_DEFINITIONS)
   cmake_parse_arguments(
     arg
@@ -499,6 +508,7 @@ function(libcudacxx_codegen_add_sass_tests)
           CODE_KIND sass
           ARCH ${arch}
           TEST "${test_path}"
+          DUMP_FUNCTIONS "${arg_DUMP_FUNCTIONS}"
           CHECK_PREFIXES "${combined_check_prefixes}"
           COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
         )
@@ -532,6 +542,7 @@ function(libcudacxx_codegen_add_sass_tests)
             ARCH ${arch}
             TEST "${test_path}"
             VARIANT "${variant_label}"
+            DUMP_FUNCTIONS "${arg_DUMP_FUNCTIONS}"
             CHECK_PREFIXES "${combined_check_prefixes}"
             CHECK_DEFINITIONS ${variant_check_definitions}
             COMPILE_DEFINITIONS

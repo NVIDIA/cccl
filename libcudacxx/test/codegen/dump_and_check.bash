@@ -10,16 +10,22 @@ dump_mode="${1:---dump-ptx}"
 if (( $# > 0 )); then
   shift
 fi
+dump_functions="${CUOBJDUMP_FUNCTIONS:-}"
 filecheck="${FILECHECK:-FileCheck}"
 cuobjdump="${CUOBJDUMP:-cuobjdump}"
+
+cuobjdump_options=("${dump_mode}")
+if [[ -n "${dump_functions}" ]]; then
+  cuobjdump_options+=(--function "${dump_functions}")
+fi
 
 if [[ "${dump_mode}" == "--dump-sass" ]]; then
   # cuobjdump prints each instruction's control word on a separate line. Remove
   # those lines so FileCheck -NEXT describes adjacent SASS instructions.
-  "${cuobjdump}" "${dump_mode}" "${input_archive}" \
+  "${cuobjdump}" "${cuobjdump_options[@]}" "${input_archive}" \
     | sed -E '\|^[[:space:]]*/\* 0x[[:xdigit:]]+ \*/[[:space:]]*$|d' \
     | "${filecheck}" --match-full-lines --check-prefixes="${input_prefix}" "$@" "${input_testfile}"
 else
-  "${cuobjdump}" "${dump_mode}" "${input_archive}" \
+  "${cuobjdump}" "${cuobjdump_options[@]}" "${input_archive}" \
     | "${filecheck}" --match-full-lines --check-prefixes="${input_prefix}" "$@" "${input_testfile}"
 fi

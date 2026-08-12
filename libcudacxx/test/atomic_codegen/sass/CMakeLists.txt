@@ -81,10 +81,13 @@ else()
   endif()
 endif()
 
+# Restrict FileCheck to the wrapper so instructions in outlined helpers cannot
+# mask an inlining regression.
 libcudacxx_codegen_add_sass_tests(
   AGGREGATE_TARGET libcudacxx.test.atomics.sass
   TARGET_PREFIX atomic_codegen
   ARCHITECTURES ${atomic_codegen_sass_cuda_archs}
+  DUMP_FUNCTIONS atomic_codegen_test
   CHECK_PREFIXES ${atomic_codegen_sass_cuda_version_prefix}
   TESTS ${libcudacxx_atomic_codegen_tests}
   COMPILE_DEFINITIONS _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1

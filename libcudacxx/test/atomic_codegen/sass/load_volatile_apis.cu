@@ -15,14 +15,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_load(TEMPLATE<int32_t, SCOPE>& atom)
+extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 {
   return atom.load(ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_load.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
 ; SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}

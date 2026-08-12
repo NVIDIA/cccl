@@ -19,14 +19,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_exchange(cuda::atomic_ref<volatile TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, SCOPE>& atom, TYPE value)
 {
   return atom.exchange(value, ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_exchange.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}

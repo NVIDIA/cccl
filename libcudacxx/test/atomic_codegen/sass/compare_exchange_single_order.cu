@@ -16,8 +16,8 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ bool
-atomic_compare_exchange(cuda::atomic_ref<int32_t, cuda::thread_scope_device>& atom, int32_t& expected, int32_t desired)
+extern "C" __device__ bool
+atomic_codegen_test(cuda::atomic_ref<int32_t, cuda::thread_scope_device>& atom, int32_t& expected, int32_t desired)
 {
 #if SINGLE_ORDER
   return atom.CAS(expected, desired, SUCCESS_ORDER);
@@ -28,7 +28,7 @@ atomic_compare_exchange(cuda::atomic_ref<int32_t, cuda::thread_scope_device>& at
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_compare_exchange.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].GPU{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}

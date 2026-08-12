@@ -16,7 +16,7 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ void atomic_store(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ void atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 {
   atom.store(value, ORDER);
 }
@@ -24,7 +24,7 @@ __device__ void atomic_store(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 // clang-format off
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_store.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}MEMBAR.SC.{{.*}}
 ; SMXX: {{.*}}BSSY [[SYNC:B[0-9]+]], {{.*}}
 ; BLOCK: {{.*}}ATOM.E.EXCH.STRONG.{{CTA|SM}} PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}

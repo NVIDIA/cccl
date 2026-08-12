@@ -21,14 +21,14 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ bool atomic_compare_exchange(volatile cuda::atomic<TYPE, SCOPE>& atom, TYPE& expected, TYPE desired)
+extern "C" __device__ bool atomic_codegen_test(volatile cuda::atomic<TYPE, SCOPE>& atom, TYPE& expected, TYPE desired)
 {
   return atom.CAS(expected, desired, SUCCESS_ORDER, FAILURE_ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_compare_exchange.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
