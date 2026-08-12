@@ -86,19 +86,17 @@ TEST_HOST_DEVICE_FUNC void test_const()
 
 // ===== atomic_ref<volatile T> tests =====
 
-template <class T>
+template <class T, class AtomicRef>
 TEST_HOST_DEVICE_FUNC void test_volatile()
 {
-  using ref_t = cuda::std::atomic_ref<volatile T>;
-
   // P3323R1: value_type is remove_cv_t<T>
-  static_assert(cuda::std::is_same_v<typename ref_t::value_type, T>, "value_type should be remove_cv_t<T>");
+  static_assert(cuda::std::is_same_v<typename AtomicRef::value_type, T>, "value_type should be remove_cv_t<T>");
 
   // P3323R1: volatile T requires is_always_lock_free
-  static_assert(ref_t::is_always_lock_free, "test assumes volatile T is lock-free");
+  static_assert(AtomicRef::is_always_lock_free, "test assumes volatile T is lock-free");
 
   volatile T val{};
-  ref_t ref(val);
+  AtomicRef ref(val);
 
   // Both read and write operations should work on atomic_ref<volatile T>
   ref.store(T(42));
@@ -106,6 +104,25 @@ TEST_HOST_DEVICE_FUNC void test_volatile()
   T prev = ref.exchange(T(7));
   assert(prev == T(42));
   assert(ref.load() == T(7));
+
+  ref.store(T(1), cuda::std::memory_order_release);
+  assert(ref.load(cuda::std::memory_order_acquire) == T(1));
+  assert(ref.exchange(T(2), cuda::std::memory_order_acq_rel) == T(1));
+
+  T expected = T(2);
+  assert(ref.compare_exchange_strong(expected, T(3), cuda::std::memory_order_acq_rel, cuda::std::memory_order_acquire));
+  assert(expected == T(2));
+
+  expected = T(2);
+  assert(!ref.compare_exchange_strong(expected, T(4), cuda::std::memory_order_seq_cst));
+  assert(expected == T(3));
+
+  expected = T(3);
+  while (!ref.compare_exchange_weak(expected, T(4), cuda::std::memory_order_relaxed))
+  {
+    expected = T(3);
+  }
+  assert(ref.load(cuda::std::memory_order_relaxed) == T(4));
 }
 
 #if _CCCL_HAS_INT128()
@@ -129,8 +146,11 @@ int main(int, char**)
   test_const<float>();
 
   // Test atomic_ref<volatile T>
-  test_volatile<int>();
-  test_volatile<float>();
+  test_volatile<int, cuda::std::atomic_ref<volatile int>>();
+  test_volatile<float, cuda::std::atomic_ref<volatile float>>();
+  test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_system>>();
+  test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_device>>();
+  test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_block>>();
 
 #if _CCCL_HAS_INT128()
   test_volatile_int128_extension<__int128>();
