@@ -24,11 +24,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp, _Tp __v>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
@@ -44,10 +39,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
     return value;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;

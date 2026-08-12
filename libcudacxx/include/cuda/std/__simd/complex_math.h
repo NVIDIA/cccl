@@ -39,11 +39,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 // [simd.complex.math], helper functors for element-wise complex operations
 
 struct __fn_real
@@ -520,10 +515,6 @@ pow(const basic_vec<_Tp, _Abi>& __x, const basic_vec<_Tp, _Abi>& __y)
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_binary<__vec_t, __fn_pow_binary>{__x, __y}};
 }
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

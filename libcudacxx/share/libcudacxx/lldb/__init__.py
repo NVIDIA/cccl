@@ -15,6 +15,7 @@ import complex
 import event
 import hierarchy
 import inplace_vector
+import mdspan
 import memory_pool
 import memory_resource
 import std_array
@@ -35,6 +36,7 @@ _FORMATTERS = (
     inplace_vector,
     event,
     hierarchy,
+    mdspan,
     memory_pool,
 )
 InternalDict = dict[str, object]

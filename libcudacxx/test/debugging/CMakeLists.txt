@@ -210,6 +210,7 @@ add_subdirectory(complex)
 add_subdirectory(event)
 add_subdirectory(hierarchy)
 add_subdirectory(inplace_vector)
+add_subdirectory(mdspan)
 add_subdirectory(memory_pool)
 # Registered only on a toolkit new enough to have the types, which keeps the
 # golden output of every registered scenario unconditional.
