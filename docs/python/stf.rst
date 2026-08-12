@@ -151,6 +151,14 @@ are complementary and a consumer picks the semantics by construction:
   consumer's stream after the allocation stream with an event wait (nothing
   blocks on the host).
 
+The localized-allocation surface (``interop.pytorch.localized_empty``)
+exposes the same choice as ``lifetime="pinned"`` (CAI import; the metadata
+registry pins the pages until :func:`release`) versus ``lifetime="gc"``
+(DLPack import; the tensor -- typically an ``nn.Parameter``, where it is the
+default -- owns the pages, so unloading the module frees the VMM and the
+placement metadata). See ``tests/stf/test_device_array_dlpack.py`` and
+``tests/stf/interop/test_localized_weights_example.py``.
+
 Interop adapters
 ----------------
 
