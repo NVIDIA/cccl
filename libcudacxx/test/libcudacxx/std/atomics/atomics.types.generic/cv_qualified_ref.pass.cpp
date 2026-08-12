@@ -24,7 +24,7 @@
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: force-tile
 
-#include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
@@ -108,6 +108,20 @@ TEST_HOST_DEVICE_FUNC void test_volatile()
   assert(ref.load() == T(7));
 }
 
+#if _CCCL_HAS_INT128()
+template <class T>
+TEST_HOST_DEVICE_FUNC void test_volatile_int128_extension()
+{
+  volatile T value{};
+
+  cuda::std::atomic_ref<volatile T> std_ref(value);
+  cuda::atomic_ref<volatile T> cuda_ref(value);
+
+  static_assert(cuda::std::is_same_v<typename decltype(std_ref)::value_type, T>);
+  static_assert(cuda::std::is_same_v<typename decltype(cuda_ref)::value_type, T>);
+}
+#endif // _CCCL_HAS_INT128()
+
 int main(int, char**)
 {
   // Test atomic_ref<const T>
@@ -117,6 +131,11 @@ int main(int, char**)
   // Test atomic_ref<volatile T>
   test_volatile<int>();
   test_volatile<float>();
+
+#if _CCCL_HAS_INT128()
+  test_volatile_int128_extension<__int128>();
+  test_volatile_int128_extension<unsigned __int128>();
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }
