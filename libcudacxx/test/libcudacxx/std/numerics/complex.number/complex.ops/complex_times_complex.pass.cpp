@@ -165,12 +165,12 @@ int main(int, char**)
 #    endif // _CCCL_HAS_LONG_DOUBLE()
 #  endif // !TEST_COMPILER(GCC, <, 8)
 #endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if !_CCCL_TILE_COMPILATION()
   test_edges<double>();
