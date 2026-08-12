@@ -213,6 +213,94 @@ function(
 endfunction()
 
 function(
+  libcudacxx_codegen_resolve_filecheck_prefixes
+  out_target_prefixes
+  out_filecheck_prefixes
+  test_path
+  input_prefixes
+)
+  file(READ "${test_path}" test_contents)
+  file(
+    STRINGS "${test_path}"
+    prefix_combine_directives
+    REGEX "%FILECHECK%[ ]+PREFIX_COMBINE"
+  )
+
+  if (NOT prefix_combine_directives)
+    set(${out_target_prefixes} "${input_prefixes}" PARENT_SCOPE)
+    set(${out_filecheck_prefixes} "${input_prefixes}" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(REPLACE "," ";" active_prefixes "${input_prefixes}")
+  set(combination_components)
+  set(active_combinations)
+
+  foreach (directive IN LISTS prefix_combine_directives)
+    if (
+      NOT
+        directive
+          MATCHES
+          "^[ ]*//[ ]+%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Za-z][A-Za-z0-9_-]*([ ]*,[ ]*[A-Za-z][A-Za-z0-9_-]*)+)[ ]*$"
+    )
+      message(
+        FATAL_ERROR
+        "Malformed PREFIX_COMBINE directive in ${test_path}: ${directive}"
+      )
+    endif()
+
+    set(components "${CMAKE_MATCH_1}")
+    string(REPLACE " " "" components "${components}")
+    string(REPLACE "," ";" components "${components}")
+    set(normalized_components)
+    set(combination_is_active TRUE)
+    foreach (component IN LISTS components)
+      string(TOUPPER "${component}" component)
+      list(APPEND normalized_components "${component}")
+      list(APPEND combination_components "${component}")
+      if (NOT component IN_LIST active_prefixes)
+        set(combination_is_active FALSE)
+      endif()
+    endforeach()
+
+    if (combination_is_active)
+      list(JOIN normalized_components "_" combined_prefix)
+      list(APPEND active_combinations "${combined_prefix}")
+    endif()
+  endforeach()
+
+  list(REMOVE_DUPLICATES combination_components)
+  list(REMOVE_DUPLICATES active_combinations)
+
+  # A prefix used only as a PREFIX_COMBINE component is an input to a combined
+  # prefix, not a standalone FileCheck prefix. This permits semantic markers
+  # such as ACQUIRE without requiring a dummy ACQUIRE directive.
+  set(standalone_prefixes)
+  foreach (prefix IN LISTS active_prefixes)
+    if (prefix IN_LIST combination_components)
+      string(
+        REGEX MATCH
+        "; ${prefix}(:|-[A-Z]+:)"
+        has_standalone_directive
+        "${test_contents}"
+      )
+      if (NOT has_standalone_directive)
+        continue()
+      endif()
+    endif()
+    list(APPEND standalone_prefixes "${prefix}")
+  endforeach()
+
+  set(filecheck_prefixes ${standalone_prefixes} ${active_combinations})
+  list(REMOVE_DUPLICATES standalone_prefixes)
+  list(REMOVE_DUPLICATES filecheck_prefixes)
+  list(JOIN standalone_prefixes "," standalone_prefixes)
+  list(JOIN filecheck_prefixes "," filecheck_prefixes)
+  set(${out_target_prefixes} "${standalone_prefixes}" PARENT_SCOPE)
+  set(${out_filecheck_prefixes} "${filecheck_prefixes}" PARENT_SCOPE)
+endfunction()
+
+function(
   libcudacxx_codegen_add_check_target
   target_path
   target_name
@@ -227,7 +315,19 @@ function(
     ${ARGN}
   )
 
-  string(REGEX REPLACE "[^A-Za-z0-9_]" "_" check_suffix "${check_prefixes}")
+  libcudacxx_codegen_resolve_filecheck_prefixes(
+    target_check_prefixes
+    filecheck_prefixes
+    "${test_path}"
+    "${check_prefixes}"
+  )
+  string(
+    REGEX REPLACE
+    "[^A-Za-z0-9_]"
+    "_"
+    check_suffix
+    "${target_check_prefixes}"
+  )
   set(check_target_name "${target_path}.${check_suffix}.check")
 
   set(filecheck_definitions)
@@ -248,7 +348,7 @@ function(
         "${libcudacxx_codegen_dump_and_check}"
         $<TARGET_FILE:${target_name}>
         "${test_path}"
-        "${check_prefixes}"
+        "${filecheck_prefixes}"
         "${arg_DUMP_MODE}"
         ${filecheck_definitions}
     # gersemi: on
@@ -355,6 +455,9 @@ function(
   foreach (definition IN LISTS ARGN)
     if (definition MATCHES "^FILECHECK_PREFIX_[A-Za-z0-9_]+=(.*)$")
       set(check_prefix "${CMAKE_MATCH_1}")
+      if (check_prefix STREQUAL "")
+        continue()
+      endif()
       if (NOT check_prefix MATCHES "^[A-Za-z][A-Za-z0-9_-]*$")
         message(
           FATAL_ERROR
