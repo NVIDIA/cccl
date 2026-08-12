@@ -25,8 +25,10 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,6 +45,32 @@ using __cuda_atomic_enable_non_native_bitwise = enable_if_t<_Operand::__size <= 
 
 template <class _Operand>
 using __cuda_atomic_enable_native_bitwise = enable_if_t<_Operand::__size >= 32, bool>;
+
+template <class _Type>
+using __atomic_enable_if_small_extended_floating_point =
+  enable_if_t<__is_extended_floating_point_v<_Type> && sizeof(_Type) < sizeof(uint32_t), bool>;
+
+template <class _Type>
+using __atomic_enable_if_other_not_native_minmax =
+  enable_if_t<(!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16))
+                && !(__is_extended_floating_point_v<_Type> && sizeof(_Type) < sizeof(uint32_t)),
+              bool>;
+
+template <class _Type>
+_CCCL_DEVICE_API _Type __cuda_atomic_subword_from_bits(uint32_t __bits)
+{
+  _Type __value{};
+  ::cuda::std::memcpy(&__value, &__bits, sizeof(_Type));
+  return __value;
+}
+
+template <class _Type>
+_CCCL_DEVICE_API uint32_t __cuda_atomic_subword_to_bits(_Type __value)
+{
+  uint32_t __bits{};
+  ::cuda::std::memcpy(&__bits, &__value, sizeof(_Type));
+  return __bits;
+}
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
 _CCCL_DEVICE static bool
@@ -115,15 +143,15 @@ _CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op,
   {
     // Calculate new desired value from last fetched __old
     // Use of the value mask is required due to the possibility of overflow when ops are widened. Possible compiler bug?
+    const _Type __current = __cuda_atomic_subword_from_bits<_Type>(__old >> __offset);
     const uint32_t __attempt =
-      ((static_cast<uint32_t>(__op(static_cast<_Type>(__old >> __offset))) << __offset) & __valueMask)
-      | (__old & __windowMask);
+      ((__cuda_atomic_subword_to_bits(__op(__current)) << __offset) & __valueMask) | (__old & __windowMask);
 
     if (__cuda_atomic_compare_exchange(
           __aligned, __old, __old, __attempt, _Order{}, __atomic_cuda_operand_b32{}, _Sco{}))
     {
       // CAS was successful
-      return static_cast<_Type>(__old >> __offset);
+      return __cuda_atomic_subword_from_bits<_Type>(__old >> __offset);
     }
   }
 }
@@ -378,26 +406,76 @@ template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_nati
   return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_xor>{__val}, __memorder, _Sco{});
 }
 
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+template <typename _Tp, typename _Fn, typename _Sco>
+struct __cuda_atomic_bind_fetch_update
+{
+  _Tp* __ptr;
+  _Tp* __dst;
+  _Fn __op;
+
+  template <typename _Atomic_Memorder>
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder)
+  {
+    *__dst = __cuda_atomic_fetch_update(__ptr, __op, _Atomic_Memorder{}, __atomic_cuda_operand_f16{}, _Sco{});
+  }
+};
+
+template <typename _Tp, typename _Fn, typename _Sco>
+[[nodiscard]] _CCCL_DEVICE static _Tp
+__atomic_fetch_small_extended_floating_point_cuda(_Tp* __ptr, const _Fn& __op, int __memorder, _Sco)
+{
+  _Tp __dst{};
+  __cuda_atomic_bind_fetch_update<_Tp, _Fn, _Sco> __bound_update{__ptr, &__dst, __op};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_update, __memorder, _Sco{});
+  return __dst;
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_small_extended_floating_point<_Tp> = 0>
+[[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_small_extended_floating_point_cuda(
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{_Tp(__val)}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_small_extended_floating_point<_Tp> = 0>
+[[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_small_extended_floating_point_cuda(
+    const_cast<_Tp*>(__ptr), __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{_Tp(__val)}, __memorder, _Sco{});
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_small_extended_floating_point<_Tp> = 0>
+[[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_small_extended_floating_point_cuda(
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_max>{_Tp(__val)}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_small_extended_floating_point<_Tp> = 0>
+[[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_small_extended_floating_point_cuda(
+    const_cast<_Tp*>(__ptr), __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_max>{_Tp(__val)}, __memorder, _Sco{});
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_other_not_native_minmax<_Tp> = 0>
 [[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
     __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{__val}, __memorder, _Sco{});
 }
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_other_not_native_minmax<_Tp> = 0>
 [[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
     __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{__val}, __memorder, _Sco{});
 }
 
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_other_not_native_minmax<_Tp> = 0>
 [[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
     __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_max>{__val}, __memorder, _Sco{});
 }
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_other_not_native_minmax<_Tp> = 0>
 [[nodiscard]] _CCCL_DEVICE static _Tp __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
