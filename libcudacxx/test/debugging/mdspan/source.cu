@@ -9,8 +9,6 @@
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 
-#include <vector>
-
 #include <cuda_runtime_api.h>
 
 // Give the inspected parameter a stack location that survives optimization, so the
@@ -51,14 +49,19 @@ inspect_rank2_mixed(const cuda::std::mdspan<int, cuda::std::extents<int, 3, cuda
   KEEP_FOR_DEBUGGER(values);
 }
 
-[[gnu::noinline]] void
-inspect_layout_left(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_left>& values)
+[[gnu::noinline]] void inspect_layout_right(const cuda::std::mdspan<int, cuda::std::extents<int, 3, 3>>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void
-inspect_layout_stride(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_stride>& values)
+inspect_layout_left(const cuda::std::mdspan<int, cuda::std::extents<int, 3, 3>, cuda::std::layout_left>& values)
+{
+  KEEP_FOR_DEBUGGER(values);
+}
+
+[[gnu::noinline]] void
+inspect_layout_stride(const cuda::std::mdspan<int, cuda::std::extents<int, 3>, cuda::std::layout_stride>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
@@ -117,9 +120,9 @@ inspect_device_mdspan_real_memory(const cuda::device_mdspan<int, cuda::std::exte
   KEEP_FOR_DEBUGGER(values);
 }
 
-// A dynamic extent so large the printer's element-copy malloc call inevitably fails
-[[gnu::noinline]] void
-inspect_mdspan_copy_failure(const cuda::std::mdspan<int, cuda::std::dextents<long long, 1>>& values)
+// A null data pointer, so the printer's element-copy cudaMemcpy call fails cleanly
+// (cudaErrorInvalidValue) without touching real memory.
+[[gnu::noinline]] void inspect_mdspan_copy_failure(const cuda::std::mdspan<int, cuda::std::extents<int, 1>>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
@@ -135,7 +138,8 @@ inspect_mdspan_copy_failure(const cuda::std::mdspan<int, cuda::std::dextents<lon
   KEEP_FOR_DEBUGGER(values);
 }
 
-[[gnu::noinline]] void inspect_vector(const std::vector<cuda::std::mdspan<int, cuda::std::extents<int, 2>>>& values)
+[[gnu::noinline]] void
+inspect_array(const cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<int, 2>>, 2>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
@@ -197,30 +201,20 @@ int main()
   const cuda::std::mdspan<int, cuda::std::extents<int, 0, 3>> empty_span(empty_data);
   inspect_empty(empty_span);
 
-  int layout_left_data[6];
-  cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_left> layout_left_span(layout_left_data, 2, 3);
-  for (int row = 0; row < 2; ++row)
-  {
-    for (int col = 0; col < 3; ++col)
-    {
-      layout_left_span(row, col) = 2000 + row * 10 + col;
-    }
-  }
+  int layout_shared_data[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+  const cuda::std::mdspan<int, cuda::std::extents<int, 3, 3>> layout_right_span(layout_shared_data);
+  inspect_layout_right(layout_right_span);
+
+  const cuda::std::mdspan<int, cuda::std::extents<int, 3, 3>, cuda::std::layout_left> layout_left_span(
+    layout_shared_data);
   inspect_layout_left(layout_left_span);
 
-  int layout_stride_data[7] = {-1, -1, -1, -1, -1, -1, -1};
-  const cuda::std::dextents<int, 2> layout_stride_extents(2, 3);
-  const cuda::std::layout_stride::mapping<cuda::std::dextents<int, 2>> layout_stride_mapping(
-    layout_stride_extents, cuda::std::array<int, 2>{4, 1});
-  cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_stride> layout_stride_span(
-    layout_stride_data, layout_stride_mapping);
-  for (int row = 0; row < 2; ++row)
-  {
-    for (int col = 0; col < 3; ++col)
-    {
-      layout_stride_span(row, col) = 3000 + row * 10 + col;
-    }
-  }
+  const cuda::std::extents<int, 3> layout_stride_extents;
+  const cuda::std::layout_stride::mapping<cuda::std::extents<int, 3>> layout_stride_mapping(
+    layout_stride_extents, cuda::std::array<int, 1>{4});
+  const cuda::std::mdspan<int, cuda::std::extents<int, 3>, cuda::std::layout_stride> layout_stride_span(
+    layout_shared_data, layout_stride_mapping);
   inspect_layout_stride(layout_stride_span);
 
   int rank0_stride_data[1] = {55};
@@ -297,8 +291,8 @@ int main()
   inspect_mdspan_device_backed(mdspan_device_backed_span);
   cudaFree(mdspan_device_backed_data);
 
-  int copy_failure_data[1] = {0};
-  const cuda::std::mdspan<int, cuda::std::dextents<long long, 1>> copy_failure_span(copy_failure_data, 1LL << 40);
+  int* const null_data = nullptr;
+  const cuda::std::mdspan<int, cuda::std::extents<int, 1>> copy_failure_span(null_data);
   inspect_mdspan_copy_failure(copy_failure_span);
 
   int managed_mdspan_data[2] = {61, 62};
@@ -309,13 +303,13 @@ int main()
   const cuda::restrict_mdspan<int, cuda::std::extents<int, 2>> restrict_mdspan_span(restrict_mdspan_data);
   inspect_restrict_mdspan(restrict_mdspan_span);
 
-  int vector_data0[2] = {-2, 4};
-  int vector_data1[2] = {11, -9};
-  const std::vector<cuda::std::mdspan<int, cuda::std::extents<int, 2>>> mdspan_vector{
-    cuda::std::mdspan<int, cuda::std::extents<int, 2>>(vector_data0),
-    cuda::std::mdspan<int, cuda::std::extents<int, 2>>(vector_data1),
+  int array_data0[2] = {-2, 4};
+  int array_data1[2] = {11, -9};
+  const cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<int, 2>>, 2> mdspan_array{
+    cuda::std::mdspan<int, cuda::std::extents<int, 2>>(array_data0),
+    cuda::std::mdspan<int, cuda::std::extents<int, 2>>(array_data1),
   };
-  inspect_vector(mdspan_vector);
+  inspect_array(mdspan_array);
 
   int mutable_data[3] = {1, 2, 3};
   const cuda::std::mdspan<int, cuda::std::dextents<int, 1>> mutable_values(mutable_data, 3);

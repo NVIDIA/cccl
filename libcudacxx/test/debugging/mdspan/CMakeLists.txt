@@ -9,6 +9,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_rank2_dynamic mdspan.rank2_dynamic values
     --case inspect_rank0 mdspan.rank0 values
     --case inspect_empty mdspan.empty values
+    --case inspect_layout_right mdspan.layout_right values
     --case inspect_layout_left mdspan.layout_left values
     --case inspect_layout_stride mdspan.layout_stride values
     --case inspect_rank0_layout_stride mdspan.rank0_layout_stride values
@@ -23,7 +24,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_mdspan_copy_failure mdspan.copy_failure values
     --case inspect_managed_mdspan mdspan.managed_mdspan values
     --case inspect_restrict_mdspan mdspan.restrict_mdspan values
-    --case inspect_vector mdspan.vector values
+    --case inspect_array mdspan.array values
     --case inspect_before_update mdspan.update.before values
     --case inspect_after_update mdspan.update.after values
     # gersemi: on
