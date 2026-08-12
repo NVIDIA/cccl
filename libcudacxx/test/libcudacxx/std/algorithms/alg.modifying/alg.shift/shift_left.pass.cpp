@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T, class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int orig[] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
   T work[]   = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
@@ -49,39 +49,43 @@ __host__ __device__ constexpr void test()
 
   // n == 0
   {
+    constexpr int len  = 3;
     T input[]          = {0, 1, 2};
     const T expected[] = {0, 1, 2};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 0);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == e);
   }
 
   // n > 0 && n < len
   {
+    constexpr int len  = 3;
     T input[]          = {0, 1, 2};
     const T expected[] = {1, 2};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 1);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 2, b, it));
   }
   {
+    constexpr int len  = 8;
     T input[]          = {1, 2, 3, 4, 5, 6, 7, 8};
     const T expected[] = {3, 4, 5, 6, 7, 8};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 2);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 6, b, it));
   }
   {
+    constexpr int len  = 8;
     T input[]          = {1, 2, 3, 4, 5, 6, 7, 8};
     const T expected[] = {7, 8};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 6);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 2, b, it));
   }
 
   // n == len
@@ -89,10 +93,10 @@ __host__ __device__ constexpr void test()
     constexpr int len     = 3;
     T input[len]          = {0, 1, 2};
     const T expected[len] = {0, 1, 2};
-    Iter b                = Iter(cuda::std::begin(input));
-    Iter e                = Iter(cuda::std::end(input));
+    Iter b                = Iter(input);
+    Iter e                = Iter(input + len);
     Iter it               = cuda::std::shift_left(b, e, len);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == b);
   }
 
@@ -101,15 +105,15 @@ __host__ __device__ constexpr void test()
     constexpr int len     = 3;
     T input[len]          = {0, 1, 2};
     const T expected[len] = {0, 1, 2};
-    Iter b                = Iter(cuda::std::begin(input));
-    Iter e                = Iter(cuda::std::end(input));
+    Iter b                = Iter(input);
+    Iter e                = Iter(input + len);
     Iter it               = cuda::std::shift_left(b, e, len + 1);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == b);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, forward_iterator<int*>>();
   test<int, bidirectional_iterator<int*>>();
@@ -127,7 +131,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

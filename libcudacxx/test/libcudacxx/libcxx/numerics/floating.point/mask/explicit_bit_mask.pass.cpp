@@ -19,26 +19,26 @@
 #include "test_macros.h"
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_exlicit_bit_mask(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC void test_fp_exlicit_bit_mask(cuda::std::__fp_storage_t<Fmt> expected)
 {
   assert(cuda::std::__fp_explicit_bit_mask_v<Fmt> == expected);
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_exlicit_bit_mask()
+TEST_FUNC void test_fp_exlicit_bit_mask()
 {
   static_assert(cuda::std::__fp_has_implicit_bit_v<Fmt>);
   assert(cuda::std::__fp_explicit_bit_mask_v<Fmt> == 0);
 }
 
 template <class T>
-__host__ __device__ void test_fp_exlicit_bit_mask()
+TEST_FUNC void test_fp_exlicit_bit_mask()
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
   assert(cuda::std::__fp_explicit_bit_mask_of_v<T> == cuda::std::__fp_explicit_bit_mask_v<fmt>);
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   using namespace test_integer_literals;
 

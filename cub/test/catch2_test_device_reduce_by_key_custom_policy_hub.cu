@@ -1,23 +1,25 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the reduce-by-key dispatcher
+
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the reduce-by-key dispatcher after publishing the tuning API
 
 template <class ReductionOpT, class AccumT, class KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB reduce-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
@@ -29,7 +31,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][device]")
+CUB_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][device]", CUB_SMALL)
 {
   using key_t          = int;
   using value_t        = int;
@@ -52,16 +54,16 @@ C2H_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][de
 
   using policy_hub_t = my_policy_hub<reduction_op_t, accum_t, key_t>;
   using dispatch_t   = cub::DispatchReduceByKey<
-      key_t*,
-      key_t*,
-      value_t*,
-      value_t*,
-      offset_t*,
-      equality_op_t,
-      reduction_op_t,
-      offset_t,
-      accum_t,
-      policy_hub_t>;
+    key_t*,
+    key_t*,
+    value_t*,
+    value_t*,
+    offset_t*,
+    equality_op_t,
+    reduction_op_t,
+    offset_t,
+    accum_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

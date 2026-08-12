@@ -28,31 +28,35 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_real(const complex<_Tp>& __c) noexcept
 {
   return __c.real();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_imag(const complex<_Tp>& __c) noexcept
 {
   return __c.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_real(const ::cuda::std::complex<_Tp>& __c) noexcept
 {
   return __c.real();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_imag(const ::cuda::std::complex<_Tp>& __c) noexcept
 {
   return __c.imag();
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 // Unless `--expt-relaxed-constexpr` is specified, obtaining values from std::complex is not constexpr :(
 #  if defined(__CUDACC_RELAXED_CONSTEXPR__)
@@ -80,7 +84,7 @@ template <class _Tp>
   return reinterpret_cast<const _Tp(&)[2]>(__c)[1];
 }
 #  endif // ^^^ !__CUDACC_RELAXED_CONSTEXPR__ ^^^
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA
 

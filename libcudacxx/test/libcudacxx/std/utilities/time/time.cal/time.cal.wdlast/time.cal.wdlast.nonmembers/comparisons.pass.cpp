@@ -19,7 +19,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using weekday      = cuda::std::chrono::weekday;
   using weekday_last = cuda::std::chrono::weekday_last;

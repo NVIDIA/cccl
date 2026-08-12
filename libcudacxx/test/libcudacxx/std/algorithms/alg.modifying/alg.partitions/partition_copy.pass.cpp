@@ -25,13 +25,13 @@
 
 struct is_odd
 {
-  __host__ __device__ constexpr bool operator()(const int& i) const
+  TEST_FUNC constexpr bool operator()(const int& i) const
   {
     return i & 1;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int ia[] = {1, 2, 3, 4, 6, 8, 5, 7};
@@ -62,7 +62,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

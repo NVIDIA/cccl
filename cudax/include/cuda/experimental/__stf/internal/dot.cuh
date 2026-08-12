@@ -36,10 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
@@ -312,7 +315,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m = metadata[unique_id];
     m.color = "red";
@@ -387,7 +390,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     set_current_color_by_device(guard);
 
@@ -413,7 +416,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
@@ -448,7 +451,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (is_discarded(id_from, guard) || is_discarded(id_to, guard))
     {
@@ -476,7 +479,7 @@ public:
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (!tracing_enabled)
     {
@@ -541,26 +544,39 @@ public:
     }
   }
 
+  //! @brief Records task timing metadata without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time_ms The task duration in milliseconds.
+  //! @param[in] device The device that executed the task, or `-1` if unspecified.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
+  void add_vertex_timing(const task_type& t,
+                         float time_ms,
+                         [[maybe_unused]] int device            = -1,
+                         const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    // Timing metadata is diagnostic only; allocation or locking failures must
+    // not interfere with task teardown.
+    on_throw(notify, loc) << [&] {
+      ::std::scoped_lock guard(mtx);
 
-    if (!tracing_enabled)
-    {
-      return;
-    }
+      if (!tracing_enabled)
+      {
+        return;
+      }
 
-    // Save timing information for this task
-    metadata[t.get_unique_id()].timing = time_ms;
+      // Save timing information for this task
+      metadata[t.get_unique_id()].timing = time_ms;
+    };
   }
 
-  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone did take a lock.
-  void set_current_color_by_device(::std::lock_guard<::std::mutex>&)
+  // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
+  void set_current_color_by_device(::std::scoped_lock<::std::mutex>&)
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      int dev;
+      int dev = 0;
       cuda_safe_call(cudaGetDevice(&dev));
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
@@ -573,7 +589,7 @@ public:
     {
       return;
     }
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
     current_color = color;
   }
 
@@ -593,7 +609,7 @@ public:
     discarded_tasks.insert(id);
   }
 
-  bool is_discarded(int id, ::std::lock_guard<::std::mutex>&) const
+  bool is_discarded(int id, ::std::scoped_lock<::std::mutex>&) const
   {
     return discarded_tasks.find(id) != discarded_tasks.end();
   }
@@ -695,7 +711,7 @@ public:
 protected:
   dot()
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     const char* filename = getenv("CUDASTF_DOT_FILE");
     if (!filename)
@@ -736,7 +752,7 @@ public:
   // Add a context to the vector of contexts we need to depict in DOT
   void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     per_ctx.push_back(mv(pc));
   }
@@ -744,7 +760,7 @@ public:
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (dot_filename.empty())
     {
@@ -827,7 +843,7 @@ public:
     }
     else
     {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+      ::std::cerr << "Unable to open file: " << dot_filename << '\n';
     }
 
     const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
@@ -851,7 +867,7 @@ public:
       }
       else
       {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+        ::std::cerr << "Unable to open file: " << stats_filename << '\n';
       }
     }
 
@@ -1458,8 +1474,8 @@ private:
       next = path_predecessor[next];
     }
 
-    outFile << "// T1 = " << t1 << ::std::endl;
-    outFile << "// Tinf = " << max_dist << ::std::endl;
+    outFile << "// T1 = " << t1 << '\n';
+    outFile << "// Tinf = " << max_dist << '\n';
 
     critical_path = max_dist;
     total_work    = t1;
@@ -1519,7 +1535,7 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
   auto sec = ::std::make_shared<dot_section>(mv(symbol));
   int id   = sec->get_id();
 
-  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+  ::std::scoped_lock guard(pc->mtx);
 
   // Get parent section ID from stack (must have at least the context section)
   auto& section_stack = pc->section_id_stack;
@@ -1545,7 +1561,7 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
   }
 
   {
-    auto guard = ::std::lock_guard{pc->mtx};
+    auto guard = ::std::scoped_lock{pc->mtx};
 
     _CCCL_ASSERT(!pc->section_id_stack.empty(), "Cannot pop from empty section stack");
     pc->section_id_stack.pop_back();

@@ -23,23 +23,25 @@
 #if _CCCL_HAS_DLPACK()
 
 #  include <cuda/__internal/dlpack.h>
-#  include <cuda/__mdspan/host_device_mdspan.h>
-#  include <cuda/__mdspan/layout_stride_relaxed.h>
-#  include <cuda/__mdspan/mdspan_to_dlpack.h>
-#  include <cuda/__mdspan/traits.h>
-#  include <cuda/__memory/is_aligned.h>
-#  include <cuda/__numeric/mul_overflow.h>
-#  include <cuda/mdspan>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/array>
-#  include <cuda/std/cstdint>
 
-#  include <dlpack/dlpack.h>
+#  if _CCCL_HAS_DLPACK_VERSION_1()
+#    include <cuda/__mdspan/host_device_mdspan.h>
+#    include <cuda/__mdspan/layout_stride_relaxed.h>
+#    include <cuda/__mdspan/mdspan_to_dlpack.h>
+#    include <cuda/__mdspan/traits.h>
+#    include <cuda/__memory/is_aligned.h>
+#    include <cuda/__numeric/mul_overflow.h>
+#    include <cuda/mdspan>
+#    include <cuda/std/__cstddef/types.h>
+#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__host_stdlib/stdexcept>
+#    include <cuda/std/__utility/cmp.h>
+#    include <cuda/std/array>
+#    include <cuda/std/cstdint>
+
+#    include <dlpack/dlpack.h>
 //
-#  include <cuda/std/__cccl/prologue.h>
+#    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -89,9 +91,9 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
   const auto __strides_ptr = __tensor.strides;
   if (__strides_ptr == nullptr)
   {
-#  if _CCCL_DLPACK_AT_LEAST(1, 2)
+#    if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument, "strides=nullptr is not supported for DLPack v1.2 and later");
-#  else
+#    else
     // strides == nullptr means row-major (C-contiguous) layout
     if (__is_layout_left && __rank > 1)
     {
@@ -101,7 +103,7 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
     {
       return;
     }
-#  endif // _CCCL_DLPACK_AT_LEAST(1, 2)
+#    endif // _CCCL_DLPACK_AT_LEAST(1, 2)
   }
   for (::cuda::std::size_t __pos = 0; __pos < __rank; ++__pos)
   {
@@ -300,7 +302,8 @@ to_managed_mdspan(const ::DLTensor& __tensor)
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
+#  endif // _CCCL_HAS_DLPACK_VERSION_1()
 #endif // __CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_DLPACK_TO_MDSPAN_H

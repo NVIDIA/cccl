@@ -13,6 +13,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
+#include <cuda/std/string_view>
 #include <cuda/tma>
 
 #include <cuda_runtime_api.h>
@@ -163,7 +164,28 @@ bool test_box_sizes()
   tensor.byte_offset = 0;
   // test largest box size
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
+
+  // Test that non-1 inner most stride throws.
+#if TEST_HAS_EXCEPTIONS()
+  int64_t invalid_strides_storage[1] = {2};
+  tensor.strides                     = invalid_strides_storage;
+  try
+  {
+    unused(cuda::make_tma_descriptor(tensor, box_sizes));
+    assert(false);
+  }
+  catch (const std::invalid_argument& e)
+  {
+    assert(cuda::std::string_view{e.what()} == "The inner most stride is required to be 1");
+  }
+  catch (...)
+  {
+    assert(false);
+  }
+#endif // TEST_HAS_EXCEPTIONS()
+
   assert(cudaFree(data) == cudaSuccess);
+
   return true;
 }
 

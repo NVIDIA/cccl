@@ -77,11 +77,73 @@ struct segmented_reduce_build
 struct segmented_reduce_run
 {
   template <typename... Ts>
-  CUresult operator()(Ts... args) const noexcept
+  CUresult operator()(
+    cccl_device_segmented_reduce_build_result_t build,
+    void* d_temp_storage,
+    size_t* temp_storage_bytes,
+    cccl_iterator_t d_in,
+    cccl_iterator_t d_out,
+    uint64_t num_segments,
+    cccl_iterator_t start_offset,
+    cccl_iterator_t end_offset,
+    cccl_op_t op,
+    cccl_value_t init,
+    CUstream stream) const noexcept
   {
-    return cccl_device_segmented_reduce(args...);
+    return cccl_device_segmented_reduce(
+      build,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      start_offset,
+      end_offset,
+      op,
+      init,
+#ifndef CCCL_C_PARALLEL_V2
+      0, // v1 only: guaranteed_max_segment_size
+#endif
+      stream);
   }
 };
+
+#ifndef CCCL_C_PARALLEL_V2
+// v1-only: variant that passes a compile-time guaranteed_max_segment_size to
+// exercise different dispatch policies. v2's cccl_device_segmented_reduce
+// signature doesn't accept guaranteed_max_segment_size.
+template <size_t GuaranteedMaxSegmentSize>
+struct segmented_reduce_run_guaranteed
+{
+  CUresult operator()(
+    cccl_device_segmented_reduce_build_result_t build,
+    void* d_temp_storage,
+    size_t* temp_storage_bytes,
+    cccl_iterator_t d_in,
+    cccl_iterator_t d_out,
+    uint64_t num_segments,
+    cccl_iterator_t start_offset,
+    cccl_iterator_t end_offset,
+    cccl_op_t op,
+    cccl_value_t init,
+    CUstream stream) const noexcept
+  {
+    return cccl_device_segmented_reduce(
+      build,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      start_offset,
+      end_offset,
+      op,
+      init,
+      GuaranteedMaxSegmentSize,
+      stream);
+  }
+};
+#endif // CCCL_C_PARALLEL_V2
 
 template <typename BuildCache = segmented_reduce_build_cache_t, typename KeyT = std::string>
 void segmented_reduce(
@@ -98,6 +160,30 @@ void segmented_reduce(
   AlgorithmExecute<BuildResultT, segmented_reduce_build, segmented_reduce_cleanup, segmented_reduce_run, BuildCache, KeyT>(
     cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+template <size_t GuaranteedMaxSegmentSize,
+          typename BuildCache = segmented_reduce_build_cache_t,
+          typename KeyT       = std::string>
+void segmented_reduce_guaranteed(
+  cccl_iterator_t input,
+  cccl_iterator_t output,
+  uint64_t num_segments,
+  cccl_iterator_t start_offsets,
+  cccl_iterator_t end_offsets,
+  cccl_op_t op,
+  cccl_value_t init,
+  std::optional<BuildCache>& cache,
+  const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT,
+                   segmented_reduce_build,
+                   segmented_reduce_cleanup,
+                   segmented_reduce_run_guaranteed<GuaranteedMaxSegmentSize>,
+                   BuildCache,
+                   KeyT>(cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
+}
+#endif // CCCL_C_PARALLEL_V2
 
 // ==============
 //   Test section
@@ -327,8 +413,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    auto segment_begin_it = host_input.begin() + segments[i];
-    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    auto segment_begin_it = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i]);
+    auto segment_end_it   = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i + 1]);
     host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
       return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
     });
@@ -398,8 +484,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    auto segment_begin_it = host_input.begin() + segments[i];
-    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    auto segment_begin_it = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i]);
+    auto segment_end_it   = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i + 1]);
     host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
       return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
     });
@@ -976,3 +1062,268 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
 
   REQUIRE(expected_value == std::vector<CmpT>(as_expected)[0]);
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+// ==============
+//   guaranteed_max_segment_size tests (v1-only)
+//   These exercise the small / medium / large dispatch policies in CUB segmented reduce.
+//   Segment sizes are fixed so the guarantee exactly matches, verifying correctness across policies.
+//   v2's cccl_device_segmented_reduce doesn't accept a guaranteed_max_segment_size parameter.
+// ==============
+
+// Helper shared by all three tests: builds offset iterators for uniform-size segments
+// and calls segmented_reduce_guaranteed, then verifies against std::reduce.
+template <size_t GuaranteedMaxSegmentSize, typename TestType, typename BuildCache>
+void run_guaranteed_max_seg_size_test(
+  std::size_t n_rows,
+  std::size_t n_cols,
+  std::optional<BuildCache>& build_cache,
+  const std::optional<std::string>& test_key)
+{
+  const std::size_t n_elems      = n_rows * n_cols;
+  const std::size_t segment_size = n_cols;
+
+  const std::vector<TestType> host_input = generate<TestType>(n_elems);
+  std::vector<TestType> host_output(n_rows, 0);
+
+  pointer_t<TestType> input_ptr(host_input);
+  pointer_t<TestType> output_ptr(host_output);
+
+  using SizeT                                     = unsigned long long;
+  static constexpr std::string_view index_ty_name = "unsigned long long";
+
+  struct row_offset_iterator_state_t
+  {
+    SizeT linear_id;
+    SizeT segment_size;
+  };
+
+  static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
+  static constexpr std::string_view advance_offset_method_name = "advance_offset_it";
+  static constexpr std::string_view deref_offset_method_name   = "dereference_offset_it";
+
+  const auto& [offset_iterator_state_src, offset_iterator_advance_src, offset_iterator_deref_src] =
+    make_step_counting_iterator_sources(
+      index_ty_name, offset_iterator_state_name, advance_offset_method_name, deref_offset_method_name);
+
+  iterator_t<SizeT, row_offset_iterator_state_t> start_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, offset_iterator_state_src},
+    {advance_offset_method_name, offset_iterator_advance_src},
+    {deref_offset_method_name, offset_iterator_deref_src});
+
+  start_offset_it.state.linear_id    = 0;
+  start_offset_it.state.segment_size = segment_size;
+
+  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
+
+  end_offset_it.state.linear_id    = 1;
+  end_offset_it.state.segment_size = segment_size;
+
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
+  value_t<TestType> init{0};
+
+  segmented_reduce_guaranteed<GuaranteedMaxSegmentSize>(
+    input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
+
+  for (std::size_t i = 0; i < n_rows; ++i)
+  {
+    std::size_t row_offset = i * segment_size;
+    host_output[i]         = std::reduce(host_input.begin() + row_offset, host_input.begin() + row_offset + n_cols);
+  }
+  REQUIRE(host_output == std::vector<TestType>(output_ptr));
+}
+
+// Small segments (≤16 elements): exercises the small warp-level dispatch policy
+struct SegmentedReduce_GuaranteedMaxSegSize_Small_Fixture_Tag;
+C2H_TEST_LIST("segmented_reduce respects guaranteed_max_segment_size for small segments",
+              "[segmented_reduce][guaranteed_max_segment_size]",
+              std::int32_t,
+              std::int64_t,
+              std::uint32_t,
+              std::uint64_t)
+{
+  static constexpr std::size_t segment_size = 8;
+  const std::size_t n_rows                  = GENERATE(0, 13, take(2, random(100, 200)));
+
+  auto& build_cache    = get_cache<SegmentedReduce_GuaranteedMaxSegSize_Small_Fixture_Tag>();
+  const auto& test_key = make_key<TestType>();
+
+  run_guaranteed_max_seg_size_test<segment_size, TestType>(n_rows, segment_size, build_cache, test_key);
+}
+
+// Medium segments (≤256 elements): exercises the medium warp-level dispatch policy
+struct SegmentedReduce_GuaranteedMaxSegSize_Medium_Fixture_Tag;
+C2H_TEST_LIST("segmented_reduce respects guaranteed_max_segment_size for medium segments",
+              "[segmented_reduce][guaranteed_max_segment_size]",
+              std::int32_t,
+              std::int64_t,
+              std::uint32_t,
+              std::uint64_t)
+{
+  static constexpr std::size_t segment_size = 64;
+  const std::size_t n_rows                  = GENERATE(0, 13, take(2, random(50, 100)));
+
+  auto& build_cache    = get_cache<SegmentedReduce_GuaranteedMaxSegSize_Medium_Fixture_Tag>();
+  const auto& test_key = make_key<TestType>();
+
+  run_guaranteed_max_seg_size_test<segment_size, TestType>(n_rows, segment_size, build_cache, test_key);
+}
+
+// Large segments (≥512 elements): exercises the large block-level dispatch policy
+struct SegmentedReduce_GuaranteedMaxSegSize_Large_Fixture_Tag;
+C2H_TEST_LIST("segmented_reduce respects guaranteed_max_segment_size for large segments",
+              "[segmented_reduce][guaranteed_max_segment_size]",
+              std::int32_t,
+              std::int64_t,
+              std::uint32_t,
+              std::uint64_t)
+{
+  static constexpr std::size_t segment_size = 1024;
+  const std::size_t n_rows                  = GENERATE(0, 5, take(2, random(10, 20)));
+
+  auto& build_cache    = get_cache<SegmentedReduce_GuaranteedMaxSegSize_Large_Fixture_Tag>();
+  const auto& test_key = make_key<TestType>();
+
+  run_guaranteed_max_seg_size_test<segment_size, TestType>(n_rows, segment_size, build_cache, test_key);
+}
+
+C2H_TEST("SegmentedReduce build result has serialization metadata populated", "[segmented_reduce][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> in(1);
+  pointer_t<T> out(1);
+  pointer_t<T> begin_offsets(1);
+  pointer_t<T> end_offsets(1);
+  value_t<T> init{T{0}};
+
+  cccl_device_segmented_reduce_build_result_t build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce_build(
+      &build,
+      in,
+      out,
+      begin_offsets,
+      end_offsets,
+      op,
+      init,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.segmented_reduce_kernel_lowered_name != nullptr);
+  CHECK(build.segmented_reduce_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
+}
+
+C2H_TEST("SegmentedReduce compile/load round-trip", "[segmented_reduce][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  pointer_t<T> dummy_begin_offsets(1);
+  pointer_t<T> dummy_end_offsets(1);
+  value_t<T> init{T{0}};
+
+  cccl_device_segmented_reduce_build_result_t build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      dummy_begin_offsets,
+      dummy_end_offsets,
+      op,
+      init,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.segmented_reduce_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.segmented_reduce_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.segmented_reduce_kernel != nullptr);
+
+  constexpr std::size_t n          = 16;
+  constexpr std::size_t n_segments = 2;
+  const std::vector<T> input       = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n_segments);
+  const std::vector<int> begin_offsets_host = {0, static_cast<int>(n / 2)};
+  const std::vector<int> end_offsets_host   = {static_cast<int>(n / 2), static_cast<int>(n)};
+  pointer_t<int> begin_offsets_ptr(begin_offsets_host);
+  pointer_t<int> end_offsets_ptr(end_offsets_host);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      input_ptr,
+      output_ptr,
+      n_segments,
+      begin_offsets_ptr,
+      end_offsets_ptr,
+      op,
+      init,
+      /*max_segment_size=*/0,
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_reduce(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      input_ptr,
+      output_ptr,
+      n_segments,
+      begin_offsets_ptr,
+      end_offsets_ptr,
+      op,
+      init,
+      /*max_segment_size=*/0,
+      null_stream));
+
+  const T expected0 = std::accumulate(input.begin(), input.begin() + n / 2, T{0});
+  const T expected1 = std::accumulate(input.begin() + n / 2, input.end(), T{0});
+  REQUIRE(output_ptr[0] == expected0);
+  REQUIRE(output_ptr[1] == expected1);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
+}
+
+#endif // CCCL_C_PARALLEL_V2 (guaranteed_max_segment_size tests)

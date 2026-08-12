@@ -110,29 +110,35 @@ inline constexpr bool __noexcept_movable_storable<_T1, _T2, true> =
 
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
-  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const noexcept(__noexcept_unqualified_iter_swap<_T1, _T2>)
+  _CCCL_API constexpr void
+  _CCCL_STATIC_CALL_OPERATOR(_T1&& __x, _T2&& __y) noexcept(__noexcept_unqualified_iter_swap<_T1, _T2>)
   {
     (void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y));
   }
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__readable_swappable<_T1, _T2>)
-  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const noexcept(__noexcept_readable_swappable<_T1, _T2>)
+  _CCCL_API constexpr void
+  _CCCL_STATIC_CALL_OPERATOR(_T1&& __x, _T2&& __y) noexcept(__noexcept_readable_swappable<_T1, _T2>)
   {
     ::cuda::std::ranges::swap(*::cuda::std::forward<_T1>(__x), *::cuda::std::forward<_T2>(__y));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__movable_storable<_T2, _T1>)
-  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const noexcept(__noexcept_movable_storable<_T1, _T2>)
+  _CCCL_API constexpr void
+  _CCCL_STATIC_CALL_OPERATOR(_T1&& __x, _T2&& __y) noexcept(__noexcept_movable_storable<_T1, _T2>)
   {
     iter_value_t<_T2> __old(::cuda::std::ranges::iter_move(__y));
     *__y                            = ::cuda::std::ranges::iter_move(__x);
     *::cuda::std::forward<_T1>(__x) = ::cuda::std::move(__old);
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

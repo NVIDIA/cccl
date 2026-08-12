@@ -22,7 +22,7 @@ void test_is_open(bool is_open)
   STATIC_REQUIRE(cuda::std::is_same_v<bool, decltype(cudax::cufile_driver.is_open())>);
   STATIC_REQUIRE(noexcept(cudax::cufile_driver.is_open()));
 
-  CUDAX_REQUIRE(cudax::cufile_driver.is_open() == is_open);
+  REQUIRE(cudax::cufile_driver.is_open() == is_open);
 }
 
 template <class Attr>

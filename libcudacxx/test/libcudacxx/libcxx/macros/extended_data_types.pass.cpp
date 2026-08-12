@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #include <cuda/std/__cccl/extended_data_types.h>
 
 #include "test_macros.h"
@@ -27,7 +28,7 @@
 #endif
 
 template <class T>
-__host__ __device__ void test_nv_fp()
+TEST_FUNC void test_nv_fp()
 {
   auto v = T{1.0f};
   unused(v);

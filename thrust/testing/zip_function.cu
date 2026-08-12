@@ -96,8 +96,10 @@ struct TestZipFunctionMixed
 
     auto inputKeyItBegin =
       thrust::make_zip_iterator(thrust::make_zip_iterator(vecA.begin(), vecB.begin()), vecC.begin());
-    auto endIt =
-      thrust::remove_if(inputKeyItBegin, inputKeyItBegin + vecA.size(), thrust::make_zip_function(RemovePred{}));
+    auto endIt = thrust::remove_if(
+      inputKeyItBegin,
+      inputKeyItBegin + static_cast<std::ptrdiff_t>(vecA.size()),
+      thrust::make_zip_function(RemovePred{}));
     auto numEle = endIt - inputKeyItBegin;
     vecA.resize(numEle);
     vecB.resize(numEle);
@@ -141,7 +143,8 @@ struct TestNestedZipFunction
 
     thrust::device_vector<bool> isMH{false, false, false};
     thrust::device_vector<bool> expected{false, false, true};
-    thrust::transform(idAndSegIt, idAndSegIt + SS.size(), isMH.begin(), NestedFunctionCall{});
+    thrust::transform(
+      idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
     ASSERT_EQUAL(isMH, expected);
   }
 };
@@ -167,7 +170,7 @@ struct TestNestedZipFunction2
 
     auto tupleIt       = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
     auto nestedTupleIt = thrust::make_zip_iterator(tupleIt, cuda::std::begin(C));
-    thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
+    thrust::sort(nestedTupleIt, nestedTupleIt + static_cast<std::ptrdiff_t>(n), SortPred{});
   }
 };
 SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;

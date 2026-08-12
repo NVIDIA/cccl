@@ -71,7 +71,7 @@ void initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
 sort_unordered_results(thrust::host_vector<float> h_res_keys, thrust::host_vector<int> h_res_values)
 {
   auto h_pairs = thrust::make_zip_iterator(h_res_keys.begin(), h_res_values.begin());
-  thrust::sort(h_pairs, h_pairs + h_res_keys.size());
+  thrust::sort(h_pairs, h_pairs + static_cast<std::ptrdiff_t>(h_res_keys.size()));
   return ::cuda::std::make_tuple(h_res_keys, h_res_values);
 }
 

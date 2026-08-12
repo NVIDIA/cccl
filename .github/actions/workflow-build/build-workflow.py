@@ -268,6 +268,13 @@ def get_gpu(gpu_string):
     result = matrix_yaml["gpus"][gpu_string]
     result["id"] = gpu_string
 
+    required_fields = ["name", "runner", "sm"]
+    missing_fields = [field for field in required_fields if field not in result]
+    if missing_fields:
+        raise Exception(
+            f"GPU '{gpu_string}' is missing required field(s): {', '.join(missing_fields)}"
+        )
+
     if "testing" not in result:
         result["testing"] = False
 
@@ -426,7 +433,11 @@ def generate_dispatch_group_name(matrix_job):
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
     cpu_str = matrix_job["cpu"]
-    gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
+    if job_info["gpu"]:
+        gpu = get_gpu(matrix_job["gpu"])
+        gpu_str = ", " + gpu["name"]
+    else:
+        gpu_str = ""
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
@@ -445,10 +456,13 @@ def generate_dispatch_job_name(matrix_job, job_type):
     py_str = (
         (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
     )
-
-    config_tag = (
-        f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    ctk_mode_str = (
+        (" ctk-" + str(matrix_job["py_ctk_mode"]))
+        if "py_ctk_mode" in matrix_job
+        else ""
     )
+
+    config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}{ctk_mode_str}"
 
     extra_info = (
         f":{cuda_compile_arch}{cmake_options}{extra_args}"
@@ -470,7 +484,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
 
-    return f"{runner_os}-{cpu}-gpu-{gpu['id']}-latest-1{suffix}"
+    return f"{runner_os}-{cpu}-gpu-{gpu['runner']}{suffix}"
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
@@ -501,6 +515,10 @@ def generate_dispatch_job_image(matrix_job, job_type):
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
+def generate_dispatch_job_environment(matrix_job, job_type):
+    return json.dumps(matrix_job.get("environment") or [])
+
+
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
@@ -520,6 +538,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+    py_ctk_mode = matrix_job["py_ctk_mode"] if "py_ctk_mode" in matrix_job else ""
     extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
@@ -535,6 +554,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+    if py_ctk_mode:
+        command += f' -ctk-mode "{py_ctk_mode}"'
     if extra_args:
         command += f" {extra_args}"
 
@@ -590,6 +611,7 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "name": generate_dispatch_job_name(matrix_job, job_type),
         "runner": generate_dispatch_job_runner(matrix_job, job_type),
         "image": generate_dispatch_job_image(matrix_job, job_type),
+        "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
     }
@@ -630,6 +652,16 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
         producer_matrix_job["ctk"] = producer_ctk
     else:
         producer_matrix_job = matrix_job
+
+    # py_ctk_mode is a consumer-only tag: it selects the pip extra the test
+    # installs, but the wheel build ignores it. Drop it from the producer so the
+    # pinned/latest/sysctk variants of a given wheel share one build instead of
+    # each spawning an identical, redundant producer (the merge below dedupes
+    # producers by their name/command).
+    if "py_ctk_mode" in producer_matrix_job:
+        if producer_matrix_job is matrix_job:
+            producer_matrix_job = copy.deepcopy(matrix_job)
+        del producer_matrix_job["py_ctk_mode"]
 
     producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 
@@ -695,12 +727,13 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 
 
 def compare_dispatch_jobs(job1, job2):
-    "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
+    "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     return (
         job1["name"] == job2["name"]
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
+        and job1["environment"] == job2["environment"]
         and job1["command"] == job2["command"]
     )
 
@@ -1095,7 +1128,7 @@ def set_derived_tags(matrix_job):
 
 
 def next_explode_tag(matrix_job):
-    non_exploded_tags = ["jobs"]
+    non_exploded_tags = ["jobs", "environment"]
 
     for tag in matrix_job:
         if tag not in non_exploded_tags and isinstance(matrix_job[tag], list):
@@ -1261,7 +1294,7 @@ def write_outputs(final_workflow):
         )
     }
 
-    runner_heading = f"🏃‍ Runner counts (total jobs: {total_jobs})"
+    runner_heading = f"🏃 Runner counts (total jobs: {total_jobs})"
 
     runner_counts_table = f"| {'#':^4} | Runner\n"
     runner_counts_table += "|------|------\n"

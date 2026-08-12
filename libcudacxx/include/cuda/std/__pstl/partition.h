@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/partition.h>
@@ -65,11 +65,7 @@ partition([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Inp
       return __first;
     }
 
-    auto __result = __first;
-    const size_t __num_selected =
-      __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
-
-    return __result + static_cast<iter_difference_t<_InputIterator>>(__num_selected);
+    return __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
   else
   {
@@ -84,6 +80,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_PARTITION_H

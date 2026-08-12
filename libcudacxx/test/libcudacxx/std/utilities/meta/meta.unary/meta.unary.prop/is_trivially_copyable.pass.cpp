@@ -24,21 +24,21 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable()
+TEST_FUNC void test_is_trivially_copyable()
 {
-  static_assert(cuda::std::is_trivially_copyable<T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<const T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "");
-  static_assert(cuda::std::is_trivially_copyable_v<const T>, "");
+  static_assert(cuda::std::is_trivially_copyable<T>::value);
+  static_assert(cuda::std::is_trivially_copyable<const T>::value);
+  static_assert(cuda::std::is_trivially_copyable_v<T>);
+  static_assert(cuda::std::is_trivially_copyable_v<const T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivially_copyable()
+TEST_FUNC void test_is_not_trivially_copyable()
 {
-  static_assert(!cuda::std::is_trivially_copyable<T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable<const T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<T>, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<const T>, "");
+  static_assert(!cuda::std::is_trivially_copyable<T>::value);
+  static_assert(!cuda::std::is_trivially_copyable<const T>::value);
+  static_assert(!cuda::std::is_trivially_copyable_v<T>);
+  static_assert(!cuda::std::is_trivially_copyable_v<const T>);
 }
 
 struct A
@@ -49,7 +49,7 @@ struct A
 struct B
 {
   int i_;
-  __host__ __device__ ~B()
+  TEST_FUNC ~B()
   {
     assert(i_ == 0);
   }
@@ -58,7 +58,7 @@ struct B
 class C
 {
 public:
-  __host__ __device__ C();
+  TEST_FUNC C();
 };
 
 int main(int, char**)

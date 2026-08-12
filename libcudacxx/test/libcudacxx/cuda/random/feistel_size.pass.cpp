@@ -8,13 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device math function
+
 #include <cuda/__random/feistel_bijection.h>
 #include <cuda/std/cassert>
 #include <cuda/std/random>
 
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Size is nearest power of two >= 256
   auto rng = cuda::std::philox4x64{};

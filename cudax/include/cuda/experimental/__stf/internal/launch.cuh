@@ -64,7 +64,7 @@ void cuda_launcher(interpreted_spec interpreted_policy, Fun&& f, void** args, St
   lconfig.dynamicSmemBytes = mem_config[2];
   lconfig.stream           = stream;
 
-  cuda_safe_call(cudaLaunchKernelExC(&lconfig, (void*) f, args));
+  cuda_try<cudaLaunchKernelExC>(&lconfig, (void*) f, args);
 }
 
 template <typename interpreted_spec, typename Fun>
@@ -81,7 +81,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
   kconfig.kernelParams   = args;
   kconfig.sharedMemBytes = static_cast<int>(mem_config[2]);
 
-  cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
+  n = cuda_try<cudaGraphAddKernelNode>(g, nullptr, 0, &kconfig);
 
   // Enable cooperative kernel if necessary by updating the node attributes
 
@@ -89,7 +89,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 
   cudaKernelNodeAttrValue val;
   val.cooperative = cooperative_kernel ? 1 : 0;
-  cuda_safe_call(cudaGraphKernelNodeSetAttribute(n, cudaKernelNodeAttributeCooperative, &val));
+  cuda_try<cudaGraphKernelNodeSetAttribute>(n, cudaKernelNodeAttributeCooperative, &val);
 }
 
 template <typename Fun, typename interpreted_spec, typename Arg>
@@ -101,6 +101,18 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
     auto th = thread_hierarchy(static_cast<int>(rank), interpreted_policy);
 
     void* th_dev_tmp_ptr = nullptr;
+
+    // Free the temporary device memory on the way out, even if set_device_tmp
+    // or the launch throws. Installed before the malloc so a throw from
+    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
+    // because SCOPE(exit) is noexcept.
+    SCOPE(exit)
+    {
+      if (th_dev_tmp_ptr)
+      {
+        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      }
+    };
 
     /* Allocate temporary device memory */
     auto th_mem_config = interpreted_policy.get_mem_config();
@@ -120,7 +132,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     if (th_mem_config[1] > 0)
     {
-      cuda_safe_call(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
+      cuda_try(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
       th.set_device_tmp(th_dev_tmp_ptr);
     }
 
@@ -129,11 +141,6 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
     void* all_args[] = {&f, &kernel_args};
 
     cuda_launcher(interpreted_policy, reserved::launch_kernel<Fun, args_type>, all_args, stream);
-
-    if (th_mem_config[1] > 0)
-    {
-      cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
-    }
   };
 }
 
@@ -175,7 +182,7 @@ public:
   {}
 
   launch(exec_place e_place, ::std::vector<cudaStream_t> streams, Arg arg)
-      : launch(spec_t(), mv(e_place), mv(arg), mv(streams))
+      : launch(spec_t(), mv(e_place), mv(streams), mv(arg))
   {}
 
   template <typename Fun>
@@ -217,7 +224,7 @@ public:
       unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
       if (hostMemoryArrivedList)
       {
-        deallocateManagedMemory(hostMemoryArrivedList, grid_size, streams[0]);
+        deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, streams[0]);
       }
     };
 
@@ -227,9 +234,16 @@ public:
     {
       if (interpreted_policy.last_level_scope() == hw_scope::device)
       {
-        auto hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
-        // printf("About to allocate hostmemarrivedlist : %lu bytes\n", grid_size - 1);
-        memset(hostMemoryArrivedList, 0, grid_size - 1);
+        const size_t arrived_bytes  = grid_size - 1;
+        auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
+        // Own the buffer until cg_system adopts it; if the assignment below
+        // throws, free immediately so we do not leak. cuda_safe_call because
+        // SCOPE(fail) is noexcept (pool insert can throw).
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+        };
+        memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
@@ -346,50 +360,42 @@ public:
       t.set_symbol(symbol);
     }
 
-    bool record_time = t.schedule_task();
+    const bool scheduled = t.schedule_task();
     // Execution place may have changed during scheduling task
-    e_place = t.get_exec_place();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    e_place                = t.get_exec_place();
+    const bool record_time = scheduled || statistics.is_calibrating_to_file();
 
     nvtx_range nr(t.get_symbol().c_str());
-    t.start();
 
-    int device;
-    cudaEvent_t start_event, end_event;
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        cudaGetDevice(&device); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
-      }
-    }
-
-    const size_t grid_size = e_place.size();
-
-    // Put all data instances in a tuple
-    auto args = data2inst<decltype(t), Deps...>(t);
-
-    using th_t      = typename thread_hierarchy_spec_t::thread_hierarchy_t;
-    using args_type = decltype(tuple_prepend(th_t(), args));
-
-    auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
+    int device              = -1;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
-      t.end_uncleared();
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
 
+    const size_t grid_size = e_place.size();
+
+    // Build the policy before start(): occupancy queries can throw, and we must
+    // not leave a started task without teardown guards. args_type only needs the
+    // unevaluated return type of data2inst, so get() is not invoked here.
+    using th_t      = typename thread_hierarchy_spec_t::thread_hierarchy_t;
+    using args_type = decltype(tuple_prepend(th_t(), data2inst<decltype(t), Deps...>(t)));
+
+    auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
+
+    // Free launch-scoped managed temps between end_uncleared and clear on both paths.
+    auto free_launch_temps = [&] {
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        /* If there was managed memory allocated we need to deallocate it */
         void* sys_mem = interpreted_policy.get_system_mem();
         if (sys_mem)
         {
@@ -400,11 +406,25 @@ public:
         unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
         if (hostMemoryArrivedList)
         {
-          deallocateManagedMemory(hostMemoryArrivedList, grid_size, t.get_stream());
+          deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, t.get_stream());
         }
+      }
+    };
 
-        if (record_time)
+    t.start();
+
+    // If things go well, end the task with time measurements.
+    SCOPE(success)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (start_event && end_event)
         {
+          // Inside the SCOPE body; keep cuda_safe_call so a CUDA error aborts
+          // rather than throwing through a fail/exit guard (std::terminate).
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -426,15 +446,48 @@ public:
       t.clear();
     };
 
+    // And if they don't, free temps and just end the task.
+    SCOPE(fail)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+      t.clear();
+    };
+
+    // Put all data instances in a tuple (requires a started task).
+    auto args = data2inst<decltype(t), Deps...>(t);
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
+      }
+    }
+
     /* Should only be allocated / deallocated if the last level used is system wide. Unnecessary and wasteful
      * otherwise. */
     if (grid_size > 1)
     {
       if (interpreted_policy.last_level_scope() == hw_scope::device)
       {
-        unsigned char* hostMemoryArrivedList;
-        hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
-        memset(hostMemoryArrivedList, 0, grid_size - 1);
+        const size_t arrived_bytes  = grid_size - 1;
+        auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
+        // Own the buffer until cg_system adopts it; if the assignment below
+        // throws, free immediately so we do not leak. cuda_safe_call because
+        // SCOPE(fail) is noexcept (pool insert can throw).
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+        };
+        memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }

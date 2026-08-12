@@ -8,7 +8,10 @@ set(
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
   cpp/task_get_stream.cu
+  cpp/test_pick_stream.cu
+  cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
+  cpp/wait_token.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
@@ -44,6 +47,7 @@ set(
   graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
+  graph/graph_child_move_ownership.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
@@ -52,6 +56,7 @@ set(
   interface/cuda_kernel_empty_args.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/legacy_to_stf_in_capture.cu
   local_stf/logical_data_t_template.cu
   local_stf/stackable.cu
   local_stf/stackable2.cu
@@ -64,6 +69,7 @@ set(
   local_stf/stackable_nested_while.cu
   local_stf/stackable_nested.cu
   local_stf/stackable_node_pool_growth.cu
+  local_stf/stream_ctx_lifetime_btb.cu
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
@@ -73,6 +79,18 @@ set(
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/replicated_data_place.cu
+  places/replicated_frozen_import.cu
+  places/cute_parallel_for.cu
+  places/locality_domain_alloc.cu
+  places/locality_domain_enumeration.cu
+  places/locality_domain_exec.cu
+  places/locality_domain_fake.cu
+  places/locality_domain_fake_unfulfillable.cu
+  places/locality_domain_grid.cu
+  places/locality_domain_helper.cu
+  places/locality_domain_localized_disabled.cu
+  places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -93,6 +111,7 @@ set(
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/composite_conditional.cu
   stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
@@ -177,6 +196,7 @@ set(
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
+  places/locality_domain_grid_pfor.cu
   places/managed_from_shape.cu
   reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
@@ -225,9 +245,9 @@ set(
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/source_location.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
-  cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
 cccl_get_cudatoolkit()

@@ -24,7 +24,6 @@
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/ignore.h>
-#include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_cat.h>

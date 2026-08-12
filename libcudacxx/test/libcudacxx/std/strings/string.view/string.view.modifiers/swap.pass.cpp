@@ -20,7 +20,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_swap()
+TEST_FUNC constexpr void test_swap()
 {
   using CharT  = typename SV::value_type;
   using Traits = typename SV::traits_type;
@@ -100,7 +100,7 @@ __host__ __device__ constexpr void test_swap()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_swap<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

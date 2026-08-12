@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     auto iter = cuda::make_discard_iterator();

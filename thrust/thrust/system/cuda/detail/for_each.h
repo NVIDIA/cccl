@@ -32,7 +32,8 @@ namespace cuda_cub
 // for_each_n
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Input, class Size, class UnaryOp>
-Input _CCCL_API _CCCL_FORCEINLINE for_each_n(execution_policy<Derived>& policy, Input first, Size count, UnaryOp op)
+Input _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
+for_each_n(execution_policy<Derived>& policy, Input first, Size count, UnaryOp op)
 {
   THRUST_CDP_DISPATCH(
     (cudaStream_t stream = cuda_cub::stream(policy);
@@ -47,7 +48,8 @@ Input _CCCL_API _CCCL_FORCEINLINE for_each_n(execution_policy<Derived>& policy, 
 
 // for_each
 template <class Derived, class Input, class UnaryOp>
-Input _CCCL_API _CCCL_FORCEINLINE for_each(execution_policy<Derived>& policy, Input first, Input last, UnaryOp op)
+Input _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
+for_each(execution_policy<Derived>& policy, Input first, Input last, UnaryOp op)
 {
   using size_type = thrust::detail::it_difference_t<Input>;
   size_type count = static_cast<size_type>(::cuda::std::distance(first, last));

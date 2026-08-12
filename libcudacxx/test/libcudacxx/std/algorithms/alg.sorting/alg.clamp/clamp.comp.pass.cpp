@@ -22,11 +22,11 @@
 
 struct Tag
 {
-  __host__ __device__ constexpr Tag()
+  TEST_FUNC constexpr Tag()
       : val(0)
       , tag("Default")
   {}
-  __host__ __device__ constexpr Tag(int a, const char* b)
+  TEST_FUNC constexpr Tag(int a, const char* b)
       : val(a)
       , tag(b)
   {}
@@ -35,22 +35,26 @@ struct Tag
   const char* tag;
 };
 
-__host__ __device__ constexpr bool eq(const Tag& rhs, const Tag& lhs)
+TEST_FUNC constexpr bool eq(const Tag& rhs, const Tag& lhs)
 {
   return rhs.val == lhs.val && rhs.tag == lhs.tag;
 }
-__host__ __device__ constexpr bool comp(const Tag& rhs, const Tag& lhs)
+
+struct comp
 {
-  return rhs.val < lhs.val;
-}
+  TEST_FUNC constexpr bool operator()(const Tag& rhs, const Tag& lhs) const noexcept
+  {
+    return rhs.val < lhs.val;
+  }
+};
 
 template <class T, class C>
-__host__ __device__ constexpr void test(const T& v, const T& lo, const T& hi, C c, const T& x)
+TEST_FUNC constexpr void test(const T& v, const T& lo, const T& hi, C c, const T& x)
 {
   assert(&cuda::std::clamp(v, lo, hi, c) == &x);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int x = 0;
@@ -79,8 +83,8 @@ __host__ __device__ constexpr bool test()
     Tag x{0, "Zero-x"};
     Tag y{0, "Zero-y"};
     Tag z{0, "Zero-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), x));
-    assert(eq(cuda::std::clamp(y, x, z, comp), y));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), x));
+    assert(eq(cuda::std::clamp(y, x, z, comp{}), y));
   }
 
   {
@@ -88,8 +92,8 @@ __host__ __device__ constexpr bool test()
     Tag x{0, "Zero-x"};
     Tag y{0, "Zero-y"};
     Tag z{1, "One-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), x));
-    assert(eq(cuda::std::clamp(y, x, z, comp), y));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), x));
+    assert(eq(cuda::std::clamp(y, x, z, comp{}), y));
   }
 
   {
@@ -97,8 +101,8 @@ __host__ __device__ constexpr bool test()
     Tag x{1, "One-x"};
     Tag y{0, "Zero-y"};
     Tag z{1, "One-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), x));
-    assert(eq(cuda::std::clamp(z, y, x, comp), z));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), x));
+    assert(eq(cuda::std::clamp(z, y, x, comp{}), z));
   }
 
   {
@@ -106,8 +110,8 @@ __host__ __device__ constexpr bool test()
     Tag x{1, "One-x"};
     Tag y{0, "Zero-y"};
     Tag z{2, "Two-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), x));
-    assert(eq(cuda::std::clamp(y, x, z, comp), x));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), x));
+    assert(eq(cuda::std::clamp(y, x, z, comp{}), x));
   }
 
   {
@@ -115,16 +119,16 @@ __host__ __device__ constexpr bool test()
     Tag x{0, "Zero-x"};
     Tag y{1, "One-y"};
     Tag z{2, "Two-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), y));
-    assert(eq(cuda::std::clamp(y, x, z, comp), y));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), y));
+    assert(eq(cuda::std::clamp(y, x, z, comp{}), y));
   }
   {
     //  If the value is greater than 'hi', we should get hi back.
     Tag x{2, "Two-x"};
     Tag y{0, "Zero-y"};
     Tag z{1, "One-z"};
-    assert(eq(cuda::std::clamp(x, y, z, comp), z));
-    assert(eq(cuda::std::clamp(y, z, x, comp), z));
+    assert(eq(cuda::std::clamp(x, y, z, comp{}), z));
+    assert(eq(cuda::std::clamp(y, z, x, comp{}), z));
   }
 
   return true;
@@ -133,7 +137,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

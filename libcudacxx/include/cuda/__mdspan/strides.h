@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__fwd/mdspan.h>
-#include <cuda/__numeric/overflow_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/extents.h>
@@ -67,7 +66,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr bool __is_representable_as(_From... __values) noexcept
   {
     return (
-      (!::cuda::overflow_cast<offset_type>(__values) || static_cast<::cuda::std::ptrdiff_t>(__values) == dynamic_stride)
+      (::cuda::std::in_range<offset_type>(__values) || static_cast<::cuda::std::ptrdiff_t>(__values) == dynamic_stride)
       && ...);
   }
 

@@ -15,8 +15,10 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 
+#include "test_macros.h"
+
 template <class T, class Vec>
-__device__ void test_result(cuda::hierarchy_query_result<T> res, Vec exp)
+TEST_DEVICE_FUNC void test_result(cuda::hierarchy_query_result<T> res, Vec exp)
 {
   assert(res.x == static_cast<T>(exp.x));
   assert(res.y == static_cast<T>(exp.y));
@@ -24,7 +26,7 @@ __device__ void test_result(cuda::hierarchy_query_result<T> res, Vec exp)
 }
 
 template <class IRes, class IExp, cuda::std::size_t... Exts>
-__device__ void test_result(cuda::std::extents<IRes, Exts...> res, cuda::std::extents<IExp, Exts...> exp)
+TEST_DEVICE_FUNC void test_result(cuda::std::extents<IRes, Exts...> res, cuda::std::extents<IExp, Exts...> exp)
 {
   for (cuda::std::size_t i = 0; i < sizeof...(Exts); ++i)
   {
@@ -33,7 +35,7 @@ __device__ void test_result(cuda::std::extents<IRes, Exts...> res, cuda::std::ex
 }
 
 template <class Level, class... Args>
-__device__ void test_dims(const uint3 exp, const Level& level, Args... args)
+TEST_DEVICE_FUNC void test_dims(const uint3 exp, const Level& level, Args... args)
 {
   test_result(level.dims(args...), exp);
   test_result(level.template dims_as<short>(args...), exp);
@@ -45,14 +47,14 @@ __device__ void test_dims(const uint3 exp, const Level& level, Args... args)
 }
 
 template <class Level, class... Args>
-__device__ void test_static_dims(const ulonglong3 exp, Level level, Args... args)
+TEST_DEVICE_FUNC void test_static_dims(const ulonglong3 exp, Level level, Args... args)
 {
   static_assert(level.static_dims(args...).x != 0);
   test_result(level.static_dims(args...), exp);
 }
 
 template <class Exp, class Level, class... Args>
-__device__ void test_extents(const Exp exp, const Level& level, Args... args)
+TEST_DEVICE_FUNC void test_extents(const Exp exp, const Level& level, Args... args)
 {
   test_result(level.extents(args...), exp);
   test_result(level.template extents_as<short>(args...), exp);
@@ -64,7 +66,7 @@ __device__ void test_extents(const Exp exp, const Level& level, Args... args)
 }
 
 template <class Level, class... Args>
-__device__ void test_static_count(Level level, Args... args)
+TEST_DEVICE_FUNC void test_static_count(Level level, Args... args)
 {
   constexpr auto static_dims = level.static_dims(args...);
   if constexpr (static_dims.x != cuda::std::dynamic_extent && static_dims.y != cuda::std::dynamic_extent
@@ -79,7 +81,7 @@ __device__ void test_static_count(Level level, Args... args)
 }
 
 template <class Level, class... Args>
-__device__ void test_count(const cuda::std::size_t exp, const Level& level, Args... args)
+TEST_DEVICE_FUNC void test_count(const cuda::std::size_t exp, const Level& level, Args... args)
 {
   assert(level.count(args...) == exp);
   assert(level.template count_as<short>(args...) == static_cast<short>(exp));
@@ -91,7 +93,7 @@ __device__ void test_count(const cuda::std::size_t exp, const Level& level, Args
 }
 
 template <class Level, class... Args>
-__device__ void test_index(const uint3 exp, const Level& level, Args... args)
+TEST_DEVICE_FUNC void test_index(const uint3 exp, const Level& level, Args... args)
 {
   test_result(level.index(args...), exp);
   test_result(level.template index_as<short>(args...), exp);
@@ -103,7 +105,7 @@ __device__ void test_index(const uint3 exp, const Level& level, Args... args)
 }
 
 template <class Level, class... Args>
-__device__ void test_rank(const cuda::std::size_t exp, const Level& level, Args... args)
+TEST_DEVICE_FUNC void test_rank(const cuda::std::size_t exp, const Level& level, Args... args)
 {
   assert(level.rank(args...) == exp);
   assert(level.template rank_as<short>(args...) == static_cast<short>(exp));
@@ -115,7 +117,7 @@ __device__ void test_rank(const cuda::std::size_t exp, const Level& level, Args.
 }
 
 template <class... Args>
-__device__ constexpr cuda::std::size_t mul_static_extents(Args... args)
+TEST_DEVICE_FUNC constexpr cuda::std::size_t mul_static_extents(Args... args)
 {
   if (((args == cuda::std::dynamic_extent) || ...))
   {

@@ -38,15 +38,22 @@
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+// However, NVRTC handles it specially
+#if _CCCL_FREESTANDING() && !_CCCL_COMPILER(NVRTC)
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif // _CCCL_ENABLE_FREESTANDING
+
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward.h>)
 #    include <__utility/forward.h>
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
-#  endif
+#  endif // _CCCL_HOSTED()
 #endif // _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 
 #include <cuda/std/__cccl/prologue.h>

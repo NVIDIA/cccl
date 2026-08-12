@@ -80,17 +80,20 @@ private:
   [[nodiscard]] _CCCL_API static constexpr int
   __compare_(char const* __s1, size_t __len1, char const* __s2, size_t __len2, size_t __n) noexcept
   {
+    int __result = int(__len1) - int(__len2);
     if (__n)
     {
       for (;; ++__s1, ++__s2)
       {
         if (*__s1 < *__s2)
         {
-          return -1;
+          __result = -1;
+          break;
         }
         if (*__s2 < *__s1)
         {
-          return 1;
+          __result = 1;
+          break;
         }
         if (0 == --__n)
         {
@@ -98,14 +101,15 @@ private:
         }
       }
     }
-    return int(__len1) - int(__len2);
+    return __result;
   }
 
   template <bool _Forward>
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t
   __find(const char* __needle, size_t __needle_size, const char* __haystack_begin, const char* __haystack_end) noexcept
   {
-    char const* __it = __haystack_begin;
+    ptrdiff_t __result = -1;
+    char const* __it   = __haystack_begin;
     for (; __it != __haystack_end; (_Forward ? ++__it : --__it))
     {
       size_t __i = 0;
@@ -118,10 +122,11 @@ private:
       }
       if (__i == __needle_size)
       {
-        return _Forward ? __it - __haystack_begin : __it - __haystack_end - 1;
+        __result = _Forward ? __it - __haystack_begin : __it - __haystack_end - 1;
+        break;
       }
     }
-    return -1;
+    return __result;
   }
 
 public:

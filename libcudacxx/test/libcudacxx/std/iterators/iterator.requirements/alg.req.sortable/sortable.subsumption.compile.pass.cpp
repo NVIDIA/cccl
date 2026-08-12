@@ -15,22 +15,24 @@
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class I, class R, class P>
-__host__ __device__ void test_subsumption()
+TEST_FUNC void test_subsumption()
   requires cuda::std::permutable<I>;
 
 template <class I, class R, class P>
-__host__ __device__ void test_subsumption()
+TEST_FUNC void test_subsumption()
   requires cuda::std::indirect_strict_weak_order<R, cuda::std::projected<I, P>>;
 
 template <class I, class R, class P>
-__host__ __device__ constexpr bool test_subsumption()
+TEST_FUNC constexpr bool test_subsumption()
   requires cuda::std::sortable<I, R, P>
 {
   return true;
 }
 
-static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>(), "");
+static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
 
 int main(int, char**)
 {

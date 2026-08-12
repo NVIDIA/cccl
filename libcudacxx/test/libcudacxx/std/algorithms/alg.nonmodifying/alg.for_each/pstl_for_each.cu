@@ -33,7 +33,7 @@ struct mark_present_for_each
 {
   bool* ptr_;
 
-  __host__ __device__ void operator()(int val) const noexcept
+  TEST_FUNC void operator()(int val) const noexcept
   {
     ptr_[val] = true;
   }

@@ -26,12 +26,12 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<hours, decltype(cuda::std::chrono::make24(cuda::std::declval<hours>(), false))>);
   static_assert(noexcept(cuda::std::chrono::make24(cuda::std::declval<hours>(), false)));
 
-  static_assert(cuda::std::chrono::make24(hours(1), false) == hours(1), "");
-  static_assert(cuda::std::chrono::make24(hours(11), false) == hours(11), "");
-  static_assert(cuda::std::chrono::make24(hours(12), false) == hours(0), "");
-  static_assert(cuda::std::chrono::make24(hours(1), true) == hours(13), "");
-  static_assert(cuda::std::chrono::make24(hours(11), true) == hours(23), "");
-  static_assert(cuda::std::chrono::make24(hours(12), true) == hours(12), "");
+  static_assert(cuda::std::chrono::make24(hours(1), false) == hours(1));
+  static_assert(cuda::std::chrono::make24(hours(11), false) == hours(11));
+  static_assert(cuda::std::chrono::make24(hours(12), false) == hours(0));
+  static_assert(cuda::std::chrono::make24(hours(1), true) == hours(13));
+  static_assert(cuda::std::chrono::make24(hours(11), true) == hours(23));
+  static_assert(cuda::std::chrono::make24(hours(12), true) == hours(12));
 
   for (int i = 1; i < 11; ++i)
   {

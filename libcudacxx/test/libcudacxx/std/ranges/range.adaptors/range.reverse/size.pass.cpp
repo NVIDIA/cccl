@@ -25,25 +25,25 @@ struct BidirSizedRange : cuda::std::ranges::view_base
   int* ptr_;
   size_t size_;
 
-  __host__ __device__ constexpr BidirSizedRange(int* ptr, size_t size)
+  TEST_FUNC constexpr BidirSizedRange(int* ptr, size_t size)
       : ptr_(ptr)
       , size_(size)
   {}
 
   template <CopyCategory CC2 = CC, cuda::std::enable_if_t<CC2 == Copyable, int> = 0>
-  __host__ __device__ constexpr BidirSizedRange(const BidirSizedRange& other) noexcept
+  TEST_FUNC constexpr BidirSizedRange(const BidirSizedRange& other) noexcept
       : ptr_(other.ptr_)
       , size_(other.size_)
   {}
 
   template <CopyCategory CC2 = CC, cuda::std::enable_if_t<CC2 == MoveOnly, int> = 0>
-  __host__ __device__ constexpr BidirSizedRange(BidirSizedRange&& other) noexcept
+  TEST_FUNC constexpr BidirSizedRange(BidirSizedRange&& other) noexcept
       : ptr_(other.ptr_)
       , size_(other.size_)
   {}
 
   template <CopyCategory CC2 = CC, cuda::std::enable_if_t<CC2 == Copyable, int> = 0>
-  __host__ __device__ constexpr BidirSizedRange& operator=(const BidirSizedRange& other) noexcept
+  TEST_FUNC constexpr BidirSizedRange& operator=(const BidirSizedRange& other) noexcept
   {
     ptr_  = other.ptr_;
     size_ = other.size_;
@@ -51,37 +51,37 @@ struct BidirSizedRange : cuda::std::ranges::view_base
   }
 
   template <CopyCategory CC2 = CC, cuda::std::enable_if_t<CC2 == MoveOnly, int> = 0>
-  __host__ __device__ constexpr BidirSizedRange& operator=(BidirSizedRange&& other) noexcept
+  TEST_FUNC constexpr BidirSizedRange& operator=(BidirSizedRange&& other) noexcept
   {
     ptr_  = other.ptr_;
     size_ = other.size_;
     return *this;
   }
 
-  __host__ __device__ constexpr bidirectional_iterator<int*> begin()
+  TEST_FUNC constexpr bidirectional_iterator<int*> begin()
   {
     return bidirectional_iterator<int*>{ptr_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> begin() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> begin() const
   {
     return bidirectional_iterator<const int*>{ptr_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<int*> end()
+  TEST_FUNC constexpr bidirectional_iterator<int*> end()
   {
     return bidirectional_iterator<int*>{ptr_ + 8};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> end() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> end() const
   {
     return bidirectional_iterator<const int*>{ptr_ + 8};
   }
 
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return size_;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -119,7 +119,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

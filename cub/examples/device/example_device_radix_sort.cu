@@ -19,8 +19,7 @@
 #include <cub/util_allocator.cuh>
 
 #include <algorithm>
-
-#include <stdio.h>
+#include <cstdio>
 
 #include "../../test/test_util.h"
 

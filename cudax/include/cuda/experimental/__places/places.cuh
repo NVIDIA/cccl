@@ -12,7 +12,9 @@
  *
  * @brief Defines abstractions for places where data is stored and places where execution is carried.
  *
- * TODO Add more documentation about this file here.
+ * @note Places should not depend on STF. Remaining STF utility includes below are legacy coupling;
+ *       new code should avoid deepening it. STF pulls `places` API into `cuda::experimental::stf`
+ *       from STF-only headers (e.g. `stf_places_into_stf_core.cuh`), not the other way around.
  */
 
 #pragma once
@@ -29,8 +31,12 @@
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <limits>
+#include <stdexcept>
 #include <typeinfo>
 
 // Used only for unit tests, not in the actual implementation
@@ -44,22 +50,36 @@
 // Sync only will not move data....
 // Data place none?
 
+// Forward-declare so places.cuh can take async_resources_handle& as a
+// convenience overload parameter without depending on STF headers.
 namespace cuda::experimental::stf
 {
+class async_resources_handle;
+} // namespace cuda::experimental::stf
+
+namespace cuda::experimental::places
+{
+using ::cuda::experimental::stf::box;
+using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::dim4;
+using ::cuda::experimental::stf::each;
+using ::cuda::experimental::stf::hash_all;
+using ::cuda::experimental::stf::hash_combine;
+using ::cuda::experimental::stf::mv;
+using ::cuda::experimental::stf::pos4;
+
+template <typename T>
+struct hash;
+
 class exec_place;
 
 // Green contexts are only supported since CUDA 12.4
 
-//! Function type for computing executor placement from data coordinates
-using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
-
 class data_place_composite;
 
-namespace reserved
-{
-void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size);
+// Forward declarations of composite allocator functions — defined in localized_array.cuh
+void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize);
 void deallocate_composite_data_place(void* ptr);
-} // namespace reserved
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
@@ -68,13 +88,29 @@ void deallocate_composite_data_place(void* ptr);
  * composite, future extensions) implement a common data_place_interface. The data_place class
  * holds a shared_ptr to this interface and delegates operations to it.
  */
+//! Tag selecting which grid axes a replicated data place replicates over
+//! (the remaining axes are SHARED: their fibers use one common instance)
+template <size_t... axes>
+struct replicate_over_t
+{};
+template <size_t... axes>
+inline constexpr replicate_over_t<axes...> replicate_over{};
+
 class data_place
 {
   template <typename T>
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<data_place_interface>(&instance, [](data_place_interface*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies. Besides
+    // avoiding a redundant control block per call, this keeps the factory
+    // thread-safe if T ever derives from enable_shared_from_this: constructing
+    // a shared_ptr from a raw pointer writes the object's weak-this member, so
+    // doing it on every call would race across host threads. The guarded
+    // function-local static performs that write once; later calls only copy
+    // the handle (atomic refcount bump).
+    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    return handle;
   }
 
 public:
@@ -137,11 +173,7 @@ public:
   /** @brief Data is placed on device with index dev_id. */
   static data_place device(int dev_id = 0)
   {
-    static int const ndevs = [] {
-      int result;
-      cuda_safe_call(cudaGetDeviceCount(&result));
-      return result;
-    }();
+    static int const ndevs = cuda_try<cudaGetDeviceCount>();
 
     EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
 
@@ -170,9 +202,52 @@ public:
 
   static data_place composite(partition_fn_t f, const exec_place& grid);
 
+  /**
+   * @brief Replicated data place: one full copy of the data in the affine
+   * memory of every member of \p grid. READ-ONLY: tasks may only take read
+   * access at this place (mutate the data at another place; the next
+   * replicated read re-broadcasts). A single-place grid degenerates to that
+   * place's affine data place (a plain place, not replicated): a live
+   * replicated place always has at least two instances.
+   */
+  static data_place replicated(const exec_place& grid);
+
+  /**
+   * @brief Deferred replicated data place: replicated over the grid of
+   * whichever task the dependency is used with (materialized at task
+   * acquisition; a scalar execution place degenerates to its affine data
+   * place). The counterpart of affine() for replication. The deferred form
+   * always replicates over every grid axis (axis grouping requires the
+   * explicit replicate_over overload).
+   */
+  static data_place replicated();
+
+  /**
+   * @brief Axis-grouped replication: one copy per coordinate of the
+   * REPLICATED axes; the remaining (shared) axes' fibers share their
+   * coordinate's instance. Fiber members must be co-located (equal affine
+   * data places) -- validated at construction. Example: on a (K, 2) grid of
+   * K devices x 2 domains, replicated(grid, replicate_over<0>) places one
+   * copy per device, shared by the device's two domains. When the replicated
+   * axes multiply out to a single instance, the result degenerates to the
+   * shared members' (co-located) affine data place, like the single-place
+   * grid of the all-axes overload.
+   */
+  template <size_t... axes>
+  static data_place replicated(const exec_place& grid, replicate_over_t<axes...>);
+
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create a data place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to plain device memory.
+   */
+  static data_place locality_domain(const locality_domain_view& view);
+  static data_place locality_domain(int dev_id, int domain_id);
 
   bool operator==(const data_place& rhs) const
   {
@@ -212,6 +287,17 @@ public:
 
   // Defined later after data_place_composite is complete
   bool is_composite() const;
+  bool is_replicated() const noexcept;
+
+  //! Number of data instances a dependency at this place resolves to
+  size_t instance_count() const;
+  //! Data place of the r-th instance (r < instance_count()); *this when
+  //! the place resolves to a single instance
+  data_place member(size_t r) const;
+  //! Instance index the given (linear) grid place resolves to; 0 when the
+  //! place resolves to a single instance. With axis-grouped replication,
+  //! places differing only along SHARED axes map to the same instance.
+  size_t instance_of(size_t place_index) const;
 
   bool is_invalid() const
   {
@@ -315,7 +401,7 @@ public:
     return pimpl_->hash();
   }
 
-  decorated_stream getDataStream() const;
+  augmented_stream getDataStream(exec_place_resources& res) const;
 
   /**
    * @brief Get the underlying interface pointer
@@ -329,6 +415,9 @@ public:
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
@@ -337,6 +426,9 @@ public:
 
   /**
    * @brief Allocate memory at this data place (raw allocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
@@ -344,7 +436,47 @@ public:
   }
 
   /**
+   * @brief Allocate memory at this data place for a tensor with the given
+   * extents (geometry-aware allocation)
+   *
+   * For most places this is equivalent to allocate(prod(data_dims) * elemsize);
+   * composite places use the geometry to back each block of the allocation on
+   * the place that owns it according to the partitioner. Extents follow the
+   * dimension-0-fastest convention of dim4::get_index().
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
+   *
+   * @throws std::invalid_argument if the product of the extents and elemsize
+   * overflows size_t or exceeds PTRDIFF_MAX
+   */
+  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
+  {
+    // An unchecked x*y*z*t*elemsize product can wrap: an ordinary place would
+    // then silently return a tiny allocation for an astronomically large
+    // tensor, and a composite place would feed the degenerate size to its
+    // partitioner. Reject any geometry whose byte count is not representable.
+    size_t total_bytes = elemsize;
+    for (size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
+    {
+      if (extent != 0 && total_bytes > ::std::numeric_limits<size_t>::max() / extent)
+      {
+        throw ::std::invalid_argument("allocate_nd: extents and element size overflow the addressable byte count");
+      }
+      total_bytes *= extent;
+    }
+    if (total_bytes > static_cast<size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()))
+    {
+      throw ::std::invalid_argument("allocate_nd: allocation size exceeds PTRDIFF_MAX");
+    }
+    return pimpl_->allocate_nd(data_dims, elemsize, stream);
+  }
+
+  /**
    * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * Standalone call: the place does not need to be activated first, and the
+   * calling thread's current device is left unchanged.
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {
@@ -363,8 +495,10 @@ private:
   ::std::shared_ptr<data_place_interface> pimpl_;
 };
 
-/** Declaration for unqualified lookup (friend is only found via ADL when a \c data_place argument is present). */
+/** Declarations for unqualified lookup (friends are only found via ADL when a \c data_place argument is present). */
 inline data_place from_index(size_t n);
+inline size_t to_index(const data_place& p);
+inline int device_ordinal(const data_place& p);
 
 // Forward declaration
 class exec_place_scope;
@@ -486,26 +620,56 @@ public:
 
     // ===== Stream management =====
 
-    virtual stream_pool& get_stream_pool(bool for_computation) const
+    /**
+     * @brief Return the stream pool to draw streams from for this place.
+     *
+     * Pooled implementations (device, host) use the default body, which
+     * looks up / lazily creates a per-place pool inside the supplied
+     * registry, keyed by `this` (a stable singleton pointer for those
+     * impls).
+     *
+     * Self-contained implementations (`exec_place_cuda_stream_impl`,
+     * `exec_place_cuda_ctx_impl`) override this method and ignore the
+     * registry, returning their embedded pool instead.
+     *
+     * The grid implementation forwards `res` to its first sub-place.
+     *
+     * @param for_computation If true, return the computation pool slot;
+     *                        otherwise return the data-transfer slot.
+     * @param res             Registry of per-place stream pools (typically
+     *                        owned by an `async_resources_handle`).
+     * @param self            The `exec_place` wrapping `*this` (kept for
+     *                        derived overrides that need access to the
+     *                        public-facing place).
+     */
+    [[nodiscard]] virtual stream_pool&
+    get_stream_pool(bool for_computation, exec_place_resources& res, [[maybe_unused]] const exec_place& self) const
     {
-      return for_computation ? pool_compute : pool_data;
+      auto& slot = res.get(this);
+      return for_computation ? slot.compute : slot.data;
     }
 
-    static constexpr size_t pool_size      = 4;
-    static constexpr size_t data_pool_size = 4;
+    static constexpr size_t pool_size      = exec_place_default_pool_size;
+    static constexpr size_t data_pool_size = exec_place_default_data_pool_size;
 
   protected:
     friend class exec_place;
     data_place affine = data_place::invalid();
-    mutable stream_pool pool_compute;
-    mutable stream_pool pool_data;
   };
 
   template <typename T>
   static ::std::shared_ptr<impl> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<impl>(&instance, [](impl*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies.
+    // exec_place::impl derives from enable_shared_from_this, so constructing a
+    // shared_ptr from the raw &instance writes the object's weak-this member.
+    // Doing that on every call races when multiple host threads request the
+    // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
+    // The guarded function-local static performs that write once; later calls
+    // only copy the handle (atomic refcount bump).
+    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    return handle;
   }
 
   exec_place() = default;
@@ -587,6 +751,31 @@ public:
     return get_place(get_dims().get_index(p));
   }
 
+  /**
+   * @brief Return a grid with new dimensions and the same linear place order
+   *
+   * The product of @p dims must equal size(), and every extent must be
+   * positive. This changes only the coordinate system: for every linear index
+   * `i`, `result.get_place(i) == get_place(i)`.
+   *
+   * @param[in] dims New grid dimensions
+   * @return A grid over the same places with dimensions @p dims
+   */
+  [[nodiscard]] _CCCL_HOST_API exec_place reshape(const dim4& dims) const;
+
+  /**
+   * @brief Collapse a contiguous inclusive range of grid axes
+   *
+   * Axes in [`first_axis`, `last_axis`] are replaced by one axis whose extent
+   * is their product. Later axes shift left and trailing extents become one.
+   * Linear place order is preserved.
+   *
+   * @param[in] first_axis First axis to collapse (inclusive)
+   * @param[in] last_axis Last axis to collapse (inclusive)
+   * @return A grid over the same places with the selected axes collapsed
+   */
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+
   // ===== Activation =====
 
   /**
@@ -617,17 +806,52 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
-  stream_pool& get_stream_pool(bool for_computation) const
+  /**
+   * @brief Get the stream pool associated with this place from the supplied
+   * registry. Pooled places (device, host) lazily create their entry in
+   * `res`; self-contained places (cuda_stream, green-context) ignore `res`
+   * and return their embedded pool.
+   */
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res) const
   {
-    return pimpl->get_stream_pool(for_computation);
+    return pimpl->get_stream_pool(for_computation, res, *this);
   }
 
-  decorated_stream getStream(bool for_computation) const;
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline stream_pool& get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
 
-  cudaStream_t pick_stream(bool for_computation = true) const
+  augmented_stream getStream(exec_place_resources& res, bool for_computation = true) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline augmented_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
+                                    bool for_computation = true) const;
+
+  cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
   {
-    return getStream(for_computation).stream;
+    return getStream(res, for_computation).stream;
   }
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline cudaStream_t pick_stream(::cuda::experimental::stf::async_resources_handle& h,
+                                  bool for_computation = true) const;
+
+  /// @brief Number of streams in this place's pool (slots, not initialized).
+  inline size_t stream_pool_size(exec_place_resources& res) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline size_t stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const;
+
+  /// @brief Materialize all streams in the pool as a vector. Triggers lazy
+  /// creation of every empty slot.
+  ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  ::std::vector<cudaStream_t> pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
 
   const ::std::shared_ptr<impl>& get_impl() const
   {
@@ -692,8 +916,31 @@ public:
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
+  /**
+   * @brief Create an execution place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to the whole device.
+   */
+  static exec_place locality_domain(const locality_domain_view& view);
+  static exec_place locality_domain(int dev_id, int domain_id);
+
   static exec_place cuda_stream(cudaStream_t stream);
-  static exec_place cuda_stream(const decorated_stream& dstream);
+  static exec_place cuda_stream(const augmented_stream& dstream);
+
+  /**
+   * @brief Create an execution place from an externally-owned CUDA driver context
+   *
+   * The place is non-owning: the caller must keep the context alive while the
+   * place is in use. This is the natural entry point for contexts created by
+   * other libraries (e.g. green contexts converted with cuCtxFromGreenCtx, such
+   * as the ones produced by cuda.core in Python).
+   *
+   * @param ctx The CUDA driver context
+   * @param devid The device ordinal of the context, or -1 to derive it from the context
+   * @param pool_size Number of streams in the place's stream pool
+   */
+  static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
 
   /**
    * @brief Returns the currently active device.
@@ -770,7 +1017,7 @@ private:
  * for (size_t i = 0; i < grid.size(); i++) {
  *   auto active = grid.activate(i);
  *   // grid[i] is now active
- *   kernel<<<..., active.place().getStream()>>>(...);
+ *   kernel<<<..., active.place().getStream(resources)>>>(...);
  * }
  * @endcode
  */
@@ -908,18 +1155,38 @@ auto exec_place::operator->*(Fun&& fun) const
   return ::std::forward<Fun>(fun)();
 }
 
-inline decorated_stream stream_pool::next(const exec_place& place)
+inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
+  ::std::scoped_lock locker(pimpl->mtx);
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);
 
+  if (result.stream != nullptr)
+  {
+    CUcontext ctx       = nullptr;
+    CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
+
+    // External runtime users (Numba / PyTorch / raw CUDA) may call
+    // cudaDeviceReset(), which destroys the primary context and all streams
+    // associated with it. The pool itself is process-global, so a non-null
+    // cached handle is not sufficient to prove the stream is still usable.
+    if (stream_err == CUDA_ERROR_CONTEXT_IS_DESTROYED || stream_err == CUDA_ERROR_INVALID_CONTEXT
+        || stream_err == CUDA_ERROR_INVALID_HANDLE || ctx == nullptr)
+    {
+      result = augmented_stream(nullptr, k_no_stream_id, -1);
+    }
+    else
+    {
+      cuda_try(stream_err);
+    }
+  }
+
   if (!result.stream)
   {
-    auto active = place.activate();
-    cuda_safe_call(cudaStreamCreateWithFlags(&result.stream, cudaStreamNonBlocking));
+    auto active   = place.activate();
+    result.stream = cuda_try<cudaStreamCreateWithFlags>(cudaStreamNonBlocking);
     result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
   }
@@ -934,9 +1201,26 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(bool for_computation) const
+inline augmented_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
 {
-  return get_stream_pool(for_computation).next(*this);
+  return get_stream_pool(for_computation, res).next(*this);
+}
+
+inline size_t exec_place::stream_pool_size(exec_place_resources& res) const
+{
+  return get_stream_pool(true, res).size();
+}
+
+inline ::std::vector<cudaStream_t> exec_place::pick_all_streams(exec_place_resources& res) const
+{
+  auto& pool = get_stream_pool(true, res);
+  ::std::vector<cudaStream_t> result;
+  result.reserve(pool.size());
+  for (size_t i = 0; i < pool.size(); ++i)
+  {
+    result.push_back(pool.next(*this).stream);
+  }
+  return result;
 }
 
 /**
@@ -955,8 +1239,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   // Activation - no-op for host
@@ -982,9 +1270,12 @@ public:
     return data_place::host();
   }
 
-  stream_pool& get_stream_pool(bool for_computation) const override
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
-    return exec_place::current_device().get_stream_pool(for_computation);
+    // Forward to the current device place: host work that needs a CUDA stream
+    // borrows the current device's pool entry from the same registry.
+    auto cur = exec_place::current_device();
+    return cur.get_stream_pool(for_computation, res);
   }
 
   ::std::string to_string() const override
@@ -1024,8 +1315,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   ::std::string to_string() const override
@@ -1063,8 +1358,10 @@ public:
         : exec_place::impl(data_place::device(devid))
         , devid_(devid)
     {
-      pool_compute = stream_pool(pool_size);
-      pool_data    = stream_pool(data_pool_size);
+      // Stream pools for this place live in an `exec_place_resources`
+      // registry (typically embedded in an `async_resources_handle`) and are
+      // looked up on demand by the default `exec_place::impl::get_stream_pool`
+      // override; nothing extra needs to be initialized here.
     }
 
     // Grid interface - device is a 1-element grid
@@ -1076,7 +1373,7 @@ public:
       auto old_dev_id = cuda_try<cudaGetDevice>();
       if (old_dev_id != devid_)
       {
-        cuda_safe_call(cudaSetDevice(devid_));
+        cuda_try(cudaSetDevice(devid_));
       }
       return exec_place::device(old_dev_id);
     }
@@ -1088,7 +1385,7 @@ public:
       auto restored_dev_id = device_ordinal(prev.affine_data_place());
       if (current_dev_id != restored_dev_id)
       {
-        cuda_safe_call(cudaSetDevice(restored_dev_id));
+        cuda_try(cudaSetDevice(restored_dev_id));
       }
     }
 
@@ -1114,19 +1411,30 @@ public:
 
 inline exec_place exec_place::device(int devid)
 {
-  static int ndevices;
-  static exec_place_device::impl* impls = [] {
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
-    auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
+  static const int ndevices = cuda_try<cudaGetDeviceCount>();
+  // One process-global ``shared_ptr`` per device, created exactly once in this
+  // function-local static initializer (guaranteed thread-safe init by the
+  // compiler). We hand out *copies* below.
+  //
+  // We must NOT re-create a ``shared_ptr`` from the raw object pointer on every
+  // call: ``exec_place::impl`` derives from ``enable_shared_from_this``, so each
+  // such construction writes the object's internal weak-this member. Because
+  // this path runs on every task submission and from every user thread,
+  // concurrent calls would race on that member (and on the freshly created
+  // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
+  // reference count, which is thread-safe.
+  static ::std::shared_ptr<exec_place::impl>* impls = [] {
+    auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
     for (int i : each(ndevices))
     {
-      new (result + i) exec_place_device::impl(i);
+      // no-op deleter: these device places are process-global singletons
+      result[i] = ::std::shared_ptr<exec_place::impl>(new exec_place_device::impl(i), [](exec_place::impl*) {});
     }
     return result;
   }();
   _CCCL_ASSERT(devid >= 0, "invalid device id");
   _CCCL_ASSERT(devid < ndevices, "invalid device id");
-  return ::std::shared_ptr<exec_place::impl>(&impls[devid], [](exec_place::impl*) {}); // no-op deleter
+  return impls[devid];
 }
 
 #ifdef UNITTESTED_FILE
@@ -1219,7 +1527,18 @@ public:
       : dims_(_dims)
       , places_(mv(_places))
   {
-    _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
+    if (places_.empty())
+    {
+      throw ::std::invalid_argument("make_grid: places must not be empty");
+    }
+    if (dims_.x == 0 || dims_.y == 0 || dims_.z == 0 || dims_.t == 0)
+    {
+      throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+    }
+    if (dims_.size() != places_.size())
+    {
+      throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+    }
   }
 
   // ===== Grid interface =====
@@ -1294,11 +1613,14 @@ public:
 
   // ===== Stream management =====
 
-  stream_pool& get_stream_pool(bool for_computation) const override
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
     _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
     _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
-    return places_[0].get_stream_pool(for_computation);
+    // Pure delegator: forward the registry to the first sub-place. The
+    // sub-place looks itself up in `res` (so the same sub-place referenced
+    // outside the grid shares the entry).
+    return places_[0].get_stream_pool(for_computation, res);
   }
 
 private:
@@ -1310,7 +1632,18 @@ private:
 //! Returns the single element if size == 1 (no grid wrapper needed)
 inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
-  _CCCL_ASSERT(!places.empty(), "invalid places");
+  if (places.empty())
+  {
+    throw ::std::invalid_argument("make_grid: places must not be empty");
+  }
+  if (dims.x == 0 || dims.y == 0 || dims.z == 0 || dims.t == 0)
+  {
+    throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+  }
+  if (dims.size() != places.size())
+  {
+    throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+  }
   if (places.size() == 1)
   {
     return mv(places[0]);
@@ -1325,6 +1658,49 @@ inline exec_place make_grid(::std::vector<exec_place> places)
   _CCCL_ASSERT(!places.empty(), "invalid places");
   const size_t n = places.size();
   return make_grid(mv(places), dim4(n, 1, 1, 1));
+}
+
+_CCCL_HOST_API inline exec_place exec_place::reshape(const dim4& dims) const
+{
+  ::std::vector<exec_place> places;
+  places.reserve(size());
+  for (size_t i = 0; i < size(); i++)
+  {
+    places.push_back(get_place(i));
+  }
+  return ::cuda::experimental::places::make_grid(::cuda::experimental::stf::mv(places), dims);
+}
+
+_CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_axis, const size_t last_axis) const
+{
+  if (first_axis > last_axis || last_axis > 3)
+  {
+    throw ::std::invalid_argument("exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
+  }
+
+  const dim4 old_dims         = get_dims();
+  const size_t old_extents[4] = {old_dims.x, old_dims.y, old_dims.z, old_dims.t};
+  size_t new_extents[4]       = {1, 1, 1, 1};
+
+  size_t output_axis = 0;
+  for (size_t axis = 0; axis < first_axis; axis++)
+  {
+    new_extents[output_axis++] = old_extents[axis];
+  }
+
+  size_t collapsed_extent = 1;
+  for (size_t axis = first_axis; axis <= last_axis; axis++)
+  {
+    collapsed_extent *= old_extents[axis];
+  }
+  new_extents[output_axis++] = collapsed_extent;
+
+  for (size_t axis = last_axis + 1; axis < 4; axis++)
+  {
+    new_extents[output_axis++] = old_extents[axis];
+  }
+
+  return reshape(dim4(new_extents[0], new_extents[1], new_extents[2], new_extents[3]));
 }
 
 // === data_place::affine_exec_place implementation ===
@@ -1371,8 +1747,12 @@ inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t id
 inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
-  // Static instance - use no-op deleter instead of shared_from_this()
-  return ::std::shared_ptr<impl>(this, [](impl*) {});
+  // These device impls are always owned by the per-device ``shared_ptr``
+  // created in ``exec_place::device()``, so ``shared_from_this()`` is valid and
+  // (unlike re-wrapping ``this`` in a fresh ``shared_ptr``) does not mutate the
+  // enable_shared_from_this weak-this member -- it only bumps the atomic
+  // reference count, which is safe to call concurrently.
+  return shared_from_this();
 }
 
 //! Creates a grid by replicating an execution place multiple times
@@ -1538,6 +1918,11 @@ public:
     return true;
   }
 
+  bool is_composite() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::composite;
@@ -1573,14 +1958,24 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    return reserved::allocate_composite_data_place(*this, size);
+    // A byte count alone does not carry the tensor geometry the partitioner
+    // needs (it maps element coordinates to places), so there is no meaningful
+    // way to service this request.
+    throw ::std::runtime_error(
+      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+      "allocate through a logical data");
+  }
+
+  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  {
+    return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
-    reserved::deallocate_composite_data_place(ptr);
+    deallocate_composite_data_place(ptr);
   }
 
   bool allocation_is_stream_ordered() const override
@@ -1608,15 +2003,302 @@ private:
   partition_fn_t partitioner_func_;
 };
 
+/**
+ * @brief Replicated data place implementation
+ *
+ * One full copy of the data lives in each grid member's affine memory. The
+ * data instance exposes replica 0; copies INTO the place fan out to the
+ * other replicas, and writes at the place are rejected at task creation, so
+ * a valid replicated instance is synced by construction. Each shard of a
+ * grid parallel_for reads its own replica (the dispatch rebases the
+ * instance per place).
+ */
+class data_place_replicated final : public data_place_interface
+{
+public:
+  //! Bit a of \p axes_mask set = grid axis a is REPLICATED; unset axes are
+  //! SHARED (their fibers use one common instance). The default replicates
+  //! over every axis (one copy per grid member).
+  explicit data_place_replicated(exec_place grid, unsigned axes_mask = all_axes)
+      : grid_(mv(grid))
+      , deferred_(false)
+      , axes_mask_(axes_mask)
+  {}
+
+  //! Deferred form: the grid is bound at task acquisition
+  data_place_replicated()
+      : deferred_(true)
+      , axes_mask_(all_axes)
+  {}
+
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
+  bool is_replicated() const noexcept override
+  {
+    return true;
+  }
+
+  size_t instance_count() const override
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    const dim4 dims = grid_.get_dims();
+    size_t n        = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        n *= dims.get(a);
+      }
+    }
+    return n;
+  }
+
+  //! Instance index of a linear grid place: mixed radix over the
+  //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
+  size_t instance_of(size_t place_index) const
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    const dim4 dims = grid_.get_dims();
+    const pos4 pos  = dims.index_to_pos(place_index);
+    size_t idx = 0, mult = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        idx += static_cast<size_t>(pos.get(a)) * mult;
+        mult *= dims.get(a);
+      }
+    }
+    return idx;
+  }
+
+  //! Linear grid place of the instance's representative (shared coords = 0)
+  size_t representative_place(size_t instance_index) const
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    const dim4 dims = grid_.get_dims();
+    ssize_t c[4]    = {0, 0, 0, 0};
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        c[a] = static_cast<ssize_t>(instance_index % dims.get(a));
+        instance_index /= dims.get(a);
+      }
+    }
+    return dims.get_index(pos4(c[0], c[1], c[2], c[3]));
+  }
+
+  //! Every fiber member of every instance must live at the SAME affine data
+  //! place -- "share" only means something where a common memory exists
+  void validate_colocation() const
+  {
+    const size_t total = grid_.size();
+    for (size_t p = 0; p < total; p++)
+    {
+      const size_t rep = representative_place(instance_of(p));
+      if (p == rep)
+      {
+        continue;
+      }
+      if (!(grid_.get_place(p).affine_data_place() == grid_.get_place(rep).affine_data_place()))
+      {
+        throw ::std::invalid_argument(
+          "replicated data place: shared axes require co-located fiber members (equal affine data places); "
+          "replicate over that axis too, or build the grid from members with coarser data affinity");
+      }
+    }
+  }
+
+  bool is_deferred() const noexcept
+  {
+    return deferred_;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_interface::composite;
+  }
+
+  ::std::string to_string() const override
+  {
+    return deferred_ ? "replicated(deferred)" : "replicated";
+  }
+
+  size_t hash() const override
+  {
+    throw ::std::logic_error("hash() not supported for replicated data_place");
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    const auto& o = static_cast<const data_place_replicated&>(other);
+    // Deferred places carry no grid: order them before concrete ones and
+    // never dereference grid_ (it has no impl in the deferred form)
+    if (deferred_ || o.deferred_)
+    {
+      return static_cast<int>(o.deferred_) - static_cast<int>(deferred_);
+    }
+    if (axes_mask_ != o.axes_mask_)
+    {
+      return (axes_mask_ < o.axes_mask_) ? -1 : 1;
+    }
+    return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::runtime_error("replicated data_place: allocate through a logical data");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::runtime_error("replicated data_place: instances deallocate through their member places");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    // Instances at this place are one ordinary allocation per member, so
+    // teardown is stream-ordered exactly when every member's is: report
+    // the members' conjunction (the place's own allocate() is never used).
+    for (size_t r = 0; r < grid_.size(); r++)
+    {
+      if (!grid_.get_place(r).affine_data_place().allocation_is_stream_ordered())
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  ::std::shared_ptr<void> get_affine_exec_impl() const override
+  {
+    return grid_.get_impl();
+  }
+
+  const exec_place& get_grid() const noexcept
+  {
+    return grid_;
+  }
+
+private:
+  static constexpr unsigned all_axes = 0xFu;
+
+  exec_place grid_;
+  bool deferred_;
+  unsigned axes_mask_;
+};
+
+//! Whether this replicated data place still needs its grid bound
+inline bool replicated_is_deferred(const data_place& dp)
+{
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+}
+
+//! Grid of a replicated data place
+inline const exec_place& replicated_grid(const data_place& dp)
+{
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+}
+
 inline bool data_place::is_composite() const
 {
-  const auto& ref = *pimpl_;
-  return typeid(ref) == typeid(data_place_composite);
+  return pimpl_->is_composite();
+}
+
+inline bool data_place::is_replicated() const noexcept
+{
+  return pimpl_->is_replicated();
+}
+
+inline size_t data_place::instance_count() const
+{
+  return pimpl_->instance_count();
+}
+
+inline data_place data_place::member(size_t r) const
+{
+  _CCCL_ASSERT(r < instance_count(), "member index out of range");
+  if (instance_count() == 1)
+  {
+    return *this;
+  }
+  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
+  return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+}
+
+inline size_t data_place::instance_of(size_t place_index) const
+{
+  if (!is_replicated())
+  {
+    return 0;
+  }
+  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
 {
   return data_place(::std::make_shared<data_place_composite>(grid, f));
+}
+
+inline data_place data_place::replicated(const exec_place& grid)
+{
+  if (!grid.get_impl())
+  {
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+  }
+  // A live replicated place always has >= 2 instances: everything downstream
+  // (acquire, member(), shard rebase) relies on it. One instance is a plain
+  // read at the member place, so degenerate to it -- the same degrade the
+  // deferred form applies when it materializes on a scalar execution place.
+  if (grid.size() == 1)
+  {
+    return grid.get_place(0).affine_data_place();
+  }
+  return data_place(::std::make_shared<data_place_replicated>(grid));
+}
+
+inline data_place data_place::replicated()
+{
+  return data_place(::std::make_shared<data_place_replicated>());
+}
+
+template <size_t... axes>
+data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes...>)
+{
+  static_assert(sizeof...(axes) >= 1, "replicate_over needs at least one axis");
+  static_assert(((axes < 4) && ...), "grid axes are 0..3");
+  if (!grid.get_impl())
+  {
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+  }
+  constexpr unsigned mask = ((1u << axes) | ...);
+  auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);
+  impl->validate_colocation();
+  // Same >= 2 instances invariant as the all-axes overload. Colocation was
+  // just validated, so with a single instance every member shares one affine
+  // data place: a plain place at member 0.
+  if (impl->instance_count() == 1)
+  {
+    return grid.get_place(0).affine_data_place();
+  }
+  return data_place(mv(impl));
 }
 
 // User-visible API when the same partitioner as the one of the grid
@@ -1626,9 +2308,9 @@ data_place data_place::composite(partitioner_t, const exec_place& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline decorated_stream data_place::getDataStream() const
+inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
 {
-  return affine_exec_place().getStream(false);
+  return affine_exec_place().getStream(res, false);
 }
 
 #ifdef UNITTESTED_FILE
@@ -1659,16 +2341,6 @@ UNITTEST("Data place equality")
 
 #endif // UNITTESTED_FILE
 
-/**
- * @brief ID of a data instance. A logical data can have multiple instances in various parts of memory
- * (CPU and several GPUs). This type identifies the index of such an instance in the internal data structures.
- *
- */
-enum class instance_id_t : size_t
-{
-  invalid = static_cast<size_t>(-1)
-};
-
 #ifdef UNITTESTED_FILE
 UNITTEST("places to_symbol")
 {
@@ -1687,7 +2359,7 @@ UNITTEST("exec place equality")
 
   EXPECT(exec_place::host() != exec_place::current_device());
 
-  cuda_safe_call(cudaSetDevice(0)); // just in case the environment was somehow messed up
+  cuda_try(cudaSetDevice(0)); // just in case the environment was somehow messed up
   EXPECT(exec_place::device(0) == exec_place::current_device());
 };
 
@@ -1699,6 +2371,100 @@ UNITTEST("grid exec place equality")
   EXPECT(exec_place::all_devices() == exec_place::all_devices());
 
   EXPECT(all != repeated_dev0);
+};
+
+UNITTEST("exec place grid reshape preserves linear place order")
+{
+  ::std::vector<exec_place> places;
+  for (size_t i = 0; i < 24; i++)
+  {
+    places.push_back(exec_place::repeat(exec_place::host(), i + 2));
+  }
+
+  const auto grid      = make_grid(places, dim4(2, 3, 4));
+  const auto reshaped  = grid.reshape(dim4(6, 4));
+  const auto flattened = grid.reshape(dim4(24));
+
+  EXPECT(reshaped.get_dims() == dim4(6, 4));
+  EXPECT(flattened.get_dims() == dim4(24));
+  for (size_t i = 0; i < grid.size(); i++)
+  {
+    EXPECT(reshaped.get_place(i) == grid.get_place(i));
+    EXPECT(flattened.get_place(i) == grid.get_place(i));
+  }
+};
+
+UNITTEST("exec place grid collapse axes preserves linear place order")
+{
+  ::std::vector<exec_place> places;
+  for (size_t i = 0; i < 24; i++)
+  {
+    places.push_back(exec_place::repeat(exec_place::host(), i + 2));
+  }
+
+  const auto grid         = make_grid(places, dim4(2, 3, 4));
+  const auto collapse_xy  = grid.collapse_axes(0, 1);
+  const auto collapse_yz  = grid.collapse_axes(1, 2);
+  const auto collapse_all = grid.collapse_axes(0, 3);
+
+  EXPECT(collapse_xy.get_dims() == dim4(6, 4));
+  EXPECT(collapse_yz.get_dims() == dim4(2, 12));
+  EXPECT(collapse_all.get_dims() == dim4(24));
+  for (size_t i = 0; i < grid.size(); i++)
+  {
+    EXPECT(collapse_xy.get_place(i) == grid.get_place(i));
+    EXPECT(collapse_yz.get_place(i) == grid.get_place(i));
+    EXPECT(collapse_all.get_place(i) == grid.get_place(i));
+  }
+};
+
+UNITTEST("exec place grid reshape rejects invalid dimensions")
+{
+  const auto grid = exec_place::repeat(exec_place::host(), 6);
+
+  bool thrown = false;
+  try
+  {
+    (void) grid.reshape(dim4(2, 2));
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.reshape(dim4(6, 0));
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.collapse_axes(2, 1);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.collapse_axes(0, 4);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
 };
 
 UNITTEST("pos4 dim4 handle large values beyond 32bit")
@@ -1748,8 +2514,7 @@ UNITTEST("dim4 very large total size calculation")
 #endif // UNITTESTED_FILE
 
 /**
- * @brief Specialization of `std::hash` for `cuda::experimental::stf::data_place` to allow it to be used as a key in
- * `std::unordered_map`.
+ * @brief Specialization of `places::hash` for `data_place`
  */
 template <>
 struct hash<data_place>
@@ -1761,8 +2526,7 @@ struct hash<data_place>
 };
 
 /**
- * @brief Specialization of `std::hash` for `cuda::experimental::stf::exec_place` to allow it to be used as a key in
- * `std::unordered_map`.
+ * @brief Specialization of `places::hash` for `exec_place`
  */
 template <>
 struct hash<exec_place>
@@ -1772,8 +2536,11 @@ struct hash<exec_place>
     return k.hash();
   }
 };
+} // end namespace cuda::experimental::places
 
 #ifdef UNITTESTED_FILE
+namespace cuda::experimental::places
+{
 UNITTEST("Data place as unordered_map key")
 {
   ::std::unordered_map<data_place, int, hash<data_place>> map;
@@ -1901,7 +2668,7 @@ UNITTEST("Exec place as std::map key")
     EXPECT(map[exec_place::device(1)] == 3);
   }
 };
+} // namespace cuda::experimental::places
 #endif // UNITTESTED_FILE
-} // end namespace cuda::experimental::stf
 
 #include <cuda/experimental/__places/localized_array.cuh>

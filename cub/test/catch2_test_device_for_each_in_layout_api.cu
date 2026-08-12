@@ -22,7 +22,7 @@
 #  include <cstdlib>
 #  include <iostream>
 
-#  include <c2h/catch2_test_helper.h>
+#  include "cub_test_macros.h"
 
 // example-begin for-each-in-layout-op
 struct layout_store_3D
@@ -39,7 +39,7 @@ struct layout_store_3D
 // example-end for-each-in-layout-op
 
 // clang-format off
-C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
+CUB_TEST("Device ForEachInLayout", "[ForEachInLayout][device]", CUB_SMALL)
 {
   // example-begin for-each-in-layout-example
   using data_t             = cuda::std::array<int, 3>;
@@ -61,13 +61,13 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
   });
   if (status != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEachInLayout failed with status: " << status << std::endl;
+    std::cerr << "cub::DeviceFor::ForEachInLayout failed with status: " << status << '\n';
     std::exit(EXIT_FAILURE);
   }
   h_output = d_output;
   if (!thrust::equal(h_output.begin(), h_output.end(), expected.begin()))
   {
-    std::cerr << "error: h_output != expected" << std::endl;
+    std::cerr << "error: h_output != expected" << '\n';
     std::exit(EXIT_FAILURE);
   }
 
@@ -75,13 +75,13 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
   status = cub::DeviceFor::ForEachInLayout(mapping_left_type{extents}, layout_store_3D{d_output_raw});
   if (status != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEachInLayout failed with status: " << status << std::endl;
+    std::cerr << "cub::DeviceFor::ForEachInLayout failed with status: " << status << '\n';
     std::exit(EXIT_FAILURE);
   }
   h_output = d_output;
   if (!thrust::equal(h_output.begin(), h_output.end(), expected.begin()))
   {
-    std::cerr << "error: h_output != expected" << std::endl;
+    std::cerr << "error: h_output != expected" << '\n';
     std::exit(EXIT_FAILURE);
   }
   // example-end for-each-in-layout-example

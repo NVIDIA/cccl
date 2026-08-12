@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr void test_strcmp(const char* lhs, const char* rhs, int expected)
+TEST_FUNC constexpr void test_strcmp(const char* lhs, const char* rhs, int expected)
 {
   const auto ret = cuda::std::strcmp(lhs, rhs);
 
@@ -33,7 +33,7 @@ __host__ __device__ constexpr void test_strcmp(const char* lhs, const char* rhs,
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(
     cuda::std::

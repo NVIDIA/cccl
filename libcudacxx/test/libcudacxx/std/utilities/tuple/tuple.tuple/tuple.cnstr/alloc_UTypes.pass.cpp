@@ -13,6 +13,7 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, UTypes&&...);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -25,12 +26,12 @@
 template <class T = void>
 struct DefaultCtorBlowsUp
 {
-  __host__ __device__ constexpr DefaultCtorBlowsUp()
+  TEST_FUNC constexpr DefaultCtorBlowsUp()
   {
     static_assert(!cuda::std::is_same<T, T>::value, "Default Ctor instantiated");
   }
 
-  __host__ __device__ explicit constexpr DefaultCtorBlowsUp(int x)
+  TEST_FUNC explicit constexpr DefaultCtorBlowsUp(int x)
       : value(x)
   {}
 
@@ -43,48 +44,42 @@ struct DerivedFromAllocArgT : cuda::std::allocator_arg_t
 // Make sure the _Up... constructor SFINAEs out when the number of initializers
 // is less that the number of elements in the tuple. Previously libc++ would
 // offer these constructors as an extension but they broke conforming code.
-__host__ __device__ void test_uses_allocator_sfinae_evaluation()
+TEST_FUNC void test_uses_allocator_sfinae_evaluation()
 {
   using BadDefault = DefaultCtorBlowsUp<>;
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value);
 
     static_assert(
-      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value,
-      "");
+      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value);
   }
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value,
-                  "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value);
 
     static_assert(
       cuda::std::
-        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value,
-      "");
+        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value);
   }
 }
 
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
 
 int main(int, char**)
 {
-  // cuda::std::allocator not supported
-  /*
   {
-      cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
-      assert(cuda::std::get<0>(t).value == 42);
+    cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
+    assert(cuda::std::get<0>(t).value == 42);
   }
-  */
   {
     cuda::std::tuple<MoveOnly> t(cuda::std::allocator_arg, A1<int>(), MoveOnly(0));
     assert(cuda::std::get<0>(t) == 0);

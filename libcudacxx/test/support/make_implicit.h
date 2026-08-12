@@ -15,7 +15,7 @@
 #include <cuda/std/utility>
 
 template <class T, class... Args>
-__host__ __device__ T make_implicit(Args&&... args)
+TEST_FUNC T make_implicit(Args&&... args)
 {
   return {cuda::std::forward<Args>(args)...};
 }

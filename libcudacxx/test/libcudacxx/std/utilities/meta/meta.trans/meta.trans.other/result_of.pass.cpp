@@ -25,11 +25,11 @@
 struct S
 {
   using FreeFunc = short (*)(long);
-  __host__ __device__ operator FreeFunc() const;
-  __host__ __device__ double operator()(char, int&);
-  __host__ __device__ double const& operator()(char, int&) const;
-  __host__ __device__ double volatile& operator()(char, int&) volatile;
-  __host__ __device__ double const volatile& operator()(char, int&) const volatile;
+  TEST_FUNC operator FreeFunc() const;
+  TEST_FUNC double operator()(char, int&);
+  TEST_FUNC double const& operator()(char, int&) const;
+  TEST_FUNC double volatile& operator()(char, int&) volatile;
+  TEST_FUNC double const volatile& operator()(char, int&) const volatile;
 };
 
 struct SD : public S
@@ -58,16 +58,16 @@ struct test_invoke_result;
 template <typename Fn, typename... Args, typename Ret>
 struct test_invoke_result<Fn(Args...), Ret>
 {
-  __host__ __device__ static void call()
+  TEST_FUNC static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
-    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value);
+    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value);
     static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
   }
 };
 
 template <class T, class U>
-__host__ __device__ void test_result_of()
+TEST_FUNC void test_result_of()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
   test_invoke_result<T, U>::call();
@@ -79,23 +79,23 @@ struct test_invoke_no_result;
 template <typename Fn, typename... Args>
 struct test_invoke_no_result<Fn(Args...)>
 {
-  __host__ __device__ static void call()
+  TEST_FUNC static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value == false, "");
-    static_assert((!HasType<cuda::std::invoke_result<Fn, Args...>>::value), "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value == false);
+    static_assert((!HasType<cuda::std::invoke_result<Fn, Args...>>::value));
   }
 };
 
 template <class T>
-__host__ __device__ void test_no_result()
+TEST_FUNC void test_no_result()
 {
-  static_assert((!HasType<cuda::std::result_of<T>>::value), "");
+  static_assert((!HasType<cuda::std::result_of<T>>::value));
   test_invoke_no_result<T>::call();
 }
 
 #if TEST_CUDA_COMPILER(NVCC)
 template <class Ret, class Fn>
-__host__ __device__ void test_lambda(Fn&&)
+TEST_FUNC void test_lambda(Fn&&)
 {
   static_assert(cuda::std::is_same_v<Ret, typename cuda::std::result_of<Fn()>::type>);
   static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn>::type>);
@@ -420,17 +420,17 @@ int main(int, char**)
 #  if _CCCL_CUDACC_AT_LEAST(12, 3)
     NV_IF_TARGET(
       NV_IS_DEVICE,
-      (test_lambda<int>([] __host__ __device__() -> int {
+      (test_lambda<int>([] TEST_FUNC() -> int {
          return 42;
        });
-       test_lambda<double>([] __host__ __device__() -> double {
+       test_lambda<double>([] TEST_FUNC() -> double {
          return 42.0;
        });
-       test_lambda<SD>([] __host__ __device__() -> SD {
+       test_lambda<SD>([] TEST_FUNC() -> SD {
          return {};
        });))
 #  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
-    test_lambda<double>(cuda::proclaim_return_type<double>([] __device__() -> double {
+    test_lambda<double>(cuda::proclaim_return_type<double>([] TEST_DEVICE_FUNC() -> double {
       return 42.0;
     }));
   }

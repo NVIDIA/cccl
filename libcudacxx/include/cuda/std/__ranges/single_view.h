@@ -68,12 +68,12 @@ public:
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Tp2>, single_view>) _CCCL_AND copy_constructible<_Tp2>)
   _CCCL_API constexpr explicit single_view(const _Tp2& __t) noexcept(is_nothrow_copy_constructible_v<_Tp2>)
       : view_interface<single_view<_Tp2>>()
-      , __value_(in_place, __t)
+      , __value_(in_place_t{}, __t)
   {}
 
   _CCCL_API constexpr explicit single_view(_Tp&& __t) noexcept(is_nothrow_move_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
-      , __value_(in_place, ::cuda::std::move(__t))
+      , __value_(in_place_t{}, ::cuda::std::move(__t))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
@@ -81,7 +81,7 @@ public:
   _CCCL_API constexpr explicit single_view(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : view_interface<single_view<_Tp>>()
-      , __value_{in_place, ::cuda::std::forward<_Args>(__args)...}
+      , __value_{in_place_t{}, ::cuda::std::forward<_Args>(__args)...}
   {}
 
   [[nodiscard]] _CCCL_API constexpr _Tp* begin() noexcept
@@ -121,7 +121,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE single_view(_Tp) -> single_view<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES single_view(_Tp) -> single_view<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -135,12 +135,14 @@ struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_single_view<_Tp>) // MSVC breaks without it
-  _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
+  _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t))))
+    -> single_view<decay_t<_Tp>>
   {
     return single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t));
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

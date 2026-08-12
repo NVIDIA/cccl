@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstddef>
@@ -222,15 +223,17 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
     SECTION("gpu_direct_rdma_flush_writes_options")
     {
+      STATIC_REQUIRE(
+        static_cast<::cudaFlushGPUDirectRDMAWritesOptions>(0) == attributes::gpu_direct_rdma_flush_writes_options.none);
       STATIC_REQUIRE(::cudaFlushGPUDirectRDMAWritesOptionHost == attributes::gpu_direct_rdma_flush_writes_options.host);
       STATIC_REQUIRE(
         ::cudaFlushGPUDirectRDMAWritesOptionMemOps == attributes::gpu_direct_rdma_flush_writes_options.mem_ops);
 
-      [[maybe_unused]] auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
-#if !_CCCL_COMPILER(MSVC)
-      CCCLRT_REQUIRE((options == attributes::gpu_direct_rdma_flush_writes_options.host || //
-                      options == attributes::gpu_direct_rdma_flush_writes_options.mem_ops));
-#endif
+      constexpr int all_flush_writes_options =
+        attributes::gpu_direct_rdma_flush_writes_options.none | attributes::gpu_direct_rdma_flush_writes_options.host
+        | attributes::gpu_direct_rdma_flush_writes_options.mem_ops;
+      auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
+      CCCLRT_REQUIRE(static_cast<unsigned>(options) <= static_cast<unsigned>(all_flush_writes_options));
     }
 
     SECTION("gpu_direct_rdma_writes_ordering")
@@ -288,6 +291,13 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
       int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
       CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
+    }
+
+    SECTION("Total global memory")
+    {
+      auto total_mem = device_ref(0).attribute(attributes::total_global_memory);
+      STATIC_REQUIRE(::cuda::std::is_same_v<decltype(total_mem), cuda::std::size_t>);
+      CCCLRT_REQUIRE(total_mem > 0);
     }
   }
   SECTION("Name")
@@ -347,6 +357,28 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
     CCCLRT_REQUIRE(true); // expected
   }
 #endif // _CCCL_HAS_EXCEPTIONS()
+}
+
+C2H_CCCLRT_TEST("Device attributes use the explicit device when current device differs", "[device][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  const auto expected_bus_id = cuda::__driver::__deviceGetAttribute(
+    static_cast<::CUdevice_attribute>(cudaDevAttrPciBusId), cuda::__driver::__deviceGet(explicit_device.get()));
+  const auto expected_device_id = cuda::__driver::__deviceGetAttribute(
+    static_cast<::CUdevice_attribute>(cudaDevAttrPciDeviceId), cuda::__driver::__deviceGet(explicit_device.get()));
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_bus_id) == expected_bus_id);
+    CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_device_id) == expected_device_id);
+  }
 }
 
 C2H_CCCLRT_TEST("memory location", "[device]")

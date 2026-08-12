@@ -42,7 +42,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   using ::cuda::std::uintptr_t;
   _CCCL_ASSERT(::cuda::__is_valid_alignment<_Tp>(__alignment), "invalid alignment");
@@ -61,7 +61,8 @@ template <typename _Tp>
   using _Up                = ::cuda::std::remove_cv_t<_Tp>;
   const auto __char_ptr    = reinterpret_cast<char*>(const_cast<_Up*>(__ptr));
   const auto __tmp         = static_cast<uintptr_t>(__alignment - 1);
-  const auto __aligned_ptr = reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
+  const auto __aligned_ptr = reinterpret_cast<char*>( // NOLINT(performance-no-int-to-ptr)
+    reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
   // __aligned_ptr and __ptr must be pointers (not values) to apply the optimization
   // __ptr - (ptr - aligned_ptr) -> __ptr + (aligned_ptr - ptr)
   const auto __diff = static_cast<::cuda::std::size_t>(__aligned_ptr - __char_ptr);

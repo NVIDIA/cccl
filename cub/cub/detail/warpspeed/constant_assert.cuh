@@ -48,5 +48,5 @@
     } while (0)
 #else
 // Host or !_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME
-#  define _WS_CONSTANT_ASSERT(expr, msg) (assert((expr) && (msg)))
+#  define _WS_CONSTANT_ASSERT(expr, msg) _CCCL_ASSERT((expr), msg)
 #endif

@@ -5,10 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: nvcc-11, nvcc-12
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
 
@@ -25,7 +28,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     // Fetch min
     {

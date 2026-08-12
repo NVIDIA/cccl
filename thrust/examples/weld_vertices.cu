@@ -69,16 +69,15 @@ int main()
   thrust::lower_bound(vertices.begin(), vertices.end(), input.begin(), input.end(), indices.begin());
 
   // print output mesh representation
-  std::cout << "Output Representation" << std::endl;
+  std::cout << "Output Representation" << '\n';
   for (size_t i = 0; i < vertices.size(); i++)
   {
     vec2 v = vertices[i];
-    std::cout
-      << " vertices[" << i << "] = (" << cuda::std::get<0>(v) << "," << cuda::std::get<1>(v) << ")" << std::endl;
+    std::cout << " vertices[" << i << "] = (" << cuda::std::get<0>(v) << "," << cuda::std::get<1>(v) << ")" << '\n';
   }
   for (size_t i = 0; i < indices.size(); i++)
   {
-    std::cout << " indices[" << i << "] = " << indices[i] << std::endl;
+    std::cout << " indices[" << i << "] = " << indices[i] << '\n';
   }
 
   return 0;

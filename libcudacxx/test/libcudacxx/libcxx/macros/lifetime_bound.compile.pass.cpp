@@ -13,7 +13,7 @@
 
 struct S
 {
-  __host__ __device__ int get() const _CCCL_LIFETIMEBOUND
+  TEST_FUNC int get() const _CCCL_LIFETIMEBOUND
   {
     return 3;
   }

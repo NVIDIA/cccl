@@ -23,18 +23,18 @@
 struct S
 {};
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using cuda::std::ranges::enable_borrowed_range;
-  static_assert(!enable_borrowed_range<char>, "");
-  static_assert(!enable_borrowed_range<int>, "");
-  static_assert(!enable_borrowed_range<double>, "");
-  static_assert(!enable_borrowed_range<S>, "");
+  static_assert(!enable_borrowed_range<char>);
+  static_assert(!enable_borrowed_range<int>);
+  static_assert(!enable_borrowed_range<double>);
+  static_assert(!enable_borrowed_range<S>);
 
   // Sequence containers
-  static_assert(!enable_borrowed_range<cuda::std::array<int, 0>>, "");
-  static_assert(!enable_borrowed_range<cuda::std::array<int, 42>>, "");
-  static_assert(!enable_borrowed_range<cuda::std::inplace_vector<int, 3>>, "");
+  static_assert(!enable_borrowed_range<cuda::std::array<int, 0>>);
+  static_assert(!enable_borrowed_range<cuda::std::array<int, 42>>);
+  static_assert(!enable_borrowed_range<cuda::std::inplace_vector<int, 3>>);
 
   // Both cuda::std::span and cuda::std::string_view have their own test.
 }

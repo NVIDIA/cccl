@@ -50,7 +50,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::for_each(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__places/places.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 namespace reserved
 {
@@ -80,7 +80,7 @@ public:
     // element for this part
     if (last_elem > n)
     {
-      size_t extra_elems = min(tile_size, last_elem - n);
+      size_t extra_elems = ::std::min(tile_size, last_elem - n);
       cnt -= extra_elems;
     }
 
@@ -137,10 +137,10 @@ public:
     return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
   {
     assert(grid_dims.x > 0);
-    return pos4((data_coords.x / tile_size) % grid_dims.x);
+    *result = pos4((data_coords.x / tile_size) % grid_dims.x);
   }
 };
 
@@ -178,10 +178,11 @@ UNITTEST("tiled partition with large 1D data")
 
   constexpr size_t tile_size = 1000;
 
-  pos4 tile_pos = tiled_partition<tile_size>::get_executor(large_coords, data_dims, grid_dims);
+  pos4 tile_pos;
+  tiled_partition<tile_size>::get_executor(&tile_pos, large_coords, data_dims, grid_dims);
 
   EXPECT(tile_pos.x == (test_coord / tile_size) % grid_dims.x);
 };
 
 #endif // UNITTESTED_FILE
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::places

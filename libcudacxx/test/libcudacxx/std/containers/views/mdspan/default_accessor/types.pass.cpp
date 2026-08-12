@@ -29,7 +29,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using A = cuda::std::default_accessor<T>;
   static_assert(cuda::std::is_same_v<typename A::offset_policy, A>);
@@ -37,11 +37,11 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_same_v<typename A::reference, T&>);
   static_assert(cuda::std::is_same_v<typename A::data_handle_type, T*>);
 
-  static_assert(cuda::std::semiregular<A>, "");
-  static_assert(cuda::std::is_trivially_copyable<A>::value, "");
+  static_assert(cuda::std::semiregular<A>);
+  static_assert(cuda::std::is_trivially_copyable<A>::value);
 
   // libcu++ extension
-  static_assert(cuda::std::is_empty<A>::value, "");
+  static_assert(cuda::std::is_empty<A>::value);
 }
 
 int main(int, char**)

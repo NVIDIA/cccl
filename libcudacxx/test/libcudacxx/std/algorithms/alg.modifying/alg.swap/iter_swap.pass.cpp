@@ -26,11 +26,11 @@ namespace ambiguous
 struct with_ambiguous_iter_swap
 {
   with_ambiguous_iter_swap() = default;
-  __host__ __device__ constexpr with_ambiguous_iter_swap(int& val) noexcept
+  TEST_FUNC constexpr with_ambiguous_iter_swap(int& val) noexcept
       : val_(cuda::std::addressof(val))
   {}
 
-  __host__ __device__ constexpr int& operator*() noexcept
+  TEST_FUNC constexpr int& operator*() noexcept
   {
     return *val_;
   }
@@ -39,13 +39,13 @@ struct with_ambiguous_iter_swap
 };
 
 template <class Iter1, class Iter2>
-_CCCL_API constexpr void iter_swap(Iter1 __a, Iter2 __b)
+TEST_FUNC constexpr void iter_swap(Iter1 __a, Iter2 __b)
 {
   // do nothing to check whether its preferred
 }
 } // namespace ambiguous
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int i = 1;
@@ -89,7 +89,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

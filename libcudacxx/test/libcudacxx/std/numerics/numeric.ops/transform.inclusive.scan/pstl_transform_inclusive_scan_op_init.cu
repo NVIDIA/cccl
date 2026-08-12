@@ -35,7 +35,7 @@ inline constexpr int size = 1000;
 template <class T>
 struct plus_two
 {
-  __device__ constexpr T operator()(const T val) const noexcept
+  TEST_DEVICE_FUNC constexpr T operator()(const T val) const noexcept
   {
     return val + 2;
   }
@@ -43,7 +43,7 @@ struct plus_two
 
 struct sum_of_int
 {
-  __device__ constexpr int operator()(const int val) const noexcept
+  TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value, account for plus_two and start at one
     plus_two<int> op{};
     return 42 + op(val) * (op(val) + 1) / 2 - op(1);

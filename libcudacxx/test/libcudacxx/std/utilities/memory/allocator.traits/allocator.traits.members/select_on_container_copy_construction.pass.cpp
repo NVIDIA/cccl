@@ -29,7 +29,7 @@ struct A
 {
   using value_type = T;
   int id;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 explicit A(int i = 0)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 explicit A(int i = 0)
       : id(i)
   {}
 };
@@ -40,17 +40,17 @@ struct B
   using value_type = T;
 
   int id;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 explicit B(int i = 0)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 explicit B(int i = 0)
       : id(i)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 B select_on_container_copy_construction() const
+  TEST_FUNC TEST_CONSTEXPR_CXX20 B select_on_container_copy_construction() const
   {
     return B(100);
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A<int> a;

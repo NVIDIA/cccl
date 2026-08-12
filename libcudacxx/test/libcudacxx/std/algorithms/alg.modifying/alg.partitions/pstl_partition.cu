@@ -21,56 +21,82 @@
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/stream>
 
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
 template <class T>
 struct is_even
 {
-  [[nodiscard]] __device__ constexpr bool operator()(T value) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
   {
     return value % 2 == 0;
   }
 };
 
-template <class Policy>
-void test_partition(const Policy& policy, thrust::device_vector<int>& input)
+template <class Policy, class T>
+void test_partition(const Policy& policy, c2h::device_vector<T>& input)
 {
+  T* raw         = thrust::raw_pointer_cast(input.data());
+  const auto mid = size / 2;
+
   { // Empty does not access anything
-    auto res = cuda::std::partition(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), is_even<int>{});
+    auto res = cuda::std::partition(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_even<T>{});
     CHECK(res == nullptr);
   }
 
-  const auto mid = size / 2;
-  thrust::sequence(input.begin(), input.end(), 0);
-  { // With matching predicate
-    auto res = cuda::std::partition(policy, input.begin(), input.end(), is_even<int>{});
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // contiguous
+    auto res = cuda::std::partition(policy, input.begin(), input.end(), is_even<T>{});
     CHECK(res == cuda::std::next(input.begin(), mid));
-    CHECK(cuda::std::equal(policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
+    CHECK(cuda::std::equal(
+      policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(0)}, 2}));
 
-    // Implementation detail, we copy the unselected elements in reverse order
-    CHECK(cuda::std::equal(policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{size - 1}, -2}));
+    CHECK(cuda::std::equal(
+      policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(size - 1)}, -2}));
   }
 
-  thrust::sequence(input.begin(), input.end(), 0);
-  { // With converting predicate
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // random access
+    auto res =
+      cuda::std::partition(policy, random_access_iterator{raw}, random_access_iterator{raw + size}, is_even<T>{});
+    CHECK(res == random_access_iterator{raw + mid});
+    CHECK(cuda::std::equal(policy,
+                           input.begin(),
+                           input.begin() + mid,
+                           cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(0)}, 2}));
+
+    CHECK(cuda::std::equal(policy,
+                           input.begin() + mid,
+                           input.end(),
+                           cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(size - 1)}, -2}));
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // converting predicate
     auto res = cuda::std::partition(policy, input.begin(), input.end(), is_even<long>{});
     CHECK(res == cuda::std::next(input.begin(), mid));
-    CHECK(cuda::std::equal(policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
+    CHECK(cuda::std::equal(
+      policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(0)}, 2}));
 
-    // Implementation detail, we copy the unselected elements in reverse order
-    CHECK(cuda::std::equal(policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{size - 1}, -2}));
+    CHECK(cuda::std::equal(
+      policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(size - 1)}, -2}));
   }
 }
 
-C2H_TEST("cuda::std::partition", "[parallel algorithm]")
+C2H_TEST("cuda::std::partition", "[parallel algorithm]", integral_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {

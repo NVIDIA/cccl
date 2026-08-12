@@ -31,6 +31,9 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
+# don't check nvtx3.h - it's not our header
+list(FILTER internal_headers EXCLUDE REGEX ".*/__nvtx/nvtx3.h")
+
 function(libcudacxx_add_internal_header_test_target target_name)
   if (NOT ARGN)
     return()

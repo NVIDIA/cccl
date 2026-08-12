@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
 
 // template<class T> struct is_execution_policy;
 // template<class T> constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
@@ -13,6 +15,8 @@
 #include <cuda/std/execution>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 static_assert(cuda::std::is_execution_policy<cuda::std::execution::sequenced_policy>::value);
 static_assert(cuda::std::is_execution_policy<cuda::std::execution::parallel_policy>::value);

@@ -8,17 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__places/data_place_impl.cuh>
-#include <cuda/experimental/__places/data_place_interface.cuh>
-#include <cuda/experimental/__places/exec/cuda_stream.cuh>
-#include <cuda/experimental/__places/exec/green_context.cuh>
-#include <cuda/experimental/__places/exec/green_ctx_view.cuh>
-#include <cuda/experimental/__places/localized_array.cuh>
-#include <cuda/experimental/__places/place_partition.cuh>
-#include <cuda/experimental/__places/places.cuh>
-#include <cuda/experimental/__places/stream_pool.cuh>
+// Single umbrella include: must pull in every public places surface (including
+// partition strategies) without requiring clients to list internal headers.
 
-using namespace cuda::experimental::stf;
+#include <cuda/experimental/places.cuh>
+
+using namespace cuda::experimental::places;
 
 int main()
 {

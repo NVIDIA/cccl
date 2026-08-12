@@ -14,8 +14,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T, class In, class Ref>
-__host__ __device__ constexpr void test_isqrt(In input, Ref ref)
+TEST_FUNC constexpr void test_isqrt(In input, Ref ref)
 {
   if (cuda::std::in_range<T>(input))
   {
@@ -24,7 +26,7 @@ __host__ __device__ constexpr void test_isqrt(In input, Ref ref)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::isqrt(T{})), T>);
   static_assert(noexcept(cuda::isqrt(T{})));
@@ -45,7 +47,7 @@ __host__ __device__ constexpr void test_type()
   test_isqrt<T>(9223372036854775807, 3037000499);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<signed short>();

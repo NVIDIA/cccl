@@ -209,7 +209,7 @@ public:
   {}
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */

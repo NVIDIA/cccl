@@ -44,7 +44,7 @@ void test_impl(const thrust::host_vector<T>& input,
     device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping_t(dst_extents));
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
+    REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
   }
   {
     // device to host
@@ -56,7 +56,7 @@ void test_impl(const thrust::host_vector<T>& input,
     host_mdspan_t host_md(host_data.data(), dst_mapping_t(dst_extents));
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(host_data == expected_data);
+    REQUIRE(host_data == expected_data);
   }
 }
 
@@ -82,7 +82,7 @@ void test_impl_stride(
     device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
+    REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
   }
   {
     // device to host
@@ -94,7 +94,7 @@ void test_impl_stride(
     host_mdspan_t host_md(host_data.data(), dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(host_data == expected_data);
+    REQUIRE(host_data == expected_data);
   }
 }
 
@@ -124,7 +124,7 @@ void test_impl_stride_offset(
                               dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
+    REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
   }
   {
     // device to host
@@ -137,7 +137,7 @@ void test_impl_stride_offset(
     host_mdspan_t host_md(host_data.data() + dst_offset, dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(host_data == expected_data);
+    REQUIRE(host_data == expected_data);
   }
 }
 
@@ -197,7 +197,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i + j * M] = i * N + j;
+      expected[i + static_cast<std::size_t>(j) * M] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
     }
   }
   // tensorA:      (4,8):(8,1)
@@ -211,7 +211,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i + j * M;
+      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(i + static_cast<std::size_t>(j) * M);
     }
   }
   // tensorA:      (4,8):(1,4)
@@ -295,7 +295,7 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i + j * D0 + k * D0 * D1] = p++;
+        expected[i + static_cast<std::size_t>(j) * D0 + static_cast<std::size_t>(k) * D0 * D1] = p++;
       }
     }
   }
@@ -366,7 +366,7 @@ TEST_CASE("copy_bytes 2D strided, padded layout", "[copy_bytes][2d][stride][row]
   {
     for (int j = 0; j < N; ++j)
     {
-      host_data[i * N * 2 + j] = i * N + j;
+      host_data[static_cast<std::size_t>(i) * N * 2 + j] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
     }
   }
   using src_extents                = cuda::std::extents<int, M, N>;
@@ -391,7 +391,7 @@ TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride
   {
     for (int j = 0; j < N; ++j)
     {
-      input_data[i + j * Ld] = k++;
+      input_data[i + static_cast<std::size_t>(j) * Ld] = k++;
     }
   }
   using extents                    = cuda::std::extents<int, M, N>;
@@ -502,8 +502,8 @@ TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offs
   {
     for (int j = 0; j < N; ++j)
     {
-      input[SrcOffset + i * SrcLd + j]    = value;
-      expected[DstOffset + i + j * DstLd] = value;
+      input[SrcOffset + static_cast<std::size_t>(i) * SrcLd + j]    = value;
+      expected[DstOffset + i + static_cast<std::size_t>(j) * DstLd] = value;
       ++value;
     }
   }

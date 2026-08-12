@@ -43,7 +43,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::find(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

@@ -25,7 +25,6 @@
 #include <cuda/__fwd/mdspan.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/mul_overflow.h>
-#include <cuda/__numeric/overflow_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/concepts.h>
@@ -132,7 +131,7 @@ private:
     {
       for (rank_type __d = 0; __d < __rank_; ++__d)
       {
-        _CCCL_ASSERT(!::cuda::overflow_cast<offset_type>(__other.stride(__d)),
+        _CCCL_ASSERT(::cuda::std::in_range<offset_type>(__other.stride(__d)),
                      "layout_stride_relaxed::mapping: stride is out of range");
         __init_strides[__d] = static_cast<offset_type>(__other.stride(__d));
       }
@@ -261,9 +260,11 @@ public:
       // The dot product of indices and strides is linear.
       // Thus, over all valid indices, the max value of the dot product is achieved at the extrema: either the min
       // index (0) if the stride is negative, or the max index (extent(r) - 1) if the stride is non-negative.
-      // For non-negative stride: contribution is (extent - 1) * stride
-      // For negative stride: contribution is 0 (max achieved at index 0)
+      // For non-negative stride: max contribution is (extent - 1) * stride, min contribution is 0
+      // For negative stride: max contribution is 0 (max achieved at index 0), min is -(extent - 1) * |stride|
+      // __min_dot tracks the total positive magnitude of the negative contributions
       index_type __dot{1};
+      offset_type __min_dot{0};
       for (rank_type __r = 0; __r < __rank_; ++__r)
       {
         const auto __ext = extents().extent(__r);
@@ -271,15 +272,32 @@ public:
         {
           return index_type{0};
         }
-        _CCCL_ASSERT(!::cuda::overflow_cast<index_type>(::cuda::uabs(strides().stride(__r))),
+        const auto __stride_val = strides().stride(__r);
+        _CCCL_ASSERT(::cuda::std::in_range<index_type>(::cuda::uabs(__stride_val)),
                      "layout_stride_relaxed::mapping: stride is out of range");
-        const auto __max_index = strides().stride(__r) < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
-        const auto __stride    = static_cast<index_type>(strides().stride(__r));
+        if (__stride_val < 0)
+        {
+          _CCCL_ASSERT(::cuda::std::in_range<offset_type>(__ext - 1),
+                       "layout_stride_relaxed::mapping: extent - 1 is not representable as offset_type");
+          const auto __min_extent   = static_cast<offset_type>(__ext - 1);
+          const auto __abs_stride_u = ::cuda::uabs(__stride_val);
+          _CCCL_ASSERT(::cuda::std::in_range<offset_type>(__abs_stride_u),
+                       "layout_stride_relaxed::mapping: absolute stride is not representable as offset_type");
+          const auto __abs_stride = static_cast<offset_type>(__abs_stride_u);
+          _CCCL_ASSERT(!::cuda::mul_overflow(__min_extent, __abs_stride)
+                         && !::cuda::add_overflow(__min_extent * __abs_stride, __min_dot),
+                       "layout_stride_relaxed::mapping: minimum mapped index is not representable");
+          __min_dot += __min_extent * __abs_stride;
+        }
+        const auto __max_index = __stride_val < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
+        const auto __stride    = static_cast<index_type>(__stride_val);
         _CCCL_ASSERT(!::cuda::mul_overflow<index_type>(__max_index, __stride)
                        && !::cuda::add_overflow(__max_index * __stride, __dot),
                      "layout_stride_relaxed::mapping: required_span_size is not representable as index_type");
         __dot += __max_index * __stride;
       }
+      _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__offset_val, __min_dot),
+                   "layout_stride_relaxed::mapping: offset is insufficient for negative strides");
       _CCCL_ASSERT(!::cuda::add_overflow<index_type>(__offset_val, __dot),
                    "layout_stride_relaxed::mapping: required_span_size is not representable as index_type");
       return static_cast<index_type>(__offset_val + __dot);
@@ -291,7 +309,7 @@ public:
   {
     if constexpr (::cuda::std::__cccl_is_integer_v<_Index>)
     {
-      return ::cuda::std::cmp_greater_equal(__index, index_type{0}) && !::cuda::overflow_cast<index_type>(__index);
+      return ::cuda::std::cmp_greater_equal(__index, index_type{0}) && ::cuda::std::in_range<index_type>(__index);
     }
     else
     {

@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -35,6 +36,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -45,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -60,13 +63,16 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cuda>
 {
   template <class _Policy, class _InputIterator, class _UnaryPred>
-  [[nodiscard]] _CCCL_HOST_API static size_t
+  [[nodiscard]] _CCCL_HOST_API static _InputIterator
   __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = size_t;
     using value_type  = iter_value_t<_InputIterator>;
 
-    _OffsetType __ret;
+    _OffsetType __num_selected;
     const auto __count = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
 
     // Determine temporary device storage requirements for device_partition
@@ -81,10 +87,8 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      0);
+      __policy);
 
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
 
@@ -95,9 +99,9 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         tuple<_InputIterator>{__first},
         __storage.template __get_ptr<1>(),
         __count,
-        CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
       _CCCL_TRY_CUDA_API(
@@ -106,17 +110,17 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __storage.__get_temp_storage(),
         __num_bytes,
         __storage.template __get_raw_ptr<1>(),
-        ::cuda::std::move(__first),
+        __first,
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition: copy of result from device to host failed",
-        ::cuda::std::addressof(__ret),
+        ::cuda::std::addressof(__num_selected),
         __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
@@ -124,21 +128,21 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
     }
 
     __stream.sync();
-    return static_cast<size_t>(__ret);
+    return __first + static_cast<iter_difference_t<_InputIterator>>(__num_selected);
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API size_t operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -146,9 +150,10 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

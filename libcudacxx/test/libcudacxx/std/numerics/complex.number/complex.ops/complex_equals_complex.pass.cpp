@@ -22,22 +22,22 @@ TEST_DIAG_SUPPRESS_CLANG("-Wliteral-conversion")
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
     constexpr cuda::std::complex<T> rhs(1.5, -2.5);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
-    static_assert(lhs == rhs, "");
+    static_assert(lhs == rhs);
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   {
     cuda::std::complex<T> lhs(1.5, 2.5);
@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();
@@ -73,10 +73,10 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<int>();
 

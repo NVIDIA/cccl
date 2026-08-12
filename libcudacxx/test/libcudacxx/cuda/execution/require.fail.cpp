@@ -8,13 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/determinism.h>
+#include <cuda/execution.require.h>
 
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query_t
 {
 } query{};
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // not every environment is a requirement
   cuda::std::execution::prop p{query, 42};

@@ -8,11 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -127,18 +127,15 @@ struct three_way_partition_result_t
 
   bool operator==(const three_way_partition_result_t<T>& other) const
   {
-    return std::tie(num_items_in_first_part,
-                    num_items_in_second_part,
-                    num_unselected_items,
-                    first_part,
-                    second_part,
-                    unselected)
-        == std::tie(other.num_items_in_first_part,
-                    other.num_items_in_second_part,
-                    other.num_unselected_items,
-                    other.first_part,
-                    other.second_part,
-                    other.unselected);
+    if (num_items_in_first_part != other.num_items_in_first_part
+        || num_items_in_second_part != other.num_items_in_second_part
+        || num_unselected_items != other.num_unselected_items)
+    {
+      return false;
+    }
+    return std::equal(first_part.begin(), first_part.begin() + num_items_in_first_part, other.first_part.begin())
+        && std::equal(second_part.begin(), second_part.begin() + num_items_in_second_part, other.second_part.begin())
+        && std::equal(unselected.begin(), unselected.begin() + num_unselected_items, other.unselected.begin());
   }
 };
 
@@ -327,6 +324,51 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
 
   REQUIRE(c_parallel_result == std_result);
+}
+
+C2H_TEST("ThreeWayPartition works with Boolean well-known operations", "[three_way_partition][well_known]")
+{
+  const std::vector<uint8_t> input{1, 0, 0, 1, 1, 0};
+  const std::size_t num_items = input.size();
+
+  pointer_t<uint8_t> input_ptr(input);
+  pointer_t<uint8_t> first_part_output_ptr(num_items);
+  pointer_t<uint8_t> second_part_output_ptr(num_items);
+  pointer_t<uint8_t> unselected_output_ptr(num_items);
+  pointer_t<int64_t> num_selected_ptr(2);
+
+  cccl_op_t identity_op    = make_well_known_unary_operation();
+  identity_op.type         = cccl_op_kind_t::CCCL_IDENTITY;
+  cccl_op_t logical_not_op = make_well_known_unary_operation();
+  logical_not_op.type      = cccl_op_kind_t::CCCL_LOGICAL_NOT;
+
+  std::optional<three_way_partition_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key                   = std::nullopt;
+  three_way_partition(
+    make_boolean_iterator(input_ptr),
+    make_boolean_iterator(first_part_output_ptr),
+    make_boolean_iterator(second_part_output_ptr),
+    make_boolean_iterator(unselected_output_ptr),
+    num_selected_ptr,
+    identity_op,
+    logical_not_op,
+    static_cast<int64_t>(num_items),
+    no_cache,
+    no_key);
+
+  const std::vector<int64_t> num_selected(num_selected_ptr);
+  REQUIRE(num_selected == std::vector<int64_t>{3, 3});
+
+  const std::vector<uint8_t> first_part_output(first_part_output_ptr);
+  const std::vector<uint8_t> second_part_output(second_part_output_ptr);
+  const std::vector<uint8_t> unselected_output(unselected_output_ptr);
+  const std::size_t num_unselected = num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]);
+  CHECK(std::vector<uint8_t>(first_part_output.begin(), first_part_output.begin() + 3)
+        == std::vector<uint8_t>{1, 1, 1});
+  CHECK(std::vector<uint8_t>(second_part_output.begin(), second_part_output.begin() + 3)
+        == std::vector<uint8_t>{0, 0, 0});
+  CHECK(std::vector<uint8_t>(unselected_output.begin(), unselected_output.begin() + num_unselected).empty());
+  CHECK(num_unselected == 0);
 }
 
 struct selector_state_t
@@ -525,3 +567,205 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   REQUIRE(static_cast<std::size_t>(num_selected[1]) == std_result.num_items_in_second_part);
   REQUIRE(num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]) == std_result.num_unselected_items);
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("ThreeWayPartition build result has serialization metadata populated", "[three_way_partition][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, 21);
+  operation_t first_op         = make_operation("less_op", first_src);
+  operation_t second_op        = make_operation("greater_op", second_src);
+
+  pointer_t<T> in(1);
+  pointer_t<T> first_out(1);
+  pointer_t<T> second_out(1);
+  pointer_t<T> unselected_out(1);
+  pointer_t<T> num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition_build(
+      &build,
+      in,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.three_way_partition_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
+}
+
+C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+  constexpr T split_value = 21;
+
+  auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
+  operation_t first_op         = make_operation("less_op", first_src);
+  operation_t second_op        = make_operation("greater_op", second_src);
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_first_out(1);
+  pointer_t<T> dummy_second_out(1);
+  pointer_t<T> dummy_unselected_out(1);
+  pointer_t<T> dummy_num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition_compile(
+      &build,
+      dummy_in,
+      dummy_first_out,
+      dummy_second_out,
+      dummy_unselected_out,
+      dummy_num_selected_out,
+      first_op,
+      second_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  REQUIRE(build.three_way_partition_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.three_way_partition_init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.three_way_partition_init_kernel != nullptr);
+  CHECK(build.three_way_partition_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> first_out(n);
+  pointer_t<T> second_out(n);
+  pointer_t<T> unselected_out(n);
+  pointer_t<int> num_selected_out(2);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      input_ptr,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      n,
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      input_ptr,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      n,
+      null_stream));
+
+  const int n_first      = num_selected_out[0];
+  const int n_second     = num_selected_out[1];
+  const int n_unselected = static_cast<int>(n) - n_first - n_second;
+  CHECK(n_first >= 0);
+  CHECK(n_second >= 0);
+  CHECK(n_unselected >= 0);
+  CHECK(n_first + n_second + n_unselected == static_cast<int>(n));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
+}
+
+C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_partition][serialization]")
+{
+  using T                 = int32_t;
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+  constexpr T split_value = 21;
+
+  const auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
+  operation_t regular_op             = make_operation("less_op", first_src);
+  (void) second_src;
+
+  // Kernel-only op: code_size == 0 with a non-empty name.
+  cccl_op_t custom_op{};
+  custom_op.type      = CCCL_STATELESS;
+  custom_op.name      = "greater_op";
+  custom_op.code_size = 0;
+  custom_op.code_type = CCCL_OP_LTOIR;
+  custom_op.size      = 1;
+  custom_op.alignment = 1;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_first_out(1);
+  pointer_t<T> dummy_second_out(1);
+  pointer_t<T> dummy_unselected_out(1);
+  pointer_t<T> dummy_num_selected_out(1);
+
+  cccl_device_three_way_partition_build_result_t build{};
+  // One regular op + one kernel-only op is an invalid combination.
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_three_way_partition_compile(
+      &build,
+      dummy_in,
+      dummy_first_out,
+      dummy_second_out,
+      dummy_unselected_out,
+      dummy_num_selected_out,
+      regular_op,
+      custom_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+}
+#endif // CCCL_C_PARALLEL_V2

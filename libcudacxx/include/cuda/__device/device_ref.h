@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -46,7 +46,7 @@ class device_ref
 
 public:
   //! @brief Create a `device_ref` object from a native device ordinal.
-  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
+  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id)
       : __id_(__id)
   {
     _CCCL_IF_CONSTEVAL_DEFAULT
@@ -127,6 +127,13 @@ public:
 
   //! @brief Initializes the primary context of the device.
   _CCCL_HOST_API void init() const; // implemented in <cuda/__device/physical_device.h> to avoid circular dependency
+
+  //! @brief Retrieve the primary context of this device.
+  //!
+  //! @return The primary CUDA context for this device.
+  [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context() const; // implemented in
+                                                                      // <cuda/__device/physical_device.h> to avoid
+                                                                      // circular dependency
 
   //! @brief Retrieve the name of this device.
   //!

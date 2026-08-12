@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
@@ -18,7 +18,7 @@
 #include <numeric>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/generators.h>
 
 using float_type_list =
@@ -32,22 +32,21 @@ using float_type_list =
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto rp = cub::detail::reduce::agent_reduce_policy{
+    const auto rp = cub::ReducePassPolicy{
       BlockSize,
       ItemsPerThread,
       4,
       cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
       cub::CacheLoadModifier::LOAD_DEFAULT};
-    auto rp_nd            = rp;
-    rp_nd.block_algorithm = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-    return {rp, rp, rp_nd};
+    return {rp, rp};
   }
 };
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
@@ -88,8 +87,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   REQUIRE_APPROX_EQ_ABS(h_expected, h_actual, abs_err);
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type     = typename c2h::get<0, TestType>;
@@ -138,10 +138,10 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   c2h::device_vector<type> d_output_p2(1);
 
   auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
+                                        cuda::execution::tune(custom_policy_selector<1, 128>{})};
 
   auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
+                                        cuda::execution::tune(custom_policy_selector<2, 256>{})};
 
   REQUIRE(
     cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1));
@@ -151,8 +151,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_EQ_WITH_NAN_MATCHING(d_output_p1, d_output_p2);
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different iterators",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different iterators",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -204,8 +205,9 @@ struct square_t
   }
 };
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -218,28 +220,36 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   auto* raw_ptr = thrust::raw_pointer_cast(d_output.data());
 
-  using output_it_t = decltype(raw_ptr);
-  using init_t      = type;
-  using accum_t     = type;
-  using transform_t = square_t<type>;
+  using output_it_t  = decltype(raw_ptr);
+  using init_value_t = type;
+  using accum_t      = type;
+  using transform_t  = square_t<type>;
 
   std::size_t temp_storage_bytes{};
 
-  auto error = cub::detail::reduce::dispatch_nondeterministic(
-    nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{}, init_t{}, 0, transform_t{});
+  auto error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
+    nullptr,
+    temp_storage_bytes,
+    input,
+    raw_ptr,
+    num_items,
+    cuda::std::plus<type>{},
+    init_value_t{},
+    nullptr,
+    transform_t{});
   REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  error = cub::detail::reduce::dispatch_nondeterministic(
+  error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input,
     raw_ptr,
     num_items,
     cuda::std::plus<type>{},
-    init_t{},
-    0,
+    init_value_t{},
+    nullptr,
     transform_t{});
   REQUIRE(error == cudaSuccess);
 
@@ -252,8 +262,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different init values",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different init values",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -290,8 +301,9 @@ using test_types =
 #endif
                  >;
 
-C2H_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
+CUB_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          test_types)
 {
   using type = typename c2h::get<0, TestType>;

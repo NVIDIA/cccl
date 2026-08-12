@@ -15,22 +15,22 @@
 #include "test_macros.h"
 
 template <class T, unsigned A>
-__host__ __device__ void test_rank()
+TEST_FUNC void test_rank()
 {
-  static_assert(cuda::std::rank<T>::value == A, "");
-  static_assert(cuda::std::rank<const T>::value == A, "");
-  static_assert(cuda::std::rank<volatile T>::value == A, "");
-  static_assert(cuda::std::rank<const volatile T>::value == A, "");
-  static_assert(cuda::std::rank_v<T> == A, "");
-  static_assert(cuda::std::rank_v<const T> == A, "");
-  static_assert(cuda::std::rank_v<volatile T> == A, "");
-  static_assert(cuda::std::rank_v<const volatile T> == A, "");
+  static_assert(cuda::std::rank<T>::value == A);
+  static_assert(cuda::std::rank<const T>::value == A);
+  static_assert(cuda::std::rank<volatile T>::value == A);
+  static_assert(cuda::std::rank<const volatile T>::value == A);
+  static_assert(cuda::std::rank_v<T> == A);
+  static_assert(cuda::std::rank_v<const T> == A);
+  static_assert(cuda::std::rank_v<volatile T> == A);
+  static_assert(cuda::std::rank_v<const volatile T> == A);
 }
 
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 int main(int, char**)

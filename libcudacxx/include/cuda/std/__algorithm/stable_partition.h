@@ -347,7 +347,7 @@ _CCCL_API _ForwardIterator __stable_partition(
 template <class _ForwardIterator, class _Predicate>
 _CCCL_API _ForwardIterator stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-  using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
   return ::cuda::std::__stable_partition<_ClassicAlgPolicy, _Predicate&>(
     ::cuda::std::move(__first), ::cuda::std::move(__last), __pred, _IterCategory());
 }

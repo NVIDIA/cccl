@@ -7,9 +7,9 @@
 #include <nvrtc.h>
 #include <nvrtc_args.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-TEST_CASE("Test nvrtc", "[test][nvrtc]")
+CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
 {
   nvrtcProgram prog{};
 
@@ -302,7 +302,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
   REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
   REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
-  REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
+  REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, nullptr, nullptr));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
   // Generate input for execution, and create output buffers.
@@ -328,7 +328,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   void* args[] = {&d_ptr, &d_err};
 
-  REQUIRE(CUDA_SUCCESS == cuLaunchKernel(kernel, 1, 1, 1, threads_in_block, 1, 1, 0, nullptr, args, 0));
+  REQUIRE(CUDA_SUCCESS == cuLaunchKernel(kernel, 1, 1, 1, threads_in_block, 1, 1, 0, nullptr, args, nullptr));
   REQUIRE(CUDA_SUCCESS == cuCtxSynchronize());
   REQUIRE(CUDA_SUCCESS == cuMemcpyDtoH(h_ptr, d_ptr, tile_size * sizeof(int)));
   REQUIRE(CUDA_SUCCESS == cuMemcpyDtoH(&h_err, d_err, sizeof(int)));

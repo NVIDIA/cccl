@@ -26,17 +26,10 @@
 
 // This benchmark tests overlapping memory regions for reading and is compute intensive
 
-template <typename OffsetT>
-static void compare_complex(nvbench::state& state, nvbench::type_list<OffsetT>)
+static void compare_complex(nvbench::state& state)
 try
 {
-  const auto n = state.get_int64("Elements{io}");
-  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
-  {
-    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
-    return;
-  }
-
+  const auto n                        = state.get_int64("Elements{io}");
   thrust::device_vector<complex32> in = generate(n);
   thrust::device_vector<bool> out(n - 1);
 
@@ -46,16 +39,13 @@ try
 
   // the complex comparison needs lots of compute and transform reads from overlapping input
   using compare_op = less_t;
-  bench_transform(
-    state, ::cuda::std::tuple{in.begin(), in.begin() + 1}, out.begin(), static_cast<OffsetT>(n) - 1, compare_op{});
+  bench_transform(state, cuda::std::tuple{in.begin(), in.begin() + 1}, out.begin(), n - 1, compare_op{});
 }
 catch (const std::bad_alloc&)
 {
   state.skip("Skipping: out of memory.");
 }
 
-// TODO(bgruber): hardcode OffsetT?
-NVBENCH_BENCH_TYPES(compare_complex, NVBENCH_TYPE_AXES(offset_types))
+NVBENCH_BENCH(compare_complex)
   .set_name("compare_complex")
-  .set_type_axes_names({"OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

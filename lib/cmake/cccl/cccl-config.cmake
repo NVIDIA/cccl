@@ -67,10 +67,13 @@ foreach (component IN LISTS components)
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
       HINTS "${cccl_cmake_dir}/../cub/"
     )
-    # Can't alias other alias targets, so use the uglified target name instead
-    # of CUB::CUB:
     if (TARGET _CUB_CUB AND NOT TARGET CCCL::CUB)
-      add_library(CCCL::CUB ALIAS _CUB_CUB)
+      # Create CCCL::CUB as an IMPORTED target (not an ALIAS) so that downstream
+      # projects can install(EXPORT ...) their own targets that link to CCCL::CUB
+      # without CMake requiring _CUB_CUB to be in the export set.
+      # See: https://github.com/NVIDIA/cccl/issues/8069
+      add_library(CCCL::CUB INTERFACE IMPORTED GLOBAL)
+      target_link_libraries(CCCL::CUB INTERFACE CUB::CUB)
       target_link_libraries(CCCL::CCCL INTERFACE CCCL::CUB)
     endif()
   elseif (component_lower STREQUAL "thrust")

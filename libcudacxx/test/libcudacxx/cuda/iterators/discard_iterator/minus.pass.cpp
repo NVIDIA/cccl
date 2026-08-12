@@ -22,7 +22,7 @@
 template <class Iter>
 _CCCL_CONCEPT MinusEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)((iter - 1));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   { // operator-(iter_difference_t<I> n)
     {

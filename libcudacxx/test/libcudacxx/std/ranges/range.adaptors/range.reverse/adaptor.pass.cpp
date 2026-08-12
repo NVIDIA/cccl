@@ -34,13 +34,13 @@ inline constexpr bool
 
 struct Pred
 {
-  __host__ __device__ int operator()(int i) const noexcept
+  TEST_FUNC int operator()(int i) const noexcept
   {
     return i;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 
@@ -153,6 +153,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 
   // Test that cuda::std::views::reverse is a range adaptor
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     // Test `v | views::reverse`
     {
       BidirRange view(buf, buf + 3);
@@ -161,6 +162,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       assert(base(result.begin().base()) == buf + 3);
       assert(base(result.end().base()) == buf);
     }
+#endif // !_CCCL_TILE_COMPILATION()
 
     // Test `adaptor | views::reverse`
     {
@@ -207,7 +209,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

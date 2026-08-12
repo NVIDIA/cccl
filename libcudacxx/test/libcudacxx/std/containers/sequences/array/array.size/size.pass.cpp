@@ -38,17 +38,17 @@ int main(int, char**)
     using T       = double;
     using C       = cuda::std::array<T, 3>;
     constexpr C c = {1, 2, 3.5};
-    static_assert(c.size() == 3, "");
-    static_assert(c.max_size() == 3, "");
-    static_assert(!c.empty(), "");
+    static_assert(c.size() == 3);
+    static_assert(c.max_size() == 3);
+    static_assert(!c.empty());
   }
   {
     using T       = double;
     using C       = cuda::std::array<T, 0>;
     constexpr C c = {};
-    static_assert(c.size() == 0, "");
-    static_assert(c.max_size() == 0, "");
-    static_assert(c.empty(), "");
+    static_assert(c.size() == 0);
+    static_assert(c.max_size() == 0);
+    static_assert(c.empty());
   }
 
   return 0;

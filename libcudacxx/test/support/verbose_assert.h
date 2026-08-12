@@ -104,7 +104,7 @@ public:
   {
     if (!passed)
     {
-      error_log << std::endl;
+      error_log << '\n';
       std::abort();
     }
   }

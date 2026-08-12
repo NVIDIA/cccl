@@ -29,22 +29,22 @@ template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
   template <int stageCount>
-  _CCCL_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
+  _CCCL_HOST_DEVICE_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
       : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
   {}
 
-  _CCCL_API constexpr SmemResource(
+  _CCCL_HOST_DEVICE_API constexpr SmemResource(
     SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
       : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> popStage() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> nextStage() noexcept
   {
     return SmemStage<_Tp>(*this);
   }
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr SmemResourceRaw
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr SmemResourceRaw
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
     int align       = alignof(_Tp);

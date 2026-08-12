@@ -88,13 +88,9 @@ template <typename T, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
-  using wrapped_init_t = cub::NullType;
-  using pair_t         = cuda::std::pair<T, T>;
-  using op_t           = impl::bicyclic_monoid_op<T>;
-  using accum_t        = pair_t;
-  using input_it_t     = const pair_t*;
-  using output_it_t    = pair_t*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using pair_t                   = cuda::std::pair<T, T>;
+  using op_t                     = impl::bicyclic_monoid_op<T>;
+  using accum_t [[maybe_unused]] = pair_t;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
@@ -120,42 +116,24 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   state.add_global_memory_reads<pair_t>(elements, "Size");
   state.add_global_memory_writes<pair_t>(elements);
 
-  cudaStream_t bench_stream = state.get_cuda_stream();
-
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    d_input,
-    d_output,
-    op_t{},
-    wrapped_init_t{},
-    input.size(),
-    bench_stream
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      d_tmp,
-      tmp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
       d_input,
       d_output,
       op_t{},
-      wrapped_init_t{},
-      input.size(),
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-    );
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 }
 

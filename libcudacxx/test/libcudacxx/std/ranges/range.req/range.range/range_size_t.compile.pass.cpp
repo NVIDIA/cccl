@@ -17,6 +17,7 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 
 #if TEST_STD_VER > 2017
 template <class T>
@@ -31,35 +32,35 @@ constexpr bool has_range_size_t<T, cuda::std::void_t<cuda::std::ranges::range_si
 
 struct A
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
-  __host__ __device__ short size();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
+  TEST_FUNC short size();
 };
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A>, short>, "");
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A&>, short>, "");
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A&&>, short>, "");
-static_assert(!has_range_size_t<const A>, "");
-static_assert(!has_range_size_t<const A&>, "");
-static_assert(!has_range_size_t<const A&&>, "");
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A>, short>);
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A&>, short>);
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<A&&>, short>);
+static_assert(!has_range_size_t<const A>);
+static_assert(!has_range_size_t<const A&>);
+static_assert(!has_range_size_t<const A&&>);
 
 struct B
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B>, cuda::std::size_t>, "");
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B&>, cuda::std::size_t>, "");
-static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B&&>, cuda::std::size_t>, "");
-static_assert(!has_range_size_t<const B>, "");
-static_assert(!has_range_size_t<const B&>, "");
-static_assert(!has_range_size_t<const B&&>, "");
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B>, cuda::std::size_t>);
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B&>, cuda::std::size_t>);
+static_assert(cuda::std::same_as<cuda::std::ranges::range_size_t<B&&>, cuda::std::size_t>);
+static_assert(!has_range_size_t<const B>);
+static_assert(!has_range_size_t<const B&>);
+static_assert(!has_range_size_t<const B&&>);
 
 struct C
 {
-  __host__ __device__ bidirectional_iterator<int*> begin();
-  __host__ __device__ bidirectional_iterator<int*> end();
+  TEST_FUNC bidirectional_iterator<int*> begin();
+  TEST_FUNC bidirectional_iterator<int*> end();
 };
-static_assert(!has_range_size_t<C>, "");
+static_assert(!has_range_size_t<C>);
 
 int main(int, char**)
 {

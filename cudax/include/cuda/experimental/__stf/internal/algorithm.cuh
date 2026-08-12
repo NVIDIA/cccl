@@ -103,8 +103,7 @@ public:
       graph_cache[hashValue] = inner_graph;
     }
 
-    cudaGraphNode_t c;
-    cuda_safe_call(cudaGraphAddChildGraphNode(&c, graph, nullptr, 0, *inner_graph));
+    ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(graph, nullptr, 0, *inner_graph);
   }
 
   /* This simply executes the algorithm within the existing context. This
@@ -250,6 +249,12 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
+    // Speaking of which.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
+
     auto current_data_place = gctx.default_exec_place().affine_data_place();
 
     // Call fun with all arguments transformed to logical data
@@ -274,21 +279,18 @@ public:
 
     if (!eg)
     {
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, [](cudaGraphExec_t* p) {
-        cudaGraphExecDestroy(*p);
-      });
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              cuda_safe_call(cudaGraphExecDestroy(*p));
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
@@ -306,6 +308,12 @@ public:
     // defer the allocations and deallocations to the cudaMallocAsync API
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
+
+    // Speaking of which.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
 
     auto current_place = gctx.default_exec_place();
 
@@ -327,22 +335,18 @@ public:
 
     if (!eg)
     {
-      auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-        cudaGraphExecDestroy(*pGraphExec);
-      };
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, cudaGraphExecDeleter);
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              cuda_safe_call(cudaGraphExecDestroy(*p));
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
 private:
@@ -353,7 +357,7 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      cuda_safe_call(cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
     }
   }
 

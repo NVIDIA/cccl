@@ -27,7 +27,7 @@ _CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
   ::cuda::ptx::n32_t<_N32> __size)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__scope == scope_cta)
   {

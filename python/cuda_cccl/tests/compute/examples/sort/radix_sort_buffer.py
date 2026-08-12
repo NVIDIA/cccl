@@ -34,12 +34,12 @@ values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
 # Perform the radix sort.
 cuda.compute.radix_sort(
-    keys_double_buffer,
-    None,
-    values_double_buffer,
-    None,
-    SortOrder.ASCENDING,
-    d_in_keys.size,
+    d_in_keys=keys_double_buffer,
+    d_out_keys=None,
+    d_in_values=values_double_buffer,
+    d_out_values=None,
+    order=SortOrder.ASCENDING,
+    num_items=d_in_keys.size,
 )
 
 # Verify the result.

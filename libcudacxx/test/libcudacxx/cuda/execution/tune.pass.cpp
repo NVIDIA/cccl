@@ -8,48 +8,50 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
+
+#include "test_macros.h"
 
 struct reduce_policy
 {
-  int block_threads;
+  int threads_per_block;
 };
 
-template <int BlockThreads, class T>
+template <int ThreadsPerBlock, class T>
 struct reduce_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> reduce_policy
   {
-    return {BlockThreads / sizeof(T)};
+    return {ThreadsPerBlock / sizeof(T)};
   }
 };
 
 struct scan_policy
 {
-  int block_threads = 1;
+  int threads_per_block = 1;
 };
 
 struct scan_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> scan_policy
   {
     return {};
   }
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  constexpr int nominal_block_threads = 256;
-  constexpr int block_threads         = nominal_block_threads / sizeof(int);
+  constexpr int nominal_threads_per_block = 256;
+  constexpr int threads_per_block         = nominal_threads_per_block / sizeof(int);
 
   using env_t =
-    decltype(cuda::execution::__tune(reduce_policy_selector<nominal_block_threads, int>{}, scan_policy_selector{}));
+    decltype(cuda::execution::tune(reduce_policy_selector<nominal_threads_per_block, int>{}, scan_policy_selector{}));
   using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
   using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
   using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;
 
-  static_assert(reduce_policy_t{}(cuda::arch_id::sm_75).block_threads == block_threads);
-  static_assert(scan_policy_t{}(cuda::arch_id::sm_75).block_threads == 1);
+  static_assert(reduce_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == threads_per_block);
+  static_assert(scan_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == 1);
 }
 
 int main(int, char**)

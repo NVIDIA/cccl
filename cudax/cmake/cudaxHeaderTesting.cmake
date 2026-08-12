@@ -4,6 +4,8 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+cccl_get_cudatoolkit()
+
 # Meta target for all configs' header builds:
 add_custom_target(cudax.all.headers)
 
@@ -87,7 +89,10 @@ function(cudax_add_header_test label definitions)
       # the following line removed:
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
-    target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
+    target_link_libraries(
+      ${headertest_target}
+      PUBLIC cudax.compiler_interface CUDA::cuda_driver
+    )
     target_compile_options(
       ${headertest_target}
       PRIVATE

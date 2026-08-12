@@ -17,7 +17,6 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/logical.h>
 #include <thrust/sequence.h>
 
 #include <cuda/memory_pool>
@@ -28,39 +27,62 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
-struct not_42
+[[nodiscard]] TEST_FUNC constexpr bool operator==(const nontrivial_type& lhs, const int& rhs)
 {
-  __device__ constexpr bool operator()(const int val) const noexcept
-  {
-    return val == 42;
-  }
-};
+  return lhs.value_ == rhs;
+}
 
-template <class Policy>
-void test_replace(const Policy& policy, thrust::device_vector<int>& input)
+[[nodiscard]] TEST_FUNC constexpr bool operator==(const int& lhs, const nontrivial_type& rhs)
+{
+  return lhs == rhs.value_;
+}
+
+template <class Policy, class T>
+void test_replace(const Policy& policy, c2h::device_vector<T>& input)
 {
   { // empty should not access anything
-    cuda::std::replace(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), 42, 1);
+    cuda::std::replace(
+      policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), static_cast<T>(42), static_cast<T>(1));
   }
 
-  { // same type
-    thrust::sequence(input.begin(), input.end(), 0);
-    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // contiguous
+    cuda::std::replace(policy, input.begin(), input.end(), static_cast<T>(42), static_cast<T>(1));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), cuda::equal_to_value<T>{static_cast<T>(42)}));
   }
 
-  { // convertible type
-    thrust::sequence(input.begin(), input.end(), 0);
-    cuda::std::replace(policy, input.begin(), input.end(), static_cast<short>(42), static_cast<short>(1));
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  T* raw_pointer = thrust::raw_pointer_cast(input.data());
+  { // random access
+    cuda::std::replace(
+      policy,
+      random_access_iterator{raw_pointer},
+      random_access_iterator{raw_pointer + size},
+      static_cast<T>(42),
+      static_cast<T>(1));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), cuda::equal_to_value<T>{static_cast<T>(42)}));
+  }
+
+  if constexpr (::cuda::std::__is_cpp17_equality_comparable_v<T, int>)
+  {
+    thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+    { // convertible type
+      cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
+      CHECK(cuda::std::none_of(policy, input.begin(), input.end(), cuda::equal_to_value<T>{static_cast<T>(42)}));
+    }
   }
 }
 
-C2H_TEST("cuda::std::replace", "[parallel algorithm]")
+C2H_TEST("cuda::std::replace", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {

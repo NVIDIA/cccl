@@ -19,9 +19,9 @@
 #include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -58,7 +58,7 @@ namespace random
  *    thrust::minstd_rand rng1;
  *
  *    // output some random values to cout
- *    std::cout << rng1() << std::endl;
+ *    std::cout << rng1() << '\n';
  *
  *    // a random value is printed
  *
@@ -69,13 +69,13 @@ namespace random
  *    rng2.discard(13);
  *
  *    // stream the object to an iostream
- *    std::cout << rng2 << std::endl;
+ *    std::cout << rng2 << '\n';
  *
  *    // rng2's current state is printed
  *
  *    // print the minimum and maximum values that minstd_rand can produce
- *    std::cout << thrust::minstd_rand::min << std::endl;
- *    std::cout << thrust::minstd_rand::max << std::endl;
+ *    std::cout << thrust::minstd_rand::min << '\n';
+ *    std::cout << thrust::minstd_rand::max << '\n';
  *
  *    // the range of minstd_rand is printed
  *
@@ -83,7 +83,7 @@ namespace random
  *    thrust::minstd_rand rng3 = rng2;
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 1 is printed
  *
@@ -91,7 +91,7 @@ namespace random
  *    rng2.seed(7);
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 0 is printed
  *
@@ -165,7 +165,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_congruential_engine's state a given number of times
    *  and discards the results.

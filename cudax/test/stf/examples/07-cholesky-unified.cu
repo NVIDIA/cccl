@@ -112,7 +112,7 @@ public:
     assert(grid_p * grid_q == ndevs);
 
     // std::cout << "FOUND " << ndevs << " DEVICES "
-    //          << "p=" << grid_p << " q=" << grid_q << std::endl;
+    //          << "p=" << grid_p << " q=" << grid_q << '\n';
   }
 
   int get_preferred_devid(int row, int col)
@@ -414,7 +414,7 @@ void PDTRSM(cublasSideMode_t side,
 {
   nvtx_range r("PDTRSM");
 
-  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
+  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << '\n';
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -481,7 +481,7 @@ void PDTRSM(cublasSideMode_t side,
     abort();
   }
   cuda_safe_call(cudaSetDevice(0));
-  //    std::cout << "[PDTRSM] END" << std::endl;
+  //    std::cout << "[PDTRSM] END" << '\n';
 }
 
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
@@ -492,7 +492,7 @@ void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
   reserved::dot::set_current_color("green");
 #endif
 
-  //    std::cout << "[PDPOTRS] START" << std::endl;
+  //    std::cout << "[PDPOTRS] START" << '\n';
   // Call the parallel functions.
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_T : CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
@@ -503,7 +503,7 @@ void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
-  //    std::cout << "[PDPOTRS] END" << std::endl;
+  //    std::cout << "[PDPOTRS] END" << '\n';
 }
 
 /*****************************************************************************
@@ -683,9 +683,9 @@ int main(int argc, char** argv)
   if (check_result)
   {
     double residual = sqrt(res_nrm2) / sqrt(Bref_nrm2);
-    // std::cout << "[POTRS] ||AX - B|| : " << sqrt(res_nrm2) << std::endl;
-    // std::cout << "[POTRS] ||B|| : " << sqrt(Bref_nrm2) << std::endl;
-    // std::cout << "[POTRS] RESIDUAL (||AX - B||/||B||) : " << residual << std::endl;
+    // std::cout << "[POTRS] ||AX - B|| : " << sqrt(res_nrm2) << '\n';
+    // std::cout << "[POTRS] ||B|| : " << sqrt(Bref_nrm2) << '\n';
+    // std::cout << "[POTRS] RESIDUAL (||AX - B||/||B||) : " << residual << '\n';
     assert(residual < 0.01);
   }
 

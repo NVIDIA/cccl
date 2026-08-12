@@ -40,7 +40,7 @@
 // Calculated expected size of an mdspan
 // Note this expects that only default_accessor is empty
 template <class MDS>
-__host__ __device__ constexpr size_t expected_size()
+TEST_FUNC constexpr size_t expected_size()
 {
   size_t sizeof_dht = sizeof(typename MDS::data_handle_type);
   size_t result     = sizeof_dht;
@@ -83,14 +83,14 @@ template <class T>
 constexpr bool trv_mv_asgn = cuda::std::is_trivially_move_assignable<T>::value;
 
 template <class MDS, bool default_ctor, bool copy_ctor, bool move_ctor, bool destr, bool copy_assign, bool move_assign>
-__host__ __device__ constexpr void check_triviality()
+TEST_FUNC constexpr void check_triviality()
 {
-  static_assert(trv_df_ctor<MDS> == default_ctor, "");
-  static_assert(trv_cp_ctor<MDS> == copy_ctor, "");
-  static_assert(trv_mv_ctor<MDS> == move_ctor, "");
-  static_assert(trv_dstruct<MDS> == destr, "");
-  static_assert(trv_cp_asgn<MDS> == copy_assign, "");
-  static_assert(trv_mv_asgn<MDS> == move_assign, "");
+  static_assert(trv_df_ctor<MDS> == default_ctor);
+  static_assert(trv_cp_ctor<MDS> == copy_ctor);
+  static_assert(trv_mv_ctor<MDS> == move_ctor);
+  static_assert(trv_dstruct<MDS> == destr);
+  static_assert(trv_cp_asgn<MDS> == copy_assign);
+  static_assert(trv_mv_asgn<MDS> == move_assign);
 }
 
 // Standard extension
@@ -99,10 +99,10 @@ template <class L,
           cuda::std::enable_if_t<cuda::std::is_same<L, cuda::std::layout_left>::value
                                    || cuda::std::is_same<L, cuda::std::layout_right>::value,
                                  int> = 0>
-__host__ __device__ constexpr void test_mdspan_no_unique_address()
+TEST_FUNC constexpr void test_mdspan_no_unique_address()
 {
 #if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
-  static_assert(sizeof(MDS) == expected_size<MDS>(), "");
+  static_assert(sizeof(MDS) == expected_size<MDS>());
 #endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 }
 
@@ -111,11 +111,11 @@ template <class L,
           cuda::std::enable_if_t<!cuda::std::is_same<L, cuda::std::layout_left>::value
                                    && !cuda::std::is_same<L, cuda::std::layout_right>::value,
                                  int> = 0>
-__host__ __device__ constexpr void test_mdspan_no_unique_address()
+TEST_FUNC constexpr void test_mdspan_no_unique_address()
 {}
 
 template <class T, class E, class L, class A>
-__host__ __device__ constexpr void test_mdspan_types()
+TEST_FUNC constexpr void test_mdspan_types()
 {
   using MDS = cuda::std::mdspan<T, E, L, A>;
 
@@ -155,7 +155,7 @@ __host__ __device__ constexpr void test_mdspan_types()
 }
 
 template <class T, class L, class A>
-__host__ __device__ constexpr void mixin_extents()
+TEST_FUNC constexpr void mixin_extents()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types<T, cuda::std::extents<int>, L, A>();
@@ -169,7 +169,7 @@ __host__ __device__ constexpr void mixin_extents()
 }
 
 template <class T, class A>
-__host__ __device__ constexpr void mixin_layout()
+TEST_FUNC constexpr void mixin_layout()
 {
   mixin_extents<T, cuda::std::layout_left, A>();
   mixin_extents<T, cuda::std::layout_right, A>();
@@ -177,13 +177,13 @@ __host__ __device__ constexpr void mixin_layout()
 }
 
 template <class T>
-__host__ __device__ constexpr void mixin_accessor()
+TEST_FUNC constexpr void mixin_accessor()
 {
   mixin_layout<T, cuda::std::default_accessor<T>>();
   mixin_layout<T, checked_accessor<T>>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -204,7 +204,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_evil()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();
@@ -217,9 +217,9 @@ int main(int, char**)
   test();
   test_evil();
 
-  static_assert(test(), "");
+  static_assert(test());
 #if TEST_STD_VER >= 2020
-  static_assert(test_evil(), "");
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
 
   return 0;

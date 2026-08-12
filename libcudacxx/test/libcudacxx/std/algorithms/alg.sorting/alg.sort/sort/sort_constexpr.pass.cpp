@@ -27,7 +27,7 @@
 const int LargeN = 128;
 
 template <int N, class T, class Iter>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int orig[N] = {};
   unsigned x  = 1;
@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test()
 }
 
 template <int N, class T, class Iter>
-__host__ __device__ constexpr bool test_pointers()
+TEST_FUNC constexpr bool test_pointers()
 {
   T data[N]  = {};
   T* orig[N] = {};

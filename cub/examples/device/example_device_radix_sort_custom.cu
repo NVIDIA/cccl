@@ -12,6 +12,7 @@
 #include <bitset>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <limits>
 #include <type_traits>
 
@@ -26,8 +27,7 @@ struct custom_t
 struct decomposer_t
 {
   __host__ __device__ //
-    ::cuda::std::tuple<std::uint16_t&, float&>
-    operator()(custom_t& key) const
+    ::cuda::std::tuple<std::uint16_t&, float&> operator()(custom_t& key) const
   {
     return {key.i, key.f};
   }

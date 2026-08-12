@@ -17,28 +17,28 @@ struct IntType
 {
   int val;
   IntType() = default;
-  __host__ __device__ constexpr IntType(int v) noexcept
+  TEST_FUNC constexpr IntType(int v) noexcept
       : val(v){};
 
-  __host__ __device__ constexpr bool operator==(const IntType& rhs) const
+  TEST_FUNC constexpr bool operator==(const IntType& rhs) const
   {
     return val == rhs.val;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ constexpr bool operator!=(const IntType& rhs) const
+  TEST_FUNC constexpr bool operator!=(const IntType& rhs) const
   {
     return val != rhs.val;
   }
 #endif // TEST_STD_VER < 2020
-  __host__ __device__ constexpr operator int() const noexcept
+  TEST_FUNC constexpr operator int() const noexcept
   {
     return val;
   }
-  __host__ __device__ constexpr operator unsigned char() const
+  TEST_FUNC constexpr operator unsigned char() const
   {
     return static_cast<unsigned char>(val);
   }
-  __host__ __device__ constexpr operator signed char() const noexcept
+  TEST_FUNC constexpr operator signed char() const noexcept
   {
     return static_cast<signed char>(val);
   }
@@ -49,28 +49,28 @@ struct IntTypeNC
 {
   int val;
   IntTypeNC() = default;
-  __host__ __device__ constexpr IntTypeNC(int v) noexcept
+  TEST_FUNC constexpr IntTypeNC(int v) noexcept
       : val(v){};
 
-  __host__ __device__ constexpr bool operator==(const IntType& rhs) const
+  TEST_FUNC constexpr bool operator==(const IntType& rhs) const
   {
     return val == rhs.val;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ constexpr bool operator!=(const IntType& rhs) const
+  TEST_FUNC constexpr bool operator!=(const IntType& rhs) const
   {
     return val != rhs.val;
   }
 #endif // TEST_STD_VER < 2020
-  __host__ __device__ constexpr operator int() noexcept
+  TEST_FUNC constexpr operator int() noexcept
   {
     return val;
   }
-  __host__ __device__ constexpr operator unsigned()
+  TEST_FUNC constexpr operator unsigned()
   {
     return static_cast<unsigned>(val);
   }
-  __host__ __device__ constexpr operator signed char() noexcept
+  TEST_FUNC constexpr operator signed char() noexcept
   {
     return static_cast<signed char>(val);
   }
@@ -81,16 +81,16 @@ template <bool conv_c, bool conv_nc, bool ctor_nt_c, bool ctor_nt_nc>
 struct IntConfig
 {
   int val;
-  __host__ __device__ constexpr explicit IntConfig(int val_)
+  TEST_FUNC constexpr explicit IntConfig(int val_)
       : val(val_)
   {}
   template <bool Convertible = conv_nc, cuda::std::enable_if_t<Convertible, int> = 0>
-  __host__ __device__ constexpr operator int() noexcept(ctor_nt_nc)
+  TEST_FUNC constexpr operator int() noexcept(ctor_nt_nc)
   {
     return val;
   }
   template <bool Convertible = conv_c, cuda::std::enable_if_t<Convertible, int> = 0>
-  __host__ __device__ constexpr operator int() const noexcept(ctor_nt_c)
+  TEST_FUNC constexpr operator int() const noexcept(ctor_nt_c)
   {
     return val;
   }

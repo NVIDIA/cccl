@@ -15,9 +15,12 @@ Defined in the ``<cuda/type_traits>`` header.
    template <class T>
    inline constexpr bool is_vector_type_v = /* see below */;
 
+   template <class T>
+   using is_vector_type = cuda::std::bool_constant<is_vector_type_v<T>>;
+
    } // namespace cuda
 
-``cuda::is_vector_type_v<T>`` is ``true`` if ``T`` is a CUDA vector type, such as ``int2``, ``float4``, or ``dim3``.
+``cuda::is_vector_type_v<T>`` is ``true`` if ``T`` is a cv-qualified CUDA vector type, such as ``int2``, ``float4``, or ``dim3``.
 
 **Supported vector types**
 
@@ -45,9 +48,12 @@ Defined in the ``<cuda/type_traits>`` header.
    template <class T>
    inline constexpr bool is_extended_fp_vector_type_v = /* see below */;
 
+   template <class T>
+   using is_extended_fp_vector_type = cuda::std::bool_constant<is_extended_fp_vector_type_v<T>>;
+
    } // namespace cuda
 
-``cuda::is_extended_fp_vector_type_v<T>`` is ``true`` if ``T`` is an extended floating-point vector type.
+``cuda::is_extended_fp_vector_type_v<T>`` is ``true`` if ``T`` is a cv-qualified extended floating-point vector type.
 
 **Supported extended floating-point vector types**
 
@@ -58,7 +64,7 @@ Defined in the ``<cuda/type_traits>`` header.
 - ``__nv_fp6x2_e2m3``, ``__nv_fp6x2_e3m2``, ``__nv_fp6x4_e2m3``, ``__nv_fp6x4_e3m2``.
 - ``__nv_fp4x2_e2m1``, ``__nv_fp4x4_e2m1``.
 
-``cuda::vector_type_t``
+``cuda::vector_type``
 -----------------------
 
 .. code:: cuda
@@ -66,25 +72,37 @@ Defined in the ``<cuda/type_traits>`` header.
    namespace cuda {
 
    template <class T, cuda::std::size_t Size>
-   using vector_type_t = /* see below */;
+   struct vector_type
+   {
+     using type = /* see below */;
+   };
+
+   template <class T, cuda::std::size_t Size>
+   using vector_type_t = typename vector_type<T, Size>::type;
 
    } // namespace cuda
 
-``cuda::vector_type_t<T, Size>`` is a type alias that maps a scalar type ``T`` and a vector size ``Size`` to the corresponding CUDA vector type. If no valid vector type exists for the given combination, the type is ``void``. It supports both integral and floating-point vector types.
+``cuda::vector_type<T, Size>::type`` is a type alias that maps a scalar type ``T`` and a vector size ``Size`` to the corresponding CUDA vector type. If no valid vector type exists for the given combination, the type is ``void``. It supports both integral and floating-point vector types.
 
-``cuda::scalar_type_t``
+``cuda::scalar_type``
 -----------------------
 
 .. code:: cuda
 
    namespace cuda {
 
-   template <class VectorType>
-   using scalar_type_t = /* see below */;
+   template <class T>
+   struct scalar_type
+   {
+     using type = /* see below */;
+   };
+
+   template <class T>
+   using scalar_type_t = typename scalar_type<T>::type;
 
    } // namespace cuda
 
-``cuda::scalar_type_t<VectorType>`` extracts the scalar element type from a CUDA vector type. For example, ``cuda::scalar_type_t<int2>`` is ``int`` and ``cuda::scalar_type_t<float4>`` is ``float``. . It supports both integral and floating-point vector types.
+``cuda::scalar_type<T>::type`` extracts the scalar element type from a cv-qualified CUDA vector type. For example, ``cuda::scalar_type<int2>::type`` is ``int`` and ``cuda::scalar_type<float4>::type`` is ``float``. It supports both integral and floating-point vector types. If ``T`` is not a vector type, the ``type`` type alias is not defined.
 
 Example
 -------

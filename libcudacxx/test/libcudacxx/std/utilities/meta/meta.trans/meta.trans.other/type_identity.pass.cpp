@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_type_identity()
+TEST_FUNC void test_type_identity()
 {
   static_assert(cuda::std::is_same_v<T, typename cuda::std::type_identity<T>::type>);
   static_assert(cuda::std::is_same_v<T, cuda::std::type_identity_t<T>>);

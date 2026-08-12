@@ -27,6 +27,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
 
 #include <thread>
 

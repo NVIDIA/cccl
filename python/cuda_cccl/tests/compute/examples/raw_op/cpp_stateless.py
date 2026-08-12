@@ -12,10 +12,10 @@ as a custom operator.
 
 import cupy as cp
 import numpy as np
+from cuda.core import Device, Program, ProgramOptions
 
 import cuda.compute
 from cuda.compute.op import RawOp
-from cuda.core import Device, Program, ProgramOptions
 
 
 def get_arch():
@@ -58,7 +58,9 @@ d_output = cp.empty(1, dtype=np.int32)
 h_init = np.array(1, dtype=np.int32)
 
 # Use the custom operator with reduce_into
-cuda.compute.reduce_into(d_input, d_output, multiply_op, len(d_input), h_init)
+cuda.compute.reduce_into(
+    d_in=d_input, d_out=d_output, num_items=len(d_input), op=multiply_op, h_init=h_init
+)
 
 # Verify the result
 result = d_output.get()[0]

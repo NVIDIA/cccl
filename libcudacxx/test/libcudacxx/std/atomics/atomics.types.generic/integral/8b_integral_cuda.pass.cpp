@@ -6,9 +6,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -90,7 +93,7 @@
 #include "common.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void test()
+TEST_HOST_DEVICE_FUNC __noinline__ void test()
 {
   do_test<A, T, Selector>();
   do_test<volatile A, T, Selector>();
@@ -99,7 +102,7 @@ __host__ __device__ __noinline__ void test()
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-__host__ __device__ void test_for_all_types()
+TEST_HOST_DEVICE_FUNC void test_for_all_types()
 {
   test<Atomic<long, Scope>, long, Selector>();
   test<Atomic<unsigned long, Scope>, unsigned long, Selector>();

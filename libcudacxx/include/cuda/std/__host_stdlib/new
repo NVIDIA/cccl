@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// HostJiT also needs <new>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <new>
 #endif // !_CCCL_COMPILER(NVRTC)

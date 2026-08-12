@@ -77,12 +77,13 @@ public:
     return {};
   }
 
-  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return ::cuda::std::assume_aligned<byte_alignment>(__p)[__i];
   }
 
-  _CCCL_API constexpr typename offset_policy::data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr typename offset_policy::data_handle_type
+  offset(data_handle_type __p, size_t __i) const noexcept
   {
     return ::cuda::std::assume_aligned<byte_alignment>(__p) + __i;
   }

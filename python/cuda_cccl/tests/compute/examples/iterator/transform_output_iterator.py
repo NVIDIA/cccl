@@ -34,11 +34,11 @@ d_out_it = TransformOutputIterator(d_output, sqrt)
 
 # Apply a sum reduction into the transform output iterator
 cuda.compute.reduce_into(
-    d_input,
-    d_out_it,
-    OpKind.PLUS,
-    len(d_input),
-    np.asarray([0], dtype=np.float32),
+    d_in=d_input,
+    d_out=d_out_it,
+    num_items=len(d_input),
+    op=OpKind.PLUS,
+    h_init=np.asarray([0], dtype=np.float32),
 )
 
 assert cp.allclose(d_output, cp.sqrt(cp.sum(d_input)), atol=1e-6)

@@ -14,8 +14,6 @@
 //     typename tuple_element<I, cuda::std::pair<T1, T2> >::type&
 //     get(pair<T1, T2>&);
 
-// UNSUPPORTED: msvc
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -26,13 +24,13 @@ struct S
 {
   cuda::std::pair<int, int> a;
   int k;
-  __device__ __host__ constexpr S()
+  TEST_FUNC constexpr S()
       : a{1, 2}
       , k(cuda::std::get<0>(a))
   {}
 };
 
-__device__ __host__ constexpr cuda::std::pair<int, int> getP()
+TEST_FUNC constexpr cuda::std::pair<int, int> getP()
 {
   return {3, 4};
 }
@@ -51,8 +49,8 @@ int main(int, char**)
   }
 
   {
-    static_assert(S().k == 1, "");
-    static_assert(cuda::std::get<1>(getP()) == 4, "");
+    static_assert(S().k == 1);
+    static_assert(cuda::std::get<1>(getP()) == 4);
   }
 
   return 0;

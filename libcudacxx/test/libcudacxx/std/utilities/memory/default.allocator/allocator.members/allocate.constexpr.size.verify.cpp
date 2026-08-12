@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using A  = cuda::std::allocator<T>;
   using AT = cuda::std::allocator_traits<A>;
@@ -34,7 +34,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   static_assert(test<double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an
                                  // integral constant expression}}

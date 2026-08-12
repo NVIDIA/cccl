@@ -16,6 +16,8 @@ heterogeneous systems.
 They build upon :ref:`memory_resources <libcudacxx-extended-api-memory-resources>` to ensure that e.g. execution space
 annotations are checked by the type system.
 
+.. _libcudacxx-containers-uninitialized-async-buffer:
+
 .. list-table::
    :widths: 25 45 30
    :header-rows: 0

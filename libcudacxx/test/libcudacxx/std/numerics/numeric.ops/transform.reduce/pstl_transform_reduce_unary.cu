@@ -38,9 +38,9 @@ template <class T>
 struct plus_one
 {
   template <class U>
-  [[nodiscard]] __device__ constexpr T operator()(const U val) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr T operator()(const U val) const noexcept
   {
-    return static_cast<T>(val + 1);
+    return static_cast<T>(val + 1); // NOLINT(bugprone-misplaced-widening-cast)
   }
 };
 

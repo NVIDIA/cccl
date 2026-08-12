@@ -34,7 +34,7 @@ struct compare_key_prefix_op
 
   SortKeyT prefix_mask;
   SortKeyT key_prefix;
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
   {
     return (sort_key & prefix_mask) == (key_prefix);
   }
@@ -52,7 +52,7 @@ struct compare_key_prefix_op
 //! the histogram in shared memory is updated. (2) Partitioning scatters the top-k items (key
 //! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
 //! its portion. Supports key-only and key-value selection.
-template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
+template <typename KeyT, int ThreadsPerBlock, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
 class block_topk_air
 {
 private:
@@ -60,22 +60,21 @@ private:
   // Whether to include all items tied with the k-th key when selecting top-k
   static constexpr bool expand_k_to_include_ties = false;
 
-  static constexpr int block_threads    = BlockThreads;
-  static constexpr int items_per_thread = ItemsPerThread;
-  static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int num_buckets      = int{1u << RadixBits};
+  static constexpr int threads_per_block = ThreadsPerBlock;
+  static constexpr int items_per_thread  = ItemsPerThread;
+  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int num_buckets       = int{1u << RadixBits};
 
   // Calculate number of buckets processed per thread
-  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
+  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
   static constexpr bool keys_only         = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using histo_counter_t = ::cuda::std::uint32_t;
-  using block_scan_t    = BlockScan<histo_counter_t, block_threads, BLOCK_SCAN_WARP_SCANS>;
+  using block_scan_t    = BlockScan<histo_counter_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
 
   using traits                 = detail::radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
-  using bit_ordered_inversion  = typename traits::bit_ordered_inversion_policy;
 
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
 
@@ -121,19 +120,19 @@ private:
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
     }
   }
 
   // Compute histogram over keys
-  template <bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
+  template <detail::topk::select SelectDirection, bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_histograms(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
     int valid_items,
@@ -147,8 +146,9 @@ private:
       const bit_ordered_type key = unsigned_keys[i];
       if ((IsFullTile || item_index < valid_items) && filter_op(key))
       {
-        const auto digit = digit_extractor.Digit(key);
-        atomicAdd(&storage.stage.passes.histogram[digit], histo_counter_t{1});
+        const auto digit  = static_cast<int>(digit_extractor.Digit(key));
+        const auto bucket = (SelectDirection == detail::topk::select::min) ? digit : (num_buckets - 1 - digit);
+        atomicAdd(&storage.stage.passes.histogram[bucket], histo_counter_t{1});
       }
     }
   }
@@ -255,7 +255,7 @@ private:
       auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
-      compute_histograms<IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op);
+      compute_histograms<SelectDirection, IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op);
       __syncthreads();
 
       // Compute prefix sum over buckets
@@ -273,7 +273,11 @@ private:
 
       // Update the kth_key_prefix and prefix_mask for the next pass
       // Basically, we will have valid_items candidates with the prefix kth_key_prefix
-      kth_key_prefix |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
+      const auto kth_key_digit =
+        (SelectDirection == detail::topk::select::min)
+          ? storage.stage.passes.pass_state.bucket
+          : (num_buckets - 1 - storage.stage.passes.pass_state.bucket);
+      kth_key_prefix |= bit_ordered_type(kth_key_digit) << pass_begin_bit;
       prefix_mask |= pass_mask;
 
       // Short-circuit if all candidates are amongst the top-k
@@ -346,10 +350,6 @@ private:
           flip_back_bits[i / 32] |= (1u << (i % 32));
           unsigned_keys[i] = twiddled_zero;
         }
-        if constexpr (SelectDirection == detail::topk::select::max)
-        {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
       }
     }
     else
@@ -358,10 +358,6 @@ private:
       for (int i = 0; i < items_per_thread; ++i)
       {
         unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
-        if constexpr (SelectDirection == detail::topk::select::max)
-        {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
       }
     }
 
@@ -420,18 +416,16 @@ private:
     {
       const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
 
-      const bool is_valid     = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
-      const bool is_selected  = key_prefix < kth_prefix;
+      const bool is_valid = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
+      using comparison_t  = ::cuda::std::
+        conditional_t<SelectDirection == detail::topk::select::min, ::cuda::std::less<>, ::cuda::std::greater<>>;
+      const bool is_selected  = comparison_t{}(key_prefix, kth_prefix);
       const bool is_candidate = key_prefix == kth_prefix;
 
       // We differentiate between candidates and selected only if not all candidates make it into the top-k items.
       int item_class = (!select_all_candidates) && is_candidate ? 1 : 0;
 
       // Untwiddle the key before storing in shared memory
-      if constexpr (SelectDirection == detail::topk::select::max)
-      {
-        unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-      }
       unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
 
       if (is_valid && (is_selected || is_candidate))
@@ -502,7 +496,7 @@ public:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())
-      , linear_tid(RowMajorTid(BlockThreads, 1, 1))
+      , linear_tid(RowMajorTid(ThreadsPerBlock, 1, 1))
   {}
 
   template <detail::topk::select SelectDirection, bool IsFullTile>

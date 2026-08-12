@@ -39,6 +39,13 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+// However, NVRTC handles it specially
+#if _CCCL_FREESTANDING() && !_CCCL_COMPILER(NVRTC)
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif // _CCCL_ENABLE_FREESTANDING
+
 #if _CCCL_COMPILER(CLANG, >=, 15)
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
 #else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
@@ -51,15 +58,21 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
+// We cannot use host features if we are building in freestanding
+#if _CCCL_FREESTANDING()
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
+#endif // _CCCL_FREESTANDING()
+
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
-#  endif
+#  endif // _CCCL_HOSTED()
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 
 // _CCCL_MOVE macro always expands to std::move builtin, if available, and fallbacks to cuda::std::move otherwise.

@@ -2,6 +2,8 @@
 #include <thrust/random.h>
 #include <thrust/remove.h>
 
+#include <iostream>
+
 // This example generates random points in the
 // unit square [0,1)x[0,1) and then removes all
 // points where x^2 + y^2 > 1
@@ -47,12 +49,12 @@ int main()
 
   // print the initial points
   std::cout << std::fixed;
-  std::cout << "Generated " << N << " points" << std::endl;
+  std::cout << "Generated " << N << " points" << '\n';
   for (size_t i = 0; i < x.size(); i++)
   {
-    std::cout << "(" << x[i] << "," << y[i] << ")" << std::endl;
+    std::cout << "(" << x[i] << "," << y[i] << ")" << '\n';
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // remove points where x^2 + y^2 > 1 and determine new array sizes
   size_t new_size =
@@ -66,10 +68,10 @@ int main()
   y.resize(new_size);
 
   // print the filtered points
-  std::cout << "After stream compaction, " << new_size << " points remain" << std::endl;
+  std::cout << "After stream compaction, " << new_size << " points remain" << '\n';
   for (size_t i = 0; i < x.size(); i++)
   {
-    std::cout << "(" << x[i] << "," << y[i] << ")" << std::endl;
+    std::cout << "(" << x[i] << "," << y[i] << ")" << '\n';
   }
 
   return 0;

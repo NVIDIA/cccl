@@ -24,10 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/__hierarchy/block_level.h>
-#  include <cuda/__hierarchy/cluster_level.h>
-#  include <cuda/__hierarchy/grid_level.h>
-#  include <cuda/__hierarchy/thread_level.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -292,13 +289,16 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 
 template <class _Config, class _Kernel, class... _Args>
 __global__ static void
-  _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
-                   (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
-  __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+// todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters directive is
+// fixed.
+//
+// _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
+//                  (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
+__kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
@@ -343,8 +343,9 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
   }
 }
 
+// Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>
-[[nodiscard]] _CCCL_API constexpr auto __get_kernel_launcher() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr const void* __get_kernel_launcher() noexcept
 {
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
@@ -352,39 +353,22 @@ template <class _Kernel, class _Config, class... _Args>
 
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-      using _ClusterExts = typename _ClusterDesc::extents_type;
-
-      if constexpr (_ClusterExts::rank_dynamic() == 0)
-      {
-        return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
-      }
-      else
-      {
-        return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
-      }
-    }
-    else
-    {
-      return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
-    }
+    // todo(dabayer): Re-enable the cluster-specific block-size launcher once cuda::launch with kernels compiled with
+    // .blocksareclusters directive is fixed.
+    return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
   }
   else
   {
-    return ::cuda::__kernel_launcher<_Config, _Kernel, _Args...>;
+    return reinterpret_cast<const void*>(::cuda::__kernel_launcher<_Config, _Kernel, _Args...>);
   }
 }
 
 #  endif // _CCCL_CUDA_COMPILATION()
 
-template <class... _Args>
-[[nodiscard]] _CCCL_HOST_API ::CUfunction __get_cufunction_of(void (*__kernel)(_Args...))
+[[nodiscard]] _CCCL_HOST_API inline ::CUfunction __get_cufunction_of(const void* __kernel)
 {
   ::cudaFunction_t __kernel_cufunction{};
-  _CCCL_TRY_CUDA_API(
-    ::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, (const void*) __kernel);
+  _CCCL_TRY_CUDA_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
   return (::CUfunction) __kernel_cufunction;
 }
 
@@ -489,16 +473,16 @@ _CCCL_CONCEPT work_submitter = ::cuda::std::is_convertible_v<_Submitter, ::cuda:
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel functor to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
 _CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
@@ -514,7 +498,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                                                   decltype(__combined),
                                                   ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
   return ::cuda::__launch_impl(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter),
     __combined,
     ::cuda::__get_cufunction_of(__launcher),
     __combined,
@@ -551,16 +535,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel function to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel function
 //!
 _CCCL_TEMPLATE(
@@ -576,7 +560,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                                _ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     __conf,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
@@ -608,7 +592,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf
@@ -629,9 +613,9 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<_ExpArgs...>(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 

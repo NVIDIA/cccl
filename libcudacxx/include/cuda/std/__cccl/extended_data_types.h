@@ -37,6 +37,14 @@
 #define _CCCL_HAS_NVBF16()   0
 #define _CCCL_HAS_FLOAT128() 0
 
+#if _CCCL_TILE_COMPILATION() // TODO(miscco): Fix access to extended floating point types
+#  define CCCL_DISABLE_NVFP4_SUPPORT
+#  define CCCL_DISABLE_NVFP6_SUPPORT
+#  define CCCL_DISABLE_NVFP8_SUPPORT
+#  define CCCL_DISABLE_INT128_SUPPORT
+#  define CCCL_DISABLE_FLOAT128_SUPPORT
+#endif // _CCCL_TILE_COMPILATION()
+
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
 #  undef _CCCL_HAS_INT128
@@ -108,7 +116,7 @@ struct __nv_fp4x4_e2m1;
  * __float128
  **********************************************************************************************************************/
 
-#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
+#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_HOST_ARCH(ARM64)
 // Detect host compiler support
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__))
 #    if _CCCL_DEVICE_COMPILATION()
@@ -122,7 +130,7 @@ struct __nv_fp4x4_e2m1;
 #      define _CCCL_HAS_FLOAT128() 1
 #    endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 #  endif // Host compiler support
-#endif // !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
+#endif // !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_HOST_ARCH(ARM64)
 
 // gcc does not allow to use q/Q floating point literals when __STRICT_ANSI__ is defined. They may be allowed by
 // -fext-numeric-literals, but there is no way to detect it in the preprocessor. The user is required to define

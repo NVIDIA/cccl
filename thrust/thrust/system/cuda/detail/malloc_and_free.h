@@ -48,7 +48,7 @@ inline cub::CachingDeviceAllocator& get_allocator()
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
-  void* result = 0;
+  void* result = nullptr;
 
   // need to repeat a lot of code here because we can't use #if inside of the
   // NV_IF_TARGET macro.

@@ -22,12 +22,12 @@ struct test_memory_resource_t final : thrust::mr::memory_resource<>
 {
   void* do_allocate(std::size_t size, std::size_t) override
   {
-    return reinterpret_cast<void*>(size);
+    return reinterpret_cast<void*>(size); // NOLINT(performance-no-int-to-ptr)
   }
 
   void do_deallocate(void* ptr, std::size_t size, std::size_t) override
   {
-    ASSERT_EQUAL(ptr, reinterpret_cast<void*>(size));
+    ASSERT_EQUAL(ptr, reinterpret_cast<void*>(size)); // NOLINT(performance-no-int-to-ptr)
   }
 } test_memory_resource;
 

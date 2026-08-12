@@ -7,7 +7,7 @@
 
 #include <cuda/cmath>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)
@@ -17,7 +17,8 @@ __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_o
 
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -55,7 +56,8 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action)
 
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -122,7 +124,8 @@ struct sum_aggregate_op_t
       scan.InclusiveSum(thread_data, thread_data, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
     {
@@ -168,7 +171,8 @@ struct min_aggregate_op_t
       scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{}, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
     {
@@ -216,7 +220,8 @@ struct min_init_value_aggregate_op_t
       scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
     {
@@ -253,7 +258,7 @@ c2h::host_vector<T> compute_host_reference(
   {
     return c2h::host_vector<T>{};
   }
-  // TODO : assert result.size() % logical_warp_threads == 0
+  // TODO : REQUIRE(result.size() % logical_warp_threads == 0)
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
@@ -341,7 +346,7 @@ struct params_t
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
 
-C2H_TEST("Warp scan works with sum", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Warp scan works with sum", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -358,7 +363,7 @@ C2H_TEST("Warp scan works with sum", "[scan][warp]", types, logical_warp_threads
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Warp scan works with vec_types", "[scan][warp]", vec_types, logical_warp_threads, modes)
+CUB_TEST("Warp scan works with vec_types", "[scan][warp]", CUB_SMALL, vec_types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -375,8 +380,9 @@ C2H_TEST("Warp scan works with vec_types", "[scan][warp]", vec_types, logical_wa
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Warp scan works with custom types",
+CUB_TEST("Warp scan works with custom types",
          "[scan][warp]",
+         CUB_SMALL,
          c2h::type_list<c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>,
          logical_warp_threads,
          modes)
@@ -396,8 +402,9 @@ C2H_TEST("Warp scan works with custom types",
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Warp scan returns valid warp aggregate",
+CUB_TEST("Warp scan returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          c2h::type_list<c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>,
          logical_warp_threads,
          modes)
@@ -425,7 +432,7 @@ C2H_TEST("Warp scan returns valid warp aggregate",
 }
 
 // TODO : Do we need all the types?
-C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Warp scan works with custom scan op", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -465,7 +472,8 @@ C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST(
+  "Warp custom op scan returns valid warp aggregate", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -512,7 +520,7 @@ C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
   REQUIRE(h_warp_aggregates == d_warp_aggregates);
 }
 
-C2H_TEST("Warp custom op scan works with initial value", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Warp custom op scan works with initial value", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -540,8 +548,9 @@ C2H_TEST("Warp custom op scan works with initial value", "[scan][warp]", types, 
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Warp custom op scan with initial value returns valid warp aggregate",
+CUB_TEST("Warp custom op scan with initial value returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          modes)
@@ -578,7 +587,7 @@ C2H_TEST("Warp custom op scan with initial value returns valid warp aggregate",
   REQUIRE(h_warp_aggregates == d_warp_aggregates);
 }
 
-C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logical_warp_threads)
+CUB_TEST("Warp combination scan works with custom scan op", "[scan][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
@@ -628,7 +637,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
 
-C2H_TEST("Warp combination custom scan works with initial value", "[scan][warp]", logical_warp_threads)
+CUB_TEST("Warp combination custom scan works with initial value", "[scan][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();

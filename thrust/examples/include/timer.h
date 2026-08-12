@@ -37,18 +37,18 @@ struct timer
 
   ~timer()
   {
-    cuda_safe_call(cudaEventDestroy(start));
-    cuda_safe_call(cudaEventDestroy(end));
+    static_cast<void>(cudaEventDestroy(start));
+    static_cast<void>(cudaEventDestroy(end));
   }
 
   void restart()
   {
-    cuda_safe_call(cudaEventRecord(start, 0));
+    cuda_safe_call(cudaEventRecord(start, nullptr));
   }
 
   double elapsed()
   {
-    cuda_safe_call(cudaEventRecord(end, 0));
+    cuda_safe_call(cudaEventRecord(end, nullptr));
     cuda_safe_call(cudaEventSynchronize(end));
 
     float ms_elapsed;
@@ -77,7 +77,7 @@ struct timer
     restart();
   }
 
-  ~timer() {}
+  ~timer() = default;
 
   void restart()
   {

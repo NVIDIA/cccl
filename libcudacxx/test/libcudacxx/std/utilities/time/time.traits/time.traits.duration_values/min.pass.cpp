@@ -22,9 +22,9 @@ int main(int, char**)
   assert(cuda::std::chrono::duration_values<int>::min() == cuda::std::numeric_limits<int>::lowest());
   assert(cuda::std::chrono::duration_values<double>::min() == cuda::std::numeric_limits<double>::lowest());
   assert(cuda::std::chrono::duration_values<Rep>::min() == cuda::std::numeric_limits<Rep>::lowest());
-  static_assert(cuda::std::chrono::duration_values<int>::min() == cuda::std::numeric_limits<int>::lowest(), "");
-  static_assert(cuda::std::chrono::duration_values<double>::min() == cuda::std::numeric_limits<double>::lowest(), "");
-  static_assert(cuda::std::chrono::duration_values<Rep>::min() == cuda::std::numeric_limits<Rep>::lowest(), "");
+  static_assert(cuda::std::chrono::duration_values<int>::min() == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::std::chrono::duration_values<double>::min() == cuda::std::numeric_limits<double>::lowest());
+  static_assert(cuda::std::chrono::duration_values<Rep>::min() == cuda::std::numeric_limits<Rep>::lowest());
 
   static_assert(noexcept(cuda::std::chrono::duration_values<int>::min()));
   static_assert(noexcept(cuda::std::chrono::duration_values<double>::min()));

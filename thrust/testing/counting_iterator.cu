@@ -95,8 +95,8 @@ void TestCountingIteratorCopyConstructor()
   ASSERT_EQUAL(*iter0, *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
 void TestCountingIteratorIncrement()
 {
@@ -277,7 +277,7 @@ void TestCountingIteratorDifference()
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::detail::it_difference_t<Iterator>;
 
-  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
+  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1; // NOLINT(bugprone-misplaced-widening-cast)
 
   Iterator first(0);
   Iterator last = first + diff;
@@ -348,3 +348,14 @@ void TestCountingIteratorPointer()
 DECLARE_UNITTEST(TestCountingIteratorPointer);
 
 _CCCL_DIAG_POP
+
+// Test that counting_iterator<float> distance_to does not trigger
+// MSVC C4244 (implicit float-to-integer conversion) without suppression.
+void TestCountingIteratorFloatDistanceTo()
+{
+  thrust::counting_iterator<float> iter1(0);
+  thrust::counting_iterator<float> iter2(5);
+
+  ASSERT_EQUAL(iter2 - iter1, 5);
+}
+DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);

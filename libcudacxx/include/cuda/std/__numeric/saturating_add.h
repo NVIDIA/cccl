@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/add_sat_overflow.h>
+#include <cuda/__numeric/saturating_add_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__numeric/saturating_cast.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -50,7 +50,7 @@ template <class _Tp>
 #    if _CCCL_COMPILER(CLANG, <, 21)
   if constexpr (sizeof(_Tp) < sizeof(int32_t))
   {
-    return ::cuda::add_sat_overflow(__x, __y).value;
+    return ::cuda::saturating_add_overflow(__x, __y).value;
   }
   else
 #    endif // _CCCL_COMPILER(CLANG, <, 21)
@@ -60,7 +60,7 @@ template <class _Tp>
 #  else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_ADD_SAT ^^^ / vvv !_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT vvv
   if constexpr (is_signed_v<_Tp>)
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
       return ::_sat_add_i8(__x, __y);
@@ -78,14 +78,14 @@ template <class _Tp>
       return ::_sat_add_i64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
-      return ::cuda::add_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
   else
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       return ::_sat_add_u8(__x, __y);
@@ -103,9 +103,9 @@ template <class _Tp>
       return ::_sat_add_u64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
-      return ::cuda::add_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
 #  endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT ^^^
@@ -116,10 +116,36 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
 {
+  // Narrow branches differ only when target-specific inline PTX is available.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_signed_v<_Tp>)
   {
-    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     // Use uint32_t because we want to avoid sign extension.
+                     uint32_t __result;
+                     asm("add.sat.s8x4 %0, %1, %2;"
+                         : "=r"(__result)
+                         : "r"(static_cast<uint32_t>(__x)), "r"(static_cast<uint32_t>(__y)));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} + int32_t{__y});
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(int16_t))
+    {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     // Use uint32_t because we want to avoid sign extension.
+                     uint32_t __result;
+                     asm("add.sat.s16x2 %0, %1, %2;"
+                         : "=r"(__result)
+                         : "r"(static_cast<uint32_t>(__x)), "r"(static_cast<uint32_t>(__y)));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
       return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} + int32_t{__y});
     }
     else if constexpr (sizeof(_Tp) == sizeof(int32_t))
@@ -130,13 +156,50 @@ template <class _Tp>
     }
     else
     {
-      return ::cuda::add_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
   else
   {
-    return ::cuda::add_sat_overflow(__x, __y).value;
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     uint32_t __result;
+                     asm("add.sat.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(uint32_t{__x}), "r"(uint32_t{__y}));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::saturating_add_overflow(__x, __y).value;
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     uint32_t __result;
+                     asm("add.sat.u16x2 %0, %1, %2;" : "=r"(__result) : "r"(uint32_t{__x}), "r"(uint32_t{__y}));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::saturating_add_overflow(__x, __y).value;
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     uint32_t __result;
+                     asm("add.sat.u32 %0, %1, %2;" : "=r"(__result) : "r"(__x), "r"(__y));
+                     return __result;
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::saturating_add_overflow(__x, __y).value;
+    }
+    else
+    {
+      return ::cuda::saturating_add_overflow(__x, __y).value;
+    }
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -144,13 +207,15 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp saturating_add(_Tp __x, _Tp __y) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__saturating_add_impl_host(__x, __y);),
                       (return ::cuda::std::__saturating_add_impl_device(__x, __y);))
   }
-  return ::cuda::add_sat_overflow(__x, __y).value;
+#endif // !_CCCL_TILE_COMPILATION()
+  return ::cuda::saturating_add_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

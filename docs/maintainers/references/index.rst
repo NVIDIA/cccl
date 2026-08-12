@@ -7,3 +7,5 @@ Reference documentation for maintainers.
    :maxdepth: 1
 
    ../branching_strategy
+   ../coderabbit
+   compile_time

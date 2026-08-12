@@ -12,11 +12,11 @@
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 #include "test_macros.h"
 #include "types.h"
 
-TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 TEST_DIAG_SUPPRESS_MSVC(4018) // various "signed/unsigned mismatch"
 
@@ -25,62 +25,63 @@ struct NotNoexceptCopy
   using difference_type = int;
 
   int value_;
-  __host__ __device__ constexpr explicit NotNoexceptCopy(int value = 0)
+  TEST_FUNC constexpr explicit NotNoexceptCopy(int value = 0)
       : value_(value)
   {}
-  __host__ __device__ constexpr NotNoexceptCopy(const NotNoexceptCopy& other) noexcept(false)
+  TEST_FUNC constexpr NotNoexceptCopy(const NotNoexceptCopy& other) noexcept(false)
       : value_(other.value_)
   {}
 
 #if TEST_STD_VER >= 2020
   bool operator==(const NotNoexceptCopy&) const = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy& operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy& operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ friend constexpr NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return NotNoexceptCopy{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ friend constexpr int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  TEST_FUNC friend constexpr int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return lhs.value_ - rhs.value_;
   }
 
-  __host__ __device__ constexpr NotNoexceptCopy& operator++()
+  TEST_FUNC constexpr NotNoexceptCopy& operator++()
   {
     ++value_;
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++value_;
   }
 };
 
-template <class T>
-__host__ __device__ constexpr void testType()
+template <class Iter>
+TEST_FUNC constexpr void testType()
 {
+  using T = typename Iter::value_type;
   {
-    cuda::counting_iterator<T> iter{T{0}};
+    Iter iter{T{0}};
     for (int i = 0; i < 100; ++i, ++iter)
     {
       assert(*iter == T(i));
@@ -90,7 +91,7 @@ __host__ __device__ constexpr void testType()
     static_assert(cuda::std::is_same_v<decltype(*iter), T>);
   }
   {
-    cuda::counting_iterator<T> iter{T{10}};
+    Iter iter{T{10}};
     for (int i = 10; i < 100; ++i, ++iter)
     {
       assert(*iter == T(i));
@@ -100,30 +101,45 @@ __host__ __device__ constexpr void testType()
   }
 
   {
-    const cuda::counting_iterator<T> iter{T{0}};
+    const Iter iter{T{0}};
     assert(*iter == T(0));
     static_assert(noexcept(*iter) == !cuda::std::same_as<T, NotNoexceptCopy>);
     static_assert(cuda::std::is_same_v<decltype(*iter), T>);
   }
 
   {
-    const cuda::counting_iterator<T> iter{T{42}};
+    const Iter iter{T{42}};
     assert(*iter == T(42));
     static_assert(noexcept(*iter) == !cuda::std::same_as<T, NotNoexceptCopy>);
     static_assert(cuda::std::is_same_v<decltype(*iter), T>);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
-  testType<SomeInt>();
-  testType<NotNoexceptCopy>();
-  testType<signed long>();
-  testType<unsigned long>();
-  testType<int>();
-  testType<unsigned>();
-  testType<short>();
-  testType<unsigned short>();
+  testType<cuda::counting_iterator<SomeInt>>();
+  testType<cuda::counting_iterator<SomeInt, cuda::std::int16_t>>();
+
+  testType<cuda::counting_iterator<NotNoexceptCopy>>();
+  testType<cuda::counting_iterator<NotNoexceptCopy, cuda::std::int16_t>>();
+
+  testType<cuda::counting_iterator<signed long>>();
+  testType<cuda::counting_iterator<signed long, cuda::std::int8_t>>();
+
+  testType<cuda::counting_iterator<unsigned long>>();
+  testType<cuda::counting_iterator<unsigned long, cuda::std::int8_t>>();
+
+  testType<cuda::counting_iterator<int>>();
+  testType<cuda::counting_iterator<int, cuda::std::int8_t>>();
+
+  testType<cuda::counting_iterator<unsigned>>();
+  testType<cuda::counting_iterator<unsigned, cuda::std::int8_t>>();
+
+  testType<cuda::counting_iterator<short>>();
+  testType<cuda::counting_iterator<short, cuda::std::int8_t>>();
+
+  testType<cuda::counting_iterator<unsigned short>>();
+  testType<cuda::counting_iterator<unsigned short, cuda::std::int8_t>>();
 
   return true;
 }
@@ -131,7 +147,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

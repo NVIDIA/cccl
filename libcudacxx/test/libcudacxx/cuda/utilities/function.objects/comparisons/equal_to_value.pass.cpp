@@ -23,14 +23,14 @@ struct ComparisonObject
 {
   int value;
 
-  __host__ __device__ constexpr friend bool operator==(const ComparisonObject& lhs, const ComparisonObject& rhs)
+  TEST_FUNC constexpr friend bool operator==(const ComparisonObject& lhs, const ComparisonObject& rhs)
   {
     return lhs.value == rhs.value;
   }
 };
 
 // Test suit for numeric types
-__host__ __device__ constexpr void test_numeric_types()
+TEST_FUNC constexpr void test_numeric_types()
 {
   // integral values
   {
@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_numeric_types()
 }
 
 // Test suit for heterogeneous comparisons
-__host__ __device__ constexpr void test_heterogeneous_comparisons()
+TEST_FUNC constexpr void test_heterogeneous_comparisons()
 {
   const cuda::equal_to_value<int> eq{42};
   assert(eq(42.0) == true);
@@ -64,7 +64,7 @@ __host__ __device__ constexpr void test_heterogeneous_comparisons()
 }
 
 // Test suit for user-defined types
-__host__ __device__ constexpr void test_user_defined_types()
+TEST_FUNC constexpr void test_user_defined_types()
 {
   const ComparisonObject a{42};
   const ComparisonObject b{42};
@@ -77,7 +77,7 @@ __host__ __device__ constexpr void test_user_defined_types()
 }
 
 // Test suit for CTAD
-__host__ __device__ constexpr void test_ctad()
+TEST_FUNC constexpr void test_ctad()
 {
   // built-in types
   const cuda::equal_to_value eq{42};
@@ -94,7 +94,7 @@ __host__ __device__ constexpr void test_ctad()
 }
 
 // Run all test suits
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_numeric_types();
   test_heterogeneous_comparisons();

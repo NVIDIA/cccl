@@ -12,7 +12,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -63,7 +63,8 @@ type_pair<custom_t>
 
 using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
 
-C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][device]", full_type_list, offsets)
+CUB_TEST(
+  "Device reduce works with all device interfaces", "[segmented][reduce][device]", CUB_SMALL, full_type_list, offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using input_t     = typename type_pair_t::input_t;
@@ -114,10 +115,16 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_segmented_reduce(
-      unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, d_offsets_it, d_offsets_it + 1, reduction_op, init_t{});
+      unwrap_it(d_in_it),
+      unwrap_it(d_out_it),
+      num_segments,
+      d_offsets_it,
+      d_offsets_it + 1,
+      reduction_op,
+      init_value_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -216,8 +223,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   }
 }
 
-C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
+CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
          "[segmented][reduce][device]",
+         CUB_SMALL,
          full_type_list)
 {
   using type_pair_t    = typename c2h::get<0, TestType>;
@@ -265,8 +273,8 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    using init_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    init_t init  = static_cast<init_t>(*unwrap_it(&default_constant));
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    init_value_t init  = static_cast<init_value_t>(*unwrap_it(&default_constant));
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);

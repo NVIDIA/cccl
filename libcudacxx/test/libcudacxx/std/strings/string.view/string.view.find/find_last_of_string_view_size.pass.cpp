@@ -18,7 +18,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_find_last_of(const SV& sv, const SV& str, typename SV::size_type x)
+TEST_FUNC constexpr void test_find_last_of(const SV& sv, const SV& str, typename SV::size_type x)
 {
   assert(sv.find_last_of(str) == x);
   if (x != SV::npos)
@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test_find_last_of(const SV& sv, const SV& str
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_find_last_of(const SV& sv, const SV& str, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find_last_of(str, pos) == x);
@@ -44,7 +44,7 @@ test_find_last_of(const SV& sv, const SV& str, typename SV::size_type pos, typen
                     __VA_ARGS__)
 
 template <class SV>
-__host__ __device__ constexpr void test_find_last_of()
+TEST_FUNC constexpr void test_find_last_of()
 {
   using SizeT = typename SV::size_type;
 
@@ -155,7 +155,7 @@ __host__ __device__ constexpr void test_find_last_of()
   TEST_FIND_LAST_OF(SV, "lecfratdjkhnsmqpoigb", "tpflmdnoicjgkberhqsa", 21, 19);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find_last_of<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

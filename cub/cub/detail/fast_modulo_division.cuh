@@ -102,13 +102,12 @@ multiply_extract_higher_bits(T value, R multiplier)
   using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
   using larger_t               = larger_unsigned_type_t<DivisorType>;
   // clang-format off
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
       (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);),
-    //NV_IS_DEVICE
-      (return (sizeof(T) == 8)
+      ({return (sizeof(T) == 8)
         ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
-        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);));
+        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);}));
   // clang-format on
 }
 
@@ -161,7 +160,7 @@ public:
     _CCCL_ASSERT(static_cast<size_t>(num_bits + BitSize - BitOffset) < sizeof(larger_t) * CHAR_BIT, "overflow error");
     // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::is_power_of_two(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
-                                                           static_cast<larger_t>(divisor)));
+                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
     _CCCL_ASSERT(_multiplier != 0, "overflow error");
   }

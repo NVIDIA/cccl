@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr bool test_fp_exp_mask(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC constexpr bool test_fp_exp_mask(cuda::std::__fp_storage_t<Fmt> expected)
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 

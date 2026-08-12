@@ -19,7 +19,7 @@
 
 #if TEST_CUDA_COMPILER(NVCC) || TEST_CUDA_COMPILER(CLANG) || TEST_COMPILER(NVRTC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   constexpr int arch_val = _CCCL_PTX_ARCH();
 
@@ -93,8 +93,7 @@ __host__ __device__ void test()
   NV_DISPATCH_TARGET(NV_IS_DEVICE, static_assert(arch_val != 0, "cuda arch expected !0");
                      , NV_IS_HOST, static_assert(arch_val == 0, "cuda arch expected 0");)
 
-  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");
-                     , NV_ANY_TARGET, static_assert(arch_val == arch_val, "");)
+  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");, NV_ANY_TARGET, static_assert(arch_val == arch_val);)
 
   NV_IF_TARGET(NV_IS_HOST, printf("Host success\r\n");, printf("Device success\r\n");)
 
@@ -108,7 +107,7 @@ __host__ __device__ void test()
 
 #elif TEST_CUDA_COMPILER(NVHPC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   int invoke_count = 0;
 
@@ -260,8 +259,7 @@ void test()
   NV_DISPATCH_TARGET(NV_IS_DEVICE, static_assert(arch_val != 0, "cuda arch expected !0");
                      , NV_IS_HOST, static_assert(arch_val == 0, "cuda arch expected 0");)
 
-  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");
-                     , NV_ANY_TARGET, static_assert(arch_val == arch_val, "");)
+  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");, NV_ANY_TARGET, static_assert(arch_val == arch_val);)
 
   NV_IF_TARGET(NV_IS_HOST, printf("Host success\r\n");, printf("Device success\r\n");)
 

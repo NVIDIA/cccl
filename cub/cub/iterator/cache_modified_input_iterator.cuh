@@ -25,13 +25,10 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -107,13 +104,13 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
   using iterator_category = ::cuda::std::random_access_iterator_tag;
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ // vvv _CCCL_HOSTED() vvv
   using iterator_category =
     THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
                                                             THRUST_NS_QUALIFIER::random_access_traversal_tag>;
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 public:
   /// Wrapped native pointer
@@ -210,12 +207,12 @@ public:
   }
 
   /// ostream operator
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 namespace detail

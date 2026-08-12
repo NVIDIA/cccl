@@ -36,7 +36,7 @@ template <typename Upstream>
 struct synchronized_pool_resource : public memory_resource<typename Upstream::pointer>
 {
   using unsync_pool = unsynchronized_pool_resource<Upstream>;
-  using lock_t      = std::lock_guard<std::mutex>;
+  using lock_t      = std::scoped_lock<std::mutex>;
 
   using void_ptr = typename Upstream::pointer;
 
@@ -75,14 +75,13 @@ public:
     upstream_pool.release();
   }
 
-  [[nodiscard]] virtual void_ptr
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     lock_t lock(mtx);
     return upstream_pool.do_allocate(bytes, alignment);
   }
 
-  virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     lock_t lock(mtx);
     upstream_pool.do_deallocate(p, n, alignment);

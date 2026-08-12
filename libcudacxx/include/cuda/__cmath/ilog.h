@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +23,6 @@
 
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -38,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ilog2(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilog2(const _Tp __t) noexcept
 {
   using _Up = ::cuda::std::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
@@ -49,13 +48,13 @@ _CCCL_API constexpr int ilog2(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ceil_ilog2(const _Tp __t) noexcept
 {
   using _Up = ::cuda::std::make_unsigned_t<_Tp>;
   return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<uint32_t, 10> __power_of_10_32bit() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint32_t, 10> __power_of_10_32bit() noexcept
 {
   return {10,
           100,
@@ -66,10 +65,10 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
           10'000'000,
           100'000'000,
           1'000'000'000,
-          ::cuda::std::numeric_limits<uint32_t>::max()};
+          ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()};
 }
 
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<uint64_t, 20> __power_of_10_64bit() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint64_t, 20> __power_of_10_64bit() noexcept
 {
   return {
     10,
@@ -91,12 +90,12 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
     100'000'000'000'000'000,
     1'000'000'000'000'000'000,
     10'000'000'000'000'000'000ull,
-    ::cuda::std::numeric_limits<uint64_t>::max()};
+    ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()};
 }
 
 #if _CCCL_HAS_INT128()
 
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<__uint128_t, 39> __power_of_10_128bit() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<__uint128_t, 39> __power_of_10_128bit() noexcept
 {
   return {
     10,
@@ -143,11 +142,13 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ilog10(_Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilog10(const _Tp __t) noexcept
 {
-  _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");
+  using ::cuda::std::uint32_t;
+  using ::cuda::std::uint64_t;
+  _CCCL_ASSERT(__t > 0, "cuda::ilog10() argument must be strictly positive");
   constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
-  auto __log2                         = ::cuda::ilog2(__t) * __reciprocal_log2_10;
+  const auto __log2                   = ::cuda::ilog2(__t) * __reciprocal_log2_10;
   auto __log10_approx                 = static_cast<int>(__log2);
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
@@ -185,6 +186,14 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
 #endif // _CCCL_HAS_INT128()
   _CCCL_ASSUME(__log10_approx <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
   return __log10_approx;
+}
+
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr int ceil_ilog10(const _Tp __t) noexcept
+{
+  _CCCL_ASSERT(__t > 0, "cuda::ceil_ilog10() argument must be strictly positive");
+  return __t == 1 ? 0 : ::cuda::ilog10(static_cast<_Tp>(__t - 1)) + 1;
 }
 
 _CCCL_END_NAMESPACE_CUDA

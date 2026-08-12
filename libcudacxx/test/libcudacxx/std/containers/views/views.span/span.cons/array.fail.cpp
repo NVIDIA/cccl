@@ -26,10 +26,10 @@
 
 #include "test_macros.h"
 
-__device__ int arr[]                  = {1, 2, 3};
-__device__ const int carr[]           = {4, 5, 6};
-__device__ volatile int varr[]        = {7, 8, 9};
-__device__ const volatile int cvarr[] = {1, 3, 5};
+TEST_GLOBAL_VARIABLE int arr[]                  = {1, 2, 3};
+TEST_GLOBAL_VARIABLE const int carr[]           = {4, 5, 6};
+TEST_GLOBAL_VARIABLE volatile int varr[]        = {7, 8, 9};
+TEST_GLOBAL_VARIABLE const volatile int cvarr[] = {1, 3, 5};
 
 int main(int, char**)
 {

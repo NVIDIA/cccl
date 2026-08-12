@@ -25,13 +25,15 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T>
 struct less_than
 {
   T value_;
-  __device__ constexpr bool operator()(const T& value) const noexcept
+  TEST_DEVICE_FUNC constexpr bool operator()(const T& value) const noexcept
   {
     return value < value_;
   }

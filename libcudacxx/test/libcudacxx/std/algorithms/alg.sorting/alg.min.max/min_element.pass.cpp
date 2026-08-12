@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test(const int (&input_data)[num_elements])
+TEST_FUNC constexpr void test(const int (&input_data)[num_elements])
 {
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test(const int (&input_data)[num_elements])
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int input_data[num_elements] = INPUT_DATA;
   test<forward_iterator<const int*>>(input_data);
@@ -50,13 +50,20 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>>(input_data);
   test<const int*>(input_data);
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>(input_data);))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>(input_data);))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

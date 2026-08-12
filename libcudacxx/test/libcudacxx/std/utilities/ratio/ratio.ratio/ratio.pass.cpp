@@ -11,11 +11,13 @@
 
 #include <cuda/std/ratio>
 
+#include "test_macros.h"
+
 template <long long N, long long D, long long eN, long long eD>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  static_assert((cuda::std::ratio<N, D>::num == eN), "");
-  static_assert((cuda::std::ratio<N, D>::den == eD), "");
+  static_assert((cuda::std::ratio<N, D>::num == eN));
+  static_assert((cuda::std::ratio<N, D>::den == eD));
 }
 
 int main(int, char**)

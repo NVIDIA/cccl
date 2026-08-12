@@ -9,6 +9,9 @@
 // UNSUPPORTED: c++17
 // XFAIL: dylib-has-no-filesystem
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // File clock is unsupported in NVRTC
 // UNSUPPORTED: nvrtc
 
@@ -23,7 +26,7 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value, "");
+  static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value);
   assert(cuda::std::chrono::file_clock::duration::min() < cuda::std::chrono::file_clock::duration::zero());
 
   return 0;

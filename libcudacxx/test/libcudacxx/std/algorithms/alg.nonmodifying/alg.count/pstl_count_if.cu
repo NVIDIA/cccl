@@ -32,7 +32,7 @@ inline constexpr int size = 1000;
 
 struct equal_to_42
 {
-  __host__ __device__ constexpr bool operator()(const int& val) const noexcept
+  TEST_FUNC constexpr bool operator()(const int& val) const noexcept
   {
     return val == 42;
   }

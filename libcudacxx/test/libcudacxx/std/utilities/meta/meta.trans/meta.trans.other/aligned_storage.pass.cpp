@@ -26,163 +26,163 @@ int main(int, char**)
   {
     using T1 = cuda::std::aligned_storage<10, 1>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 1>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 1, "");
-    static_assert(sizeof(T1) == 10, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 1);
+    static_assert(sizeof(T1) == 10);
   }
   {
     using T1 = cuda::std::aligned_storage<10, 2>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 2>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 2, "");
-    static_assert(sizeof(T1) == 10, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 2);
+    static_assert(sizeof(T1) == 10);
   }
   {
     using T1 = cuda::std::aligned_storage<10, 4>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 4>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 4, "");
-    static_assert(sizeof(T1) == 12, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 4);
+    static_assert(sizeof(T1) == 12);
   }
   {
     using T1 = cuda::std::aligned_storage<10, 8>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 8>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 8, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 8);
+    static_assert(sizeof(T1) == 16);
   }
   {
     using T1 = cuda::std::aligned_storage<10, 16>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 16>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 16, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 16);
+    static_assert(sizeof(T1) == 16);
   }
   {
     using T1 = cuda::std::aligned_storage<10, 32>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10, 32>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 32, "");
-    static_assert(sizeof(T1) == 32, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 32);
+    static_assert(sizeof(T1) == 32);
   }
   {
     using T1 = cuda::std::aligned_storage<20, 32>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<20, 32>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 32, "");
-    static_assert(sizeof(T1) == 32, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 32);
+    static_assert(sizeof(T1) == 32);
   }
   {
     using T1 = cuda::std::aligned_storage<40, 32>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<40, 32>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 32, "");
-    static_assert(sizeof(T1) == 64, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 32);
+    static_assert(sizeof(T1) == 64);
   }
   {
     using T1 = cuda::std::aligned_storage<12, 16>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<12, 16>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 16, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 16);
+    static_assert(sizeof(T1) == 16);
   }
   {
     using T1 = cuda::std::aligned_storage<1>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<1>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 1, "");
-    static_assert(sizeof(T1) == 1, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 1);
+    static_assert(sizeof(T1) == 1);
   }
   {
     using T1 = cuda::std::aligned_storage<2>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<2>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 2, "");
-    static_assert(sizeof(T1) == 2, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 2);
+    static_assert(sizeof(T1) == 2);
   }
   {
     using T1 = cuda::std::aligned_storage<3>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<3>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 2, "");
-    static_assert(sizeof(T1) == 4, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 2);
+    static_assert(sizeof(T1) == 4);
   }
   {
     using T1 = cuda::std::aligned_storage<4>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<4>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 4, "");
-    static_assert(sizeof(T1) == 4, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 4);
+    static_assert(sizeof(T1) == 4);
   }
   {
     using T1 = cuda::std::aligned_storage<5>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<5>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 4, "");
-    static_assert(sizeof(T1) == 8, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 4);
+    static_assert(sizeof(T1) == 8);
   }
   {
     using T1 = cuda::std::aligned_storage<7>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<7>>);
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 4, "");
-    static_assert(sizeof(T1) == 8, "");
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 4);
+    static_assert(sizeof(T1) == 8);
   }
   {
     using T1 = cuda::std::aligned_storage<8>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<8>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 8, "");
-    static_assert(sizeof(T1) == 8, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 8);
+    static_assert(sizeof(T1) == 8);
   }
   {
     using T1 = cuda::std::aligned_storage<9>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<9>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 8, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 8);
+    static_assert(sizeof(T1) == 16);
   }
   {
     using T1 = cuda::std::aligned_storage<15>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<15>>);
-    static_assert(cuda::std::is_pod<T1>::value, "");
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 8, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_pod<T1>::value);
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 8);
+    static_assert(sizeof(T1) == 16);
   }
   // Use alignof(cuda::std::max_align_t) below to find the max alignment instead of
   // hardcoding it, because it's different on different platforms.
@@ -190,36 +190,36 @@ int main(int, char**)
   {
     using T1 = cuda::std::aligned_storage<16>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<16>>);
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t), "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t));
+    static_assert(sizeof(T1) == 16);
   }
   {
     using T1 = cuda::std::aligned_storage<17>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<17>>);
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t), "");
-    static_assert(sizeof(T1) == 16 + alignof(cuda::std::max_align_t), "");
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == alignof(cuda::std::max_align_t));
+    static_assert(sizeof(T1) == 16 + alignof(cuda::std::max_align_t));
   }
   {
     using T1 = cuda::std::aligned_storage<10>::type;
     static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_storage_t<10>>);
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == 8, "");
-    static_assert(sizeof(T1) == 16, "");
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == 8);
+    static_assert(sizeof(T1) == 16);
   }
 // NVCC doesn't support types that are _this_ overaligned, it seems
 #if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
   {
     const int Align = 65536;
     using T1        = typename cuda::std::aligned_storage<1, Align>::type;
-    static_assert(cuda::std::is_trivial<T1>::value, "");
-    static_assert(cuda::std::is_standard_layout<T1>::value, "");
-    static_assert(cuda::std::alignment_of<T1>::value == Align, "");
-    static_assert(sizeof(T1) == Align, "");
+    static_assert(cuda::std::is_trivial<T1>::value);
+    static_assert(cuda::std::is_standard_layout<T1>::value);
+    static_assert(cuda::std::alignment_of<T1>::value == Align);
+    static_assert(sizeof(T1) == Align);
   }
 #endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
 

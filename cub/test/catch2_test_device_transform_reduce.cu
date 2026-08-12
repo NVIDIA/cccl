@@ -9,7 +9,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -28,10 +28,10 @@ struct square_t
   }
 };
 
-C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", types)
+CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", CUB_SMALL, types)
 {
   using item_t         = c2h::get<0, TestType>;
-  using init_t         = item_t;
+  using init_value_t   = item_t;
   using offset_t       = std::int32_t;
   using reduction_op_t = cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
@@ -75,10 +75,10 @@ C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   }
 }
 
-C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", types)
+CUB_TEST("Device transform reduce works with iterators", "[reduce][device]", CUB_SMALL, types)
 {
   using item_t         = c2h::get<0, TestType>;
-  using init_t         = item_t;
+  using init_value_t   = item_t;
   using offset_t       = std::int32_t;
   using reduction_op_t = cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
@@ -92,7 +92,7 @@ C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   c2h::device_vector<item_t> in(num_items, magic_val);
   c2h::device_vector<item_t> out(1);
 
-  device_transform_reduce(in.begin(), out.begin(), num_items, reduction_op_t{}, transform_op_t{}, init_t{});
+  device_transform_reduce(in.begin(), out.begin(), num_items, reduction_op_t{}, transform_op_t{}, init_value_t{});
 
   const item_t expected = num_items * magic_val * magic_val;
   const item_t actual   = out[0];
@@ -113,7 +113,7 @@ struct transformed_input_t
   std::uint64_t b;
 };
 
-struct init_t
+struct init_value_t
 {
   char a;
   char b;
@@ -134,7 +134,7 @@ struct accum_t
       , b{other.b}
   {}
 
-  __host__ __device__ accum_t(const init_t& other)
+  __host__ __device__ accum_t(const init_value_t& other)
       : a{static_cast<std::uint64_t>(other.a)}
       , b{static_cast<std::uint64_t>(other.b)}
   {}
@@ -162,7 +162,7 @@ struct output_t
       , b{other.b}
   {}
 
-  __host__ __device__ output_t(const init_t& other)
+  __host__ __device__ output_t(const init_value_t& other)
       : a{static_cast<std::uint64_t>(other.a)}
       , b{static_cast<std::uint64_t>(other.b)}
   {}
@@ -187,14 +187,14 @@ struct reduction_op_t
   }
 };
 
-C2H_TEST("Device transform reduce doesn't let input type into reduction op", "[reduce][device]")
+CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[reduce][device]", CUB_SMALL)
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
-  const init_t init{3, 3};
+  const init_value_t init{3, 3};
   const input_t magic_val{2, 2};
 
   c2h::device_vector<input_t> in(num_items, magic_val);
@@ -205,7 +205,7 @@ C2H_TEST("Device transform reduce doesn't let input type into reduction op", "[r
 
   device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, init);
 
-  const std::uint64_t expected = num_items * magic_val.a * magic_val.a + init.a;
+  const std::uint64_t expected = static_cast<std::uint64_t>(num_items) * magic_val.a * magic_val.a + init.a;
   const output_t actual        = out[0];
 
   INFO("num_items: " << num_items);

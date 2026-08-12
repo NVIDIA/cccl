@@ -29,7 +29,7 @@
 using month  = cuda::std::chrono::month;
 using months = cuda::std::chrono::months;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(noexcept(cuda::std::declval<month>() - cuda::std::declval<months>()));
   static_assert(noexcept(cuda::std::declval<month>() - cuda::std::declval<month>()));

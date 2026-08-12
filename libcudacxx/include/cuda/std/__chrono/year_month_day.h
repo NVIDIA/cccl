@@ -53,8 +53,8 @@ private:
   // https://howardhinnant.github.io/date_algorithms.html#days_from_civil
   [[nodiscard]] _CCCL_API constexpr days __to_days() const noexcept
   {
-    static_assert(cuda::std::numeric_limits<unsigned>::digits >= 18, "");
-    static_assert(cuda::std::numeric_limits<int>::digits >= 20, "");
+    static_assert(cuda::std::numeric_limits<unsigned>::digits >= 18);
+    static_assert(cuda::std::numeric_limits<int>::digits >= 20);
 
     // nvcc doesn't allow ODR using constexpr globals. Therefore,
     // make a temporary initialized from the global
@@ -75,8 +75,8 @@ private:
   // https://howardhinnant.github.io/date_algorithms.html#civil_from_days
   [[nodiscard]] _CCCL_API static constexpr year_month_day __from_days(days __d) noexcept
   {
-    static_assert(cuda::std::numeric_limits<unsigned>::digits >= 18, "");
-    static_assert(cuda::std::numeric_limits<int>::digits >= 20, "");
+    static_assert(cuda::std::numeric_limits<unsigned>::digits >= 18);
+    static_assert(cuda::std::numeric_limits<int>::digits >= 20);
     const int __z        = __d.count() + 719468;
     const int __era      = (__z >= 0 ? __z : __z - 146096) / 146097;
     const unsigned __doe = static_cast<unsigned>(__z - __era * 146097); // [0, 146096]

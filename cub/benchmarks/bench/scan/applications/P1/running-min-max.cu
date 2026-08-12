@@ -189,15 +189,13 @@ void validate(const thrust::device_vector<ValueT>& input,
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using wrapped_init_t = cub::NullType;
-  using value_t        = T;
-  using pair_t         = impl::min_max_t<value_t>;
-  using op_t           = impl::scan_op;
-  using accum_t        = pair_t;
-  using input_raw_t    = const value_t*;
-  using input_it_t     = cuda::transform_iterator<impl::embed_op<value_t>, input_raw_t>;
-  using output_it_t    = pair_t*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using value_t                  = T;
+  using pair_t                   = impl::min_max_t<value_t>;
+  using op_t                     = impl::scan_op;
+  using accum_t [[maybe_unused]] = pair_t;
+  using input_raw_t              = const value_t*;
+  using input_it_t               = cuda::transform_iterator<impl::embed_op<value_t>, input_raw_t>;
+  using output_it_t              = pair_t*;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
@@ -213,46 +211,28 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<value_t>(elements, "Size");
   state.add_global_memory_writes<pair_t>(elements);
 
-  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
-
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    inp_it,
-    d_output,
-    op_t{},
-    wrapped_init_t{},
-    input.size(),
-    bench_stream
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      d_tmp,
-      tmp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
       inp_it,
       d_output,
       op_t{},
-      wrapped_init_t{},
-      input.size(),
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-    );
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 
   // for verification use
-  // impl::validate(input, output, bench_stream);
+  // impl::validate(input, output, state.get_cuda_stream().get_stream());
 }
 
 #ifdef TUNE_T

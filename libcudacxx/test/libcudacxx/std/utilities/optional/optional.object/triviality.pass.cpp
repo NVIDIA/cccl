@@ -27,7 +27,7 @@
 #include "archetypes.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool implies(bool p, bool q)
+TEST_FUNC constexpr bool implies(bool p, bool q)
 {
   return !p || q;
 }
@@ -45,8 +45,8 @@ struct SpecialMemberTest
                         cuda::std::is_trivially_move_constructible_v<O>),
                 "optional<T> is trivially move constructible if T is trivially move constructible");
 
-  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T> && cuda::std::is_trivially_copy_assignable_v<T>
-                          && cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T>&& cuda::std::is_trivially_copy_assignable_v<T>&&
+                          cuda::std::is_trivially_destructible_v<T>,
 
                         cuda::std::is_trivially_copy_assignable_v<O>),
                 "optional<T> is trivially copy assignable if T is "
@@ -54,8 +54,8 @@ struct SpecialMemberTest
                 "trivially copy assignable, and "
                 "trivially destructible");
 
-  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T> && cuda::std::is_trivially_move_assignable_v<T>
-                          && cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T>&& cuda::std::is_trivially_move_assignable_v<T>&&
+                          cuda::std::is_trivially_destructible_v<T>,
 
                         cuda::std::is_trivially_move_assignable_v<O>),
                 "optional<T> is trivially move assignable if T is "
@@ -71,13 +71,13 @@ struct SpecialMemberTest
 };
 
 template <class... Args>
-__host__ __device__ static void sink(Args&&...)
+TEST_FUNC static void sink(Args&&...)
 {}
 
 template <class... TestTypes>
 struct DoTestsMetafunction
 {
-  __host__ __device__ DoTestsMetafunction()
+  TEST_FUNC DoTestsMetafunction()
   {
     sink(SpecialMemberTest<TestTypes>{}...);
   }
@@ -86,9 +86,9 @@ struct DoTestsMetafunction
 struct TrivialMoveNonTrivialCopy
 {
   TrivialMoveNonTrivialCopy() = default;
-  __host__ __device__ TrivialMoveNonTrivialCopy(const TrivialMoveNonTrivialCopy&) {}
+  TEST_FUNC TrivialMoveNonTrivialCopy(const TrivialMoveNonTrivialCopy&) {}
   TrivialMoveNonTrivialCopy(TrivialMoveNonTrivialCopy&&) = default;
-  __host__ __device__ TrivialMoveNonTrivialCopy& operator=(const TrivialMoveNonTrivialCopy&)
+  TEST_FUNC TrivialMoveNonTrivialCopy& operator=(const TrivialMoveNonTrivialCopy&)
   {
     return *this;
   }
@@ -99,9 +99,9 @@ struct TrivialCopyNonTrivialMove
 {
   TrivialCopyNonTrivialMove()                                 = default;
   TrivialCopyNonTrivialMove(const TrivialCopyNonTrivialMove&) = default;
-  __host__ __device__ TrivialCopyNonTrivialMove(TrivialCopyNonTrivialMove&&) {}
+  TEST_FUNC TrivialCopyNonTrivialMove(TrivialCopyNonTrivialMove&&) {}
   TrivialCopyNonTrivialMove& operator=(const TrivialCopyNonTrivialMove&) = default;
-  __host__ __device__ TrivialCopyNonTrivialMove& operator=(TrivialCopyNonTrivialMove&&)
+  TEST_FUNC TrivialCopyNonTrivialMove& operator=(TrivialCopyNonTrivialMove&&)
   {
     return *this;
   }

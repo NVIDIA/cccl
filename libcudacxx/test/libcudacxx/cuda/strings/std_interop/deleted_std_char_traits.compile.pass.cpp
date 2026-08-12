@@ -35,64 +35,64 @@ struct cuda::std::char_traits<MyChar>
   using char_type = MyChar;
   using int_type  = typename base::int_type;
 
-  __host__ __device__ static constexpr void assign(char_type& __lhs, const char_type& __rhs) noexcept
+  TEST_FUNC static constexpr void assign(char_type& __lhs, const char_type& __rhs) noexcept
   {
     __lhs = __rhs;
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr bool eq(char_type __lhs, char_type __rhs) noexcept
+  [[nodiscard]] TEST_FUNC static constexpr bool eq(char_type __lhs, char_type __rhs) noexcept
   {
     return __lhs == __rhs;
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr bool lt(char_type __lhs, char_type __rhs) noexcept
+  [[nodiscard]] TEST_FUNC static constexpr bool lt(char_type __lhs, char_type __rhs) noexcept
   {
     return static_cast<unsigned char>(__lhs) < static_cast<unsigned char>(__rhs);
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr int
+  [[nodiscard]] TEST_FUNC static constexpr int
   compare(const char_type* __lhs, const char_type* __rhs, size_t __count) noexcept
   {
     return ::cuda::std::__cccl_memcmp(__lhs, __rhs, __count);
   }
 
-  [[nodiscard]] __host__ __device__ inline static size_t constexpr length(const char_type* __s) noexcept
+  [[nodiscard]] TEST_FUNC inline static size_t constexpr length(const char_type* __s) noexcept
   {
     return ::cuda::std::__cccl_strlen(__s);
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr const char_type*
+  [[nodiscard]] TEST_FUNC static constexpr const char_type*
   find(const char_type* __s, size_t __n, const char_type& __a) noexcept
   {
     return ::cuda::std::__cccl_memchr<const char_type>(__s, __a, __n);
   }
 
-  __host__ __device__ static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
+  TEST_FUNC static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     return ::cuda::std::__cccl_memmove(__s1, __s2, __n);
   }
 
-  __host__ __device__ static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
+  TEST_FUNC static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     return ::cuda::std::__cccl_memcpy(__s1, __s2, __n);
   }
 
-  __host__ __device__ static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
+  TEST_FUNC static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
   {
     return ::cuda::std::__cccl_memset(__s, __a, __n);
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr char_type to_char_type(int_type __c) noexcept
+  [[nodiscard]] TEST_FUNC static constexpr char_type to_char_type(int_type __c) noexcept
   {
     return char_type(__c);
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr int_type to_int_type(char_type __c) noexcept
+  [[nodiscard]] TEST_FUNC static constexpr int_type to_int_type(char_type __c) noexcept
   {
     return int_type(static_cast<unsigned char>(__c));
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr bool eq_int_type(int_type __lhs, int_type __rhs) noexcept
+  [[nodiscard]] TEST_FUNC static constexpr bool eq_int_type(int_type __lhs, int_type __rhs) noexcept
   {
     return __lhs == __rhs;
   }

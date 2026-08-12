@@ -22,23 +22,25 @@
 
 #if _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
 
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__internal/dlpack.h>
-#  include <cuda/__memory/is_aligned.h>
-#  include <cuda/__memory/is_pointer_accessible.h>
-#  include <cuda/devices> // sub headers cause circular dependency
-#  include <cuda/std/__algorithm/min.h>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__utility/unreachable.h>
-#  include <cuda/std/array>
-#  include <cuda/std/cstdint>
-#  include <cuda/std/span>
 
-#  include <driver_types.h>
+#  if _CCCL_HAS_DLPACK_VERSION_1()
+#    include <cuda/__driver/driver_api.h>
+#    include <cuda/__memory/is_aligned.h>
+#    include <cuda/__memory/is_pointer_accessible.h>
+#    include <cuda/devices> // sub headers cause circular dependency
+#    include <cuda/std/__algorithm/min.h>
+#    include <cuda/std/__cstddef/types.h>
+#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__host_stdlib/stdexcept>
+#    include <cuda/std/__utility/unreachable.h>
+#    include <cuda/std/array>
+#    include <cuda/std/cstdint>
+#    include <cuda/std/span>
 
-#  include <cuda/std/__cccl/prologue.h>
+#    include <driver_types.h>
+
+#    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -73,11 +75,11 @@ enum class tma_swizzle
   bytes32  = ::CU_TENSOR_MAP_SWIZZLE_32B,
   bytes64  = ::CU_TENSOR_MAP_SWIZZLE_64B,
   bytes128 = ::CU_TENSOR_MAP_SWIZZLE_128B,
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
   bytes128_atom_32B         = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B,
   bytes128_atom_32B_flip_8B = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B_FLIP_8B,
   bytes128_atom_64B         = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B,
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
 
 /***********************************************************************************************************************
@@ -143,14 +145,14 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
       return ::CU_TENSOR_MAP_SWIZZLE_64B;
     case tma_swizzle::bytes128:
       return ::CU_TENSOR_MAP_SWIZZLE_128B;
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
     case tma_swizzle::bytes128_atom_32B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B;
     case tma_swizzle::bytes128_atom_32B_flip_8B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B_FLIP_8B;
     case tma_swizzle::bytes128_atom_64B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B;
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
       ::cuda::std::unreachable();
   }
@@ -174,13 +176,13 @@ _CCCL_HOST_API inline void __check_device(const ::DLTensor& __tensor, tma_swizzl
   }
   if (__compute_capability == 9)
   {
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
     if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
         || __swizzle == tma_swizzle::bytes128_atom_64B)
     {
       _CCCL_THROW(::std::invalid_argument, "tma_swizzle::bytes128_atom* are not supported with compute capability 9");
     }
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
     if (__tensor.dtype.code == ::kDLUInt && __tensor.dtype.bits == 4 && __tensor.dtype.lanes == 16)
     {
       _CCCL_THROW(::std::invalid_argument, "U4x16 is not supported with compute capability 9");
@@ -220,11 +222,11 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill)
           {
             _CCCL_THROW(::std::invalid_argument, "uint4 data type must be 16 lanes");
           }
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
           return ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
-#  else
+#    else
           _CCCL_THROW(::std::invalid_argument, "U4x16 is not supported for compute capability 9");
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
         }
         case 8:
           if (__tensor.dtype.lanes != 1)
@@ -301,11 +303,11 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill)
       {
         _CCCL_THROW(::std::invalid_argument, "Float4_e2m1fn data type must be 4 bits");
       }
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
       return ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
-#  else
+#    else
       _CCCL_THROW(::std::invalid_argument, "U4x16 (Float4_e2m1fn) is not supported for compute capability 9");
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
       _CCCL_THROW(::std::invalid_argument, "Unsupported data type");
   }
@@ -323,7 +325,7 @@ __get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interl
   }
   if (__interleave_layout != tma_interleave_layout::none)
   {
-    if (__rank <= 3)
+    if (__rank <= 2)
     {
       _CCCL_THROW(::std::invalid_argument,
                   "tensor.ndim (rank) must be greater than or equal to 3 for interleaved layout");
@@ -347,10 +349,8 @@ __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interle
   {
     _CCCL_THROW(::std::invalid_argument, "tensor.data (address) is not sufficiently aligned");
   }
-  if (!::cuda::is_device_accessible(__address, __tensor.device.device_id))
-  {
-    _CCCL_THROW(::std::invalid_argument, "Address is not a valid GPU global address");
-  }
+  _CCCL_ASSERT(::cuda::is_device_accessible(__address, __tensor.device.device_id),
+               "Address is not a valid GPU global address");
   return static_cast<void*>(__address);
 }
 
@@ -370,7 +370,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   {
     _CCCL_THROW(::std::invalid_argument, "__tensor.shape is null");
   }
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
   if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B)
   {
     if (__tensor_sizes[__rank - 1] % 2 != 0)
@@ -379,7 +379,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
                   "The innermost tensor dimension size must be a multiple of 2 for U4x16 or Float4_e2m1fn");
     }
   }
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
   for (int __i = 0; __i < __rank; ++__i)
   {
     constexpr auto __max_allowed_size = int64_t{1} << 32; // 2^32
@@ -411,9 +411,9 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   [[maybe_unused]] int64_t __cumulative_size = 1;
   if (__input_strides == nullptr)
   {
-#  if _CCCL_DLPACK_AT_LEAST(1, 2)
+#    if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument, "__tensor.strides=nullptr is not supported for DLPack v1.2 and later");
-#  else // ^^^ _CCCL_DLPACK_AT_LEAST(1, 2) ^^^ / vvv _CCCL_DLPACK_BELOW(1, 2) vvv
+#    else // ^^^ _CCCL_DLPACK_AT_LEAST(1, 2) ^^^ / vvv _CCCL_DLPACK_BELOW(1, 2) vvv
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
       // TODO(fbusato): check mul overflow
@@ -430,9 +430,14 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
-#  endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
+#    endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
   }
-  // TMA ignores the innermost stride (always 1).
+
+  if (__input_strides[__rank - 1] != 1)
+  {
+    _CCCL_THROW(::std::invalid_argument, "The inner most stride is required to be 1");
+  }
+
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
     const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
@@ -486,8 +491,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     __total_size *= __box_size;
     __box_sizes_output[__i] = __box_size;
   }
-  const auto __inner_dimension_bytes =
-    ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);
+  const auto __inner_dimension_bytes = ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[0], __data_type);
   if (__interleave_layout == tma_interleave_layout::none)
   {
     if (__inner_dimension_bytes % 16 != 0)
@@ -523,7 +527,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
                     "be less than or equal to 128");
       }
     }
-#  if _CCCL_CTK_AT_LEAST(12, 8)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
     if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
         || __swizzle == tma_swizzle::bytes128_atom_64B)
     {
@@ -534,7 +538,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
                     "bytes to be less than or equal to 128");
       }
     }
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
   }
   const auto __max_shmem =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
@@ -649,8 +653,9 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
+#  endif // _CCCL_HAS_DLPACK_VERSION_1()
 #endif // _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
 
 #endif // _CUDA___TMA_MAKE_TMA_DESCRIPTOR_H

@@ -3,12 +3,9 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#undef NDEBUG
 #include <cub/device/device_scan.cuh>
 
-#include <cassert>
-
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
@@ -68,8 +65,8 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
     }
     __syncthreads();
 
-    assert(tile_data[tile_idx] == prefix.GetInclusivePrefix());
-    assert(tile_aggregate == prefix.GetBlockAggregate());
+    REQUIRE_DEVICE(tile_data[tile_idx] == prefix.GetInclusivePrefix());
+    REQUIRE_DEVICE(tile_aggregate == prefix.GetBlockAggregate());
   }
 }
 
@@ -96,7 +93,8 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
   return reference;
 }
 
-C2H_TEST("Decoupled look-back works with various message types", "[decoupled look-back][device]", message_types)
+CUB_TEST(
+  "Decoupled look-back works with various message types", "[decoupled look-back][device]", CUB_SMALL, message_types)
 {
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;

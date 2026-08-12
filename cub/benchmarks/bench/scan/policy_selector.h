@@ -3,30 +3,45 @@
 
 #include <cub/device/device_scan.cuh>
 
-#if !TUNE_BASE
-#  include "look_back_helper.cuh"
-#endif // !TUNE_BASE
-
-#ifndef USES_WARPSPEED
-#  define USES_WARPSPEED() 0
+#ifndef USES_LOOKAHEAD
+#  define USES_LOOKAHEAD() 0
 #endif
 
 #if !TUNE_BASE
+#  if !USES_LOOKAHEAD()
+#    include <look_back_helper.cuh>
+
+#    if TUNE_TRANSPOSE == 0
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#    else // TUNE_TRANSPOSE == 1
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#    endif // TUNE_TRANSPOSE
+
+#    if TUNE_LOAD == 0
+#      define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#    else // TUNE_LOAD == 1
+#      define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#    endif // TUNE_LOAD
+#  endif // !USES_LOOKAHEAD()
+
 template <typename AccumT>
 struct policy_selector
 {
-#  if USES_WARPSPEED()
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
   {
-    cub::detail::scan::scan_policy policy{};
-    policy.warpspeed = cub::detail::scan::scan_warpspeed_policy{
-      true, TUNE_NUM_REDUCE_SCAN_WARPS, TUNE_NUM_LOOKBACK_ITEMS, TUNE_ITEMS_PLUS_ONE - 1};
-    return policy;
-  }
+#  if USES_LOOKAHEAD()
+    return {cub::ScanAlgorithm::lookahead,
+            cub::ScanLookbackPolicy{},
+            cub::ScanLookaheadPolicy{
+              TUNE_NUM_REDUCE_SCAN_WARPS,
+              TUNE_ITEMS_PLUS_ONE - 1,
+              TUNE_NUM_LOOKBACK_ITEMS,
+              TUNE_LOOKBACK_STAGES,
+              TUNE_BLOCK_IDX_STAGES}};
 #  else
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
-  {
-    return cub::detail::scan::make_mem_scaled_scan_policy(
+    return cub::detail::scan::make_mem_scaled_lookback_scan_policy(
       TUNE_THREADS,
       TUNE_ITEMS,
       int{sizeof(AccumT)},
@@ -34,8 +49,8 @@ struct policy_selector
       TUNE_LOAD_MODIFIER,
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy);
-  }
+      lookback_delay_policy);
 #  endif
+  }
 };
 #endif // !TUNE_BASE

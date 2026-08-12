@@ -28,13 +28,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator;
 
-#if _CCCL_HAS_CONCEPTS()
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS()
 template <class, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 

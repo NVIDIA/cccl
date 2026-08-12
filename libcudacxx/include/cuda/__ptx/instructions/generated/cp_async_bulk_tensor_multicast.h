@@ -86,7 +86,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -138,8 +138,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -206,7 +206,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -260,8 +260,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -329,7 +329,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -385,8 +385,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -455,7 +455,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -513,8 +513,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -584,7 +584,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)

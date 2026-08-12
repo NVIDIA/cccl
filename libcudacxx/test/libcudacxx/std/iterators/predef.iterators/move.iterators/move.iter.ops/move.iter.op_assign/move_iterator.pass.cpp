@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class It, class U>
-__host__ __device__ void test(U u)
+TEST_FUNC void test(U u)
 {
   const cuda::std::move_iterator<U> r2(u);
   cuda::std::move_iterator<It> r1(It(nullptr));
@@ -47,30 +47,30 @@ struct ToIter
   using value_type        = char;
   using difference_type   = signed char;
 
-  __host__ __device__ explicit constexpr ToIter()
+  TEST_FUNC explicit constexpr ToIter()
       : m_value(0)
   {}
-  __host__ __device__ constexpr ToIter(const ToIter& src)
+  TEST_FUNC constexpr ToIter(const ToIter& src)
       : m_value(src.m_value)
   {}
   // Intentionally not defined, must not be called.
-  __host__ __device__ ToIter(char* src);
-  __host__ __device__ constexpr ToIter& operator=(char* src)
+  TEST_FUNC ToIter(char* src);
+  TEST_FUNC constexpr ToIter& operator=(char* src)
   {
     m_value = src;
     return *this;
   }
-  __host__ __device__ constexpr ToIter& operator=(const ToIter& src)
+  TEST_FUNC constexpr ToIter& operator=(const ToIter& src)
   {
     m_value = src.m_value;
     return *this;
   }
   char* m_value;
 
-  __host__ __device__ reference operator*() const;
+  TEST_FUNC reference operator*() const;
 };
 
-__host__ __device__ constexpr bool test_conv_assign()
+TEST_FUNC constexpr bool test_conv_assign()
 {
   char c   = '\0';
   char* fi = &c;
@@ -97,8 +97,8 @@ int main(int, char**)
     constexpr const Derived* p = nullptr;
     constexpr DerivedIter it1  = cuda::std::make_move_iterator(p);
     constexpr BaseIter it2     = (BaseIter{nullptr} = it1);
-    static_assert(it2.base() == p, "");
-    static_assert(test_conv_assign(), "");
+    static_assert(it2.base() == p);
+    static_assert(test_conv_assign());
   }
 
   return 0;

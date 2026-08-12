@@ -30,7 +30,7 @@ struct basic_test_single_dim
   static constexpr int grid_size  = 512;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -48,8 +48,9 @@ struct basic_test_single_dim
   {
     auto dims = cuda::make_hierarchy(cuda::block_dims<block_size>(), cuda::grid_dims<grid_size>());
     static_assert(cuda::gpu_thread.dims(cuda::grid, dims).x == grid_size * block_size);
-    static_assert(cuda::gpu_thread.count(cuda::grid, dims) == grid_size * block_size);
-    static_assert(cuda::gpu_thread.static_dims(cuda::grid, dims)[0] == grid_size * block_size);
+    static_assert(cuda::gpu_thread.count(cuda::grid, dims) == static_cast<unsigned long>(grid_size) * block_size);
+    static_assert(
+      cuda::gpu_thread.static_dims(cuda::grid, dims)[0] == static_cast<unsigned long>(grid_size) * block_size);
 
     static_assert(cuda::gpu_thread.dims(cuda::block, dims).x == block_size);
     static_assert(cuda::block.dims(cuda::grid, dims).x == grid_size);
@@ -75,7 +76,7 @@ struct basic_test_multi_dim
   static constexpr int block_size = 256;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -121,7 +122,7 @@ struct basic_test_mixed
   static constexpr int block_size = 256;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -160,7 +161,7 @@ C2H_TEST("Basic", "[hierarchy]")
 struct basic_test_cluster
 {
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -392,19 +393,19 @@ __global__ void examples_kernel(Hierarchy hierarchy)
   }
   {
     // Can be called with the instances of level types
-    int num_threads_in_block = cuda::gpu_thread.count(cuda::block);
-    int num_blocks_in_grid   = cuda::block.count(cuda::grid);
+    int num_threads_in_block = static_cast<int>(cuda::gpu_thread.count(cuda::block));
+    int num_blocks_in_grid   = static_cast<int>(cuda::block.count(cuda::grid));
 
     // Or using the level types as template arguments
-    int num_threads_in_grid = cuda::gpu_thread.count(cuda::grid);
+    int num_threads_in_grid = static_cast<int>(cuda::gpu_thread.count(cuda::grid));
   }
   {
     // Can be called with the instances of level types
-    int thread_rank_in_block = cuda::gpu_thread.rank(cuda::block);
-    int block_rank_in_grid   = cuda::block.rank(cuda::grid);
+    int thread_rank_in_block = static_cast<int>(cuda::gpu_thread.rank(cuda::block));
+    int block_rank_in_grid   = static_cast<int>(cuda::block.rank(cuda::grid));
 
     // Or using the level types as template arguments
-    int thread_rank_in_grid = cuda::gpu_thread.rank(cuda::grid);
+    int thread_rank_in_grid = static_cast<int>(cuda::gpu_thread.rank(cuda::grid));
   }
   {
     // Can be called with the instances of level types
@@ -508,7 +509,7 @@ C2H_TEST("cuda::distribute", "[hierarchy]")
 {
   unsigned numElements          = 50000;
   constexpr int threadsPerBlock = 256;
-  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(static_cast<int>(numElements));
 
   CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
   CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config) == (numElements + threadsPerBlock - 1) / threadsPerBlock);

@@ -22,7 +22,7 @@
 
 #include <cstdio>
 
-using namespace cuda::experimental::stf;
+using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
@@ -87,7 +87,7 @@ void test_device_allocation()
 
   // Create a stream for the allocation
   cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  cuda_try(cudaStreamCreate(&stream));
 
   // Allocate using data_place::device(0)
   auto place = data_place::device(0);
@@ -101,25 +101,25 @@ void test_device_allocation()
 
   // Allocate result flag on host for checking
   int* d_result;
-  cuda_safe_call(cudaMallocAsync(&d_result, sizeof(int), stream));
-  cuda_safe_call(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
+  cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
 
   // Check on device
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
 
   // Copy result back
   int h_result = 0;
-  cuda_safe_call(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   EXPECT(h_result == 0); // No errors
 
   // Cleanup
-  cuda_safe_call(cudaFreeAsync(d_result, stream));
+  cuda_try(cudaFreeAsync(d_result, stream));
   place.deallocate(d_ptr, byte_size, stream);
 
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try(cudaStreamSynchronize(stream));
+  cuda_try(cudaStreamDestroy(stream));
 
   printf("  Device allocation test PASSED\n");
 }
@@ -130,9 +130,9 @@ void test_managed_allocation()
 
   // Check if concurrent managed access is supported
   int dev;
-  cuda_safe_call(cudaGetDevice(&dev));
+  cuda_try(cudaGetDevice(&dev));
   cudaDeviceProp prop;
-  cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
+  cuda_try(cudaGetDeviceProperties(&prop, dev));
   if (!prop.concurrentManagedAccess)
   {
     printf("  Concurrent CPU/GPU access not supported, skipping managed test.\n");
@@ -144,7 +144,7 @@ void test_managed_allocation()
   const int test_value   = 100;
 
   cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  cuda_try(cudaStreamCreate(&stream));
 
   // Allocate using data_place::managed()
   auto place = data_place::managed();
@@ -161,23 +161,23 @@ void test_managed_allocation()
 
   // Read back on device and verify
   int* d_result;
-  cuda_safe_call(cudaMallocAsync(&d_result, sizeof(int), stream));
-  cuda_safe_call(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
+  cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
 
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(ptr, n, test_value, d_result);
 
   int h_result = 0;
-  cuda_safe_call(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   EXPECT(h_result == 0); // No errors
 
   // Cleanup
-  cuda_safe_call(cudaFreeAsync(d_result, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaFreeAsync(d_result, stream));
+  cuda_try(cudaStreamSynchronize(stream));
   place.deallocate(ptr, byte_size);
 
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try(cudaStreamDestroy(stream));
 
   printf("  Managed allocation test PASSED\n");
 }

@@ -15,7 +15,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -35,12 +35,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -64,7 +64,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -87,12 +87,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -119,7 +119,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -142,12 +142,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -174,7 +174,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -204,12 +204,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -243,7 +243,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -282,12 +282,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -330,7 +330,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -386,12 +386,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -451,7 +451,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -541,12 +541,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -640,7 +640,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -797,12 +797,12 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -963,7 +963,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -986,12 +986,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1018,7 +1018,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1041,12 +1041,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1073,7 +1073,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1103,12 +1103,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1142,7 +1142,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1181,12 +1181,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1229,7 +1229,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1285,12 +1285,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1350,7 +1350,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1440,12 +1440,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1539,7 +1539,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1696,12 +1696,12 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1862,7 +1862,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1885,12 +1885,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1917,7 +1917,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1947,12 +1947,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1986,7 +1986,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2025,12 +2025,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2073,7 +2073,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2129,12 +2129,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2194,7 +2194,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2284,12 +2284,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2383,7 +2383,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_only_supported_on_
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2540,12 +2540,12 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2706,7 +2706,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2726,12 +2726,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2755,7 +2755,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2778,12 +2778,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2810,7 +2810,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2833,12 +2833,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2865,7 +2865,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2895,12 +2895,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2934,7 +2934,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2973,12 +2973,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3021,7 +3021,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3077,12 +3077,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3142,7 +3142,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3232,12 +3232,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3331,7 +3331,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_only_supported_on_S
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3488,12 +3488,12 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3656,7 +3656,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3680,13 +3680,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3715,7 +3715,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3739,13 +3739,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3774,7 +3774,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3798,13 +3798,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3833,7 +3833,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3864,13 +3864,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3906,7 +3906,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3946,13 +3946,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3997,7 +3997,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4054,13 +4054,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4122,7 +4122,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4213,13 +4213,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4315,7 +4315,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4473,13 +4473,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4644,7 +4644,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -4688,7 +4688,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -4733,7 +4733,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -4777,7 +4777,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -4821,7 +4821,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -4865,7 +4865,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -4910,7 +4910,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -4954,7 +4954,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -4998,7 +4998,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -5058,7 +5058,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -5119,7 +5119,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -5179,7 +5179,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -5239,7 +5239,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -5317,7 +5317,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -5396,7 +5396,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -5474,7 +5474,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -5552,7 +5552,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -5664,7 +5664,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -5777,7 +5777,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -5889,7 +5889,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -6001,7 +6001,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -6181,7 +6181,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -6362,7 +6362,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -6542,7 +6542,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -6723,7 +6723,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -7038,7 +7038,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -7353,7 +7353,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -7668,7 +7668,7 @@ template <::cuda::ptx::dot_op _Op>
 _CCCL_DEVICE static inline float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -7987,7 +7987,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -8036,7 +8036,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -8085,7 +8085,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8134,7 +8134,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8183,7 +8183,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -8232,7 +8232,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -8281,7 +8281,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8330,7 +8330,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8379,7 +8379,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -8444,7 +8444,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -8509,7 +8509,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8574,7 +8574,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8639,7 +8639,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -8722,7 +8722,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -8805,7 +8805,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8888,7 +8888,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -8971,7 +8971,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -9088,7 +9088,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -9205,7 +9205,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -9322,7 +9322,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -9439,7 +9439,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -9624,7 +9624,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -9809,7 +9809,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -9994,7 +9994,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -10179,7 +10179,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::uint32_t __redval;
@@ -10498,7 +10498,7 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   ::cuda::std::int32_t __redval;
@@ -10817,7 +10817,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;
@@ -11136,7 +11136,7 @@ _CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
   ::cuda::std::uint32_t __taddr,
   ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
-  static_assert(__op == op_min || __op == op_max, "");
+  static_assert(__op == op_min || __op == op_max);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   float __redval;

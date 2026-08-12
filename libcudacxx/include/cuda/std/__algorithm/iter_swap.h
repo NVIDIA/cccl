@@ -51,8 +51,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>)
-  _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
   {
     (void) iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b));
   }
@@ -60,8 +60,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__readable_swappable<_ForwardIterator1, _ForwardIterator2>)
-  _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
+  _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_ForwardIterator1&& __a, _ForwardIterator2&& __b) noexcept(
+    noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
   {
     swap(*__a, *__b);
   }

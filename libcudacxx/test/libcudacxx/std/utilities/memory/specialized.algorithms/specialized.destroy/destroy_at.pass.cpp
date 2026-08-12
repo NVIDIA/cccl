@@ -9,6 +9,9 @@
 
 // UNSUPPORTED: gcc-6
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <memory>
 
 // template <class T>
@@ -24,42 +27,44 @@
 struct Counted
 {
   int* counter_;
-  __host__ __device__ constexpr Counted(int* counter)
+  TEST_HOST_DEVICE_FUNC constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~Counted()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 ~Counted()
   {
     --*counter_;
   }
-  __host__ __device__ friend void operator&(Counted) = delete;
+  TEST_HOST_DEVICE_FUNC friend void operator&(Counted) = delete;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualCounted
 {
   int* counter_;
-  __host__ __device__ constexpr VirtualCounted(int* counter)
+  TEST_HOST_DEVICE_FUNC constexpr VirtualCounted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted()
   {
     --*counter_;
   }
-  __host__ __device__ void operator&() const = delete;
+  TEST_HOST_DEVICE_FUNC void operator&() const = delete;
 };
 
 struct DerivedCounted : VirtualCounted
 {
-  __host__ __device__ constexpr DerivedCounted(int* counter)
+  TEST_HOST_DEVICE_FUNC constexpr DerivedCounted(int* counter)
       : VirtualCounted(counter)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_arrays()
 {
   {
     int counter    = 0;
@@ -97,7 +102,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     int counter = 0;
@@ -116,6 +121,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::__construct_at(cuda::std::addressof(first), &counter);
     cuda::std::__construct_at(cuda::std::addressof(second), &counter);
   }
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   {
     int counter = 0;
     DerivedCounted first{&counter};
@@ -133,6 +139,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::__construct_at(cuda::std::addressof(first), &counter);
     cuda::std::__construct_at(cuda::std::addressof(second), &counter);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return true;
 }

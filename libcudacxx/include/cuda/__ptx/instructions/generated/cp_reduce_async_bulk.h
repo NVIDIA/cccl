@@ -667,7 +667,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
 // __op == op_and_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (sizeof(_Type) == 4)
@@ -719,7 +719,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
 // __op == op_or_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (sizeof(_Type) == 4)
@@ -771,7 +771,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
 // __op == op_xor_op (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (sizeof(_Type) == 4)

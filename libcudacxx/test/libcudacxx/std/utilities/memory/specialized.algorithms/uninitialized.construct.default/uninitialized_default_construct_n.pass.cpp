@@ -24,25 +24,25 @@ TEST_GLOBAL_VARIABLE int Counted_count       = 0;
 TEST_GLOBAL_VARIABLE int Counted_constructed = 0;
 struct Counted
 {
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     Counted_count = Counted_constructed = 0;
   }
-  __host__ __device__ explicit Counted()
+  TEST_FUNC explicit Counted()
   {
     ++Counted_count;
     ++Counted_constructed;
   }
-  __host__ __device__ Counted(Counted const&)
+  TEST_FUNC Counted(Counted const&)
   {
     assert(false);
   }
-  __host__ __device__ ~Counted()
+  TEST_FUNC ~Counted()
   {
     assert(Counted_count > 0);
     --Counted_count;
   }
-  __host__ __device__ friend void operator&(Counted) = delete;
+  TEST_FUNC friend void operator&(Counted) = delete;
 };
 
 #if TEST_HAS_EXCEPTIONS()
@@ -96,8 +96,9 @@ void test_ctor_throws()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_counted()
+TEST_FUNC void test_counted()
 {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("Counted_count") cannot be used in tile code
   using It                                        = forward_iterator<Counted*>;
   const int N                                     = 5;
   alignas(Counted) char pool[sizeof(Counted) * N] = {};
@@ -112,6 +113,7 @@ __host__ __device__ void test_counted()
   assert(Counted_constructed == 5);
   cuda::std::__destroy(p, p + N);
   assert(Counted_count == 0);
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 int main(int, char**)

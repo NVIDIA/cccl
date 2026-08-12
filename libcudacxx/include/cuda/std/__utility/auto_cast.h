@@ -23,7 +23,7 @@
 
 #include <cuda/std/__type_traits/decay.h>
 
-#if _CCCL_STD_VER >= 2023 && __cpp_auto_cast >= 202110L
+#if _CCCL_STD_VER >= 2023 && __cpp_auto_cast >= 202110L && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _LIBCUDACXX_AUTO_CAST(expr) auto(expr)
 #elif _CCCL_STD_VER < 2020 && _CCCL_COMPILER(MSVC)
 #  define _LIBCUDACXX_AUTO_CAST(expr) (::cuda::std::decay_t<decltype((expr))>) (expr)

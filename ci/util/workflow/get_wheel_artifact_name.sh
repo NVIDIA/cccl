@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 [job_id]
 
 Get the name of the wheel file that matches the specified job ID's configuration.
@@ -12,8 +13,9 @@ If no job ID is provided, the \$JOB_ID environment variable is used.
 If the job ID does not exist in the workflow, or is not a python job, an error is raised.
 EOF
 )
+readonly usage
 
-if [ "$#" -gt 1 ]; then
+if [[ "$#" -gt 1 ]]; then
   echo "Error: Too many arguments." >&2
   echo "$usage" >&2
   exit 1
@@ -21,7 +23,7 @@ fi
 
 job_id="${1:-${JOB_ID:-}}"
 
-if [ -z "$job_id" ]; then
+if [[ -z "$job_id" ]]; then
   echo "Error: No job ID provided and \$JOB_ID is not set." >&2
   echo "$usage" >&2
   exit 1
@@ -37,6 +39,7 @@ else
   os="linux"
 fi
 arch=$(echo "$job_def" | jq -r '.origin.matrix_job.cpu')
+project=$(echo "$job_def" | jq -r '.origin.matrix_job.project')
 
 for tag in "$py_version" "$os" "$arch"; do
   if [[ -z "$tag" ]]; then
@@ -48,4 +51,24 @@ for tag in "$py_version" "$os" "$arch"; do
   fi
 done
 
-echo "wheel-cccl-$os-$arch-py$py_version"
+# v1 and v2 Python build jobs both run in the same workflow, so their wheel
+# artifacts must have distinct names or the second upload clobbers the first
+# and downstream test jobs grab the wrong wheel. v1 keeps its historical name
+# (the test-cpu-import workflow hardcodes it); v2 gets a "-v2" suffix.
+suffix=""
+if [[ "$project" == "python_v2" ]]; then
+  suffix="-v2"
+elif [[ "$project" == "python_tsan" ]]; then
+  # ThreadSanitizer-instrumented wheel (free-threaded TSan nightly lane). Must
+  # be distinct so its build doesn't clobber the normal wheel and the TSan test
+  # job doesn't grab an uninstrumented one.
+  suffix="-tsan"
+fi
+
+# The cuda-stf wheel is built by a separate job that also runs in project
+# 'python', so it must use a distinct artifact name. Callers set
+# CCCL_WHEEL_KIND=stf (default is the historical 'cccl' name) when they mean
+# the cuda-stf wheel.
+kind="${CCCL_WHEEL_KIND:-cccl}"
+
+echo "wheel-${kind}${suffix}-$os-$arch-py$py_version"

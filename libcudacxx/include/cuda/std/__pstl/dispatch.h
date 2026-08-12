@@ -40,14 +40,23 @@ enum class __pstl_algorithm
   __for_each_n,
   __generate_n,
   __inclusive_scan,
+  __max_element,
   __merge,
+  __min_element,
   __partition,
   __partition_copy,
   __reduce,
   __remove_if,
+  __rotate,
+  __rotate_copy,
+  __shift_left,
+  __shift_right,
+  __stable_partition,
+  __sort,
   __transform,
   __transform_reduce,
   __unique,
+  __unique_copy,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially

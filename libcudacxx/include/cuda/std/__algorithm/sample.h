@@ -34,7 +34,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -60,7 +60,7 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -82,14 +82,14 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator __sample(
+_CCCL_HOST_DEVICE_API _SampleIterator __sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
   _Distance __n,
   _UniformRandomNumberGenerator& __g)
 {
-  using _PopCategory = typename iterator_traits<_PopulationIterator>::iterator_category;
+  using _PopCategory = __iterator_traits_category_or_concept_t<_PopulationIterator>;
   using _Difference  = typename iterator_traits<_PopulationIterator>::difference_type;
   static_assert(__has_forward_traversal<_PopulationIterator> || __has_random_access_traversal<_SampleIterator>,
                 "SampleIterator must meet the requirements of RandomAccessIterator");
@@ -99,7 +99,7 @@ _CCCL_API _SampleIterator __sample(
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-_CCCL_API _SampleIterator sample(
+_CCCL_HOST_DEVICE_API _SampleIterator sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,

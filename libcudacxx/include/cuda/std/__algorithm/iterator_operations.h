@@ -56,9 +56,6 @@ struct _IterOps<_RangeAlgPolicy>
   using __value_type = iter_value_t<_Iter>;
 
   template <class _Iter>
-  using __iterator_category = ::cuda::std::ranges::__iterator_concept<_Iter>;
-
-  template <class _Iter>
   using __difference_type = iter_difference_t<_Iter>;
 
   static constexpr auto advance      = ::cuda::std::ranges::advance;
@@ -78,9 +75,6 @@ struct _IterOps<_ClassicAlgPolicy>
 {
   template <class _Iter>
   using __value_type = typename iterator_traits<_Iter>::value_type;
-
-  template <class _Iter>
-  using __iterator_category = typename iterator_traits<_Iter>::iterator_category;
 
   template <class _Iter>
   using __difference_type = typename iterator_traits<_Iter>::difference_type;
@@ -121,8 +115,7 @@ struct _IterOps<_ClassicAlgPolicy>
   _CCCL_API constexpr static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `::cuda::std::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
-    __move_t<_Iter>
-    __iter_move(_Iter&& __i)
+    __move_t<_Iter> __iter_move(_Iter&& __i)
   {
     __validate_iter_reference<_Iter>();
 
@@ -135,8 +128,7 @@ struct _IterOps<_ClassicAlgPolicy>
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to
     // that temporary. Note that the C++03 mode doesn't support `auto` as the return type.
-    __deref_t<_Iter>
-    __iter_move(_Iter&& __i)
+    __deref_t<_Iter> __iter_move(_Iter&& __i)
   {
     __validate_iter_reference<_Iter>();
 

@@ -19,32 +19,32 @@
 template <size_t Val>
 struct integral_like : cuda::std::integral_constant<size_t, Val>
 {};
-static_assert(cuda::std::__integral_constant_like<integral_like<42>>, "");
+static_assert(cuda::std::__integral_constant_like<integral_like<42>>);
 
 template <size_t Val>
 struct not_integral_like : cuda::std::integral_constant<size_t, Val>
 {
-  __host__ __device__ constexpr not_integral_like(int) noexcept {}
+  TEST_FUNC constexpr not_integral_like(int) noexcept {}
 };
-static_assert(!cuda::std::__integral_constant_like<not_integral_like<42>>, "");
+static_assert(!cuda::std::__integral_constant_like<not_integral_like<42>>);
 
 template <class OffsetType, class ExtentType, class StrideType>
 _CCCL_CONCEPT can_strided_slice = _CCCL_REQUIRES_EXPR((OffsetType, ExtentType, StrideType))(
   (cuda::std::strided_slice<OffsetType, ExtentType, StrideType>{}));
 
-static_assert(can_strided_slice<int, short, size_t>, "");
-static_assert(can_strided_slice<integral_like<42>, int, int>, "");
-static_assert(can_strided_slice<int, integral_like<42>, int>, "");
-static_assert(can_strided_slice<int, int, integral_like<42>>, "");
+static_assert(can_strided_slice<int, short, size_t>);
+static_assert(can_strided_slice<integral_like<42>, int, int>);
+static_assert(can_strided_slice<int, integral_like<42>, int>);
+static_assert(can_strided_slice<int, int, integral_like<42>>);
 
 // We cannot check mandates with the current setup
-// static_assert(!can_strided_slice<int, void, integral_like<42>>, "");
-// static_assert(!can_strided_slice<not_integral_like<42>, int, int>, "");
-// static_assert(!can_strided_slice<int, not_integral_like<42>, int>, "");
-// static_assert(!can_strided_slice<int, int, not_integral_like<42>>, "");
+// static_assert(!can_strided_slice<int, void, integral_like<42>>);
+// static_assert(!can_strided_slice<not_integral_like<42>, int, int>);
+// static_assert(!can_strided_slice<int, not_integral_like<42>, int>);
+// static_assert(!can_strided_slice<int, int, not_integral_like<42>>);
 
 template <class T>
-__host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noexcept
+TEST_FUNC constexpr T construct_from_int([[maybe_unused]] int val) noexcept
 {
   if constexpr (cuda::std::__integral_constant_like<T>)
   {
@@ -57,27 +57,27 @@ __host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noe
 }
 
 template <class OffsetType, class ExtentType, class StrideType>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using strided_slice = cuda::std::strided_slice<OffsetType, ExtentType, StrideType>;
   // Ensure we are trivially copy/move constructible
-  static_assert(cuda::std::is_trivially_copy_constructible<strided_slice>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible<strided_slice>::value, "");
+  static_assert(cuda::std::is_trivially_copy_constructible<strided_slice>::value);
+  static_assert(cuda::std::is_trivially_move_constructible<strided_slice>::value);
 
   // Ensure we properly do not store compile time sizes
 #if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && !TEST_COMPILER(MSVC)
-  static_assert(sizeof(strided_slice) == sizeof(cuda::std::tuple<OffsetType, ExtentType, StrideType>), "");
+  static_assert(sizeof(strided_slice) == sizeof(cuda::std::tuple<OffsetType, ExtentType, StrideType>));
 #endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && !TEST_COMPILER(MSVC)
 
   // Ensure we have the right alias types
-  static_assert(cuda::std::is_same<typename strided_slice::offset_type, OffsetType>::value, "");
-  static_assert(cuda::std::is_same<typename strided_slice::extent_type, ExtentType>::value, "");
-  static_assert(cuda::std::is_same<typename strided_slice::stride_type, StrideType>::value, "");
+  static_assert(cuda::std::is_same<typename strided_slice::offset_type, OffsetType>::value);
+  static_assert(cuda::std::is_same<typename strided_slice::extent_type, ExtentType>::value);
+  static_assert(cuda::std::is_same<typename strided_slice::stride_type, StrideType>::value);
 
   // Ensure we have the right members with the right types
-  static_assert(cuda::std::is_same<decltype(strided_slice{}.offset), OffsetType>::value, "");
-  static_assert(cuda::std::is_same<decltype(strided_slice{}.extent), ExtentType>::value, "");
-  static_assert(cuda::std::is_same<decltype(strided_slice{}.stride), StrideType>::value, "");
+  static_assert(cuda::std::is_same<decltype(strided_slice{}.offset), OffsetType>::value);
+  static_assert(cuda::std::is_same<decltype(strided_slice{}.extent), ExtentType>::value);
+  static_assert(cuda::std::is_same<decltype(strided_slice{}.stride), StrideType>::value);
 
   {
     strided_slice zero_initialized;
@@ -111,7 +111,7 @@ __host__ __device__ constexpr void test()
 #endif // TEST_STD_VER >= 2020
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short, size_t>();
   test<integral_like<42>, int, int>();
@@ -124,6 +124,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

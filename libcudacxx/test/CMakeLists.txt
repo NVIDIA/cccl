@@ -60,6 +60,16 @@ if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
       -Wno-deprecated-gpu-targets
     )
   endif()
+
+  if (
+    CCCL_ENABLE_TILE
+    AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS_EQUAL "13.2"
+  )
+    message(
+      FATAL_ERROR
+      "tile programs require NVCC 13.3 or later; found NVCC ${CMAKE_CUDA_COMPILER_VERSION}"
+    )
+  endif()
   # Set warnings for Clang as device compiler
 elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
   set(
@@ -87,4 +97,7 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
 endif()
 
 add_subdirectory(nvtarget)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CodegenTest.cmake")
 add_subdirectory(atomic_codegen)
+add_subdirectory(simd_codegen)
+add_subdirectory(debugging)

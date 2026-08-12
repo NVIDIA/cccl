@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/transform.h>
 
+#include <iostream>
+
 // This example shows how thrust::zip_iterator can be used to create a
 // 'virtual' array of structures.  In this case the structure is a 3d
 // vector type (Float3) whose (x,y,z) components will be stored in
@@ -105,15 +107,15 @@ int main()
   std::cout << std::fixed;
   for (size_t i = 0; i < 4; i++)
   {
-    Float3 a  = A_first[i];
-    Float3 b  = B_first[i];
+    Float3 a  = A_first[static_cast<std::ptrdiff_t>(i)];
+    Float3 b  = B_first[static_cast<std::ptrdiff_t>(i)];
     float dot = result[i];
 
     std::cout << "(" << cuda::std::get<0>(a) << "," << cuda::std::get<1>(a) << "," << cuda::std::get<2>(a) << ")";
     std::cout << " * ";
     std::cout << "(" << cuda::std::get<0>(b) << "," << cuda::std::get<1>(b) << "," << cuda::std::get<2>(b) << ")";
     std::cout << " = ";
-    std::cout << dot << std::endl;
+    std::cout << dot << '\n';
   }
 
   return 0;

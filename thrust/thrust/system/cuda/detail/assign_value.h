@@ -32,7 +32,7 @@ namespace cuda_cub
 namespace detail
 {
 template <typename T, typename U>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
+_CCCL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
 {
   *dst = *src;
 }

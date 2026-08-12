@@ -933,19 +933,27 @@ _CCCL_API constexpr bool __equal_unaligned(
     // do middle words
     unsigned __clz_r   = __bits_per_word - __first2.__ctz_;
     __storage_type __m = ~__storage_type(0) << __first2.__ctz_;
+    bool __result      = true;
     for (; __n >= __bits_per_word; __n -= __bits_per_word, ++__first1.__seg_)
     {
       __storage_type __b = *__first1.__seg_;
       if ((*__first2.__seg_ & __m) != (__b << __first2.__ctz_))
       {
-        return false;
+        __result = false;
+        break;
       }
       ++__first2.__seg_;
       if ((*__first2.__seg_ & ~__m) != (__b >> __clz_r))
       {
-        return false;
+        __result = false;
+        break;
       }
     }
+    if (!__result)
+    {
+      return false;
+    }
+
     // do last word
     if (__n > 0)
     {
@@ -1004,13 +1012,20 @@ _CCCL_API constexpr bool __equal_aligned(
     // __first1.__ctz_ == 0;
     // __first2.__ctz_ == 0;
     // do middle words
+    bool __result = true;
     for (; __n >= __bits_per_word; __n -= __bits_per_word, ++__first1.__seg_, ++__first2.__seg_)
     {
       if (*__first2.__seg_ != *__first1.__seg_)
       {
-        return false;
+        __result = false;
+        break;
       }
     }
+    if (!__result)
+    {
+      return false;
+    }
+
     // do last word
     if (__n > 0)
     {
