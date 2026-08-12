@@ -249,8 +249,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
     else
     {
       // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-      const unsigned nbytes =
-        static_cast<unsigned>((static_cast<size_t>(tile_len) + (first_tile ? 0 : slot_pad)) * sizeof(KeyT));
+      const unsigned nbytes     = static_cast<unsigned>((tile_len + (first_tile ? 0 : slot_pad)) * int{sizeof(KeyT)});
       const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
       ptx::cp_async_bulk_ignore_oob(
