@@ -182,7 +182,7 @@ if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PAR
     mem_available="$((mem_available * 95 / 100))"
     # Total job count is available memory after accounting for `nproc` concurrent preprocessor
     # calls divided by the amount of memory required to invoke the sccache thin client process
-    PARALLEL_LEVEL="$(((mem_available - mem_for_sccache_daemon - mem_for_preprocessing) / mem_per_job))"
+    PARALLEL_LEVEL="$(((mem_available - mem_for_sccache_daemon - mem_for_preprocessing) / mem_per_job / 10))"
 fi
 
 if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
