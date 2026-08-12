@@ -284,6 +284,14 @@ public:
   const domain_entry& get(int dev_id, int domain_id, locality_domain_sm_split split)
   {
     ::std::lock_guard<::std::mutex> lock(mtx_);
+    // Whole-device degrade ignores the split method (documented contract).
+    // Canonicalize the cache key so every method resolves to the SAME green
+    // context, stream pool, and execution-place identity instead of one
+    // whole-device context per requested method.
+    if (native_raw_count(dev_id) == 0)
+    {
+      split = locality_domain_sm_split::backfill;
+    }
     const auto key = ::std::make_pair(dev_id, split);
     auto it        = devices_.find(key);
     if (it == devices_.end())
@@ -353,6 +361,14 @@ private:
             params[i].coscheduledSmCount = 2;
             params[i].flags |= CU_DEV_SM_RESOURCE_GROUP_BACKFILL;
             // smCount must be a multiple of 2 and at least coscheduledSmCount.
+            // EQUAL shares are deliberate: uneven groups (which would consume
+            // the division remainder) trade balanced domains for full
+            // coverage, and pay off only for skewed workloads -- callers who
+            // want that express it through explicit per-place work division,
+            // not through asymmetric contexts. The unassigned remainder is
+            // bounded by 2 * num_domains - 2 SMs and is zero on parts whose
+            // SM total divides evenly (all currently known multi-domain
+            // parts).
             const unsigned int share = total_sms / static_cast<unsigned int>(num_domains);
             params[i].smCount        = ::std::max(2u, share - (share % 2u));
             break;
@@ -386,7 +402,20 @@ private:
     devices_[::std::make_pair(dev_id, split)] = ::std::move(entries);
   }
 
+  // Memoized locality_domain_native_raw_count per device (driver attribute
+  // query); called under mtx_ from get().
+  int native_raw_count(int dev_id)
+  {
+    auto it = raw_counts_.find(dev_id);
+    if (it == raw_counts_.end())
+    {
+      it = raw_counts_.emplace(dev_id, locality_domain_native_raw_count(dev_id)).first;
+    }
+    return it->second;
+  }
+
   ::std::map<::std::pair<int, locality_domain_sm_split>, ::std::vector<domain_entry>> devices_;
+  ::std::map<int, int> raw_counts_;
   ::std::mutex mtx_;
 };
 

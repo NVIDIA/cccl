@@ -97,6 +97,19 @@ int main()
     //
     // Only meaningful when the driver actually splits by domain (not under
     // the whole-device degrade, where every method spans all SMs).
+    // Under the whole-device degrade the split method is documented to be
+    // ignored: every method must resolve to the SAME cached whole-device
+    // green context (same execution-place identity), not one context per
+    // requested method.
+    if (places::locality_domain_native_raw_count(dev) == 0)
+    {
+      const auto& e_bf = places::locality_domain_ctx_cache::instance().get(dev, 0, locality_domain_sm_split::backfill);
+      const auto& e_al = places::locality_domain_ctx_cache::instance().get(dev, 0, locality_domain_sm_split::aligned);
+      const auto& e_fi = places::locality_domain_ctx_cache::instance().get(dev, 0, locality_domain_sm_split::fine);
+      EXPECT(e_bf.g_ctx == e_al.g_ctx);
+      EXPECT(e_bf.g_ctx == e_fi.g_ctx);
+    }
+
     if (places::locality_domain_native_raw_count(dev) > 0)
     {
       CUdevice device;
