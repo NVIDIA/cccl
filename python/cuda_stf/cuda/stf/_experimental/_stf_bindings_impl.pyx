@@ -199,11 +199,23 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_cute_partition_opaque_t
     ctypedef stf_cute_partition_opaque_t* stf_cute_partition_handle
 
+    ctypedef struct stf_placement_stats:
+        uint64_t total_bytes
+        uint64_t vm_bytes
+        uint64_t block_size
+        uint64_t nblocks
+        uint64_t nallocs
+        uint64_t total_samples
+        uint64_t matching_samples
+        uint64_t replication_factor
+
     ctypedef struct stf_partition_dim_spec:
         int policy
         int mesh_axis
         uint64_t block
 
+    int stf_placement_evaluate(stf_exec_place_handle grid, stf_get_executor_fn mapper, const stf_dim4* data_dims, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+    int stf_placement_evaluate_partition(stf_exec_place_handle grid, stf_cute_partition_handle partition, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
     stf_cute_partition_handle stf_cute_partition_create(const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank, uint32_t replicated_axes_mask)
     uint32_t stf_cute_partition_replicated_axes(stf_cute_partition_handle p)
     uint64_t stf_cute_partition_replication_factor(stf_cute_partition_handle p)
@@ -1935,7 +1947,8 @@ cdef class cute_partition:
         ``replicate_over`` names grid axes (C-order, like the spec's axis
         entries) that are bound to no tensor dimension and hold one copy of
         their fiber's bytes per coordinate instead.
-        A composite data place built from such a partition is replicated
+        ``placement_evaluate`` reports the per-member copies, and a
+        composite data place built from such a partition is replicated
         (read-only): through a logical data it resolves to one composite
         allocation per replicated coordinate. Direct allocation is
         rejected -- allocate through a logical data, like
@@ -2114,7 +2127,7 @@ cdef class cute_partition:
         padded extents); the result is a C-order tuple of :attr:`grid_rank`
         entries. Ownership is closed-form (no sampling); note that physical
         placement of an allocation is page-granular and may only approximate
-        this element-level ownership.
+        this element-level ownership (see :func:`placement_evaluate`).
         """
         coords = tuple(coords) if not isinstance(coords, int) else (coords,)
         if len(coords) != self._rank:
@@ -2159,6 +2172,125 @@ cdef class cute_partition:
         for i in range(n):
             offset += <int64_t>coords[axes[i]] * str_[i]
         return offset
+
+
+class placement_stats:
+    """Statistics describing how a localized allocation (or a dry-run
+    evaluation of one) distributes a tensor over data places."""
+
+    def __init__(self, total_bytes, vm_bytes, block_size, nblocks, nallocs,
+                 total_samples, matching_samples, bytes_per_grid_index,
+                 replication_factor=1):
+        self.total_bytes = total_bytes
+        self.vm_bytes = vm_bytes
+        self.block_size = block_size
+        self.nblocks = nblocks
+        self.nallocs = nallocs
+        self.total_samples = total_samples
+        self.matching_samples = matching_samples
+        #: bytes owned by each grid position (list indexed by linear grid index)
+        self.bytes_per_grid_index = bytes_per_grid_index
+        #: copies of each byte along replicated partition axes (1 = none)
+        self.replication_factor = replication_factor
+
+    @property
+    def resident_bytes(self):
+        """Total bytes resident across all copies
+        (``vm_bytes * replication_factor``)."""
+        return self.vm_bytes * self.replication_factor
+
+    @property
+    def accuracy(self):
+        """Estimated fraction of bytes local to their owner once ownership is
+        quantized to blocks."""
+        if self.total_samples == 0:
+            return 1.0
+        return self.matching_samples / self.total_samples
+
+    def __repr__(self):
+        return (f"placement_stats(total_bytes={self.total_bytes}, nblocks={self.nblocks}, "
+                f"nallocs={self.nallocs}, accuracy={self.accuracy:.3f}, "
+                f"bytes_per_grid_index={self.bytes_per_grid_index})")
+
+
+def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, block_size=0):
+    """Evaluate - without allocating - how a localized allocation would
+    distribute a tensor over the places of a grid.
+
+    Runs the exact same block-owner decision procedure as the allocation path
+    and returns a :class:`placement_stats`, so a candidate mapping can be
+    scored (and its parameters tuned) before committing memory.
+
+    ``mapper`` is a :class:`cute_partition`, a native partition function
+    pointer (int, see :func:`partition_fn_blocked`), or a Python callable
+    ``(data_coords, data_dims, grid_dims) -> grid_coords`` where every tuple
+    is C-order (``data_coords``/``data_dims`` have ``len(data_dims)`` entries
+    and ``grid_dims``/``grid_coords`` the grid's rank). Note the callable
+    form crosses the GIL for every probe: the structured/native forms are the
+    fast path.
+
+    ``probes`` and ``block_size`` of 0 select the defaults (10 samples per
+    block; the device allocation granularity, or 2 MiB without a GPU).
+    """
+    cdef stf_dim4 dims
+    cdef stf_dim4 gd
+    cdef stf_placement_stats c_stats
+    stf_exec_place_get_dims(grid._h, &gd)
+    cdef size_t grid_size = gd.x * gd.y * gd.z * gd.t
+    cdef uint64_t* per_pos = <uint64_t*>malloc(grid_size * sizeof(uint64_t))
+    if per_pos == NULL:
+        raise MemoryError()
+
+    cdef uintptr_t ptr_val
+    cdef int rc
+    cdef cute_partition part
+    try:
+        if isinstance(mapper, cute_partition):
+            part = <cute_partition>mapper
+            if data_dims is not None and _validate_extents(data_dims, "data_dims") != tuple(part.true_dims):
+                raise ValueError(
+                    f"data_dims {data_dims} do not match the partition's true extents {part.true_dims} "
+                    "(pass None to use the partition's extents)")
+            rc = stf_placement_evaluate_partition(
+                grid._h, part._h, <uint64_t>elemsize, <uint64_t>probes, <uint64_t>block_size,
+                &c_stats, per_pos)
+        else:
+            public_dims = _validate_extents(data_dims, "data_dims")
+            _fill_dim4_c_order(public_dims, &dims, u"data_dims")
+            mapper_state = None
+            if isinstance(mapper, bool):
+                raise TypeError("mapper must not be a bool")
+            elif isinstance(mapper, int):
+                if mapper == 0:
+                    raise ValueError("mapper function pointer must not be NULL")
+                ptr_val = <uintptr_t>mapper
+            elif callable(mapper):
+                mapper_state = _make_mapper_callback(
+                    mapper, len(public_dims), _exec_place_grid_rank(grid))
+                ptr_val = mapper_state.c_ptr
+            else:
+                raise TypeError(
+                    "mapper must be a cute_partition, a native partition function pointer, or a callable")
+            rc = stf_placement_evaluate(
+                grid._h, <stf_get_executor_fn>ptr_val, &dims, <uint64_t>elemsize,
+                <uint64_t>probes, <uint64_t>block_size, &c_stats, per_pos)
+            if mapper_state is not None and mapper_state.error is not None:
+                raise RuntimeError("the mapper raised during placement evaluation") from mapper_state.error
+        if rc != 0:
+            raise RuntimeError("placement evaluation failed (see stderr for the underlying error)")
+
+        return placement_stats(
+            c_stats.total_bytes,
+            c_stats.vm_bytes,
+            c_stats.block_size,
+            c_stats.nblocks,
+            c_stats.nallocs,
+            c_stats.total_samples,
+            c_stats.matching_samples,
+            [per_pos[i] for i in range(grid_size)],
+            replication_factor=c_stats.replication_factor)
+    finally:
+        free(per_pos)
 
 
 cdef class data_place:

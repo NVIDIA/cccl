@@ -245,6 +245,29 @@ def test_tensor_of_tiles_from_spec():
         )
 
 
+def test_placement_evaluate_all_mapper_forms():
+    """Native fn pointer, cute partition and Python callable must agree."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 4 * MiB
+    kwargs = dict(elemsize=1, block_size=2 * MiB)
+
+    s_native = stf.placement_evaluate(grid, stf.partition_fn_blocked(), (n,), **kwargs)
+    assert s_native.nblocks == 2
+    assert s_native.nallocs == 2
+    assert s_native.accuracy == 1.0  # block-aligned split
+    assert s_native.bytes_per_grid_index == [2 * MiB, 2 * MiB]
+
+    part = stf.cute_partition.from_spec((n,), (("blocked", 0),), (2,))
+    s_part = stf.placement_evaluate(grid, part, None, **kwargs)
+    assert s_part.bytes_per_grid_index == s_native.bytes_per_grid_index
+
+    s_callable = stf.placement_evaluate(grid, blocked_mapper_1d, (n,), **kwargs)
+    assert s_callable.bytes_per_grid_index == s_native.bytes_per_grid_index
+
+
 def test_cute_partition_replicate_over():
     """Replicated grid axes: declared, never bound, and visible as properties."""
     # 2-D grid: tensor dim 0 blocked over grid axis 0, grid axis 1 replicated
@@ -274,6 +297,30 @@ def test_cute_partition_replicate_over():
         stf.cute_partition.from_spec(
             (8,), (("blocked", 0),), (2, 3), replicate_over=(2,)
         )
+
+
+def test_placement_evaluate_replicated_reporting():
+    """Replicated axes report one copy of the fiber's bytes per member."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 4 * MiB
+    # The tensor is not distributed at all: the single grid axis is
+    # replicated, so every member holds a full copy.
+    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
+    s = stf.placement_evaluate(grid, part, None, elemsize=1, block_size=2 * MiB)
+
+    assert s.replication_factor == 2
+    assert s.bytes_per_grid_index == [4 * MiB, 4 * MiB]
+    assert s.resident_bytes == 2 * s.vm_bytes
+    assert s.accuracy == 1.0
+
+    # A non-replicated evaluation reports factor 1 and resident == vm
+    plain = stf.cute_partition.from_spec((n,), (("blocked", 0),), (2,))
+    s_plain = stf.placement_evaluate(grid, plain, None, elemsize=1, block_size=2 * MiB)
+    assert s_plain.replication_factor == 1
+    assert s_plain.resident_bytes == s_plain.vm_bytes
 
 
 def test_replicated_partition_direct_allocation_rejected():
@@ -319,6 +366,59 @@ def test_replicated_partition_read_dep():
     ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
     ctx.finalize()
     assert abs(results[0] - float(X.sum())) < 1e-4
+
+
+def test_placement_evaluate_c_order_callback():
+    """The mapper sees C-order coordinates of the data's rank. A 2-D
+    non-square shape blocked along axis 0 must match the equivalent
+    structured partition."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    shape = (2, 2 * MiB)  # 2 contiguous rows of 2 MiB
+    seen = []
+
+    def row_owner(data_coords, data_dims, grid_dims):
+        if not seen:
+            seen.append((tuple(data_coords), tuple(data_dims), tuple(grid_dims)))
+        assert len(data_coords) == 2
+        assert tuple(data_dims) == shape
+        assert tuple(grid_dims) == (2,)
+        return data_coords[0]
+
+    s_callable = stf.placement_evaluate(grid, row_owner, shape, 1, block_size=2 * MiB)
+    assert seen, "mapper was never invoked"
+    assert s_callable.bytes_per_grid_index == [2 * MiB, 2 * MiB]
+    assert s_callable.accuracy == 1.0
+
+    part = stf.cute_partition.from_spec(shape, (("blocked", 0), None), (2,))
+    s_part = stf.placement_evaluate(grid, part, None, 1, block_size=2 * MiB)
+    assert s_part.bytes_per_grid_index == s_callable.bytes_per_grid_index
+
+
+def test_placement_evaluate_majority_tie_breaking():
+    """A block straddling two owners goes to the majority owner and the
+    accuracy reflects the straddling (seeded: deterministic across calls)."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    # 2.5 MiB blocked over 2 places: block 0 straddles 62.5%/37.5%, so the
+    # checks hold structurally for any uniform sampler (all-64-probes-majority
+    # has probability ~1e-13)
+    n = 5 * MiB // 2
+    s1 = stf.placement_evaluate(
+        grid, stf.partition_fn_blocked(), (n,), 1, probes=64, block_size=2 * MiB
+    )
+    assert s1.nallocs == 2
+    assert 0.7 < s1.accuracy < 1.0
+
+    s2 = stf.placement_evaluate(
+        grid, stf.partition_fn_blocked(), (n,), 1, probes=64, block_size=2 * MiB
+    )
+    assert s1.matching_samples == s2.matching_samples
+    assert s1.bytes_per_grid_index == s2.bytes_per_grid_index
 
 
 def test_shaped_allocation_on_composite_places():
@@ -434,7 +534,9 @@ def test_invalid_inputs_raise_cleanly():
     with pytest.raises(TypeError):
         stf.cute_partition()
 
-    # bool is not a partition
+    # bool is not a function pointer
+    with pytest.raises(TypeError):
+        stf.placement_evaluate(grid, True, (1024,), 1)
     with pytest.raises(TypeError):
         stf.data_place.composite(grid, True)
 
@@ -443,6 +545,26 @@ def test_invalid_inputs_raise_cleanly():
         stf.data_place.composite(grid, blocked_mapper_1d)
     with pytest.raises(ValueError, match="data_rank"):
         stf.partition_fn_blocked(1)
+
+    # elemsize 0 (would be a division by zero)
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, stf.partition_fn_blocked(), (1024,), 0)
+
+    # A raising mapper must surface, not silently yield wrong statistics
+    def bad_mapper(coords, dims, gdims):
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="mapper raised"):
+        stf.placement_evaluate(grid, bad_mapper, (4 * MiB,), 1, block_size=2 * MiB)
+
+    # A mapper returning the wrong number of grid coordinates must surface
+    def wrong_rank_mapper(coords, dims, gdims):
+        return (0, 0)
+
+    with pytest.raises(RuntimeError, match="mapper raised"):
+        stf.placement_evaluate(
+            grid, wrong_rank_mapper, (4 * MiB,), 1, block_size=2 * MiB
+        )
 
     # Zero-extent grid axis
     with pytest.raises(ValueError):
@@ -461,6 +583,11 @@ def test_invalid_inputs_raise_cleanly():
         stf.cute_partition.from_spec(
             (2, 2, 2, 2, 2), (None, None, None, None, None), (2,)
         )
+
+    # Partition grid must match the execution grid
+    part = stf.cute_partition.from_spec((4 * MiB,), (("blocked", 0),), (3,))
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, part, None, 1)
 
     # elemsize is extents-form-only
     dp = stf.data_place.device(0)

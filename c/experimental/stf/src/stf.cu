@@ -206,6 +206,44 @@ template <class Opaque>
 }
 } // namespace
 
+namespace
+{
+// Shared tail of the two stf_placement_evaluate* entry points
+int stf_fill_placement_outputs(
+  const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+{
+  out_stats->total_bytes      = stats.total_bytes;
+  out_stats->vm_bytes         = stats.vm_bytes;
+  out_stats->block_size       = stats.block_size;
+  out_stats->nblocks          = stats.nblocks;
+  out_stats->nallocs          = stats.nallocs;
+  out_stats->total_samples    = stats.total_samples;
+  out_stats->matching_samples = stats.matching_samples;
+  out_stats->replication_factor = stats.replication_factor;
+
+  if (bytes_per_grid_index != nullptr)
+  {
+    const size_t grid_size = grid.get_dims().size();
+    for (size_t i = 0; i < grid_size; i++)
+    {
+      bytes_per_grid_index[i] = 0;
+    }
+    for (const auto& entry : stats.bytes_per_grid_index)
+    {
+      if (entry.first >= grid_size)
+      {
+        // A mapper returned coordinates outside the grid: refuse to write
+        // past the caller's buffer and report the failure.
+        fprintf(stderr, "placement evaluation: mapper returned a position outside the grid\n");
+        return 1;
+      }
+      bytes_per_grid_index[entry.first] = entry.second;
+    }
+  }
+  return 0;
+}
+} // namespace
+
 extern "C" {
 
 stf_exec_place_handle stf_exec_place_host(void)
@@ -746,6 +784,82 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
+}
+
+int stf_placement_evaluate(
+  stf_exec_place_handle grid,
+  stf_get_executor_fn mapper,
+  const stf_dim4* data_dims,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  dim4 dims;
+  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  try
+  {
+    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      reinterpret_cast<partition_fn_t>(mapper),
+      dims,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: unknown exception\n");
+    return 1;
+  }
+}
+
+int stf_placement_evaluate_partition(
+  stf_exec_place_handle grid,
+  stf_cute_partition_handle partition,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  const auto* part     = from_opaque_const(partition);
+  try
+  {
+    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      *part,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: unknown exception\n");
+    return 1;
+  }
 }
 
 stf_cute_partition_handle stf_cute_partition_create(

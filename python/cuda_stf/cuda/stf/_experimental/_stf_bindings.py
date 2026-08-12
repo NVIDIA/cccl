@@ -49,6 +49,8 @@ _BINDING_EXPORTS = (
     "machine_init",
     "partition_fn_blocked",
     "partition_fn_cyclic",
+    "placement_evaluate",
+    "placement_stats",
     "read",
     "rw",
     "stackable_context",
