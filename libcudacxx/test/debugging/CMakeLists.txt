@@ -102,6 +102,9 @@ libcudacxx_add_pretty_printer_test
 
 Build a CUDA pretty-printer scenario and register its enabled debugger tests.
 
+A scenario that prints ``LIBCUDACXX_PRETTY_PRINTER_SKIP: <reason>`` instead of running
+its cases is reported as skipped, which covers support that only the driver knows about.
+
 The function creates the executable target
 ``libcudacxx.test.debugging.<NAME>`` with host debug information and optimization
 disabled. For each enabled debugger, it registers a serial CTest named
@@ -196,7 +199,7 @@ function(libcudacxx_add_pretty_printer_test)
     )
     # Set an aggressive timeout because pretty printers should not be slow. If they are,
     # then it's a problem with the printer and/or it is doing too much
-    set_tests_properties(${test_name} PROPERTIES TIMEOUT 10)
+    set_tests_properties(${test_name} PROPERTIES TIMEOUT 10 SKIP_RETURN_CODE 77)
   endforeach()
 endfunction()
 

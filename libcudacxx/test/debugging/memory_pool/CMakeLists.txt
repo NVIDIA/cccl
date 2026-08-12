@@ -15,5 +15,6 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_after_update memory_pool.update.after value
     --case inspect_in_use memory_pool.in_use value
     --case inspect_after_release memory_pool.after_release value
+    --case inspect_shared_in_use memory_pool.shared_in_use value
     # gersemi: on
 )

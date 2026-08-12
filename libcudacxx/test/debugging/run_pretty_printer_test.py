@@ -36,10 +36,11 @@ _TEMPLATE_PATTERN = re.compile(r">\s+>")
 _NONZERO_HEX_PATTERN = re.compile(r"\b0x(?!0+\b)[0-9a-fA-F]+\b")
 _STREAM_UNIQUE_ID_PATTERN = re.compile(r"(?<=unique_id=)\d+")
 _NUMERIC_LITERAL_PATTERN = re.compile(r"\b(\d+)[uUlL]*(?![\w.])")
-# The driver rounds pool usage up, so only zero vs nonzero is stable.
-_POOL_USAGE_PATTERN = re.compile(
-    r"\b((?:reserved|used)_mem_(?:current|high) = )[1-9]\d*"
+# A scenario prints this when it cannot run on the current driver or device.
+_SKIP_PATTERN = re.compile(
+    r"^\s*LIBCUDACXX_PRETTY_PRINTER_SKIP:\s*(?P<reason>.+)$", re.MULTILINE
 )
+_SKIP_RETURN_CODE = 77
 
 
 class HarnessError(RuntimeError):
@@ -523,8 +524,7 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
     Returns
     -------
     str
-        Output with unstable addresses, pool usage, and debugger prefixes
-        normalized.
+        Output with unstable addresses and debugger prefixes normalized.
     """
     normalized_lines: list[str] = []
     for line in output.splitlines():
@@ -534,7 +534,6 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
         line = _NONZERO_HEX_PATTERN.sub("<address>", line)
         line = _STREAM_UNIQUE_ID_PATTERN.sub("<id>", line)
         line = _NUMERIC_LITERAL_PATTERN.sub(r"\1", line)
-        line = _POOL_USAGE_PATTERN.sub(r"\g<1><nonzero>", line)
         normalized_lines.append(line)
     return "\n".join(normalized_lines) + "\n"
 
@@ -765,7 +764,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
     Returns
     -------
     int
-        Zero on success and one for handled debugger or matching failures.
+        Zero on success, 77 when the scenario reports itself unsupported, and
+        one for handled debugger or matching failures.
 
     Raises
     ------
@@ -787,6 +787,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
     except DebuggerError as error:
         _report_error(args, debugger, command_file, error)
         return 1
+
+    skipped = _SKIP_PATTERN.search(transcript)
+    if skipped:
+        scenario = args.expected.parent.name
+        print(f"skipping {scenario}: {skipped.group('reason').strip()}")
+        return _SKIP_RETURN_CODE
 
     try:
         _match_output(args, debugger, args.cases, transcript)

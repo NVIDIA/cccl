@@ -7,6 +7,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/stream>
 
+#include <cstdio>
+
 #define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 using pool_ref_alias = cuda::device_memory_pool_ref;
@@ -16,6 +18,20 @@ using pool_ref_alias = cuda::device_memory_pool_ref;
   cuda::memory_pool_properties props{};
   props.release_threshold = release_threshold;
   return props;
+}
+
+// Stream-ordered allocation support is a device attribute, so probe it at runtime.
+[[nodiscard]] bool device_pools_supported()
+{
+  try
+  {
+    (void) cuda::device_memory_pool{cuda::device_ref{0}};
+    return true;
+  }
+  catch (const cuda::cuda_error&)
+  {
+    return false;
+  }
 }
 
 [[gnu::noinline]] void inspect_owning(const cuda::device_memory_pool& value)
@@ -78,8 +94,19 @@ using pool_ref_alias = cuda::device_memory_pool_ref;
   KEEP_FOR_DEBUGGER(value);
 }
 
+[[gnu::noinline]] void inspect_shared_in_use(const cuda::shared_device_memory_pool& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
 int main()
 {
+  if (!device_pools_supported())
+  {
+    std::puts("LIBCUDACXX_PRETTY_PRINTER_SKIP: device memory pools are not supported");
+    return 0;
+  }
+
   constexpr cuda::device_ref device{0};
 
   const cuda::device_memory_pool owning_pool{device, properties(1024 * 1024)};
@@ -130,6 +157,14 @@ int main()
   inspect_after_release(released_pool);
 
   in_use_pool.deallocate(stream, in_use_allocation, allocation_size);
+  stream.sync();
+
+  cuda::shared_device_memory_pool shared_in_use_pool{device, properties(9 * 1024 * 1024)};
+  void* const shared_in_use_allocation = shared_in_use_pool.allocate(stream, allocation_size);
+  stream.sync();
+  inspect_shared_in_use(shared_in_use_pool);
+
+  shared_in_use_pool.deallocate(stream, shared_in_use_allocation, allocation_size);
   stream.sync();
 
   return 0;
