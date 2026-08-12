@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include <cctype>
-#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <string>
@@ -100,54 +98,6 @@ add_extra_cub_thrust_includes(hostjit::CompilerConfig& jit_config, const char* c
   add_if_dir(strip_dash_i_prefix(thrust_path));
 }
 
-// std::getenv is deprecated by MSVC's CRT, and this header is included by the
-// algorithm .cu files, which build with /W4 /WX -- so an unguarded call is a
-// hard error there. The suppression is confined to this one wrapper rather
-// than defining _CRT_SECURE_NO_WARNINGS, which a header has no business
-// imposing on every translation unit that includes it. _dupenv_s would avoid
-// the warning outright but returns an allocation the caller must free, which
-// is a worse trade for a value read once per process.
-inline const char* read_env(const char* name)
-{
-#if defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif
-  return std::getenv(name);
-#if defined(_MSC_VER)
-#  pragma warning(pop)
-#endif
-}
-
-// Tri-state reading of `CCCL_ENABLE_PCH`: -1 unset/unrecognized, 0 off, 1 on.
-// Looked up once per process -- the value cannot meaningfully change mid-run,
-// and every build would otherwise pay a getenv.
-inline int pch_env_override()
-{
-  static const int cached = [] {
-    const char* v = read_env("CCCL_ENABLE_PCH");
-    if (!v || v[0] == '\0')
-    {
-      return -1;
-    }
-    std::string s{v};
-    for (auto& c : s)
-    {
-      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    }
-    if (s == "1" || s == "true" || s == "on" || s == "yes")
-    {
-      return 1;
-    }
-    if (s == "0" || s == "false" || s == "off" || s == "no")
-    {
-      return 0;
-    }
-    return -1;
-  }();
-  return cached;
-}
-
 // RAII helper for merging cub_path / thrust_path (`-I`-prefixed) into a
 // `cccl_build_config*`'s `extra_include_dirs` before passing to
 // `CubCall::compile()`. The merged config and the strings it points into are
@@ -166,28 +116,11 @@ public:
       merged_ = *base;
     }
 
-    // Effective `enable_pch`, highest precedence first:
-    //   1. CCCL_ENABLE_PCH=0  -- force off. A kill switch has to beat
-    //      everything, including a caller that explicitly asked for PCH.
-    //   2. an explicit caller config -- use it as given.
-    //   3. CCCL_ENABLE_PCH=1  -- blanket opt-in for callers that cannot pass
-    //      a config (the C API's build entry points without `_ex`).
-    //   4. otherwise off, which is the unchanged C default.
-    //
-    // Note the asymmetry in 1 vs 3: an env var may switch the feature off
-    // behind a caller's back, but not on. Letting it force on would mean a
-    // caller that explicitly set `enable_pch = 0` silently gets a PCH anyway,
-    // which makes the C API non-hermetic for no benefit -- an escape hatch
-    // only needs to work in the disabling direction.
-    const int env = pch_env_override();
-    if (env == 0)
-    {
-      merged_.enable_pch = 0;
-    }
-    else if (!base && env == 1)
-    {
-      merged_.enable_pch = 1;
-    }
+    // Precompiled-header policy belongs to the caller: whether to enable it,
+    // where the cache lives, and when to prune it. Nothing here reads the
+    // environment or picks a default location, so a build writes only where it
+    // was told to.
+
     // We append at most two paths (cub + thrust). Reserve up front so the
     // owned_strs_/ptrs_ vectors don't reallocate — important because we
     // capture pointers into owned_strs_ for `extra_include_dirs`.

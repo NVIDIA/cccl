@@ -1,16 +1,14 @@
-# v2 (cccl.c.parallel.v2, HostJIT) — the cccl_build_config every build passes,
-# plus the PCH cache-directory accessor. Selected at CMake configure time and
-# configure_file'd to the build dir as `_bindings_build_config.pxi`.
+# v2 (cccl.c.parallel.v2, HostJIT) — the build configuration every build passes.
+# Selected at CMake configure time and configure_file'd to the build dir as
+# `_bindings_build_config.pxi`.
 #
-# v2's struct carries two fields v1's does not: enable_pch and verbose.
+# Precompiled headers are enabled here. Parsing the CUB / libcudacxx / Thrust
+# bundle dominates a build, and one cached header pair serves every algorithm.
+# Leaving them on is safe: an unusable cache or a stale entry falls back to
+# building without one.
 #
-# Precompiled headers are turned on here, for every build. Parsing the CUB /
-# libcudacxx / Thrust bundle dominates a HostJIT build, and one cached PCH pair
-# serves all twelve algorithms, so this is the difference between a ~3.4s and a
-# ~1.1s cold build. It is safe to leave on unconditionally: when the cache is
-# unusable, or an entry is stale, the C layer builds without a PCH instead of
-# failing. Set CCCL_ENABLE_PCH=0 to disable — the C layer treats that as a kill
-# switch that beats this value.
+# The cache location and the CCCL_ENABLE_PCH switch come from `_pch.py`, which
+# owns that policy; this file only carries the decision across.
 
 cdef extern from "cccl/c/types.h":
     cdef struct cccl_build_config:
@@ -19,46 +17,46 @@ cdef extern from "cccl/c/types.h":
         const char** extra_include_dirs
         size_t num_extra_include_dirs
         int enable_pch
+        const char* pch_cache_dir
         int verbose
 
 
-cdef extern from "cccl/c/pch.h":
-    cdef size_t cccl_hostjit_pch_cache_dir(char*, size_t) nogil
-
-
-# One config shared by every build. The C layer copies what it needs during the
-# call and retains no pointer into it, so a single module-level instance is
-# enough and there is nothing to keep alive per build.
+# One config shared by every build. Its contents are copied during the call and
+# no pointer into it is retained, so a single module-level instance suffices and
+# there is nothing to keep alive per build.
 cdef cccl_build_config _shared_build_config
 
-_shared_build_config.extra_compile_flags = NULL
-_shared_build_config.num_extra_compile_flags = 0
-_shared_build_config.extra_include_dirs = NULL
-_shared_build_config.num_extra_include_dirs = 0
-_shared_build_config.enable_pch = 1
-_shared_build_config.verbose = 0
+# Keeps the encoded cache path alive for as long as the config points at it.
+cdef bytes _pch_cache_dir_bytes = b""
+
+
+cdef inline void _init_build_config():
+    global _pch_cache_dir_bytes
+    from ._pch import resolve_cache_dir
+
+    directory = resolve_cache_dir()
+    _pch_cache_dir_bytes = b"" if directory is None else str(directory).encode("utf-8")
+
+    _shared_build_config.extra_compile_flags = NULL
+    _shared_build_config.num_extra_compile_flags = 0
+    _shared_build_config.extra_include_dirs = NULL
+    _shared_build_config.num_extra_include_dirs = 0
+    # An unresolvable directory is itself the "off" signal: an empty path means
+    # build without a precompiled header.
+    _shared_build_config.enable_pch = 0 if directory is None else 1
+    _shared_build_config.pch_cache_dir = (
+        NULL if not _pch_cache_dir_bytes else <const char*>_pch_cache_dir_bytes
+    )
+    _shared_build_config.verbose = 0
+
+
+_init_build_config()
 
 
 cdef inline cccl_build_config* _get_build_config() noexcept nogil:
     return &_shared_build_config
 
 
-
-
 cdef inline str _pch_cache_dir_impl():
-    # Two-call snprintf idiom: ask for the size, then fill. The path comes from
-    # an environment-dependent chain resolved in the C layer, so there is no
-    # bounded length to assume here.
-    cdef size_t needed = cccl_hostjit_pch_cache_dir(NULL, 0)
-    if needed == 0:
-        return None
-
-    cdef char* buf = <char*>malloc(needed)
-    if buf == NULL:
-        raise MemoryError()
-    try:
-        if cccl_hostjit_pch_cache_dir(buf, needed) == 0:
-            return None
-        return buf[:needed - 1].decode("utf-8")
-    finally:
-        free(buf)
+    # Report the path this module resolved.
+    return _pch_cache_dir_bytes.decode("utf-8") if _pch_cache_dir_bytes else None

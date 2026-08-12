@@ -762,7 +762,9 @@ Measured on sm_89, one build per process:
      - 2.38x
 
 Generating the pair costs ~4.2 s once per target and consumes ~85 MB of cache.
-``ci/util/bench_hostjit_pch.sh`` reproduces these numbers and plots them.
+The benchmark that produced these numbers is linked from the pull request that
+introduced them; it is not carried in-tree, since it is a one-off measurement
+rather than something CI runs.
 
 Note that generation costs more than an entire cold build, so a first build
 against an empty cache (~4.7 s) is *slower* than one with PCH off (~3.1 s). PCH
@@ -807,9 +809,11 @@ Inspecting and clearing the cache::
     cc.pch_cache_dir()     # -> Path, or None if there is no cache
     cc.clear_pch_cache()   # -> number of files removed
 
-``pch_cache_dir()`` asks the C layer rather than reconstructing the resolution
-chain, so it stays correct whatever the environment. Both return ``None`` / ``0``
-on the v1 backend, which has no PCH cache.
+Both return ``None`` / ``0`` on the v1 backend, which has no PCH cache.
+
+``cuda/compute/_pch.py`` owns the cache: which directory to use, whether the
+feature is on, and when to prune. The backend generates and loads entries at the
+location it is given, so a build writes only where that module points it.
 
 Clearing only costs the time to regenerate. Reach for it to reclaim disk, or to
 force regeneration after changing something the cache key does not cover —
@@ -824,10 +828,8 @@ explicit act.
 Environment variables:
 
 ``CCCL_ENABLE_PCH``
-  ``0`` disables precompiled headers entirely. This is a kill switch: it beats
-  an explicit ``enable_pch = 1`` from a C caller. ``1`` enables PCH for C
-  callers that pass no ``cccl_build_config`` (it does not override a caller that
-  explicitly disabled it). ``cuda.compute`` enables PCH itself and needs neither.
+  ``0`` disables precompiled headers. Builds then run exactly as they would
+  with no cache available.
 
 ``CCCL_PCH_CACHE_DIR``
   Cache location, used verbatim. When unset, the default differs by platform.
@@ -836,21 +838,15 @@ Environment variables:
   temp directory. On Windows: ``%LOCALAPPDATA%\cccl\hostjit_pch``, then a
   directory under the system temp directory — ``XDG_CACHE_HOME`` and ``HOME``
   are not consulted there. Set this in CI, or in tests, to avoid touching the
-  shared user cache.
+  shared user cache. The first writable candidate wins; if none is writable,
+  precompiled headers are simply off.
 
 ``CCCL_PCH_CACHE_MAXSIZE``
   Cache size cap, in bytes or with a ``K``/``M``/``G`` suffix. Default 1 GiB;
   ``0`` disables eviction. Modelled on ``CUDA_CACHE_MAXSIZE``, whose 256 MiB
   default is too small here — CUDA caches cubins of a few kilobytes, whereas a
-  single PCH is tens of megabytes.
-
-C callers opt in explicitly, since the C API default is unchanged (off)::
-
-    cccl_build_config cfg = {0};
-    cfg.enable_pch = 1;
-    cccl_device_reduce_build_ex(&build, d_in, d_out, op, init, determinism,
-                                cc_major, cc_minor,
-                                cub, thrust, libcudacxx, ctk, &cfg);
+  single PCH is tens of megabytes. Applied after a build; entries carry the
+  mtime of their last use, so eviction is least-recently-used.
 
 Clearing caches
 +++++++++++++++
