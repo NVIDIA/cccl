@@ -86,7 +86,7 @@ class MemoryResourceSyntheticProvider:
         return self.resource is not None
 
     def get_child_index(self, name: str) -> int:
-        return 0 if name == "resource" else -1
+        return 0 if name == "resource" and self.resource is not None else -1
 
     def get_child_at_index(self, index: int) -> lldb.SBValue | None:
         return self.resource if index == 0 else None
