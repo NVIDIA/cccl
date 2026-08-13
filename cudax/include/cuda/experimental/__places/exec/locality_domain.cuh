@@ -298,6 +298,7 @@ public:
     {
       init_device(dev_id, split);
       it = devices_.find(key);
+      EXPECT(it != devices_.end(), "init_device did not register device ", dev_id);
     }
     EXPECT((domain_id >= 0 && domain_id < static_cast<int>(it->second.size())),
            "Invalid locality domain ordinal ",
@@ -323,7 +324,13 @@ private:
     cuda_try(cuDeviceGetDevResource(device, &sm_resource, CU_DEV_RESOURCE_TYPE_SM));
 
     ::std::vector<CUdevResource> domain_sms(num_domains);
-    if (raw_domains > 0)
+    if (raw_domains == 0)
+    {
+      // Whole-device degrade: the single domain covers all SMs, whatever the
+      // requested split method.
+      domain_sms[0] = sm_resource;
+    }
+    else
     {
       // One SM resource group per locality domain. The split method decides
       // how each group is sized and structured (see the public documentation
@@ -380,12 +387,6 @@ private:
       cuda_try(cuDevSmResourceSplit(
         domain_sms.data(), static_cast<unsigned int>(num_domains), &sm_resource, &remainder, 0, params.data()));
     }
-    else
-    {
-      // Whole-device degrade: the single domain covers all SMs, whatever the
-      // requested split method.
-      domain_sms[0] = sm_resource;
-    }
 
     // Create one green context (and a stream pool) per locality domain.
     ::std::vector<domain_entry> entries(num_domains);
@@ -399,7 +400,7 @@ private:
       entries[i].pool = stream_pool(exec_place::impl::pool_size);
     }
 
-    devices_[::std::make_pair(dev_id, split)] = ::std::move(entries);
+    devices_[::std::make_pair(dev_id, split)] = mv(entries);
   }
 
   // Memoized locality_domain_native_raw_count per device (driver attribute

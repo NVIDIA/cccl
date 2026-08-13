@@ -635,7 +635,7 @@ the selected extents; later axes shift left and trailing extents become one:
 
 These operations are useful when a partition should consume several axes of
 a processor grid as one logical axis. They are coordinate transformations,
-not :ref:`places-partitioning`: the latter decomposes a place into constituent
+not :ref:`partitioning <places-partitioning>`: the latter decomposes a place into constituent
 resources.
 
 .. _places-partitioning:
