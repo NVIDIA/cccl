@@ -31,11 +31,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __compose_op
 {
   template <class _Fn1, class _Fn2, class... _Args>
@@ -51,10 +46,6 @@ struct __compose_op
       ::cuda::std::invoke(::cuda::std::forward<_Fn2>(__f2), ::cuda::std::forward<_Args>(__args)...));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Fn1, class _Fn2>
 struct __compose_t : __perfect_forward<__compose_op, _Fn1, _Fn2>

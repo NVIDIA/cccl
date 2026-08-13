@@ -116,11 +116,6 @@ struct __tuple_cat_return_ref
 template <class _Types, class _I0, class _J0>
 struct __tuple_cat;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class... _Types, size_t... _I0, size_t... _J0>
 struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J0...>>
 {
@@ -156,10 +151,6 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
       ::cuda::std::forward<_Tuples>(__tpls)...);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Tuple0, class... _Tuples>
 _CCCL_API constexpr typename __tuple_cat_return<_Tuple0, _Tuples...>::type tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
