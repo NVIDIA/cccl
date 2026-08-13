@@ -8,11 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
+// Temporary nvcc workaround for a cuda::buffer destructor conflict
 #if defined(__CUDACC__)
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
+#include <cuda/__cccl_config>
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -76,14 +77,14 @@ constexpr int erase_modulus  = 4;
 template <class Pair>
 struct iota_pair
 {
-  __host__ __device__ Pair operator()(int i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API Pair operator()(int i) const noexcept
   {
     return Pair{static_cast<typename Pair::first_type>(i), static_cast<typename Pair::second_type>(i + payload_offset)};
   }
 };
 
 template <class Pair>
-__global__ void mark_erased_slots(
+_CCCL_KERNEL_ATTRIBUTES void mark_erased_slots(
   Pair* slots,
   ::cuda::std::size_t capacity,
   typename Pair::first_type empty_key_sentinel,
@@ -100,7 +101,7 @@ __global__ void mark_erased_slots(
 }
 
 template <class Map>
-void mark_erased_slots(Map& map, ::cuda::stream_ref stream)
+_CCCL_HOST_API void mark_erased_slots(Map& map, ::cuda::stream_ref stream)
 {
   constexpr int block_size = 128;
   const auto grid_size     = static_cast<unsigned>((map.capacity() + block_size - 1) / block_size);
@@ -116,7 +117,7 @@ struct matches_rehashed_values
   const Mapped* found;
   Mapped empty_value_sentinel;
 
-  __device__ bool operator()(int i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
   {
     const auto expected =
       (i % erase_modulus == 0)
@@ -127,7 +128,7 @@ struct matches_rehashed_values
 };
 
 template <class Map, class MemoryResource>
-void require_rehashed_contents(const Map& map, ::cuda::stream_ref stream, MemoryResource mr, int num_keys)
+_CCCL_HOST_API void require_rehashed_contents(const Map& map, ::cuda::stream_ref stream, MemoryResource mr, int num_keys)
 {
   using key_type    = typename Map::key_type;
   using mapped_type = typename Map::mapped_type;
