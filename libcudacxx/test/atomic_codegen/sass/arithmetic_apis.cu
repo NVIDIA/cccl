@@ -11,27 +11,43 @@
 // clang-format off
 // %PARAM% TEMPLATE,SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE api cab=ca,tsb,CTA,block:cad=ca,tsd,GPU,non_block:cas=ca,tss,SYS,non_block:carb=car,tsb,CTA,block:card=car,tsd,GPU,non_block:cars=car,tss,SYS,non_block:csa=csa,tss,SYS,non_block:csar=csar,tss,SYS,non_block
 // %PARAM% OP,FILECHECK_PREFIX_OP op add=fetch_add,add:sub=fetch_sub,sub
-// %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_ORDER order relaxed=mor,,no_membar:acquire=moa,,no_membar:release=more,ALL,membar:acq_rel=moar,ALL,membar:seq_cst=mosc,SC,membar
+// %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar
+// %FILECHECK% PREFIX_COMBINE add,block
+// %FILECHECK% PREFIX_COMBINE add,non_block
+// %FILECHECK% PREFIX_COMBINE sub,block
+// %FILECHECK% PREFIX_COMBINE sub,non_block
+// %FILECHECK% PREFIX_COMBINE non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_arithmetic(TEMPLATE<int32_t, SCOPE>& atom, int32_t value)
+extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom, int32_t value)
 {
   return atom.OP(value, ORDER);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_arithmetic.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; ADD-NOT: {{.*}}{{(IADD3|IMAD\.MOV)}} {{R[0-9]+}}, {{.*}}-R6{{.*}}
-; SUB-DAG: {{.*}}{{(IADD3|IMAD\.MOV)}} [[OPERAND:R[0-9]+]], {{.*}}-R6{{.*}}
+; ADD-NOT: {{.*}}{{(IADD3|IMAD\.MOV)}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
+; SUB-DAG: {{.*}}{{(IADD3|IMAD\.MOV)}} [[OPERAND:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR-DAG: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
-; NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; ADD_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; ADD_NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; SUB_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
+; SUB_NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
+; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 

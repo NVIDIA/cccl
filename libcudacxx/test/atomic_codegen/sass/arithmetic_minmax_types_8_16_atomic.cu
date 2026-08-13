@@ -12,7 +12,9 @@
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE,SASS_CALC type f16=f16,HSETP2:bf16=bf16,HSETP2
 // %PARAM% OP op fetch_min:fetch_max
-// %PARAM% ORDER,FILECHECK_PREFIX_ORDER order relaxed=mor,no_membar:acquire=moa,no_membar:release=more,release:acq_rel=moar,release:seq_cst=mosc,seq_cst
+// %PARAM% ORDER,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,non_seq_cst,no_acquire,no_membar:acquire=moa,non_seq_cst,acquire,no_membar:release=more,non_seq_cst,no_acquire,release:acq_rel=moar,non_seq_cst,acquire,release:seq_cst=mosc,seq_cst,acquire,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
 
 #include <cuda_bf16.h>
@@ -20,7 +22,7 @@
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_minmax(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 {
   return atom.OP(value, ORDER);
 }
@@ -30,12 +32,17 @@ __device__ auto atomic_minmax(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 // clang-format off
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_minmax.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
 ; BLOCK-DAG: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR:R[0-9]+]]{{(\.64)?\].*}}
 ; NON_BLOCK-DAG: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR:R[0-9]+]]{{(\.64)?\].*}}
 ; SMXX-DAG: {{.*}}[[SASS_CALC]]{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SEQ_CST-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; RELEASE-DAG: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
@@ -43,6 +50,9 @@ __device__ auto atomic_minmax(cuda::atomic<TYPE, SCOPE>& atom, TYPE value)
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}} PT, [[OLD:R[0-9]+]], {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, [[EXPECTED:R[0-9]+]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, [[EXPECTED:R[0-9]+]], {{R[0-9]+}}{{.*}}
+; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
