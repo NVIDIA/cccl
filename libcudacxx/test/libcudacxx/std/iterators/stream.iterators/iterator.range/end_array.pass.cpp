@@ -20,13 +20,8 @@ int main(int, char**)
 {
   int ia[] = {1, 2, 3};
 
-#if _CCCL_TILE_COMPILATION()
-  int* i = cuda::std::__begin_cpo{}(ia);
-  int* e = cuda::std::__end_cpo{}(ia);
-#else
   int* i = cuda::std::begin(ia);
   int* e = cuda::std::end(ia);
-#endif // !_CCCL_TILE_COMPILATION()
   assert(e == ia + 3);
   assert(e - i == 3);
 

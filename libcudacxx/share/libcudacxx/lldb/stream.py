@@ -9,6 +9,8 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+import cccl_common
+
 import lldb
 
 _STREAM_PATTERN = re.compile(r"^cuda::(?:stream|stream_ref)$")
@@ -105,14 +107,12 @@ class StreamSnapshot(NamedTuple):
 
 
 def is_cuda_stream(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _STREAM_PATTERN.fullmatch(type_name) is not None
 
 
 def _stream_handle(value: lldb.SBValue) -> lldb.SBValue:
-    value = value.GetNonSyntheticValue()
+    value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
     handle = value.GetChildMemberWithName("__stream")
     if handle.IsValid():
         return handle
@@ -207,6 +207,7 @@ def _query_stream_snapshot(value: lldb.SBValue, handle: int) -> StreamSnapshot |
 
 
 def stream_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
+    value = cccl_common.strip_reference_value(value)
     handle = _stream_handle(value)
     if not handle.IsValid() or handle.GetError().Fail():
         return None
@@ -235,7 +236,7 @@ class StreamSyntheticProvider:
     """Expose CUDA stream properties as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
-        self.value = value.GetNonSyntheticValue()
+        self.value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
         self.children: list[tuple[str, int, str]] = []
         self.summary_unique_id: int | None = None
         self.stop_id: int | None = None

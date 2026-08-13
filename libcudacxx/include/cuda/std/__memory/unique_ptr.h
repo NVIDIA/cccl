@@ -69,7 +69,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
+  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void _CCCL_STATIC_CALL_OPERATOR(_Tp* __ptr) noexcept
   {
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     static_assert(sizeof(_Tp) >= 0, "cannot delete an incomplete type");
@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
-  operator()([[maybe_unused]] _Up* __ptr) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] _Up* __ptr) noexcept
   {
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -733,7 +733,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
   using result_type   = CCCL_DEPRECATED size_t;
 #  endif
 
-  _CCCL_HOST_DEVICE_API inline size_t operator()(const unique_ptr<_Tp, _Dp>& __ptr) const
+  _CCCL_HOST_DEVICE_API inline size_t _CCCL_STATIC_CALL_OPERATOR(const unique_ptr<_Tp, _Dp>& __ptr)
   {
     using pointer = typename unique_ptr<_Tp, _Dp>::pointer;
     return hash<pointer>()(__ptr.get());

@@ -152,14 +152,15 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Compute, per destination rank, how many local keys it is owed and where they land.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API ::std::vector<
   typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __resizable_buffer_type<::cuda::std::size_t>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
   const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
   ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets)
@@ -184,12 +185,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
   __local_current_offsets->reserve(__num_local);
 
   {
-    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __env_it   = ::cuda::std::ranges::begin(__envs);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
+    auto __env_it       = ::cuda::std::ranges::begin(__envs);
+    auto __input_it     = ::cuda::std::ranges::begin(__input_iters);
+    auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
       const auto& __hist   = __hist_results[__idx].__hist;
       const auto& __I_j    = __hist_results[__idx].__splitters.__I_j;
@@ -241,13 +243,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
       // histogramming phase, but ultimately it does something very similar here. I wonder if we
       // can't just reuse the histogram directly here. There is a lot of repeated information
       // here.
-      const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it));
+      const auto* __input_begin = ::cuda::std::to_address(*__input_it);
       using __input_it_t        = ::cuda::std::remove_cvref_t<decltype(__input_begin)>;
 
       auto __op =
         __send_count_and_offset_fn<__bucket_count_fn<__input_it_t, __bucket_to_splitter_key_fn<_Tp>, _BinaryOp>>{
           {__input_begin,
-           ::cuda::std::to_address(::cuda::std::ranges::end(*__input_it)),
+           __input_begin + *__num_items_it,
            // This is doing double duty here. Not only do we use it to calculate the actual size
            // of each bin, but we also use the __rank() function to calculate the offsets.
            __bucket_to_splitter_key_fn<_Tp>{
@@ -363,16 +365,17 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
 
 //! @brief Send the keys in `[S(d - 1), S(d))` to rank `d`, then merge the runs each rank receives.
 //!
-//! `__local_inputs` must be locally sorted and `__hist_results` carry finalized brackets
-//! from `__histogramming_phase`.
+//! The keys in `__input_iters` must be locally sorted and `__hist_results` carry finalized
+//! brackets from `__histogramming_phase`.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange, class _InputRange>
+template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange_result_type
 _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRange&& __local_inputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
   const ::std::vector<__per_comm_histogramming_result_type>& __hist_results)
 {
@@ -384,21 +387,21 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
 
   auto __local_recvd = [&] {
     const auto __local_counts = __compute_send_counts_and_offsets(
-      __setup, __comms, __envs, __local_inputs, __cmp, __hist_results, &__local_current_offsets);
+      __setup, __comms, __envs, __input_iters, __num_items_range, __cmp, __hist_results, &__local_current_offsets);
 
     return __make_recv_buffers(__comms, __envs, __comm_size, __local_counts, &__local_h_counts);
   }();
 
   {
     auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto __input_it = ::cuda::std::ranges::begin(__input_iters);
     auto&& __guard  = __comm_it->group_guard();
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
     {
       __comm_it->all_to_all_v(
         __guard,
-        ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)),
+        ::cuda::std::to_address(*__input_it),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_counts_column).data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_displs_column).data(),
         __local_recvd[__idx].data(),
@@ -411,11 +414,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   // Merge the p received sorted runs into this phase's output.
   //
   // The merged keys stay in a stream-ordered buffer rather than being written back into the
-  // caller's range: `__local_inputs` is the send buffer of the `all_to_all_v` enqueued above, and
-  // resizing it here would both alias that in-flight collective and, for a container whose growth
-  // reallocates through a synchronous allocator, block this rank inside a region where its peers
-  // are waiting on a collective it has not yet joined. The caller's range is written exactly once,
-  // at the very end of the rebalance phase, when nothing is in flight.
+  // caller's storage: the keys behind `__input_iters` are the send buffer of the `all_to_all_v`
+  // enqueued above, and writing them here would alias that in-flight collective. The caller's
+  // storage is written exactly once, at the very end of the rebalance phase, when nothing is in
+  // flight.
   ::std::vector<__resizable_buffer_type<_Tp>> __local_merged;
 
   __local_merged.reserve(__num_local);

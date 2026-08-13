@@ -24,11 +24,11 @@
 
 struct View : cuda::std::ranges::view_base
 {
-  TEST_HOST_DEVICE_FUNC int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   }
-  TEST_HOST_DEVICE_FUNC int* end() const
+  TEST_FUNC int* end() const
   {
     return nullptr;
   }
@@ -41,7 +41,7 @@ _CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((View), View v)((v.begin()));
 
 struct Pred
 {
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -54,7 +54,7 @@ template <bool Ret>
 struct always
 {
   template <class... Args>
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(Args&&...) const
+  TEST_FUNC constexpr bool operator()(Args&&...) const
   {
     return Ret;
   }
@@ -62,17 +62,17 @@ struct always
 
 struct TrackingPred
 {
-  TEST_HOST_DEVICE_FUNC constexpr explicit TrackingPred(bool* moved, bool* copied)
+  TEST_FUNC constexpr explicit TrackingPred(bool* moved, bool* copied)
       : moved_(moved)
       , copied_(copied)
   {}
-  TEST_HOST_DEVICE_FUNC constexpr TrackingPred(TrackingPred const& other)
+  TEST_FUNC constexpr TrackingPred(TrackingPred const& other)
       : moved_(other.moved_)
       , copied_(other.copied_)
   {
     *copied_ = true;
   }
-  TEST_HOST_DEVICE_FUNC constexpr TrackingPred(TrackingPred&& other)
+  TEST_FUNC constexpr TrackingPred(TrackingPred&& other)
       : moved_(other.moved_)
       , copied_(other.copied_)
   {
@@ -81,7 +81,7 @@ struct TrackingPred
   TrackingPred& operator=(TrackingPred const&) = default;
   TrackingPred& operator=(TrackingPred&&)      = default;
 
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -90,13 +90,13 @@ struct TrackingPred
 };
 
 template <class Range, class Iter, class Sent, cuda::std::size_t N>
-TEST_HOST_DEVICE_FUNC constexpr auto make_subrange(int (&buffer)[N])
+TEST_FUNC constexpr auto make_subrange(int (&buffer)[N])
 {
   return Range{Iter{buffer}, Sent{Iter{buffer + N}}};
 }
 
 template <class Iter>
-TEST_HOST_DEVICE_FUNC constexpr void testOne()
+TEST_FUNC constexpr void testOne()
 {
   using Sent  = sentinel_wrapper<Iter>;
   using Range = cuda::std::ranges::subrange<Iter, Sent>;
@@ -156,7 +156,7 @@ TEST_HOST_DEVICE_FUNC constexpr void testOne()
   {
     struct LessThan3
     {
-      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int i) const
+      TEST_FUNC constexpr bool operator()(int i) const
       {
         return i < 3;
       }
@@ -204,7 +204,7 @@ TEST_HOST_DEVICE_FUNC constexpr void testOne()
   {
     struct LessThan3
     {
-      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int& i) const
+      TEST_FUNC constexpr bool operator()(int& i) const
       {
         return i < 3;
       }
@@ -241,7 +241,7 @@ TEST_HOST_DEVICE_FUNC constexpr void testOne()
   }
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testOne<cpp17_input_iterator<int*>>();
   testOne<cpp20_input_iterator<int*>>();

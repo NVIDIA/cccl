@@ -66,13 +66,14 @@ _CCCL_END_NAMESPACE_CUDA_STD
 // [range.iter.op.distance]
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 _CCCL_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
-  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last)
   {
     iter_difference_t<_Ip> __n = 0;
     while (__first != __last)
@@ -86,7 +87,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
-  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
+  [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Ip> _CCCL_STATIC_CALL_OPERATOR(_Ip&& __first, _Sp __last)
   {
     if constexpr (sized_sentinel_for<_Sp, remove_cvref_t<_Ip>>)
     {
@@ -101,15 +102,15 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES((range<_Rp>) )
-  [[nodiscard]] _CCCL_API constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
+  [[nodiscard]] _CCCL_API constexpr range_difference_t<_Rp> _CCCL_STATIC_CALL_OPERATOR(_Rp&& __r)
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::__size_cpo{}(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
     }
     else
     {
-      return operator()(::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r));
+      return __fn{}(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
     }
   }
 };
@@ -118,9 +119,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __distance_cpo = __distance::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

@@ -38,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // Needs to be a functor for tile mode
 struct __fmt_hex_to_upper
 {
-  [[nodiscard]] _CCCL_API constexpr char operator()(char __c) const noexcept
+  [[nodiscard]] _CCCL_API constexpr char _CCCL_STATIC_CALL_OPERATOR(char __c) noexcept
   {
     switch (__c)
     {

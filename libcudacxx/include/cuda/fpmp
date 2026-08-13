@@ -24,9 +24,9 @@
 // Core multi-precision types and operations (constructors, conversions,
 // arithmetic and comparison operators, sqrt, rsqrt, fma).
 //
-// The large set of transcendental math functions (exp, log, trig, pow, ...) is
-// not part of this header: it is kept separate so translation units that only
-// need the core type do not pay its compile-time cost.
+// The large set of transcendental math functions (exp, log, trig, pow, ...)
+// lives in a separate umbrella header, <cuda/fpmp_math>, so translation units
+// that only need the core type do not pay its compile-time cost.
 #include <cuda/__fp/fpmp.h>
 // cuda::std::numeric_limits<> specialization for the fpmp2 types.
 #include <cuda/__fp/fpmp_limits.h>
