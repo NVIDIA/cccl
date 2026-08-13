@@ -921,9 +921,16 @@ public:
    *
    * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
    * the place gracefully degrades to the whole device.
+   *
+   * @param split Selects how the place's SM partition is carved out of the
+   *        device (whole-device coverage vs. strict per-domain affinity);
+   *        see `locality_domain_sm_split`. Ignored by backends without
+   *        native locality-domain support.
    */
-  static exec_place locality_domain(const locality_domain_view& view);
-  static exec_place locality_domain(int dev_id, int domain_id);
+  static exec_place locality_domain(const locality_domain_view& view,
+                                    locality_domain_sm_split split = locality_domain_sm_split::backfill);
+  static exec_place
+  locality_domain(int dev_id, int domain_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);
