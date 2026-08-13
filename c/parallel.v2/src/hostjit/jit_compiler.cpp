@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <chrono>
-#include <cstdint>
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -45,14 +45,22 @@ static constexpr const char* pch_preamble_source =
   "#include <cub/device/device_select.cuh>\n"
   "#include <cub/device/device_transform.cuh>\n";
 
-// 64-bit FNV-1a over everything that determines the contents of a PCH: the
-// preamble text, the PCH kind, and every option handed to libnvcc.
+// Digest everything that determines the contents of a PCH: the preamble text,
+// the PCH kind, and every option handed to libnvcc.
 //
 // This is the cache key. Two compiles that agree on it can share a PCH; two
 // that disagree must not, because clang validates a PCH against the command
 // line it was built with. Keying on (kind, sm_version) alone -- as this did
 // before -- means a source-tree build and an installed wheel, which differ in
 // their include paths, collide on one entry and break each other.
+//
+// The parts are joined with NULs so that adjacent values cannot run together
+// and produce the same digest as a different split, then hashed once.
+// `std::hash` is implementation-defined rather than a fixed algorithm, which
+// only means a library upgrade can change the key: entries under the old key
+// are simply never looked up again and age out of the cache. It is stable
+// across processes for a given binary, which is the property a cache shared
+// between builds actually needs.
 //
 // Header *contents* are deliberately not hashed: reading every CUB header to
 // digest it would cost about as much as the parse the PCH exists to avoid. An
@@ -61,29 +69,26 @@ static constexpr const char* pch_preamble_source =
 // retry-without-PCH path in JITCompiler::compile recovers.
 std::string hash_pch_options(const std::vector<std::string>& options, const std::string& kind_name)
 {
-  std::uint64_t h = 1469598103934665603ull;
-  auto mix        = [&h](std::string_view s) {
-    for (unsigned char c : s)
-    {
-      h ^= c;
-      h *= 1099511628211ull;
-    }
-    h ^= '\0';
-    h *= 1099511628211ull;
+  std::string blob;
+  const auto append = [&blob](std::string_view s) {
+    blob.append(s);
+    blob.push_back('\0');
   };
 
-  mix(pch_preamble_source);
-  mix(kind_name);
+  append(pch_preamble_source);
+  append(kind_name);
   for (const auto& option : options)
   {
-    mix(option);
+    append(option);
   }
 
+  std::size_t h = std::hash<std::string_view>{}(blob);
+
   // Fixed-width lowercase hex, so cache filenames sort and glob predictably.
-  std::string out(16, '0');
-  for (int i = 15; i >= 0; --i)
+  std::string out(2 * sizeof(h), '0');
+  for (auto i = out.size(); i-- > 0;)
   {
-    out[static_cast<size_t>(i)] = "0123456789abcdef"[h & 0xf];
+    out[i] = "0123456789abcdef"[h & 0xf];
     h >>= 4;
   }
   return out;
