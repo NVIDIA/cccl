@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__places/exec/green_context.cuh>
+#include <cuda/experimental/__places/exec/locality_domain.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 
@@ -40,6 +41,7 @@ namespace cuda::experimental::places
 enum class place_partition_scope
 {
   cuda_device,
+  locality_domain,
   green_context,
   cuda_stream,
 };
@@ -55,6 +57,8 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
   {
     case place_partition_scope::cuda_device:
       return "cuda_device";
+    case place_partition_scope::locality_domain:
+      return "locality_domain";
     case place_partition_scope::green_context:
       return "green_context";
     case place_partition_scope::cuda_stream:
@@ -72,12 +76,15 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
  *
  * Computes a vector of execution places that partition the input place at a
  * given granularity (see `place_partition_scope`). For example, a grid place
- * can be partitioned into devices, or into green contexts, or into CUDA streams.
+ * can be partitioned into devices, into locality domains, into green
+ * contexts, or into CUDA streams.
  *
  * Use the constructors that take `::cuda::experimental::stf::async_resources_handle&` when partitioning at
  * `cuda_stream` or `green_context` scope (stream and green-context resources
- * are obtained from the handle). The constructors without a handle support only
- * `cuda_device` scope. Green context scope requires CUDA 12.4 or later.
+ * are obtained from the handle). The constructors without a handle support the
+ * `cuda_device` and `locality_domain` scopes. Green context scope requires
+ * CUDA 12.4 or later; locality_domain scope works everywhere (devices without
+ * locality-domain support degrade to a single whole-device domain).
  *
  * Iteration over subplaces is provided via `begin()` / `end()`; `to_exec_place()` builds
  * an `exec_place` grid from the subplaces.
@@ -88,10 +95,14 @@ public:
   /** @brief Partition an execution place into a vector of subplaces (with async resource handle).
    * @param place The execution place to partition (e.g. grid or device)
    * @param handle Handle used to obtain stream or green-context resources when scope is cuda_stream or green_context
-   * @param scope Partitioning granularity (cuda_device, green_context, or cuda_stream)
+   * @param scope Partitioning granularity (cuda_device, locality_domain, green_context, or cuda_stream)
+   * @param ld_split SM split method applied when scope is locality_domain (see `locality_domain_sm_split`)
    */
-  place_partition(
-    exec_place place, ::cuda::experimental::stf::async_resources_handle& handle, place_partition_scope scope)
+  place_partition(exec_place place,
+                  ::cuda::experimental::stf::async_resources_handle& handle,
+                  place_partition_scope scope,
+                  locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
+      : ld_split_(ld_split)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
@@ -100,11 +111,15 @@ public:
   }
 
   /** @brief Partition an execution place into a vector of subplaces (no async handle).
-   * Only `cuda_device` scope is supported; green_context and cuda_stream require a handle.
+   * Only `cuda_device` and `locality_domain` scopes are supported; green_context and cuda_stream require a handle.
    * @param place The execution place to partition
-   * @param scope Partitioning granularity (must be cuda_device when no handle is provided)
+   * @param scope Partitioning granularity (cuda_device or locality_domain when no handle is provided)
+   * @param ld_split SM split method applied when scope is locality_domain (see `locality_domain_sm_split`)
    */
-  place_partition(const exec_place& place, place_partition_scope scope)
+  place_partition(const exec_place& place,
+                  place_partition_scope scope,
+                  locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
+      : ld_split_(ld_split)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts need an async resource handle.");
@@ -119,7 +134,9 @@ public:
    */
   place_partition(::cuda::experimental::stf::async_resources_handle& handle,
                   const ::std::vector<::std::shared_ptr<exec_place>>& places,
-                  place_partition_scope scope)
+                  place_partition_scope scope,
+                  locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
+      : ld_split_(ld_split)
   {
     for (const auto& place : places)
     {
@@ -132,8 +149,11 @@ public:
    * @param grid Input execution place grid to partition
    * @param scope Partitioning granularity
    */
-  place_partition(
-    ::cuda::experimental::stf::async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
+  place_partition(::cuda::experimental::stf::async_resources_handle& handle,
+                  const exec_place& grid,
+                  place_partition_scope scope,
+                  locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
+      : ld_split_(ld_split)
   {
     ::std::vector<::std::shared_ptr<exec_place>> places;
     places.reserve(grid.size());
@@ -152,7 +172,10 @@ public:
    * @param places Input execution places to partition
    * @param scope Partitioning granularity (must be cuda_device)
    */
-  place_partition(const ::std::vector<::std::shared_ptr<exec_place>>& places, place_partition_scope scope)
+  place_partition(const ::std::vector<::std::shared_ptr<exec_place>>& places,
+                  place_partition_scope scope,
+                  locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
+      : ld_split_(ld_split)
   {
     for (const auto& place : places)
     {
@@ -313,11 +336,39 @@ private:
       return;
     }
 
+    if (scope == place_partition_scope::locality_domain)
+    {
+      // No handle needed: locality-domain green contexts are cached in a
+      // process-wide registry keyed by (device, split method).
+      for (size_t i = 0; i < place.size(); ++i)
+      {
+        exec_place p = place.get_place(i);
+        if (!p.is_device())
+        {
+          // Host or other non-device place: nothing to partition into
+          sub_places.push_back(mv(p));
+          continue;
+        }
+        const int dev_id = device_ordinal(p.affine_data_place());
+        // Always at least 1: unsupported devices degrade to a single
+        // whole-device domain, so this scope is usable on any machine.
+        const unsigned int num_domains = locality_domain_count(dev_id);
+        for (unsigned int d = 0; d < num_domains; ++d)
+        {
+          sub_places.push_back(exec_place::locality_domain(dev_id, static_cast<int>(d), ld_split_));
+        }
+      }
+      return;
+    }
+
     assert(!"Internal error: unreachable code.");
   }
 
   /** A vector with all subplaces (computed once in compute_subplaces) */
   ::std::vector<exec_place> sub_places;
+
+  /** SM split method used when partitioning at locality_domain scope */
+  locality_domain_sm_split ld_split_ = locality_domain_sm_split::backfill;
 };
 
 // Deferred implementation because we need place_partition

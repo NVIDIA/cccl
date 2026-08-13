@@ -49,5 +49,43 @@ int main()
   print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_device);
 
   print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::cuda_stream);
+
+  // Locality-domain scope: works with or without a handle, on any device
+  // (unsupported devices degrade to one whole-device domain, so the count is
+  // never zero).
+  print_partition(handle, exec_place::current_device(), place_partition_scope::locality_domain);
+  print_partition(handle, exec_place::all_devices(), place_partition_scope::locality_domain);
+
+  int ndevs;
+  cuda_safe_call(cudaGetDeviceCount(&ndevs));
+  size_t expected = 0;
+  for (int d = 0; d < ndevs; d++)
+  {
+    expected += locality_domain_count(d);
+  }
+
+  // Machine-wide grid at locality-domain granularity (no handle needed)
+  place_partition machine_domains(exec_place::all_devices(), place_partition_scope::locality_domain);
+  EXPECT(machine_domains.size() == expected,
+         "all_devices at locality_domain scope: got ",
+         machine_domains.size(),
+         " subplaces, expected ",
+         expected);
+
+  // Single-device partition must match the make_locality_domain_grid sugar
+  place_partition dev_domains(exec_place::current_device(), place_partition_scope::locality_domain);
+  exec_place sugar = make_locality_domain_grid(0);
+  EXPECT(dev_domains.size() == sugar.size(),
+         "current_device at locality_domain scope: got ",
+         dev_domains.size(),
+         " subplaces, expected ",
+         sugar.size());
+  for (size_t i = 0; i < dev_domains.size(); i++)
+  {
+    EXPECT((dev_domains.get(i) == sugar.get_place(i)),
+           "subplace ",
+           i,
+           " differs between place_partition and make_locality_domain_grid");
+  }
 #endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
 }
