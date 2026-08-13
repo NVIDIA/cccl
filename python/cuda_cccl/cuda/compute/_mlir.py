@@ -12,10 +12,12 @@ JIT/struct machinery is funneled through this module so the rest of the package
 depends on a single, well-defined surface instead of importing from a dozen
 ``numba_cuda_mlir.*`` submodules directly.
 
-Notably absent: ``_compile_op_to_llvm_bitcode`` in ``_jit.py`` intentionally
-keeps using *numba-cuda* (not numba-cuda-mlir) to emit LLVM bitcode for the v2
-(HostJIT) backend -- see that function for the rationale.  That is the one path
-that does not go through this module.
+One export reaches past that public surface: ``compile_to_llvm_ir``.
+numba-cuda-mlir's ``cuda.compile`` emits only PTX or LTO-IR, but the v2
+(HostJIT) backend wants LLVM bitcode, so ``_jit._compile_op_to_llvm_bitcode``
+drives the internal pipeline one step further -- to optimized MLIR, then
+``translate_to_llvmir`` -- and turns the resulting textual IR into bitcode with
+llvmlite.  See those two functions for the rationale.
 """
 
 from __future__ import annotations
