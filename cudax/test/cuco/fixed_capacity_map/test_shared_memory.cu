@@ -176,7 +176,10 @@ make_copy_shmem_kernel(GlobalRef global_ref, int num_keys, int* keys_exist, int*
   __shared__ ::cuda::__uninitialized_array<value_type, ref_t::capacity_v, sizeof(value_type)> smem;
 
   const auto block = ::cooperative_groups::this_thread_block();
-  auto shared_ref  = global_ref.template make_copy<::cuda::thread_scope_block>(
+  // Exercise destruction and reinitialization of make_copy's shared barrier.
+  (void) global_ref.template make_copy<::cuda::thread_scope_block>(
+    block, typename ref_t::storage_span_type{smem.data(), ref_t::capacity_v});
+  auto shared_ref = global_ref.template make_copy<::cuda::thread_scope_block>(
     block, typename ref_t::storage_span_type{smem.data(), ref_t::capacity_v});
   static_assert(::cuda::std::decay_t<decltype(shared_ref)>::thread_scope == ::cuda::thread_scope_block,
                 "make_copy must rebind the thread scope of the returned ref");

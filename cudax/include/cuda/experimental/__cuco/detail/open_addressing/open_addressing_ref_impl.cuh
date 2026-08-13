@@ -340,6 +340,11 @@ public:
     ::cuda::memcpy_async(__group, __dst, __storage_ref.data(), sizeof(__value_type) * __num_slots, *__barrier);
 
     __barrier->arrive_and_wait();
+    __group.sync();
+    if (__group.thread_rank() == 0)
+    {
+      __barrier->~__barrier_type();
+    }
   }
 
   //!
