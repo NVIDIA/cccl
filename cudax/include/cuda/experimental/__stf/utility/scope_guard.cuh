@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
@@ -83,14 +84,95 @@ notify(const ::std::exception* __exception, const ::cuda::std::source_location _
   return ::std::ignore;
 }
 
+/**
+ * @brief The bottom type: a type with no values, convertible to every type.
+ *
+ * A callable that declares `nothing` as its return type promises in the type system that it
+ * never returns normally: keeping the promise any other way would require materializing a value
+ * of a type that has none. `[[noreturn]]` makes the same promise to the optimizer, but not
+ * reliably to overload resolution, so `on_throw` recognizes terminating reactions by this
+ * return type rather than by conversion to `void (*)()` (which any captureless lambda would
+ * satisfy, turning innocent cleanup into program death).
+ *
+ * The conversion operator lets an expression of type `nothing` appear where a value of any
+ * type is expected, references included, so a never-returning call may be `return`ed from a
+ * function of any result type. It can never run -- running it would require an object that
+ * cannot exist -- so its body exists to satisfy the compiler, not to execute.
+ */
+struct nothing final
+{
+  nothing()                          = delete;
+  nothing(const nothing&)            = delete;
+  nothing& operator=(const nothing&) = delete;
+
+  // Two operators, because deduction for conversion functions strips the reference off the
+  // target before matching: the rvalue one serves values and rvalue references, the lvalue one
+  // serves lvalue references. A value target sees both and prefers the rvalue binding, so the
+  // pair is not ambiguous.
+  template <class _Tp>
+  [[noreturn]] operator _Tp&&() const noexcept
+  {
+    ::std::abort();
+  }
+  template <class _Tp>
+  [[noreturn]] operator _Tp&() const noexcept
+  {
+    ::std::abort();
+  }
+};
+
+/**
+ * @brief `::std::abort` wrapped so that never returning is part of its type: the reaction to
+ * pass as in `on_throw(abort) << callable`.
+ *
+ * An object rather than a function so the name cannot be overloaded and stops unqualified
+ * lookup dead. Inside this namespace, plain `abort` finds it before the C library's; code
+ * that mixes both via using-directives gets an ambiguity error rather than a silent pick,
+ * and disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`.
+ */
+struct abort_t
+{
+  [[noreturn]] nothing operator()() const noexcept
+  {
+    ::std::abort(); // noreturn, so no value of the value-less result type is owed
+  }
+};
+inline constexpr abort_t abort{};
+
+//! @brief `::std::terminate` wrapped like `abort`, its type proving it never returns.
+struct terminate_t
+{
+  [[noreturn]] nothing operator()() const noexcept
+  {
+    ::std::terminate();
+  }
+};
+inline constexpr terminate_t terminate{};
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-// One policy for all four reactions: the alternative is constraining the `on_throw` overloads
-// against one another, which is fragile, because clang keeps `[[noreturn]]` in the type of
-// `std::abort` and thereby makes a `void (*)() noexcept` parameter an inexact match that a
-// catch-all template would win. `operator<<` lives here too, since argument-dependent lookup
-// only searches the innermost namespace enclosing the policy type.
+// Whether invoking _Fn with _Args... provably never returns, its declared result `nothing`
+// having no values. Lazily computed so a non-invocable pairing reads as `false` rather than
+// a hard error inside `invoke_result_t`.
+template <class _Fn, class... _Args>
+constexpr bool __never_returns()
+{
+  if constexpr (::cuda::std::is_invocable_v<_Fn, _Args...>)
+  {
+    return ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, nothing>;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+// One policy for all four reactions: recognizing them in one place keeps the order of the
+// questions explicit, which matters because `nothing` converts to every type, so any
+// convertibility question must be asked after the never-returns question. `operator<<` lives
+// here too, since argument-dependent lookup only searches the innermost namespace enclosing
+// the policy type.
 template <class _Reaction>
 struct __on_throw_policy
 {
@@ -108,14 +190,19 @@ struct __on_throw_policy
       ::cuda::std::is_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>;
     constexpr bool __drops =
       ::cuda::std::is_same_v<const ::cuda::std::remove_reference_t<_Reaction>, const decltype(::std::ignore)>;
+    // The reactions whose call provably never returns, each in its own calling shape.
+    constexpr bool __handler_dies =
+      __never_returns<_Reaction&, const ::std::exception*, ::cuda::std::source_location>();
+    constexpr bool __action_dies = !__handles && __never_returns<_Reaction&>();
     // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
     // what it is and a handler decides by returning it. Asking the same of `void` would be
-    // useless, every result type being convertible to `void`, but nothing except `::std::ignore`
-    // itself converts to its type.
+    // useless, every result type being convertible to `void`; and `nothing` converts to every
+    // type, `::std::ignore`'s included, so a dying handler is asked by name first.
     constexpr bool __resumes =
       __handles
-        ? ::cuda::std::
-            is_invocable_r_v<decltype(::std::ignore), _Reaction&, const ::std::exception*, ::cuda::std::source_location>
+        ? !__handler_dies
+            && ::cuda::std::
+              is_invocable_r_v<decltype(::std::ignore), _Reaction&, const ::std::exception*, ::cuda::std::source_location>
         : __drops;
 
     if constexpr (__handles)
@@ -124,24 +211,28 @@ struct __on_throw_policy
         ::cuda::std::is_nothrow_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>,
         "an on_throw handler runs while an exception is in flight and must be noexcept");
       __reaction_(__exception, __loc_);
-      if constexpr (!__resumes)
+      if constexpr (__handler_dies)
+      {
+        // The call above cannot return: its declared result type has no values.
+        _CCCL_UNREACHABLE();
+      }
+      else if constexpr (!__resumes)
       {
         static_assert(
           ::cuda::std::is_void_v<
             ::cuda::std::invoke_result_t<_Reaction&, const ::std::exception*, ::cuda::std::source_location>>,
-          "an on_throw handler must return void, to end the program, or ::std::ignore, to go on");
+          "an on_throw handler must return nothing or void, to end the program, or ::std::ignore, to go on");
         ::std::abort(); // the handler was supposed to see to that itself
         _CCCL_UNREACHABLE();
       }
     }
-    else if constexpr (::cuda::std::is_convertible_v<_Reaction, void (*)()>)
+    else if constexpr (__action_dies)
     {
-      // A terminating action, `::std::abort` and `::std::terminate` being the ones worth naming.
-      // A `noexcept` pointer is not asked for, even though the action runs during unwinding,
-      // because Microsoft's `abort` is not declared `noexcept` and would miss this branch.
+      // A terminating action, `abort` and `terminate` being the ones provided. No backstop
+      // follows the call: its result type already proves it cannot return, which is also what
+      // lets it stand in for a callable returning a reference.
       notify(__exception, __loc_);
       __reaction_();
-      ::std::abort(); // in case it returns after all
       _CCCL_UNREACHABLE();
     }
     else if constexpr (!__drops)
@@ -157,8 +248,9 @@ struct __on_throw_policy
         "a reference result needs an on_throw reaction passed as an lvalue of the same "
         "type, anything else dying with the call");
       static_assert(::cuda::std::is_convertible_v<_Reaction, _Result>,
-                    "an on_throw reaction is a handler, something convertible to void (*)(), "
-                    "::std::ignore, or a value convertible to the result of the callable");
+                    "an on_throw reaction is a handler, a never-returning callable (one returning "
+                    "nothing, like abort and terminate), ::std::ignore, or a value convertible to "
+                    "the result of the callable");
       return ::cuda::std::forward<_Reaction>(__reaction_);
     }
 
@@ -210,12 +302,16 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   `cuda::std::source_location`, be it a function, a function pointer, or a function object,
  *   capturing or not. It is invoked with the caught exception, or with `nullptr` for an
  *   exception that does not derive from `std::exception`, along with `__loc`. Its return type
- *   says what happens next: returning `decltype(::std::ignore)` resumes execution with a
- *   default-constructed result, and returning `void` claims the handler ends the program, with
- *   `std::abort` running right after it in case it does not. `notify` is such a handler.
- * - A terminating action: anything convertible to `void (*)()`, `std::abort` and
- *   `std::terminate` being the obvious ones. The exception is reported through `notify`, the
- *   action runs, and `std::abort` follows in case it returns.
+ *   says what happens next: `nothing` proves the handler never returns; returning
+ *   `decltype(::std::ignore)` resumes execution with a default-constructed result; and
+ *   returning `void` claims the handler ends the program, with `std::abort` running right
+ *   after it in case it does not. `notify` is such a handler.
+ * - A terminating action: a callable invocable with no arguments whose declared result is
+ *   `nothing`, of which `abort` and `terminate` above are the ones provided. The exception is
+ *   reported through `notify`, then the action runs, its result type proof that it never
+ *   returns. `::std::abort` itself does not qualify -- a `void (*)()` says nothing about
+ *   returning, and any captureless lambda converts to one -- so pass `abort`, or wrap your own
+ *   ending in a `nothing`-returning callable.
  * - `std::ignore`, which suppresses the exception silently and resumes execution with a
  *   default-constructed result.
  * - Anything else, taken as a replacement value for the result. It must be convertible to the
@@ -228,9 +324,9 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  * where it stands, leaving the reaction unreachable, so such a pairing is rejected instead of
  * standing there looking like protection. Call such a callable directly.
  *
- * A callable returning a reference therefore goes with a terminating action, which never has to
- * produce a result, or with a replacement passed as an lvalue of the same type, which the policy
- * refers to rather than copies and which the caller keeps alive:
+ * A callable returning a reference therefore goes with a never-returning reaction, which never
+ * has to produce a result, or with a replacement passed as an lvalue of the same type, which the
+ * policy refers to rather than copies and which the caller keeps alive:
  *
  * @code
  * int fallback = 42;
@@ -250,15 +346,37 @@ auto on_throw(_Reaction&& __reaction,
 }
 
 #ifdef UNITTESTED_FILE
+UNITTEST("nothing")
+{
+  using namespace cuda::experimental::stf;
+  // No values: not constructible in any way.
+  static_assert(!::std::is_default_constructible_v<nothing>);
+  static_assert(!::std::is_copy_constructible_v<nothing>);
+  static_assert(!::std::is_move_constructible_v<nothing>);
+  // One-way conversions: `nothing` converts to every type, no type converts to `nothing`.
+  static_assert(::std::is_convertible_v<nothing, int>);
+  static_assert(::std::is_convertible_v<nothing, int&>);
+  static_assert(::std::is_convertible_v<nothing, void (*)()>);
+  static_assert(!::std::is_convertible_v<int, nothing>);
+  // A never-returning call may be returned from a function of any result type, references
+  // included; the conversion typechecks and never runs.
+  [[maybe_unused]] const auto propagates = []() -> int& {
+    return cuda::experimental::stf::abort();
+  };
+};
+
 UNITTEST("on_throw")
 {
   using namespace cuda::experimental::stf;
   //! [on_throw]
+  // The C library also declares ::abort, so under a using-directive the typed one is picked
+  // by name; qualifying every use works as well.
+  using cuda::experimental::stf::abort;
   int value = 0;
-  on_throw(::std::abort) << [&] {
+  on_throw(abort) << [&] {
     value = 42; // would abort the application if this code threw
   };
-  on_throw(::std::terminate) << [] {};
+  on_throw(terminate) << [] {};
   on_throw(notify) << [] {}; // would report the exception on stderr and carry on
   const int answer = on_throw(-1) << [] {
     return 42; // would yield -1 instead if this code threw
@@ -277,8 +395,18 @@ UNITTEST("on_throw")
   };
   EXPECT(untouched == 7);
 
-  // A terminating action need not be `noexcept`, which is how Microsoft declares `abort`.
-  void (*const bail)() = [] {
+  // A handler may also declare `nothing` and die on its own terms, no abort backstop needed.
+  const auto die_typed = [](const ::std::exception*, ::cuda::std::source_location) noexcept -> nothing {
+    ::std::abort();
+  };
+  const int also_untouched = on_throw(die_typed) << [] {
+    return 8;
+  };
+  EXPECT(also_untouched == 8);
+
+  // Any callable whose declared result is `nothing` works as a terminating action; the type,
+  // not an attribute, is what proves it never returns.
+  const auto bail = []() noexcept -> nothing {
     ::std::abort();
   };
   const int spared = on_throw(bail) << [] {
@@ -286,11 +414,11 @@ UNITTEST("on_throw")
   };
   EXPECT(spared == 9);
 
-  // A terminating action is also the one reaction that goes with a reference result, since it
+  // A never-returning reaction is also the one that goes with a reference result, since it
   // never has to produce one. The referent is static because nvcc reads a return of a
   // by-reference capture as a return of a local.
   static int target = 5;
-  int& alias        = on_throw(::std::abort) << []() -> int& {
+  int& alias        = on_throw(abort) << []() -> int& {
     return target;
   };
   EXPECT(&alias == &target);
@@ -392,7 +520,7 @@ UNITTEST("on_throw")
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
  * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
- * defined) those lambdas are invoked via `on_throw(::std::abort)`; in release
+ * defined) those lambdas are invoked via `on_throw(abort)`; in release
  * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
  * controlled code must return `void` (enforced at compile time).
  *
@@ -434,7 +562,7 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
   static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
-  on_throw(::std::abort, loc) << f;
+  on_throw(abort, loc) << f;
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
   (void) loc;
   f();
