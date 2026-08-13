@@ -224,6 +224,9 @@ public:
     inst.reclaimable = false;
   }
 
+  // erase() writes data back and unfreezes it. A failure part-way through leaves the data
+  // in a state no caller could recover from, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~logical_data_untyped_impl()
   {
     erase();

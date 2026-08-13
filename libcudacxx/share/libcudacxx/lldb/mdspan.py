@@ -350,8 +350,11 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
 
 
 def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
-    stripped = cccl_common.strip_reference_value(value)
-    info = _mdspan_info(stripped)
+    # Report metadata only (mirrors buffer_summary). Whether the data is
+    # readable is already visible in the element list the synthetic provider
+    # supplies, so do not stage a throwaway host copy to find out: that costs
+    # three inferior calls per print and scales with the element count.
+    info = _mdspan_info(cccl_common.strip_reference_value(value))
     if info is None:
         return None
     details = []
@@ -360,22 +363,7 @@ def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | N
         details.append(f"rank={len(info.extents)}")
         details.append(f"extents=[{extents_text}]")
     if info.data is not None:
-        data_address = info.data.GetValueAsUnsigned(0)
-        data_text = f"data={data_address:#x}"
-        span = _required_span_size(info.layout, info.extents, info.strides)
-        if span > 0:
-            frame = stripped.GetFrame()
-            element_type = info.data.GetType().GetPointeeType()
-            byte_count = span * element_type.GetByteSize()
-            host_copy = _stage_host_copy(frame, data_address, byte_count)
-            if host_copy is None:
-                # Mirrors GDB's own wording for an unreadable pointee.
-                data_text += (
-                    f" <error: Cannot access memory at address {data_address:#x}>"
-                )
-            else:
-                _release_host_copy(frame, host_copy.GetValueAsUnsigned(0))
-        details.append(data_text)
+        details.append(f"data={info.data.GetValueAsUnsigned(0):#x}")
     if not details:
         return None
     return ", ".join(details)
