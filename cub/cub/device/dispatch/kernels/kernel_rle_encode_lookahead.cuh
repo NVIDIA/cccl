@@ -82,7 +82,7 @@ struct ring_cursor_t
 // Nan: we could use u32 layouts [ready_bit:1][open_len:15][run_count:16], but we choose to use u64 to
 // 1. w << 32 is free (u64 is already split into 2 registers), so we save a bit of time (theoretically)
 // 2. to use the same layout as warpspeed scan
-constexpr ::cuda::std::uint32_t tile_published = 1u;
+inline constexpr ::cuda::std::uint32_t tile_published = 1u;
 
 struct tile_partial_state_t
 {
