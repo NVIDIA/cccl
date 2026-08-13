@@ -119,12 +119,11 @@ TEST_FUNC constexpr void test()
     int zeros[n_ints] = {0};
 
     const cuda::std::size_t N = 2;
-    const auto middle         = cuda::std::__begin_cpo{}(ints) + N;
-    auto it                   = cuda::std::rotate_copy(
-      cuda::std::__begin_cpo{}(ints), middle, cuda::std::__end_cpo{}(ints), cuda::std::__begin_cpo{}(zeros));
-    assert(cuda::std::distance(cuda::std::__begin_cpo{}(zeros), it) == n_ints);
-    assert(cuda::std::equal(cuda::std::__begin_cpo{}(ints), middle, cuda::std::__begin_cpo{}(zeros) + n_ints - N));
-    assert(cuda::std::equal(middle, cuda::std::__end_cpo{}(ints), cuda::std::__begin_cpo{}(zeros)));
+    const auto middle         = cuda::std::begin(ints) + N;
+    auto it = cuda::std::rotate_copy(cuda::std::begin(ints), middle, cuda::std::end(ints), cuda::std::begin(zeros));
+    assert(cuda::std::distance(cuda::std::begin(zeros), it) == n_ints);
+    assert(cuda::std::equal(cuda::std::begin(ints), middle, cuda::std::begin(zeros) + n_ints - N));
+    assert(cuda::std::equal(middle, cuda::std::end(ints), cuda::std::begin(zeros)));
   }
 }
 

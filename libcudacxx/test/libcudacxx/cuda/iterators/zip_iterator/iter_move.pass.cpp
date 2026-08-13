@@ -40,7 +40,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
   { // underlying iter_move noexcept
     cuda::zip_iterator iter{a, b, cuda::counting_iterator{3L}};
 
-    assert(cuda::std::ranges::__iter_move_cpo{}(iter) == cuda::std::make_tuple(1, 3.0, 3L));
+    assert(cuda::std::ranges::iter_move(iter) == cuda::std::make_tuple(1, 3.0, 3L));
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::iter_move(iter)), cuda::std::tuple<int&&, const double&&, long>>);
     static_assert(noexcept(cuda::std::ranges::iter_move(iter)));
@@ -65,14 +65,14 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     assert(iter_swap_called_times1 == 0);
     assert(iter_swap_called_times2 == 0);
     {
-      [[maybe_unused]] auto&& i = cuda::std::ranges::__iter_move_cpo{}(iter);
+      [[maybe_unused]] auto&& i = cuda::std::ranges::iter_move(iter);
       assert(iter_move_called_times1 == 1);
       assert(iter_move_called_times2 == 1);
       assert(iter_swap_called_times1 == 0);
       assert(iter_swap_called_times2 == 0);
     }
     {
-      [[maybe_unused]] auto&& i = cuda::std::ranges::__iter_move_cpo{}(iter);
+      [[maybe_unused]] auto&& i = cuda::std::ranges::iter_move(iter);
       assert(iter_move_called_times1 == 2);
       assert(iter_move_called_times2 == 2);
       assert(iter_swap_called_times1 == 0);

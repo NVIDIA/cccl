@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
@@ -26,30 +26,26 @@ _THREAD_SCOPE_NAMES = {
 }
 
 
-def _template_name(type_name: str) -> str:
-    return type_name.split("<", 1)[0]
-
-
 def _is_atomic_ref(type_name: str) -> bool:
-    return _template_name(type_name) in _ATOMIC_REF_NAMES
+    return cccl_common.template_name(type_name) in _ATOMIC_REF_NAMES
 
 
 def _complete_type_name(value_type: gdb.Type) -> str:
     """Return the complete public type name, including CUDA thread scope."""
-    value_type = value_type.strip_typedefs().unqualified()
-    type_name = memory_resource.public_type_name(value_type)
-    template_name = _template_name(type_name)
+    value_type = cccl_common.canonical_type(value_type)
+    type_name = cccl_common.public_type_name(value_type)
+    template_name = cccl_common.template_name(type_name)
     if template_name not in {"cuda::atomic", "cuda::atomic_ref"}:
         return type_name
 
-    value_type_name = memory_resource.public_type_name(value_type.template_argument(0))
+    value_type_name = cccl_common.public_type_name(value_type.template_argument(0))
     scope = int(value_type.template_argument(1))
     return f"{template_name}<{value_type_name}, cuda::thread_scope_{_THREAD_SCOPE_NAMES[scope]}>"
 
 
 def _is_cuda_atomic(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
-    template_name = _template_name(memory_resource.public_type_name(value_type))
+    value_type = cccl_common.canonical_type(value_type)
+    template_name = cccl_common.template_name(cccl_common.public_type_name(value_type))
     return template_name in _ATOMIC_NAMES
 
 
@@ -58,7 +54,7 @@ def _reference_pointer(value: gdb.Value) -> gdb.Value:
 
 
 def _stored_value(value: gdb.Value, type_name: str) -> gdb.Value:
-    value_type = value.type.strip_typedefs().unqualified()
+    value_type = cccl_common.canonical_type(value.type)
     storage = value["__a"]
     stored = storage["__a_value"]
 
@@ -77,8 +73,9 @@ class AtomicPrinter:
     """Expose the value represented by a CUDA atomic without executing inferior code."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
+        self.type = cccl_common.canonical_type(value.type)
         self.type_name = _complete_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:

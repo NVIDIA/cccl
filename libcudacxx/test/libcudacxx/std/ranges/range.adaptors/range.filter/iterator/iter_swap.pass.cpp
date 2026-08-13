@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // friend constexpr void iter_swap(iterator const& x, iterator const& y)
 //  noexcept(noexcept(ranges::iter_swap(x.current_, y.current_)))
 //  requires(indirectly_swappable<iterator_t<V>>);
@@ -29,7 +26,7 @@ _CCCL_CONCEPT has_iter_swap = _CCCL_REQUIRES_EXPR((It), It it)(cuda::std::ranges
 
 struct IsEven
 {
-  TEST_HOST_DEVICE_FUNC constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
@@ -37,14 +34,14 @@ struct IsEven
 
 // needs to be a standalone function for NVRTC
 template <class FilterView, class View, class Iter, class Sent, class T, class U, class V>
-TEST_HOST_DEVICE_FUNC constexpr FilterView make_filter_view(T begin, U end, V pred)
+TEST_FUNC constexpr FilterView make_filter_view(T begin, U end, V pred)
 {
   View view{Iter(begin), Sent(Iter(end))};
   return FilterView(cuda::std::move(view), pred);
 }
 
 template <class Iterator, bool IsNoexcept>
-TEST_HOST_DEVICE_FUNC constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using Sentinel       = sentinel_wrapper<Iterator>;
   using View           = minimal_view<Iterator, Sentinel>;
@@ -68,7 +65,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test()
   }
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   test<cpp17_input_iterator<int*>, /* noexcept */ false>();
   test<cpp20_input_iterator<int*>, /* noexcept */ false>();

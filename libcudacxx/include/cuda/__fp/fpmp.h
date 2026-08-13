@@ -150,31 +150,23 @@
       INTO fpmp2, which can drop precision at unintended conversions or introduce accidental
       round-trips / FP64 use (accuracy/perf) with no diagnostic; keep the default 1 unless the
       migration benefit outweighs that risk.
-    - _CCCL_FPMP_FP128_ENABLE: Automatically detected: the __float128 type where the compiler provides
-      it, otherwise a 128-bit long double on platforms that have one (aarch64, s390x, PowerPC with IEEE
-      long double). Decides whether fpmp2 declares its fp128 interchange at all, and answers the same
-      in both passes of a CUDA compilation, so host code in a .cu file keeps the interchange whatever
-      the target architecture. Can be set to 0 to disable 128-bit float support (older compilers,
-      compatibility).
-    - _CCCL_FPMP_FP128_DEVICE_OPS: Automatically detected: whether the fp128 interchange is callable
-      from device code, which nvcc allows from sm_100 up and only when every targeted architecture
-      qualifies. Set it to 1 explicitly on a toolchain that provides device fp128 earlier.
-    - _CCCL_FPMP_FP128_MATH_FALLBACK: When 1, fp64mp2 math functions use quad-precision (__fpmp_fp128)
-      for higher accuracy. Requires libquadmath linkage, slower compilation, larger code.
-      When 0 (default), falls back to double precision—faster builds, smaller code, but
-      reduced accuracy for transcendental functions.
-    - CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP: When 1 (default), double-to-fpmp2 conversion uses integer
+    - CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP*: When 1 (default), double-to-fpmp2 conversion uses integer
       bit manipulation instead of FP64 casts. Avoids the slow FP64 pipeline on GPUs with limited
       double-precision throughput (e.g. consumer GPUs with a 1:64 ratio). When 0, uses standard casts.
-    - CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE: When 1 (default), fpmp2-to-double conversion reconstructs
+    - CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE*: When 1 (default), fpmp2-to-double conversion reconstructs
       the double bit pattern using integer arithmetic (no FP64 ops). When 0, uses (double)hi + (double)lo.
-    - Tuning the double<->fp32mp2 conversions: both macros above default to 1 because the integer
+    * Tuning the double<->fp32mp2 conversions: both macros above default to 1 because the integer
       path is a large win on FP64-throttled GPUs (measured several-x faster than the FP64 casts on
       an L40S) and applies to the FP32-based fp32mp2 (fp64mp2 conversions are inherently FP64 either
       way). Set either to 0 to fall back to the plain FP64 casts if you hit: (a) register pressure /
       reduced occupancy from the extra integer work in large kernels, or (b) a GPU with high FP64
       throughput (e.g. datacenter A100/H100, ~1:2) where the FP64 path is already cheap.
       e.g. -DCCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE=0 (and/or -DCCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP=0).
+
+    The _CCCL_FPMP_* switches those knobs map to, and the fp128 switches the library detects on
+    its own, are documented where they are defined: fpmp_impl.h for the ones that shape the class
+    (_CCCL_FPMP_FP128_ENABLE, _CCCL_FPMP_FP128_DEVICE_OPS) and fpmp_math_impl.h for the one that
+    only picks math bodies (_CCCL_FPMP_FP128_MATH_FALLBACK).
 
     Important Notes:
     -------------------------------------------------------------------------
@@ -297,6 +289,20 @@ public:
   }
 
   /*
+  // Accessors for volatile objects, so that reading a limb does not require copying
+  // the whole value out first. Not constexpr: a volatile read is never a constant
+  // expression.
+  */
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _FpType hi() const volatile noexcept
+  {
+    return __mp2_hi_;
+  }
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _FpType lo() const volatile noexcept
+  {
+    return __mp2_lo_;
+  }
+
+  /*
   // Basic constructors
   */
   // Default constructor
@@ -315,6 +321,19 @@ public:
   // Note: NVCC implicitly makes defaulted special members __host__ __device__
   */
   _CCCL_HIDE_FROM_ABI fpmp2(const fpmp2& __other) = default;
+
+  /*
+  // Volatile support: the constructor and assignment operators below, plus the
+  // volatile hi() / lo() accessors above, cover storage only, i.e. load, store and
+  // (hi, lo)-preserving round-trip, which is what the legacy pattern of keeping
+  // shared-memory scalars in volatile variables needs.
+  //
+  // A volatile object cannot be an operand of arithmetic,
+  // comparison or the math API: those take const fpmp2&, and a volatile lvalue never
+  // binds to it, not even through the converting constructor below, because
+  // reference-related types are required to bind directly. Copy into a non-volatile
+  // local, compute there, store the result back.
+  */
 
   /*
   // Copy constructor from volatile fpmp2
@@ -355,6 +374,19 @@ public:
     __mp2_hi_ = __other.__mp2_hi_;
     __mp2_lo_ = __other.__mp2_lo_;
     return *this;
+  }
+
+  /*
+  // Assignment operator from volatile to volatile fpmp2, e.g. a shared-memory to
+  // shared-memory copy
+  // Template so it is NOT a copy assignment operator per the C++ standard
+  // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
+  */
+  template <typename _Dummy = void>
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpmp2& __other) volatile noexcept
+  {
+    __mp2_hi_ = __other.__mp2_hi_;
+    __mp2_lo_ = __other.__mp2_lo_;
   }
 
   /*

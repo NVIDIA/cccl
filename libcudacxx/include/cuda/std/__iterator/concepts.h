@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -45,6 +46,7 @@
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -65,7 +67,7 @@ concept __indirectly_readable_impl =
     typename iter_reference_t<_In>;
     typename iter_rvalue_reference_t<_In>;
     { *__i } -> same_as<iter_reference_t<_In>>;
-    { ::cuda::std::ranges::__iter_move_cpo{}(__i) } -> same_as<iter_rvalue_reference_t<_In>>;
+    { ::cuda::std::ranges::iter_move(__i) } -> same_as<iter_rvalue_reference_t<_In>>;
   } && common_reference_with<iter_reference_t<_In>&&, iter_value_t<_In>&>
   && common_reference_with<iter_reference_t<_In>&&, iter_rvalue_reference_t<_In>&&>
   && common_reference_with<iter_rvalue_reference_t<_In>&&, const iter_value_t<_In>&>;
@@ -79,12 +81,12 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                       = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  *static_cast<_Out &&>(__o) = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*__o) = static_cast<_Tp &&>(__t); // not required to be
-                                                                                // equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*static_cast<_Out &&>(__o)) =
-    static_cast<_Tp &&>(__t); // not required to be equality-preserving
+  *__o                                             = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  *static_cast<_Out&&>(__o)                        = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t); // not required to be
+                                                                              // equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) =
+    static_cast<_Tp&&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -142,7 +144,7 @@ concept input_iterator = input_or_output_iterator<_Ip> && indirectly_readable<_I
 template <class _Ip, class _Tp>
 concept output_iterator =
   input_or_output_iterator<_Ip> && indirectly_writable<_Ip, _Tp> && requires(_Ip __it, _Tp&& __t) {
-    *__it++ = static_cast<_Tp &&>(__t); // not required to be equality-preserving
+    *__it++ = static_cast<_Tp&&>(__t); // not required to be equality-preserving
   };
 
 // [iterator.concept.forward]
@@ -331,7 +333,7 @@ _CCCL_CONCEPT_FRAGMENT(
     typename(iter_reference_t<_In>),
     typename(iter_rvalue_reference_t<_In>),
     requires(same_as<iter_reference_t<_In>, decltype(*__i)>),
-    requires(same_as<iter_rvalue_reference_t<_In>, decltype(::cuda::std::ranges::__iter_move_cpo{}(__i))>),
+    requires(same_as<iter_rvalue_reference_t<_In>, decltype(::cuda::std::ranges::iter_move(__i))>),
     requires(common_reference_with<iter_reference_t<_In>&&, iter_value_t<_In>&>),
     requires(common_reference_with<iter_reference_t<_In>&&, iter_rvalue_reference_t<_In>&&>),
     requires(common_reference_with<iter_rvalue_reference_t<_In>&&, const iter_value_t<_In>&>)));
@@ -710,6 +712,26 @@ template <class _Ip>
 inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+
+template <class _Fn, class _Tp, class _Iter, class _Up>
+_CCCL_CONCEPT __indirectly_binary_reducible_impl = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter, _Up), )(
+  requires(movable<_Tp>),
+  requires(movable<_Up>),
+  requires(convertible_to<_Tp, _Up>),
+  requires(invocable<_Fn&, _Up, iter_reference_t<_Iter>>),
+  requires(assignable_from<_Up&, invoke_result_t<_Fn&, _Up, iter_reference_t<_Iter>>>));
+
+// Similar to __indirectly_binary_invokable. Asserts that for a given operator, type, and
+// iterator triple, that a general reduction is well formed, so _Fn(_Fn(_Tp, *_Iter), *_Iter)
+// etc is sane.
+template <class _Fn, class _Tp, class _Iter>
+_CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter), )(
+  requires(copy_constructible<_Fn>),
+  requires(indirectly_readable<_Iter>),
+  requires(invocable<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(__invoke_constructible<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(
+    __indirectly_binary_reducible_impl<_Fn, _Tp, _Iter, decay_t<invoke_result_t<_Fn&, _Tp, iter_reference_t<_Iter>>>>));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

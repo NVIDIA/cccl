@@ -767,16 +767,18 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)

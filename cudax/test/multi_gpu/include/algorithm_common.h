@@ -10,28 +10,15 @@
 
 #pragma once
 
-#include <cuda/buffer>
 #include <cuda/std/cstddef>
 
+#include <chrono>
 #include <exception>
 #include <future>
+#include <type_traits>
 #include <vector>
 
-// One output iterator per local output buffer. Collected after `out` is fully built so the
-// iterators do not dangle across reallocations.
-template <class T>
-[[nodiscard]] std::vector<typename cuda::device_buffer<T>::iterator>
-make_output_iterators(std::vector<cuda::device_buffer<T>>& out)
-{
-  std::vector<typename cuda::device_buffer<T>::iterator> outputs;
-
-  outputs.reserve(out.size());
-  for (auto& buf : out)
-  {
-    outputs.push_back(buf.begin());
-  }
-  return outputs;
-}
+#include <c2h/catch2_test_helper.h>
 
 template <class Fn>
 void run_threaded(cuda::std::size_t num_ranks, Fn fn)
@@ -54,14 +41,41 @@ void run_threaded(cuda::std::size_t num_ranks, Fn fn)
   // one on a peer.
   std::exception_ptr error = nullptr;
 
-  for (auto& f : futures)
+  for (cuda::std::size_t i = 0; i < futures.size(); ++i)
   {
+    auto& f = futures[i];
+
+    REQUIRE(f.valid());
+
+    {
+      using namespace std::chrono_literals;
+      // Doing the timeout detection this way gives a much nicer error message than ctest or catch2.
+      switch (constexpr auto timeout = 15s; f.wait_for(timeout))
+      {
+        case std::future_status::deferred:
+          FAIL("Test should not use deferred execution, only async");
+          break;
+        case std::future_status::timeout: {
+          // The standard gives no mechanism to abandon or cancel a task launched with
+          // std::async, and futures block in their destructor for task completion. So to make
+          // this error message actually useful, we need to toss them all into the oubliette.
+          [[maybe_unused]] auto* _ = new std::vector<std::future<void>>{std::move(futures)};
+          static_assert(std::is_same_v<std::remove_cv_t<decltype(timeout)>, std::chrono::seconds>);
+          FAIL("Future for rank " << i << " timed out after " << timeout.count() << "s, likely a deadlock");
+          break;
+        }
+        case std::future_status::ready:
+          break;
+      }
+    }
+
     try
     {
       f.get();
     }
     catch (...)
     {
+      INFO("rank " << i << " exception");
       if (!error)
       {
         error = std::current_exception();

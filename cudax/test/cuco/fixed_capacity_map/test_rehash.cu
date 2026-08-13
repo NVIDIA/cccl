@@ -15,6 +15,7 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
@@ -153,7 +154,7 @@ C2H_TEST("fixed_capacity_map rehash", "[container]", key_types, mapped_types, cg
   [[maybe_unused]] constexpr int bucket_size = c2h::get<3, TestType>::value;
   [[maybe_unused]] constexpr int probing     = c2h::get<4, TestType>::value;
 
-  using hasher = cudax::cuco::hash<key_type>;
+  using hasher = cuda::hash<key_type>;
   using probing_type =
     ::cuda::std::conditional_t<probing == 0,
                                cudax::cuco::linear_probing<cg_size, hasher>,
@@ -215,13 +216,13 @@ C2H_TEST("fixed_capacity_map rehash", "[container]", key_types, mapped_types, cg
 
   constexpr auto static_capacity = cudax::cuco::make_valid_capacity<probing_type, bucket_size>(requested);
   using static_map_type          = cudax::cuco::fixed_capacity_map<
-             key_type,
-             mapped_type,
-             static_capacity,
-             ::cuda::thread_scope_device,
-             ::cuda::std::equal_to<key_type>,
-             probing_type,
-             bucket_size>;
+    key_type,
+    mapped_type,
+    static_capacity,
+    ::cuda::thread_scope_device,
+    ::cuda::std::equal_to<key_type>,
+    probing_type,
+    bucket_size>;
 
   static_assert(!has_capacity_rehashes<static_map_type>::value);
   static_assert(!has_explicit_dynamic_capacity_rehashes<static_map_type>::value);

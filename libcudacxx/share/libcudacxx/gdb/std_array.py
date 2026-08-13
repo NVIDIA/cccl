@@ -9,19 +9,14 @@ from __future__ import annotations
 from collections.abc import Iterator
 from types import ModuleType
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
 
 
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
-
-
 def _is_cuda_array(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
-    template_name = _template_name(value_type)
+    template_name = cccl_common.template_name(cccl_common.canonical_type(value_type))
     return (
         template_name.startswith("cuda::std::")
         and template_name.rsplit("::", 1)[-1] == "array"
@@ -32,9 +27,10 @@ class ArrayPrinter:
     """Expose cuda::std::array metadata and elements to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
-        self.type_name = memory_resource.public_type_name(self.type)
+        self.type = cccl_common.canonical_type(value.type)
+        self.type_name = cccl_common.public_type_name(self.type)
         self.size = int(self.type.template_argument(1))
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
