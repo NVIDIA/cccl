@@ -42,6 +42,13 @@ _LOCK_STALE_SECONDS = 600
 # The window is generous because a live generation must never be swept.
 _TEMP_STALE_SECONDS = 3600
 
+# An entry touched this recently belongs to a build that is running or has just
+# finished, and is never evicted. Without this, a cap smaller than one build's
+# working set would delete the very entries that build just produced, and every
+# build would regenerate them; the cap is exceeded instead of enforced. A build
+# takes seconds, so the window only has to outlast one.
+_ACTIVE_SECONDS = 120
+
 _FALSEY = {"0", "false", "off", "no"}
 
 
@@ -199,6 +206,14 @@ def evict(exempt: set[Path] | None = None) -> int:
     used within any age window still costs a gigabyte. Recency is mtime, which a
     build refreshes on the entries it uses.
 
+    An entry a build is using is never evicted, so a cap smaller than one
+    build's working set is exceeded rather than enforced -- evicting it would
+    delete what that build just produced and force the next one to regenerate.
+    Such entries are identified by recency: a build refreshes the timestamp of
+    every entry it uses, so anything touched within the last `_ACTIVE_SECONDS`
+    belongs to a build that is running or has just finished. `exempt` names
+    additional paths to protect when a caller knows them.
+
     A precompiled header and its preamble are evicted together, since the header
     records the preamble as an input. Returns the number of bytes reclaimed.
     """
@@ -215,27 +230,22 @@ def evict(exempt: set[Path] | None = None) -> int:
     if cap == 0:
         return reclaimed
 
+    active_after = time.time() - _ACTIVE_SECONDS
     entries = []
     total = 0
     for pch in directory.glob("*.pch"):
-        if pch in exempt:
-            continue
         preamble = pch.with_name(pch.name[: -len(".pch")] + "_preamble.cu")
         try:
-            size = pch.stat().st_size + (
-                preamble.stat().st_size if preamble.exists() else 0
-            )
-            entries.append((pch.stat().st_mtime, size, pch, preamble))
+            stat = pch.stat()
+            size = stat.st_size + (preamble.stat().st_size if preamble.exists() else 0)
         except OSError:
             continue
+        # Protected entries still count toward the cap -- they occupy the disk
+        # either way -- they are simply not candidates for removal.
         total += size
-    # Everything in the directory counts toward the cap, including entries this
-    # build is using, so measure them even though they cannot be evicted.
-    for pch in exempt:
-        try:
-            total += pch.stat().st_size
-        except OSError:
-            pass
+        if pch in exempt or stat.st_mtime >= active_after:
+            continue
+        entries.append((stat.st_mtime, size, pch, preamble))
 
     if total <= cap:
         return reclaimed

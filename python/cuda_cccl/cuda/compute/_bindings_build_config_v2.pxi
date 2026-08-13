@@ -20,8 +20,8 @@ cdef extern from "cccl/c/types.h":
         const char** extra_include_dirs
         size_t num_extra_include_dirs
         int enable_pch
-        const char* pch_cache_dir
         int verbose
+        const char* pch_cache_dir
 
 
 # One config shared by every build. Its contents are copied during the call and
