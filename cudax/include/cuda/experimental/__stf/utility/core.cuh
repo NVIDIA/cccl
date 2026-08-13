@@ -217,7 +217,10 @@ constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
 {
   return ::std::apply(
     [&](auto&&... p) {
-      return ::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
+      // Spelling the type out rather than deducing it keeps this usable from device code: a
+      // deduction guide is not a constexpr function, so it stays host-only even where clang
+      // treats libstdc++'s constexpr tuple machinery as implicitly __host__ __device__.
+      return ::std::tuple<::std::decay_t<T>, P...>(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
     },
     mv(tuple));
 }
