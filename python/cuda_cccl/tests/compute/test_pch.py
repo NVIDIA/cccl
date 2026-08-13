@@ -284,6 +284,27 @@ def test_size_cap_evicts_lru_entries(tmp_path):
     assert len(pch_files(tmp_path)) == 2, pch_files(tmp_path)
 
 
+def test_cap_below_working_set_keeps_this_build(tmp_path):
+    """A cap too small for one build's entries is exceeded, not enforced.
+
+    Evicting them would delete what the build just produced and make the next
+    build regenerate it, so the cache would thrash and never serve a hit.
+    """
+    proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_PCH_CACHE_MAXSIZE="1M")
+    assert proc.returncode == 0, proc.stderr
+    assert len(pch_files(tmp_path)) == 2, (
+        f"a cap below one build's working set evicted its own entries: "
+        f"{pch_files(tmp_path)}"
+    )
+
+    # And they are still usable: the next build reuses rather than regenerating.
+    before = {p.name: p.stat().st_ino for p in tmp_path.glob("*.pch")}
+    proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_PCH_CACHE_MAXSIZE="1M")
+    assert proc.returncode == 0, proc.stderr
+    after = {p.name: p.stat().st_ino for p in tmp_path.glob("*.pch")}
+    assert before == after, "entries were regenerated instead of reused"
+
+
 def test_size_cap_zero_disables_eviction(tmp_path):
     """CCCL_PCH_CACHE_MAXSIZE=0 keeps everything."""
     stale = tmp_path / "device_sm89_0123456789abcdef.pch"
