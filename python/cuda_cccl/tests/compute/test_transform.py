@@ -536,6 +536,55 @@ def test_unary_transform_stateful_multiple_arrays():
     np.testing.assert_array_equal(result, expected)
 
 
+def test_unary_transform_stateful_mixed_dtype_arrays():
+    """Stateful transform capturing state arrays of *differing* dtypes.
+
+    The packed state pointers are read as untyped addresses and given their
+    element type at the point of use, so the captured arrays need not agree on
+    dtype.  This matters for segmented reductions, which inherently mix a
+    payload dtype with int64 offsets.
+    """
+    num_items = 8
+    h_in = np.arange(num_items, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.float64))
+
+    # Three captured arrays, three different dtypes.
+    scale = DeviceArray.from_numpy(np.array([2.5], dtype=np.float64))
+    offset = DeviceArray.from_numpy(np.array([7], dtype=np.int64))
+    flag = DeviceArray.from_numpy(np.array([1], dtype=np.int8))
+
+    def transform_with_mixed_state(x):
+        return (x + offset[0]) * scale[0] * flag[0]
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=transform_with_mixed_state, num_items=num_items
+    )
+    result = d_out.copy_to_host()
+    expected = (h_in.astype(np.float64) + 7) * 2.5 * 1
+    np.testing.assert_allclose(result, expected)
+
+    # Distinct dtype combinations must not collide in the op cache: re-run with
+    # the same shapes but a different dtype mix and check the result changes.
+    scale = DeviceArray.from_numpy(np.array([2.5], dtype=np.float32))
+    offset = DeviceArray.from_numpy(np.array([7], dtype=np.int32))
+    flag = DeviceArray.from_numpy(np.array([2], dtype=np.int8))
+
+    def transform_with_other_mixed_state(x):
+        return (x + offset[0]) * scale[0] * flag[0]
+
+    d_out.copy_from_host(np.zeros_like(expected))
+    cuda.compute.unary_transform(
+        d_in=d_in,
+        d_out=d_out,
+        op=transform_with_other_mixed_state,
+        num_items=num_items,
+    )
+    result = d_out.copy_to_host()
+    expected = (h_in.astype(np.float64) + 7) * np.float32(2.5) * 2
+    np.testing.assert_allclose(result, expected, rtol=1e-6)
+
+
 def test_unary_transform_stateful_closure_factory():
     """Test stateful transform with dynamically created closures.
 

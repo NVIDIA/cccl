@@ -35,7 +35,7 @@ from __future__ import annotations
 import itertools
 import threading
 
-from ._mlir import cuda, types
+from ._mlir import as_numpy_dtype, cuda, types
 from ._utils import sanitize_identifier
 
 # Global counter to generate unique symbol names even when the same function
@@ -168,11 +168,12 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     key (see ``_jit._JitOpState.get_cache_key``).
 
     ``state_dtypes`` is the list of numba-cuda-mlir scalar types of the state
-    arrays.  All state arrays must share a dtype: the packed pointers are read
-    through a single ``CPointer(CPointer(dtype))`` view, which requires a
-    uniform pointee type.  Heterogeneous state dtypes are not yet supported
-    (reinterpreting raw addresses to differently-typed pointers has no
-    pure-Python expression in numba-cuda-mlir).
+    arrays.  They need not agree: the packed pointers are read through a
+    ``CPointer(voidptr)`` view (untyped addresses) and each one is given its
+    element type at the point of use, by passing an explicit ``dtype`` to
+    ``carray``.  This matters because a segmented reduction inherently mixes a
+    payload dtype with int64 offsets, so requiring a uniform dtype would rule
+    that pattern out.
 
     Returns ``(wrapper_func, wrapper_sig)``.
     """
@@ -181,15 +182,6 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
         raise ValueError("stateful op wrapper requires at least one state array")
     if len(state_shapes) != num_states:
         raise ValueError("state_shapes and state_dtypes must have the same length")
-
-    unique_state_dtypes = set(state_dtypes)
-    if len(unique_state_dtypes) > 1:
-        raise NotImplementedError(
-            "stateful operators that capture device arrays of differing dtypes "
-            f"are not supported (got {sorted(map(str, unique_state_dtypes))}); "
-            "all captured arrays must share a dtype"
-        )
-    state_dtype = state_dtypes[0]
 
     op_device = cuda.jit(device=True)(op)
 
@@ -200,10 +192,12 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     wrapper_name = _make_wrapper_name(op.__name__)
     input_names = [f"arg_{i}" for i in range(len(input_types))]
 
-    # Rebuild the j-th packed pointer -- a CPointer(state_dtype) -- into a shaped
-    # device Array via carray so the operator can use array operations on it.
+    # Rebuild the j-th packed pointer into a shaped device Array via carray so the
+    # operator can use array operations on it.  The pointer is an untyped address,
+    # so carray is told the element type explicitly; ``_state_dt{j}`` is injected
+    # into the wrapper namespace below.
     state_args = ", ".join(
-        f"cuda.carray(states[{j}], {tuple(state_shapes[j])!r})"
+        f"cuda.carray(states[{j}], {tuple(state_shapes[j])!r}, _state_dt{j})"
         for j in range(num_states)
     )
     input_args = ", ".join(f"{name}[0]" for name in input_names)
@@ -212,8 +206,13 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
         op_device, sig.args
     )
     body, extra_namespace = _result_store_body(call_args, return_type, reconstruct)
-    # carray is called through ``cuda`` inside the generated device function.
-    extra_namespace = {**extra_namespace, "cuda": cuda}
+    # carray is called through ``cuda`` inside the generated device function,
+    # and each state's element type is passed to it explicitly.
+    extra_namespace = {
+        **extra_namespace,
+        "cuda": cuda,
+        **{f"_state_dt{j}": as_numpy_dtype(state_dtypes[j]) for j in range(num_states)},
+    }
 
     wrapper_func = _build_wrapper(
         wrapper_name,
@@ -224,7 +223,7 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     )
 
     wrapper_sig = types.void(
-        types.CPointer(types.CPointer(state_dtype)),
+        types.CPointer(types.voidptr),
         *(types.CPointer(t) for t in input_types),
         types.CPointer(return_type),
     )
