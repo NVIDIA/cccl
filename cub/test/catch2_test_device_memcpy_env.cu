@@ -228,8 +228,8 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
       .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   constexpr auto p2_large = cub::BatchedCopyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32};
   constexpr auto p2       = cub::BatchedCopyPolicy{
-          .algorithm = cub::BatchedCopyAlgorithm::lookback,
-          .lookback  = cub::BatchedCopyLookbackPolicy{.small_buffer = p2_small, .large_buffer = p2_large}};
+    .algorithm = cub::BatchedCopyAlgorithm::lookback,
+    .lookback  = cub::BatchedCopyLookbackPolicy{.small_buffer = p2_small, .large_buffer = p2_large}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2_small = p1_small;
   constexpr auto p2_large = p1_large;

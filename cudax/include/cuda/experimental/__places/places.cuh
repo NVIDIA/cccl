@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -59,6 +60,7 @@ class async_resources_handle;
 namespace cuda::experimental::places
 {
 using ::cuda::experimental::stf::box;
+using ::cuda::experimental::stf::cuda_safe_call;
 using ::cuda::experimental::stf::cuda_try;
 using ::cuda::experimental::stf::dim4;
 using ::cuda::experimental::stf::each;
@@ -205,7 +207,9 @@ public:
    * @brief Replicated data place: one full copy of the data in the affine
    * memory of every member of \p grid. READ-ONLY: tasks may only take read
    * access at this place (mutate the data at another place; the next
-   * replicated read re-broadcasts).
+   * replicated read re-broadcasts). A single-place grid degenerates to that
+   * place's affine data place (a plain place, not replicated): a live
+   * replicated place always has at least two instances.
    */
   static data_place replicated(const exec_place& grid);
 
@@ -225,7 +229,10 @@ public:
    * coordinate's instance. Fiber members must be co-located (equal affine
    * data places) -- validated at construction. Example: on a (K, 2) grid of
    * K devices x 2 domains, replicated(grid, replicate_over<0>) places one
-   * copy per device, shared by the device's two domains.
+   * copy per device, shared by the device's two domains. When the replicated
+   * axes multiply out to a single instance, the result degenerates to the
+   * shared members' (co-located) affine data place, like the single-place
+   * grid of the all-axes overload.
    */
   template <size_t... axes>
   static data_place replicated(const exec_place& grid, replicate_over_t<axes...>);
@@ -233,6 +240,15 @@ public:
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create a data place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to plain device memory.
+   */
+  static data_place locality_domain(const locality_domain_view& view);
+  static data_place locality_domain(int dev_id, int domain_id);
 
   bool operator==(const data_place& rhs) const
   {
@@ -900,6 +916,22 @@ public:
    */
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  /**
+   * @brief Create an execution place pinned to one locality domain of a device
+   *
+   * Defined in `exec/locality_domain.cuh`. On toolkits older than CUDA 13.4
+   * the place gracefully degrades to the whole device.
+   *
+   * @param split Selects how the place's SM partition is carved out of the
+   *        device (whole-device coverage vs. strict per-domain affinity);
+   *        see `locality_domain_sm_split`. Ignored by backends without
+   *        native locality-domain support.
+   */
+  static exec_place locality_domain(const locality_domain_view& view,
+                                    locality_domain_sm_split split = locality_domain_sm_split::backfill);
+  static exec_place
+  locality_domain(int dev_id, int domain_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);
@@ -2239,6 +2271,14 @@ inline data_place data_place::replicated(const exec_place& grid)
   {
     throw ::std::invalid_argument("replicated data_place requires a valid execution place");
   }
+  // A live replicated place always has >= 2 instances: everything downstream
+  // (acquire, member(), shard rebase) relies on it. One instance is a plain
+  // read at the member place, so degenerate to it -- the same degrade the
+  // deferred form applies when it materializes on a scalar execution place.
+  if (grid.size() == 1)
+  {
+    return grid.get_place(0).affine_data_place();
+  }
   return data_place(::std::make_shared<data_place_replicated>(grid));
 }
 
@@ -2259,6 +2299,13 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
   constexpr unsigned mask = ((1u << axes) | ...);
   auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);
   impl->validate_colocation();
+  // Same >= 2 instances invariant as the all-axes overload. Colocation was
+  // just validated, so with a single instance every member shares one affine
+  // data place: a plain place at member 0.
+  if (impl->instance_count() == 1)
+  {
+    return grid.get_place(0).affine_data_place();
+  }
   return data_place(mv(impl));
 }
 

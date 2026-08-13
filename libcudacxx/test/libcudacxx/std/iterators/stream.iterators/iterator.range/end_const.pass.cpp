@@ -20,11 +20,7 @@ int main(int, char**)
 {
   int ia[] = {1, 2, 3};
   const cuda::std::inplace_vector<int, 3> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
-#if _CCCL_TILE_COMPILATION()
-  cuda::std::inplace_vector<int, 3>::const_iterator i = cuda::std::__end_cpo{}(v);
-#else
   cuda::std::inplace_vector<int, 3>::const_iterator i = cuda::std::end(v);
-#endif // !_CCCL_TILE_COMPILATION()
   assert(i == v.cend());
 
   return 0;

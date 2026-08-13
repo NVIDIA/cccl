@@ -22,8 +22,11 @@ import atomic  # noqa: E402
 import buffer  # noqa: E402
 import complex  # noqa: E402
 import event  # noqa: E402
+import hierarchy  # noqa: E402
 import inplace_vector  # noqa: E402
+import mdspan  # noqa: E402
 import memory_resource  # noqa: E402
+import span  # noqa: E402
 import std_array  # noqa: E402
 import stream  # noqa: E402
 import tuple  # noqa: E402
@@ -38,6 +41,9 @@ _PRINTERS = (
     tuple,
     inplace_vector,
     event,
+    hierarchy,
+    mdspan,
+    span,
 )
 
 

@@ -71,14 +71,15 @@ template <class _Tp, size_t _Idx>
 struct __overload
 {
   template <class _Up>
-  _CCCL_API inline auto operator()(_Tp, _Up&&) const -> __check_for_narrowing<_Tp, _Up>;
+  _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(_Tp, _Up&&) -> __check_for_narrowing<_Tp, _Up>;
 };
 
 template <class _Tp, size_t>
 struct __overload_bool
 {
   template <class _Up, class _Ap = remove_cvref_t<_Up>>
-  _CCCL_API inline auto operator()(bool, _Up&&) const -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
+  _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(bool, _Up&&)
+    -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
 };
 
 template <size_t _Idx>

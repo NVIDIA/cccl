@@ -80,12 +80,14 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
     ]:
         ct_space = list(
             filter(
-                lambda variant: not (
-                    ("OffsetT{ct}=I64" in variant)
-                    or ("KeyT{ct}=I16" in variant)
-                    or ("ValueT{ct}=I16" in variant)
-                    or ("KeyT{ct}=I128" in variant)
-                    or ("ValueT{ct}=I128" in variant)
+                lambda variant: (
+                    not (
+                        ("OffsetT{ct}=I64" in variant)
+                        or ("KeyT{ct}=I16" in variant)
+                        or ("ValueT{ct}=I16" in variant)
+                        or ("KeyT{ct}=I128" in variant)
+                        or ("ValueT{ct}=I128" in variant)
+                    )
                 ),
                 ct_space,
             )
