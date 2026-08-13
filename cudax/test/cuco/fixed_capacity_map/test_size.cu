@@ -8,11 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
+// Temporary nvcc workaround for a cuda::buffer destructor conflict
 #if defined(__CUDACC__)
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 
+#include <cuda/__cccl_config>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
@@ -40,7 +41,7 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 template <class Pair>
 struct duplicate_iota_pair
 {
-  __host__ __device__ Pair operator()(int i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API Pair operator()(int i) const noexcept
   {
     const auto key = static_cast<typename Pair::first_type>(i / 2);
     return Pair{key, static_cast<typename Pair::second_type>(key)};
