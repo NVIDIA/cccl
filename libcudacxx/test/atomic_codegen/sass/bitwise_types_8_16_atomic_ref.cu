@@ -12,12 +12,14 @@
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE type int8_t:uint8_t:int16_t:uint16_t
 // %PARAM% OP,SASS_OP op and=fetch_and,AND:or=fetch_or,OR:xor=fetch_xor,XOR
-// %PARAM% ORDER,FILECHECK_PREFIX_ORDER order relaxed=mor,no_membar:acquire=moa,no_membar:release=more,release:acq_rel=moar,release:seq_cst=mosc,seq_cst
+// %PARAM% ORDER,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,non_seq_cst,no_acquire,no_membar:acquire=moa,non_seq_cst,acquire,no_membar:release=more,non_seq_cst,no_acquire,release:acq_rel=moar,non_seq_cst,acquire,release:seq_cst=mosc,seq_cst,acquire,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
 
 #include "atomic_codegen_helpers.h"
 
-__device__ auto atomic_bitwise(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
+extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
 {
   return atom.OP(value, ORDER);
 }
@@ -27,11 +29,16 @@ __device__ auto atomic_bitwise(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
 // clang-format off
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*atomic_bitwise.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]]{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}
 ; SMXX-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SEQ_CST-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; SMXX: {{.*}}LOP3.LUT {{.*}}
@@ -40,6 +47,9 @@ __device__ auto atomic_bitwise(cuda::atomic_ref<TYPE, SCOPE>& atom, TYPE value)
 ; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]]{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}} PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
+; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]]{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
