@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__cccl_config>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
@@ -35,7 +36,7 @@ struct atomic_test_values
   ::cuda::std::int32_t loaded32;
 };
 
-__global__ void test_atomic_kernel(atomic_test_values* values)
+_CCCL_KERNEL_ATTRIBUTES void test_atomic_kernel(atomic_test_values* values)
 {
   const auto rank = static_cast<::cuda::std::int32_t>(threadIdx.x);
 
