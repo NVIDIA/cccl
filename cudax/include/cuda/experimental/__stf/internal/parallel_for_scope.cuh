@@ -773,9 +773,9 @@ public:
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
-    // Only nvcc offers those traits. With nvc++ every lambda can run on host and device, and
-    // with clang-cuda a lambda runs on the device iff it is annotated __device__, which the
-    // call below diagnoses on its own.
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
