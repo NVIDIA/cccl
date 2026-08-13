@@ -23,6 +23,7 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -454,12 +455,15 @@ public:
 
     ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __num_regs, ::cuda::no_init};
 
-    ::cuda::copy_configuration __config{};
 #if _CCCL_CTK_AT_LEAST(13, 0)
+    ::cuda::copy_configuration __config{};
     __config.src_access_order = ::cuda::source_access_order::stream;
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     ::cuda::copy_bytes(__stream, __sketch, __host_sketch_buf, __config);
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+    ::cuda::__driver::__memcpyAsync(
+      __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream.get());
+#endif // _CCCL_CTK_BELOW(13, 0)
     __stream.sync();
 
     __fp_type __sum               = 0;
