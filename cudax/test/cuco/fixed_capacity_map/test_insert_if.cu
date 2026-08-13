@@ -42,7 +42,7 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 template <class Pair>
 struct iota_pair
 {
-  _CCCL_HOST_DEVICE_API Pair operator()(typename Pair::first_type key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API Pair operator()(typename Pair::first_type key) const noexcept
   {
     return Pair{key, key};
   }
@@ -50,7 +50,7 @@ struct iota_pair
 
 struct is_even
 {
-  _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
   {
     return value % 2 == 0;
   }
@@ -58,7 +58,7 @@ struct is_even
 
 struct is_odd
 {
-  _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
   {
     return value % 2 != 0;
   }
@@ -69,7 +69,7 @@ struct matches_inserted_parity
   const int* results;
   bool even;
 
-  _CCCL_DEVICE_API bool operator()(int index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int index) const noexcept
   {
     const bool expected = (index % 2 == 0) == even;
     return static_cast<bool>(results[index]) == expected;
@@ -100,8 +100,8 @@ C2H_TEST("fixed_capacity_map insert_if", "[container]", key_types, cg_sizes, buc
   constexpr key_type empty_key_sentinel = key_type{-1};
 
   ::cuda::stream stream{::cuda::device_ref{0}};
-  auto mr     = ::cuda::device_default_memory_pool(stream.device());
-  auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+  auto mr           = ::cuda::device_default_memory_pool(stream.device());
+  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
 
   map_type map{stream,
                mr,

@@ -21,26 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/hash.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__utility/pair.h>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/types.cuh>
+#  include <cuda/__functional/hash.h>
+#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/extents.h>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/capacity.cuh>
+#  include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
+#  include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
+#  include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
+#  include <cuda/experimental/__cuco/probing_scheme.cuh>
+#  include <cuda/experimental/__cuco/types.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -341,7 +341,7 @@ public:
   //!
   //! @return Number of successful insertions
   template <class _InputIt, class _StencilIt, class _Predicate>
-  size_type
+  _CCCL_HOST_API size_type
   insert_if(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
   {
     return __impl->insert_if(__stream, __first, __last, __stencil, __pred, ref());
@@ -363,8 +363,8 @@ public:
   //! @param __stencil Beginning of the stencil sequence
   //! @param __pred Predicate applied to the stencil to determine which elements to insert
   template <class _InputIt, class _StencilIt, class _Predicate>
-  void insert_if_async(
-    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred) noexcept
+  _CCCL_HOST_API void insert_if_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
   {
     __impl->insert_if_async(__stream, __first, __last, __stencil, __pred, ref());
   }
@@ -612,8 +612,8 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH
