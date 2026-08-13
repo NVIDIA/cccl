@@ -70,10 +70,10 @@ class MemoryResourcePrinter:
 
     def to_string(self) -> str:
         if self.storage == "unavailable":
-            return f"{self.type_name} state=unavailable"
-        if self.storage == "empty":
-            return f"{self.type_name} has_value=false"
-        return f"{self.type_name} has_value=true, storage={self.storage}"
+            return f"{self.type_name} storage=unavailable"
+        if self.resource is None:
+            return f"{self.type_name} storage=0x0"
+        return f"{self.type_name} storage={int(self.resource):#x} ({self.storage})"
 
 
 class MemoryResourcePrinterLookup(gdb.printing.PrettyPrinter):

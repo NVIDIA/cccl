@@ -40,10 +40,10 @@ def _resource_info(value: lldb.SBValue) -> tuple[str, lldb.SBValue | None]:
         return "unavailable", None
     if tagged_vptr & 1:
         resource = buffer.AddressOf().Cast(void_pointer).Clone("resource")
-        return "in-situ", resource
+        return ("in-situ", resource) if resource.IsValid() else ("unavailable", None)
 
     resource = buffer.CreateChildAtOffset("resource", 0, void_pointer)
-    return "heap", resource if resource.IsValid() else None
+    return ("heap", resource) if resource.IsValid() else ("unavailable", None)
 
 
 def memory_resource_description(value: lldb.SBValue) -> str:
@@ -60,12 +60,12 @@ def memory_resource_description(value: lldb.SBValue) -> str:
 
 def memory_resource_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
     type_name = cccl_common.public_type_name(value.GetType())
-    storage, _ = _resource_info(value)
+    storage, resource = _resource_info(value)
     if storage == "unavailable":
-        return f"{type_name} state=unavailable"
-    if storage == "empty":
-        return f"{type_name} has_value=false"
-    return f"{type_name} has_value=true, storage={storage}"
+        return f"{type_name} storage=unavailable"
+    if resource is None:
+        return f"{type_name} storage=0x0"
+    return f"{type_name} storage={resource.GetValueAsUnsigned(0):#x} ({storage})"
 
 
 class MemoryResourceSyntheticProvider:
