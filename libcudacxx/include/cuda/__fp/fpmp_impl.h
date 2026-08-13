@@ -686,7 +686,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_add_rz(double __x, double __y) noexc
                       {
                         return __sum;
                       }
-                      double __error = fma(-1.0, __sum, __x) + __y;
+                      double __error = ::cuda::std::fma(-1.0, __sum, __x) + __y;
                       if (__error == 0.0)
                       {
                         return __sum;
@@ -712,7 +712,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_mul_rn(double __x, double __y) noexc
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_fma_rn(double __x, double __y, double __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fma_rn(__x, __y, __z);), (return fma(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fma_rn(__x, __y, __z);), (return ::cuda::std::fma(__x, __y, __z);))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rcp_rn(double __x) noexcept
 {
@@ -720,7 +720,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rcp_rn(double __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rsqrt_rn(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return rsqrt(__x);), (return 1.0 / sqrt(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 {
@@ -728,7 +728,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(round(__x));))
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(::cuda::std::round(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
 {
