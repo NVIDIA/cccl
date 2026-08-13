@@ -17,6 +17,7 @@ import hierarchy
 import inplace_vector
 import mdspan
 import memory_resource
+import span
 import std_array
 import stream
 import tuple
@@ -36,6 +37,7 @@ _FORMATTERS = (
     event,
     hierarchy,
     mdspan,
+    span,
 )
 InternalDict = dict[str, object]
 

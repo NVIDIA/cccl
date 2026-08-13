@@ -21,15 +21,15 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Compile-time: every accuracy variant, packed and unpacked, is trivially copyable.
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu>);
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu_low>);
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu_high>);
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked>);
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked_low>);
-static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked_high>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_low>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_high>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_unpacked>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_unpacked_low>);
+static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_unpacked_high>);
 
 // Exercise the four volatile paths for one emulated type; values are exact double
 // bit patterns so the round-trips must be exactly preserved.
@@ -79,12 +79,12 @@ TEST_HOST_DEVICE_FUNC void test()
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  test<fp64emu>();
-  test<fp64emu_low>();
-  test<fp64emu_high>();
-  test<fp64emu_unpacked>();
-  test<fp64emu_unpacked_low>();
-  test<fp64emu_unpacked_high>();
+  test<cudax::fp64emu>();
+  test<cudax::fp64emu_low>();
+  test<cudax::fp64emu_high>();
+  test<cudax::fp64emu_unpacked>();
+  test<cudax::fp64emu_unpacked_low>();
+  test<cudax::fp64emu_unpacked_high>();
 }
 
 int main(int, char**)

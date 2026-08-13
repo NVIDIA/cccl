@@ -730,7 +730,20 @@ protected:
 
   ~dot()
   {
-    finish();
+    // A trace we failed to write is not worth terminating the program over, which is what
+    // an exception escaping a destructor would do.
+    _CCCL_TRY
+    {
+      finish();
+    }
+    _CCCL_CATCH (const ::std::exception& e)
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s: %s\n", dot_filename.c_str(), e.what());
+    }
+    _CCCL_CATCH_ALL
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s\n", dot_filename.c_str());
+    }
   }
 
 public:

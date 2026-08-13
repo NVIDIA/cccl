@@ -60,6 +60,7 @@ class async_resources_handle;
 namespace cuda::experimental::places
 {
 using ::cuda::experimental::stf::box;
+using ::cuda::experimental::stf::cuda_safe_call;
 using ::cuda::experimental::stf::cuda_try;
 using ::cuda::experimental::stf::dim4;
 using ::cuda::experimental::stf::each;
