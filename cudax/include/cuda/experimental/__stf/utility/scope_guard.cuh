@@ -90,14 +90,15 @@ notify(const ::std::exception* __exception, const ::cuda::std::source_location _
  * A callable that declares `nothing` as its return type promises in the type system that it
  * never returns normally: keeping the promise any other way would require materializing a value
  * of a type that has none. `[[noreturn]]` makes the same promise to the optimizer, but not
- * reliably to overload resolution, so `on_throw` recognizes terminating reactions by this
- * return type rather than by conversion to `void (*)()` (which any captureless lambda would
- * satisfy, turning innocent cleanup into program death).
+ * reliably to overload resolution; a `nothing` result states it as a fact of the type, visible
+ * to metaprogramming and impossible to fake.
  *
- * The conversion operator lets an expression of type `nothing` appear where a value of any
- * type is expected, references included, so a never-returning call may be `return`ed from a
- * function of any result type. It can never run -- running it would require an object that
- * cannot exist -- so its body exists to satisfy the compiler, not to execute.
+ * The conversion operator lets a `nothing` expression appear wherever a value of any type is
+ * expected, references included: a never-returning call may be `return`ed from a function of
+ * any result type, or supply one arm of a ternary whose other arm produces the legitimate
+ * value, as in `ready ? front() : abort()`. The operator can never run -- running it would
+ * require an object that cannot exist -- so its body exists to satisfy the compiler, not to
+ * execute.
  */
 struct nothing final
 {
@@ -125,29 +126,20 @@ struct nothing final
  * @brief `::std::abort` wrapped so that never returning is part of its type: the reaction to
  * pass as in `on_throw(abort) << callable`.
  *
- * An object rather than a function so the name cannot be overloaded and stops unqualified
- * lookup dead. Inside this namespace, plain `abort` finds it before the C library's; code
- * that mixes both via using-directives gets an ambiguity error rather than a silent pick,
- * and disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`.
+ * Inside this namespace, plain `abort` finds this function before the C library's. Code that
+ * sees both through using-directives gets an ambiguity error rather than a silent pick, and
+ * disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`.
  */
-struct abort_t
+[[noreturn]] inline nothing abort() noexcept
 {
-  [[noreturn]] nothing operator()() const noexcept
-  {
-    ::std::abort(); // noreturn, so no value of the value-less result type is owed
-  }
-};
-inline constexpr abort_t abort{};
+  ::std::abort(); // noreturn, so no value of the value-less result type is owed
+}
 
 //! @brief `::std::terminate` wrapped like `abort`, its type proving it never returns.
-struct terminate_t
+[[noreturn]] inline nothing terminate() noexcept
 {
-  [[noreturn]] nothing operator()() const noexcept
-  {
-    ::std::terminate();
-  }
-};
-inline constexpr terminate_t terminate{};
+  ::std::terminate();
+}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
@@ -195,9 +187,8 @@ struct __on_throw_policy
       __never_returns<_Reaction&, const ::std::exception*, ::cuda::std::source_location>();
     constexpr bool __action_dies = !__handles && __never_returns<_Reaction&>();
     // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
-    // what it is and a handler decides by returning it. Asking the same of `void` would be
-    // useless, every result type being convertible to `void`; and `nothing` converts to every
-    // type, `::std::ignore`'s included, so a dying handler is asked by name first.
+    // what it is and a handler decides by returning it. `nothing` converts to every type,
+    // `::std::ignore`'s included, so a dying handler is asked by name first.
     constexpr bool __resumes =
       __handles
         ? !__handler_dies
@@ -210,19 +201,14 @@ struct __on_throw_policy
       static_assert(
         ::cuda::std::is_nothrow_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>,
         "an on_throw handler runs while an exception is in flight and must be noexcept");
+      // The return type is the handler's whole answer; in particular `void` is rejected, saying
+      // nothing about what comes next.
+      static_assert(__handler_dies || __resumes,
+                    "an on_throw handler must return nothing, to end the program, or ::std::ignore, to go on");
       __reaction_(__exception, __loc_);
       if constexpr (__handler_dies)
       {
         // The call above cannot return: its declared result type has no values.
-        _CCCL_UNREACHABLE();
-      }
-      else if constexpr (!__resumes)
-      {
-        static_assert(
-          ::cuda::std::is_void_v<
-            ::cuda::std::invoke_result_t<_Reaction&, const ::std::exception*, ::cuda::std::source_location>>,
-          "an on_throw handler must return nothing or void, to end the program, or ::std::ignore, to go on");
-        ::std::abort(); // the handler was supposed to see to that itself
         _CCCL_UNREACHABLE();
       }
     }
@@ -302,10 +288,10 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   `cuda::std::source_location`, be it a function, a function pointer, or a function object,
  *   capturing or not. It is invoked with the caught exception, or with `nullptr` for an
  *   exception that does not derive from `std::exception`, along with `__loc`. Its return type
- *   says what happens next: `nothing` proves the handler never returns; returning
- *   `decltype(::std::ignore)` resumes execution with a default-constructed result; and
- *   returning `void` claims the handler ends the program, with `std::abort` running right
- *   after it in case it does not. `notify` is such a handler.
+ *   is its whole answer to what happens next: `nothing` proves the handler never returns, and
+ *   `decltype(::std::ignore)` resumes execution with a default-constructed result. Any other
+ *   return type, `void` included, is rejected for saying nothing about what comes next.
+ *   `notify` is such a handler.
  * - A terminating action: a callable invocable with no arguments whose declared result is
  *   `nothing`, of which `abort` and `terminate` above are the ones provided. The exception is
  *   reported through `notify`, then the action runs, its result type proof that it never
@@ -363,6 +349,11 @@ UNITTEST("nothing")
   [[maybe_unused]] const auto propagates = []() -> int& {
     return cuda::experimental::stf::abort();
   };
+  // A `nothing` expression also supplies one arm of a ternary, the other arm setting the type.
+  const auto pick = [](bool ok) -> int {
+    return ok ? 42 : cuda::experimental::stf::abort();
+  };
+  EXPECT(pick(true) == 42);
 };
 
 UNITTEST("on_throw")
@@ -385,24 +376,15 @@ UNITTEST("on_throw")
   EXPECT(answer == 42);
   //! [on_throw]
 
-  // A terminating handler, recognized by its void return, stays out of the way as long as
-  // nothing throws.
-  const auto die = [](const ::std::exception*, ::cuda::std::source_location) noexcept {
+  // A terminating handler declares `nothing` and dies on its own terms, no backstop needed;
+  // it stays out of the way as long as nothing throws.
+  const auto die = [](const ::std::exception*, ::cuda::std::source_location) noexcept -> nothing {
     ::std::abort();
   };
   const int untouched = on_throw(die) << [] {
     return 7;
   };
   EXPECT(untouched == 7);
-
-  // A handler may also declare `nothing` and die on its own terms, no abort backstop needed.
-  const auto die_typed = [](const ::std::exception*, ::cuda::std::source_location) noexcept -> nothing {
-    ::std::abort();
-  };
-  const int also_untouched = on_throw(die_typed) << [] {
-    return 8;
-  };
-  EXPECT(also_untouched == 8);
 
   // Any callable whose declared result is `nothing` works as a terminating action; the type,
   // not an attribute, is what proves it never returns.
