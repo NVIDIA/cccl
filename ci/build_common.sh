@@ -428,7 +428,7 @@ function build_preset() {
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
     shift 2
-    local BUILD_COMMANDS=("$@")
+    local EXTRA_ARGS=("$@")
 
     symlink_latest_preset "$PRESET"
 
@@ -454,7 +454,20 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
+
+    local -a build_command=(cmake --build --preset "$PRESET" ${VERBOSE:+-v} "${EXTRA_ARGS[@]}")
+
+    if [[ "${#EXTRA_ARGS[@]}" -eq 0 ]]; then
+        run_ci_timed_command "$GROUP_NAME (objects)" xargs -r \
+            "${build_command[@]}" --parallel "$PARALLEL_LEVEL" --target < <(
+                cmake --build --preset "$PRESET" -- -t inputs all | grep -E '\.o(bj)?\b'
+            ) || status=$?
+    fi
+
+    if [[ "$status" -eq 0 ]]; then
+        run_ci_timed_command "$GROUP_NAME" "${build_command[@]}" --parallel "$CMAKE_BUILD_PARALLEL_LEVEL" || status=$?
+    fi
+
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
