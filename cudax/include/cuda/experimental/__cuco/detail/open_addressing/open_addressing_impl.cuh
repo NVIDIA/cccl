@@ -252,7 +252,7 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST_API __size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
-    return this->insert_if(
+    return insert_if(
       __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
   }
 
@@ -291,7 +291,7 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
-    this->insert_if_async(
+    insert_if_async(
       __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
   }
 
@@ -401,7 +401,7 @@ public:
   _CCCL_HOST_API void find_async(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
   {
-    this->find_if_async(
+    find_if_async(
       __stream,
       __first,
       __last,
