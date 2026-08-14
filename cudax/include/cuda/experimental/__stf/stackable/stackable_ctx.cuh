@@ -992,6 +992,9 @@ public:
     ctx_.push(loc);
   }
 
+  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
+  // terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~graph_scope_guard()
   {
     ctx_.pop();
@@ -1086,6 +1089,10 @@ public:
   //!
   //! Runs pop_prologue() (if not already done) and pop_epilogue(). After
   //! release(), further calls to launch()/exec()/stream()/graph() are invalid.
+  //!
+  //! Tearing the graph node down is not something a caller could retry or recover from, so
+  //! a failure here terminates.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   void release() noexcept
   {
     if (released_)
@@ -1257,6 +1264,9 @@ private:
         , handle(mv(h))
     {}
 
+    // As in release(), a failing pop_epilogue() is not recoverable, so terminating is the
+    // intended outcome.
+    // NOLINTNEXTLINE(bugprone-exception-escape)
     ~state()
     {
       // Guard against users who manually called pop_epilogue() on the ctx
@@ -1305,6 +1315,9 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
+  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
+  // context stack inconsistent, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~while_graph_scope_guard()
   {
     ctx_.pop();
@@ -2174,7 +2187,7 @@ UNITTEST("pop_prologue_shared storable across scopes / in containers")
   test_pop_prologue_shared_stored_in_container();
 };
 
-inline void test_pop_prologue_shared_manual_epilogue()
+inline void test_pop_prologue_shared_manual_epilogue_meh()
 {
   // If the user manually calls ctx.pop_epilogue() after creating shared
   // copies, outstanding copies must become invalid and the shared state
@@ -2208,11 +2221,11 @@ inline void test_pop_prologue_shared_manual_epilogue()
 
 UNITTEST("pop_prologue_shared tolerates manual pop_epilogue")
 {
-  test_pop_prologue_shared_manual_epilogue();
+  test_pop_prologue_shared_manual_epilogue_meh();
 };
 
 #    if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
-inline void test_pop_prologue_with_while_graph_scope()
+inline void test_pop_prologue_with_while_graph_scope_meh()
 {
   constexpr int N              = 3; // re-launch the whole while-graph 3 times
   constexpr size_t inner_iters = 4; // each launch runs the body 4 times
@@ -2254,7 +2267,7 @@ inline void test_pop_prologue_with_while_graph_scope()
 
 UNITTEST("pop_prologue with while_graph_scope re-launched multiple times")
 {
-  test_pop_prologue_with_while_graph_scope();
+  test_pop_prologue_with_while_graph_scope_meh();
 };
 #    endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
 

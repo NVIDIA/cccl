@@ -90,6 +90,7 @@ set(
   places/locality_domain_grid.cu
   places/locality_domain_helper.cu
   places/locality_domain_localized_disabled.cu
+  places/locality_domain_split_method.cu
   places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
