@@ -274,10 +274,10 @@ public:
   {
     // pthread calls this, so an exception must not leave it either.
     on_throw(abort) << [&] {
-      fprintf(stderr, "CALLBACK RUNNING...\n");
+      // fprintf(stderr, "CALLBACK RUNNING...\n");
       auto* cbq = static_cast<callback_queue*>(args);
       cudaCallbackQueueProgress(cbq, 1);
-      fprintf(stderr, "CALLBACK HALTING...\n");
+      // fprintf(stderr, "CALLBACK HALTING...\n");
     };
 
     return nullptr;
