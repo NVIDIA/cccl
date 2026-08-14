@@ -224,10 +224,10 @@ function build_preset {
 
     # Compile all the objects first
     $duration = (Measure-Command -Expression {
-        & bash -c "`
-            cmake --build --preset $PRESET -- -t inputs all | `
-            grep -E '\.o(bj)?\b' | sed 's@\\\\@/@g' | `
-            xargs -r cmake --build --preset $PRESET --parallel $env:PARALLEL_LEVEL -v --target`
+        & bash -c "xargs -r \`
+            cmake --build --preset '$PRESET' --parallel '$env:PARALLEL_LEVEL' -v --target < <(`
+                cmake --build --preset '$PRESET' -- -t inputs all | grep -E '\.o(bj)?\b' | sed 's@\\\\@/@g'`
+            )`
         " | Out-Default
     }).Seconds
 
