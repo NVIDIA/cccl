@@ -18,8 +18,8 @@ _SCRIPT_DIRECTORY = str(Path(__file__).resolve().parent)
 if _SCRIPT_DIRECTORY not in sys.path:
     sys.path.insert(0, _SCRIPT_DIRECTORY)
 
-import atomic  # noqa: E402
 import annotated_ptr  # noqa: E402
+import atomic  # noqa: E402
 import buffer  # noqa: E402
 import complex  # noqa: E402
 import event  # noqa: E402
