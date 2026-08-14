@@ -189,11 +189,10 @@ runs:
 
         $exitCode = 0
         try {
-          Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"
+          Write-Host "Executing command: $env:COMMAND"
           Write-Host "In directory: $(Get-Location)"
           Invoke-Expression $env:COMMAND
           $exitCode = $LASTEXITCODE
-          Write-Host "::endgroup::"
           Write-Host "Command finished with exit code $exitCode"
         } catch {
           Write-Host 'Command failed with error'
