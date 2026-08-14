@@ -360,11 +360,8 @@ void cuda_try(Status status, const ::cuda::std::source_location loc = ::cuda::st
 {
   if (status)
   {
-#if _CCCL_HAS_EXCEPTIONS()
+    // _CCCL_THROW itself terminates (with a report) when exceptions are disabled.
     _CCCL_THROW(cuda_exception, status, loc);
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    ::cuda::std::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
   }
 }
 
