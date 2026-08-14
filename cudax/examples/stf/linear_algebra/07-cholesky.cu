@@ -438,7 +438,7 @@ void PDTRSM(cublasSideMode_t side,
     {
       // TODO
       assert(0);
-      abort();
+      std::abort();
     }
     else
     {
@@ -494,7 +494,7 @@ void PDTRSM(cublasSideMode_t side,
   else
   {
     // TODO
-    abort();
+    std::abort();
   }
   cuda_safe_call(cudaSetDevice(0));
   //    std::cout << "[PDTRSM] END" << '\n';

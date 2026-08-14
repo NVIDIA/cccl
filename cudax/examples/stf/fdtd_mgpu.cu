@@ -143,7 +143,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         break;
       default:
         fprintf(stderr, "Invalid exec place argument\n");
-        abort();
+        std::abort();
     }
 
     fprintf(stderr, "Running on %s\n", where.to_string().c_str());
