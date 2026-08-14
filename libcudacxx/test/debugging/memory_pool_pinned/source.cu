@@ -21,18 +21,17 @@
 }
 
 // Host pool support is a device attribute the toolkit gate in CMake cannot see.
-// Returns the driver's error message, or nullptr when pinned pools are usable.
-[[nodiscard]] const char* pinned_pools_error()
+// Returns the driver's error message, or an empty string when pinned pools are usable.
+[[nodiscard]] std::string pinned_pools_error()
 {
   try
   {
     (void) cuda::pinned_memory_pool{0};
-    return nullptr;
+    return {};
   }
   catch (const cuda::cuda_error& err)
   {
-    static const std::string reason{err.what()};
-    return reason.c_str();
+    return err.what();
   }
 }
 
@@ -63,9 +62,9 @@
 
 int main()
 {
-  if (const char* const error = pinned_pools_error())
+  if (const std::string error = pinned_pools_error(); !error.empty())
   {
-    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: pinned memory pools are not supported: %s\n", error);
+    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: pinned memory pools are not supported: %s\n", error.c_str());
     return 0;
   }
 

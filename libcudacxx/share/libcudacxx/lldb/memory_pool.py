@@ -228,6 +228,8 @@ class MemoryPoolSyntheticProvider:
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
         self.value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
+        # Canonicalizing resolves any alias while keeping cv/ref qualifiers.
+        self.type_name = value.GetType().GetCanonicalType().GetDisplayTypeName() or ""
         self.children: tuple[tuple[str, int], ...] = ()
         self.stop_id: int | None = None
         self.initialized = False
@@ -254,6 +256,9 @@ class MemoryPoolSyntheticProvider:
 
     def has_children(self) -> bool:
         return bool(self.children)
+
+    def get_type_name(self) -> str:
+        return self.type_name
 
     def get_child_index(self, name: str) -> int:
         for index, (child_name, _) in enumerate(self.children):

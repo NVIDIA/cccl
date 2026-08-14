@@ -17,7 +17,7 @@
 }
 =============== memory_pool.ref end ===============
 =============== memory_pool.alias begin ===============
-(const pool_ref_alias &) <address> handle=<address>: {
+(const cuda::device_memory_pool_ref &) <address> handle=<address>: {
   release_threshold = 3145728
   reserved_mem_current = 0
   reserved_mem_high = 0
@@ -50,7 +50,7 @@
 (const cuda::shared_device_memory_pool &) <address> handle=0x0, use_count=0
 =============== memory_pool.shared_no_init end ===============
 =============== memory_pool.nested begin ===============
-(cuda::std::array<cuda::device_memory_pool_ref, 2>) <address>: {
+(const cuda::std::array<cuda::device_memory_pool_ref, 2> &) <address>: {
   [0] = handle=<address> {
     release_threshold = 4194304
     reserved_mem_current = 0

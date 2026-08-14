@@ -22,18 +22,17 @@
 
 // Creating a managed pool also needs a 13.0 driver, which the toolkit gate in CMake
 // cannot see, so probe it here and let the harness skip the scenario without one.
-// Returns the driver's error message, or nullptr when managed pools are usable.
-[[nodiscard]] const char* managed_pools_error()
+// Returns the driver's error message, or an empty string when managed pools are usable.
+[[nodiscard]] std::string managed_pools_error()
 {
   try
   {
     (void) cuda::managed_memory_pool{};
-    return nullptr;
+    return {};
   }
   catch (const cuda::cuda_error& err)
   {
-    static const std::string reason{err.what()};
-    return reason.c_str();
+    return err.what();
   }
 }
 
@@ -74,9 +73,9 @@
 
 int main()
 {
-  if (const char* const error = managed_pools_error())
+  if (const std::string error = managed_pools_error(); !error.empty())
   {
-    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: managed memory pools are not supported: %s\n", error);
+    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: managed memory pools are not supported: %s\n", error.c_str());
     return 0;
   }
 
