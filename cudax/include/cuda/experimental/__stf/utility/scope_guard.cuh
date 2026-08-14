@@ -109,16 +109,18 @@ struct nothing final
   // Two operators, because deduction for conversion functions strips the reference off the
   // target before matching: the rvalue one serves values and rvalue references, the lvalue one
   // serves lvalue references. A value target sees both and prefers the rvalue binding, so the
-  // pair is not ambiguous.
+  // pair is not ambiguous. The bodies are unreachable rather than aborting: every `nothing`
+  // prvalue is the result of a call that never returns, so control provably cannot arrive here
+  // short of undefined behavior already committed elsewhere.
   template <class _Tp>
   [[noreturn]] operator _Tp&&() const noexcept
   {
-    ::std::abort();
+    _CCCL_UNREACHABLE();
   }
   template <class _Tp>
   [[noreturn]] operator _Tp&() const noexcept
   {
-    ::std::abort();
+    _CCCL_UNREACHABLE();
   }
 };
 

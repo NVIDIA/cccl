@@ -1163,7 +1163,7 @@ public:
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(abort) << [untyped_args] {
+      on_throw(abort) << [&] {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
