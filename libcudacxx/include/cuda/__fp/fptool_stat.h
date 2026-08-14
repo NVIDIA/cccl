@@ -491,10 +491,10 @@ __fpmp2_stat_accumulate(fpmp2_stat_value* __slot, _FpType __hi, _FpType __lo) no
   const bool __lo_is_zero = __p_lo.__exp == __exp_min && __p_lo.__mant_is_zero;
   const bool __is_zero    = __hi_is_zero && __lo_is_zero;
   const bool __is_nan     = (__p_hi.__exp_is_max && !__p_hi.__mant_is_zero) //
-                     || (__p_lo.__exp_is_max && !__p_lo.__mant_is_zero);
-  const bool __is_inf = (__p_hi.__exp_is_max && __p_hi.__mant_is_zero) //
-                     || (__p_lo.__exp_is_max && __p_lo.__mant_is_zero);
-  const bool __is_finite = !__p_hi.__exp_is_max && !__p_lo.__exp_is_max;
+                         || (__p_lo.__exp_is_max && !__p_lo.__mant_is_zero);
+  const bool __is_inf     = (__p_hi.__exp_is_max && __p_hi.__mant_is_zero) //
+                         || (__p_lo.__exp_is_max && __p_lo.__mant_is_zero);
+  const bool __is_finite  = !__p_hi.__exp_is_max && !__p_lo.__exp_is_max;
   // A subnormal is the minimum exponent field with a non-zero mantissa, which is what the
   // zero tests above rule out. Either limb counts.
   const bool __is_denorm = (__p_hi.__exp == __exp_min && !__p_hi.__mant_is_zero) //
