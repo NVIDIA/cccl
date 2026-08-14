@@ -213,11 +213,13 @@ add_subdirectory(inplace_vector)
 add_subdirectory(mdspan)
 add_subdirectory(memory_pool)
 # Registered only on a toolkit new enough to have the types, which keeps the
-# golden output of every registered scenario unconditional.
-if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9)
+# golden output of every registered scenario unconditional. Gate on the toolkit
+# version rather than the compiler version, since the CUDA compiler may be clang.
+cccl_get_cudatoolkit()
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.9)
   add_subdirectory(memory_pool_pinned)
 endif()
-if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
   add_subdirectory(memory_pool_managed)
 endif()
 add_subdirectory(memory_resource)

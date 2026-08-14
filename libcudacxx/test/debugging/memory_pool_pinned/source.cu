@@ -27,8 +27,9 @@
     (void) cuda::pinned_memory_pool{0};
     return true;
   }
-  catch (const cuda::cuda_error&)
+  catch (const cuda::cuda_error& err)
   {
+    std::printf("pinned memory pool creation failed: %s\n", err.what());
     return false;
   }
 }

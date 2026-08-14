@@ -28,8 +28,9 @@
     (void) cuda::managed_memory_pool{};
     return true;
   }
-  catch (const cuda::cuda_error&)
+  catch (const cuda::cuda_error& err)
   {
+    std::printf("managed memory pool creation failed: %s\n", err.what());
     return false;
   }
 }
