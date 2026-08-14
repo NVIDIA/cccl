@@ -69,9 +69,12 @@ inline const ::std::string_view type_name{
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
 {
+  // Host-only by construction (::std::apply, ::std::tuple), so this forwards with the host stdlib.
+  // The __host__ __device__ ::cuda::std::forward crashes nvcc 12.0's front end in this lambda when
+  // the host compiler is clang.
   return ::std::apply(
     [&](auto&&... x) {
-      return ::std::tuple(f(::cuda::std::forward<decltype(x)>(x))...);
+      return ::std::tuple(f(::std::forward<decltype(x)>(x))...);
     },
     t);
 }
@@ -109,8 +112,8 @@ class print_type_name_and_fail
 template <typename Array>
 auto to_tuple(Array&& array)
 {
-  return tuple2tuple(::cuda::std::forward<Array>(array), [](auto&& e) {
-    return ::cuda::std::forward<decltype(e)>(e);
+  return tuple2tuple(::std::forward<Array>(array), [](auto&& e) {
+    return ::std::forward<decltype(e)>(e);
   });
 }
 
