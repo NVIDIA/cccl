@@ -153,7 +153,7 @@
 }
 =============== mdspan.device_backed end ===============
 =============== mdspan.copy_failure begin ===============
-(cuda::std::mdspan<int, cuda::std::extents<int, 1>>) <address> rank=1, extents=[1], data=0x0 <error: Cannot access memory at address 0x0>
+(cuda::std::mdspan<int, cuda::std::extents<int, 1>>) <address> rank=1, extents=[1], data=0x0
 =============== mdspan.copy_failure end ===============
 =============== mdspan.managed_mdspan begin ===============
 (cuda::managed_mdspan<int, cuda::std::extents<int, 2>>) <address> rank=1, extents=[2], data=<address>: {
@@ -168,7 +168,7 @@
 }
 =============== mdspan.restrict_mdspan end ===============
 =============== mdspan.array begin ===============
-(cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<int, 2>>, 2>) <address>: {
+(const cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<int, 2>>, 2> &) <address>: {
   [0] = rank=1, extents=[2], data=<address> {
     [0] = -2
     [1] = 4

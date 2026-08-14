@@ -21,24 +21,24 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Runs mul/add/div/sub/fma through the raw __fpbits64 emulation cores and checks
 // each against the native double reference. Returns true on success.
 TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
-  __fpbits64 ex = __fp64emu_from_double(dx);
-  __fpbits64 ey = __fp64emu_from_double(dy);
-  __fpbits64 ez = __fp64emu_from_double(dz);
+  cudax::__fpbits64 ex = cudax::__fp64emu_from_double(dx);
+  cudax::__fpbits64 ey = cudax::__fp64emu_from_double(dy);
+  cudax::__fpbits64 ez = cudax::__fp64emu_from_double(dz);
 
   const double ref[5] = {dx * dy, dx + dy, dx / dy, dx - dy, dx * dy + dz};
 
   const double got[5] = {
-    __fp64emu_to_double(__fp64emu_mid_dmul_rn(ex, ey)),
-    __fp64emu_to_double(__fp64emu_high_dadd_rn(ex, ey)),
-    __fp64emu_to_double(__fp64emu_mid_ddiv_rn(ex, ey)),
-    __fp64emu_to_double(__fp64emu_high_dsub_rn(ex, ey)),
-    __fp64emu_to_double(__fp64emu_mid_fma_rn(ex, ey, ez)),
+    cudax::__fp64emu_to_double(cudax::__fp64emu_mid_dmul_rn(ex, ey)),
+    cudax::__fp64emu_to_double(cudax::__fp64emu_high_dadd_rn(ex, ey)),
+    cudax::__fp64emu_to_double(cudax::__fp64emu_mid_ddiv_rn(ex, ey)),
+    cudax::__fp64emu_to_double(cudax::__fp64emu_high_dsub_rn(ex, ey)),
+    cudax::__fp64emu_to_double(cudax::__fp64emu_mid_fma_rn(ex, ey, ez)),
   };
 
   const double tol = 1e-10;

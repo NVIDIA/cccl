@@ -31,6 +31,34 @@
 #include <type_traits>
 #include <utility>
 
+/**
+ * @brief Formalizes, at a statement position, that the enclosing code is not supported with
+ * the current compiler: `_CCCL_UNSUPPORTED(name_that_reads_as_a_message, "message")`.
+ *
+ * Expands to a call to `name_that_reads_as_a_message`, declared on the spot but never defined
+ * anywhere, carrying the GNU `error` attribute. The attribute's diagnostic fires only at
+ * codegen, which yields the intended split: clang-tidy and `-fsyntax-only` sweeps analyze the
+ * enclosing file cleanly, an actual build fails at compile time with the message, compilers
+ * without the attribute fail at link with the function name as the message, and nothing
+ * anywhere compiles into wrong runtime behavior.
+ *
+ * The `noexcept` is load-bearing: with a nontrivial destructor in scope the call would
+ * otherwise be emitted as an invoke, whose error-attribute diagnostic clang silently skips
+ * (observed with clang 21, plain C++ and CUDA alike).
+ */
+#if _CCCL_HAS_ATTRIBUTE(error)
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg) __attribute__((error(_msg)))
+#else // _CCCL_HAS_ATTRIBUTE(error)
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)
+#endif // _CCCL_HAS_ATTRIBUTE(error)
+#define _CCCL_UNSUPPORTED(_name, _msg)                  \
+  do                                                    \
+  {                                                     \
+    _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)                   \
+    void _name() noexcept; /* deliberately undefined */ \
+    _name();                                            \
+  } while (0)
+
 namespace cuda::experimental::stf
 {
 #ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
@@ -215,11 +243,10 @@ constexpr void unroll(F&& f, ::std::index_sequence<i...> = {})
 template <typename T, typename... P>
 constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
 {
-  return ::std::apply(
-    [&](auto&&... p) {
-      return ::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
-    },
-    mv(tuple));
+  // Spelling the prefix's type out rather than deducing it keeps this usable from device code: a
+  // deduction guide is not a constexpr function, so it stays host-only even where clang treats
+  // libstdc++'s constexpr tuple machinery as implicitly __host__ __device__.
+  return ::std::tuple_cat(::std::tuple<::std::decay_t<T>>(::std::forward<T>(prefix)), mv(tuple));
 }
 
 namespace reserved
