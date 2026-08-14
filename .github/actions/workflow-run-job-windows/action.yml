@@ -243,6 +243,7 @@ runs:
 
         docker_exit=0
         set +e
+        { set -x; } 2>/dev/null
         docker run \
           -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
@@ -288,6 +289,7 @@ runs:
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
         docker_exit=$?
+        { set +x; } 2>/dev/null
         set -e
 
         artifacts=""
