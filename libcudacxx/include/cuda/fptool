@@ -37,4 +37,3 @@
 #include <cuda/__fp/fptool_stat_math.h>
 
 #endif // _CUDA_FPTOOL
-
