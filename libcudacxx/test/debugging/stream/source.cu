@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/std/array>
 #include <cuda/std/utility>
 #include <cuda/stream>
-
-#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
@@ -62,7 +61,10 @@ using stream_ref_alias = cuda::stream_ref;
   KEEP_FOR_DEBUGGER(value);
 }
 
-[[gnu::noinline]] void inspect_summary(const std::vector<cuda::stream_ref>& values)
+// cuda::std::array keeps this case on a CCCL formatter. A std::vector would use the
+// system libc++ or libstdc++ container formatter, whose output is not stable across
+// toolchain versions.
+[[gnu::noinline]] void inspect_summary(const cuda::std::array<cuda::stream_ref, 3>& values)
 {
   KEEP_FOR_DEBUGGER(values);
 }
@@ -99,7 +101,7 @@ int main()
   const cuda::stream_ref invalid_stream{cuda::invalid_stream};
   cuda::stream moved_from_stream{device};
   const cuda::stream moved_to_stream{cuda::std::move(moved_from_stream)};
-  const std::vector<cuda::stream_ref> summarized_streams{stream_reference, default_stream, invalid_stream};
+  const cuda::std::array<cuda::stream_ref, 3> summarized_streams{stream_reference, default_stream, invalid_stream};
   cuda::stream_ref updated_stream{default_stream};
   const cuda::stream capture_stream{device};
 
@@ -128,6 +130,7 @@ int main()
   inspect_invalid(invalid_stream);
   inspect_moved_from(moved_from_stream);
   inspect_summary(summarized_streams);
+  KEEP_FOR_DEBUGGER(summarized_streams);
   inspect_before_update(updated_stream);
   updated_stream = owning_stream;
   inspect_after_update(updated_stream);

@@ -928,6 +928,11 @@ inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_
  * The grid adapts to the queried domain count: on a device with a single
  * domain (or with the fallback backend) it holds one whole-domain place.
  *
+ * This is single-device convenience sugar: the general mechanism is
+ * `place_partition` at `place_partition_scope::locality_domain`, which also
+ * flattens multi-device grids (e.g. partitioning `exec_place::all_devices()`
+ * yields every domain of every device).
+ *
  * @param dev_id The CUDA device ordinal
  * @param split SM split method applied to every place of the grid; see
  *        `locality_domain_sm_split`. With the default `backfill` the grid
