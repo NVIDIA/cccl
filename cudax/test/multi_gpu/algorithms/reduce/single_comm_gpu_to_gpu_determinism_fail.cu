@@ -8,14 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- * @brief Static error check: `reduce` rejects a `gpu_to_gpu` determinism requirement.
- *
- * `gpu_to_gpu` is a stronger guarantee than `run_to_run`, and the collective reduction offers
- * neither, so `reduce` must reject the requirement at compile time.
- */
-
 #include "reduce_determinism_fail_common.cuh"
 
 int main()

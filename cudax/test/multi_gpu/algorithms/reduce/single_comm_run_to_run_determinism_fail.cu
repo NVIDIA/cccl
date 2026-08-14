@@ -8,15 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- * @brief Static error check: `reduce` rejects a `run_to_run` determinism requirement.
- *
- * A collective reduction cannot promise run-to-run determinism, because the order in which the
- * ranks combine their partial results is not fixed. So `reduce` must reject the requirement at
- * compile time rather than silently ignore it.
- */
-
 #include "reduce_determinism_fail_common.cuh"
 
 int main()

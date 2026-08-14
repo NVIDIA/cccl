@@ -13,13 +13,11 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/execution>
 
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
-
-#include <cstdlib>
 
 namespace cudax = ::cuda::experimental;
 
