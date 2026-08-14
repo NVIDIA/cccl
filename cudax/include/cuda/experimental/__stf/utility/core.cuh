@@ -48,9 +48,9 @@
  */
 #if _CCCL_HAS_ATTRIBUTE(error)
 #  define _CUDASTF_UNSUPPORTED_ATTRIBUTE(_msg) __attribute__((error(_msg)))
-#else // ^^^ _CCCL_HAS_ATTRIBUTE(error) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(error) vvv
+#else // _CCCL_HAS_ATTRIBUTE(error)
 #  define _CUDASTF_UNSUPPORTED_ATTRIBUTE(_msg)
-#endif // ^^^ !_CCCL_HAS_ATTRIBUTE(error) ^^^
+#endif // _CCCL_HAS_ATTRIBUTE(error)
 #define CUDASTF_UNSUPPORTED(_name, _msg)                \
   do                                                    \
   {                                                     \
