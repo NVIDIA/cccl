@@ -24,6 +24,9 @@
 
 #include <cuda/__container/buffer.h>
 #include <cuda/__device/device_ref.h>
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__functional/lazy_call_or.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
@@ -116,6 +119,12 @@ struct __in_range_out_it_properties
   using __buffer_type _CCCL_NODEBUG =
     ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
 };
+
+template <class _Env>
+using __determinism_of_t _CCCL_NODEBUG = ::cuda::__call_result_or_t<
+  ::cuda::execution::determinism::__get_determinism_t,
+  ::cuda::execution::determinism::not_guaranteed_t,
+  ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, _Env>>;
 
 template <class _RangeOfIters>
 _CCCL_CONCEPT __range_of_random_access_iterators = _CCCL_REQUIRES_EXPR((_RangeOfIters), )(
