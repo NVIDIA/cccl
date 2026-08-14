@@ -84,9 +84,6 @@ void block_reduce_warp_reductions(nvbench::state& state, nvbench::type_list<T>)
     case 1:
       block_reduce_warp_reductions_dispatch<1>(state, nvbench::type_list<T>{});
       break;
-    case 4:
-      block_reduce_warp_reductions_dispatch<4>(state, nvbench::type_list<T>{});
-      break;
     case 16:
       block_reduce_warp_reductions_dispatch<16>(state, nvbench::type_list<T>{});
       break;
@@ -100,7 +97,7 @@ NVBENCH_BENCH_TYPES(block_reduce_warp_reductions, NVBENCH_TYPE_AXES(value_types)
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
   .add_int64_axis("BlockThreads", {128, 256, 512, 1024})
-  .add_int64_axis("ItemsPerThread", {1, 4, 16});
+  .add_int64_axis("ItemsPerThread", {1, 16});
 
 template <typename T>
 void block_reduce_warp_reductions_latency(nvbench::state& state, nvbench::type_list<T>)

@@ -3,33 +3,17 @@
 
 #include <nvbench_helper.cuh>
 
-using value_types = nvbench::type_list<
-  int8_t,
-  int16_t,
-  int32_t,
-  int64_t,
-#if _CCCL_HAS_INT128()
-  int128_t,
-#endif
+using value_types =
+  push_back_t<all_types
 #if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
-  __half,
+              ,
+              __half
 #endif
 #if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-  __nv_bfloat16,
+              ,
+              __nv_bfloat16
 #endif
-  float,
-  double,
-#if _CCCL_HAS_FLOAT128()
-  __float128,
-#endif
-#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
-  cuda::std::complex<__half>,
-#endif
-#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-  cuda::std::complex<__nv_bfloat16>,
-#endif
-  cuda::std::complex<float>,
-  cuda::std::complex<double>>;
+              >;
 
 using op_t = ::cuda::std::plus<>;
 #include "block_reduce_base.cuh"
