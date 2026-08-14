@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
@@ -41,48 +42,73 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <ostream>
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <utility>
 
+#ifdef UNITTESTED_FILE
+#  include <sstream>
+#endif // UNITTESTED_FILE
+
 namespace cuda::experimental::stf
 {
 /**
- * @brief A suppressing handler that reports an exception on `stderr` and flushes it.
+ * @brief A suppressing handler that reports an exception and carries on.
  *
- * Use it as in `on_throw(notify) << callable` to report an exception and carry on.
- * Reporting to a destination other than `stderr` is a matter of writing another
- * handler, which this function doubles as the model for.
+ * `on_throw(notify) << callable` reports on `stderr`; `on_throw(notify, stream) << callable`
+ * reports on any `::std::ostream`. Reporting somewhere else entirely is a matter of writing
+ * another handler, which this one doubles as the model for. An object rather than a function
+ * because it is an overload set, which must travel as one value.
  *
- * @param[in] __exception The caught exception, or `nullptr` if it does not derive from
- *            `std::exception`, in which case the report carries no message.
- * @param[in] __loc The location to report.
- * @return `std::ignore`, which marks this handler as suppressing.
+ * The report carries the location and the exception's message, or "nonstandard exception" for
+ * an exception that does not derive from `std::exception` (which reaches a handler as
+ * `nullptr`). Both overloads return `::std::ignore`, marking a suppressing handler.
  */
-inline decltype(::std::ignore)
-notify(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
+struct notify_t
 {
-  if (__exception != nullptr)
+  //! @brief Reports on `stderr` and flushes it.
+  decltype(::std::ignore)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) const noexcept
   {
-    ::fprintf(stderr,
-              "%s(%u) on_throw violation in %s: %s\n",
-              __loc.file_name(),
-              __loc.line(),
-              __loc.function_name(),
-              __exception->what());
+    if (__exception != nullptr)
+    {
+      ::fprintf(stderr,
+                "%s(%u) on_throw violation in %s: %s\n",
+                __loc.file_name(),
+                __loc.line(),
+                __loc.function_name(),
+                __exception->what());
+    }
+    else
+    {
+      ::fprintf(stderr,
+                "%s(%u) on_throw violation in %s: nonstandard exception\n",
+                __loc.file_name(),
+                __loc.line(),
+                __loc.function_name());
+    }
+    ::fflush(stderr);
+    return ::std::ignore;
   }
-  else
+
+  //! @brief Reports on `__os` and flushes it. The report is best-effort: a stream configured
+  //! to throw does not get to end the program from inside a handler.
+  decltype(::std::ignore) operator()(
+    ::std::ostream& __os, const ::std::exception* __exception, const ::cuda::std::source_location __loc) const noexcept
   {
-    ::fprintf(stderr,
-              "%s(%u) on_throw violation in %s: nonstandard exception\n",
-              __loc.file_name(),
-              __loc.line(),
-              __loc.function_name());
+    _CCCL_TRY
+    {
+      __os << __loc.file_name() << '(' << __loc.line() << ") on_throw violation in " << __loc.function_name() << ": "
+           << (__exception != nullptr ? __exception->what() : "nonstandard exception") << '\n';
+      __os.flush();
+    }
+    _CCCL_CATCH_ALL {}
+    return ::std::ignore;
   }
-  ::fflush(stderr);
-  return ::std::ignore;
-}
+};
+inline constexpr notify_t notify{};
 
 /**
  * @brief The bottom type: a type with no values, convertible to every type.
@@ -147,20 +173,37 @@ struct nothing final
 namespace detail
 {
 // Whether invoking _Fn with _Args... provably never returns, its declared result `nothing`
-// having no values. Lazily computed so a non-invocable pairing reads as `false` rather than
-// a hard error inside `invoke_result_t`.
+// having no values. The primary template reads as `false` for a non-invocable pairing; the
+// partial specialization's void_t keeps `invoke_result_t` from hard-erroring in that case.
+template <class _AlwaysVoid, class _Fn, class... _Args>
+inline constexpr bool __never_returns_impl = false;
+
 template <class _Fn, class... _Args>
-constexpr bool __never_returns()
+inline constexpr bool
+  __never_returns_impl<::cuda::std::void_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, _Fn, _Args...> =
+    ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, nothing>;
+
+template <class _Fn, class... _Args>
+inline constexpr bool __never_returns = __never_returns_impl<void, _Fn, _Args...>;
+
+// Binds a stream to a reaction that takes one as its first argument, the result being an
+// ordinary handler. Produced by the stream-taking on_throw overload.
+template <class _Reaction>
+struct __stream_bound
 {
-  if constexpr (::cuda::std::is_invocable_v<_Fn, _Args...>)
+  _Reaction __reaction_;
+  ::std::ostream& __os_;
+
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
   {
-    return ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, nothing>;
+    static_assert(
+      ::cuda::std::
+        is_nothrow_invocable_v<_Reaction&, ::std::ostream&, const ::std::exception*, ::cuda::std::source_location>,
+      "an on_throw reaction given a stream must be noexcept-invocable with "
+      "(std::ostream&, const std::exception*, source_location)");
+    return __reaction_(__os_, __exception, __loc);
   }
-  else
-  {
-    return false;
-  }
-}
+};
 
 // One policy for all four reactions: recognizing them in one place keeps the order of the
 // questions explicit, which matters because `nothing` converts to every type, so any
@@ -185,9 +228,8 @@ struct __on_throw_policy
     constexpr bool __drops =
       ::cuda::std::is_same_v<const ::cuda::std::remove_reference_t<_Reaction>, const decltype(::std::ignore)>;
     // The reactions whose call provably never returns, each in its own calling shape.
-    constexpr bool __handler_dies =
-      __never_returns<_Reaction&, const ::std::exception*, ::cuda::std::source_location>();
-    constexpr bool __action_dies = !__handles && __never_returns<_Reaction&>();
+    constexpr bool __handler_dies = __never_returns<_Reaction&, const ::std::exception*, ::cuda::std::source_location>;
+    constexpr bool __action_dies  = !__handles && __never_returns<_Reaction&>;
     // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
     // what it is and a handler decides by returning it. `nothing` converts to every type,
     // `::std::ignore`'s included, so a dying handler is asked by name first.
@@ -333,6 +375,27 @@ auto on_throw(_Reaction&& __reaction,
   return detail::__on_throw_policy<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __loc};
 }
 
+/**
+ * @brief Creates a policy like `on_throw(reaction)` with a stream bound as the reaction's first
+ * argument: `on_throw(notify, ::std::cerr) << callable` reports to `cerr`.
+ *
+ * The reaction must be a `noexcept` callable taking `(::std::ostream&, const std::exception*,
+ * cuda::std::source_location)`. Its return type keeps the usual handler meaning: `nothing` to
+ * end the program, `::std::ignore` to go on. `notify` has both this shape and the plain one.
+ *
+ * @param[in] __reaction The reaction, invoked with `__os` prepended to a handler's arguments.
+ * @param[in] __os The stream to report to, which the caller keeps alive.
+ * @param[in] __loc The location passed to the reaction; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
+ */
+template <class _Reaction>
+auto on_throw(_Reaction&& __reaction,
+              ::std::ostream& __os,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
+{
+  return on_throw(detail::__stream_bound<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __os}, __loc);
+}
+
 #ifdef UNITTESTED_FILE
 UNITTEST("nothing")
 {
@@ -454,6 +517,23 @@ UNITTEST("on_throw")
   on_throw(to_log, site) << [] {
     throw 42;
   };
+
+  // A stream binds as the handler's first argument; notify itself has the shape.
+  ::std::ostringstream stream_log;
+  const int streamed = on_throw(notify, stream_log, site) << []() -> int {
+    throw ::std::runtime_error("streamed");
+  };
+  EXPECT(streamed == 0);
+  {
+    char streamed_expected[1024]{};
+    ::snprintf(streamed_expected,
+               sizeof(streamed_expected),
+               "%s(%u) on_throw violation in %s: streamed\n",
+               site.file_name(),
+               site.line(),
+               site.function_name());
+    EXPECT(stream_log.str() == streamed_expected);
+  }
 
   ::rewind(log);
   char message[1024]{};
