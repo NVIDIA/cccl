@@ -93,6 +93,13 @@ sysctk12 = [
   # the whole point of the sysctk extra.
   "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
   "numba-cuda-mlir>=0.4.2",
+  # nvjitlink is the one exception to "use the system toolkit": numba-cuda-mlir
+  # calls nvJitLinkVersion, which only exists from CUDA 12.3, so a system CTK
+  # 12.0 (which this lane tests) is too old and every JIT dies with
+  # `FunctionNotFoundError: function nvJitLinkVersion is not found`.  Take just
+  # this one library from pip, exactly as minimal-cu12 does above, and leave the
+  # rest of the toolkit system-provided.
+  "nvidia-nvjitlink-cu12>=12.3.0,<13.0.0",
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
