@@ -21,26 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/hash.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__utility/pair.h>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/types.cuh>
+#  include <cuda/__functional/hash.h>
+#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/extents.h>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/capacity.cuh>
+#  include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
+#  include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
+#  include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
+#  include <cuda/experimental/__cuco/probing_scheme.cuh>
+#  include <cuda/experimental/__cuco/types.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -482,6 +482,18 @@ public:
 
   // ===== Accessors =====
 
+  //! @brief Gets the number of elements in the map.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __stream CUDA stream used to get the number of elements
+  //!
+  //! @return The number of elements in the map
+  [[nodiscard]] _CCCL_HOST_API size_type size(::cuda::stream_ref __stream) const
+  {
+    return __impl->size(__stream);
+  }
+
   //! @brief Returns the total number of slots the map can hold (the prime/stride-adjusted capacity).
   //!
   //! @return Total slot count
@@ -563,8 +575,7 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
-
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 #endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH
