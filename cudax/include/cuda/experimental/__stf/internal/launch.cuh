@@ -20,6 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy_impl.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
@@ -38,10 +41,30 @@ class stream_task;
 
 namespace reserved
 {
+//! @brief Builds the argument tuple that `launch_kernel` receives by value.
+//!
+//! @param[in] __prefix Value to place first, in practice the thread hierarchy.
+//! @param[in] __tuple Data instances that follow it.
+//! @return A `cuda::std::tuple` holding `__prefix` ahead of the elements of `__tuple`.
+//!
+//! The result is deliberately not a `std::tuple`: the kernel unpacks it in device code, and
+//! libstdc++'s `std::apply` is host-only. nvcc accepts calling it from device code because
+//! `--expt-relaxed-constexpr` admits host `constexpr` functions there, but clang-cuda has no
+//! such escape hatch and rejects it.
+template <typename _Prefix, typename... _Ts>
+[[nodiscard]] auto __make_kernel_args(_Prefix __prefix, ::std::tuple<_Ts...> __tuple)
+{
+  return ::std::apply(
+    [&](auto&&... __elements) {
+      return ::cuda::std::tuple<_Prefix, _Ts...>(mv(__prefix), ::std::forward<decltype(__elements)>(__elements)...);
+    },
+    mv(__tuple));
+}
+
 template <typename Fun, typename Arg>
 __global__ void launch_kernel(Fun f, Arg arg)
 {
-  ::std::apply(mv(f), mv(arg));
+  ::cuda::std::apply(mv(f), mv(arg));
 }
 
 template <typename interpreted_spec, typename Fun, typename Stream_t>
@@ -136,7 +159,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
       th.set_device_tmp(th_dev_tmp_ptr);
     }
 
-    auto kernel_args = tuple_prepend(mv(th), mv(arg));
+    auto kernel_args = __make_kernel_args(mv(th), mv(arg));
     using args_type  = decltype(kernel_args);
     void* all_args[] = {&f, &kernel_args};
 
@@ -149,7 +172,7 @@ void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_plac
 {
   _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
-  auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
+  auto kernel_args = __make_kernel_args(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
   void* all_args[] = {&f, &kernel_args};
 
@@ -188,16 +211,18 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVCC) VVV
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     static_assert(is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type,
                   "Cannot run launch() on the host");
@@ -207,7 +232,7 @@ public:
     const size_t grid_size = e_place.size();
 
     using th_t     = typename spec_t::thread_hierarchy_t;
-    using arg_type = decltype(tuple_prepend(th_t(), arg));
+    using arg_type = decltype(__make_kernel_args(th_t(), arg));
 
     auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, arg_type>);
 
@@ -320,16 +345,18 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVCC) VVV
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     static_assert(is_extended_device_lambda_closure_type || is_extended_host_device_lambda_closure_type,
                   "Cannot run launch() on the host");
@@ -388,7 +415,7 @@ public:
     // not leave a started task without teardown guards. args_type only needs the
     // unevaluated return type of data2inst, so get() is not invoked here.
     using th_t      = typename thread_hierarchy_spec_t::thread_hierarchy_t;
-    using args_type = decltype(tuple_prepend(th_t(), data2inst<decltype(t), Deps...>(t)));
+    using args_type = decltype(__make_kernel_args(th_t(), data2inst<decltype(t), Deps...>(t)));
 
     auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
 

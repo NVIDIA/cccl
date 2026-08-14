@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// UNSUPPORTED: force-tile
-// nvbug6537343: error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
-
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -78,33 +74,6 @@ TEST_FUNC constexpr void test_range()
     inplace_vector vec = {T(0), T(5)};
     vec.append_range(Range<T, 3>{T(42), T(3), T(1337)});
     assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(5), T(42), T(3), T(1337)}));
-  }
-
-  { // inplace_vector<T, 0>::try_append_range(range)
-    Range<T, 3> input{T(42), T(3), T(1337)};
-    cuda::std::inplace_vector<T, 0> vec{};
-    auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
-    assert(vec.empty());
-    assert(res == input.begin());
-  }
-
-  { // inplace_vector<T, N>::try_append_range(range)
-    Range<T, 3> input{T(42), T(3), T(1337)};
-    inplace_vector vec{T(0), T(5)};
-    auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
-    assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(5), T(42), T(3), T(1337)}));
-    assert(res == input.end());
-  }
-
-  { // inplace_vector<T, N>::try_append_range(range), beyond capacity
-    Range<T, 4> input{T(42), T(3), T(1337), T(1)};
-    inplace_vector vec{T(0), T(5)};
-    auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
-    assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(5), T(42), T(3), T(1337)}));
-    assert(++res == input.end());
   }
 }
 

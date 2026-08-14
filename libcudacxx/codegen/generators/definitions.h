@@ -107,7 +107,7 @@ inline std::string constraints(Operand op, size_t sz)
               }},
   };
 
-  if (sz == 16)
+  if (sz <= 16)
   {
     return {"h"};
   }

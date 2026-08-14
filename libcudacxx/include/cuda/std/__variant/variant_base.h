@@ -216,11 +216,6 @@ protected:
   }
 };
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
 __dtor<__traits<_Types...>, _Trait::_Available> : public __base<_Trait::_Available, _Types...>
@@ -278,10 +273,6 @@ private:
     _CCCL_UNREACHABLE();
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT

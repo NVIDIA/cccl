@@ -23,13 +23,13 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 constexpr double epsilon = 1e-4;
 
 // exp() via range reduction + polynomial, generic over double and fp64emu.
 template <typename T>
-_CCCL_HOST_DEVICE T exp_impl(T x)
+TEST_HOST_DEVICE_FUNC T exp_impl(T x)
 {
   constexpr double ln2_hi  = 0x1.62e42fefa39efp-1; // high part of ln(2)
   constexpr double ln2_lo  = 0x1.abc9e3b39803fp-34; // low part for extra precision
@@ -106,7 +106,7 @@ TEST_HOST_DEVICE_FUNC void test()
   for (const double x : tv)
   {
     const double ref = cuda::std::exp(x);
-    const double got = (double) exp_impl<fp64emu>(x);
+    const double got = (double) exp_impl<cudax::fp64emu>(x);
     const double rel = (ref != 0.0) ? cuda::std::fabs(got - ref) / ref : 0.0;
     assert(rel < epsilon);
   }

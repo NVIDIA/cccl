@@ -25,6 +25,7 @@
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
@@ -37,6 +38,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/functors.cuh>
@@ -144,7 +146,16 @@ private:
   __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ::cuda::copy_configuration __config{};
+    __config.src_access_order = ::cuda::source_access_order::stream;
+
+    const ::cuda::std::span<__size_type> __result_span{&__result, 1};
+    ::cuda::copy_bytes(__stream, __counter, __result_span, __config);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     ::cuda::__driver::__memcpyAsync(&__result, __counter.data(), sizeof(__size_type), __stream.get());
+#  endif // _CCCL_CTK_BELOW(13, 0)
     __stream.sync();
     return __result;
   }
