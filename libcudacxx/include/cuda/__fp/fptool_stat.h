@@ -693,9 +693,13 @@ public:
 private:
   base_type __stat_v_;
 
-  // Instrumentation hook. Compiled out on the host, where there is no record to update.
+  // Instrumentation hook. Compiled out on the host, where there is no record to update,
+  // which leaves the operands unread in a host-only translation unit.
   template <__fpmp2_stat_binop _Kind>
-  _CCCL_HOST_DEVICE_API static void __trace(const base_type& __x, const base_type& __y, const base_type& __r) noexcept
+  _CCCL_HOST_DEVICE_API static void
+  __trace([[maybe_unused]] const base_type& __x,
+          [[maybe_unused]] const base_type& __y,
+          [[maybe_unused]] const base_type& __r) noexcept
   {
     NV_IF_TARGET(NV_IS_DEVICE, (__fpmp2_stat_note_binop<_Kind>(__x, __y, __r);))
   }

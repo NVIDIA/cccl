@@ -648,8 +648,11 @@ int main(int, char**)
 {
   test_parity();
 #if _CCCL_CUDA_COMPILATION()
-  test_device_record();
-  test_event_counters();
+  // force_include.h makes this main __host__ __device__ and runs it twice: on the host,
+  // then inside a kernel. Only the host run can launch kernels and reach the runtime API
+  // that resets and reads the record, so NV_IS_HOST selects the driver of the test, not
+  // the code under test -- the instrumented arithmetic itself runs on the GPU.
+  NV_IF_TARGET(NV_IS_HOST, (test_device_record(); test_event_counters();))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }
