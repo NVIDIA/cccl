@@ -82,6 +82,7 @@ cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
     utility/unstable_unique.cu
     utility/optionally_static.cu
+    utility/scope.cu
 )
 
 cudax_add_catch2_test(test_target containers
@@ -109,80 +110,7 @@ cudax_add_catch2_test(test_target copy
     copy/copy_shared_memory.cu
 )
 
-# nvcc 12.0 fails to compile cuco hashers test
-if (
-  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
-  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
-)
-  cudax_add_catch2_test(test_target cuco.utility.hashers
-    cuco/utility/test_hashers.cu
-  )
-endif()
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${cudax_target}
-    cuco/fixed_capacity_map/test_insert_and_contains.cu
-)
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.find ${cudax_target}
-    cuco/fixed_capacity_map/test_find.cu
-)
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
-    cuco/fixed_capacity_map/test_capacity.cu
-)
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.shared_memory ${cudax_target}
-    cuco/fixed_capacity_map/test_shared_memory.cu
-)
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.misaligned_storage ${cudax_target}
-    cuco/fixed_capacity_map/test_misaligned_storage.cu
-)
-
-cudax_add_catch2_test(test_target cuco.fixed_capacity_map.key_sentinel ${cudax_target}
-    cuco/fixed_capacity_map/test_key_sentinel.cu
-)
-
-cudax_add_catch2_test(test_target cuco.utility.atomic
-    cuco/utility/test_atomic.cu
-)
-
-cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
-    cuco/utility/test_capacity.cu
-)
-
-cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
-  cuco/hyperloglog/test_hyperloglog.cu
-)
-
-# cudax_add_cuco_fail_test
-function(cudax_add_cuco_fail_test target_name_var test_name source)
-  set(test_target cudax.test.${test_name})
-
-  cccl_add_executable(
-    ${test_target}
-    SOURCES ${source}
-    NO_METATARGETS
-    NO_CLANG_TIDY
-  )
-  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
-  cccl_add_xfail_compile_target_test(
-    ${test_target}
-    SOURCE_FILE "${source}"
-    ERROR_REGEX_LABEL "expected-error"
-  )
-
-  set(${target_name_var} ${test_target} PARENT_SCOPE)
-endfunction()
-
-# Expected-failure compile tests (_fail.cu convention)
-cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_map.key_size_fail
-  cuco/fixed_capacity_map/test_key_size_fail.cu
-)
-
-cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_map.slot_size_fail
-  cuco/fixed_capacity_map/test_slot_size_fail.cu
-)
+add_subdirectory(cuco)
 
 cudax_add_catch2_test(test_target green_context
     green_context/green_ctx_smoke.cu
@@ -225,11 +153,14 @@ cudax_add_catch2_test(test_target group.mapping.identity_mapping
 cudax_add_catch2_test(test_target group.mapping.take
     group/mapping/take.cu
 )
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
+    group/synchronizer/barrier_synchronizer.cu
+)
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
-cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
-    group/synchronizer/barrier_synchronizer.cu
+cudax_add_catch2_test(test_target group.synchronizer.level_synchronizer
+    group/synchronizer/level_synchronizer.cu
 )
 cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu
@@ -292,6 +223,10 @@ cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
 
 cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
     coop/shuffle_up/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.scratch
+    coop/scratch.cu
 )
 
 if (cudax_ENABLE_CUFILE)

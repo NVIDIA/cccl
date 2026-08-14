@@ -1624,7 +1624,7 @@ CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[hi
 template <int BlockThreads>
 struct histogram_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
   }

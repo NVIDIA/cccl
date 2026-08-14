@@ -212,6 +212,22 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
 stf_exec_place_handle
 stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims);
 
+//! \brief Return a grid with new dimensions and the same linear place order.
+//!
+//! Every extent in \p grid_dims must be positive and their product must equal
+//! the size of \p grid. The returned handle owns an independent grid wrapper;
+//! destroying either handle does not invalidate the other.
+//! \return A new execution-place handle, or NULL if the dimensions are invalid.
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims);
+
+//! \brief Collapse a contiguous inclusive range of grid axes.
+//!
+//! Axes in [\p first_axis, \p last_axis] are replaced by one axis whose
+//! extent is their product. Later axes shift left, trailing extents become
+//! one, and linear place order is preserved.
+//! \return A new execution-place handle, or NULL if the axis range is invalid.
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis);
+
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
@@ -283,6 +299,77 @@ stf_data_place_handle stf_data_place_current_device(void);
 
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
+
+//! \brief Number of locality domains of a device. Never 0 for a valid
+//! device: without native locality-domain support (pre-13.4 toolkit, or a
+//! driver that cannot answer the query) the device reports a single domain
+//! covering the whole device. Returns 0 only on error (invalid device;
+//! detail on stderr).
+uint32_t stf_locality_domain_count(int dev_id);
+
+//! \brief SM split methods for locality-domain execution places.
+//!
+//! Selects how a locality-domain execution place's SM partition is carved
+//! out of the device (native backend only; other backends ignore it):
+//! - BACKFILL (the default): every domain place is sized to an even share
+//!   of the device total and backfilled by the driver (target domain first,
+//!   then SMs outside any domain, then other domains), so the domain places
+//!   together cover the whole device. Backfilled SMs may sit outside the
+//!   place's domain (no memory affinity with it), and the partition does
+//!   not support launching thread-block clusters.
+//! - ALIGNED: only SMs of the domain that form complete co-scheduled groups
+//!   at the device's default alignment. Strictly domain-affine and
+//!   cluster-capable, but incomplete groups and SMs outside any domain are
+//!   left out of the partition.
+//! - FINE: all of the domain's SMs at the finest co-scheduling granularity.
+//!   Strictly domain-affine, at the cost of thread-block cluster launches.
+typedef enum stf_locality_domain_sm_split
+{
+  STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL = 0,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED  = 1,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_FINE     = 2,
+} stf_locality_domain_sm_split;
+
+//! \brief Execution place pinned to one locality domain of a device (the
+//! whole device with the fallback backend). Ordinals are identity tokens,
+//! validated lazily at use (native backend). Uses the default SM split
+//! method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Like \ref stf_exec_place_locality_domain with an explicit SM
+//! split method. Returns NULL on an invalid \p split value.
+stf_exec_place_handle
+stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split);
+
+//! \brief Grid with one execution place per locality domain of \p dev_id
+//! (a single whole-device place with the fallback backend). Uses the
+//! default SM split method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
+
+//! \brief Like \ref stf_exec_place_locality_domain_grid with an explicit SM
+//! split method applied to every place of the grid. Returns NULL on an
+//! invalid \p split value.
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split);
+
+//! \brief Data place whose allocations are localized to one locality
+//! domain of a device (plain device memory with the fallback backend).
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Replicated placement: one copy of the data in the affine memory of
+//! every member of \p grid. Read-only at the place: mutate the data at
+//! another place, the next replicated read re-broadcasts.
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid);
+
+//! \brief Deferred replicated placement: replicated over the grid of
+//! whichever task the dependency is used with (bound at task acquisition; a
+//! scalar execution place degenerates to its affine data place).
+stf_data_place_handle stf_data_place_replicated_deferred(void);
+
+//! \brief Whether \p h is a replicated data place (concrete or deferred).
+//! Replicated places only support read access; bindings can validate at
+//! dependency construction instead of hitting the C++ exception at task
+//! creation. Returns 1 if replicated, 0 otherwise.
+int stf_data_place_is_replicated(stf_data_place_handle h);
 
 //! \brief Native blocked partition function for a given dimension,
 //! usable wherever an stf_get_executor_fn is expected without any FFI

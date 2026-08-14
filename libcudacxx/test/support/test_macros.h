@@ -117,8 +117,10 @@ TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
   [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
 
+#if !_CCCL_TILE_COMPILATION()
   // Device path.
   NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+#endif // !_CCCL_TILE_COMPILATION()
 
   // Host path.
 #if TEST_COMPILER(CLANG)

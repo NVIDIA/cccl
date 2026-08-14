@@ -295,7 +295,10 @@ public:
   // if necessary.
   //
   // Returns true if the task_dep needs an update
-  bool validate_access(int ctx_offset, const stackable_ctx& sctx_ref, access_mode m) const
+  bool validate_access(int ctx_offset,
+                       const stackable_ctx& sctx_ref,
+                       access_mode m,
+                       const data_place& dplace_hint = data_place::invalid()) const
   {
     auto& self = *const_cast<stackable_logical_data*>(this);
     auto lock  = self.mut_data().acquire_exclusive_lock();
@@ -340,7 +343,13 @@ public:
       path.push(current);
     }
 
-    const auto where = sctx_ref.get_ctx(ctx_offset).default_exec_place().affine_data_place();
+    // Read-only imports of a dependency at a concrete replicated place use
+    // that place, so the push imports every member instance (member walk in
+    // push_at) instead of rebuilding the replicas in the nested context.
+    const bool replicated_hint = push_mode == access_mode::read && !dplace_hint.is_invalid()
+                              && dplace_hint.is_replicated() && !replicated_is_deferred(dplace_hint);
+    const auto where =
+      replicated_hint ? dplace_hint : sctx_ref.get_ctx(ctx_offset).default_exec_place().affine_data_place();
 
     while (!path.empty())
     {
@@ -649,6 +658,14 @@ private:
       where = from_ctx.default_exec_place().affine_data_place();
     }
 
+    // A replicated place can only drive a read import (the member walk
+    // below); a write-capable import or the deferred form falls back to a
+    // single-instance import at the first member / the default place.
+    if (where.is_replicated() && (m != access_mode::read || replicated_is_deferred(where)))
+    {
+      where = replicated_is_deferred(where) ? from_ctx.default_exec_place().affine_data_place() : where.member(0);
+    }
+
     _CCCL_ASSERT(!where.is_invalid(), "Invalid data place");
 
     if (!from_data_node.frozen_ld.has_value())
@@ -673,11 +690,47 @@ private:
     _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
     auto& frozen_ld = from_data_node.frozen_ld.value();
 
-    ::std::pair<T, event_list> get_res = frozen_ld.get(where);
-    auto ld                            = to_ctx.logical_data(get_res.first, where);
+    ::std::optional<logical_data<T>> imported;
+    if (where.is_replicated())
+    {
+      // Member walk: import EVERY member instance of the replicated place
+      // from the frozen parent data (populating them at the parent level
+      // where transfers are unrestricted), and adopt them as valid shared
+      // copies in the nested context. A read at the replicated place then
+      // resolves in the nested context without issuing any copy -- in
+      // particular no memcpy node lands in a conditional body graph.
+      // The read-only guarantee comes from the normalization above.
+      ::std::vector<data_place> done;
+      const size_t nmembers = where.instance_count();
+      done.reserve(nmembers);
+      for (size_t r = 0; r < nmembers; r++)
+      {
+        data_place member = where.member(r);
+        if (::std::find(done.begin(), done.end(), member) != done.end())
+        {
+          continue; // equal members share one instance
+        }
+        ::std::pair<T, event_list> res = frozen_ld.get(member);
+        if (!imported.has_value())
+        {
+          imported = to_ctx.logical_data(res.first, member);
+        }
+        else
+        {
+          imported->adopt_shared_instance(mv(res.first), member);
+        }
+        done.push_back(mv(member));
+        to_node->ctx_prereqs.merge(mv(res.second));
+      }
+    }
+    else
+    {
+      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
+      imported                           = to_ctx.logical_data(get_res.first, where);
+      to_node->ctx_prereqs.merge(mv(get_res.second));
+    }
+    auto& ld = imported.value();
     from_data_node.get_cnt++;
-
-    to_node->ctx_prereqs.merge(mv(get_res.second));
 
     if (!st.symbol.empty())
     {
@@ -731,7 +784,7 @@ public:
   {
     auto& sctx = d.sctx();
     int offset = sctx.get_head_offset();
-    d.validate_access(offset, sctx, mode);
+    d.validate_access(offset, sctx, mode, dplace);
     return resolve(offset);
   }
 
@@ -939,6 +992,9 @@ public:
     ctx_.push(loc);
   }
 
+  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
+  // terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~graph_scope_guard()
   {
     ctx_.pop();
@@ -1033,6 +1089,10 @@ public:
   //!
   //! Runs pop_prologue() (if not already done) and pop_epilogue(). After
   //! release(), further calls to launch()/exec()/stream()/graph() are invalid.
+  //!
+  //! Tearing the graph node down is not something a caller could retry or recover from, so
+  //! a failure here terminates.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   void release() noexcept
   {
     if (released_)
@@ -1204,6 +1264,9 @@ private:
         , handle(mv(h))
     {}
 
+    // As in release(), a failing pop_epilogue() is not recoverable, so terminating is the
+    // intended outcome.
+    // NOLINTNEXTLINE(bugprone-exception-escape)
     ~state()
     {
       // Guard against users who manually called pop_epilogue() on the ctx
@@ -1252,6 +1315,9 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
+  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
+  // context stack inconsistent, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~while_graph_scope_guard()
   {
     ctx_.pop();
@@ -2121,7 +2187,7 @@ UNITTEST("pop_prologue_shared storable across scopes / in containers")
   test_pop_prologue_shared_stored_in_container();
 };
 
-inline void test_pop_prologue_shared_manual_epilogue()
+inline void test_pop_prologue_shared_manual_epilogue_meh()
 {
   // If the user manually calls ctx.pop_epilogue() after creating shared
   // copies, outstanding copies must become invalid and the shared state
@@ -2155,11 +2221,11 @@ inline void test_pop_prologue_shared_manual_epilogue()
 
 UNITTEST("pop_prologue_shared tolerates manual pop_epilogue")
 {
-  test_pop_prologue_shared_manual_epilogue();
+  test_pop_prologue_shared_manual_epilogue_meh();
 };
 
 #    if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
-inline void test_pop_prologue_with_while_graph_scope()
+inline void test_pop_prologue_with_while_graph_scope_meh()
 {
   constexpr int N              = 3; // re-launch the whole while-graph 3 times
   constexpr size_t inner_iters = 4; // each launch runs the body 4 times
@@ -2201,7 +2267,7 @@ inline void test_pop_prologue_with_while_graph_scope()
 
 UNITTEST("pop_prologue with while_graph_scope re-launched multiple times")
 {
-  test_pop_prologue_with_while_graph_scope();
+  test_pop_prologue_with_while_graph_scope_meh();
 };
 #    endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
 

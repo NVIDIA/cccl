@@ -76,16 +76,18 @@ public:
 
   struct __synchronizer_instance
   {
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void
-    do_sync(const _MappingResult& __mapping_result, const barrier_synchronizer& __synchronizer) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result,
+                                  const barrier_synchronizer& __synchronizer,
+                                  const _Hierarchy&) const noexcept
     {
       __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
     }
 
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void
-    do_sync_aligned(const _MappingResult& __mapping_result, const barrier_synchronizer& __synchronizer) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result,
+                                          const barrier_synchronizer& __synchronizer,
+                                          const _Hierarchy&) const noexcept
     {
       __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
     }
@@ -100,12 +102,9 @@ public:
     return __barriers_;
   }
 
-  template <class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&,
-    const _ParentGroup& __parent,
-    const _Mapping& __mapping,
-    const _MappingResult& __mapping_result) const noexcept
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const noexcept
   {
     using _Level = typename _ParentGroup::level_type;
 

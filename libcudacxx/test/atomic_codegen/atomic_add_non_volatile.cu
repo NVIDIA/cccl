@@ -6,6 +6,24 @@ __global__ void add_relaxed_device_non_volatile(int* data, int* out, int n)
   *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
 }
 
+__global__ void add_relaxed_block_pointer_non_volatile(int** data, int** out, int n)
+{
+  auto ref = cuda::atomic_ref<int*, cuda::thread_scope_block>{*data};
+  *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
+}
+
+__global__ void add_relaxed_device_pointer_non_volatile(int** data, int** out, int n)
+{
+  auto ref = cuda::atomic_ref<int*, cuda::thread_scope_device>{*data};
+  *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
+}
+
+__global__ void add_relaxed_system_pointer_non_volatile(int** data, int** out, int n)
+{
+  auto ref = cuda::atomic_ref<int*, cuda::thread_scope_system>{*data};
+  *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
+}
+
 /*
 
 ; SM8X-LABEL: .target sm_80
@@ -17,5 +35,17 @@ __global__ void add_relaxed_device_non_volatile(int* data, int* out, int n)
 ; SM8X-NEXT: {{/*[[:space:]] *}}atom.add.relaxed.gpu.s32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
 ; SM8X-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
 ; SM8X-NEXT: ret;
+
+; SM8X-LABEL: .visible .entry {{_.*add_relaxed_block_pointer_non_volatile.*}}(
+; SM8X: {{.*}}atom.add.relaxed.cta.u64{{.*}}
+; SM8X: ret;
+
+; SM8X-LABEL: .visible .entry {{_.*add_relaxed_device_pointer_non_volatile.*}}(
+; SM8X: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
+; SM8X: ret;
+
+; SM8X-LABEL: .visible .entry {{_.*add_relaxed_system_pointer_non_volatile.*}}(
+; SM8X: {{.*}}atom.add.relaxed.sys.u64{{.*}}
+; SM8X: ret;
 
 */

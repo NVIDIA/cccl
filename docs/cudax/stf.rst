@@ -837,6 +837,14 @@ current CUDA device to ``id`` when the task is started, and restore the
 previous current device when the task ends. ``exec_place::host()`` does
 not affect the current CUDA device.
 
+Beyond devices and the host, execution places can also designate finer
+locations such as green contexts (SM partitions) or locality domains of a
+device (``exec_place::locality_domain(devid, domain)``). Native
+locality-domain support requires CUDA 13.4+; the same API compiles on older
+toolkits with a whole-device fallback where every device reports a single
+domain (``locality_domain_count() == 1``). These are described in the places
+documentation (see :ref:`places-locality-domains`).
+
 .. code:: cpp
 
    context ctx;

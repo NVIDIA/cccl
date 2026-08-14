@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -513,6 +514,60 @@ class parallel_for_scope
    * @return A tuple containing the result of `dep.instance(t)` for each dependency,
    *         with `std::ignore` in positions where the result type is `void_interface&`.
    */
+  //! Resolve one instance onto this place's member of a replicated data
+  //! place: each shard reads the ordinary instance living at member(r),
+  //! straight from the place-keyed instance table. The tuple's dep copy may
+  //! still hold the DEFERRED form (acquire materialized and wrote back into
+  //! the task's dep vector, not this copy), so the member place is resolved
+  //! against the launch's own execution place in that case.
+  template <typename Inst, typename Dep>
+  void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
+  {
+    const data_place& dp = dep.get_dplace();
+    if (dp.is_invalid() || !dp.is_replicated())
+    {
+      return;
+    }
+    const data_place member =
+      ::cuda::experimental::places::replicated_is_deferred(dp)
+        ? e_place.get_place(place_index).affine_data_place()
+        : dp.member(dp.instance_of(place_index));
+    auto data = dep.get_data();
+    inst      = data.template instance<Inst>(data.find_instance_id(member));
+  }
+
+  //! Walk (dep index J, instance index K) in lockstep: deps_tup_t filters
+  //! void_interface dependencies out of the instances tuple, so the two
+  //! tuples are NOT aligned index-for-index -- a token dep advances J only.
+  template <size_t J, size_t K>
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index)
+  {
+    if constexpr (J < sizeof...(deps_ops_t))
+    {
+      using dep_t = ::std::tuple_element_t<J, ::std::tuple<deps_ops_t...>>;
+      if constexpr (::std::is_same_v<typename dep_t::dep_type, void_interface>)
+      {
+        rebase_replicated_impl<J + 1, K>(instances, place_index);
+      }
+      else
+      {
+        rebase_replicated_one(::std::get<K>(instances), ::std::get<J>(deps), place_index);
+        rebase_replicated_impl<J + 1, K + 1>(instances, place_index);
+      }
+    }
+  }
+
+  //! Each shard of a grid dispatch reads its own member instance of any dep
+  //! placed at a replicated data place (place 0 uses the instance as fetched)
+  void rebase_replicated_instances(deps_tup_t& instances, size_t place_index)
+  {
+    if (place_index == 0)
+    {
+      return;
+    }
+    rebase_replicated_impl<0, 0>(instances, place_index);
+  }
+
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
   {
     return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
@@ -653,6 +708,18 @@ public:
 
     SCOPE(exit)
     {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    SCOPE(success)
+    {
       t.end_uncleared();
       if constexpr (::std::is_same_v<context, stream_ctx>)
       {
@@ -679,6 +746,11 @@ public:
       t.clear();
     };
 
+    SCOPE(fail)
+    {
+      t.end();
+    };
+
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       if (record_time)
@@ -695,16 +767,18 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
@@ -1018,6 +1092,7 @@ public:
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
+    rebase_replicated_instances(arg_instances, place_index);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
@@ -1086,39 +1161,43 @@ public:
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
-      auto p = static_cast<decltype(args)>(untyped_args);
+      // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
+      // it.
+      on_throw(::std::abort) << [untyped_args] {
+        auto p = static_cast<decltype(args)>(untyped_args);
 
-      auto& data               = ::std::get<0>(*p);
-      const size_t n           = ::std::get<1>(*p);
-      Fun& f                   = ::std::get<2>(*p);
-      const sub_shape_t& shape = ::std::get<3>(*p);
+        auto& data               = ::std::get<0>(*p);
+        const size_t n           = ::std::get<1>(*p);
+        Fun& f                   = ::std::get<2>(*p);
+        const sub_shape_t& shape = ::std::get<3>(*p);
 
-      // deps_ops_t are pairs of data instance type, and a reduction operator,
-      // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, auto&&... data) {
-        auto h = [&](auto&&... coords) {
-          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+        // deps_ops_t are pairs of data instance type, and a reduction operator,
+        // this gets only the data instance types (eg. slice<double>)
+        auto explode_coords = [&](size_t i, auto&&... data) {
+          auto h = [&](auto&&... coords) {
+            f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+          };
+          auto coords = shape.index_to_coords(i);
+          if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+          {
+            return;
+          }
+          ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
         };
-        auto coords = shape.index_to_coords(i);
-        if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+
+        // Finally we get to do the workload on every 1D item of the shape
+        for (size_t i = 0; i < n; ++i)
         {
-          return;
+          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
         }
-        ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
+
+        // For stream contexts, delete immediately (no replay risk)
+        // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        {
+          delete p;
+        }
       };
-
-      // Finally we get to do the workload on every 1D item of the shape
-      for (size_t i = 0; i < n; ++i)
-      {
-        ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
-      }
-
-      // For stream contexts, delete immediately (no replay risk)
-      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<context, graph_ctx>)
-      {
-        delete p;
-      }
     };
 
     if constexpr (::std::is_same_v<context, stream_ctx>)

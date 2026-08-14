@@ -163,12 +163,12 @@
   _CCCL_HOST_DEVICE_API inline _Tp fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) \
     _CONST _VOLATILE noexcept                                                                         \
   {                                                                                                   \
-    return __atomic_fetch_add_dispatch(&__a, __op, __m, __thread_scope_system_tag{});                 \
+    return __atomic_fetch_add_dispatch(&__a, __op, __m, _Sco{});                                      \
   }                                                                                                   \
   _CCCL_HOST_DEVICE_API inline _Tp fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) \
     _CONST _VOLATILE noexcept                                                                         \
   {                                                                                                   \
-    return __atomic_fetch_sub_dispatch(&__a, __op, __m, __thread_scope_system_tag{});                 \
+    return __atomic_fetch_sub_dispatch(&__a, __op, __m, _Sco{});                                      \
   }                                                                                                   \
   _CCCL_HOST_DEVICE_API inline _Tp operator++(int) _CONST _VOLATILE noexcept                          \
   {                                                                                                   \

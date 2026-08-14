@@ -34,7 +34,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT>
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_parser<_CharT> __fmt_formatter_str_make_parser() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_parser<_CharT> __fmt_formatter_str_make_parser() noexcept
 {
   __fmt_spec_parser<_CharT> __parser{};
   __parser.__alignment_ = ::cuda::std::to_underlying(__fmt_spec_alignment::__left);
@@ -101,7 +101,7 @@ public:
   //! @return An iterator pointing to the end of the parsed format specification.
   //!
   template <class _ParseCtx>
-  _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
+  _CCCL_HOST_DEVICE_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
     typename _ParseCtx::iterator __result = __parser_.__parse(__ctx, ::cuda::std::__fmt_spec_fields_str());
     ::cuda::std::__fmt_process_display_type_str(__parser_.__type_);
@@ -116,7 +116,7 @@ public:
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _Tp, class _FmtCtx>
-  _CCCL_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
+  _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
   {
     return __format(__value, __ctx);
   }

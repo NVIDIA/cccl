@@ -22,19 +22,26 @@
 #endif // no system header
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/functors.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
@@ -139,7 +146,16 @@ private:
   __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ::cuda::copy_configuration __config{};
+    __config.src_access_order = ::cuda::source_access_order::stream;
+
+    const ::cuda::std::span<__size_type> __result_span{&__result, 1};
+    ::cuda::copy_bytes(__stream, __counter, __result_span, __config);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     ::cuda::__driver::__memcpyAsync(&__result, __counter.data(), sizeof(__size_type), __stream.get());
+#  endif // _CCCL_CTK_BELOW(13, 0)
     __stream.sync();
     return __result;
   }
@@ -367,6 +383,39 @@ public:
       ::cuda::std::identity{},
       __output_begin,
       __container_ref);
+  }
+
+  //! @brief Retrieves all elements in the container.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @tparam _OutputIt Device-accessible random access output iterator
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __output_begin Beginning of the output range
+  //!
+  //! @return Iterator indicating the end of the output
+  template <class _OutputIt>
+  [[nodiscard]] _CCCL_HOST_API _OutputIt retrieve_all(::cuda::stream_ref __stream, _OutputIt __output_begin) const
+  {
+    auto __counter = __make_counter(__stream);
+
+    const auto __input_begin = ::cuda::make_transform_iterator(
+      ::cuda::counting_iterator<__size_type>{0}, __get_slot<__has_payload, __storage_ref_type>{storage_ref()});
+    const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+    const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
+
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::DeviceSelect::If,
+      "cuco: failed to retrieve all elements",
+      __input_begin,
+      __output_begin,
+      __counter.data(),
+      capacity(),
+      __is_filled,
+      __env);
+
+    return __output_begin + __read_counter(__counter, __stream);
   }
 
   //! @brief Returns the total number of slots.

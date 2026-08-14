@@ -123,12 +123,12 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryPredicate)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
-    _BinaryPredicate __pred) const
+    _BinaryPredicate __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

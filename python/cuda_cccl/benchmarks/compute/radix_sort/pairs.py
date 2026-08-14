@@ -22,11 +22,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import INTEGRAL_TYPES, as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 from cuda.compute import SortOrder, make_radix_sort
 
 KEY_TYPE_MAP = INTEGRAL_TYPES

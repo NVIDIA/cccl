@@ -61,13 +61,35 @@ Resource get_resource()
   }
 }
 
+static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
+{
+  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  void* cuda_malloc_host_ptr = nullptr;
+  cudaError_t status         = cudaMallocHost(&cuda_malloc_host_ptr, 1);
+  if (status != cudaSuccess || cuda_malloc_host_ptr == nullptr)
+  {
+    return false;
+  }
+
+  cudaPointerAttributes attributes;
+  status                  = cudaPointerGetAttributes(&attributes, cuda_malloc_host_ptr);
+  cudaError_t free_status = cudaFreeHost(cuda_malloc_host_ptr);
+  CHECK(free_status == cudaSuccess);
+
+  return status == cudaSuccess && free_status == cudaSuccess && attributes.type == type;
+}
+
 static void ensure_pinned_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
-  CHECK(attributes.type == cudaMemoryTypeHost);
+  if (attributes.type != cudaMemoryTypeHost)
+  {
+    // Some platforms emulate pinned host allocations with another memory type.
+    CHECK(cuda_malloc_host_reports_memory_type(attributes.type));
+  }
   // Driver bug fixed in r575
   // TODO Re-enable one we start testing with r575
   // CHECK(attributes.devicePointer != nullptr);
