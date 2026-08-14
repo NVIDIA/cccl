@@ -83,12 +83,14 @@ __device__ void test_this_queries(const cudax::this_thread<Hierarchy>& group)
   // static_assert(cuda::gpu_thread.static_count(group) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == 1);
+  REQUIRE(group.count(cuda::gpu_thread) == 1);
   REQUIRE(group.count(cuda::warp) == cuda::gpu_thread.count(cuda::warp));
   REQUIRE(group.count(cuda::block) == cuda::gpu_thread.count(cuda::block));
   REQUIRE(group.count(cuda::cluster) == cuda::gpu_thread.count(cuda::cluster));
   REQUIRE(group.count(cuda::grid) == cuda::gpu_thread.count(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.rank(group) == 0);
+  REQUIRE(group.rank(cuda::gpu_thread) == 0);
   REQUIRE(group.rank(cuda::warp) == cuda::gpu_thread.rank(cuda::warp));
   REQUIRE(group.rank(cuda::block) == cuda::gpu_thread.rank(cuda::block));
   REQUIRE(group.rank(cuda::cluster) == cuda::gpu_thread.rank(cuda::cluster));
@@ -109,12 +111,14 @@ __device__ void test_this_queries(const cudax::this_warp<Hierarchy>& group)
 
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::warp));
   REQUIRE(cuda::warp.count(group) == 1);
+  REQUIRE(group.count(cuda::warp) == 1);
   REQUIRE(group.count(cuda::block) == cuda::warp.count(cuda::block));
   REQUIRE(group.count(cuda::cluster) == cuda::warp.count(cuda::cluster));
   REQUIRE(group.count(cuda::grid) == cuda::warp.count(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.rank(group) == cuda::gpu_thread.rank(cuda::warp));
   REQUIRE(cuda::warp.rank(group) == 0);
+  REQUIRE(group.rank(cuda::warp) == 0);
   REQUIRE(group.rank(cuda::block) == cuda::warp.rank(cuda::block));
   REQUIRE(group.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
   REQUIRE(group.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
@@ -138,12 +142,14 @@ __device__ void test_this_queries(const cudax::this_block<Hierarchy>& group)
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::block));
   REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::block));
   REQUIRE(cuda::block.count(group) == 1);
+  REQUIRE(group.count(cuda::block) == 1);
   REQUIRE(group.count(cuda::cluster) == cuda::block.count(cuda::cluster));
   REQUIRE(group.count(cuda::grid) == cuda::block.count(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.rank(group) == cuda::gpu_thread.rank(cuda::block));
   REQUIRE(cuda::warp.rank(group) == cuda::warp.rank(cuda::block));
   REQUIRE(cuda::block.rank(group) == 0);
+  REQUIRE(group.rank(cuda::block) == 0);
   REQUIRE(group.rank(cuda::cluster) == cuda::block.rank(cuda::cluster));
   REQUIRE(group.rank(cuda::grid) == cuda::block.rank(cuda::grid));
 
@@ -170,12 +176,14 @@ __device__ void test_this_queries(const cudax::this_cluster<Hierarchy>& group)
   REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::cluster));
   REQUIRE(cuda::block.count(group) == cuda::block.count(cuda::cluster));
   REQUIRE(cuda::cluster.count(group) == 1);
+  REQUIRE(group.count(cuda::cluster) == 1);
   REQUIRE(group.count(cuda::grid) == cuda::cluster.count(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.rank(group) == cuda::gpu_thread.rank(cuda::cluster));
   REQUIRE(cuda::warp.rank(group) == cuda::warp.rank(cuda::cluster));
   REQUIRE(cuda::block.rank(group) == cuda::block.rank(cuda::cluster));
   REQUIRE(cuda::cluster.rank(group) == 0);
+  REQUIRE(group.rank(cuda::cluster) == 0);
   REQUIRE(group.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (cuda::gpu_thread.rank(cuda::cluster) == 0));
@@ -205,12 +213,14 @@ __device__ void test_this_queries(const cudax::this_grid<Hierarchy>& group)
   REQUIRE(cuda::block.count(group) == cuda::block.count(cuda::grid));
   REQUIRE(cuda::cluster.count(group) == cuda::cluster.count(cuda::grid));
   REQUIRE(cuda::grid.count(group) == 1);
+  REQUIRE(group.count(cuda::grid) == 1);
 
   REQUIRE(cuda::gpu_thread.rank(group) == cuda::gpu_thread.rank(cuda::grid));
   REQUIRE(cuda::warp.rank(group) == cuda::warp.rank(cuda::grid));
   REQUIRE(cuda::block.rank(group) == cuda::block.rank(cuda::grid));
   REQUIRE(cuda::cluster.rank(group) == cuda::cluster.rank(cuda::grid));
   REQUIRE(cuda::grid.rank(group) == 0);
+  REQUIRE(group.rank(cuda::grid) == 0);
 
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (cuda::gpu_thread.rank(cuda::grid) == 0));
   REQUIRE(cuda::warp.is_root_rank(group) == (cuda::warp.rank(cuda::grid) == 0));
