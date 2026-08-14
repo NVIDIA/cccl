@@ -696,7 +696,7 @@ private:
 
     // A replicated place seeds the import from its first member and adopts the other
     // members below; every other place imports itself and nothing else.
-    const data_place seed               = where.is_replicated() ? where.member(0) : where;
+    data_place seed                     = where.is_replicated() ? where.member(0) : where;
     ::std::pair<T, event_list> seed_res = frozen_ld.get(seed);
     logical_data<T> ld                  = to_ctx.logical_data(seed_res.first, seed);
     to_node->ctx_prereqs.merge(mv(seed_res.second));
@@ -713,7 +713,7 @@ private:
       const size_t nmembers = where.instance_count();
       ::std::vector<data_place> done;
       done.reserve(nmembers);
-      done.push_back(seed);
+      done.push_back(mv(seed));
       for (size_t r = 1; r < nmembers; r++)
       {
         data_place member = where.member(r);

@@ -326,8 +326,17 @@ public:
   launch_scope(const launch_scope&)            = delete;
   launch_scope& operator=(const launch_scope&) = delete;
 
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A launch_scope holds host-only state (a std::string, host containers) and only ever lives on
+  // the host, so the members below are exempted from the execution space check.
+
   /// Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   launch_scope(launch_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~launch_scope() = default;
 
   /**
    * @brief Set the symbol for the task.

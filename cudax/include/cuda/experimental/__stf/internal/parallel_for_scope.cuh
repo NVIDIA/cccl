@@ -617,8 +617,18 @@ public:
       , p_(mv(p))
   {}
 
-  parallel_for_scope(const parallel_for_scope&)            = delete;
-  parallel_for_scope(parallel_for_scope&&)                 = default;
+  parallel_for_scope(const parallel_for_scope&) = delete;
+
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A parallel_for_scope holds host-only state (a std::string, a host tuple of dependencies) and
+  // only ever lives on the host, so the members below are exempted from the execution space check.
+  _CCCL_EXEC_CHECK_DISABLE
+  parallel_for_scope(parallel_for_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~parallel_for_scope() = default;
+
   parallel_for_scope& operator=(const parallel_for_scope&) = delete;
 
   /**

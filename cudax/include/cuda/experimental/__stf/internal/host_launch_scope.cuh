@@ -164,7 +164,13 @@ public:
 
   host_launch_scope(const host_launch_scope&)            = delete;
   host_launch_scope& operator=(const host_launch_scope&) = delete;
-  // move-constructible
+
+  // move-constructible. nvcc infers __host__ __device__ for special members that are defaulted on
+  // their first declaration, and neither an explicit annotation nor defaulting out of class
+  // overrides that. A host_launch_scope holds host-only state (a std::string, host containers) and
+  // only ever lives on the host, so this one is exempted from the execution space check. The
+  // destructor above needs no exemption: written out, it is a host function like any other.
+  _CCCL_EXEC_CHECK_DISABLE
   host_launch_scope(host_launch_scope&&) = default;
 
   /**
