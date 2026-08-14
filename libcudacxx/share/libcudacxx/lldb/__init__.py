@@ -9,8 +9,8 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
-import atomic
 import annotated_ptr
+import atomic
 import buffer
 import complex
 import event
