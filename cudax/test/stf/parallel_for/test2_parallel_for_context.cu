@@ -71,19 +71,8 @@ int main()
             //    assert(fabs(sy(i, j) - expected) < 0.001);
           };
 #else
-  // parallel_for on the host requires nvcc or nvc++, which alone can classify lambdas for
-  // host/device execution; state that limitation instead of letting the kernel instantiation
-  // explain it. The call below is declared but never defined, and its 'error' attribute fires
-  // only at codegen: clang-tidy and -fsyntax-only sweeps analyze this file cleanly, while an
-  // actual build fails at compile time with the message (or at link time, with the name as
-  // the message, on compilers without the attribute). The noexcept is load-bearing: with a
-  // nontrivial destructor in scope the call would otherwise be emitted as an invoke, whose
-  // error-attribute diagnostic clang silently skips.
-#  if _CCCL_HAS_ATTRIBUTE(error)
-  __attribute__((error("parallel_for on exec_place::host() requires nvcc or nvc++")))
-#  endif
-  void parallel_for_on_the_host_requires_nvcc_or_nvcpp() noexcept;
-  parallel_for_on_the_host_requires_nvcc_or_nvcpp();
+  CUDASTF_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                      "parallel_for on exec_place::host() requires nvcc or nvc++");
 #endif
 
   ctx.finalize();
