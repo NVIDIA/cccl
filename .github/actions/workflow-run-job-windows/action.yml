@@ -274,7 +274,7 @@ runs:
           --env "NVCC_APPEND_FLAGS=-t=100" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "RUST_LOG_STYLE=never" \
-          --env "SCCACHE_SERVER_LOG=sccache=debug" \
+          --env "SCCACHE_SERVER_LOG=sccache=trace" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
           --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
