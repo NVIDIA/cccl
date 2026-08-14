@@ -73,6 +73,7 @@ template <typename T>
 struct hash;
 
 class exec_place;
+class exec_place_host;
 
 // Green contexts are only supported since CUDA 12.4
 
@@ -900,7 +901,7 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static exec_place host();
+  static exec_place_host host();
   static exec_place device_auto();
 
   static exec_place device(int devid);
@@ -1292,9 +1293,36 @@ public:
   }
 };
 
-inline exec_place exec_place::host()
+/**
+ * @brief The host execution place, as its own type.
+ *
+ * `exec_place::host()` returning this rather than an erased `exec_place` keeps host-ness in
+ * the type system, so constructs like `parallel_for` can select their host code path at
+ * compile time and never instantiate the device kernel. That static choice is the one
+ * classification available on every compiler: only nvcc has the extended-lambda builtins
+ * that tell a host lambda from a device one, so for clang-cuda a typed host place is what
+ * makes `parallel_for(exec_place::host(), ...)` with a plain host lambda compile at all.
+ */
+class exec_place_host : public exec_place
 {
-  return exec_place(make_static_instance<exec_place_host_impl>());
+public:
+  exec_place_host()
+      : exec_place(make_static_instance<exec_place_host_impl>())
+  {}
+
+  //! @brief The checked downcast: re-manufactures the static host-ness of a type-erased
+  //! place from a runtime check, for callers that erased a host place and need to hand a
+  //! host callable to a construct that dispatches on this type.
+  static exec_place_host from(const exec_place& __p)
+  {
+    _CCCL_ASSERT(__p.is_host(), "exec_place_host::from() requires a host execution place");
+    return exec_place_host();
+  }
+};
+
+inline exec_place_host exec_place::host()
+{
+  return exec_place_host();
 }
 
 // Implementation for device_auto placeholder

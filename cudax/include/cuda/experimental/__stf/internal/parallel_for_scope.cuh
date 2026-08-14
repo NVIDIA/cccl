@@ -774,14 +774,23 @@ public:
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
     // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
-    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
-    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    // indeed run on host and device. For clang-cuda it is a fallback: the statically-host
+    // branch below is the one that runs host lambdas there, and a host lambda handed an
+    // erased `exec_place` is diagnosed at the kernel it would not survive being compiled
+    // into. A device-only lambda taking the host branch remains to be classified.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
-    // TODO redo cascade of tests
-    if constexpr (need_reduction)
+    // A place that is host by type: take the host path at compile time and never mention the
+    // device kernel. This is the one classification that works on every compiler; nvcc's
+    // lambda traits above refine the erased-place cases this cannot see.
+    if constexpr (::std::is_same_v<exec_place_t, exec_place_host>)
+    {
+      static_assert(!need_reduction, "Reduce access mode currently unimplemented on host.");
+      return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
+    }
+    else if constexpr (need_reduction)
     {
       _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
       _CCCL_ASSERT(e_place.size() == 1, "Reduce access mode currently unimplemented on grid of places.");
@@ -810,8 +819,11 @@ public:
       return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
     }
 
-    // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
+    // Device land. This is a separate statement, not the else of the cascade above, so it
+    // instantiates regardless of which branch was taken; the statically-host case must be
+    // excluded here too or it would drag the device kernel back in.
+    if constexpr ((is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
+                  && !::std::is_same_v<exec_place_t, exec_place_host>)
     {
       if (e_place.size() == 1)
       {
