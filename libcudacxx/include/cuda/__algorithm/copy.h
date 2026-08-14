@@ -68,6 +68,12 @@ struct copy_configuration
 
 namespace __detail
 {
+template <class _SrcTp, class _DstTp>
+_CCCL_CONCEPT __can_span_copy_bytes = _CCCL_REQUIRES_EXPR((_SrcTp, _DstTp), )(
+  requires((!::cuda::std::is_const_v<_DstTp>) ),
+  requires(::cuda::is_trivially_copyable_v<_SrcTp>),
+  requires(::cuda::is_trivially_copyable_v<_DstTp>));
+
 template <typename _SrcTy, ::cuda::std::size_t _SrcSize, typename _DstTy, ::cuda::std::size_t _DstSize>
 _CCCL_HOST_API void __copy_bytes_impl(
   stream_ref __stream,
@@ -75,8 +81,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   ::cuda::std::span<_DstTy, _DstSize> __dst,
   [[maybe_unused]] copy_configuration __config)
 {
-  static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
-  static_assert(::cuda::is_trivially_copyable_v<_SrcTy> && ::cuda::is_trivially_copyable_v<_DstTy>);
+  static_assert(__can_span_copy_bytes<_SrcTy, _DstTy>);
 
   // If neither are dynamic_extent then they are a number, and in that case we can check at compile-time
   if constexpr ((_SrcSize != ::cuda::std::dynamic_extent) && (_DstSize != ::cuda::std::dynamic_extent))
@@ -117,6 +122,13 @@ _CCCL_HOST_API void __copy_bytes_impl(
 #  endif // _CCCL_CTK_BELOW(13, 0)
 }
 
+template <class _SrcTp, class _SrcExtents, class _SrcLayout, class _DstTp, class _DstExtents, class _DstLayout>
+_CCCL_CONCEPT __can_mdspan_copy_bytes =
+  _CCCL_REQUIRES_EXPR((_SrcTp, _SrcExtents, _SrcLayout, _DstTp, _DstExtents, _DstLayout), )(
+    requires(__can_span_copy_bytes<_SrcTp, _DstTp>),
+    requires(::cuda::std::is_constructible_v<_DstExtents, _SrcExtents>),
+    requires(::cuda::std::is_same_v<_SrcLayout, _DstLayout>));
+
 template <typename _SrcElem,
           typename _SrcExtents,
           typename _SrcLayout,
@@ -131,10 +143,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   ::cuda::std::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst,
   copy_configuration __config)
 {
-  static_assert(::cuda::std::is_constructible_v<_DstExtents, _SrcExtents>,
-                "Multidimensional copy requires both source and destination extents to be compatible");
-  static_assert(::cuda::std::is_same_v<_SrcLayout, _DstLayout>,
-                "Multidimensional copy requires both source and destination layouts to match");
+  static_assert(__can_mdspan_copy_bytes<_SrcElem, _SrcExtents, _SrcLayout, _DstElem, _DstExtents, _DstLayout>);
 
   // Check only destination, because the layout of destination is the same as source
   if (!__dst.is_exhaustive())

@@ -56,11 +56,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
@@ -103,10 +98,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
     delete[] __ptr;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
@@ -734,12 +725,6 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash;
 
 #ifndef __cuda_std__
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp, class _Dp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
@@ -754,9 +739,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
     return hash<pointer>()(__ptr.get());
   }
 };
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

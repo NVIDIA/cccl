@@ -37,11 +37,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 template <class _Iter, class _Func>
 using for_each_result = in_fun_result<_Iter, _Func>;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 _CCCL_BEGIN_NAMESPACE_CPO(__for_each)
 struct __fn
 {
@@ -75,11 +70,6 @@ public:
     return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

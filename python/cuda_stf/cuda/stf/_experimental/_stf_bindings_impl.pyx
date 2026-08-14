@@ -174,8 +174,16 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place_handle stf_data_place_managed()
     stf_data_place_handle stf_data_place_affine()
     uint32_t stf_locality_domain_count(int dev_id)
+    ctypedef enum stf_locality_domain_sm_split:
+        STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL
+        STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED
+        STF_LOCALITY_DOMAIN_SM_SPLIT_FINE
     stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_split(
+        int dev_id, int domain_id, stf_locality_domain_sm_split split)
     stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_grid_split(
+        int dev_id, stf_locality_domain_sm_split split)
     stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
     stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
     stf_data_place_handle stf_data_place_replicated_deferred()
@@ -1108,6 +1116,28 @@ def locality_domain_count(int dev_id=0):
     return int(n)
 
 
+# SM split methods for locality-domain execution places (see the
+# ``sm_split`` parameter of ``exec_place.locality_domain`` /
+# ``exec_place_grid.locality_domains``): "backfill" covers the whole device
+# (each place is padded with SMs from outside its domain), while "aligned"
+# and "fine" are strictly per-domain (see the docstrings for the tradeoffs).
+_SM_SPLIT_METHODS = {
+    "backfill": STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL,
+    "aligned": STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED,
+    "fine": STF_LOCALITY_DOMAIN_SM_SPLIT_FINE,
+}
+
+
+cdef stf_locality_domain_sm_split _sm_split_from_str(sm_split) except *:
+    try:
+        return _SM_SPLIT_METHODS[sm_split]
+    except (KeyError, TypeError):
+        raise ValueError(
+            f"unknown sm_split {sm_split!r}; expected one of "
+            f"{sorted(_SM_SPLIT_METHODS)}"
+        ) from None
+
+
 def machine_init():
     """Initialize machine topology (P2P access, device memory pools).
 
@@ -1346,12 +1376,30 @@ cdef class exec_place:
         return p
 
     @staticmethod
-    def locality_domain(int dev_id, int domain_id):
+    def locality_domain(int dev_id, int domain_id, sm_split="backfill"):
         """Execution place pinned to one locality domain of a device (the
         whole device with the fallback backend). Ordinals are identity
-        tokens, validated lazily at use."""
+        tokens, validated lazily at use.
+
+        ``sm_split`` selects how the place's SM partition is carved out of
+        the device (native backend only; other backends ignore it):
+
+        - ``"backfill"`` (default): an even share of the device total,
+          backfilled by the driver to whole-device coverage across the
+          domain places. Backfilled SMs may sit outside the place's domain
+          (no memory affinity with it), and the partition does not support
+          launching thread-block clusters.
+        - ``"aligned"``: only SMs of the domain that form complete
+          co-scheduled groups at the device's default alignment; strictly
+          domain-affine and cluster-capable, but incomplete groups and SMs
+          outside any domain are left out.
+        - ``"fine"``: all of the domain's SMs at the finest co-scheduling
+          granularity; strictly domain-affine, at the cost of thread-block
+          cluster launches.
+        """
+        cdef stf_locality_domain_sm_split split = _sm_split_from_str(sm_split)
         cdef exec_place p = exec_place.__new__(exec_place)
-        p._h = stf_exec_place_locality_domain(dev_id, domain_id)
+        p._h = stf_exec_place_locality_domain_split(dev_id, domain_id, split)
         if p._h == NULL:
             raise RuntimeError("failed to create locality-domain exec place")
         return p
@@ -1683,11 +1731,17 @@ cdef class exec_place_grid(exec_place):
         return g
 
     @staticmethod
-    def locality_domains(int dev_id=0):
+    def locality_domains(int dev_id=0, sm_split="backfill"):
         """Grid with one execution place per locality domain of a device
-        (a single whole-device place with the fallback backend)."""
+        (a single whole-device place with the fallback backend).
+
+        ``sm_split`` selects the SM split method applied to every place of
+        the grid (see ``exec_place.locality_domain``): with the default
+        ``"backfill"`` the grid members together cover the whole device,
+        while ``"aligned"`` and ``"fine"`` are strictly per-domain."""
+        cdef stf_locality_domain_sm_split split = _sm_split_from_str(sm_split)
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
-        g._h = stf_exec_place_locality_domain_grid(dev_id)
+        g._h = stf_exec_place_locality_domain_grid_split(dev_id, split)
         if g._h == NULL:
             raise RuntimeError("failed to create locality-domain grid")
         return g

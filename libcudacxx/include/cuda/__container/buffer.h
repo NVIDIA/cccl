@@ -1019,7 +1019,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 {
   auto __res =
     buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, mr::__memory_accessibility_from_properties<_FirstProperty, _RestProperties...>::value>(
+  __fill_n<_Tp, mr::__memory_accessibility_from_properties_v<_FirstProperty, _RestProperties...>>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
