@@ -9,6 +9,7 @@
 #include <cuda/stream>
 
 #include <cstdio>
+#include <string>
 
 #define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
@@ -21,17 +22,18 @@
 
 // Creating a managed pool also needs a 13.0 driver, which the toolkit gate in CMake
 // cannot see, so probe it here and let the harness skip the scenario without one.
-[[nodiscard]] bool managed_pools_supported()
+// Returns the driver's error message, or nullptr when managed pools are usable.
+[[nodiscard]] const char* managed_pools_error()
 {
   try
   {
     (void) cuda::managed_memory_pool{};
-    return true;
+    return nullptr;
   }
   catch (const cuda::cuda_error& err)
   {
-    std::printf("managed memory pool creation failed: %s\n", err.what());
-    return false;
+    static const std::string reason{err.what()};
+    return reason.c_str();
   }
 }
 
@@ -72,9 +74,9 @@
 
 int main()
 {
-  if (!managed_pools_supported())
+  if (const char* const error = managed_pools_error())
   {
-    std::puts("LIBCUDACXX_PRETTY_PRINTER_SKIP: managed memory pools are not supported");
+    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: managed memory pools are not supported: %s\n", error);
     return 0;
   }
 

@@ -9,6 +9,7 @@
 #include <cuda/stream>
 
 #include <cstdio>
+#include <string>
 
 #define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
@@ -20,17 +21,18 @@
 }
 
 // Host pool support is a device attribute the toolkit gate in CMake cannot see.
-[[nodiscard]] bool pinned_pools_supported()
+// Returns the driver's error message, or nullptr when pinned pools are usable.
+[[nodiscard]] const char* pinned_pools_error()
 {
   try
   {
     (void) cuda::pinned_memory_pool{0};
-    return true;
+    return nullptr;
   }
   catch (const cuda::cuda_error& err)
   {
-    std::printf("pinned memory pool creation failed: %s\n", err.what());
-    return false;
+    static const std::string reason{err.what()};
+    return reason.c_str();
   }
 }
 
@@ -61,9 +63,9 @@
 
 int main()
 {
-  if (!pinned_pools_supported())
+  if (const char* const error = pinned_pools_error())
   {
-    std::puts("LIBCUDACXX_PRETTY_PRINTER_SKIP: pinned memory pools are not supported");
+    std::printf("LIBCUDACXX_PRETTY_PRINTER_SKIP: pinned memory pools are not supported: %s\n", error);
     return 0;
   }
 
