@@ -96,6 +96,8 @@ if (NOT testing_enabled)
   return()
 endif()
 
+cccl_get_cudatoolkit()
+
 #[=======================================================================[.rst:
 libcudacxx_add_pretty_printer_test
 ---------------------------------
@@ -163,7 +165,10 @@ function(libcudacxx_add_pretty_printer_test)
     NO_CLANG_TIDY
     SOURCES ${pretty_printer_SOURCES}
   )
-  target_link_libraries(${target_name} PRIVATE libcudacxx.compiler_interface)
+  target_link_libraries(
+    ${target_name}
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart
+  )
 
   # Explicitly set max optimization, the printers should work even when everything is
   # compiled out.
@@ -215,7 +220,6 @@ add_subdirectory(memory_pool)
 # Registered only on a toolkit new enough to have the types, which keeps the
 # golden output of every registered scenario unconditional. Gate on the toolkit
 # version rather than the compiler version, since the CUDA compiler may be clang.
-cccl_get_cudatoolkit()
 if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.9)
   add_subdirectory(memory_pool_pinned)
 endif()
