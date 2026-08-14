@@ -31,6 +31,8 @@
  * accesses on "data" depending on in/out dependencies
  */
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // task has-a task_dep_vector_untyped
 
@@ -242,7 +244,8 @@ public:
     const data_place& dp = d.get_dplace();
     if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
     {
-      throw ::std::invalid_argument(
+      _CCCL_THROW(
+        ::std::invalid_argument,
         "replicated data places only support read access (mutate the data at another place; the next replicated "
         "read re-broadcasts)");
     }

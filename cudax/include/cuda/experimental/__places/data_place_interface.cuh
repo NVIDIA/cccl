@@ -30,6 +30,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
@@ -253,7 +254,7 @@ public:
    */
   virtual const partition_fn_t& get_partitioner() const
   {
-    throw ::std::logic_error("get_partitioner() called on non-composite data_place");
+    _CCCL_THROW(::std::logic_error, "get_partitioner() called on non-composite data_place");
   }
 };
 } // end namespace cuda::experimental::places

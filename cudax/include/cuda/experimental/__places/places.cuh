@@ -29,6 +29,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
@@ -462,13 +464,14 @@ public:
     {
       if (extent != 0 && total_bytes > ::std::numeric_limits<size_t>::max() / extent)
       {
-        throw ::std::invalid_argument("allocate_nd: extents and element size overflow the addressable byte count");
+        _CCCL_THROW(::std::invalid_argument,
+                    "allocate_nd: extents and element size overflow the addressable byte count");
       }
       total_bytes *= extent;
     }
     if (total_bytes > static_cast<size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()))
     {
-      throw ::std::invalid_argument("allocate_nd: allocation size exceeds PTRDIFF_MAX");
+      _CCCL_THROW(::std::invalid_argument, "allocate_nd: allocation size exceeds PTRDIFF_MAX");
     }
     return pimpl_->allocate_nd(data_dims, elemsize, stream);
   }
@@ -1307,12 +1310,12 @@ public:
 
   exec_place activate(size_t) const override
   {
-    throw ::std::logic_error("activate() called on device_auto exec_place - should be resolved first");
+    _CCCL_THROW(::std::logic_error, "activate() called on device_auto exec_place - should be resolved first");
   }
 
   void deactivate(const exec_place&, size_t) const override
   {
-    throw ::std::logic_error("deactivate() called on device_auto exec_place - should be resolved first");
+    _CCCL_THROW(::std::logic_error, "deactivate() called on device_auto exec_place - should be resolved first");
   }
 
   bool is_device() const override
@@ -1537,15 +1540,15 @@ public:
   {
     if (places_.empty())
     {
-      throw ::std::invalid_argument("make_grid: places must not be empty");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
     }
     if (dims_.x == 0 || dims_.y == 0 || dims_.z == 0 || dims_.t == 0)
     {
-      throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
     }
     if (dims_.size() != places_.size())
     {
-      throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
     }
   }
 
@@ -1642,15 +1645,15 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   if (places.empty())
   {
-    throw ::std::invalid_argument("make_grid: places must not be empty");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
   }
   if (dims.x == 0 || dims.y == 0 || dims.z == 0 || dims.t == 0)
   {
-    throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
   }
   if (dims.size() != places.size())
   {
-    throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
   }
   if (places.size() == 1)
   {
@@ -1683,7 +1686,7 @@ _CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_ax
 {
   if (first_axis > last_axis || last_axis > 3)
   {
-    throw ::std::invalid_argument("exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
+    _CCCL_THROW(::std::invalid_argument, "exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
   }
 
   const dim4 old_dims         = get_dims();
@@ -1740,8 +1743,9 @@ inline exec_place data_place::affine_exec_place() const
   }
 
   // For invalid, affine, device_auto - throw
-  throw ::std::logic_error("affine_exec_place() not meaningful for data_place type with ordinal "
-                           + ::std::to_string(pimpl_->get_device_ordinal()));
+  _CCCL_THROW(::std::logic_error,
+              "affine_exec_place() not meaningful for data_place type with ordinal "
+                + ::std::to_string(pimpl_->get_device_ordinal()));
 }
 
 // === Deferred implementations for get_place() ===
@@ -1944,7 +1948,7 @@ public:
   size_t hash() const override
   {
     // Composite places don't support hashing
-    throw ::std::logic_error("hash() not supported for composite data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for composite data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -1971,9 +1975,9 @@ public:
     // A byte count alone does not carry the tensor geometry the partitioner
     // needs (it maps element coordinates to places), so there is no meaningful
     // way to service this request.
-    throw ::std::runtime_error(
-      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
-      "allocate through a logical data");
+    _CCCL_THROW(::std::runtime_error,
+                "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+                "allocate through a logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -2053,7 +2057,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     size_t n        = 1;
@@ -2073,7 +2077,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
@@ -2094,7 +2098,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     ssize_t c[4]    = {0, 0, 0, 0};
@@ -2123,9 +2127,9 @@ public:
       }
       if (!(grid_.get_place(p).affine_data_place() == grid_.get_place(rep).affine_data_place()))
       {
-        throw ::std::invalid_argument(
-          "replicated data place: shared axes require co-located fiber members (equal affine data places); "
-          "replicate over that axis too, or build the grid from members with coarser data affinity");
+        _CCCL_THROW(::std::invalid_argument,
+                    "replicated data place: shared axes require co-located fiber members (equal affine data places); "
+                    "replicate over that axis too, or build the grid from members with coarser data affinity");
       }
     }
   }
@@ -2147,7 +2151,7 @@ public:
 
   size_t hash() const override
   {
-    throw ::std::logic_error("hash() not supported for replicated data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for replicated data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -2172,12 +2176,12 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error("replicated data_place: allocate through a logical data");
+    _CCCL_THROW(::std::runtime_error, "replicated data_place: allocate through a logical data");
   }
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error("replicated data_place: instances deallocate through their member places");
+    _CCCL_THROW(::std::runtime_error, "replicated data_place: instances deallocate through their member places");
   }
 
   bool allocation_is_stream_ordered() const override
@@ -2269,7 +2273,7 @@ inline data_place data_place::replicated(const exec_place& grid)
 {
   if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
   }
   // A live replicated place always has >= 2 instances: everything downstream
   // (acquire, member(), shard rebase) relies on it. One instance is a plain
@@ -2294,7 +2298,7 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
   static_assert(((axes < 4) && ...), "grid axes are 0..3");
   if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
   }
   constexpr unsigned mask = ((1u << axes) | ...);
   auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);

@@ -52,6 +52,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -329,11 +330,11 @@ public:
   {
     if (place_leaves.size() > max_leaves || local_leaves.size() > max_leaves)
     {
-      throw ::std::invalid_argument("cute_partition: at most max_leaves leaves are supported per mode");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: at most max_leaves leaves are supported per mode");
     }
     if (place_leaves.size() != place_axes.size())
     {
-      throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: one grid axis is required per place leaf");
     }
     ::cuda::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
     ::cuda::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
@@ -787,7 +788,8 @@ public:
     {
       if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the task shape does not match the partition's extents");
       }
     }
 
@@ -828,7 +830,8 @@ public:
       const auto hi_bound = b.get_end(d);
       if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the box is not contained in the partition's extents");
       }
       lo[d] = static_cast<size_t>(lo_bound);
       hi[d] = static_cast<size_t>(hi_bound);
@@ -845,7 +848,7 @@ public:
   {
     if (place_index >= num_places())
     {
-      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+      _CCCL_THROW(::std::out_of_range, "cute_partition::place_offset: place index out of range");
     }
     size_t offset = 0;
     for (size_t k = 0; k < num_place_leaves_; k++)
@@ -942,8 +945,9 @@ private:
     {
       if (padded_dims_.get(d) != 1)
       {
-        throw ::std::invalid_argument("cute_partition::apply: the iteration rank does not match the partition's "
-                                      "extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the iteration rank does not match the partition's "
+                    "extents");
       }
     }
   }
@@ -957,7 +961,8 @@ private:
   {
     if (!(grid_dims == grid_dims_))
     {
-      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition::apply: the grid does not match the partition's grid extents");
     }
 
     // The dispatch loop linearizes places into .x
@@ -980,17 +985,17 @@ private:
       const int a = place_axes_[k];
       if (a < 0 || a > 3)
       {
-        throw ::std::invalid_argument("cute_partition: place axis out of range");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: place axis out of range");
       }
       if (place_leaves_[k].extent != grid_dims_.get(static_cast<size_t>(a)))
       {
-        throw ::std::invalid_argument("cute_partition: place leaf extent does not match its grid axis extent");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: place leaf extent does not match its grid axis extent");
       }
       for (size_t j = 0; j < k; j++)
       {
         if (place_axes_[j] == a)
         {
-          throw ::std::invalid_argument("cute_partition: grid axis bound to more than one place leaf");
+          _CCCL_THROW(::std::invalid_argument, "cute_partition: grid axis bound to more than one place leaf");
         }
       }
     }
@@ -1001,17 +1006,17 @@ private:
     // replication is introduced.
     if (num_places() != grid_dims_.size())
     {
-      throw ::std::invalid_argument(
-        "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
-        "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
-        "tensor dimension.");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
+                  "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
+                  "tensor dimension.");
     }
 
     for (size_t d = 0; d < 4; d++)
     {
       if (true_dims_.get(d) < 1 || true_dims_.get(d) > padded_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition: true extents must be within [1, padded extents]");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: true extents must be within [1, padded extents]");
       }
     }
 
@@ -1025,11 +1030,11 @@ private:
       const layout_leaf& l = (k < num_place_leaves_) ? place_leaves_[k] : local_leaves_[k - num_place_leaves_];
       if (l.stride < 0)
       {
-        throw ::std::invalid_argument("cute_partition: negative strides are not supported");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: negative strides are not supported");
       }
       if (l.extent == 0)
       {
-        throw ::std::invalid_argument("cute_partition: leaf extents must be at least 1");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: leaf extents must be at least 1");
       }
       if (l.extent > 1)
       {
@@ -1046,14 +1051,15 @@ private:
     {
       if (static_cast<size_t>(all[k].stride) != expected_stride)
       {
-        throw ::std::invalid_argument("cute_partition: leaves do not tile the padded space exactly (layout must be "
-                                      "exact and bijective)");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition: leaves do not tile the padded space exactly (layout must be "
+                    "exact and bijective)");
       }
       expected_stride *= all[k].extent;
     }
     if (expected_stride != padded_dims_.size())
     {
-      throw ::std::invalid_argument("cute_partition: layout size does not match the padded extents");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: layout size does not match the padded extents");
     }
   }
 
@@ -1185,7 +1191,8 @@ public:
     if (descriptor.place_leaves().size() != num_place_leaves || descriptor.place_axes().size() != num_place_leaves
         || descriptor.local_leaves().size() != num_local_leaves)
     {
-      throw ::std::invalid_argument("cute_partition: descriptor topology does not match the static partition type");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition: descriptor topology does not match the static partition type");
     }
 
     ::cuda::std::copy(descriptor.place_leaves().begin(), descriptor.place_leaves().end(), place_leaves_.begin());
@@ -1196,7 +1203,7 @@ public:
     {
       if (padded_dims_.get(d) != 1)
       {
-        throw ::std::invalid_argument("cute_partition: rank does not match the partition extents");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: rank does not match the partition extents");
       }
     }
   }
@@ -1284,7 +1291,8 @@ public:
     {
       if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the task shape does not match the partition's extents");
       }
       hi[d] = true_dims_.get(d);
     }
@@ -1304,7 +1312,8 @@ public:
       const auto hi_bound = b.get_end(d);
       if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the box is not contained in the partition's extents");
       }
       lo[d] = static_cast<size_t>(lo_bound);
       hi[d] = static_cast<size_t>(hi_bound);
@@ -1316,7 +1325,7 @@ public:
   {
     if (place_index >= num_places())
     {
-      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+      _CCCL_THROW(::std::out_of_range, "cute_partition::place_offset: place index out of range");
     }
 
     size_t offset = 0;
@@ -1417,7 +1426,8 @@ private:
   {
     if (!(grid_dims == grid_dims_))
     {
-      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition::apply: the grid does not match the partition's grid extents");
     }
 
     const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
@@ -1458,7 +1468,7 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
 {
   if (spec.size() > 4)
   {
-    throw ::std::invalid_argument("make_partition: at most 4 dimensions are supported");
+    _CCCL_THROW(::std::invalid_argument, "make_partition: at most 4 dimensions are supported");
   }
   const size_t rank = spec.size();
 
@@ -1476,12 +1486,12 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
     const auto& e = spec[d];
     if (e.mesh_axis < 0 || e.mesh_axis > 3)
     {
-      throw ::std::invalid_argument("make_partition: mesh_axis out of range");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: mesh_axis out of range");
     }
     const size_t nplaces = grid_dims.get(static_cast<size_t>(e.mesh_axis));
     if (nplaces == 0)
     {
-      throw ::std::invalid_argument("make_partition: grid axis extents must be at least 1");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: grid axis extents must be at least 1");
     }
 
     switch (e.policy)
@@ -1495,7 +1505,7 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
       case dim_policy::block_cyclic: {
         if (e.block == 0)
         {
-          throw ::std::invalid_argument("make_partition: block_cyclic requires a block size");
+          _CCCL_THROW(::std::invalid_argument, "make_partition: block_cyclic requires a block size");
         }
         const size_t super  = e.block * nplaces;
         const size_t nsuper = (extent + super - 1) / super;
@@ -1614,7 +1624,7 @@ auto make_partition(dim4 true_dims, partition_spec<Specs...> spec, dim4 grid_dim
   {
     if (true_dims.get(d) != 1)
     {
-      throw ::std::invalid_argument("make_partition: the number of specs does not match the tensor rank");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: the number of specs does not match the tensor rank");
     }
   }
 
@@ -1669,7 +1679,7 @@ template <typename Partition>
 {
   if (!(grid.get_dims() == partition.grid_dims()))
   {
-    throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+    _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
   }
 
   const dim4 data_dims = partition.true_dims();
@@ -1773,7 +1783,7 @@ public:
   {
     if (!(grid_.get_dims() == partition_.grid_dims()))
     {
-      throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+      _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
     }
   }
 
@@ -1799,7 +1809,7 @@ public:
 
   size_t hash() const override
   {
-    throw ::std::logic_error("hash() not supported for composite data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for composite data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -1822,9 +1832,9 @@ public:
 
   void* allocate(::cuda::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error(
-      "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
-      "partition's true extents or allocate through logical data");
+    _CCCL_THROW(::std::runtime_error,
+                "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
+                "partition's true extents or allocate through logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -1833,8 +1843,9 @@ public:
     // must be the ones the partition was built for.
     if (!(data_dims == partition_.true_dims()))
     {
-      throw ::std::invalid_argument("cute composite data_place: requested extents do not match the partition's true "
-                                    "extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute composite data_place: requested extents do not match the partition's true "
+                  "extents");
     }
 
     auto arr = ::std::make_unique<localized_array>(

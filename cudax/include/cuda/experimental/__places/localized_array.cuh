@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/type_traits>
@@ -146,7 +147,8 @@ template <typename OwnerFn>
 {
   if (elemsize == 0 || block_size_bytes < elemsize)
   {
-    throw ::std::invalid_argument("placement blocks must hold at least one element (elemsize in [1, block size])");
+    _CCCL_THROW(::std::invalid_argument,
+                "placement blocks must hold at least one element (elemsize in [1, block size])");
   }
   const size_t block_elems = block_size_bytes / elemsize;
 
@@ -409,7 +411,7 @@ private:
   {
     if (elemsize == 0)
     {
-      throw ::std::invalid_argument("localized_array requires an element size of at least 1 byte");
+      _CCCL_THROW(::std::invalid_argument, "localized_array requires an element size of at least 1 byte");
     }
 
     cuda_try(cudaFree(nullptr));
@@ -457,13 +459,13 @@ private:
     {
       if (r.num_blocks == 0 || r.first_block != cursor)
       {
-        throw ::std::invalid_argument("placement runs must be non-empty, ordered, and tile the blocks exactly");
+        _CCCL_THROW(::std::invalid_argument, "placement runs must be non-empty, ordered, and tile the blocks exactly");
       }
       cursor += r.num_blocks;
     }
     if (cursor != nblocks)
     {
-      throw ::std::invalid_argument("placement runs must cover every placement block");
+      _CCCL_THROW(::std::invalid_argument, "placement runs must cover every placement block");
     }
 
     // Reserve the virtual range only once the placement plan is validated:
@@ -538,7 +540,7 @@ private:
         cuMemRelease(meta[mapped].alloc_handle);
       }
       cuMemAddressFree(base_ptr, vm_total_size_bytes);
-      throw;
+      _CCCL_RETHROW;
     }
   }
 
