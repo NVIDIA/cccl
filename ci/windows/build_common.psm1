@@ -245,7 +245,7 @@ function build_preset {
     }
 
     # Echo and execute command to stdout:
-    $build_command = "cmake --build --preset $PRESET -v --parallel $N_CPUS_MINUS_1"
+    $build_command = "cmake --build --preset $PRESET -v --parallel $env:CMAKE_BUILD_PARALLEL_LEVEL"
 
     Write-Host $build_command
 
