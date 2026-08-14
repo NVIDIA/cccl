@@ -28,6 +28,17 @@ runs:
 
   using: "composite"
   steps:
+    # Change GitHub's `core.autocrlf true` default to `false`
+    # because converting LF -> CRLF causes cache misses.
+    - name: Prepare git
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        set -x
+        # Print current value of `core.autocrlf`
+        git config --system core.autocrlf
+        # Force it to false to avoid LF -> CRLF
+        git config --system core.autocrlf false
+
     - name: Checkout repo
       uses: actions/checkout@v6
       with:
@@ -177,7 +188,7 @@ runs:
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
         $ErrorActionPreference = 'Stop'
 
-        git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
+        git config --system --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
 
         $env:SCCACHE_ERROR_LOG="$env:TEMP\sccache.log"
 
