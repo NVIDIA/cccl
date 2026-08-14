@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -116,7 +117,7 @@ struct cuda_kernel_desc
   }
 
   /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
-  using func_variant_t = ::std::variant<CUfunction, CUkernel, const void*>;
+  using func_variant_t = ::cuda::std::variant<CUfunction, CUkernel, const void*>;
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
@@ -129,9 +130,9 @@ struct cuda_kernel_desc
   // Helper to launch the kernel using CUDA stream based API
   void launch(cudaStream_t stream) const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       // cudaLaunchKernel is an overload set (cuda_runtime.h templated wrapper), so it
       // keeps the runtime-status cuda_try form.
@@ -139,11 +140,11 @@ struct cuda_kernel_desc
     }
     else
     {
-      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
+      auto* ker_ptr = ::cuda::std::get_if<CUfunction>(&func_variant);
       if (!ker_ptr)
       {
         // If this is a CUkernel, the cast to a CUfunction is sufficient
-        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+        ker_ptr = reinterpret_cast<const CUfunction*>(::cuda::std::get_if<CUkernel>(&func_variant));
       }
 
       cuda_try<cuLaunchKernel>(
@@ -163,9 +164,9 @@ struct cuda_kernel_desc
 
   void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       cudaKernelNodeParams params{
         .func           = const_cast<void*>(*f),
@@ -178,7 +179,7 @@ struct cuda_kernel_desc
       return;
     }
 
-    if (auto* func_ptr = ::std::get_if<CUfunction>(&func_variant))
+    if (auto* func_ptr = ::cuda::std::get_if<CUfunction>(&func_variant))
     {
       CUDA_KERNEL_NODE_PARAMS params{
         .func           = *func_ptr,
@@ -197,7 +198,7 @@ struct cuda_kernel_desc
       return;
     }
 
-    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    auto* ker_ptr = ::cuda::std::get_if<CUkernel>(&func_variant);
     _CCCL_ASSERT(ker_ptr, "invalid function");
 
     CUDA_KERNEL_NODE_PARAMS params{
@@ -220,9 +221,9 @@ struct cuda_kernel_desc
   // Utility to query the number of registers used by this kernel
   int get_num_registers() const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       // cudaFuncGetAttributes is an overload set (cuda_runtime.h templated wrapper),
       // so it keeps the runtime-status cuda_try form.
@@ -231,13 +232,13 @@ struct cuda_kernel_desc
       return func_attr.numRegs;
     }
 
-    auto* fun_ptr = ::std::get_if<CUfunction>(&func_variant);
+    auto* fun_ptr = ::cuda::std::get_if<CUfunction>(&func_variant);
     if (fun_ptr)
     {
       return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *fun_ptr);
     }
 
-    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    auto* ker_ptr = ::cuda::std::get_if<CUkernel>(&func_variant);
     _CCCL_ASSERT(ker_ptr, "invalid kernel");
 
     auto current_dev = cuda_try<cuCtxGetDevice>();
