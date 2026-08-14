@@ -1178,10 +1178,16 @@ UNITTEST("parallel_for with integral shape")
 
 inline void unit_test_host_pfor()
 {
+  // parallel_for does not execute on the host (it builds CUDA kernels); host_launch is the
+  // host-side counterpart, and its explicit loop is the same serial loop the host path of
+  // parallel_for used to hide.
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(exec_place::host(), lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
-    A(i) = 2 * i;
+  ctx.host_launch(lA.write())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      A(i) = 2 * i;
+    }
   };
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 64; i++)
@@ -1192,7 +1198,7 @@ inline void unit_test_host_pfor()
   ctx.finalize();
 }
 
-UNITTEST("basic parallel_for test on host")
+UNITTEST("host work written and checked through host_launch")
 {
   unit_test_host_pfor();
 };
@@ -1210,8 +1216,11 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = 17 * pos + 4;
   };
 
-  ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
-    sx(pos) = sx(pos) * sx(pos);
+  ctx.host_launch(lx.rw())->*[](auto sx) {
+    for (size_t pos = 0; pos < sx.size(); pos++)
+    {
+      sx(pos) = sx(pos) * sx(pos);
+    }
   };
 
   ctx.parallel_for(lx.shape(), lx.rw())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
@@ -1226,39 +1235,11 @@ inline void unit_test_pfor_mix_host_dev()
   }
 }
 
-/* This test ensures that parallel_for on exec_place::host are properly
- * interleaved with those on devices. */
-UNITTEST("parallel_for host and device")
+/* This test ensures that host work is properly interleaved with parallel_for
+ * on devices. */
+UNITTEST("host work interleaved with device parallel_for")
 {
   unit_test_pfor_mix_host_dev();
-};
-
-inline void unit_test_untyped_place_pfor()
-{
-  stream_ctx ctx;
-
-  exec_place where = exec_place::host();
-
-  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  // We have to put both __host__ __device__ qualifiers as this is resolved
-  // dynamically and both host and device codes will be generated
-  ctx.parallel_for(where, lA.shape(), lA.write())->*[] _CCCL_HOST_DEVICE(size_t i, slice<size_t> A) {
-    // Even if we do have a __device__ qualifier, we are not supposed to call it
-    NV_IF_TARGET(NV_IS_DEVICE, (assert(0);))
-    A(i) = 2 * i;
-  };
-  ctx.host_launch(lA.read())->*[](auto A) {
-    for (size_t i = 0; i < 64; i++)
-    {
-      EXPECT(A(i) == 2 * i);
-    }
-  };
-  ctx.finalize();
-}
-
-UNITTEST("basic parallel_for test on host (untyped execution place)")
-{
-  unit_test_untyped_place_pfor();
 };
 
 inline void unit_test_pfor_grid()

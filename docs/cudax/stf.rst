@@ -990,9 +990,10 @@ host memory from CUDA kernels, for example).
 ``parallel_for`` construct
 --------------------------
 
-CUDASTF provides a helper construct which creates CUDA kernels (or CPU
-kernels) which execute an operation over an index space described as a
-*shape*.
+CUDASTF provides a helper construct which creates CUDA kernels which
+execute an operation over an index space described as a *shape*.
+``parallel_for`` executes on device places only; work on the host
+belongs to ``host_launch``.
 
 Example with a 1-dimensional array
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

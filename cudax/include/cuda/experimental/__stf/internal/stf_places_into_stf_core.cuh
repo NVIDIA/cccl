@@ -29,6 +29,7 @@ using ::cuda::experimental::places::augmented_stream;
 using ::cuda::experimental::places::data_place;
 using ::cuda::experimental::places::device_ordinal;
 using ::cuda::experimental::places::exec_place;
+using ::cuda::experimental::places::exec_place_host;
 using ::cuda::experimental::places::exec_place_scope;
 using ::cuda::experimental::places::from_index;
 using ::cuda::experimental::places::partition_cyclic;

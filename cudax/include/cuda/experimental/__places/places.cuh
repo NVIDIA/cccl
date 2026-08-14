@@ -73,6 +73,7 @@ template <typename T>
 struct hash;
 
 class exec_place;
+class exec_place_host;
 
 // Green contexts are only supported since CUDA 12.4
 
@@ -900,7 +901,7 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static exec_place host();
+  static exec_place_host host();
   static exec_place device_auto();
 
   static exec_place device(int devid);
@@ -1292,9 +1293,27 @@ public:
   }
 };
 
-inline exec_place exec_place::host()
+/**
+ * @brief The host execution place, as its own type.
+ *
+ * `exec_place::host()` returning this rather than an erased `exec_place` keeps host-ness in
+ * the type system, so a construct that does not support host execution -- `parallel_for`,
+ * which builds CUDA kernels -- can reject the direct spelling
+ * `parallel_for(exec_place::host(), ...)` with a `static_assert` instead of a runtime
+ * failure. The type converts to `exec_place` and loses nothing in the process: host-ness
+ * remains queryable at runtime through `is_host()`, which is how erased places are checked.
+ */
+class exec_place_host : public exec_place
 {
-  return exec_place(make_static_instance<exec_place_host_impl>());
+public:
+  exec_place_host()
+      : exec_place(make_static_instance<exec_place_host_impl>())
+  {}
+};
+
+inline exec_place_host exec_place::host()
+{
+  return exec_place_host();
 }
 
 // Implementation for device_auto placeholder

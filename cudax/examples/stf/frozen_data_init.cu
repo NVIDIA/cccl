@@ -41,10 +41,17 @@ int main()
     x(i, j) = d_buf(i, j);
   };
 
-  ctx.parallel_for(exec_place::host(), lX.shape(), lX.read()).set_symbol("check buf")
-      ->*[h_buf](size_t i, size_t j, auto x) {
-            EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
-          };
+  // Host-side check: host work goes through host_launch with an explicit loop, parallel_for
+  // being a device-only construct.
+  ctx.host_launch(lX.read()).set_symbol("check buf")->*[h_buf](auto x) {
+    for (size_t i = 0; i < x.extent(0); i++)
+    {
+      for (size_t j = 0; j < x.extent(1); j++)
+      {
+        EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
+      }
+    }
+  };
 
   // Make sure all tasks are done before unfreezing
   frozen_buffer.unfreeze(ctx.fence());

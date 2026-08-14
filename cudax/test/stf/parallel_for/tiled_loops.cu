@@ -65,15 +65,19 @@ int main()
   bool checked   = false;
   bool* pchecked = &checked;
 
-  /* Check the result on the host */
-  ctx.parallel_for(exec_place::host(), ly.shape(), ly.read())->*[=](size_t pos, slice<const double> sy) {
-    int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
-    int value    = (int) sy(pos);
-    if (expected != value)
+  /* Check the result on the host: host work goes through host_launch, parallel_for being a
+   * device-only construct. */
+  ctx.host_launch(ly.read())->*[=](slice<const double> sy) {
+    for (size_t pos = 0; pos < sy.size(); pos++)
     {
-      printf("POS %zu -> %d (expected %d)\n", pos, value, expected);
+      int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
+      int value    = (int) sy(pos);
+      if (expected != value)
+      {
+        printf("POS %zu -> %d (expected %d)\n", pos, value, expected);
+      }
+      assert(expected == value);
     }
-    assert(expected == value);
     *pchecked = true;
   };
 

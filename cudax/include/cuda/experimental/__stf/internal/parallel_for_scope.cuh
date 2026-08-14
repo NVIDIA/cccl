@@ -29,7 +29,6 @@
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
-#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
@@ -447,34 +446,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
- * @brief Resource wrapper for managing parallel_for host callback arguments
- *
- * This manages the memory allocated for parallel_for host callback arguments using the
- * ctx_resource system instead of manual delete in each callback.
- */
-template <typename ArgsType>
-class parallel_for_args_resource : public ctx_resource
-{
-public:
-  explicit parallel_for_args_resource(ArgsType* args)
-      : args_(args)
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    delete args_;
-  }
-
-private:
-  ArgsType* args_;
-};
-
-/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -667,6 +638,15 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
+    // parallel_for builds CUDA kernels; it does not execute on the host, where it could only
+    // ever have offered a serial loop on a CUDA callback thread. Host work belongs to
+    // host_launch. The direct spelling `parallel_for(exec_place::host(), ...)` is rejected
+    // here at compile time; a type-erased place that turns out to be host is rejected at
+    // runtime below.
+    static_assert(!::std::is_same_v<exec_place_t, exec_place_host>,
+                  "parallel_for does not execute on the host; use host_launch instead");
+    EXPECT(!e_place.is_host(), "parallel_for does not execute on the host; use host_launch instead.");
+
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
     auto t           = ctx.task(e_place);
@@ -768,86 +748,53 @@ public:
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
 #  if _CCCL_CUDA_COMPILER(NVCC)
-    // With nvcc, dedicated traits tell how a lambda can be executed.
-    static constexpr bool is_extended_host_device_lambda_closure_type =
-                            __nv_is_extended_host_device_lambda_closure_type(Fun),
-                          is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
+    // With nvcc, dedicated traits tell whether the lambda can execute on the device.
+    static constexpr bool device_invocable =
+      __nv_is_extended_host_device_lambda_closure_type(Fun) || __nv_is_extended_device_lambda_closure_type(Fun);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
-    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
-    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
-    // takes the host branch, so classifying it correctly is part of supporting that compiler.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
+    // Only nvcc offers those traits. nvc++ compiles every lambda for both sides, so the claim
+    // holds outright there. clang-cuda treats unannotated lambdas as implicitly
+    // __host__ __device__ and checks what a body actually calls only when the kernel is
+    // emitted, so a lambda that cannot really execute on the device is diagnosed at the
+    // kernel rather than here.
+    static constexpr bool device_invocable = true;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
+    static_assert(device_invocable,
+                  "parallel_for requires a callable invocable on the device (__device__ or "
+                  "__host__ __device__); for host execution use host_launch");
 
-    // TODO redo cascade of tests
-    if constexpr (need_reduction)
+    if constexpr (!device_invocable)
     {
-      _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
+      // Discarded so the static_assert above stays the only diagnostic; instantiating the
+      // device path with a host callable would only bury it.
+    }
+    else if constexpr (need_reduction)
+    {
       _CCCL_ASSERT(e_place.size() == 1, "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
-      return;
     }
-    else if constexpr (is_extended_host_device_lambda_closure_type)
+    else if (e_place.size() == 1)
     {
-      // Can run on both - decide dynamically
-      if (e_place.is_host())
-      {
-        return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
-      }
-      // Fall through for the device implementation
-    }
-    else if constexpr (is_extended_device_lambda_closure_type)
-    {
-      // Lambda can run only on device - make sure they're not trying it on the host
-      EXPECT(!e_place.is_host(), "Attempt to run a device function on the host.");
-      // Fall through for the device implementation
+      // Apply the parallel_for construct over the entire shape on the
+      // execution place of the task.
+      do_parallel_for(f, e_place, shape, t);
     }
     else
     {
-      // Lambda can run only on the host - make sure they're not trying it elsewhere
-      EXPECT(e_place.is_host(), "Attempt to run a host function on a device.");
-      return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
-    }
-
-    // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
-    {
-      if (e_place.size() == 1)
+      if constexpr (::std::is_same_v<partitioner_t, null_partition>)
       {
-        // Apply the parallel_for construct over the entire shape on the
-        // execution place of the task.
-        if constexpr (need_reduction)
-        {
-          do_parallel_for_redux(f, e_place, shape, t);
-        }
-        else
-        {
-          do_parallel_for(f, e_place, shape, t);
-        }
+        fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
+        abort();
       }
       else
       {
-        if constexpr (::std::is_same_v<partitioner_t, null_partition>)
+        for (size_t i = 0; i < e_place.size(); i++)
         {
-          fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
-        }
-        else
-        {
-          for (size_t i = 0; i < e_place.size(); i++)
-          {
-            auto active          = t.activate_place(i);
-            const auto sub_shape = p_.apply(shape, pos4(i), e_place.get_dims());
-            do_parallel_for(f, active.place(), sub_shape, t, i);
-          }
+          auto active          = t.activate_place(i);
+          const auto sub_shape = p_.apply(shape, pos4(i), e_place.get_dims());
+          do_parallel_for(f, active.place(), sub_shape, t, i);
         }
       }
-    }
-    else
-    {
-      // This point is never reachable, but we can't prove that statically.
-      assert(!"Internal CUDASTF error.");
     }
   }
 
@@ -1126,99 +1073,6 @@ public:
 
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
-    }
-    else
-    {
-      fprintf(stderr, "Internal error.\n");
-      abort();
-    }
-  }
-
-  // Executes loop on the host.
-  template <typename Fun, typename sub_shape_t>
-  void do_parallel_for_host(Fun&& f, const sub_shape_t& shape, typename context::task_type& t)
-  {
-    const size_t n = shape.size();
-
-    // Tuple <tuple<instances...>, size_t , fun, shape>
-    using args_t = ::std::tuple<deps_tup_t, size_t, Fun, sub_shape_t>;
-
-    // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t instances = get_arg_instances(deps, t);
-
-    // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
-    // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the resource system or immediately in callback
-    auto args = new args_t(mv(instances), n, mv(f), shape);
-
-    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
-    // For stream contexts, delete immediately in callback (better memory efficiency)
-    if constexpr (::std::is_same_v<context, graph_ctx>)
-    {
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-      ctx.add_resource(mv(resource));
-    }
-
-    // The function which the host callback will execute
-    auto host_func = [](void* untyped_args) {
-      // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
-      // it.
-      on_throw(::std::abort) << [untyped_args] {
-        auto p = static_cast<decltype(args)>(untyped_args);
-
-        auto& data               = ::std::get<0>(*p);
-        const size_t n           = ::std::get<1>(*p);
-        Fun& f                   = ::std::get<2>(*p);
-        const sub_shape_t& shape = ::std::get<3>(*p);
-
-        // deps_ops_t are pairs of data instance type, and a reduction operator,
-        // this gets only the data instance types (eg. slice<double>)
-        auto explode_coords = [&](size_t i, auto&&... data) {
-          auto h = [&](auto&&... coords) {
-            f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
-          };
-          auto coords = shape.index_to_coords(i);
-          if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
-          {
-            return;
-          }
-          ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
-        };
-
-        // Finally we get to do the workload on every 1D item of the shape
-        for (size_t i = 0; i < n; ++i)
-        {
-          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
-        }
-
-        // For stream contexts, delete immediately (no replay risk)
-        // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-        if constexpr (!::std::is_same_v<context, graph_ctx>)
-        {
-          delete p;
-        }
-      };
-    };
-
-    if constexpr (::std::is_same_v<context, stream_ctx>)
-    {
-      // Stream path: the callback owns `args` once the launch succeeds, so delete
-      // it if the enqueue throws. (Graph path hands ownership to a ctx resource
-      // above before the node is created, so it needs no guard here.)
-      SCOPE(fail)
-      {
-        delete args;
-      };
-      cuda_try<cudaLaunchHostFunc>(t.get_stream(), host_func, args);
-    }
-    else if constexpr (::std::is_same_v<context, graph_ctx>)
-    {
-      cudaHostNodeParams params;
-      params.userData = args;
-      params.fn       = host_func;
-
-      // Put this host node into the child graph that implements the graph_task<>
-      t.get_node() = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
     }
     else
     {
