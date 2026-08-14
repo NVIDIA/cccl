@@ -47,8 +47,8 @@ int main()
             EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
           };
 #else
-  CUDASTF_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
-                      "parallel_for on exec_place::host() requires nvcc or nvc++");
+  _CCCL_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                    "parallel_for on exec_place::host() requires nvcc or nvc++");
 #endif
 
   // Make sure all tasks are done before unfreezing

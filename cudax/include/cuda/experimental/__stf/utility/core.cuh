@@ -33,7 +33,7 @@
 
 /**
  * @brief Formalizes, at a statement position, that the enclosing code is not supported with
- * the current compiler: `CUDASTF_UNSUPPORTED(name_that_reads_as_a_message, "message")`.
+ * the current compiler: `_CCCL_UNSUPPORTED(name_that_reads_as_a_message, "message")`.
  *
  * Expands to a call to `name_that_reads_as_a_message`, declared on the spot but never defined
  * anywhere, carrying the GNU `error` attribute. The attribute's diagnostic fires only at
@@ -47,14 +47,14 @@
  * (observed with clang 21, plain C++ and CUDA alike).
  */
 #if _CCCL_HAS_ATTRIBUTE(error)
-#  define _CUDASTF_UNSUPPORTED_ATTRIBUTE(_msg) __attribute__((error(_msg)))
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg) __attribute__((error(_msg)))
 #else // _CCCL_HAS_ATTRIBUTE(error)
-#  define _CUDASTF_UNSUPPORTED_ATTRIBUTE(_msg)
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)
 #endif // _CCCL_HAS_ATTRIBUTE(error)
-#define CUDASTF_UNSUPPORTED(_name, _msg)                \
+#define _CCCL_UNSUPPORTED(_name, _msg)                  \
   do                                                    \
   {                                                     \
-    _CUDASTF_UNSUPPORTED_ATTRIBUTE(_msg)                \
+    _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)                   \
     void _name() noexcept; /* deliberately undefined */ \
     _name();                                            \
   } while (0)

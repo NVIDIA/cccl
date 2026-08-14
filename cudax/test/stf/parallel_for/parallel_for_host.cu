@@ -24,8 +24,8 @@ int main()
     _CCCL_ASSERT(nqpoints == 3, "invalid value");
   };
 #else
-  CUDASTF_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
-                      "parallel_for on exec_place::host() requires nvcc or nvc++");
+  _CCCL_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                    "parallel_for on exec_place::host() requires nvcc or nvc++");
 #endif
 
   ctx.finalize();
