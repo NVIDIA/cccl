@@ -61,7 +61,16 @@ namespace cuda::experimental::stf
 template <typename... Ts, typename F>
 decltype(auto) operator->*(::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::cuda::std::visit(::cuda::std::forward<F>(f), v);
+  // Hand-rolled dispatch rather than cuda::std::visit: visit is host-device, and returning the
+  // callable's result through its frames drags implicitly-generated move constructors into
+  // device code, where their std::string members cannot go (nvcc #20011 on CTK 12.0/13.0).
+  // This function is host-only, so everything stays on the host.
+  static_assert(sizeof...(Ts) == 2, "this dispatch is written for the binary payload variants");
+  if (v.index() == 0)
+  {
+    return ::cuda::std::forward<F>(f)(::cuda::std::get<0>(v));
+  }
+  return ::cuda::std::forward<F>(f)(::cuda::std::get<1>(v));
 }
 
 /**
@@ -70,7 +79,12 @@ decltype(auto) operator->*(::cuda::std::variant<Ts...>& v, F&& f)
 template <typename... Ts, typename F>
 decltype(auto) operator->*(const ::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::cuda::std::visit(::cuda::std::forward<F>(f), v);
+  static_assert(sizeof...(Ts) == 2, "this dispatch is written for the binary payload variants");
+  if (v.index() == 0)
+  {
+    return ::cuda::std::forward<F>(f)(::cuda::std::get<0>(v));
+  }
+  return ::cuda::std::forward<F>(f)(::cuda::std::get<1>(v));
 }
 #endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -1058,21 +1072,17 @@ public:
   backend_ctx_untyped& get_backend()
   {
     _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
-    return ::cuda::std::visit(
-      [](auto& ctx) -> backend_ctx_untyped& {
-        return static_cast<backend_ctx_untyped&>(ctx);
-      },
-      payload);
+    return payload->*[](auto& ctx) -> backend_ctx_untyped& {
+      return static_cast<backend_ctx_untyped&>(ctx);
+    };
   }
 
   const backend_ctx_untyped& get_backend() const
   {
     _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
-    return ::cuda::std::visit(
-      [](const auto& ctx) -> const backend_ctx_untyped& {
-        return static_cast<const backend_ctx_untyped&>(ctx);
-      },
-      payload);
+    return payload->*[](const auto& ctx) -> const backend_ctx_untyped& {
+      return static_cast<const backend_ctx_untyped&>(ctx);
+    };
   }
 
 public:
