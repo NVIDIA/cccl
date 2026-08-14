@@ -100,23 +100,17 @@ C2H_TEST_LIST(
     { // Ensure that we properly fail to allocate data that would overflow
       constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
 
-      try
-      { // Multiplication for byte count would overflow
-        __uninitialized_async_buffer input{resource, stream, max_element_count + 1};
-      }
-      catch (const ::std::invalid_argument& e)
-      {
-        CHECK(e.what() == ::std::string("cuda::__uninitialized_async_buffer: Input size overflow"));
-      }
+      // Multiplication for byte count would overflow
+      REQUIRE_THROWS_MATCHES(
+        __uninitialized_async_buffer(resource, stream, max_element_count + 1),
+        ::std::invalid_argument,
+        Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
 
-      try
-      { // Adding alignment would overflow
-        __uninitialized_async_buffer input{resource, stream, max_element_count, 4};
-      }
-      catch (const ::std::invalid_argument& e)
-      {
-        CHECK(e.what() == ::std::string("cuda::__uninitialized_async_buffer: Input size overflow"));
-      }
+      // Adding alignment would overflow
+      REQUIRE_THROWS_MATCHES(
+        __uninitialized_async_buffer(resource, stream, max_element_count, 4),
+        ::std::invalid_argument,
+        Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
     }
   }
 
