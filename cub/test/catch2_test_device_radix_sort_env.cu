@@ -25,7 +25,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, device_radix_so
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -88,7 +88,7 @@ struct pairs_decomposer_t
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device radix sort pairs works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -110,7 +110,7 @@ TEST_CASE("Device radix sort pairs works with default environment", "[radix_sort
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -132,7 +132,7 @@ TEST_CASE("Device radix sort pairs descending works with default environment", "
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort keys works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -150,7 +150,7 @@ TEST_CASE("Device radix sort keys works with default environment", "[radix_sort]
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("Device radix sort keys descending works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -164,7 +164,7 @@ TEST_CASE("Device radix sort keys descending works with default environment", "[
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("Device radix sort keys decomposer+bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys decomposer+bits works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -183,7 +183,7 @@ TEST_CASE("Device radix sort keys decomposer+bits works with default environment
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys decomposer works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -196,7 +196,7 @@ TEST_CASE("Device radix sort keys decomposer works with default environment", "[
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys DB decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys DB decomposer works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -211,7 +211,9 @@ TEST_CASE("Device radix sort keys DB decomposer works with default environment",
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort keys DB decomposer+bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys DB decomposer+bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -227,7 +229,7 @@ TEST_CASE("Device radix sort keys DB decomposer+bits works with default environm
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort pairs decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs decomposer works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
   auto keys_out   = c2h::device_vector<custom_pair_key_t>(3);
@@ -250,7 +252,9 @@ TEST_CASE("Device radix sort pairs decomposer works with default environment", "
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs decomposer with bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs decomposer with bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
   auto keys_out   = c2h::device_vector<custom_pair_key_t>(3);
@@ -275,7 +279,9 @@ TEST_CASE("Device radix sort pairs decomposer with bits works with default envir
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort keys descending decomposer+bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending decomposer+bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -294,7 +300,9 @@ TEST_CASE("Device radix sort keys descending decomposer+bits works with default 
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys descending decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending decomposer works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -307,7 +315,9 @@ TEST_CASE("Device radix sort keys descending decomposer works with default envir
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys descending DB decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending DB decomposer works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -322,7 +332,9 @@ TEST_CASE("Device radix sort keys descending DB decomposer works with default en
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort keys descending DB decomposer+bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending DB decomposer+bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -338,7 +350,9 @@ TEST_CASE("Device radix sort keys descending DB decomposer+bits works with defau
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort pairs descending decomposer+bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending decomposer+bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out   = c2h::device_vector<custom_key_t>(7);
@@ -363,7 +377,9 @@ TEST_CASE("Device radix sort pairs descending decomposer+bits works with default
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending decomposer works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out   = c2h::device_vector<custom_key_t>(7);
@@ -386,7 +402,9 @@ TEST_CASE("Device radix sort pairs descending decomposer works with default envi
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending DB decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending DB decomposer works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
@@ -408,8 +426,9 @@ TEST_CASE("Device radix sort pairs descending DB decomposer works with default e
   REQUIRE(values == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending DB decomposer+bits works with default environment",
-          "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
@@ -434,7 +453,7 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits works with defa
 
 #endif
 
-C2H_TEST("Device radix sort pairs uses environment", "[radix_sort][device]")
+CUB_TEST("Device radix sort pairs uses environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -473,7 +492,7 @@ C2H_TEST("Device radix sort pairs uses environment", "[radix_sort][device]")
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("Device radix sort pairs descending uses environment", "[radix_sort][device]")
+CUB_TEST("Device radix sort pairs descending uses environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -511,7 +530,7 @@ C2H_TEST("Device radix sort pairs descending uses environment", "[radix_sort][de
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("Device radix sort keys uses environment", "[radix_sort][device]")
+CUB_TEST("Device radix sort keys uses environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -537,7 +556,7 @@ C2H_TEST("Device radix sort keys uses environment", "[radix_sort][device]")
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("Device radix sort keys descending uses environment", "[radix_sort][device]")
+CUB_TEST("Device radix sort keys descending uses environment", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -569,7 +588,7 @@ C2H_TEST("Device radix sort keys descending uses environment", "[radix_sort][dev
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -612,7 +631,7 @@ TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device]")
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -655,7 +674,7 @@ TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_sort]
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -684,7 +703,7 @@ TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]")
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -713,7 +732,7 @@ TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("Device radix sort pairs decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
   auto keys_out   = c2h::device_vector<custom_pair_key_t>(3);
@@ -744,7 +763,7 @@ TEST_CASE("Device radix sort pairs decomposer uses custom stream", "[radix_sort]
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device radix sort pairs DB decomposer works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs DB decomposer works with default environment", "[radix_sort][device]", CUB_SMALL)
 {
   c2h::device_vector<custom_pair_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
   c2h::device_vector<custom_pair_key_t> keys_buf1(3);
@@ -766,7 +785,9 @@ TEST_CASE("Device radix sort pairs DB decomposer works with default environment"
   REQUIRE(values == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs DB decomposer with bits works with default environment", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs DB decomposer with bits works with default environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   c2h::device_vector<custom_pair_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
   c2h::device_vector<custom_pair_key_t> keys_buf1(3);
@@ -790,7 +811,7 @@ TEST_CASE("Device radix sort pairs DB decomposer with bits works with default en
 
 #endif
 
-TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   c2h::device_vector<custom_pair_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
   c2h::device_vector<custom_pair_key_t> keys_buf1(3);
@@ -817,7 +838,7 @@ TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radix_so
   REQUIRE(values == expected_values);
 }
 
-TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -842,7 +863,7 @@ TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[radix_s
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -860,7 +881,7 @@ TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_sort][
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -880,7 +901,7 @@ TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix_sor
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -902,7 +923,7 @@ TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[radi
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort keys descending decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending decomposer+bits uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -927,7 +948,7 @@ TEST_CASE("Device radix sort keys descending decomposer+bits uses custom stream"
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys descending decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
@@ -945,7 +966,7 @@ TEST_CASE("Device radix sort keys descending decomposer uses custom stream", "[r
   REQUIRE(keys_out == expected);
 }
 
-TEST_CASE("Device radix sort keys descending DB decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending DB decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -966,7 +987,9 @@ TEST_CASE("Device radix sort keys descending DB decomposer uses custom stream", 
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom stream",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
@@ -988,7 +1011,7 @@ TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom stre
   REQUIRE(keys == expected);
 }
 
-TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out   = c2h::device_vector<custom_key_t>(7);
@@ -1019,7 +1042,7 @@ TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom stream
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out   = c2h::device_vector<custom_key_t>(7);
@@ -1048,7 +1071,7 @@ TEST_CASE("Device radix sort pairs descending decomposer uses custom stream", "[
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stream", "[radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
@@ -1075,7 +1098,9 @@ TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stream",
   REQUIRE(values == expected_values);
 }
 
-TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom stream", "[radix_sort][device]")
+CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom stream",
+              "[radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
@@ -1118,7 +1143,7 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom str
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
   {
     using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy                            = default_selector_t{}(cc);
@@ -1143,8 +1168,8 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   size_t bytes_allocated   = 0;
   size_t bytes_deallocated = 0;
   auto env                 = stdexec::env{device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated},
-                          stream,
-                          cuda::execution::tune(policy_selector)};
+                                          stream,
+                                          cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
@@ -1152,7 +1177,7 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   return bytes_allocated;
 }
 
-TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1172,7 +1197,7 @@ TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]")
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1185,7 +1210,7 @@ TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1205,7 +1230,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][dev
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1218,7 +1243,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[ra
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1231,7 +1256,7 @@ TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1244,7 +1269,7 @@ TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][d
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1257,7 +1282,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][devi
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
@@ -1272,7 +1297,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[rad
 
 // decomposer variants: keys
 
-TEST_CASE("DeviceRadixSort::SortKeys decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<custom_key_t>(10'000);
@@ -1285,7 +1310,7 @@ TEST_CASE("DeviceRadixSort::SortKeys decomposer+bits can be tuned", "[radix_sort
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeys decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<custom_key_t>(10'000);
@@ -1298,7 +1323,7 @@ TEST_CASE("DeviceRadixSort::SortKeys decomposer can be tuned", "[radix_sort][dev
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeys DB decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys DB decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto buf0 = c2h::device_vector<custom_key_t>(10'000);
@@ -1312,7 +1337,7 @@ TEST_CASE("DeviceRadixSort::SortKeys DB decomposer can be tuned", "[radix_sort][
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeys DB decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeys DB decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto buf0 = c2h::device_vector<custom_key_t>(10'000);
@@ -1328,7 +1353,7 @@ TEST_CASE("DeviceRadixSort::SortKeys DB decomposer+bits can be tuned", "[radix_s
 
 // decomposer variants: keys descending
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<custom_key_t>(10'000);
@@ -1341,7 +1366,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer+bits can be tuned", "[
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto data = c2h::device_vector<custom_key_t>(10'000);
@@ -1354,7 +1379,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer can be tuned", "[radix
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto buf0 = c2h::device_vector<custom_key_t>(10'000);
@@ -1368,7 +1393,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer can be tuned", "[ra
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto buf0 = c2h::device_vector<custom_key_t>(10'000);
@@ -1385,7 +1410,7 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer+bits can be tuned",
 
 // decomposer variants: pairs
 
-TEST_CASE("DeviceRadixSort::SortPairs decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1403,7 +1428,7 @@ TEST_CASE("DeviceRadixSort::SortPairs decomposer+bits can be tuned", "[radix_sor
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairs decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1423,7 +1448,7 @@ TEST_CASE("DeviceRadixSort::SortPairs decomposer can be tuned", "[radix_sort][de
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairs DB decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs DB decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1440,7 +1465,7 @@ TEST_CASE("DeviceRadixSort::SortPairs DB decomposer can be tuned", "[radix_sort]
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairs DB decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairs DB decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1460,7 +1485,7 @@ TEST_CASE("DeviceRadixSort::SortPairs DB decomposer+bits can be tuned", "[radix_
 
 // decomposer variants: pairs descending
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1482,7 +1507,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer+bits can be tuned", "
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1502,7 +1527,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer can be tuned", "[radi
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1520,7 +1545,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer can be tuned", "[r
   CHECK(bytes32 != bytes128);
 }
 
-TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer+bits can be tuned", "[radix_sort][device]")
+CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer+bits can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
     auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
@@ -1541,7 +1566,7 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer+bits can be tuned"
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
+CUB_TEST("Test RadixSortPolicy properties", "[radix_sort][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortPolicy>);
@@ -1603,13 +1628,13 @@ C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
     .threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8};
   constexpr auto p2_exclusive_sum = cub::RadixSortExclusiveSumPolicy{.threads_per_block = 256, .radix_bits = 8};
   constexpr auto p2_onesweep      = cub::RadixSortOnesweepPolicy{
-         .threads_per_block       = 256,
-         .items_per_thread        = 21,
-         .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
-         .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-         .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-         .rank_private_partitions = 1,
-         .radix_bits              = 8};
+    .threads_per_block       = 256,
+    .items_per_thread        = 21,
+    .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+    .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+    .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+    .rank_private_partitions = 1,
+    .radix_bits              = 8};
   constexpr auto p2_scan = cub::ScanPolicy{
     .algorithm = cub::ScanAlgorithm::lookback,
     .lookback =

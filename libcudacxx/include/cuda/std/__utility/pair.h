@@ -602,6 +602,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   }
   // NOLINTEND(bugprone-use-after-move)
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
@@ -610,6 +611,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   }
 
 #if _CCCL_STD_VER >= 2023
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr void swap(const pair& __p) const
     noexcept(is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>)
   {

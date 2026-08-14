@@ -143,7 +143,7 @@ static_assert(::cuda::std::is_trivially_destructible_v<device_memory_pool_ref>);
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
-[[nodiscard]] inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
+[[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
   static ::cuda::std::unique_ptr<__default_device_memory_pool[]> __pools_{
     ::new __default_device_memory_pool[::cuda::__physical_devices_count()]};

@@ -7,9 +7,9 @@
 #include <nvrtc.h>
 #include <nvrtc_args.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-TEST_CASE("Test nvrtc", "[test][nvrtc]")
+CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
 {
   nvrtcProgram prog{};
 

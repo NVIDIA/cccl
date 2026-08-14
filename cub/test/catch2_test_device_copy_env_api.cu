@@ -16,9 +16,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-env
   // 3 contiguous ranges copied via Batched API
@@ -71,23 +71,26 @@ struct BatchedCopyPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
-    return {.small_buffer = {.threads_per_block     = 128,
-                             .buffers_per_thread    = 4,
-                             .bytes_per_thread      = 8,
-                             .prefer_pow2_bits      = false,
-                             .block_level_tile_size = 256 * 32,
-                             .warp_level_threshold  = 128,
-                             .block_level_threshold = 8 * 1024,
-                             .buffer_lookback_delay = {},
-                             .block_lookback_delay  = {}},
-            .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}};
+    return {
+      .algorithm = cub::BatchedCopyAlgorithm::lookback,
+      .lookback  = {
+        .small_buffer = {.threads_per_block     = 128,
+                         .buffers_per_thread    = 4,
+                         .bytes_per_thread      = 8,
+                         .prefer_pow2_bits      = false,
+                         .block_level_tile_size = 256 * 32,
+                         .warp_level_threshold  = 128,
+                         .block_level_threshold = 8 * 1024,
+                         .buffer_lookback_delay = {},
+                         .block_lookback_delay  = {}},
+        .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
   }
 };
 // example-end copy-batched-policy-selector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-tuning
   // 3 contiguous ranges copied via Batched API with custom tuning
@@ -124,7 +127,7 @@ C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][en
 
 #endif // _CCCL_STD_VER >= 2020
 
-C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-mdspan-env
   // Copy a 2D array using mdspan

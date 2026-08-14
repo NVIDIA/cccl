@@ -21,15 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/functional>
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,10 +45,10 @@ namespace cuda::experimental::cuco
 //!
 //! @tparam _Key The item type the sketch counts.
 //! @tparam _Algo The hash algorithm. Defaults to xxhash_64.
-template <class _Key, hash_algorithm _Algo = hash_algorithm::xxhash_64>
+template <class _Key, ::cuda::hash_algorithm _Algo = ::cuda::hash_algorithm::xxhash_64>
 struct default_hll_policy
 {
-  using hasher           = hash<_Key, _Algo>;
+  using hasher           = ::cuda::hash<_Key, _Algo>;
   using hash_result_type = decltype(::cuda::std::declval<hasher>()(::cuda::std::declval<_Key>()));
   using register_type    = ::cuda::std::int32_t;
 
@@ -114,7 +113,7 @@ struct default_hll_policy
   //! @param[in] __v Count of zero registers.
   //! @param[in] __precision HLL precision parameter.
   //! @return The bias-corrected cardinality estimate.
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr double
   finalize(double __z, ::cuda::std::int32_t __v, ::cuda::std::int32_t __precision) noexcept
   {
     return __hyperloglog_ns::hllpp_finalizer{__precision}(__z, __v);

@@ -21,9 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/hash.h>
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__utility/pair.h>
@@ -32,7 +35,6 @@
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/types.cuh>
 
@@ -70,7 +72,7 @@ template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
           class _KeyEqual               = ::cuda::std::equal_to<_Key>,
-          class _ProbingScheme          = linear_probing<4, hash<_Key>>,
+          class _ProbingScheme          = linear_probing<4, ::cuda::hash<_Key>>,
           int _BucketSize               = 1,
           class _MemoryResource         = ::cuda::device_memory_pool_ref>
 class fixed_capacity_map
@@ -353,6 +355,129 @@ public:
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
   {
     __impl->contains_async(__stream, __first, __last, __output_begin, ref());
+  }
+
+  // ===== Find =====
+
+  //! @brief For each key in `[__first, __last)` writes the associated payload, or `empty_value_sentinel()`
+  //! if the key is not present.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use `find_async`.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _OutputIt Device accessible output iterator assignable from `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __output_begin Beginning of the output sequence of payloads
+  template <class _InputIt, class _OutputIt>
+  void find(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
+  {
+    find_async(__stream, __first, __last, __output_begin);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronously, for each key in `[__first, __last)` writes the associated payload, or
+  //! `empty_value_sentinel()` if the key is not present.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _OutputIt Device accessible output iterator assignable from `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __output_begin Beginning of the output sequence of payloads
+  template <class _InputIt, class _OutputIt>
+  void
+  find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
+  {
+    __impl->find_async(__stream, __first, __last, __output_begin, ref());
+  }
+
+  //! @brief For each key `__first[i]` with `__pred(__stencil[i]) == true` writes the associated payload,
+  //! or `empty_value_sentinel()` if the key is not present; writes `empty_value_sentinel()` for the rest.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use `find_if_async`.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //!         `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning `bool`
+  //! @tparam _OutputIt Device accessible output iterator assignable from `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which keys to query
+  //! @param __output_begin Beginning of the output sequence of payloads
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  void find_if(::cuda::stream_ref __stream,
+               _InputIt __first,
+               _InputIt __last,
+               _StencilIt __stencil,
+               _Predicate __pred,
+               _OutputIt __output_begin) const
+  {
+    find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronous version of `find_if`.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //!         `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning `bool`
+  //! @tparam _OutputIt Device accessible output iterator assignable from `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which keys to query
+  //! @param __output_begin Beginning of the output sequence of payloads
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  void find_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const noexcept
+  {
+    __impl->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
+  // ===== Retrieve All =====
+
+  //! @brief Retrieves all keys and their associated mapped values.
+  //!
+  //! @note This function synchronizes the given stream.
+  //! @note The output order is implementation-defined and may differ between calls.
+  //! @note Behavior is undefined if either output range is smaller than the number of elements in
+  //! the map.
+  //!
+  //! @tparam _KeyOutputIt Device-accessible random access output iterator assignable from
+  //! `key_type`
+  //! @tparam _ValueOutputIt Device-accessible random access output iterator assignable from
+  //! `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __keys_out Beginning of the key output range
+  //! @param __values_out Beginning of the mapped-value output range
+  //!
+  //! @return Pair of iterators indicating the ends of the output ranges
+  template <class _KeyOutputIt, class _ValueOutputIt>
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<_KeyOutputIt, _ValueOutputIt>
+  retrieve_all(::cuda::stream_ref __stream, _KeyOutputIt __keys_out, _ValueOutputIt __values_out) const
+  {
+    const auto __zipped_out_begin = ::cuda::make_zip_iterator(__keys_out, __values_out);
+    const auto __zipped_out_end   = __impl->retrieve_all(__stream, __zipped_out_begin);
+    const auto __num_out          = __zipped_out_end - __zipped_out_begin;
+
+    return {__keys_out + __num_out, __values_out + __num_out};
   }
 
   // ===== Accessors =====

@@ -11,7 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
@@ -29,6 +29,7 @@ from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 class _SegmentedReduce(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -70,16 +71,25 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
+            d_in,
+            d_out,
+            start_offsets_in,
+            end_offsets_in,
+            op,
+            h_init,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceSegmentedReduceBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                self.op_cccl,
+                self.h_init_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -97,7 +107,9 @@ class _SegmentedReduce(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(

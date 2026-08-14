@@ -11,7 +11,7 @@
 #include <cuda/devices>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 #if _CCCL_STD_VER >= 2020
 
@@ -20,18 +20,19 @@ struct ReduceByKeyPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReduceByKeyPolicy
   {
-    return {.threads_per_block = 128,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 7 : 6,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{
-                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+    return {.algorithm = cub::ReduceByKeyAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 128,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 7 : 6,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = cub::LookbackDelayPolicy{
+                            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
   }
 };
 // example-end reduce-by-key-policy-selector
 
-C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[reduce][env]")
+CUB_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[reduce][env]", CUB_SMALL)
 {
   // example-begin reduce-by-key-tuning
   auto d_keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -69,7 +70,7 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[re
 #else // _CCCL_STD_VER >= 2020
 
 // we need a dummy test for C++17, otherwise the return code of the test executable is 2 (not 0)
-C2H_TEST("cub::DeviceReduce::ReduceByKey dummy test", "[reduce][env]")
+CUB_TEST("cub::DeviceReduce::ReduceByKey dummy test", "[reduce][env]", CUB_SMALL)
 {
   SUCCEED();
 }

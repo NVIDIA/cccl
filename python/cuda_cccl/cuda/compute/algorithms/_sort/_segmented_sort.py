@@ -9,7 +9,7 @@ import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_results, cache_with_registered_key_functions
 from ..._cccl_interop import set_cccl_iterator_state
 from ..._serialization import BUILD_RESULTS, ITER, Serializable
 from ..._utils.protocols import (
@@ -23,6 +23,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 class _SegmentedSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_keys_cccl",
@@ -65,17 +66,30 @@ class _SegmentedSort(Serializable):
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
-            _bindings.DeviceSegmentedSortBuildResult,
+        build_order = (
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
-            else _bindings.SortOrder.DESCENDING,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
+            else _bindings.SortOrder.DESCENDING
+        )
+        self.build_results, self._bound_build_result = cache_build_results(
+            _bindings.DeviceSegmentedSortBuildResult,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            start_offsets_in,
+            end_offsets_in,
+            order,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceSegmentedSortBuildResult,
+                build_order,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -93,7 +107,9 @@ class _SegmentedSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(

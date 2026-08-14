@@ -17,6 +17,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/ranges>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -111,19 +112,27 @@ void do_exclusive_scan(
   cuda::std::span<cudax::nccl_communicator_ref> comms,
   const std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
-  std::vector<typename cuda::device_buffer<T>::iterator>& outputs,
+  std::vector<cuda::device_buffer<T>>& out,
   const T& init,
   const T& ident,
   Op op)
 {
-  const auto envs_size    = envs.size();
-  const auto in_copy      = in;
-  const auto outputs_copy = outputs;
+  const auto envs_size = envs.size();
+  const auto in_copy   = in;
 
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::exclusive_scan(comms, envs, in, outputs, init, op, ident);
+  cudax::exclusive_scan(
+    cudax::distributed,
+    comms,
+    envs,
+    in | cuda::std::views::transform(cuda::std::ranges::begin),
+    in | cuda::std::views::transform(cuda::std::ranges::size),
+    out | cuda::std::views::transform(cuda::std::ranges::begin),
+    init,
+    op,
+    ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
@@ -134,7 +143,6 @@ void do_exclusive_scan(
     INFO("device = " << i);
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
   }
-  REQUIRE_THAT(outputs, Catch::Matchers::Equals(outputs_copy));
 }
 } // namespace
 
@@ -164,14 +172,14 @@ MULTI_GPU_TEST("exclusive_scan documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values.size(), cuda::no_init));
   }
 
-  std::vector<typename cuda::device_buffer<int>::iterator> output_iterators = make_output_iterators(outputs);
-
   cudax::exclusive_scan(
+    cudax::distributed,
     comms,
     // Passing streams as the environment directly
     streams,
-    inputs,
-    output_iterators,
+    inputs | cuda::std::views::transform(cuda::std::ranges::begin),
+    inputs | cuda::std::views::transform(cuda::std::ranges::size),
+    outputs | cuda::std::views::transform(cuda::std::ranges::begin),
     /*__init=*/0);
 
   constexpr cuda::std::array expected_rank_0{0, 1};
@@ -212,7 +220,7 @@ MULTI_GPU_TEST("exclusive_scan, one element per rank", value_types, operators)
   envs.reserve(comms.size());
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r)};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(1, make_value<T>(r));
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
@@ -223,9 +231,7 @@ MULTI_GPU_TEST("exclusive_scan, one element per rank", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_exclusive_scan(comms, envs, in, outputs, init, ident, Op{});
+  do_exclusive_scan(comms, envs, in, out, init, ident, Op{});
 
   for (cuda::std::size_t i = 0; i < out.size(); ++i)
   {
@@ -249,10 +255,10 @@ MULTI_GPU_TEST("exclusive_scan, multiple elements per rank", value_types, operat
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Global rank `comms[i].rank()` contributes `{rank, rank, rank}`. `exclusive_scan` first
+  // Global rank `comms[i].rank()` contributes ten copies of `rank`. `exclusive_scan` first
   // computes a local prefix for each rank seeded by the prefix of all previous ranks. Each local
   // rank also gets an output buffer and an environment carrying its stream. `reference` mirrors
-  // every global rank's three contributions for the host-side scan.
+  // every global rank's ten contributions for the host-side scan.
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<T>> out;
   std::vector<decltype(::cuda::std::execution::env{::cuda::stream_ref{streams[0]}})> envs;
@@ -261,10 +267,11 @@ MULTI_GPU_TEST("exclusive_scan, multiple elements per rank", value_types, operat
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto v                                      = make_value<T>(r);
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {v, v, v};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
@@ -275,9 +282,7 @@ MULTI_GPU_TEST("exclusive_scan, multiple elements per rank", value_types, operat
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_exclusive_scan(comms, envs, in, outputs, init, ident, Op{});
+  do_exclusive_scan(comms, envs, in, out, init, ident, Op{});
 
   for (cuda::std::size_t i = 0; i < out.size(); ++i)
   {
@@ -299,7 +304,7 @@ MULTI_GPU_TEST("exclusive_scan, some ranks empty", value_types, operators)
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Even global ranks contribute two copies of `rank`; odd global ranks contribute an empty input
+  // Even global ranks contribute ten copies of `rank`; odd global ranks contribute an empty input
   // range. Rank 0 is always non-empty. `exclusive_scan` must treat an empty rank as contributing
   // nothing, exactly like `std::exclusive_scan` over the surviving elements. `reference` mirrors
   // that for the host-side scan.
@@ -311,11 +316,13 @@ MULTI_GPU_TEST("exclusive_scan, some ranks empty", value_types, operators)
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (int r = 0; r < comms.front().size(); ++r)
   {
     if (r % 2 == 0)
     {
-      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r), make_value<T>(r)};
+      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
     }
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
@@ -327,9 +334,7 @@ MULTI_GPU_TEST("exclusive_scan, some ranks empty", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_exclusive_scan(comms, envs, in, outputs, init, ident, Op{});
+  do_exclusive_scan(comms, envs, in, out, init, ident, Op{});
 
   for (cuda::std::size_t i = 0; i < out.size(); ++i)
   {
@@ -370,9 +375,7 @@ MULTI_GPU_TEST("exclusive_scan, all ranks empty", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_exclusive_scan(comms, envs, in, outputs, init, ident, Op{});
+  do_exclusive_scan(comms, envs, in, out, init, ident, Op{});
 
   for (cuda::std::size_t i = 0; i < out.size(); ++i)
   {

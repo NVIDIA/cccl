@@ -215,11 +215,10 @@ constexpr void unroll(F&& f, ::std::index_sequence<i...> = {})
 template <typename T, typename... P>
 constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
 {
-  return ::std::apply(
-    [&](auto&&... p) {
-      return ::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
-    },
-    mv(tuple));
+  // Spelling the prefix's type out rather than deducing it keeps this usable from device code: a
+  // deduction guide is not a constexpr function, so it stays host-only even where clang treats
+  // libstdc++'s constexpr tuple machinery as implicitly __host__ __device__.
+  return ::std::tuple_cat(::std::tuple<::std::decay_t<T>>(::std::forward<T>(prefix)), mv(tuple));
 }
 
 namespace reserved

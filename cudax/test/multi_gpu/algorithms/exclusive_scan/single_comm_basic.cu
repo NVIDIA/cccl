@@ -131,15 +131,14 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  const auto in_copy      = in;
-  auto outputs            = make_output_iterators(out);
-  const auto outputs_copy = outputs;
+  const auto in_copy = in;
 
   INFO("init = " << init);
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::exclusive_scan(comms[i], envs[i], in[i], outputs[i], init, op, ident);
+    cudax::exclusive_scan(
+      cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
   });
 
   REQUIRE(in.size() == in_copy.size());
@@ -153,7 +152,6 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
 
     REQUIRE_THAT(out[i], Equals(expected));
   }
-  REQUIRE_THAT(outputs, Catch::Matchers::Equals(outputs_copy));
 }
 } // namespace
 
@@ -184,7 +182,8 @@ MULTI_GPU_TEST("exclusive_scan single-comm documentation example", c2h::type_lis
     auto input  = cuda::make_device_buffer<int>(environment, device, input_values);
     auto output = cuda::make_device_buffer<int>(environment, device, input_values.size(), cuda::no_init);
 
-    cudax::exclusive_scan(communicator, environment, input, output.begin(), /*__init=*/0);
+    cudax::exclusive_scan(
+      cudax::distributed, communicator, environment, input.begin(), input.size(), output.begin(), /*__init=*/0);
 
     // Every rank contributes {1, 2}, so rank r starts with a prefix of 3 * r.
     const auto rank = communicator.rank();
@@ -242,11 +241,11 @@ MULTI_GPU_TEST("exclusive_scan single-comm, multiple elements per rank", value_t
   const auto ident = get_identity<T, Op>();
   auto comms       = this->communicators();
 
+  constexpr auto values_per_rank = 10;
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto value                                  = make_value<T>(r);
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {value, value, value};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
   }
 
   run_case(comms, inputs_by_rank, init, ident, Op{});
@@ -261,12 +260,13 @@ MULTI_GPU_TEST("exclusive_scan single-comm, some ranks empty", value_types, oper
   const auto ident = get_identity<T, Op>();
   auto comms       = this->communicators();
 
+  constexpr auto values_per_rank = 10;
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
     if (r % 2 == 0)
     {
-      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r), make_value<T>(r)};
+      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
     }
   }
 

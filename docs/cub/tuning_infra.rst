@@ -1,6 +1,6 @@
 .. _cub-tuning-infra:
 
-CUB Automated Tuning Infrastructure
+Automated Tuning Infrastructure
 ================================================================================
 
 This page describes tuning infrastructure to automatically tune CUB device-scope algorithms for performance.

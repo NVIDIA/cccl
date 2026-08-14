@@ -27,7 +27,7 @@ function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  cccl_add_executable(${bench_target} NO_METATARGETS SOURCES "${bench_src}")
+  cccl_add_executable(${bench_target} SOURCES "${bench_src}")
   target_link_libraries(
     ${bench_target}
     PRIVATE #
@@ -44,7 +44,7 @@ function(add_bench_dir bench_dir)
 
   foreach (bench_src IN LISTS bench_srcs)
     get_filename_component(bench_name "${bench_src}" NAME_WLE)
-    string(PREPEND bench_name "${config_prefix}.${bench_prefix}.")
+    string(PREPEND bench_name "cudax.${bench_prefix}.")
     register_cccl_benchmark("${bench_name}" "")
 
     string(APPEND bench_name ".base")
