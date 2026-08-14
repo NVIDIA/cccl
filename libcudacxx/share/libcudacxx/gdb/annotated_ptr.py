@@ -6,28 +6,19 @@
 
 from __future__ import annotations
 
-import re
 from types import ModuleType
 
 import gdb
 import gdb.printing
 
-_ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
-
-
-def public_type_name(value_type: gdb.Type) -> str:
-    """Return a type name without CUDA ABI inline namespaces."""
-    return _ABI_NAMESPACE_PATTERN.sub("", str(value_type))
-
-
-def _template_name(value_type: gdb.Type) -> str:
-    return str(value_type).split("<", 1)[0]
+from . import cccl_common
 
 
 def _is_annotated_ptr(value_type: gdb.Type) -> bool:
-    value_type = value_type.strip_typedefs().unqualified()
-    type_name = public_type_name(value_type)
-    template_name = _template_name(value_type)
+    """Check if a GDB type represents cuda::annotated_ptr."""
+    value_type = cccl_common.canonical_type(value_type)
+    type_name = cccl_common.public_type_name(value_type)
+    template_name = cccl_common.template_name(value_type)
     return (
         type_name.startswith("cuda::")
         and template_name.rsplit("::", 1)[-1] == "annotated_ptr"
@@ -35,44 +26,54 @@ def _is_annotated_ptr(value_type: gdb.Type) -> bool:
 
 
 class AnnotatedPtrPrinter:
-    """Summarize a CUDA annotated_ptr smart pointer."""
+    """Expose cuda::annotated_ptr type and pointer value to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
-        self.value = value
-        self.type = value.type.strip_typedefs().unqualified()
-        self.type_name = public_type_name(self.type)
+        # Strip reference to access members
+        self.value = cccl_common.strip_reference_value(value)
+        # Store canonical type for type name display
+        self.canonical_type_obj = cccl_common.canonical_type(self.value.type)
+        self.type_name = cccl_common.public_type_name(self.canonical_type_obj)
+
+    def _template_arguments(self) -> tuple[str, str] | None:
+        """Extract template argument type names, or None if unavailable."""
+        try:
+            pointee_type = self.value.type.template_argument(0)
+            pointee_type_name = cccl_common.public_type_name(pointee_type)
+
+            property_type = self.value.type.template_argument(1)
+            property_type_name = cccl_common.public_type_name(property_type)
+            return pointee_type_name, property_type_name
+        except (gdb.error, IndexError):
+            return None
+
+    def _pointer_display(self) -> str | None:
+        """Extract pointer display value, or None if unavailable."""
+        try:
+            repr_ptr = self.value["__repr"]
+            ptr_value = int(repr_ptr)
+            return "nullptr" if ptr_value == 0 else f"{ptr_value:#x}"
+        except (gdb.error, ValueError):
+            return None
 
     def to_string(self) -> str:
-        try:
-            # Get the template arguments: _Tp (pointee type) and _Property
-            pointee_type = self.type.template_argument(0)
-            pointee_type_name = public_type_name(pointee_type)
-
-            property_type = self.type.template_argument(1)
-            property_type_name = public_type_name(property_type)
-
-            # Access the __repr member (the wrapped pointer)
-            repr_ptr = self.value["__repr"]
-
-            # Get the pointer value
-            ptr_value = int(repr_ptr)
-
-            # Format the pointer display
-            if ptr_value == 0:
-                ptr_display = "nullptr"
-            else:
-                ptr_display = f"{ptr_value:#x}"
-
-            # Construct the full type name with template arguments
-            full_type = f"{self.type_name}<{pointee_type_name}, {property_type_name}>"
-
-            return f"{full_type} -> {ptr_display}"
-        except (gdb.error, ValueError):
+        """Combine type info and pointer value into annotated_ptr display."""
+        template_args = self._template_arguments()
+        if template_args is None:
             return self.type_name
+
+        pointee_type_name, property_type_name = template_args
+        full_type = f"{self.type_name}<{pointee_type_name}, {property_type_name}>"
+
+        ptr_display = self._pointer_display()
+        if ptr_display is None:
+            return full_type
+
+        return f"{full_type} -> {ptr_display}"
 
 
 class AnnotatedPtrPrinterLookup(gdb.printing.PrettyPrinter):
-    """Select printers for cuda::annotated_ptr types."""
+    """Select the cuda::annotated_ptr printer by its public class name."""
 
     def __init__(self) -> None:
         super().__init__("cuda::annotated_ptr")
@@ -84,7 +85,7 @@ class AnnotatedPtrPrinterLookup(gdb.printing.PrettyPrinter):
 
 
 def register(objfile: ModuleType) -> None:
-    """Register CUDA annotated_ptr formatters with GDB."""
+    """Register the cuda::annotated_ptr printer with GDB."""
     gdb.printing.register_pretty_printer(
         objfile, AnnotatedPtrPrinterLookup(), replace=True
     )
