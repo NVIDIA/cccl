@@ -694,7 +694,13 @@ private:
     _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
     auto& frozen_ld = from_data_node.frozen_ld.value();
 
-    ::cuda::std::optional<logical_data<T>> imported;
+    // A replicated place seeds the import from its first member and adopts the other
+    // members below; every other place imports itself and nothing else.
+    const data_place seed               = where.is_replicated() ? where.member(0) : where;
+    ::std::pair<T, event_list> seed_res = frozen_ld.get(seed);
+    logical_data<T> ld                  = to_ctx.logical_data(seed_res.first, seed);
+    to_node->ctx_prereqs.merge(mv(seed_res.second));
+
     if (where.is_replicated())
     {
       // Member walk: import EVERY member instance of the replicated place
@@ -704,10 +710,11 @@ private:
       // resolves in the nested context without issuing any copy -- in
       // particular no memcpy node lands in a conditional body graph.
       // The read-only guarantee comes from the normalization above.
-      ::std::vector<data_place> done;
       const size_t nmembers = where.instance_count();
+      ::std::vector<data_place> done;
       done.reserve(nmembers);
-      for (size_t r = 0; r < nmembers; r++)
+      done.push_back(seed);
+      for (size_t r = 1; r < nmembers; r++)
       {
         data_place member = where.member(r);
         if (::std::find(done.begin(), done.end(), member) != done.end())
@@ -715,25 +722,12 @@ private:
           continue; // equal members share one instance
         }
         ::std::pair<T, event_list> res = frozen_ld.get(member);
-        if (!imported.has_value())
-        {
-          imported = to_ctx.logical_data(res.first, member);
-        }
-        else
-        {
-          imported->adopt_shared_instance(mv(res.first), member);
-        }
+        ld.adopt_shared_instance(mv(res.first), member);
         done.push_back(mv(member));
         to_node->ctx_prereqs.merge(mv(res.second));
       }
     }
-    else
-    {
-      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
-      imported                           = to_ctx.logical_data(get_res.first, where);
-      to_node->ctx_prereqs.merge(mv(get_res.second));
-    }
-    auto& ld = imported.value();
+
     from_data_node.get_cnt++;
 
     if (!st.symbol.empty())
