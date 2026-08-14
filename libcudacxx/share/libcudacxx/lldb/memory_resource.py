@@ -59,13 +59,18 @@ def memory_resource_description(value: lldb.SBValue) -> str:
 
 
 def memory_resource_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
-    type_name = cccl_common.public_type_name(value.GetType())
+    value_type = value.GetType()
+    type_name = cccl_common.public_type_name(value_type)
+    declared_type_name = value_type.GetDisplayTypeName() or value_type.GetName() or ""
+    # LLDB already renders the declared type. Keep the canonical name only when
+    # it adds information, such as when the declared type is an alias.
+    type_prefix = "" if type_name in declared_type_name else f"{type_name} "
     storage, resource = _resource_info(value)
     if storage == "unavailable":
-        return f"{type_name} storage=unavailable"
+        return f"{type_prefix}storage=unavailable"
     if resource is None:
-        return f"{type_name} storage=0x0"
-    return f"{type_name} storage={resource.GetValueAsUnsigned(0):#x} ({storage})"
+        return f"{type_prefix}storage=0x0"
+    return f"{type_prefix}storage={resource.GetValueAsUnsigned(0):#x} ({storage})"
 
 
 class MemoryResourceSyntheticProvider:
