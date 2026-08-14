@@ -95,6 +95,29 @@ C2H_TEST_LIST(
       CCCLRT_CHECK(input.size() == 0);
       CCCLRT_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
+
+    if constexpr (sizeof(TestType) != 1)
+    { // Ensure that we properly fail to allocate data that would overflow
+      constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
+
+      try
+      { // Multiplication for byte count would overflow
+        __uninitialized_async_buffer input{resource, stream, max_element_count + 1};
+      }
+      catch (const ::std::invalid_argument& e)
+      {
+        CHECK(e.what() == ::std::string("cuda::__uninitialized_async_buffer: Input size overflow"));
+      }
+
+      try
+      { // Adding alignment would overflow
+        __uninitialized_async_buffer input{resource, stream, max_element_count, 4};
+      }
+      catch (const ::std::invalid_argument& e)
+      {
+        CHECK(e.what() == ::std::string("cuda::__uninitialized_async_buffer: Input size overflow"));
+      }
+    }
   }
 
   SECTION("conversion")
@@ -217,6 +240,20 @@ C2H_TEST_LIST(
       CCCLRT_CHECK(old_buf.size() == old_size);
 
       CCCLRT_CHECK(buf.stream() == old_buf.stream());
+    }
+
+    if constexpr (sizeof(TestType) != 1)
+    {
+      constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
+
+      try
+      { // Multiplication for byte count would overflow
+        const __uninitialized_async_buffer old_buf = buf.__replace_allocation(max_element_count + 1);
+      }
+      catch (const ::std::invalid_argument& e)
+      {
+        CHECK(e.what() == ::std::string("cuda::__uninitialized_async_buffer: Input size overflow"));
+      }
     }
   }
 
