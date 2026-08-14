@@ -58,13 +58,13 @@ namespace cuda::experimental::stf
  * @brief A suppressing handler that reports an exception and carries on.
  *
  * `on_throw(notify) << callable` reports on `stderr`; `on_throw(notify, stream) << callable`
- * reports on any `::std::ostream`. Reporting somewhere else entirely is a matter of writing
+ * reports on any `std::ostream`. Reporting somewhere else entirely is a matter of writing
  * another handler, which this one doubles as the model for. An object rather than a function
  * because it is an overload set, which must travel as one value.
  *
  * The report carries the location and the exception's message, or "nonstandard exception" for
  * an exception that does not derive from `std::exception` (which reaches a handler as
- * `nullptr`). Both overloads return `::std::ignore`, marking a suppressing handler.
+ * `nullptr`). Both overloads return `std::ignore`, marking a suppressing handler.
  */
 struct notify_t
 {
@@ -151,7 +151,7 @@ struct nothing final
 };
 
 /**
- * @brief `::std::abort` wrapped so that never returning is part of its type: the reaction to
+ * @brief `std::abort` wrapped so that never returning is part of its type: the reaction to
  * pass as in `on_throw(abort) << callable`.
  *
  * Inside this namespace, plain `abort` finds this function before the C library's. Code that
@@ -163,7 +163,7 @@ struct nothing final
   ::std::abort(); // noreturn, so no value of the value-less result type is owed
 }
 
-//! @brief `::std::terminate` wrapped like `abort`, its type proving it never returns.
+//! @brief `std::terminate` wrapped like `abort`, its type proving it never returns.
 [[noreturn]] inline nothing terminate() noexcept
 {
   ::std::terminate();
@@ -339,7 +339,7 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  * - A terminating action: a callable invocable with no arguments whose declared result is
  *   `nothing`, of which `abort` and `terminate` above are the ones provided. The exception is
  *   reported through `notify`, then the action runs, its result type proof that it never
- *   returns. `::std::abort` itself does not qualify -- a `void (*)()` says nothing about
+ *   returns. `std::abort` itself does not qualify -- a `void (*)()` says nothing about
  *   returning, and any captureless lambda converts to one -- so pass `abort`, or wrap your own
  *   ending in a `nothing`-returning callable.
  * - `std::ignore`, which suppresses the exception silently and resumes execution with a
@@ -377,11 +377,11 @@ auto on_throw(_Reaction&& __reaction,
 
 /**
  * @brief Creates a policy like `on_throw(reaction)` with a stream bound as the reaction's first
- * argument: `on_throw(notify, ::std::cerr) << callable` reports to `cerr`.
+ * argument: `on_throw(notify, std::cerr) << callable` reports to `cerr`.
  *
- * The reaction must be a `noexcept` callable taking `(::std::ostream&, const std::exception*,
+ * The reaction must be a `noexcept` callable taking `(std::ostream&, const std::exception*,
  * cuda::std::source_location)`. Its return type keeps the usual handler meaning: `nothing` to
- * end the program, `::std::ignore` to go on. `notify` has both this shape and the plain one.
+ * end the program, `std::ignore` to go on. `notify` has both this shape and the plain one.
  *
  * @param[in] __reaction The reaction, invoked with `__os` prepended to a handler's arguments.
  * @param[in] __os The stream to report to, which the caller keeps alive.
