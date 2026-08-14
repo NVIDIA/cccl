@@ -1315,6 +1315,9 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
+  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
+  // context stack inconsistent, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~while_graph_scope_guard()
   {
     ctx_.pop();
