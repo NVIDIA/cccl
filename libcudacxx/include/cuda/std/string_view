@@ -880,7 +880,7 @@ template <class _CharT, class _Traits, class _Allocator>
 operator+(const ::std::basic_string<_CharT, _Traits, _Allocator>& __lhs,
           type_identity_t<basic_string_view<_CharT, _Traits>> __rhs)
 {
-  ::std::basic_string<_CharT, _Traits, _Allocator> __ret;
+  ::std::basic_string<_CharT, _Traits, _Allocator> __ret{__lhs.get_allocator()};
   __ret.reserve(__lhs.size() + __rhs.size());
   __ret.append(__lhs.data(), __lhs.size());
   __ret.append(__rhs.data(), __rhs.size());
@@ -891,7 +891,7 @@ template <class _CharT, class _Allocator>
 operator+(const ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator>& __lhs,
           type_identity_t<basic_string_view<_CharT, char_traits<_CharT>>> __rhs)
 {
-  ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator> __ret;
+  ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator> __ret{__lhs.get_allocator()};
   __ret.reserve(__lhs.size() + __rhs.size());
   __ret.append(__lhs.data(), __lhs.size());
   __ret.append(__rhs.data(), __rhs.size());
@@ -919,7 +919,7 @@ template <class _CharT, class _Traits, class _Allocator>
 operator+(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs,
           const ::std::basic_string<_CharT, _Traits, _Allocator>& __rhs)
 {
-  ::std::basic_string<_CharT, _Traits, _Allocator> __ret;
+  ::std::basic_string<_CharT, _Traits, _Allocator> __ret{__rhs.get_allocator()};
   __ret.reserve(__lhs.size() + __rhs.size());
   __ret.append(__lhs.data(), __lhs.size());
   __ret.append(__rhs.data(), __rhs.size());
@@ -930,7 +930,7 @@ template <class _CharT, class _Allocator>
 operator+(type_identity_t<basic_string_view<_CharT, char_traits<_CharT>>> __lhs,
           const ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator>& __rhs)
 {
-  ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator> __ret;
+  ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Allocator> __ret{__rhs.get_allocator()};
   __ret.reserve(__lhs.size() + __rhs.size());
   __ret.append(__lhs.data(), __lhs.size());
   __ret.append(__rhs.data(), __rhs.size());
