@@ -31,6 +31,34 @@
 #include <type_traits>
 #include <utility>
 
+/**
+ * @brief Formalizes, at a statement position, that the enclosing code is not supported with
+ * the current compiler: `_CCCL_UNSUPPORTED(name_that_reads_as_a_message, "message")`.
+ *
+ * Expands to a call to `name_that_reads_as_a_message`, declared on the spot but never defined
+ * anywhere, carrying the GNU `error` attribute. The attribute's diagnostic fires only at
+ * codegen, which yields the intended split: clang-tidy and `-fsyntax-only` sweeps analyze the
+ * enclosing file cleanly, an actual build fails at compile time with the message, compilers
+ * without the attribute fail at link with the function name as the message, and nothing
+ * anywhere compiles into wrong runtime behavior.
+ *
+ * The `noexcept` is load-bearing: with a nontrivial destructor in scope the call would
+ * otherwise be emitted as an invoke, whose error-attribute diagnostic clang silently skips
+ * (observed with clang 21, plain C++ and CUDA alike).
+ */
+#if _CCCL_HAS_ATTRIBUTE(error)
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg) __attribute__((error(_msg)))
+#else // _CCCL_HAS_ATTRIBUTE(error)
+#  define _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)
+#endif // _CCCL_HAS_ATTRIBUTE(error)
+#define _CCCL_UNSUPPORTED(_name, _msg)                  \
+  do                                                    \
+  {                                                     \
+    _CCCL_UNSUPPORTED_ATTRIBUTE(_msg)                   \
+    void _name() noexcept; /* deliberately undefined */ \
+    _name();                                            \
+  } while (0)
+
 namespace cuda::experimental::stf
 {
 #ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
