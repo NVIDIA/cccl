@@ -41,10 +41,10 @@ using global_annotated_float   = cuda::annotated_ptr<float, cuda::access_propert
 
 int main()
 {
-  // Allocate test data
-  const int streaming_data  = 42;
-  const int persisting_data = 100;
-  const float global_data   = 3.14f;
+  // Allocate test data with mutable backing (required by annotated_ptr)
+  int streaming_data  = 42;
+  int persisting_data = 100;
+  float global_data   = 3.14f;
 
   // Test case 1: streaming annotated_ptr
   const streaming_annotated_int streaming_ptr(&streaming_data);
@@ -58,8 +58,8 @@ int main()
   const global_annotated_float global_ptr(&global_data);
   inspect_global(global_ptr);
 
-  // Test case 4: null streaming_annotated_ptr
-  const streaming_annotated_int null_ptr(nullptr);
+  // Test case 4: null streaming_annotated_ptr (use default constructor)
+  const streaming_annotated_int null_ptr{};
   inspect_null(null_ptr);
 
   return 0;

@@ -33,15 +33,19 @@ class AnnotatedPtrPrinter:
         self.value = cccl_common.strip_reference_value(value)
         # Store canonical type for type name display
         self.canonical_type_obj = cccl_common.canonical_type(self.value.type)
-        self.type_name = cccl_common.public_type_name(self.canonical_type_obj)
+        # Extract base type name without template arguments to avoid duplication
+        self.type_name = cccl_common.template_name(
+            cccl_common.public_type_name(self.canonical_type_obj)
+        )
 
     def _template_arguments(self) -> tuple[str, str] | None:
         """Extract template argument type names, or None if unavailable."""
         try:
-            pointee_type = self.value.type.template_argument(0)
+            # Read template arguments from canonical type to handle typedef aliases
+            pointee_type = self.canonical_type_obj.template_argument(0)
             pointee_type_name = cccl_common.public_type_name(pointee_type)
 
-            property_type = self.value.type.template_argument(1)
+            property_type = self.canonical_type_obj.template_argument(1)
             property_type_name = cccl_common.public_type_name(property_type)
             return pointee_type_name, property_type_name
         except (gdb.error, IndexError):
