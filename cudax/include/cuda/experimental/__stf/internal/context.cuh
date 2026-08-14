@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/std/variant>
 
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
@@ -59,7 +61,7 @@ namespace cuda::experimental::stf
 template <typename... Ts, typename F>
 decltype(auto) operator->*(::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::cuda::std::visit(::std::forward<F>(f), v);
+  return ::cuda::std::visit(::cuda::std::forward<F>(f), v);
 }
 
 /**
@@ -68,7 +70,7 @@ decltype(auto) operator->*(::cuda::std::variant<Ts...>& v, F&& f)
 template <typename... Ts, typename F>
 decltype(auto) operator->*(const ::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::cuda::std::visit(::std::forward<F>(f), v);
+  return ::cuda::std::visit(::cuda::std::forward<F>(f), v);
 }
 #endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -138,7 +140,7 @@ private:
     void operator->*(Fun&& f)
     {
       payload->*[&](auto& self) {
-        self->*::std::forward<Fun>(f);
+        self->*::cuda::std::forward<Fun>(f);
       };
     }
 
@@ -155,7 +157,7 @@ private:
     auto& add_deps(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_deps(::std::forward<Args>(args)...);
+        self.add_deps(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -164,7 +166,7 @@ private:
     auto& add_kernel_desc(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_kernel_desc(::std::forward<Args>(args)...);
+        self.add_kernel_desc(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -286,7 +288,7 @@ public:
     unified_task& add_deps(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_deps(::std::forward<Args>(args)...);
+        self.add_deps(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -329,8 +331,8 @@ public:
     cudaGraph_t get_graph()
     {
       return payload->*[&](auto& self) -> cudaGraph_t {
-        using task_t = ::std::decay_t<decltype(self)>;
-        if constexpr (::std::is_same_v<task_t, graph_task<Deps...>>)
+        using task_t = ::cuda::std::decay_t<decltype(self)>;
+        if constexpr (::cuda::std::is_same_v<task_t, graph_task<Deps...>>)
         {
           return self.get_graph();
         }
@@ -348,7 +350,7 @@ public:
     cudaStream_t get_stream(size_t place_index) const
     {
       return payload->*[&](auto& self) -> cudaStream_t {
-        if constexpr (::std::is_same_v<stream_task<Deps...>, ::std::decay_t<decltype(self)>>)
+        if constexpr (::cuda::std::is_same_v<stream_task<Deps...>, ::cuda::std::decay_t<decltype(self)>>)
         {
           // Per-place streams only exist for grid exec places. stream_task::get_stream(size_t) indexes the
           // stream grid without bounds checking, so guard the linear index here before forwarding.
@@ -569,17 +571,17 @@ public:
   auto logical_data(P0&& p0, Ps&&... ps)
   {
     _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
-    using T0 = ::std::remove_reference_t<P0>;
-    if constexpr (::std::is_integral_v<T0>)
+    using T0 = ::cuda::std::remove_reference_t<P0>;
+    if constexpr (::cuda::std::is_integral_v<T0>)
     {
       // Assume we create an array with the given length, so forward to the previous function.
-      return logical_data<T0>(size_t(p0), ::std::forward<Ps>(ps)...);
+      return logical_data<T0>(size_t(p0), ::cuda::std::forward<Ps>(ps)...);
     }
     else
     {
       // Forward all parameters to the homonym function in the context.
       return payload->*[&](auto& self) {
-        return self.logical_data(::std::forward<P0>(p0), ::std::forward<Ps>(ps)...);
+        return self.logical_data(::cuda::std::forward<P0>(p0), ::cuda::std::forward<Ps>(ps)...);
       };
     }
   }
@@ -640,7 +642,7 @@ public:
     _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // Workaround: For some obscure reason `mv(deps)...` fails to compile
     return payload->*[&](auto& self) {
-      return unified_task<Deps...>(self.task(mv(e_place), ::std::move(deps)...));
+      return unified_task<Deps...>(self.task(mv(e_place), ::cuda::std::move(deps)...));
     };
   }
 
@@ -657,10 +659,10 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    if constexpr (::std::is_integral_v<S>)
+    if constexpr (::cuda::std::is_integral_v<S>)
     {
       return parallel_for(mv(e_place), box(shape), mv(deps)...);
     }
@@ -679,7 +681,7 @@ public:
             typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized.");
@@ -1700,7 +1702,7 @@ UNITTEST("logical data slice const")
   slice<const double> cA = make_slice((const double*) &A[0], 128);
   auto lA                = ctx.logical_data(cA);
   ctx.task(lA.read())->*[](cudaStream_t, auto A) {
-    static_assert(::std::is_same_v<decltype(A), slice<const double>>);
+    static_assert(::cuda::std::is_same_v<decltype(A), slice<const double>>);
   };
   ctx.finalize();
 };
@@ -1757,7 +1759,7 @@ UNITTEST("make_tuple_indexwise")
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t1), ::std::tuple<int, int>>);
+  static_assert(::cuda::std::is_same_v<decltype(t1), ::std::tuple<int, int>>);
   EXPECT(t1 == ::std::tuple(0, 1));
 
   auto t2 = make_tuple_indexwise<3>([&](auto i) {
@@ -1770,7 +1772,7 @@ UNITTEST("make_tuple_indexwise")
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
+  static_assert(::cuda::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
   EXPECT(t2 == ::std::tuple(0, 2));
 };
 
@@ -1877,7 +1879,7 @@ UNITTEST("wait on token")
   auto tok = ctx.token();
   ctx.task(tok.write())->*[](cudaStream_t) {};
 
-  static_assert(::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
+  static_assert(::cuda::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
   ctx.wait(tok);
 
   ctx.finalize();

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -78,7 +79,7 @@ public:
    */
   enum ord : int
   {
-    invalid     = ::std::numeric_limits<int>::min(),
+    invalid     = ::cuda::std::numeric_limits<int>::min(),
     composite   = -5,
     device_auto = -4,
     affine      = -3,

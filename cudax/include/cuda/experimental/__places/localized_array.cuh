@@ -17,6 +17,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -156,7 +159,7 @@ template <typename OwnerFn>
   ::std::mt19937 gen(0x5EED);
   ::std::uniform_int_distribution<size_t> dis(0, block_elems - 1);
 
-  probes = ::std::max<size_t>(1, ::std::min(probes, block_elems));
+  probes = ::cuda::std::max<size_t>(1, ::cuda::std::min(probes, block_elems));
 
   ::std::vector<pos4> owners;
   owners.reserve(nblocks);
@@ -170,7 +173,7 @@ template <typename OwnerFn>
     for (size_t sample = 0; sample < probes; sample++)
     {
       // Clip: the last block may extend past the payload
-      const size_t index  = ::std::min(block_start + dis(gen), total_elems - 1);
+      const size_t index  = ::cuda::std::min(block_start + dis(gen), total_elems - 1);
       sampled_pos[sample] = owner_of(index);
     }
 
@@ -736,7 +739,7 @@ inline void* allocate_composite_data_place(const data_place_composite& p, dim4 d
   };
   auto arr  = ::std::make_unique<localized_array>(grid, mapper, delinearize, data_dims.size(), elemsize, data_dims);
   void* ptr = arr->get_base_ptr();
-  get_composite_alloc_registry()[ptr] = ::std::move(arr);
+  get_composite_alloc_registry()[ptr] = ::cuda::std::move(arr);
   return ptr;
 }
 

@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 #include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -57,7 +58,7 @@ public:
     {
       size_t before_cnt = ctx.task_count();
 
-      static_assert(::std::is_invocable_v<Fun, context_t, size_t>, "Incorrect lambda function signature.");
+      static_assert(::cuda::std::is_invocable_v<Fun, context_t, size_t>, "Incorrect lambda function signature.");
 
       f(ctx, iter);
 

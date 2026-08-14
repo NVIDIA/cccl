@@ -18,6 +18,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -40,7 +43,8 @@ class stream_ctx;
 namespace reserved
 {
 template <typename T>
-inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
+inline constexpr bool is_cufunction_or_cukernel_v =
+  ::cuda::std::is_same_v<T, CUfunction> || ::cuda::std::is_same_v<T, CUkernel>;
 } // end namespace reserved
 
 /**
@@ -64,9 +68,9 @@ struct cuda_kernel_desc
   {
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
-    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
+    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::cuda::std::is_invocable_v<Fun, Args...>);
 
-    using TupleType = ::std::tuple<::std::decay_t<Args>...>;
+    using TupleType = ::std::tuple<::cuda::std::decay_t<Args>...>;
 
     _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
 
@@ -311,7 +315,7 @@ public:
     dynamic_deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)
     {
-      add_deps(::std::forward<Pack>(pack)...);
+      add_deps(::cuda::std::forward<Pack>(pack)...);
     }
   }
 
@@ -365,7 +369,7 @@ public:
 
     t.start();
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -399,7 +403,7 @@ public:
       support_task.reset();
     };
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -510,7 +514,7 @@ private:
 
     auto& t = *support_task;
 
-    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
     {
       auto lock = t.lock_ctx_graph();
       auto& g   = t.get_ctx_graph();
@@ -559,13 +563,13 @@ private:
   // To store a task that implements cuda_kernel(_chain). Note that we do not
   // store the task with Deps... but a "dynamic" task where all dependencies
   // are added using add_deps.
-  using underlying_task_type = decltype(::std::declval<Ctx>().task());
-  ::std::optional<underlying_task_type> support_task;
+  using underlying_task_type = decltype(::cuda::std::declval<Ctx>().task());
+  ::cuda::std::optional<underlying_task_type> support_task;
 
   // Dependencies added with add_deps
   ::std::vector<task_dep_untyped> dynamic_deps;
 
-  ::std::optional<exec_place> e_place;
+  ::cuda::std::optional<exec_place> e_place;
 
   // What kernel(s) must be done ? We also store this in a vector if there is a
   // single kernel (with the cuda_kernel construct)

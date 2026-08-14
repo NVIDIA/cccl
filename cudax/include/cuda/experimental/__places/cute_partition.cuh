@@ -42,6 +42,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -443,7 +446,7 @@ public:
           while (keep_going && x0 < t0)
           {
             const size_t pad_pos = row_pad_base + x0;
-            const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
+            const size_t seg     = ::cuda::std::min(t0 - x0, s - (pad_pos % s));
             push((ind + x0) * elemsize, seg * elemsize, owner(pos4(x0, x1, x2, x3))); // pos4 widens to ssize_t; dims
                                                                                       // may exceed INT_MAX
             x0 += seg;
@@ -495,7 +498,7 @@ public:
       if (place_leaves_[k].extent > 1)
       {
         const auto stride = static_cast<size_t>(place_leaves_[k].stride);
-        s                 = (s == 0) ? stride : ::std::min(s, stride);
+        s                 = (s == 0) ? stride : ::cuda::std::min(s, stride);
       }
     }
     return s;
@@ -526,7 +529,7 @@ public:
    *         exceed max_runs (dense sub-block interleavings such as
    *         element-cyclic): callers fall back to sampled majority.
    */
-  ::std::optional<::std::vector<pos4>>
+  ::cuda::std::optional<::std::vector<pos4>>
   try_block_owners(size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = 0) const
   {
     _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
@@ -547,7 +550,7 @@ public:
       // immediately. The floor keeps small allocations permissive: below it
       // the walk costs microseconds either way, and declining fine-grained
       // small cases would forfeit exact plans for no measurable saving.
-      max_runs = ::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+      max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
     }
     if (misplaced_bytes)
     {
@@ -592,7 +595,7 @@ public:
           cur_block++;
           continue;
         }
-        const size_t chunk = ::std::min(byte_len, block_end - byte_start);
+        const size_t chunk = ::cuda::std::min(byte_len, block_end - byte_start);
         bool found         = false;
         for (auto& e : hist)
         {
@@ -615,7 +618,7 @@ public:
 
     if (!for_each_owner_byte_run(elemsize, max_runs, feed))
     {
-      return ::std::nullopt;
+      return ::cuda::std::nullopt;
     }
     if (!hist.empty())
     {
@@ -659,7 +662,7 @@ public:
    *
    * @param max_runs walk budget, as in try_block_owners (0 = auto)
    */
-  ::std::optional<::std::vector<block_run>>
+  ::cuda::std::optional<::std::vector<block_run>>
   try_block_runs(size_t block_size_bytes, size_t elemsize, size_t max_runs = 0) const
   {
     _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
@@ -667,7 +670,7 @@ public:
     const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
     if (max_runs == 0)
     {
-      max_runs = ::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+      max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
     }
 
     ::std::vector<block_run> runs;
@@ -683,13 +686,14 @@ public:
       }
       const size_t first = start / block_size_bytes;
       // the last run's tail may end mid-block; the block is still pure
-      const size_t count = (::std::min(start + len, total_bytes) - start + block_size_bytes - 1) / block_size_bytes;
+      const size_t count =
+        (::cuda::std::min(start + len, total_bytes) - start + block_size_bytes - 1) / block_size_bytes;
       runs.push_back(block_run{o, first, count});
       return true;
     });
     if (!completed || !aligned)
     {
-      return ::std::nullopt;
+      return ::cuda::std::nullopt;
     }
     return runs;
   }
@@ -1746,7 +1750,7 @@ inline auto make_partition_placement_provider(
     // this budget it is BOTH cheaper and exact, so choosing it can never be
     // a performance regression. The floor keeps small allocations
     // permissive.
-    const size_t budget = ::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
+    const size_t budget = ::cuda::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
 
     // Exact tier: the strict quotient exists -- runs come straight from the
     // layout algebra, no per-block work at all.

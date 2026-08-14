@@ -20,6 +20,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -462,14 +466,14 @@ public:
     size_t total_bytes = elemsize;
     for (size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
     {
-      if (extent != 0 && total_bytes > ::std::numeric_limits<size_t>::max() / extent)
+      if (extent != 0 && total_bytes > ::cuda::std::numeric_limits<size_t>::max() / extent)
       {
         _CCCL_THROW(::std::invalid_argument,
                     "allocate_nd: extents and element size overflow the addressable byte count");
       }
       total_bytes *= extent;
     }
-    if (total_bytes > static_cast<size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()))
+    if (total_bytes > static_cast<size_t>(::cuda::std::numeric_limits<::std::ptrdiff_t>::max()))
     {
       _CCCL_THROW(::std::invalid_argument, "allocate_nd: allocation size exceeds PTRDIFF_MAX");
     }
@@ -1061,7 +1065,7 @@ public:
   template <typename T = void>
   exec_place_scope(const data_place&)
   {
-    static_assert(!::std::is_same_v<T, T>,
+    static_assert(!::cuda::std::is_same_v<T, T>,
                   "exec_place_scope cannot be constructed from data_place; "
                   "use data_place::affine_exec_place() to get the exec_place first");
   }
@@ -1163,7 +1167,7 @@ template <typename Fun>
 auto exec_place::operator->*(Fun&& fun) const
 {
   auto active = activate();
-  return ::std::forward<Fun>(fun)();
+  return ::cuda::std::forward<Fun>(fun)();
 }
 
 inline augmented_stream stream_pool::next(const exec_place& place)
@@ -1866,10 +1870,10 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
   dim4 begin_coords(
     tile_id.x * tile_sizes.x, tile_id.y * tile_sizes.y, tile_id.z * tile_sizes.z, tile_id.t * tile_sizes.t);
 
-  dim4 end_coords(::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
-                  ::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
-                  ::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
-                  ::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
+  dim4 end_coords(::cuda::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
+                  ::cuda::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
+                  ::cuda::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
+                  ::cuda::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
 
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.x, tile_sizes.x, tile_id.x);
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.y, tile_sizes.y, tile_id.y);

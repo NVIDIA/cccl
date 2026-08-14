@@ -81,6 +81,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -379,7 +380,7 @@ private:
             // SM total divides evenly (all currently known multi-domain
             // parts).
             const unsigned int share = total_sms / static_cast<unsigned int>(num_domains);
-            params[i].smCount        = ::std::max(2u, share - (share % 2u));
+            params[i].smCount        = ::cuda::std::max(2u, share - (share % 2u));
             break;
           }
         }
@@ -523,10 +524,10 @@ public:
       unsigned int finest_groups = 0;
       cuda_try(cuDevSmResourceSplitByCount(nullptr, &finest_groups, &input, nullptr, 0, 1));
       const unsigned int total_sm    = input.sm.smCount;
-      const unsigned int granularity = (finest_groups > 0) ? ::std::max(1u, total_sm / finest_groups) : 1u;
+      const unsigned int granularity = (finest_groups > 0) ? ::cuda::std::max(1u, total_sm / finest_groups) : 1u;
 
-      unsigned int sm_per = ::std::max(1u, total_sm / n);
-      sm_per              = ::std::max(granularity, sm_per - (sm_per % granularity));
+      unsigned int sm_per = ::cuda::std::max(1u, total_sm / n);
+      sm_per              = ::cuda::std::max(granularity, sm_per - (sm_per % granularity));
 
       it = helpers_.emplace(dev_id, ::std::make_shared<green_context_helper>(static_cast<int>(sm_per), dev_id)).first;
     }

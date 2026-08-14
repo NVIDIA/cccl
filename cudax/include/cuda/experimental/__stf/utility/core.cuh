@@ -15,6 +15,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -47,9 +49,9 @@ namespace cuda::experimental::stf
 template <typename T>
 _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
 {
-  static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
-  static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
-  return ::std::move(obj);
+  static_assert(::cuda::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
+  static_assert(!::cuda::std::is_const_v<::cuda::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
+  return ::cuda::std::move(obj);
 }
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -69,7 +71,7 @@ _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
 template <typename T, typename U>
 _CCCL_HOST_DEVICE auto each(T from, U to)
 {
-  using common = ::std::remove_reference_t<decltype(true ? from : to)>;
+  using common = ::cuda::std::remove_reference_t<decltype(true ? from : to)>;
 
   class iterator
   {
@@ -87,9 +89,9 @@ _CCCL_HOST_DEVICE auto each(T from, U to)
 
     _CCCL_HOST_DEVICE iterator& operator++()
     {
-      if constexpr (::std::is_enum_v<common>)
+      if constexpr (::cuda::std::is_enum_v<common>)
       {
-        value = static_cast<T>(static_cast<::std::underlying_type_t<T>>(value) + 1);
+        value = static_cast<T>(static_cast<::cuda::std::underlying_type_t<T>>(value) + 1);
       }
       else
       {
@@ -139,8 +141,8 @@ _CCCL_HOST_DEVICE auto each(T from, U to)
 template <typename T>
 auto each(T to)
 {
-  static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
-  if constexpr (::std::is_signed_v<T>)
+  static_assert(!::cuda::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
+  if constexpr (::cuda::std::is_signed_v<T>)
   {
     _CCCL_ASSERT(to >= 0, "Attempt to iterate from 0 to a negative value.");
   }
@@ -172,16 +174,16 @@ auto each(T to)
  * compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr void unroll(F&& f, ::std::index_sequence<i...> = {})
+constexpr void unroll(F&& f, ::cuda::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
-    return unroll<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
+    return unroll<n>(::cuda::std::forward<F>(f), ::cuda::std::make_index_sequence<n>());
   }
   else
   {
     using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-    if constexpr (::std::is_same_v<result_t, void>)
+    if constexpr (::cuda::std::is_same_v<result_t, void>)
     {
       (f(::std::integral_constant<size_t, i>()), ...);
     }
@@ -218,7 +220,7 @@ constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
   // Spelling the prefix's type out rather than deducing it keeps this usable from device code: a
   // deduction guide is not a constexpr function, so it stays host-only even where clang treats
   // libstdc++'s constexpr tuple machinery as implicitly __host__ __device__.
-  return ::std::tuple_cat(::std::tuple<::std::decay_t<T>>(::std::forward<T>(prefix)), mv(tuple));
+  return ::std::tuple_cat(::std::tuple<::cuda::std::decay_t<T>>(::cuda::std::forward<T>(prefix)), mv(tuple));
 }
 
 namespace reserved
@@ -232,7 +234,7 @@ inline constexpr auto make_tuple()
 template <typename T, typename... P>
 constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 {
-  if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>)
+  if constexpr (::cuda::std::is_same_v<const T, const decltype(::std::ignore)>)
   {
     // Recurse skipping the first parameter
     return make_tuple(mv(p)...);
@@ -278,11 +280,11 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = {})
+constexpr auto make_tuple_indexwise(F&& f, ::cuda::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
-    return make_tuple_indexwise<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
+    return make_tuple_indexwise<n>(::cuda::std::forward<F>(f), ::cuda::std::make_index_sequence<n>());
   }
   else
   {
@@ -307,15 +309,15 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = {})
 template <typename Tuple, typename F>
 constexpr auto tuple_transform(Tuple&& t, F&& f)
 {
-  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  constexpr size_t n = ::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>;
   return make_tuple_indexwise<n>([&](auto j) {
-    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    if constexpr (::cuda::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::cuda::std::forward<Tuple>(t)))>)
     {
-      return f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+      return f(j, ::std::get<j>(::cuda::std::forward<Tuple>(t)));
     }
     else
     {
-      return f(::std::get<j>(::std::forward<Tuple>(t)));
+      return f(::std::get<j>(::cuda::std::forward<Tuple>(t)));
     }
   });
 }
@@ -345,15 +347,15 @@ constexpr auto tuple_transform(Tuple&& t, F&& f)
 template <typename Tuple, typename F>
 constexpr void each_in_tuple(Tuple&& t, F&& f)
 {
-  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  constexpr size_t n = ::std::tuple_size_v<::cuda::std::remove_reference_t<Tuple>>;
   unroll<n>([&](auto j) {
-    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    if constexpr (::cuda::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::cuda::std::forward<Tuple>(t)))>)
     {
-      f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+      f(j, ::std::get<j>(::cuda::std::forward<Tuple>(t)));
     }
     else
     {
-      f(::std::get<j>(::std::forward<Tuple>(t)));
+      f(::std::get<j>(::cuda::std::forward<Tuple>(t)));
     }
   });
 }
@@ -362,17 +364,17 @@ namespace reserved
 {
 // Implementation of each_in_pack below
 template <typename F, size_t... i, typename... P>
-constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p)
+constexpr void each_in_pack(F&& f, ::cuda::std::index_sequence<i...>, P&&... p)
 {
-  if constexpr (::std::is_invocable_v<F,
-                                      ::std::integral_constant<size_t, 0>,
-                                      ::std::tuple_element_t<0, ::std::tuple<P&&...>>>)
+  if constexpr (::cuda::std::is_invocable_v<F,
+                                            ::std::integral_constant<size_t, 0>,
+                                            ::std::tuple_element_t<0, ::std::tuple<P&&...>>>)
   {
-    (f(::std::integral_constant<size_t, i>(), ::std::forward<P>(p)), ...);
+    (f(::std::integral_constant<size_t, i>(), ::cuda::std::forward<P>(p)), ...);
   }
   else
   {
-    (f(::std::forward<P>(p)), ...);
+    (f(::cuda::std::forward<P>(p)), ...);
   }
 }
 } // namespace reserved
@@ -403,7 +405,8 @@ constexpr void each_in_pack(F&& f, P&&... p)
 {
   if constexpr (sizeof...(P) > 0)
   {
-    reserved::each_in_pack(::std::forward<F>(f), ::std::make_index_sequence<sizeof...(P)>(), ::std::forward<P>(p)...);
+    reserved::each_in_pack(
+      ::cuda::std::forward<F>(f), ::cuda::std::make_index_sequence<sizeof...(P)>(), ::cuda::std::forward<P>(p)...);
   }
 }
 
@@ -420,6 +423,6 @@ constexpr void each_in_pack(F&& f, P&&... p)
 template <typename E>
 auto as_underlying(E value)
 {
-  return static_cast<::std::underlying_type_t<E>>(value);
+  return static_cast<::cuda::std::underlying_type_t<E>>(value);
 }
 } // namespace cuda::experimental::stf
