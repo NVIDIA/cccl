@@ -21,26 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/hash.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__utility/pair.h>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/types.cuh>
+#  include <cuda/__functional/hash.h>
+#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/extents.h>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/capacity.cuh>
+#  include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
+#  include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
+#  include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
+#  include <cuda/experimental/__cuco/probing_scheme.cuh>
+#  include <cuda/experimental/__cuco/types.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -109,7 +109,7 @@ private:
   mapped_type __empty_value_sentinel;
 
   //! @brief Synchronizes the CUDA stream.
-  static void __sync(::cuda::stream_ref __stream)
+  _CCCL_HOST_API static void __sync(::cuda::stream_ref __stream)
   {
     __stream.sync();
   }
@@ -480,6 +480,69 @@ public:
     return {__keys_out + __num_out, __values_out + __num_out};
   }
 
+  // ===== Rehash =====
+
+  //! @brief Rebuilds the map in new storage without changing its capacity.
+  //!
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream)
+  {
+    rehash_async(__stream);
+    __sync(__stream);
+  }
+
+  //! @brief Changes the map's capacity and rebuilds it in new storage.
+  //!
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    rehash_async(__stream, __capacity);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronously rebuilds the map in new storage without changing its capacity.
+  //!
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
+  {
+    __impl->rehash_async(__stream, *this);
+  }
+
+  //! @brief Asynchronously changes the map's capacity and rebuilds it in new storage.
+  //!
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __impl->rehash_async(__stream, __capacity, *this);
+  }
+
   // ===== Accessors =====
 
   //! @brief Returns the total number of slots the map can hold (the prime/stride-adjusted capacity).
@@ -563,8 +626,7 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
-
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 #endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH
