@@ -139,12 +139,12 @@ struct nothing final
   // prvalue is the result of a call that never returns, so control provably cannot arrive here
   // short of undefined behavior already committed elsewhere.
   template <class _Tp>
-  [[noreturn]] operator _Tp&&() const noexcept
+  [[noreturn]] _CCCL_HOST_DEVICE operator _Tp&&() const noexcept
   {
     _CCCL_UNREACHABLE();
   }
   template <class _Tp>
-  [[noreturn]] operator _Tp&() const noexcept
+  [[noreturn]] _CCCL_HOST_DEVICE operator _Tp&() const noexcept
   {
     _CCCL_UNREACHABLE();
   }

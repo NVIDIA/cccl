@@ -275,7 +275,7 @@ public:
     // pthread calls this, so an exception must not leave it either.
     on_throw(abort) << [&] {
       // fprintf(stderr, "CALLBACK RUNNING...\n");
-      auto* cbq = static_cast<callback_queue*>(args);
+      auto* const cbq = static_cast<callback_queue*>(args);
       cudaCallbackQueueProgress(cbq, 1);
       // fprintf(stderr, "CALLBACK HALTING...\n");
     };
@@ -286,7 +286,7 @@ public:
 
 inline callback_queue* default_callback_queue()
 {
-  callback_queue* default_cb = &callback_queue::instance();
+  callback_queue* const default_cb = &callback_queue::instance();
   return default_cb;
 }
 
@@ -300,8 +300,8 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
   // The CUDA runtime calls this back, so an exception must not leave it; it would also strand
   // the queue mutex.
   on_throw(abort) << [&] {
-    auto* cb_             = static_cast<cb*>(userData);
-    callback_queue* queue = cb_->queue;
+    auto* const cb_             = static_cast<cb*>(userData);
+    callback_queue* const queue = cb_->queue;
 
     // Protect the queue
     pthread_mutex_lock(&queue->mutex);
@@ -314,9 +314,9 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 inline void cudagraph_callback_dispatcher(void* userData)
 {
   on_throw(abort) << [&] {
-    auto* cb_ = static_cast<cb*>(userData);
+    auto* const cb_ = static_cast<cb*>(userData);
 
-    callback_queue* queue = cb_->queue;
+    callback_queue* const queue = cb_->queue;
 
     // Protect the queue
     pthread_mutex_lock(&queue->mutex);
@@ -351,7 +351,7 @@ inline cb* get_current_cb()
 
 inline cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
 {
-  cb* current_cb = get_current_cb();
+  cb* const current_cb = get_current_cb();
   assert(current_cb);
   current_cb->step        = step;
   current_cb->private_ptr = private_ptr;
@@ -360,7 +360,7 @@ inline cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
 
 inline cudaError_t cudaCallbackGetStatus(int* step, void** private_ptr)
 {
-  cb* current_cb = get_current_cb();
+  cb* const current_cb = get_current_cb();
   assert(current_cb);
 
   if (step)
@@ -452,7 +452,7 @@ inline _CCCL_HOST cudaError_t cudaStreamAddCallbackWithQueue(
   if (q)
   {
     // We store the arguments in a structure that will be destroyed later on
-    cb* data        = new cb(stream, callback, userData, q);
+    cb* const data  = new cb(stream, callback, userData, q);
     cudaError_t err = cudaStreamAddCallback(stream, callback_dispatcher, data, flags);
 
     // Submit completion kernel in the stream ...
@@ -481,7 +481,7 @@ cudaLaunchHostFuncWithQueue(cudaStream_t stream, cudaHostFn_t fn, void* userData
 {
   assert(q);
   // We store the arguments in a structure that will be destroyed later on
-  cb* data        = new cb(fn, userData, q);
+  cb* const data  = new cb(fn, userData, q);
   cudaError_t err = cudaLaunchHostFunc(stream, (cudaHostFn_t) cudagraph_callback_dispatcher, data);
 
   // Submit completion kernel in the stream ...
@@ -504,7 +504,7 @@ inline _CCCL_HOST cudaError_t cudaGraphAddHostNodeWithQueue(
   assert(q);
 
   // We store the arguments in a structure that will be destroyed later on
-  cb* data = new cb(params->fn, params->userData, q);
+  cb* const data = new cb(params->fn, params->userData, q);
 
   // XXX we should expose a child graph ...
   cudaGraphNode_t node0;
