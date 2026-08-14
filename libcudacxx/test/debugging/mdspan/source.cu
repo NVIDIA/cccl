@@ -156,6 +156,15 @@ inspect_array(const cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<i
 
 int main()
 {
+  // Build the CUDA context before the first breakpoint. The printer copies elements
+  // with an inferior cudaMemcpy call; if that call is the first CUDA call in the
+  // process, a breakpoint hit during context setup interrupts it, LLDB unwinds it,
+  // and every later copy fails with cudaErrorContextIsDestroyed.
+  if (cudaFree(nullptr) != cudaSuccess)
+  {
+    return 1;
+  }
+
   int rank1_dynamic_data[4] = {10, -3, 7, 42};
   const cuda::std::mdspan<int, cuda::std::dextents<int, 1>> rank1_dynamic(rank1_dynamic_data, 4);
   inspect_rank1_dynamic(rank1_dynamic);
