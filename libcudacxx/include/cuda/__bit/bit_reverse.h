@@ -42,12 +42,17 @@
 #  define _CCCL_BUILTIN_BITREVERSE64(...) __builtin_bitreverse64(__VA_ARGS__)
 #endif
 
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverseg)
+#  define _CCCL_BUILTIN_BITREVERSEG(...) __builtin_bitreverseg(__VA_ARGS__)
+#endif
+
 // nvcc doesn't allow clang's bitreverse builtin
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_BITREVERSE8
 #  undef _CCCL_BUILTIN_BITREVERSE16
 #  undef _CCCL_BUILTIN_BITREVERSE32
 #  undef _CCCL_BUILTIN_BITREVERSE64
+#  undef _CCCL_BUILTIN_BITREVERSEG
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -186,7 +191,9 @@ template <typename _Tp>
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }
 #endif // !_CCCL_TILE_COMPILATION()
-#if defined(_CCCL_BUILTIN_BITREVERSE32)
+#if defined(_CCCL_BUILTIN_BITREVERSEG)
+  return _CCCL_BUILTIN_BITREVERSEG(__value);
+#elif defined(_CCCL_BUILTIN_BITREVERSE32)
   return ::cuda::__bit_reverse_builtin(__value);
 #else
   return ::cuda::__bit_reverse_generic(__value);
