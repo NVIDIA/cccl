@@ -309,7 +309,7 @@ public:
   _CCCL_HOST_API void contains_async(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
   {
-    this->contains_if_async(
+    contains_if_async(
       __stream,
       __first,
       __last,
@@ -395,7 +395,7 @@ public:
   _CCCL_HOST_API void find_async(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
   {
-    this->find_if_async(
+    find_if_async(
       __stream,
       __first,
       __last,
