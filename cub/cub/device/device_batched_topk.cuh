@@ -103,10 +103,8 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   //   1. determinism and tie_break must be acknowledged together (both specified, or both omitted default)
   //   2. an explicit tie_break of prefer_smaller_index / prefer_larger_index fully pins the result set across GPUs and
   //      therefore requires determinism::gpu_to_gpu (it cannot be paired with run_to_run or not_guaranteed)
-  //   3. only `output_ordering::unsorted` is implemented. Given rules 1/2, this admits the five implemented
-  //      (determinism, tie_break) combinations -- (not_guaranteed, unspecified), (run_to_run, unspecified),
-  //      (gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index}) -- while `sorted` / `stable_sorted`
-  //      (and therefore the empty-env default, which resolves to `stable_sorted`) remain rejected.
+  //   3. `output_ordering::stable_sorted` is not implemented. `sorted` and `unsorted` support the five valid
+  //      (determinism, tie_break) combinations; the empty-env default remains rejected because it is stable-sorted.
   //
   // Backend routing implied by the request (exact rules in `policy_selector_from_types`, dispatch_batched_topk.cuh):
   // any request beyond fully non-deterministic -- determinism stronger than not_guaranteed (run_to_run/gpu_to_gpu), or
@@ -148,8 +146,8 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   constexpr bool tie_break_compatible_with_determinism =
     ::cuda::std::is_same_v<requested_tie_break_t, ::cuda::execution::tie_break::unspecified_t>
     || ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-  constexpr bool is_unsorted_output =
-    ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>;
+  constexpr bool is_stable_sorted_output =
+    ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::stable_sorted_t>;
 
   static_assert(determinism_and_tie_break_paired,
                 "cub::DeviceBatchedTopK: determinism and tie_break requirements must be acknowledged together. Either "
@@ -161,11 +159,10 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
                 "prefer_larger_index pins the result set across GPUs and therefore requires "
                 "cuda::execution::determinism::gpu_to_gpu (it cannot be combined with run_to_run or not_guaranteed).");
   static_assert(
-    !determinism_and_tie_break_paired || !tie_break_compatible_with_determinism || is_unsorted_output,
-    "cub::DeviceBatchedTopK currently only implements cuda::execution::output_ordering::unsorted output "
-    "(cuda::execution::output_ordering::sorted and stable_sorted are not yet implemented). Because the default "
-    "output ordering is stable_sorted, an empty (no-requirement) environment is rejected: request unsorted output "
-    "explicitly, e.g. cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
+    !determinism_and_tie_break_paired || !tie_break_compatible_with_determinism || !is_stable_sorted_output,
+    "cub::DeviceBatchedTopK does not yet implement cuda::execution::output_ordering::stable_sorted. Because the "
+    "default output ordering is stable_sorted, an empty (no-requirement) environment is rejected: request sorted or "
+    "unsorted output explicitly, e.g. cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
     "cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted).");
 
   // ---------------------------------------------------------------------------
@@ -231,7 +228,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     // conservative 64-bit upper bound here.
     constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
-    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
+    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value, requested_order_t::value>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -365,10 +362,12 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //! - **Uniform number of segments.** ``num_segments`` must be a single value (``constant``, ``immediate``, or a plain
 //!   integral) resolved on the host, and must not exceed ``2^31 - 1`` (it sizes the launch grid). A negative count is
 //!   treated as no work (an empty batch). A ``deferred`` (device-resident) count is not supported at this time.
-//! - **Unsorted output required.** Only ``cuda::execution::output_ordering::unsorted`` is implemented; the sorted
-//!   orderings of the default contract described in *Determinism, tie-breaking, and output ordering* below (and hence
-//!   an empty, no-requirement environment, which defaults to ``stable_sorted``) are rejected at compile time. The
-//!   supported ``determinism`` / ``tie_break`` requirements depend on the architecture -- see the *Current support*
+//! - **Sorted output is bounded.** ``cuda::execution::output_ordering::sorted`` is supported, while
+//!   ``stable_sorted`` (and therefore an empty, no-requirement environment) is rejected at compile time. Sorted output
+//!   requires ``min(k bound, segment-size bound)`` to fit one block-wide radix-sort tile and extra temporary storage
+//!   proportional to ``num_segments * min(k bound, segment-size bound)``. A ``k`` of at least 2048 is supported when
+//!   ``max(sizeof(key), sizeof(value)) <= 16``; larger key/value types may need a tighter ``k`` or segment-size bound.
+//!   The supported ``determinism`` / ``tie_break`` requirements depend on the architecture -- see the *Current support*
 //!   note below. ``determinism`` and ``tie_break`` must always be specified together, or both omitted to take the
 //!   default.
 //!
@@ -391,10 +390,10 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!
 //! .. note::
 //!
-//!    **Current support.** Only the unsorted output ordering is implemented;
-//!    ``cuda::execution::output_ordering::unsorted`` must be requested explicitly (``sorted`` / ``stable_sorted``, and
-//!    thus an empty, no-requirement environment, are rejected at compile time). The supported selection requirements
-//!    and segment sizes differ by architecture:
+//!    **Current support.** ``cuda::execution::output_ordering::unsorted`` and ``sorted`` are implemented.
+//!    ``stable_sorted`` and an empty environment (which requests it by default) are rejected at compile time. Sorted
+//!    output requires a bounded ``min(k bound, segment-size bound)`` and additional temporary storage; see *Current
+//!    constraints* above. The supported selection requirements and segment sizes differ by architecture:
 //!
 //!    - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
 //!      ``(determinism::not_guaranteed, tie_break::unspecified)`` is supported, and every segment must fit a single
@@ -488,8 +487,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -594,8 +594,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -703,8 +704,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -807,8 +809,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -933,8 +936,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -1049,8 +1053,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -1176,8 +1181,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
@@ -1292,8 +1298,9 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
-  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   **[optional]** Execution environment. Supports `output_ordering::unsorted` and `sorted`; `stable_sorted` (and
+  //!   thus an empty environment) is not yet supported. Sorted output needs a bounded `min(k bound, segment-size
+  //!   bound)` and additional temporary storage. The selection requirements may be any acknowledged
   //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
   //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
