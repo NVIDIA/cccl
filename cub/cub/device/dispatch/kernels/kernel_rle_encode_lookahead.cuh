@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__memory/ptr_rebind.h>
 #include <cuda/ptx>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -249,15 +250,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
     else
     {
       // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-      const unsigned nbytes     = static_cast<unsigned>((tile_len + (first_tile ? 0 : slot_pad)) * int{sizeof(KeyT)});
-      const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
+      const unsigned nbytes = static_cast<unsigned>((tile_len + (first_tile ? 0 : slot_pad)) * int{sizeof(KeyT)});
+      const unsigned span_bytes =
+        (nbytes + base_skip + (detail::bulk_copy_min_align - 1)) & ~unsigned{detail::bulk_copy_min_align - 1};
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
       ptx::cp_async_bulk_ignore_oob(
         ptx::space_shared,
         ptx::space_global,
         slot + (first_tile ? slot_pad : 0),
-        reinterpret_cast<const KeyT*>(
-          reinterpret_cast<const char*>(d_keys + static_cast<size_t>(tile_id) * tile_size - (first_tile ? 0 : slot_pad))
+        ::cuda::ptr_rebind<KeyT>(
+          ::cuda::ptr_rebind<char>(d_keys + static_cast<size_t>(tile_id) * tile_size - (first_tile ? 0 : slot_pad))
           - base_skip),
         span_bytes,
         first_tile ? base_skip : 0u,
