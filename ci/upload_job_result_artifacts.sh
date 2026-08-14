@@ -63,4 +63,11 @@ find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if no
 find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
 find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
 
+# TESTING - copy source trees to verify contents
+mkdir -p "$job_artifacts"/src/
+cp -arv .git "$job_artifacts"/src/
+cp -arv cub "$job_artifacts"/src/
+cp -arv thrust "$job_artifacts"/src/
+cp -arv libcudacxx "$job_artifacts"/src/
+
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
