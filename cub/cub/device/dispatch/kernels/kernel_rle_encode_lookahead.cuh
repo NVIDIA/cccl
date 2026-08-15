@@ -23,6 +23,7 @@
 #include <cuda/ptx>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -727,7 +728,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   const int lane_id = tid & 31;
   const int bid     = blockIdx.x;
   const unsigned base_skip =
-    (alignof(KeyT) < 16) ? (static_cast<unsigned>(reinterpret_cast<size_t>(d_keys)) & 15u) : 0u;
+    (int{alignof(KeyT)} < detail::bulk_copy_min_align)
+      ? (static_cast<unsigned>(::cuda::std::bit_cast<::cuda::std::uintptr_t>(d_keys))
+         & unsigned{detail::bulk_copy_min_align - 1})
+      : 0u;
   const int skip_elems = static_cast<int>(base_skip / sizeof(KeyT));
   if (tid == 0)
   {
