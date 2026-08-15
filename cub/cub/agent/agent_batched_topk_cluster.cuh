@@ -3377,12 +3377,13 @@ private:
       static_cast<::cuda::std::uint64_t>(segment_size_raw) <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
       "segment size must be non-negative and fit the 32-bit cluster offset type");
     segment_size = static_cast<segment_size_val_t>(segment_size_raw);
-    // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
-    const auto output_size =
+    // Keep the nonnegative requested k because selection clamps it to the segment size, while fixed-width padding ends
+    // at the requested k. Compare in a 64-bit width holding both operands.
+    const auto requested_k =
       static_cast<::cuda::std::uint64_t>(detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id));
-    const auto k_clamped = (::cuda::std::min) (output_size, static_cast<::cuda::std::uint64_t>(segment_size));
+    const auto k_clamped = (::cuda::std::min) (requested_k, static_cast<::cuda::std::uint64_t>(segment_size));
 
-    fill_output_tail(k_clamped, output_size);
+    fill_output_tail(k_clamped, requested_k);
 
     if (k_clamped == 0)
     {

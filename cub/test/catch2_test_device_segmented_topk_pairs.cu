@@ -344,16 +344,6 @@ void check_batched_topk_pairs_output_padding()
 
   CAPTURE(Direction, Determinism, TieBreak);
 
-  skip_unless_batched_topk_pairs_supported<Direction, Determinism, TieBreak>(
-    /*static_max_segment_size=*/5,
-    d_keys_in,
-    d_compact_keys,
-    d_values_in,
-    d_compact_vals,
-    segment_sizes,
-    k_arg,
-    num_segs);
-
   batched_topk_pairs<Direction, Determinism, TieBreak>(
     d_keys_in, d_compact_keys, d_values_in, d_compact_vals, segment_sizes, k_arg, num_segs);
   batched_topk_pairs_with_padding<Direction, Determinism, TieBreak>(
@@ -2528,10 +2518,10 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
 
 #if TEST_TYPES == 0
   // Extend this existing variable-size/per-segment-k test with fixed-width materialization. Restrict the focused
-  // contract matrix to one representative key/static-k instantiation; direction remains this test's Cartesian axis.
+  // contract matrix to one representative key/static-k/runtime-size instantiation; direction remains an existing axis.
   if constexpr (cuda::std::is_same_v<key_t, cuda::std::uint8_t> && static_max_k == 32)
   {
-    SECTION("default output leaves both tails untouched; OutputPadding fills them through the requested per-row k")
+    if (num_items == min_items)
     {
       check_batched_topk_pairs_output_padding_backends<direction>();
     }

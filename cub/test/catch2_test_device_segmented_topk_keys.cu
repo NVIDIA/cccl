@@ -289,9 +289,6 @@ void check_batched_topk_keys_output_padding()
 
   CAPTURE(Direction, Determinism, TieBreak);
 
-  skip_unless_batched_topk_keys_supported<Direction, Determinism, TieBreak>(
-    /*static_max_segment_size=*/5, d_keys_in, d_compact_output, segment_sizes, k_arg, num_segs);
-
   // The existing environment has compact semantics: unused slots remain untouched.
   batched_topk_keys<Direction, Determinism, TieBreak>(d_keys_in, d_compact_output, segment_sizes, k_arg, num_segs);
 
@@ -1760,10 +1757,10 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 
 #if TEST_TYPES == 0
   // Extend this existing variable-size/per-segment-k test with fixed-width materialization. Restrict the focused
-  // contract matrix to one representative key/static-k instantiation; direction remains this test's Cartesian axis.
+  // contract matrix to one representative key/static-k/runtime-size instantiation; direction remains an existing axis.
   if constexpr (cuda::std::is_same_v<key_t, cuda::std::uint8_t> && static_max_k == 32)
   {
-    SECTION("default output leaves the tail untouched; OutputPadding fills it through the requested per-row k")
+    if (num_items == min_items)
     {
       check_batched_topk_keys_output_padding_backends<direction>();
     }
@@ -2285,20 +2282,17 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as n
   // No segment had any items, so the whole output is left untouched.
   REQUIRE(keys_out == thrust::device_vector<int>(num_segments * k, sentinel));
 
-  SECTION("OutputPadding fills every requested slot for the host-known empty segments")
-  {
-    constexpr int pad = -1;
-    auto padded_out   = thrust::device_vector<int>(num_segments * k, sentinel);
-    auto d_padded_out =
-      cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(padded_out.data())), k);
+  constexpr int pad = -1;
+  auto padded_out   = thrust::device_vector<int>(num_segments * k, sentinel);
+  auto d_padded_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(padded_out.data())), k);
 
-    // The immediate negative value makes __highest_(segment_sizes) negative on the host. This specifically exercises
-    // deterministic cluster launch-shape sizing before the in-kernel empty-segment handling.
-    batched_topk_keys_with_padding<cub::detail::topk::select::max, determinism, tie_break>(
-      d_keys_in, d_padded_out, segment_sizes, k_arg, num_segs, cub::DeviceBatchedTopK::OutputPadding(pad));
+  // The immediate negative value makes __highest_(segment_sizes) negative on the host. This specifically exercises
+  // deterministic cluster launch-shape sizing before the in-kernel empty-segment handling.
+  batched_topk_keys_with_padding<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in, d_padded_out, segment_sizes, k_arg, num_segs, cub::DeviceBatchedTopK::OutputPadding(pad));
 
-    REQUIRE(padded_out == thrust::device_vector<int>(num_segments * k, pad));
-  }
+  REQUIRE(padded_out == thrust::device_vector<int>(num_segments * k, pad));
 }
 
 // Zero segments is a no-op, but with a positive segment-size bound the `max_seg_size <= 0` guard does not fire, so the

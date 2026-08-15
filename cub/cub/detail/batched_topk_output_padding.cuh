@@ -20,9 +20,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, bool HasValue>
 struct output_padding_values
 {
+  static constexpr bool has_value = HasValue;
+
   KeyT key;
   ValueT value;
 };

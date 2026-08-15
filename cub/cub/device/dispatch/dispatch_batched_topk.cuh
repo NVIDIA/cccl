@@ -1066,18 +1066,23 @@ _CCCL_HOST_API cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  // Empty batch = no work to launch: no segments, or (for the default compact-output contract) a non-positive tightest
-  // max segment size (every segment empty, e.g. a uniform negative size clamped to 0). An output-padding request must
-  // still launch for empty segments because a positive k makes the entire output segment padding. `== 0` suffices for
-  // `num_segments`: a negative count is already short-circuited as no work above. Consulted only on the launch
-  // (`d_temp_storage != nullptr`) of a *supported* arm below: the query pass falls through to size
-  // `temp_storage_bytes`, and the unsupported arm ignores it so an unavailable request still fails with
-  // cudaErrorNotSupported rather than being masked into success.
+  // Empty batch = no work to launch: no segments; for compact output, a non-positive tightest max segment size; or for
+  // padded output, a non-positive tightest max k. Padded output must still launch for empty segments when k is positive
+  // because the entire output segment is padding. `== 0` suffices for `num_segments`: a negative count is already
+  // short-circuited as no work above. Consulted only on the launch (`d_temp_storage != nullptr`) of a *supported* arm
+  // below: the query pass falls through to size `temp_storage_bytes`, and the unsupported arm ignores it so an
+  // unavailable request still fails with cudaErrorNotSupported rather than being masked into success.
   const auto empty_batch_no_launch = [&] {
-    return d_temp_storage != nullptr
-        && (detail::params::get_param(num_segments, 0) == 0
-            || (!detail::batched_topk::is_padded_output_segments_iterator_v<KeyOutputItItT>
-                && ::cuda::args::__highest_(segment_sizes) <= 0));
+    if constexpr (detail::batched_topk::is_padded_output_segments_iterator_v<KeyOutputItItT>)
+    {
+      return d_temp_storage != nullptr
+          && (detail::params::get_param(num_segments, 0) == 0 || ::cuda::args::__highest_(k) <= 0);
+    }
+    else
+    {
+      return d_temp_storage != nullptr
+          && (detail::params::get_param(num_segments, 0) == 0 || ::cuda::args::__highest_(segment_sizes) <= 0);
+    }
   };
 
   return detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {

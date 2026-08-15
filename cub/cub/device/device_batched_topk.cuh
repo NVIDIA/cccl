@@ -251,9 +251,9 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     if constexpr (::cuda::std::execution::__queryable_with<EnvT, batched_topk::get_output_padding_t>)
     {
       const auto& padding         = env.query(batched_topk::get_output_padding_t{});
-      using value_padding_t       = ::cuda::std::remove_cvref_t<decltype(padding.value)>;
+      using padding_t             = ::cuda::std::remove_cvref_t<decltype(padding)>;
       constexpr bool is_keys_only = ::cuda::std::is_same_v<it_value_t<it_value_t<ValueInputIteratorItT>>, NullType>;
-      static_assert(is_keys_only == ::cuda::std::is_same_v<value_padding_t, NullType>,
+      static_assert(is_keys_only == !padding_t::has_value,
                     "cub::DeviceBatchedTopK::OutputPadding requires one value for Keys and two values for Pairs");
 
       const auto padded_keys_out = batched_topk::make_padded_output_segments_iterator(d_keys_out, padding.key);
@@ -277,7 +277,6 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     return cudaErrorInvalidValue;
   }
 }
-
 //! @endcond
 } // namespace detail
 
@@ -473,7 +472,7 @@ struct DeviceBatchedTopK
   template <typename KeyT>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto OutputPadding(KeyT key)
   {
-    using padding_t = detail::batched_topk::output_padding_values<KeyT, NullType>;
+    using padding_t = detail::batched_topk::output_padding_values<KeyT, NullType, false>;
     return ::cuda::std::execution::prop{detail::batched_topk::get_output_padding_t{}, padding_t{key, {}}};
   }
 
@@ -485,7 +484,7 @@ struct DeviceBatchedTopK
   template <typename KeyT, typename ValueT>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto OutputPadding(KeyT key, ValueT value)
   {
-    using padding_t = detail::batched_topk::output_padding_values<KeyT, ValueT>;
+    using padding_t = detail::batched_topk::output_padding_values<KeyT, ValueT, true>;
     return ::cuda::std::execution::prop{detail::batched_topk::get_output_padding_t{}, padding_t{key, value}};
   }
 
