@@ -242,14 +242,8 @@ public:
       const bool single_channel = num_channels == 1 && num_active_channels == 1;
       auto gmem = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
 
-      // Multi-channel 32-bit-counter histograms use the wider SM100 sweep tuned by autoresearch.
-      if (num_channels > 1 && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive)
-      {
-        gmem =
-          HistogramPrivatizationPolicy{1024, t_scale(is_even ? 8 : 16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
-      }
       // Single-channel primitive samples with 32-bit counters use their per-sample-width tuning.
-      else if (single_channel && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive)
+      if (single_channel && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive)
       {
         // Eight-bit EVEN and RANGE histograms retain the dedicated SM100 tunings already in main.
         if (sample_size_bytes == 1)
@@ -309,11 +303,12 @@ public:
       constexpr int max_privatized_dynamic_smem_4_channel_even_bytes       = 131072;
       constexpr int max_output_histogram_bytes_for_init_kernel_pdl_trigger = 8192;
 
-      // Dynamic-SMEM tuning exists only for the type and channel combinations measured by autoresearch.
+      // Dynamic-SMEM tuning exists only for combinations that improve on current main.
+      // Multi-channel EVEN keeps the established global-memory path above the static tier.
       const bool has_dynamic_smem_tuning =
         counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
         && ((single_channel && (sample_size_bytes == 1 || sample_size_bytes == 4 || sample_size_bytes == 8))
-            || num_channels > 1);
+            || (!is_even && num_channels > 1));
       const int init_kernel_pdl_trigger_bytes =
         single_channel && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
             && (sample_size_bytes == 1 || sample_size_bytes == 2 || sample_size_bytes == 4 || sample_size_bytes == 8)
