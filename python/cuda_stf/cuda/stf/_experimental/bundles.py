@@ -19,6 +19,15 @@ bundle clamps ``constant`` fields to read), explicitly requesting more than a
 field's ceiling raises, unspecified fields in per-field spellings default to
 read, and one submitted dependency is one ``get`` slot.
 
+When to use a bundle — and when not to: bundles model data that is one
+OBJECT at the level users reason about (a sparse matrix's invariant-bound
+arrays, a graph's topology, a mesh's coordinates and connectivity, a library
+descriptor's constituents). They are not a dependency-count reducer for
+loosely related arrays: a solver workspace whose tasks touch different
+subsets with different modes each time (e.g. Krylov vectors R/P/V/S/T)
+should keep bare per-array dependencies — grouping such arrays would
+over-declare and serialize tasks that share no data.
+
 ``constant`` is a promise about *users of this bundle*, not global
 immutability: other views or bare handles may legitimately write the field,
 and the ordinary read dependencies the bundle generates are what serialize
