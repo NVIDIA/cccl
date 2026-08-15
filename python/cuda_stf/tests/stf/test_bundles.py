@@ -26,8 +26,8 @@ def _modes(bd: bundle_dep):
 
 def test_bundle_modes_and_ceilings():
     ctx = stf.context()
-    vals = np.zeros(8, dtype=np.float64)
-    idx = np.arange(8, dtype=np.int32)
+    vals = ctx.logical_data(np.zeros(8, dtype=np.float64))
+    idx = ctx.logical_data(np.arange(8, dtype=np.int32))
     B = ctx.bundle(vals=vals, idx=constant(idx))
 
     # fields stay first-class logical data
@@ -54,8 +54,8 @@ def test_bundle_modes_and_ceilings():
 
 def test_task_slots():
     ctx = stf.context()
-    vals = np.full(8, 2.0, dtype=np.float64)
-    idx = np.arange(8, dtype=np.int32)
+    vals = ctx.logical_data(np.full(8, 2.0, dtype=np.float64))
+    idx = ctx.logical_data(np.arange(8, dtype=np.int32))
     out = np.zeros(8, dtype=np.float64)
 
     B = ctx.bundle(vals=vals, idx=constant(idx))
@@ -77,22 +77,25 @@ def test_task_slots():
     ctx.finalize()
 
 
-def test_bundle_adopts_and_registers():
+def test_bundle_adopts_handles_only():
     ctx = stf.context()
     lv = ctx.logical_data(np.zeros(4, dtype=np.float32))
-    B = ctx.bundle(vals=lv, aux=np.ones(4, dtype=np.float32))
-    assert B.vals is lv  # adopted, not re-registered
+    la = ctx.logical_data(np.ones(4, dtype=np.float32))
+    B = ctx.bundle(vals=lv, aux=la)
+    assert B.vals is lv  # adopted: the same handle, nothing copied
     with ctx.task(B.rw()) as t:
         assert set(t.get(0)._fields) == {"vals", "aux"}
+    # bundles group handles, they do not register arrays
+    with pytest.raises(TypeError):
+        ctx.bundle(vals=np.zeros(4))
     ctx.finalize()
 
 
-def test_bundle_device_array_inference():
-    da = stf.DeviceArray(8, np.dtype(np.float32), stf.data_place.device(0))
+def test_bundle_device_logical_data():
+    dplace = stf.data_place.device(0)
+    da = stf.DeviceArray(8, np.dtype(np.float32), dplace)
     ctx = stf.context()
-    # registering a device CUDA-Array-Interface object must infer the device
-    # data place (no host-pinning assertion)
-    B = ctx.bundle(vals=da)
+    B = ctx.bundle(vals=ctx.logical_data(da, dplace))
     with ctx.task(B.rw()) as t:
         assert t.get(0).vals.__cuda_array_interface__["shape"] == (8,)
     ctx.finalize()

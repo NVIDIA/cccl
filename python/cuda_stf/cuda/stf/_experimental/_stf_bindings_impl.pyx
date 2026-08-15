@@ -3129,8 +3129,9 @@ cdef class context:
         Create a :class:`~cuda.stf._experimental.bundles.bundle`: a non-owning
         group of logical data usable as a single task dependency.
 
-        Field values may be existing logical data (adopted) or array-likes
-        (registered); wrap a value in ``constant`` for a read-only ceiling.
+        Field values must be logical data (bundles group handles; register
+        arrays first with ``ctx.logical_data``). Wrap a value in
+        ``constant`` for a read-only ceiling.
 
         Example
         -------

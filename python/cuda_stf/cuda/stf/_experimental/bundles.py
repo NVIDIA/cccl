@@ -52,23 +52,16 @@ class constant:
         self.value = value
 
 
-def _register(ctx, value):
-    """Register an array-like, inferring the data place for device memory.
-
-    CUDA Array Interface objects live on a device; registering them without a
-    device data place trips an opaque host-pinning assertion, so infer the
-    device from the pointer attributes.
-    """
-    if isinstance(value, _b.logical_data):
-        return value
-    cai = getattr(value, "__cuda_array_interface__", None)
-    if cai is not None:
-        from cuda.bindings import runtime as _rt
-
-        err, attr = _rt.cudaPointerGetAttributes(cai["data"][0])
-        if int(err) == 0 and attr.type == _rt.cudaMemoryType.cudaMemoryTypeDevice:
-            return ctx.logical_data(value, _b.data_place.device(attr.device))
-    return ctx.logical_data(value)
+def _check_field(name, value):
+    """Bundle fields must be logical data: bundles group handles, they do not
+    register data (that is ``ctx.logical_data``'s job, with its explicit data
+    place policy). Duck-typed so stackable logical data qualify too."""
+    if not (hasattr(value, "read") and hasattr(value, "rw")):
+        raise TypeError(
+            f"bundle field {name!r} must be a logical data (register the array "
+            "first with ctx.logical_data(...))"
+        )
+    return value
 
 
 class bundle_dep:
@@ -86,10 +79,10 @@ class bundle_dep:
 class bundle:
     """Non-owning group of logical data with named fields and ceilings.
 
-    Field values may be existing :class:`logical_data` (adopted: handles are
-    shared, nothing is copied) or array-likes (registered). Wrapping a value
-    in :class:`constant` gives the field a read-only ceiling. Fields remain
-    first-class logical data, reachable as attributes (``b.vals``).
+    Field values must be logical data (handles are shared, nothing is copied
+    or registered — register arrays first with ``ctx.logical_data``).
+    Wrapping a value in :class:`constant` gives the field a read-only
+    ceiling. Fields remain first-class, reachable as attributes (``b.vals``).
     """
 
     def __init__(self, ctx, **fields):
@@ -102,7 +95,7 @@ class bundle:
             if isinstance(value, constant):
                 self._ceiling_read.add(name)
                 value = value.value
-            self._lds[name] = _register(ctx, value)
+            self._lds[name] = _check_field(name, value)
             self._names.append(name)
 
     def __getattr__(self, name):

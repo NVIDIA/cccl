@@ -123,9 +123,9 @@ def test_cg_csr_bundle():
 
     # The matrix is one bundle: values tracked, structure read-only ceilinged
     A = ctx.bundle(
-        vals=np.array(vals, dtype=np.float64),
-        colind=constant(np.array(colind, dtype=np.int32)),
-        rowptr=constant(np.array(rowptr, dtype=np.int32)),
+        vals=ctx.logical_data(np.array(vals, dtype=np.float64)),
+        colind=constant(ctx.logical_data(np.array(colind, dtype=np.int32))),
+        rowptr=constant(ctx.logical_data(np.array(rowptr, dtype=np.int32))),
     )
 
     x_host = np.zeros(n)
