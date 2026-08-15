@@ -225,9 +225,9 @@ void test_gather_if(const size_t n)
   thrust::device_vector<T> d_output(n);
 
   thrust::gather_if(
-    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even{});
   thrust::gather_if(
-    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even());
+    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even{});
 
   REQUIRE(h_output == d_output);
 }
