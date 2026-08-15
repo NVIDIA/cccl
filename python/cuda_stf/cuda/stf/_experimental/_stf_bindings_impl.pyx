@@ -1070,6 +1070,20 @@ cdef class logical_data:
         ctx._alive = self._alive
         return ctx
 
+_bundle_view_types = {}
+
+
+def _bundle_view_type(names):
+    """Cached namedtuple type for a bundle's field names (task.get views)."""
+    t = _bundle_view_types.get(names)
+    if t is None:
+        from collections import namedtuple
+
+        t = namedtuple("bundle_view", names)
+        _bundle_view_types[names] = t
+    return t
+
+
 class dep:
     __slots__ = ("ld", "mode", "dplace")
     # ld may be either a logical_data or a stackable_logical_data; both classes
@@ -2288,10 +2302,11 @@ cdef class task:
         arity, names = self._slot_map[slot]
         if names is None:
             return self.get_arg_cai(base)
-        from types import SimpleNamespace
-
+        # A namedtuple (rather than a plain namespace) so the whole view can
+        # cross kernel boundaries as ONE argument: numba typing supports
+        # namedtuples of arrays, preserving the bundle abstraction on device.
         views = [self.get_arg_cai(base + k) for k in range(arity)]
-        return SimpleNamespace(**dict(zip(names, views)))
+        return _bundle_view_type(tuple(names))(*views)
 
     def get_arg(self, index) -> int:
         if self._lds_args[index]._is_token:

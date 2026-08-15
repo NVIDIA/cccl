@@ -22,7 +22,7 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 numba = pytest.importorskip("numba")
 from numba import cuda  # noqa: E402
 
-from cuda.stf._experimental import _stf_bindings as stf  # noqa: E402
+import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.bundles import bundle, constant  # noqa: E402
 
 
@@ -38,13 +38,23 @@ def _stream(t):
     return cuda.external_stream(t.stream_ptr())
 
 
+def _nb_views(bundle_view):
+    """Adapt a whole bundle view: a namedtuple of numba device arrays.
+
+    Numba types namedtuples of arrays, so the bundle stays ONE kernel
+    argument — the device-side analog of the C++ tuple view.
+    """
+    return type(bundle_view)(*map(_nb, bundle_view))
+
+
 @cuda.jit
-def _spmv_kernel(vals, colind, rowptr, x, y):
+def _spmv_kernel(a, x, y):
+    """The CSR matrix arrives as ONE argument (a namedtuple of arrays)."""
     i = cuda.grid(1)
     if i < y.shape[0]:
         acc = 0.0
-        for k in range(rowptr[i], rowptr[i + 1]):
-            acc += vals[k] * x[colind[k]]
+        for k in range(a.rowptr[i], a.rowptr[i + 1]):
+            acc += a.vals[k] * x[a.colind[k]]
         y[i] = acc
 
 
@@ -80,9 +90,8 @@ def spmv(ctx, A, lx, ly, n):
     """y = A @ x — the CSR matrix is a single dependency."""
     nb = (n + 127) // 128
     with ctx.task(A.read(), lx.read(), ly.rw()) as t:
-        a = t.get(0)
         _spmv_kernel[nb, 128, _stream(t)](
-            _nb(a.vals), _nb(a.colind), _nb(a.rowptr), _nb(t.get(1)), _nb(t.get(2))
+            _nb_views(t.get(0)), _nb(t.get(1)), _nb(t.get(2))
         )
 
 

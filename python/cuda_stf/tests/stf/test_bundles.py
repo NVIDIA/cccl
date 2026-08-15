@@ -13,12 +13,11 @@ import numpy as np
 import pytest
 
 import cuda.stf._experimental as stf
-from cuda.stf._experimental import _stf_bindings as b
 from cuda.stf._experimental.bundles import bundle, bundle_dep, constant
 
-READ = b.AccessMode.READ.value
-RW = b.AccessMode.RW.value
-WRITE = b.AccessMode.WRITE.value
+READ = stf.AccessMode.READ
+RW = stf.AccessMode.RW
+WRITE = stf.AccessMode.WRITE
 
 
 def _modes(bd: bundle_dep):
@@ -26,13 +25,13 @@ def _modes(bd: bundle_dep):
 
 
 def test_bundle_modes_and_ceilings():
-    ctx = b.context()
+    ctx = stf.context()
     vals = np.zeros(8, dtype=np.float64)
     idx = np.arange(8, dtype=np.int32)
     B = bundle(ctx, vals=vals, idx=constant(idx))
 
     # fields stay first-class logical data
-    assert isinstance(B.vals, b.logical_data)
+    assert hasattr(B.vals, "read") and hasattr(B.vals, "rw")
     assert len(B) == 2
 
     # read: everything read
@@ -54,7 +53,7 @@ def test_bundle_modes_and_ceilings():
 
 
 def test_task_slots():
-    ctx = b.context()
+    ctx = stf.context()
     vals = np.full(8, 2.0, dtype=np.float64)
     idx = np.arange(8, dtype=np.int32)
     out = np.zeros(8, dtype=np.float64)
@@ -65,7 +64,7 @@ def test_task_slots():
     # one bundle (2 fields) + one plain dep: bundle counts as ONE slot
     with ctx.task(B.read(), lo.rw()) as t:
         g = t.get(0)
-        assert set(vars(g)) == {"vals", "idx"}
+        assert set(g._fields) == {"vals", "idx"}
         v = g.vals.__cuda_array_interface__
         o = t.get(1).__cuda_array_interface__
         assert v["shape"] == (8,) and o["shape"] == (8,)
@@ -79,18 +78,18 @@ def test_task_slots():
 
 
 def test_bundle_adopts_and_registers():
-    ctx = b.context()
+    ctx = stf.context()
     lv = ctx.logical_data(np.zeros(4, dtype=np.float32))
     B = bundle(ctx, vals=lv, aux=np.ones(4, dtype=np.float32))
     assert B.vals is lv  # adopted, not re-registered
     with ctx.task(B.rw()) as t:
-        assert set(vars(t.get(0))) == {"vals", "aux"}
+        assert set(t.get(0)._fields) == {"vals", "aux"}
     ctx.finalize()
 
 
 def test_bundle_device_array_inference():
-    da = stf.DeviceArray(8, np.dtype(np.float32), b.data_place.device(0))
-    ctx = b.context()
+    da = stf.DeviceArray(8, np.dtype(np.float32), stf.data_place.device(0))
+    ctx = stf.context()
     # registering a device CUDA-Array-Interface object must infer the device
     # data place (no host-pinning assertion)
     B = bundle(ctx, vals=da)
