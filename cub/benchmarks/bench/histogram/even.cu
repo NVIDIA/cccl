@@ -51,7 +51,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<SampleT, CounterT, 1, 1, true>{})
+      cuda::execution::tune(histogram_tuning_policy_selector<SampleT, CounterT, 1, 1, true>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
