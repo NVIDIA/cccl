@@ -23,7 +23,7 @@ numba = pytest.importorskip("numba")
 from numba import cuda  # noqa: E402
 
 from cuda.stf._experimental import _stf_bindings as stf  # noqa: E402
-from cuda.stf._experimental.bundles import bundle, bundle_task, constant  # noqa: E402
+from cuda.stf._experimental.bundles import bundle, constant  # noqa: E402
 
 
 def _nb(view):
@@ -79,7 +79,7 @@ def _xpay_kernel(beta_num, beta_den, x, y):
 def spmv(ctx, A, lx, ly, n):
     """y = A @ x — the CSR matrix is a single dependency."""
     nb = (n + 127) // 128
-    with bundle_task(ctx, A.read(), lx.read(), ly.rw()) as t:
+    with ctx.task(A.read(), lx.read(), ly.rw()) as t:
         a = t.get(0)
         _spmv_kernel[nb, 128, _stream(t)](
             _nb(a.vals), _nb(a.colind), _nb(a.rowptr), _nb(t.get(1)), _nb(t.get(2))
@@ -88,7 +88,7 @@ def spmv(ctx, A, lx, ly, n):
 
 def dot(ctx, la, lb, lres, n):
     nb = (n + 127) // 128
-    with bundle_task(ctx, la.read(), lb.read(), lres.rw()) as t:
+    with ctx.task(la.read(), lb.read(), lres.rw()) as t:
         s = _stream(t)
         out = _nb(t.get(2))
         _zero1[1, 1, s](out)
@@ -136,21 +136,21 @@ def test_cg_csr_bundle():
         spmv(ctx, A, lp, lap, n)
         dot(ctx, lp, lap, lpap, n)
 
-        with bundle_task(ctx, lrsold.read(), lpap.read(), lp.read(), lx.rw()) as t:
+        with ctx.task(lrsold.read(), lpap.read(), lp.read(), lx.rw()) as t:
             _axpy_kernel[nb, 128, _stream(t)](
                 _nb(t.get(0)), _nb(t.get(1)), _nb(t.get(2)), _nb(t.get(3))
             )
-        with bundle_task(ctx, lrsold.read(), lpap.read(), lap.read(), lr.rw()) as t:
+        with ctx.task(lrsold.read(), lpap.read(), lap.read(), lr.rw()) as t:
             # r -= alpha * Ap
             _xpay_neg[nb, 128, _stream(t)](
                 _nb(t.get(0)), _nb(t.get(1)), _nb(t.get(2)), _nb(t.get(3))
             )
         dot(ctx, lr, lr, lrsnew, n)
-        with bundle_task(ctx, lrsnew.read(), lrsold.read(), lr.read(), lp.rw()) as t:
+        with ctx.task(lrsnew.read(), lrsold.read(), lr.read(), lp.rw()) as t:
             _xpay_kernel[nb, 128, _stream(t)](
                 _nb(t.get(0)), _nb(t.get(1)), _nb(t.get(2)), _nb(t.get(3))
             )
-        with bundle_task(ctx, lrsnew.read(), lrsold.rw()) as t:
+        with ctx.task(lrsnew.read(), lrsold.rw()) as t:
             _copy1[1, 1, _stream(t)](_nb(t.get(0)), _nb(t.get(1)))
 
     ctx.finalize()

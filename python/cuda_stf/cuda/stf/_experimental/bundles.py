@@ -8,7 +8,7 @@ three arrays of a CSR matrix, a graph's topology) so tasks can depend on the
 whole group with a single argument, while every constituent ("field") remains
 an ordinary logical data usable on its own. A bundle owns no data and no
 dependency-tracking state: a bundle dependency expands into one ordinary
-dependency per field before reaching the task, and :meth:`bundle_task.get`
+dependency per field before reaching the task, and ``task.get``
 reassembles the per-field views with the bundle counting as ONE slot.
 
 This mirrors the C++ ``bundle`` / ``field`` / ``constant`` feature
@@ -26,19 +26,17 @@ against those writers.
 
 Example
 -------
->>> from cuda.stf._experimental.bundles import bundle, bundle_task, constant
+>>> from cuda.stf._experimental.bundles import bundle, constant
 >>> A = bundle(ctx, vals=vals_array, colind=constant(colind_array),
 ...            rowptr=constant(rowptr_array))
->>> with bundle_task(ctx, A.rw(), ly.rw()) as t:
+>>> with ctx.task(A.rw(), ly.rw()) as t:
 ...     a = t.get(0)      # namespace: a.vals, a.colind, a.rowptr (CAI views)
 ...     y = t.get(1)      # ordinary dependency: one slot each
 """
 
-from types import SimpleNamespace
-
 from cuda.stf._experimental import _stf_bindings as _b
 
-__all__ = ["bundle", "bundle_dep", "bundle_task", "constant"]
+__all__ = ["bundle", "bundle_dep", "constant"]
 
 _READ = _b.AccessMode.READ.value
 _RW = _b.AccessMode.RW.value
@@ -75,6 +73,8 @@ def _register(ctx, value):
 
 class bundle_dep:
     """A group of ordinary deps submitted as a single argument (one slot)."""
+
+    _stf_bundle_dep = True
 
     __slots__ = ("deps", "names")
 
@@ -155,45 +155,3 @@ class bundle:
             mode = _READ if name in self._ceiling_read else modes[name]
             deps.append(_b.dep(self._lds[name], mode, dplace))
         return bundle_dep(deps, self._names)
-
-
-class bundle_task:
-    """Context manager wrapping ``ctx.task``: flattens bundle dependencies and
-    regroups per-slot access, with each bundle counting as one slot.
-
-    Non-bundle arguments pass through unchanged; ``get(i)`` returns the plain
-    CUDA Array Interface view for them, and a :class:`types.SimpleNamespace`
-    of per-field views for bundle slots. Other task methods (``stream_ptr``,
-    ``get_arg_cai``, ...) are forwarded to the underlying task.
-    """
-
-    def __init__(self, ctx, *args, **kwargs):
-        self._slots = []  # (arity, names or None)
-        flat = []
-        for a in args:
-            if isinstance(a, bundle_dep):
-                self._slots.append((len(a.deps), a.names))
-                flat.extend(a.deps)
-            else:
-                self._slots.append((1, None))
-                flat.append(a)
-        self._task = ctx.task(*flat, **kwargs)
-
-    def __enter__(self):
-        self._task.__enter__()
-        return self
-
-    def __exit__(self, *exc):
-        return self._task.__exit__(*exc)
-
-    def __getattr__(self, name):
-        return getattr(self._task, name)
-
-    def get(self, slot):
-        """Per-slot view access; a bundle is one slot."""
-        arity, names = self._slots[slot]
-        base = sum(s[0] for s in self._slots[:slot])
-        if names is None:
-            return self._task.get_arg_cai(base)
-        views = [self._task.get_arg_cai(base + k) for k in range(arity)]
-        return SimpleNamespace(**dict(zip(names, views)))

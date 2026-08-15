@@ -14,7 +14,7 @@ import pytest
 
 import cuda.stf._experimental as stf
 from cuda.stf._experimental import _stf_bindings as b
-from cuda.stf._experimental.bundles import bundle, bundle_dep, bundle_task, constant
+from cuda.stf._experimental.bundles import bundle, bundle_dep, constant
 
 READ = b.AccessMode.READ.value
 RW = b.AccessMode.RW.value
@@ -53,7 +53,7 @@ def test_bundle_modes_and_ceilings():
     ctx.finalize()
 
 
-def test_bundle_task_slots():
+def test_task_slots():
     ctx = b.context()
     vals = np.full(8, 2.0, dtype=np.float64)
     idx = np.arange(8, dtype=np.int32)
@@ -63,7 +63,7 @@ def test_bundle_task_slots():
     lo = ctx.logical_data(out)
 
     # one bundle (2 fields) + one plain dep: bundle counts as ONE slot
-    with bundle_task(ctx, B.read(), lo.rw()) as t:
+    with ctx.task(B.read(), lo.rw()) as t:
         g = t.get(0)
         assert set(vars(g)) == {"vals", "idx"}
         v = g.vals.__cuda_array_interface__
@@ -72,7 +72,7 @@ def test_bundle_task_slots():
         assert v["data"][0] != o["data"][0]
 
     # mixed use: bundle dep + bare dep on one of its own fields
-    with bundle_task(ctx, B.read(), B.vals.rw()) as t:
+    with ctx.task(B.read(), B.vals.rw()) as t:
         assert t.get(1).__cuda_array_interface__["shape"] == (8,)
 
     ctx.finalize()
@@ -83,7 +83,7 @@ def test_bundle_adopts_and_registers():
     lv = ctx.logical_data(np.zeros(4, dtype=np.float32))
     B = bundle(ctx, vals=lv, aux=np.ones(4, dtype=np.float32))
     assert B.vals is lv  # adopted, not re-registered
-    with bundle_task(ctx, B.rw()) as t:
+    with ctx.task(B.rw()) as t:
         assert set(vars(t.get(0))) == {"vals", "aux"}
     ctx.finalize()
 
@@ -94,6 +94,6 @@ def test_bundle_device_array_inference():
     # registering a device CUDA-Array-Interface object must infer the device
     # data place (no host-pinning assertion)
     B = bundle(ctx, vals=da)
-    with bundle_task(ctx, B.rw()) as t:
+    with ctx.task(B.rw()) as t:
         assert t.get(0).vals.__cuda_array_interface__["shape"] == (8,)
     ctx.finalize()

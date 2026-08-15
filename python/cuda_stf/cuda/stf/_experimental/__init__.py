@@ -33,7 +33,6 @@ _LAZY_SYMBOLS = {
     "CudaStream": "._stf_bindings",
     "bundle": ".bundles",
     "bundle_dep": ".bundles",
-    "bundle_task": ".bundles",
     "constant": ".bundles",
     "async_resources": "._stf_bindings",
     "cond": "._stf_bindings",

@@ -2133,6 +2133,9 @@ cdef class task:
     cdef _AliveFlag _alive
     # Grid rank of the exec place set through set_exec_place (1 = scalar)
     cdef int _grid_rank
+    # One entry per submitted dependency slot: (arity, field names or None).
+    # A bundle dependency contributes several flat deps but ONE slot.
+    cdef list _slot_map
 
     def __cinit__(self, context ctx):
         self._t = stf_task_create(ctx._ctx)
@@ -2144,6 +2147,7 @@ cdef class task:
         self._mapper_states = []
         self._alive = ctx._alive
         self._grid_rank = 1
+        self._slot_map = []
 
     def __dealloc__(self):
         # See stackable_logical_data.__dealloc__ for why a None _alive must
@@ -2268,6 +2272,26 @@ cdef class task:
         for e in dims:
             n *= e
         return [self.get_stream_at_index(i) for i in range(n)]
+
+    def get(self, slot):
+        """Per-slot view access: one submitted dependency is one slot.
+
+        For a plain dependency this returns its CUDA Array Interface view
+        (like ``get_arg_cai``); for a bundle dependency it returns a
+        ``types.SimpleNamespace`` with one view per field.
+        """
+        if slot < 0 or slot >= len(self._slot_map):
+            raise IndexError(f"task has {len(self._slot_map)} dependency slots")
+        base = 0
+        for s in range(slot):
+            base += self._slot_map[s][0]
+        arity, names = self._slot_map[slot]
+        if names is None:
+            return self.get_arg_cai(base)
+        from types import SimpleNamespace
+
+        views = [self.get_arg_cai(base + k) for k in range(arity)]
+        return SimpleNamespace(**dict(zip(names, views)))
 
     def get_arg(self, index) -> int:
         if self._lds_args[index]._is_token:
@@ -3102,6 +3126,12 @@ cdef class context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
+                t._slot_map.append((1, None))
+            elif getattr(d, "_stf_bundle_dep", False):
+                # a bundle dependency: several flat deps, one slot
+                for leaf in d.deps:
+                    t.add_dep(leaf)
+                t._slot_map.append((len(d.deps), list(d.names)))
             elif isinstance(d, exec_place):
                 if exec_place_set:
                       raise ValueError("Only one exec_place can be given")
