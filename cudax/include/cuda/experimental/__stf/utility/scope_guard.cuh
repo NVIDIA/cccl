@@ -72,23 +72,12 @@ struct notify_t
   decltype(::std::ignore)
   operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) const noexcept
   {
-    if (__exception != nullptr)
-    {
-      ::fprintf(stderr,
-                "%s(%u) on_throw violation in %s: %s\n",
-                __loc.file_name(),
-                __loc.line(),
-                __loc.function_name(),
-                __exception->what());
-    }
-    else
-    {
-      ::fprintf(stderr,
-                "%s(%u) on_throw violation in %s: nonstandard exception\n",
-                __loc.file_name(),
-                __loc.line(),
-                __loc.function_name());
-    }
+    ::fprintf(stderr,
+              "%s(%u) on_throw violation in %s: %s\n",
+              __loc.file_name(),
+              __loc.line(),
+              __loc.function_name(),
+              __exception != nullptr ? __exception->what() : "nonstandard exception");
     ::fflush(stderr);
     return ::std::ignore;
   }
@@ -200,22 +189,22 @@ inline constexpr bool
 template <class _Fn, class... _Args>
 inline constexpr bool __never_returns = __never_returns_impl<void, _Fn, _Args...>;
 
-// Binds a stream to a reaction that takes one as its first argument, the result being an
-// ordinary handler. Produced by the stream-taking on_throw overload.
-template <class _Reaction>
-struct __stream_bound
+// Binds an extra leading argument to a reaction, the pair itself being an ordinary handler.
+// Produced by the argument-binding on_throw overload. Like the policy and its reaction, the
+// argument is stored by reference when passed an lvalue and owned when passed an rvalue.
+template <class _Reaction, class _Arg>
+struct __bound_reaction
 {
   _Reaction __reaction_;
-  ::std::ostream& __os_;
+  _Arg __arg_;
 
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
   {
     static_assert(
-      ::cuda::std::
-        is_nothrow_invocable_v<_Reaction&, ::std::ostream&, const ::std::exception*, ::cuda::std::source_location>,
-      "an on_throw reaction given a stream must be noexcept-invocable with "
-      "(std::ostream&, const std::exception*, source_location)");
-    return __reaction_(__os_, __exception, __loc);
+      ::cuda::std::is_nothrow_invocable_v<_Reaction&, _Arg&, const ::std::exception*, ::cuda::std::source_location>,
+      "an on_throw reaction with a bound argument must be noexcept-invocable with "
+      "(the argument, const std::exception*, source_location)");
+    return __reaction_(__arg_, __exception, __loc);
   }
 };
 
@@ -413,24 +402,28 @@ auto on_throw(_Reaction&& __reaction,
 }
 
 /**
- * @brief Creates a policy like `on_throw(reaction)` with a stream bound as the reaction's first
- * argument: `on_throw(notify, std::cerr) << callable` reports to `cerr`.
+ * @brief Creates a policy like `on_throw(reaction)` with an extra argument bound as the
+ * reaction's first parameter: `on_throw(notify, std::cerr) << callable` reports to `cerr`, and
+ * any handler taking `(Arg, const std::exception*, source_location)` participates the same
+ * way, whatever its `Arg`. A reaction that cannot accept the argument is a compile-time error.
  *
- * The reaction must be a `noexcept` callable taking `(std::ostream&, const std::exception*,
- * cuda::std::source_location)`. Its return type keeps the usual handler meaning: `nothing` to
- * end the program, `std::ignore` to go on. `notify` has both this shape and the plain one.
+ * The reaction's return type keeps the usual handler meaning: `nothing` to end the program,
+ * `std::ignore` to go on. `notify` has both the bound (stream) shape and the plain one.
  *
- * @param[in] __reaction The reaction, invoked with `__os` prepended to a handler's arguments.
- * @param[in] __os The stream to report to, which the caller keeps alive.
+ * @param[in] __reaction The reaction, invoked with `__arg` prepended to a handler's arguments.
+ * @param[in] __arg The bound argument, referred to if passed an lvalue (the caller keeps it
+ *            alive) and owned by the policy if passed an rvalue.
  * @param[in] __loc The location passed to the reaction; defaults to the call site.
  * @return A policy object consumed by `operator<<`.
  */
-template <class _Reaction>
+template <class _Reaction, class _Arg>
 auto on_throw(_Reaction&& __reaction,
-              ::std::ostream& __os,
+              _Arg&& __arg,
               const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  return on_throw(detail::__stream_bound<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __os}, __loc);
+  return on_throw(detail::__bound_reaction<_Reaction, _Arg>{::cuda::std::forward<_Reaction>(__reaction),
+                                                            ::cuda::std::forward<_Arg>(__arg)},
+                  __loc);
 }
 
 #ifdef UNITTESTED_FILE
@@ -587,6 +580,18 @@ UNITTEST("on_throw")
              site.function_name());
   EXPECT(::std::string_view{message} == expected);
   ::fclose(log);
+
+  // The bound argument need not be a stream: anything the handler accepts binds the same way.
+  int hits        = 0;
+  const auto tick = [](int& h, const ::std::exception*, ::cuda::std::source_location) noexcept {
+    ++h;
+    return ::std::ignore;
+  };
+  const int ticked = on_throw(tick, hits) << []() -> int {
+    throw ::std::runtime_error("counted");
+  };
+  EXPECT(ticked == 0);
+  EXPECT(hits == 1);
 
   // `defer` captures instead of reacting: empty on success, the exception otherwise, ready
   // for a later rethrow -- non-std exceptions included.
