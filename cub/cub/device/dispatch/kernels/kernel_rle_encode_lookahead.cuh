@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -361,7 +362,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   // if we have any heads, get last head index
   if (warps_with_runs)
   {
-    const int last_warp_with_runs = 31 - __clz(warps_with_runs);
+    const int last_warp_with_runs = 31 - ::cuda::std::countl_zero(warps_with_runs);
     // broadcast the index from last lane to all
     last_head_idx = __shfl_sync(full_mask, active ? slot_warp_last_heads[lane_id] : -1, last_warp_with_runs);
   }
@@ -876,11 +877,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (nonempty_chunk_mask)
           {
             const int first_chunk           = __ffs(nonempty_chunk_mask) - 1;
-            const int last_chunk            = 31 - __clz(nonempty_chunk_mask);
+            const int last_chunk            = 31 - ::cuda::std::countl_zero(nonempty_chunk_mask);
             const unsigned first_chunk_mask = __shfl_sync(full_mask, my_flags, first_chunk);
             const unsigned last_chunk_mask  = __shfl_sync(full_mask, my_flags, last_chunk);
             warp_first_head                 = warp_tile_offset + first_chunk * 32 + (__ffs(first_chunk_mask) - 1);
-            warp_last_head                  = warp_tile_offset + last_chunk * 32 + 31 - __clz(last_chunk_mask);
+            warp_last_head = warp_tile_offset + last_chunk * 32 + 31 - ::cuda::std::countl_zero(last_chunk_mask);
           }
           // now, we calculate warptile aggregates
           if (lane_id == 0)
