@@ -169,6 +169,20 @@ struct nothing final
   ::std::terminate();
 }
 
+/**
+ * @brief Tag asking `on_throw` to capture rather than react: `on_throw(defer) << callable`
+ * evaluates to a `std::exception_ptr` that is empty when the callable returns normally and
+ * holds the thrown exception otherwise, ready for storage and a later
+ * `std::rethrow_exception`. This is the reaction for boundaries that must not unwind but
+ * cannot decide either -- the exception's fate is somebody else's, later.
+ *
+ * The callable must return `void`: the expression's value is the `exception_ptr`, leaving a
+ * result no channel.
+ */
+struct defer_t
+{};
+inline constexpr defer_t defer{};
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
@@ -306,17 +320,37 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
   static_assert(!noexcept(::cuda::std::forward<_Fn>(__fn)()),
                 "on_throw has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly");
-  _CCCL_TRY
+  if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Reaction>, defer_t>)
   {
-    return ::cuda::std::forward<_Fn>(__fn)();
+    // Capture, don't react: the expression's value is the exception_ptr itself, so this
+    // branch owns the return type and never consults __handle.
+    static_assert(::cuda::std::is_void_v<_Result>,
+                  "on_throw(defer) evaluates to the exception_ptr, leaving the callable's "
+                  "result no channel; the callable must return void");
+    _CCCL_TRY
+    {
+      ::cuda::std::forward<_Fn>(__fn)();
+      return ::std::exception_ptr();
+    }
+    _CCCL_CATCH_ALL
+    {
+      return ::std::current_exception();
+    }
   }
-  _CCCL_CATCH (const ::std::exception& __exception)
+  else
   {
-    return __policy.template __handle<_Result>(&__exception);
-  }
-  _CCCL_CATCH_ALL
-  {
-    return __policy.template __handle<_Result>(nullptr);
+    _CCCL_TRY
+    {
+      return ::cuda::std::forward<_Fn>(__fn)();
+    }
+    _CCCL_CATCH (const ::std::exception& __exception)
+    {
+      return __policy.template __handle<_Result>(&__exception);
+    }
+    _CCCL_CATCH_ALL
+    {
+      return __policy.template __handle<_Result>(nullptr);
+    }
   }
 }
 } // namespace detail
@@ -326,7 +360,7 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  * @brief Creates a policy saying how to react if a callable throws.
  *
  * Apply the policy with `on_throw(reaction) << callable`, which evaluates to the result of the
- * callable when nothing goes wrong. The reaction is one of four things, recognized by type:
+ * callable when nothing goes wrong. The reaction is one of five things, recognized by type:
  *
  * - A handler: any `noexcept` callable accepting a `const std::exception*` and a
  *   `cuda::std::source_location`, be it a function, a function pointer, or a function object,
@@ -344,6 +378,9 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   ending in a `nothing`-returning callable.
  * - `std::ignore`, which suppresses the exception silently and resumes execution with a
  *   default-constructed result.
+ * - `defer`, under which the expression evaluates to a `std::exception_ptr` instead of the
+ *   callable's result: empty when the callable returns normally, otherwise holding the thrown
+ *   exception for storage and later rethrow. The callable must return `void`.
  * - Anything else, taken as a replacement value for the result. It must be convertible to the
  *   callable's result type, and is moved into the result if the policy owns it.
  *
@@ -550,6 +587,29 @@ UNITTEST("on_throw")
              site.function_name());
   EXPECT(::std::string_view{message} == expected);
   ::fclose(log);
+
+  // `defer` captures instead of reacting: empty on success, the exception otherwise, ready
+  // for a later rethrow -- non-std exceptions included.
+  const ::std::exception_ptr clean = on_throw(defer) << [] {};
+  EXPECT(!clean);
+  const ::std::exception_ptr held = on_throw(defer) << [] {
+    throw ::std::runtime_error("deferred");
+  };
+  EXPECT(!!held);
+  bool rethrown = false;
+  try
+  {
+    ::std::rethrow_exception(held);
+  }
+  catch (const ::std::runtime_error& e)
+  {
+    rethrown = ::std::string_view{e.what()} == "deferred";
+  }
+  EXPECT(rethrown);
+  const ::std::exception_ptr odd = on_throw(defer) << [] {
+    throw 42;
+  };
+  EXPECT(!!odd);
 
   // A replacement value stands in for the result, converted to the callable's result type.
   const int replaced = on_throw(42) << []() -> int {
