@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -146,8 +148,8 @@ struct expecter
     const char* op;
     comparison_expression(bool value, L lhs, R rhs, const char* op)
         : value(value)
-        , lhs(::std::forward<L>(lhs))
-        , rhs(::std::forward<R>(rhs))
+        , lhs(::cuda::std::forward<L>(lhs))
+        , rhs(::cuda::std::forward<R>(rhs))
         , op(op)
     {}
   };
@@ -164,7 +166,7 @@ struct expecter
 
     template <typename U>
     term(U&& value)
-        : value(::std::forward<U>(value))
+        : value(::cuda::std::forward<U>(value))
     {}
 
     /*
@@ -208,12 +210,12 @@ struct expecter
      * evaluating
      * `==`.
      */
-#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                \
-    template <typename U>                                                      \
-    auto operator op(U&& rhs) &&                                               \
-    {                                                                          \
-      using Result = decltype(value op ::std::forward<U>(rhs));                \
-      return term<Result>(::std::forward<T>(value) op ::std::forward<U>(rhs)); \
+#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
+    template <typename U>                                                                  \
+    auto operator op(U&& rhs) &&                                                           \
+    {                                                                                      \
+      using Result = decltype(value op ::cuda::std::forward<U>(rhs));                      \
+      return term<Result>(::cuda::std::forward<T>(value) op ::cuda::std::forward<U>(rhs)); \
     }
 
     _9d10c7e37932af3c4f39a5ce7ff00b5a(*);
@@ -263,7 +265,7 @@ struct expecter
   template <typename T>
   term<T> operator->*(T&& lhs)
   {
-    return term<T>(::std::forward<T>(lhs));
+    return term<T>(::cuda::std::forward<T>(lhs));
   }
 
   /*
@@ -278,17 +280,17 @@ struct expecter
   {
     if (t.value)
     {
-      return ::std::forward<T>(t.value);
+      return ::cuda::std::forward<T>(t.value);
     }
     if constexpr (sizeof...(msgs) == 0)
     {
-      using U = ::std::remove_reference_t<T>;
+      using U = ::cuda::std::remove_reference_t<T>;
       _CCCL_THROW(
         cuda::experimental::stf::expecter::failure,
         loc,
         "Tested expression of type " + ::std::string(type_name<T>) + " is "
           + (std::is_same_v<const U, const bool> ? "false"
-             : ::std::is_arithmetic_v<U>         ? "zero"
+             : ::cuda::std::is_arithmetic_v<U>   ? "zero"
                                                  : "null")
           + ".\n");
     }
@@ -311,7 +313,7 @@ struct expecter
   {
     if (e.value)
     {
-      return ::std::forward<L>(e.lhs);
+      return ::cuda::std::forward<L>(e.lhs);
     }
     _CCCL_THROW(
       ::cuda::experimental::stf::expecter::failure, loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
@@ -366,7 +368,7 @@ public:
   template <typename... Params>
   static unittest<Params...> make(const char* name, ::cuda::std::source_location loc, Params&&... params)
   {
-    return unittest<Params...>(name, loc, ::std::forward<Params>(params)...);
+    return unittest<Params...>(name, loc, ::cuda::std::forward<Params>(params)...);
   }
 
 public:
@@ -444,8 +446,8 @@ public:
    * @param params other parameters, if any
    */
   unittest(const char* name, ::cuda::std::source_location loc, Param param, Params... params)
-      : unittest<Params...>(name, loc, ::std::forward<Params>(params)...)
-      , param(::std::forward<Param>(param))
+      : unittest<Params...>(name, loc, ::cuda::std::forward<Params>(params)...)
+      , param(::cuda::std::forward<Param>(param))
   {}
 
   /**
@@ -459,11 +461,11 @@ public:
   unittest& operator->*(Fun&& fun)
   {
     unittest<>::operator->*([&](const char* name) {
-      fun(name, ::std::forward<Param>(param));
+      fun(name, ::cuda::std::forward<Param>(param));
     });
     if constexpr (sizeof...(Params) > 0)
     {
-      unittest<Params...>::operator->*(::std::forward<Fun>(fun));
+      unittest<Params...>::operator->*(::cuda::std::forward<Fun>(fun));
     }
     return *this;
   }
@@ -522,9 +524,9 @@ int main()
 #  ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("Numeric NOP test.", int(), float(), double())
 {
-  using T = ::std::remove_reference_t<decltype(unittest_param)>;
+  using T = ::cuda::std::remove_reference_t<decltype(unittest_param)>;
   auto x  = EXPECT(T(1) + T(1) == T(2));
-  static_assert(::std::is_same_v<decltype(x), T>);
+  static_assert(::cuda::std::is_same_v<decltype(x), T>);
 };
 #  endif // STF_HAS_UNITTEST_WITH_ARGS
 
@@ -623,7 +625,7 @@ UNITTEST("tuple2tuple")
   auto t1 = tuple2tuple(t, [](auto x) {
     return x + 1.0;
   });
-  static_assert(::std::is_same_v<decltype(t1), ::std::tuple<double, double, double>>);
+  static_assert(::cuda::std::is_same_v<decltype(t1), ::std::tuple<double, double, double>>);
   EXPECT(t1 == ::std::make_tuple(2.0, 3.0, 4.0));
   //! [tuple2tuple]
 };

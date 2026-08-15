@@ -14,6 +14,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -109,8 +113,8 @@ public:
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : owner_(::std::make_shared<owner>(::std::make_shared<state>(mv(sctx))))
   {
-    static_assert(::std::is_move_constructible_v<stackable_logical_data>);
-    static_assert(::std::is_move_assignable_v<stackable_logical_data>);
+    static_assert(::cuda::std::is_move_constructible_v<stackable_logical_data>);
+    static_assert(::cuda::std::is_move_assignable_v<stackable_logical_data>);
 
     // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2,
     // export at depth 1, not 0 ...)
@@ -189,32 +193,32 @@ public:
   // Helpers — return lazy stackable_task_dep descriptors.
   auto read() const
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::read);
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::read);
   }
 
   auto read(data_place dp) const
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::read, mv(dp));
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::read, mv(dp));
   }
 
   auto write()
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::write);
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write);
   }
 
   auto write(data_place dp)
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::write, mv(dp));
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write, mv(dp));
   }
 
   auto rw()
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::rw);
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw);
   }
 
   auto rw(data_place dp)
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, access_mode::rw, mv(dp));
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw, mv(dp));
   }
 
   template <typename Op>
@@ -243,12 +247,12 @@ public:
 
   auto dep_with_mode(access_mode m)
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, m);
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, m);
   }
 
   auto dep_with_mode(access_mode m, data_place dp)
   {
-    return stackable_task_dep<T, ::std::monostate, false>(*this, m, mv(dp));
+    return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, m, mv(dp));
   }
 
   auto shape() const
@@ -436,7 +440,7 @@ private:
       {}
 
       logical_data<T> ld;
-      ::std::optional<frozen_logical_data<T>> frozen_ld;
+      ::cuda::std::optional<frozen_logical_data<T>> frozen_ld;
       event_list unfreeze_prereqs;
       int get_cnt                = 0;
       access_mode effective_mode = access_mode::none;
@@ -467,7 +471,7 @@ private:
         return;
       }
 
-      const size_t new_size = ::std::max(target_size, data_nodes.size() * factor_numerator / factor_denominator);
+      const size_t new_size = ::cuda::std::max(target_size, data_nodes.size() * factor_numerator / factor_denominator);
       data_nodes.resize(new_size);
     }
 
@@ -513,7 +517,7 @@ private:
     }
 
     stackable_ctx sctx;
-    ::std::vector<::std::optional<data_node>> data_nodes;
+    ::std::vector<::cuda::std::optional<data_node>> data_nodes;
     int data_root_offset = -1;
     ::std::string symbol;
     bool read_only = false;
@@ -690,7 +694,13 @@ private:
     _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
     auto& frozen_ld = from_data_node.frozen_ld.value();
 
-    ::std::optional<logical_data<T>> imported;
+    // A replicated place seeds the import from its first member and adopts the other
+    // members below; every other place imports itself and nothing else.
+    data_place seed                     = where.is_replicated() ? where.member(0) : where;
+    ::std::pair<T, event_list> seed_res = frozen_ld.get(seed);
+    logical_data<T> ld                  = to_ctx.logical_data(seed_res.first, seed);
+    to_node->ctx_prereqs.merge(mv(seed_res.second));
+
     if (where.is_replicated())
     {
       // Member walk: import EVERY member instance of the replicated place
@@ -700,10 +710,11 @@ private:
       // resolves in the nested context without issuing any copy -- in
       // particular no memcpy node lands in a conditional body graph.
       // The read-only guarantee comes from the normalization above.
-      ::std::vector<data_place> done;
       const size_t nmembers = where.instance_count();
+      ::std::vector<data_place> done;
       done.reserve(nmembers);
-      for (size_t r = 0; r < nmembers; r++)
+      done.push_back(mv(seed));
+      for (size_t r = 1; r < nmembers; r++)
       {
         data_place member = where.member(r);
         if (::std::find(done.begin(), done.end(), member) != done.end())
@@ -711,25 +722,12 @@ private:
           continue; // equal members share one instance
         }
         ::std::pair<T, event_list> res = frozen_ld.get(member);
-        if (!imported.has_value())
-        {
-          imported = to_ctx.logical_data(res.first, member);
-        }
-        else
-        {
-          imported->adopt_shared_instance(mv(res.first), member);
-        }
+        ld.adopt_shared_instance(mv(res.first), member);
         done.push_back(mv(member));
         to_node->ctx_prereqs.merge(mv(res.second));
       }
     }
-    else
-    {
-      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
-      imported                           = to_ctx.logical_data(get_res.first, where);
-      to_node->ctx_prereqs.merge(mv(get_res.second));
-    }
-    auto& ld = imported.value();
+
     from_data_node.get_cnt++;
 
     if (!st.symbol.empty())
@@ -769,7 +767,7 @@ public:
   using op_type     = reduce_op;
   enum : bool
   {
-    does_work = !::std::is_same_v<reduce_op, ::std::monostate>
+    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
   };
 
   stackable_task_dep(stackable_logical_data<T> _d, access_mode _mode, data_place _dplace = data_place::affine())
@@ -1358,7 +1356,7 @@ public:
   private:
     stackable_ctx& ctx_;
     cudaGraphConditionalHandle handle_;
-    ::std::tuple<::std::decay_t<Deps>...> tdeps;
+    ::std::tuple<::cuda::std::decay_t<Deps>...> tdeps;
   };
 
   //! \brief Helper for updating while loop condition using a device lambda
@@ -1460,7 +1458,7 @@ private:
   // destroyed first (reverse declaration order).  Its destructor calls
   // ctx_.pop() which may still reference counter data.
   stackable_logical_data<scalar_view<size_t>> counter_;
-  ::std::optional<stackable_ctx::while_graph_scope_guard> while_guard_;
+  ::cuda::std::optional<stackable_ctx::while_graph_scope_guard> while_guard_;
 };
 
 inline auto stackable_ctx::repeat_graph_scope(
