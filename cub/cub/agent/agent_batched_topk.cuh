@@ -25,11 +25,28 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/argument>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
+template <typename OutputSegmentsIteratorT, typename PaddingT>
+struct padded_output_segments_iterator;
+
+template <typename OutputSegmentsIteratorT>
+struct agent_batched_topk_output_segments_iterator_traits
+{
+  static constexpr bool is_padded = false;
+};
+
+template <typename OutputSegmentsIteratorT, typename PaddingT>
+struct agent_batched_topk_output_segments_iterator_traits<
+  padded_output_segments_iterator<OutputSegmentsIteratorT, PaddingT>>
+{
+  static constexpr bool is_padded = true;
+};
+
 // Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
 // and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
 // counter on its own cache line for performance.
@@ -99,6 +116,10 @@ struct agent_batched_topk_worker_per_segment
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
+  static constexpr bool pad_output   = agent_batched_topk_output_segments_iterator_traits<KeyOutputItItT>::is_padded;
+  static_assert(is_keys_only
+                  || pad_output == agent_batched_topk_output_segments_iterator_traits<ValueOutputItItT>::is_padded,
+                "key and value output padding must be enabled together");
 
   // -------------------------------------------------------------------------
   // Primitive Types
@@ -184,6 +205,36 @@ struct agent_batched_topk_worker_per_segment
       , d_large_segments_tile_offsets(d_large_segments_tile_offsets)
   {}
 
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  fill_output_tail(int segment_id, ::cuda::std::uint64_t num_selected, ::cuda::std::uint64_t output_size)
+  {
+    if constexpr (pad_output)
+    {
+      if (num_selected >= output_size)
+      {
+        return;
+      }
+
+      auto block_keys_out = d_key_segments_out_it[segment_id];
+      if constexpr (is_keys_only)
+      {
+        for (::cuda::std::uint64_t idx = num_selected + threadIdx.x; idx < output_size; idx += blockDim.x)
+        {
+          block_keys_out[idx] = d_key_segments_out_it.padding_value;
+        }
+      }
+      else
+      {
+        auto block_vals_out = d_value_segments_out_it[segment_id];
+        for (::cuda::std::uint64_t idx = num_selected + threadIdx.x; idx < output_size; idx += blockDim.x)
+        {
+          block_keys_out[idx] = d_key_segments_out_it.padding_value;
+          block_vals_out[idx] = d_value_segments_out_it.padding_value;
+        }
+      }
+    }
+  }
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
@@ -219,10 +270,10 @@ struct agent_batched_topk_worker_per_segment
     {
       // Process small segment. Clamp `k` (already floored to >= 0) to the segment size in a width holding both operands
       // so a `k` type narrower than the segment size cannot wrap; the result fits the segment-size type.
+      const auto output_size =
+        static_cast<::cuda::std::uint64_t>(params::__get_and_clamp_param_to_nonnegative(k_param, segment_id));
       const auto k = static_cast<decltype(segment_size)>(
-        (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                              params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
-                            static_cast<::cuda::std::uint64_t>(segment_size)));
+        (::cuda::std::min) (output_size, static_cast<::cuda::std::uint64_t>(segment_size)));
       // Nothing to select for an empty segment (including a negative size or a negative `k`, both clamped to 0) or a
       // zero k: skip the block work, leaving its output untouched (also keeps the block primitive's `valid_items in
       // [1, tile_items]` precondition). We must not `return` here -- the large-segment epilogue below is unconditional
@@ -330,6 +381,8 @@ struct agent_batched_topk_worker_per_segment
           block_store_vals_t(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
         }
       } // if (k != 0)
+
+      fill_output_tail(segment_id, static_cast<::cuda::std::uint64_t>(k), output_size);
     }
 
     // Epilogue: Scan queued large segment sizes (in tiles not elements) for load balancing search in the large segment
