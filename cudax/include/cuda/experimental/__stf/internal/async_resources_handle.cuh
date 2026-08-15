@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -270,7 +272,7 @@ public:
   {
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
-    pimpl->per_device_gc_helper[dev_id] = ::std::move(helper);
+    pimpl->per_device_gc_helper[dev_id] = ::cuda::std::move(helper);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -325,7 +327,7 @@ public:
  */
 UNITTEST("async_resources_handle is_default_constructible")
 {
-  static_assert(::std::is_default_constructible<async_resources_handle>::value,
+  static_assert(::cuda::std::is_default_constructible<async_resources_handle>::value,
                 "async_resources_handle must be default constructible");
 };
 #endif
