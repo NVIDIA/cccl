@@ -26,6 +26,14 @@ using namespace cuda::experimental::stf;
 
 using test_bundle = bundle<field<slice<double>>, field<slice<int>, constant>>;
 
+__global__ void bundle_kernel(slice<const double> v, slice<const int> ix, slice<double> out)
+{
+  for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < out.size(); i += blockDim.x * gridDim.x)
+  {
+    out(i) += 0.0 * (v(i) + ix(i));
+  }
+}
+
 // The rw view must keep mutable fields mutable and const-qualify constant fields
 template <typename BundleView>
 __host__ __device__ void check_rw_view_types()
@@ -91,6 +99,17 @@ void run(context& ctx)
     {
       out(i) += 0.0 * ::cuda::std::get<1>(b)(i);
     }
+  };
+
+  // cuda_kernel and cuda_kernel_chain with a bundle dependency
+  ctx.cuda_kernel(B.read(), lo.rw())->*[](auto b, auto out) {
+    return cuda_kernel_desc{bundle_kernel, 8, 32, 0, ::cuda::std::get<0>(b), ::cuda::std::get<1>(b), out};
+  };
+
+  ctx.cuda_kernel_chain(B.read(), lo.rw())->*[](auto b, auto out) {
+    return ::std::vector<cuda_kernel_desc>{
+      {bundle_kernel, 8, 32, 0, ::cuda::std::get<0>(b), ::cuda::std::get<1>(b), out},
+      {bundle_kernel, 8, 32, 0, ::cuda::std::get<0>(b), ::cuda::std::get<1>(b), out}};
   };
 
   // host_launch with structured bindings on the bundle view; verify the results

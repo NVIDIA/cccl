@@ -851,7 +851,6 @@ public:
   {
     return parallel_for(default_exec_place(), mv(shape), mv(args)...);
   }
-#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
   template <
     typename partitioner_t,
@@ -892,6 +891,7 @@ public:
   {
     return launch(default_exec_place(), mv(args)...);
   }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
   template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
   auto host_launch(Args... args)
