@@ -1,0 +1,46 @@
+=============== optional.engaged begin ===============
+(const cuda::std::optional<int> &) <address> Has Value=true: {
+  Value = 42
+}
+=============== optional.engaged end ===============
+=============== optional.disengaged begin ===============
+(const cuda::std::optional<int> &) <address> Has Value=false
+=============== optional.disengaged end ===============
+=============== optional.nested begin ===============
+(const cuda::std::optional<cuda::std::optional<int>> &) <address> Has Value=true: {
+  Value = Has Value=true {
+    Value = 7
+  }
+}
+=============== optional.nested end ===============
+=============== optional.nested_disengaged begin ===============
+(const cuda::std::optional<cuda::std::optional<int>> &) <address> Has Value=true: {
+  Value = Has Value=false
+}
+=============== optional.nested_disengaged end ===============
+=============== optional.non_trivial begin ===============
+(const cuda::std::optional<non_trivial> &) <address> Has Value=true: {
+  Value = (id = 3, weight = 2.5)
+}
+=============== optional.non_trivial end ===============
+=============== optional.alias begin ===============
+(const optional_alias &) <address> Has Value=true: {
+  Value = -8
+}
+=============== optional.alias end ===============
+=============== optional.reference begin ===============
+(const cuda::std::optional<int &> &) <address> Has Value=true: {
+  Value = 11
+}
+=============== optional.reference end ===============
+=============== optional.reference_disengaged begin ===============
+(const cuda::std::optional<int &> &) <address> Has Value=false
+=============== optional.reference_disengaged end ===============
+=============== optional.update.before begin ===============
+(const cuda::std::optional<int> &) <address> Has Value=true: {
+  Value = 99
+}
+=============== optional.update.before end ===============
+=============== optional.update.after begin ===============
+(const cuda::std::optional<int> &) <address> Has Value=false
+=============== optional.update.after end ===============

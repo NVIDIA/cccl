@@ -1,0 +1,49 @@
+=============== optional.engaged begin ===============
+cuda::std::optional<int> = {
+  [contained value] = 42
+}
+=============== optional.engaged end ===============
+=============== optional.disengaged begin ===============
+cuda::std::optional<int> [no contained value]
+=============== optional.disengaged end ===============
+=============== optional.nested begin ===============
+cuda::std::optional<cuda::std::optional<int>> = {
+  [contained value] = cuda::std::optional<int> = {
+    [contained value] = 7
+  }
+}
+=============== optional.nested end ===============
+=============== optional.nested_disengaged begin ===============
+cuda::std::optional<cuda::std::optional<int>> = {
+  [contained value] = cuda::std::optional<int> [no contained value]
+}
+=============== optional.nested_disengaged end ===============
+=============== optional.non_trivial begin ===============
+cuda::std::optional<non_trivial> = {
+  [contained value] = {
+    id = 3,
+    weight = 2.5
+  }
+}
+=============== optional.non_trivial end ===============
+=============== optional.alias begin ===============
+cuda::std::optional<int> = {
+  [contained value] = -8
+}
+=============== optional.alias end ===============
+=============== optional.reference begin ===============
+cuda::std::optional<int&> = {
+  [contained value] = 11
+}
+=============== optional.reference end ===============
+=============== optional.reference_disengaged begin ===============
+cuda::std::optional<int&> [no contained value]
+=============== optional.reference_disengaged end ===============
+=============== optional.update.before begin ===============
+cuda::std::optional<int> = {
+  [contained value] = 99
+}
+=============== optional.update.before end ===============
+=============== optional.update.after begin ===============
+cuda::std::optional<int> [no contained value]
+=============== optional.update.after end ===============
