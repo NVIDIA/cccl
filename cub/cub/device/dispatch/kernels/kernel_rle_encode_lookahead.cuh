@@ -298,9 +298,9 @@ clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_g
 
 // calculate head_flags: each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
 // head = (key != predecessor)
-template <int ItemsPerThread, bool ClampTail, class KeyT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned
-compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id, int skip_elems)
+template <int ItemsPerThread, bool KeysStaged, class KeyT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned compute_head_flags(
+  const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id, [[maybe_unused]] int skip_elems)
 {
   static_assert(ItemsPerThread <= 32, "one lane per iter requires ItemsPerThread<=32");
   unsigned my_flags = 0;
@@ -309,13 +309,18 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
   {
     // each iteration handles one 32-element chunk of the warp tile; lane i compares element i of the chunk
     const int loc = warp_tile_offset + iter * 32 + lane_id;
-    int key_idx   = loc + skip_elems;
-    int pred_idx  = loc + skip_elems - 1; // loc==0 reads the over fetched slot[slot_pad-1]
-    if constexpr (ClampTail)
+    int key_idx;
+    int pred_idx;
+    if constexpr (KeysStaged)
+    {
+      key_idx  = loc + skip_elems;
+      pred_idx = loc + skip_elems - 1; // loc==0 reads the over fetched slot[slot_pad-1]
+    }
+    else
     {
       // vvv regressed case: plain global loads have no ignore_oob, so clamp the tail reads into the input.
       // the clamped values are garbage, but (loc < tile_len) below already zeroes those heads vvv
-      key_idx  = (::cuda::std::min) (key_idx, tile_len - 1);
+      key_idx  = (::cuda::std::min) (loc, tile_len - 1);
       pred_idx = (tile_id == 0) ? (::cuda::std::max) (key_idx - 1, 0) : key_idx - 1;
       // ^^^ regressed case ^^^
     }
@@ -853,7 +858,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (keys_staged)
           {
             const KeyT* key_buf = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
-            my_flags            = compute_head_flags<items_per_thread, false>(
+            my_flags            = compute_head_flags<items_per_thread, true>(
               key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
           }
           else
@@ -861,7 +866,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // vvv regressed case: we load compute flags straight from global vvv
             const KeyT* key_buf = d_keys + static_cast<size_t>(tile_id) * tile_size;
             my_flags =
-              compute_head_flags<items_per_thread, true>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
+              compute_head_flags<items_per_thread, false>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
             // ^^^ regressed case ^^^
           }
           local_run_count = __reduce_add_sync(full_mask, __popc(my_flags));
