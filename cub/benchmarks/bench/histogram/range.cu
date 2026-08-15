@@ -50,7 +50,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<SampleT, CounterT, 1, 1, false>{})
+      cuda::execution::tune(histogram_tuning_policy_selector<SampleT, CounterT, 1, 1, false>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
