@@ -121,7 +121,6 @@ def test_cg_csr_bundle():
     )
 
     x_host = np.zeros(n)
-    lb = ctx.logical_data(b)
     lx = ctx.logical_data(x_host)
     lr = ctx.logical_data(b.copy())  # r = b - A@0 = b
     lp = ctx.logical_data(b.copy())  # p = r
