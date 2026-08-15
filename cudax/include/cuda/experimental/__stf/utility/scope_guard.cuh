@@ -320,7 +320,7 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
   static_assert(!noexcept(::cuda::std::forward<_Fn>(__fn)()),
                 "on_throw has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly");
-  if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Reaction>, defer_t>)
+  if constexpr (::cuda::std::is_same_v<const ::cuda::std::remove_reference_t<_Reaction>, const defer_t>)
   {
     // Capture, don't react: the expression's value is the exception_ptr itself, so this
     // branch owns the return type and never consults __handle.
