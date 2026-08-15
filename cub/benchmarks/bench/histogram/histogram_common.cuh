@@ -27,8 +27,15 @@
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
 #  endif // TUNE_LOAD_ALGORITHM_ID
 
+// Only generated tuning variants instantiate this selector. The `.base` target used for
+// production-policy comparisons defines TUNE_BASE=1 and calls DeviceHistogram without a
+// tuning environment, so it exercises the shipping selector unchanged.
+//
+// A generated tuning point supplies one candidate kernel configuration. Apply that same
+// candidate to every privatization mode so the tuner measures the candidate independently
+// of the runtime bin count selected by the production storage thresholds.
 template <typename SampleT, typename CounterT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, bool IS_EVEN>
-struct bench_policy_selector
+struct histogram_tuning_policy_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
