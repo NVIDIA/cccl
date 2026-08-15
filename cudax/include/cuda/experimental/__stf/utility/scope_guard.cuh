@@ -300,7 +300,8 @@ struct __on_throw_policy
 };
 
 template <class _Reaction, class _Fn>
-decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept
+// The policy goes unread in the defer instantiation, which gcc 9 flags without the attribute.
+decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept
 {
   using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
   // A `noexcept` callable puts the reaction out of reach: an exception raised inside it ends the
