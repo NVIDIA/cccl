@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import cuda.stf._experimental as stf
-from cuda.stf._experimental.bundles import bundle, bundle_dep, constant
+from cuda.stf._experimental.bundles import bundle_dep, constant
 
 READ = stf.AccessMode.READ
 RW = stf.AccessMode.RW
@@ -28,7 +28,7 @@ def test_bundle_modes_and_ceilings():
     ctx = stf.context()
     vals = np.zeros(8, dtype=np.float64)
     idx = np.arange(8, dtype=np.int32)
-    B = bundle(ctx, vals=vals, idx=constant(idx))
+    B = ctx.bundle(vals=vals, idx=constant(idx))
 
     # fields stay first-class logical data
     assert hasattr(B.vals, "read") and hasattr(B.vals, "rw")
@@ -58,7 +58,7 @@ def test_task_slots():
     idx = np.arange(8, dtype=np.int32)
     out = np.zeros(8, dtype=np.float64)
 
-    B = bundle(ctx, vals=vals, idx=constant(idx))
+    B = ctx.bundle(vals=vals, idx=constant(idx))
     lo = ctx.logical_data(out)
 
     # one bundle (2 fields) + one plain dep: bundle counts as ONE slot
@@ -80,7 +80,7 @@ def test_task_slots():
 def test_bundle_adopts_and_registers():
     ctx = stf.context()
     lv = ctx.logical_data(np.zeros(4, dtype=np.float32))
-    B = bundle(ctx, vals=lv, aux=np.ones(4, dtype=np.float32))
+    B = ctx.bundle(vals=lv, aux=np.ones(4, dtype=np.float32))
     assert B.vals is lv  # adopted, not re-registered
     with ctx.task(B.rw()) as t:
         assert set(t.get(0)._fields) == {"vals", "aux"}
@@ -92,7 +92,7 @@ def test_bundle_device_array_inference():
     ctx = stf.context()
     # registering a device CUDA-Array-Interface object must infer the device
     # data place (no host-pinning assertion)
-    B = bundle(ctx, vals=da)
+    B = ctx.bundle(vals=da)
     with ctx.task(B.rw()) as t:
         assert t.get(0).vals.__cuda_array_interface__["shape"] == (8,)
     ctx.finalize()

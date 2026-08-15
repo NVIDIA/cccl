@@ -26,9 +26,9 @@ against those writers.
 
 Example
 -------
->>> from cuda.stf._experimental.bundles import bundle, constant
->>> A = bundle(ctx, vals=vals_array, colind=constant(colind_array),
-...            rowptr=constant(rowptr_array))
+>>> from cuda.stf._experimental import constant
+>>> A = ctx.bundle(vals=vals_array, colind=constant(colind_array),
+...                rowptr=constant(rowptr_array))
 >>> with ctx.task(A.rw(), ly.rw()) as t:
 ...     a = t.get(0)      # namespace: a.vals, a.colind, a.rowptr (CAI views)
 ...     y = t.get(1)      # ordinary dependency: one slot each

@@ -3124,6 +3124,24 @@ cdef class context:
     def token(self):
         return logical_data.token(self)
 
+    def bundle(self, **fields):
+        """
+        Create a :class:`~cuda.stf._experimental.bundles.bundle`: a non-owning
+        group of logical data usable as a single task dependency.
+
+        Field values may be existing logical data (adopted) or array-likes
+        (registered); wrap a value in ``constant`` for a read-only ceiling.
+
+        Example
+        -------
+        >>> A = ctx.bundle(vals=vals, colind=constant(colind))
+        >>> with ctx.task(A.rw(), ly.rw()) as t:
+        ...     a = t.get(0)
+        """
+        from cuda.stf._experimental.bundles import bundle as _bundle
+
+        return _bundle(self, **fields)
+
     def task(self, *args, symbol=None):
         """
         Create a `task`
