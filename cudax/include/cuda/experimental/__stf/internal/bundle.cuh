@@ -62,6 +62,11 @@ class logical_data;
 template <typename T>
 class shape_of;
 
+class void_interface;
+
+template <typename T, typename reduce_op, bool initialize>
+class task_dep;
+
 /**
  * @brief Trait tag marking a bundle field as constant (read-only ceiling).
  *
@@ -132,13 +137,26 @@ inline constexpr bool is_bundle_dep_v = is_bundle_dep<::cuda::std::remove_cvref_
 template <typename... Args>
 inline constexpr bool any_bundle_dep_v = (is_bundle_dep_v<Args> || ... || false);
 
-//! Number of flat dependencies one submitted argument expands to
+//! Number of user-visible lambda arguments one flat dependency produces:
+//! void_interface (token) dependencies are filtered out of the argument list
+//! by the constructs and thus produce none.
 template <typename T>
-struct slot_arity : ::cuda::std::integral_constant<size_t, 1>
+struct dep_visible_arity : ::cuda::std::integral_constant<size_t, 1>
+{};
+
+template <typename reduce_op, bool initialize>
+struct dep_visible_arity<task_dep<void_interface, reduce_op, initialize>> : ::cuda::std::integral_constant<size_t, 0>
+{};
+
+//! Number of user-visible lambda arguments one submitted argument produces
+template <typename T>
+struct visible_slot_arity
+    : ::cuda::std::integral_constant<size_t, dep_visible_arity<::cuda::std::remove_cvref_t<T>>::value>
 {};
 
 template <typename... L>
-struct slot_arity<bundle_dep<L...>> : ::cuda::std::integral_constant<size_t, sizeof...(L)>
+struct visible_slot_arity<bundle_dep<L...>>
+    : ::cuda::std::integral_constant<size_t, (dep_visible_arity<::cuda::std::remove_cvref_t<L>>::value + ... + 0)>
 {};
 
 //! Expand one submitted dependency argument into a tuple of flat dependencies
@@ -320,26 +338,6 @@ struct bundle_arg_adapter<Fun, ::std::index_sequence<Arities...>>
     return o;
   }
 
-  // Group the slot starting at flat position Offset (relative to the first
-  // flat view) out of the full forwarded argument tuple. NLead is the number
-  // of leading (non-dependency) arguments.
-  _CCCL_EXEC_CHECK_DISABLE
-  template <size_t NLead, size_t Slot, typename Tup>
-  _CCCL_HOST_DEVICE static decltype(auto) group_slot(Tup& tup)
-  {
-    constexpr size_t off = NLead + offset_of(Slot);
-    if constexpr (arity_of(Slot) == 1)
-    {
-      // Forward the argument as-is (a reduction accumulator must remain a reference)
-      return static_cast<::cuda::std::tuple_element_t<off, ::cuda::std::remove_cvref_t<Tup>>&&>(
-        ::cuda::std::get<off>(tup));
-    }
-    else
-    {
-      return make_view_tuple<off>(tup, ::std::make_index_sequence<arity_of(Slot)>());
-    }
-  }
-
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t Off, typename Tup, size_t... Ks>
   _CCCL_HOST_DEVICE static auto make_view_tuple(Tup& tup, ::std::index_sequence<Ks...>)
@@ -349,15 +347,47 @@ struct bundle_arg_adapter<Fun, ::std::index_sequence<Arities...>>
       ::cuda::std::get<Off + Ks>(tup)...);
   }
 
-  // Type-level mirror of group_slot, used to constrain operator()
+  // One argument-tuple piece per slot, later flattened with tuple_cat: empty
+  // for zero-arity slots (token dependencies produce no user argument), a
+  // single forwarded reference for arity-1 slots (a reduction accumulator
+  // must remain a reference), a single by-value tuple of views for bundles.
+  _CCCL_EXEC_CHECK_DISABLE
   template <size_t NLead, size_t Slot, typename Tup>
-  using group_slot_t = decltype(group_slot<NLead, Slot>(::cuda::std::declval<Tup&>()));
+  _CCCL_HOST_DEVICE static auto slot_piece(Tup& tup)
+  {
+    constexpr size_t off = NLead + offset_of(Slot);
+    if constexpr (arity_of(Slot) == 0)
+    {
+      return ::cuda::std::tuple<>();
+    }
+    else if constexpr (arity_of(Slot) == 1)
+    {
+      return ::cuda::std::forward_as_tuple(
+        static_cast<::cuda::std::tuple_element_t<off, ::cuda::std::remove_cvref_t<Tup>>&&>(::cuda::std::get<off>(tup)));
+    }
+    else
+    {
+      return ::cuda::std::make_tuple(make_view_tuple<off>(tup, ::std::make_index_sequence<arity_of(Slot)>()));
+    }
+  }
+
+  // Type-level mirror of slot_piece, used to constrain operator()
+  template <size_t NLead, size_t Slot, typename Tup>
+  using slot_piece_t = decltype(slot_piece<NLead, Slot>(::cuda::std::declval<Tup&>()));
+
+  template <typename ArgsTup, size_t... Is>
+  static constexpr bool apply_invocable(::std::index_sequence<Is...>)
+  {
+    return ::cuda::std::is_invocable_v<Fun&, ::cuda::std::tuple_element_t<Is, ArgsTup>...>;
+  }
 
   template <typename Tup, size_t NLead, size_t... LeadIs, size_t... SlotIs>
   static constexpr bool invocable_impl(::std::index_sequence<LeadIs...>, ::std::index_sequence<SlotIs...>)
   {
-    return ::cuda::std::
-      is_invocable_v<Fun&, ::cuda::std::tuple_element_t<LeadIs, Tup>&&..., group_slot_t<NLead, SlotIs, Tup>...>;
+    using args_tuple = decltype(::cuda::std::tuple_cat(
+      ::cuda::std::declval<::cuda::std::tuple<::cuda::std::tuple_element_t<LeadIs, Tup>...>>(),
+      ::cuda::std::declval<slot_piece_t<NLead, SlotIs, Tup>>()...));
+    return apply_invocable<args_tuple>(::std::make_index_sequence<::cuda::std::tuple_size_v<args_tuple>>());
   }
 
   template <typename... Args>
@@ -380,7 +410,10 @@ struct bundle_arg_adapter<Fun, ::std::index_sequence<Arities...>>
   _CCCL_HOST_DEVICE decltype(auto) call(Tup&& tup, ::std::index_sequence<LeadIs...>, ::std::index_sequence<SlotIs...>)
   {
     constexpr size_t n_lead = sizeof...(LeadIs);
-    return f(::cuda::std::get<LeadIs>(mv(tup))..., group_slot<n_lead, SlotIs>(tup)...);
+    return ::cuda::std::apply(
+      f,
+      ::cuda::std::tuple_cat(::cuda::std::forward_as_tuple(::cuda::std::get<LeadIs>(mv(tup))...),
+                             slot_piece<n_lead, SlotIs>(tup)...));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -459,7 +492,7 @@ private:
 template <typename MakeInner, typename... Args>
 auto make_bundle_scope(MakeInner&& make_inner, Args... args)
 {
-  using arities = ::std::index_sequence<slot_arity<Args>::value...>;
+  using arities = ::std::index_sequence<visible_slot_arity<::cuda::std::remove_cvref_t<Args>>::value...>;
   auto flat     = ::std::tuple_cat(as_dep_tuple(mv(args))...);
   auto inner    = ::std::apply(::cuda::std::forward<MakeInner>(make_inner), mv(flat));
   return bundle_scope<decltype(inner), arities>(mv(inner));

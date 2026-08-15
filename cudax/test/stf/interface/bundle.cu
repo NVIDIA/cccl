@@ -78,6 +78,21 @@ void run(context& ctx)
     v2(i) = ::cuda::std::get<0>(b)(i);
   };
 
+  // token dependency mixed with a bundle dependency: the token produces no
+  // lambda argument, and the bundle grouping must stay aligned
+  auto tok = ctx.token();
+  ctx.parallel_for(lo.shape(), tok.rw(), B.read(), lo.rw())->*[] __device__(size_t i, auto b, auto out) {
+    out(i) += 0.0 * ::cuda::std::get<0>(b)(i);
+  };
+
+  // launch with a bundle dependency
+  ctx.launch(B.read(), lo.rw())->*[] __device__(auto th, auto b, auto out) {
+    for (size_t i = th.rank(); i < out.size(); i += th.size())
+    {
+      out(i) += 0.0 * ::cuda::std::get<1>(b)(i);
+    }
+  };
+
   // host_launch with structured bindings on the bundle view; verify the results
   ctx.host_launch(B.read(), lo.read())->*[N](auto b, auto out) {
     auto& [v, ix] = b;
