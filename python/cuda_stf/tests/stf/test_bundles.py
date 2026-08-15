@@ -21,7 +21,8 @@ WRITE = stf.AccessMode.WRITE
 
 
 def _modes(bd: bundle_dep):
-    return {name: d.mode for name, d in zip(bd.names, bd.deps)}
+    acquired_names = [n for n, got in zip(bd.names, bd.acquired) if got]
+    return {name: d.mode for name, d in zip(acquired_names, bd.deps)}
 
 
 def test_bundle_modes_and_ceilings():
@@ -48,6 +49,13 @@ def test_bundle_modes_and_ceilings():
         B.dep(idx=RW)
     with pytest.raises(KeyError):
         B.dep(nope=READ)
+
+    # NONE excludes a field: no dep, no transfer, view is None
+    bd = B.dep(vals=RW, idx=stf.AccessMode.NONE)
+    assert _modes(bd) == {"vals": RW}
+    with ctx.task(bd) as t:
+        g = t.get(0)
+        assert g.idx is None and g.vals is not None
 
     ctx.finalize()
 

@@ -25,8 +25,13 @@ arrays, a graph's topology, a mesh's coordinates and connectivity, a library
 descriptor's constituents). They are not a dependency-count reducer for
 loosely related arrays: a solver workspace whose tasks touch different
 subsets with different modes each time (e.g. Krylov vectors R/P/V/S/T)
-should keep bare per-array dependencies — grouping such arrays would
-over-declare and serialize tasks that share no data.
+should keep bare per-array dependencies. Bundling adds no synchronization
+of its own (a bundle dependency flattens to exactly the leaf dependencies
+you would write by hand) — but the whole-object spellings and the
+read-default acquire every field, which for a workspace means transfers
+and ordering against fields the task never touches, for no modeling gain.
+Use ``AccessMode.NONE`` to exclude a field where object-level access is
+otherwise right.
 
 ``constant`` is a promise about *users of this bundle*, not global
 immutability: other views or bare handles may legitimately write the field,
@@ -47,6 +52,7 @@ from cuda.stf._experimental import _stf_bindings as _b
 
 __all__ = ["bundle", "bundle_dep", "constant"]
 
+_NONE = _b.AccessMode.NONE.value
 _READ = _b.AccessMode.READ.value
 _RW = _b.AccessMode.RW.value
 _WRITE = _b.AccessMode.WRITE.value
@@ -74,15 +80,21 @@ def _check_field(name, value):
 
 
 class bundle_dep:
-    """A group of ordinary deps submitted as a single argument (one slot)."""
+    """A group of ordinary deps submitted as a single argument (one slot).
+
+    ``names`` covers every field of the bundle; ``acquired`` marks which of
+    them contribute a dependency (fields excluded with mode ``NONE`` are not
+    acquired at all — their view is ``None``).
+    """
 
     _stf_bundle_dep = True
 
-    __slots__ = ("deps", "names")
+    __slots__ = ("deps", "names", "acquired")
 
-    def __init__(self, deps, names):
+    def __init__(self, deps, names, acquired):
         self.deps = list(deps)
         self.names = list(names)
+        self.acquired = list(acquired)
 
 
 class bundle:
@@ -138,13 +150,15 @@ class bundle:
 
         Explicitly requesting more than a constant field's ceiling raises
         ``ValueError`` (distribution clamps; explicit excess is an error).
+        A field set to ``AccessMode.NONE`` is not acquired at all: no
+        dependency, no transfer, and its view is ``None``.
         """
         m = dict.fromkeys(self._names, _READ)
         for name, mode in modes.items():
             if name not in self._lds:
                 raise KeyError(f"bundle has no field {name!r}")
             mode = int(mode)
-            if name in self._ceiling_read and mode != _READ:
+            if name in self._ceiling_read and mode not in (_READ, _NONE):
                 raise ValueError(
                     f"field {name!r} is constant in this bundle (read-only ceiling)"
                 )
@@ -153,7 +167,14 @@ class bundle:
 
     def _make(self, modes, dplace):
         deps = []
+        acquired = []
         for name in self._names:
-            mode = _READ if name in self._ceiling_read else modes[name]
+            mode = modes[name]
+            if mode != _NONE and name in self._ceiling_read:
+                mode = _READ
+            if mode == _NONE:
+                acquired.append(False)
+                continue
+            acquired.append(True)
             deps.append(_b.dep(self._lds[name], mode, dplace))
-        return bundle_dep(deps, self._names)
+        return bundle_dep(deps, self._names, acquired)

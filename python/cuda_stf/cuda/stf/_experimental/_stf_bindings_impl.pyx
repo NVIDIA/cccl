@@ -2299,13 +2299,21 @@ cdef class task:
         base = 0
         for s in range(slot):
             base += self._slot_map[s][0]
-        arity, names = self._slot_map[slot]
+        arity, names, acquired = self._slot_map[slot]
         if names is None:
             return self.get_arg_cai(base)
         # A namedtuple (rather than a plain namespace) so the whole view can
         # cross kernel boundaries as ONE argument: numba typing supports
         # namedtuples of arrays, preserving the bundle abstraction on device.
-        views = [self.get_arg_cai(base + k) for k in range(arity)]
+        # Fields excluded with mode NONE are present but None.
+        views = []
+        k = 0
+        for got in acquired:
+            if got:
+                views.append(self.get_arg_cai(base + k))
+                k += 1
+            else:
+                views.append(None)
         return _bundle_view_type(tuple(names))(*views)
 
     def get_arg(self, index) -> int:
@@ -3160,12 +3168,12 @@ cdef class context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
-                t._slot_map.append((1, None))
+                t._slot_map.append((1, None, None))
             elif getattr(d, "_stf_bundle_dep", False):
                 # a bundle dependency: several flat deps, one slot
                 for leaf in d.deps:
                     t.add_dep(leaf)
-                t._slot_map.append((len(d.deps), list(d.names)))
+                t._slot_map.append((len(d.deps), list(d.names), list(d.acquired)))
             elif isinstance(d, exec_place):
                 if exec_place_set:
                       raise ValueError("Only one exec_place can be given")
