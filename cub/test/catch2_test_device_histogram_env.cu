@@ -1931,7 +1931,7 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_even_4ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
       cuda::compute_capability{10, 0});
-  STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 1024);
+  STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
   STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_multi_range_policy.static_smem.items_per_thread == 5);
@@ -1965,17 +1965,13 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE(
     cub::detail::histogram::select_privatization_mode<false, unsigned int, 3>(sm100_multi_range_policy, 2049)
     == privatization_mode::gmem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 8192)
-                 == privatization_mode::dynamic_smem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 8193)
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 256)
+                 == privatization_mode::static_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 257)
                  == privatization_mode::gmem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(sm100_even_2ch_policy, 28544)
-                 == privatization_mode::dynamic_smem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(sm100_even_2ch_policy, 28545)
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(sm100_even_2ch_policy, 257)
                  == privatization_mode::gmem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(sm100_even_3ch_policy, 19029)
-                 == privatization_mode::dynamic_smem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(sm100_even_3ch_policy, 19030)
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(sm100_even_3ch_policy, 257)
                  == privatization_mode::gmem);
   STATIC_REQUIRE(
     cub::detail::histogram::select_privatization_mode<true, unsigned long long, 1>(sm100_wide_counter_policy, 128)
