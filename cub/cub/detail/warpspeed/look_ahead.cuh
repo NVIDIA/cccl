@@ -27,7 +27,9 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/underlying_type.h>
+#include <cuda/std/climits>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
@@ -41,7 +43,9 @@ namespace detail::warpspeed
 {
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
-#if _CCCL_CUDA_COMPILER(NVHPC)
+#if !_CCCL_HAS_INT128()
+  return 8;
+#elif _CCCL_CUDA_COMPILER(NVHPC)
   return 8;
 #else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)  vvv
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return 16;), (return 8;))
@@ -72,10 +76,10 @@ struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 
 template <typename AccumT>
 _CCCL_DEVICE_API void
-storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT aggr, int index)
+storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT aggr, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
                 && ::cuda::is_trivially_copyable_v<tile_state_t<AccumT>>)
@@ -84,7 +88,11 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
     tile_state_t<AccumT> tmp{scanState, aggr};
 
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
+    __nv_atomic_store(reinterpret_cast<__as_integer*>(ptrTileStates + index),
+                      reinterpret_cast<__as_integer*>(&tmp),
+                      __NV_ATOMIC_RELAXED,
+                      __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
       tmp, ::cuda::std::memory_order_relaxed);
@@ -99,10 +107,10 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
+_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
@@ -110,7 +118,11 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
+    __nv_atomic_load(reinterpret_cast<__as_integer*>(ptrTileStates + index),
+                     reinterpret_cast<__as_integer*>(&res),
+                     __NV_ATOMIC_RELAXED,
+                     __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
       ::cuda::std::memory_order_relaxed);
@@ -149,14 +161,15 @@ _CCCL_DEVICE_API void warpLoadLookahead(
   tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
   int idxTileCur,
-  int idxTileNext)
+  int idxTileNext,
+  int num_tiles)
 {
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookahead < idxTileNext)
     {
-      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookahead);
+      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookahead, num_tiles);
     }
     else
     {
@@ -182,7 +195,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTilePrev,
   const AccumT aggrExclusiveCtaPrev,
   const int idxTileNext,
-  ScanOpT& scan_op)
+  ScanOpT& scan_op,
+  const int num_tiles)
 {
   const int laneIdx                                       = static_cast<int>(specialRegisters.laneIdx);
   [[maybe_unused]] const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -198,7 +212,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
@@ -266,7 +280,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   int& idxTilePrev,
   AccumT& aggrExclusiveCtaPrev,
   const int idxTileNext,
-  ScanOpT& scan_op)
+  ScanOpT& scan_op,
+  const int num_tiles)
 {
   const int laneIdx                      = static_cast<int>(specialRegisters.laneIdx);
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -282,7 +297,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {

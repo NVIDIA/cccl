@@ -115,7 +115,7 @@ public:
     if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
-      cuda_safe_call(cudaStreamSynchronize(s));
+      cuda_try<cudaStreamSynchronize>(s);
       // slice_print(in, "in before op");
       // slice_print(inout, "inout before op");
 
@@ -160,7 +160,7 @@ public:
     if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
-      cuda_safe_call(cudaStreamSynchronize(s));
+      cuda_try<cudaStreamSynchronize>(s);
       if constexpr (dimensions == 1)
       {
         for (size_t i = 0; i < out.extent(0); i++)

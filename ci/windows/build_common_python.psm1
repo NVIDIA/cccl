@@ -4,16 +4,17 @@ function Get-Python {
         Returns the path of the Python interpreter satisfying the supplied
         version, installing it via uv if necessary.
     .PARAMETER Version
-        A string in the form 'M.m' (e.g., '3.10', '3.13').
+        A string in the form 'M.m' (e.g., '3.10', '3.13') or a free-threaded
+        version such as '3.14t'.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [ValidatePattern('^\d+\.\d+$')]
+        [ValidatePattern('^\d+\.\d+t?$')]
         [string]$Version
     )
 
-    # Install uv if not present. uv downloads pre-built CPython binaries —
+    # Install uv if not present. uv downloads pre-built CPython binaries --
     # no compilation, no build dependencies, no pyenv-win required.
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "Installing uv..."
@@ -70,6 +71,77 @@ function Get-CudaMajor {
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
     return '13'
+}
+
+function Get-CudaVersion {
+    <#
+    .SYNOPSIS
+        Gets the CUDA major.minor version for this container instance (e.g.
+        '12.9' or '13.0').  Defaults to '13.0' if no match can be found.
+    #>
+    if ($env:CUDA_PATH) {
+        $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
+        if (Test-Path $nvcc) {
+            $out = & $nvcc --version 2>&1
+            $text = ($out -join "`n")
+            if ($text -match 'release\s+(\d+\.\d+)') { return $Matches[1] }
+        }
+        # Fallback: parse major.minor from CUDA_PATH like ...\v13.0
+        $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+\.\d+)')
+        if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
+    }
+    return '13.0'
+}
+
+function Get-CtkTestMode {
+    <#
+    .SYNOPSIS
+        Validates and normalizes a CTK test mode passed as -Mode (forwarded from
+        the -ctk-mode arg): 'pinned' (default; empty means pinned), 'latest', or
+        'sysctk'. Throws on any other value (fail loud on a typo'd mode). Returns
+        the lowercased mode.
+    #>
+    param([string]$Mode = "")
+    if ([string]::IsNullOrEmpty($Mode)) { return "pinned" }
+    $Mode = $Mode.ToLowerInvariant()
+    if (-not ($Mode -in @("pinned", "latest", "sysctk"))) {
+        throw "Invalid ctk mode '$Mode' (expected pinned|latest|sysctk)"
+    }
+    return $Mode
+}
+
+function Set-CtkPin {
+    <#
+    .SYNOPSIS
+        Configures cuda-toolkit pinning for this lane per the -Mode arg (see
+        Get-CtkTestMode): 'pinned' (default) pins cuda-toolkit to the container's
+        CTK major.minor via PIP_CONSTRAINT; 'latest' and 'sysctk' leave it
+        unpinned ('sysctk' installs no cuda-toolkit wheel at all -- the
+        system-provided toolkit is used).
+    #>
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "pinned") {
+        $cudaVersion = Get-CudaVersion
+        $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
+        "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
+    } else {
+        # latest / sysctk: no pin. Clear any inherited constraint so it cannot
+        # affect the resolve.
+        Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
+    }
+}
+
+function Get-CtkExtraFlavor {
+    <#
+    .SYNOPSIS
+        Returns the pip-extra toolkit "flavor" for the given -Mode: 'sysctk' when
+        the mode is sysctk (rely on the system-provided CUDA toolkit) or 'cu'
+        otherwise (pip-installed toolkit). Combine with the CUDA major, e.g.
+        "minimal-$(Get-CtkExtraFlavor $CtkMode)$cudaMajor".
+    #>
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "sysctk") { return "sysctk" }
+    return "cu"
 }
 
 function Convert-ToUnixPath {
@@ -171,4 +243,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

@@ -329,7 +329,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("RadixSort build result has AoT metadata populated", "[radix_sort][aot]")
+C2H_TEST("RadixSort build result has serialization metadata populated", "[radix_sort][serialization]")
 {
   using T = int32_t;
 
@@ -372,7 +372,7 @@ C2H_TEST("RadixSort build result has AoT metadata populated", "[radix_sort][aot]
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
 
-C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][aot]")
+C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][serialization]")
 {
   using T = int32_t;
 

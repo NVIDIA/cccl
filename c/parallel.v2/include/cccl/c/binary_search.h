@@ -29,6 +29,10 @@ typedef struct cccl_device_binary_search_build_result_t
   void* payload;
   size_t payload_size;
   void* jit_compiler; // hostjit::JITCompiler*
+#if defined(_WIN32)
+  // Opaque state for serializing CUB's lazy first-call initialization.
+  void* first_call_state;
+#endif // _WIN32
   void* binary_search_fn; // int(*)(void*, ull, void*, ull, void*, void*, void*)
 } cccl_device_binary_search_build_result_t;
 

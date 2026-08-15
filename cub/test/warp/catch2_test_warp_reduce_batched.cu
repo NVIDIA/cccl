@@ -19,7 +19,7 @@
 
 #include <test_util.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/operator.cuh>
@@ -84,7 +84,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
         : (idx * LogicalWarpThreads + lane_id);
     if (batch_idx < Batches)
     {
-      output[logical_warp_id * Batches + batch_idx] = outputs[idx];
+      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
     }
   }
 }
@@ -127,7 +127,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
         : (idx * LogicalWarpThreads + lane_id);
     if (batch_idx < Batches)
     {
-      output[logical_warp_id * Batches + batch_idx] = outputs[idx];
+      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
     }
   }
 }
@@ -183,7 +183,7 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
           : (idx * LogicalWarpThreads + lane_id);
       if (batch_idx < Batches)
       {
-        output[participant_idx * Batches + batch_idx] = outputs[idx];
+        output[static_cast<std::size_t>(participant_idx) * Batches + batch_idx] = outputs[idx];
       }
     }
   }
@@ -363,7 +363,7 @@ using sub_warp_unequal_configs = c2h::type_list<int_pair<3, 16>, int_pair<4, 8>,
 
 using unequal_nm_single_out_configs = c2h::type_list<int_pair<1, 32>, int_pair<3, 16>, int_pair<4, 8>, int_pair<1, 2>>;
 
-C2H_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", full_type_list, equal_nm_configs)
+CUB_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", CUB_SMALL, full_type_list, equal_nm_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::std::plus<>;
@@ -372,8 +372,11 @@ C2H_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", full_ty
   test_warp_reduce_batched<WarpReduceBatchedMode::SingleOut, num_batches, logical_warp_num_threads, value_t, op_t>();
 }
 
-C2H_TEST(
-  "WarpReduceBatched::Reduce N!=M sum", "[warp][reduce][batched]", builtin_type_list, unequal_nm_single_out_configs)
+CUB_TEST("WarpReduceBatched::Reduce N!=M sum",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         unequal_nm_single_out_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::std::plus<>;
@@ -382,8 +385,11 @@ C2H_TEST(
   test_warp_reduce_batched<WarpReduceBatchedMode::SingleOut, num_batches, logical_warp_num_threads, value_t, op_t>();
 }
 
-C2H_TEST(
-  "WarpReduceBatched::Reduce max with over-syncing", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
+CUB_TEST("WarpReduceBatched::Reduce max with over-syncing",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         equal_nm_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::maximum<>;
@@ -402,8 +408,9 @@ C2H_TEST(
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::Reduce min with over-syncing",
+CUB_TEST("WarpReduceBatched::Reduce min with over-syncing",
          "[warp][reduce][batched]",
+         CUB_SMALL,
          builtin_type_list,
          unequal_nm_single_out_configs)
 {
@@ -424,7 +431,8 @@ C2H_TEST("WarpReduceBatched::Reduce min with over-syncing",
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", builtin_type_list, equal_nm_configs)
+CUB_TEST(
+  "WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", CUB_SMALL, builtin_type_list, equal_nm_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::std::plus<>;
@@ -439,26 +447,35 @@ C2H_TEST("WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", built
                            convenience_overload>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped N=M sum", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
-{
-  using value_t                          = c2h::get<0, TestType>;
-  using op_t                             = cuda::std::plus<>;
-  constexpr int num_batches              = c2h::get<1, TestType>::x;
-  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<WarpReduceBatchedMode::ToStriped, num_batches, logical_warp_num_threads, value_t, op_t>();
-}
-
-C2H_TEST("WarpReduceBatched::ReduceToStriped N!=M sum", "[warp][reduce][batched]", builtin_type_list, unequal_nm_configs)
-{
-  using value_t                          = c2h::get<0, TestType>;
-  using op_t                             = cuda::std::plus<>;
-  constexpr int num_batches              = c2h::get<1, TestType>::x;
-  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<WarpReduceBatchedMode::ToStriped, num_batches, logical_warp_num_threads, value_t, op_t>();
-}
-
-C2H_TEST("WarpReduceBatched::ReduceToStriped max with over-syncing",
+CUB_TEST("WarpReduceBatched::ReduceToStriped N=M sum",
          "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         equal_nm_configs)
+{
+  using value_t                          = c2h::get<0, TestType>;
+  using op_t                             = cuda::std::plus<>;
+  constexpr int num_batches              = c2h::get<1, TestType>::x;
+  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
+  test_warp_reduce_batched<WarpReduceBatchedMode::ToStriped, num_batches, logical_warp_num_threads, value_t, op_t>();
+}
+
+CUB_TEST("WarpReduceBatched::ReduceToStriped N!=M sum",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         unequal_nm_configs)
+{
+  using value_t                          = c2h::get<0, TestType>;
+  using op_t                             = cuda::std::plus<>;
+  constexpr int num_batches              = c2h::get<1, TestType>::x;
+  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
+  test_warp_reduce_batched<WarpReduceBatchedMode::ToStriped, num_batches, logical_warp_num_threads, value_t, op_t>();
+}
+
+CUB_TEST("WarpReduceBatched::ReduceToStriped max with over-syncing",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
          builtin_type_list,
          equal_nm_configs)
 {
@@ -479,8 +496,9 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped max with over-syncing",
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped min with over-syncing",
+CUB_TEST("WarpReduceBatched::ReduceToStriped min with over-syncing",
          "[warp][reduce][batched]",
+         CUB_SMALL,
          builtin_type_list,
          unequal_nm_configs)
 {
@@ -501,7 +519,11 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped min with over-syncing",
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::SumToStriped", "[warp][reduce][batched][convenience]", builtin_type_list, equal_nm_configs)
+CUB_TEST("WarpReduceBatched::SumToStriped",
+         "[warp][reduce][batched][convenience]",
+         CUB_SMALL,
+         builtin_type_list,
+         equal_nm_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::std::plus<>;
@@ -516,8 +538,9 @@ C2H_TEST("WarpReduceBatched::SumToStriped", "[warp][reduce][batched][convenience
                            convenience_overload>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_equal_configs)
 {
@@ -536,8 +559,9 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N=M 
                            cond_participation>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N!=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N!=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_unequal_configs)
 {
@@ -556,8 +580,9 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation N!=M
                            cond_participation>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and over-syncing N=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and over-syncing N=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_equal_configs)
 {
@@ -578,8 +603,9 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and 
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and over-syncing N!=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and over-syncing N!=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_unequal_configs)
 {
@@ -600,26 +626,35 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped with conditional participation and 
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked N=M sum", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
-{
-  using value_t                          = c2h::get<0, TestType>;
-  using op_t                             = cuda::std::plus<>;
-  constexpr int num_batches              = c2h::get<1, TestType>::x;
-  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<WarpReduceBatchedMode::ToBlocked, num_batches, logical_warp_num_threads, value_t, op_t>();
-}
-
-C2H_TEST("WarpReduceBatched::ReduceToBlocked N!=M sum", "[warp][reduce][batched]", builtin_type_list, unequal_nm_configs)
-{
-  using value_t                          = c2h::get<0, TestType>;
-  using op_t                             = cuda::std::plus<>;
-  constexpr int num_batches              = c2h::get<1, TestType>::x;
-  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<WarpReduceBatchedMode::ToBlocked, num_batches, logical_warp_num_threads, value_t, op_t>();
-}
-
-C2H_TEST("WarpReduceBatched::ReduceToBlocked max with over-syncing",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked N=M sum",
          "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         equal_nm_configs)
+{
+  using value_t                          = c2h::get<0, TestType>;
+  using op_t                             = cuda::std::plus<>;
+  constexpr int num_batches              = c2h::get<1, TestType>::x;
+  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
+  test_warp_reduce_batched<WarpReduceBatchedMode::ToBlocked, num_batches, logical_warp_num_threads, value_t, op_t>();
+}
+
+CUB_TEST("WarpReduceBatched::ReduceToBlocked N!=M sum",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
+         builtin_type_list,
+         unequal_nm_configs)
+{
+  using value_t                          = c2h::get<0, TestType>;
+  using op_t                             = cuda::std::plus<>;
+  constexpr int num_batches              = c2h::get<1, TestType>::x;
+  constexpr int logical_warp_num_threads = c2h::get<1, TestType>::y;
+  test_warp_reduce_batched<WarpReduceBatchedMode::ToBlocked, num_batches, logical_warp_num_threads, value_t, op_t>();
+}
+
+CUB_TEST("WarpReduceBatched::ReduceToBlocked max with over-syncing",
+         "[warp][reduce][batched]",
+         CUB_SMALL,
          builtin_type_list,
          equal_nm_configs)
 {
@@ -640,8 +675,9 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked max with over-syncing",
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked min with over-syncing",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked min with over-syncing",
          "[warp][reduce][batched]",
+         CUB_SMALL,
          builtin_type_list,
          unequal_nm_configs)
 {
@@ -662,7 +698,11 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked min with over-syncing",
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::SumToBlocked", "[warp][reduce][batched][convenience]", builtin_type_list, equal_nm_configs)
+CUB_TEST("WarpReduceBatched::SumToBlocked",
+         "[warp][reduce][batched][convenience]",
+         CUB_SMALL,
+         builtin_type_list,
+         equal_nm_configs)
 {
   using value_t                          = c2h::get<0, TestType>;
   using op_t                             = cuda::std::plus<>;
@@ -677,8 +717,9 @@ C2H_TEST("WarpReduceBatched::SumToBlocked", "[warp][reduce][batched][convenience
                            convenience_overload>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_equal_configs)
 {
@@ -697,8 +738,9 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N=M 
                            cond_participation>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N!=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N!=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_unequal_configs)
 {
@@ -717,8 +759,9 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation N!=M
                            cond_participation>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and over-syncing N=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and over-syncing N=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_equal_configs)
 {
@@ -739,8 +782,9 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and 
                            sync_physical_warp>();
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and over-syncing N!=M sum",
+CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and over-syncing N!=M sum",
          "[warp][reduce][batched][lane_mask]",
+         CUB_SMALL,
          builtin_type_list,
          sub_warp_unequal_configs)
 {

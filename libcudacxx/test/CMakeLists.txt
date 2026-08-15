@@ -97,5 +97,7 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
 endif()
 
 add_subdirectory(nvtarget)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CodegenTest.cmake")
 add_subdirectory(atomic_codegen)
 add_subdirectory(simd_codegen)
+add_subdirectory(debugging)

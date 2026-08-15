@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin sort-keys-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -46,7 +46,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin sort-keys-descending-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -77,7 +77,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin sort-keys-db-env
   auto keys_buf0 = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -110,7 +110,9 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based API",
+         "[segmented_sort][keys][env]",
+         CUB_SMALL)
 {
   // example-begin sort-keys-descending-db-env
   auto keys_buf0 = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -143,7 +145,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin stable-sort-keys-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -174,7 +176,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin stable-sort-keys-descending-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -205,7 +207,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin stable-sort-keys-db-env
   auto keys_buf0 = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -238,7 +240,9 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-based API", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-based API",
+         "[segmented_sort][keys][env]",
+         CUB_SMALL)
 {
   // example-begin stable-sort-keys-descending-db-env
   auto keys_buf0 = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -288,18 +292,18 @@ struct SegmentedSortPolicySelector
           .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
           .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
           .radix_bits        = 6},
-      .small_segment =
-        cub::SegmentedSortSubWarpMergeSortPolicy{
-          .threads_per_block = 256,
-          .threads_per_warp  = 4,
-          .items_per_thread  = 7,
-          .load_algorithm    = cub::WARP_LOAD_DIRECT,
-          .load_modifier     = cub::LOAD_DEFAULT,
-          .store_algorithm   = cub::WARP_STORE_DIRECT},
       .medium_segment =
         cub::SegmentedSortSubWarpMergeSortPolicy{
           .threads_per_block = 256,
           .threads_per_warp  = 32,
+          .items_per_thread  = 7,
+          .load_algorithm    = cub::WARP_LOAD_DIRECT,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .store_algorithm   = cub::WARP_STORE_DIRECT},
+      .small_segment =
+        cub::SegmentedSortSubWarpMergeSortPolicy{
+          .threads_per_block = 256,
+          .threads_per_warp  = 4,
           .items_per_thread  = 7,
           .load_algorithm    = cub::WARP_LOAD_DIRECT,
           .load_modifier     = cub::LOAD_DEFAULT,
@@ -309,7 +313,7 @@ struct SegmentedSortPolicySelector
 };
 // example-end sort-keys-custom-policy-selector
 
-C2H_TEST("cub::DeviceSegmentedSort::SortKeys with custom policy selector", "[segmented_sort][keys][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortKeys with custom policy selector", "[segmented_sort][keys][env]", CUB_SMALL)
 {
   // example-begin sort-keys-custom-policy
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

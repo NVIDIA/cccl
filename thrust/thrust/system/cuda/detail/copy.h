@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
@@ -15,7 +15,6 @@
 
 #include <thrust/system/cuda/config.h>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/system/cuda/detail/cdp_dispatch.h>
 #include <thrust/system/cuda/detail/cross_system.h>
@@ -30,6 +29,7 @@
 #endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/__fwd/iterator.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -151,11 +151,11 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   // Also, trivial relocation is probably the wrong trait here, because we usually want to copy, not relocate. This
   // matters for types like unique_ptr, which are trivially relocatable, but not trivially copyable. But then we would
   // need a cross system move algorithm ...
-  if constexpr (is_indirectly_trivially_relocate_to_v<InputIt, OutputIt>)
+  if constexpr (thrust::detail::is_indirectly_trivially_copyable_to_v<InputIt, OutputIt>)
   {
     using InputTy = thrust::detail::it_value_t<InputIt>;
-    auto* dst     = reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result));
-    auto* src     = reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*begin));
+    auto* dst     = reinterpret_cast<InputTy*>(::cuda::std::to_address(result));
+    auto* src     = reinterpret_cast<InputTy const*>(::cuda::std::to_address(begin));
     trivial_cross_system_copy_n(derived_cast(systems.sys1), derived_cast(systems.sys2), dst, src, n);
     return result + n;
   }
@@ -170,10 +170,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  // FIXME(bgruber): We should not check is_trivially_relocatable, since we do not semantically relocate, but copy (the
-  // source remains valid). This is relevant for types like `unique_ptr`, which are trivially relocatable, but not
-  // trivially copyable.
-  if constexpr (is_indirectly_trivially_relocatable_to<InputIt, OutputIt>::value)
+  if constexpr (thrust::detail::is_indirectly_trivially_copyable_to_v<InputIt, OutputIt>)
   {
     using InputTy = thrust::detail::it_value_t<InputIt>;
     const auto n  = ::cuda::std::distance(first, last);
@@ -181,8 +178,8 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
     {
       const cudaError status = trivial_copy_device_to_device(
         policy,
-        reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result)),
-        reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*first)),
+        reinterpret_cast<InputTy*>(::cuda::std::to_address(result)),
+        reinterpret_cast<InputTy const*>(::cuda::std::to_address(first)),
         n);
       throw_on_error(status, "__copy:: D->D: failed");
     }

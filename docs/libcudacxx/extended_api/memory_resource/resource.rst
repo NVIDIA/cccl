@@ -1,8 +1,8 @@
 .. _libcudacxx-extended-api-memory-resources-resource:
 .. _libcudacxx-extended-api-memory-resources-synchronous-resource:
 
-The ``cuda::synchronous_resource`` concept
--------------------------------------------
+The ``cuda::mr::resource`` and ``cuda::mr::synchronous_resource`` concepts
+--------------------------------------------------------------------------
 
 The `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__ feature provides only a
 single ``allocate`` interface, which is sufficient for homogeneous memory systems. However, CUDA provides both
@@ -13,7 +13,7 @@ whether a memory resource can utilize stream-ordered allocations. Even if the ap
 to properly tell the memory resource to use stream-ordered allocation. Ideally, this should not be something discovered
 through an assert at run time, but should be checked by the compiler.
 
-Because asynchronous memory management is critical for performance, ``cuda::mr::resource`` defaults to stream-ordered interface provided by ``allocate`` / ``deallocate``.
+Because asynchronous memory management is critical for performance, ``cuda::mr::resource`` includes the stream-ordered interface provided by ``allocate`` / ``deallocate``.
 For cases where stream-ordered allocation is not possible, ``cuda::mr::synchronous_resource`` is provided.
 
 The ``cuda::mr::synchronous_resource`` concept provides basic type checks to ensure that a given memory resource provides the
@@ -42,27 +42,27 @@ To demonstrate, the following example defines several resources, only some of wh
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_argument&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_allocate_argument>);
+   static_assert(!cuda::mr::synchronous_resource<invalid_allocate_argument>);
 
    struct invalid_allocate_return {
      int allocate_sync(std::size_t, std::size_t) { return 42; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_return&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_allocate_return>);
+   static_assert(!cuda::mr::synchronous_resource<invalid_allocate_return>);
 
    struct invalid_deallocate_argument {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, invalid_argument, std::size_t) noexcept {}
      bool operator==(const invalid_deallocate_argument&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_deallocate_argument>);
+   static_assert(!cuda::mr::synchronous_resource<invalid_deallocate_argument>);
 
    struct non_comparable {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
    };
-   static_assert(!cuda::mr::resource<non_comparable>);
+   static_assert(!cuda::mr::synchronous_resource<non_comparable>);
 
    struct non_eq_comparable {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
@@ -122,15 +122,17 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
        std::size_t required_alignment;
    };
 
+   constexpr std::size_t my_default_alignment = 16;
+
    template<class MemoryResource>
-       requires cuda::mr::resource<MemoryResource>
+       requires cuda::mr::synchronous_resource<MemoryResource>
    void* allocate_maybe_sync_check_alignment(MemoryResource& resource, cuda::stream_ref stream, std::size_t size) {
        if constexpr(cuda::mr::resource_with<MemoryResource, required_alignment>) {
-           return resource.allocate(stream, size, get_property(resource, required_alignment));
+           return resource.allocate(stream, size, get_property(resource, required_alignment{}));
        } else if constexpr (cuda::mr::resource<MemoryResource>) {
            return resource.allocate(stream, size, my_default_alignment);
        } else if constexpr (cuda::mr::synchronous_resource_with<MemoryResource, required_alignment>) {
-           return resource.allocate_sync(size, get_property(resource, required_alignment));
+           return resource.allocate_sync(size, get_property(resource, required_alignment{}));
        } else {
            return resource.allocate_sync(size, my_default_alignment);
        }
@@ -138,11 +140,12 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
 
    // Potentially more concise
    template<class MemoryResource>
-       requires cuda::mr::resource<MemoryResource>
+       requires cuda::mr::synchronous_resource<MemoryResource>
    void* allocate_maybe_sync_check_alignment2(MemoryResource& resource, cuda::stream_ref stream, std::size_t size) {
-       constexpr std::size_t align = cuda::mr::resource_with<MemoryResource, required_alignment>
-                                   ? get_property(resource, required_alignment)
-                                   : my_default_alignment;
+       std::size_t align = my_default_alignment;
+       if constexpr(cuda::mr::synchronous_resource_with<MemoryResource, required_alignment>) {
+           align = get_property(resource, required_alignment{});
+       }
        if constexpr(cuda::mr::resource<MemoryResource>) {
            return resource.allocate(stream, size, align);
        } else {

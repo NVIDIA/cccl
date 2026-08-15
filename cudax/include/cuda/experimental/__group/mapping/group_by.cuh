@@ -224,9 +224,10 @@ public:
   }
 };
 
-_CCCL_DEVICE group_by(unsigned) -> group_by<::cuda::std::dynamic_extent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(unsigned) -> group_by<::cuda::std::dynamic_extent>;
 
-_CCCL_DEVICE group_by(unsigned, const non_exhaustive_t&) -> group_by<::cuda::std::dynamic_extent, false>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(unsigned, const non_exhaustive_t&)
+  -> group_by<::cuda::std::dynamic_extent, false>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

@@ -153,7 +153,7 @@ CCCL_C_API CUresult cccl_device_inclusive_scan_no_init(
 CCCL_C_API CUresult cccl_device_scan_link_ltoir(
   cccl_device_scan_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
 
-// Serialize a populated build_result. See cccl/c/aot.h::cccl_aot_buffer_free.
+// Serialize a populated build_result. See cccl/c/serialization.h::cccl_serialization_buffer_free.
 CCCL_C_API CUresult
 cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build, void** out_buf, size_t* out_size);
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
@@ -29,6 +30,7 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/min.h>
@@ -88,6 +90,7 @@ struct deterministic_sum_t
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename DeterministicAccumT,
@@ -110,8 +113,12 @@ struct DeterministicDeviceReduceKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     ReductionKernel,
-    reduce::
-      DeterministicDeviceReduceKernel<PolicySelector, InputIteratorT, ReductionOpT, DeterministicAccumT, TransformOpT>)
+    reduce::DeterministicDeviceReduceKernel<PolicySelector,
+                                            InputIteratorT,
+                                            KernelNumItemsT,
+                                            ReductionOpT,
+                                            DeterministicAccumT,
+                                            TransformOpT>)
 
   // The second single-tile pass reduces the per-block partials and always uses an identity transform
   CUB_DEFINE_KERNEL_GETTER(
@@ -123,6 +130,17 @@ struct DeterministicDeviceReduceKernelSource
       ReductionOpT,
       InitValueT,
       DeterministicAccumT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    DeferredSingleTileSecondKernel,
+    reduce::DeterministicDeviceReduceDeferredSingleTileKernel<
+      PolicySelector,
+      DeterministicAccumT*,
+      OutputIteratorT,
+      KernelNumItemsT,
+      ReductionOpT,
+      InitValueT,
+      DeterministicAccumT>)
 };
 
 //! Kernel source instantiation matching the default used by `rfa::dispatch` below. Tests use this alias to
@@ -131,29 +149,32 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename InitValueT,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
-          typename PolicySelector =
-            policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>>
+          typename TransformOpT   = ::cuda::std::identity,
+          typename AccumT         = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+          typename PolicySelector = policy_selector_from_types<AccumT,
+                                                               reduce::num_items_offset_t<OffsetT>,
+                                                               deterministic_sum_t<AccumT>,
+                                                               __determinism_t::__gpu_to_gpu>>
 using default_kernel_source_t = DeterministicDeviceReduceKernelSource<
   PolicySelector,
   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
   OutputIteratorT,
+  // Immediate chunk sizes are passed to the kernels as-is; deferred problem sizes are read on device.
+  detail::parameter_from_host_t<int, OffsetT>,
   deterministic_sum_t<AccumT>,
   InitValueT,
   typename deterministic_sum_t<AccumT>::DeterministicAcc,
   TransformOpT>;
 
-template <typename SingleTileKernelT,
-          typename InputIteratorT,
+template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitValueT,
           typename TransformOpT,
+          typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_single_tile(
-  SingleTileKernelT single_tile_kernel,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -164,6 +185,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   cudaStream_t stream,
   TransformOpT transform_op,
   ReducePolicy active_policy,
+  KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
   // Return if the caller is simply requesting the size of the storage allocation
@@ -185,7 +207,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
         launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-          .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op)))
+          .doit(kernel_source.SingleTileKernel(),
+                d_in,
+                d_out,
+                static_cast<int>(num_items),
+                reduction_op,
+                init,
+                transform_op)))
   {
     return error;
   }
@@ -201,18 +229,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 }
 
 template <typename DeterministicAccumT,
-          typename ReduceKernelT,
-          typename SingleTileKernelT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitValueT,
           typename TransformOpT,
+          typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_passes(
-  ReduceKernelT reduce_kernel,
-  SingleTileKernelT single_tile_second_kernel,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -223,6 +248,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   cudaStream_t stream,
   TransformOpT transform_op,
   ReducePolicy active_policy,
+  KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
   int sm_count;
@@ -232,7 +258,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   KernelConfig reduce_config;
-  if (const auto error = CubDebug(reduce_config.__init(reduce_kernel, active_policy.multi_tile)))
+  if (const auto error = CubDebug(reduce_config.__init(kernel_source.ReductionKernel(), active_policy.multi_tile)))
   {
     return error;
   }
@@ -241,16 +267,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
 
   const int num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-  const int num_chunks          = static_cast<int>(::cuda::ceil_div(num_items, num_items_per_chunk));
 
-  const int chunk_tile_grid_size = ::cuda::ceil_div(num_items_per_chunk, reduce_config.tile_size);
-  const int chunk_grid_size      = ::cuda::std::min(max_blocks, chunk_tile_grid_size);
+  // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
+  // problem in a single launch with the worst-case grid, whose surplus blocks exit early.
+  int num_chunks           = 1;
+  int chunk_grid_size      = max_blocks;
+  int partial_chunk_size   = 0;
+  bool has_partial_chunk   = false;
+  int last_chunk_grid_size = max_blocks;
+  if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
+  {
+    num_chunks = static_cast<int>(::cuda::ceil_div(num_items, num_items_per_chunk));
 
-  const int partial_chunk_size        = num_items % num_items_per_chunk;
-  const bool has_partial_chunk        = partial_chunk_size != 0;
-  const int last_chunk_tile_grid_size = ::cuda::ceil_div(partial_chunk_size, reduce_config.tile_size);
+    const int chunk_tile_grid_size = ::cuda::ceil_div(num_items_per_chunk, reduce_config.tile_size);
+    chunk_grid_size                = ::cuda::std::min(max_blocks, chunk_tile_grid_size);
 
-  const int last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
+    partial_chunk_size                  = num_items % num_items_per_chunk;
+    has_partial_chunk                   = partial_chunk_size != 0;
+    const int last_chunk_tile_grid_size = ::cuda::ceil_div(partial_chunk_size, reduce_config.tile_size);
+
+    last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
+  }
 
   const int reduce_grid_size = chunk_grid_size * (num_chunks - 1) + last_chunk_grid_size;
 
@@ -286,6 +323,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto current_grid_size =
       static_cast<int>(num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size);
 
+    // An immediate problem size is passed as the current chunk size; a deferred problem size is read on device and
+    // `num_current_items` holds the worst-case chunk size, which must not be passed to the kernel.
+    const auto kernel_num_items = [=] {
+      if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
+      {
+        return detail::reduce::make_num_items_kernel_arg(num_items);
+      }
+      else
+      {
+        return num_current_items;
+      }
+    }();
+
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
@@ -299,10 +349,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
     if (const auto error = CubDebug(
           launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
-            .doit(reduce_kernel,
+            .doit(kernel_source.ReductionKernel(),
                   d_in,
                   d_chunk_block_reductions,
-                  num_current_items,
+                  kernel_num_items,
                   reduction_op,
                   transform_op,
                   current_grid_size)))
@@ -338,16 +388,33 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
           active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
-  // Invoke DeterministicDeviceReduceSingleTileKernel
-  if (const auto error = CubDebug(
-        launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-          .doit(single_tile_second_kernel,
-                d_block_reductions,
-                d_out,
-                reduce_grid_size,
-                reduction_op,
-                init,
-                ::cuda::std::identity{})))
+  // Invoke DeterministicDeviceReduceSingleTileKernel/DeterministicDeviceReduceDeferredSingleTileKernel
+  const auto second_pass_error = [&] {
+    if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
+    {
+      return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+        .doit(kernel_source.DeferredSingleTileSecondKernel(),
+              d_block_reductions,
+              d_out,
+              detail::reduce::make_num_items_kernel_arg(num_items),
+              reduce_grid_size,
+              reduction_op,
+              init,
+              ::cuda::std::identity{});
+    }
+    else
+    {
+      return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+        .doit(kernel_source.SingleTileSecondKernel(),
+              d_block_reductions,
+              d_out,
+              reduce_grid_size,
+              reduction_op,
+              init,
+              ::cuda::std::identity{});
+    }
+  }();
+  if (const auto error = CubDebug(second_pass_error))
   {
     return error;
   }
@@ -367,10 +434,12 @@ template <
   typename OutputIteratorT,
   typename OffsetT,
   typename InitValueT,
-  typename TransformOpT = ::cuda::std::identity,
-  typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
-  typename PolicySelector =
-    policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>,
+  typename TransformOpT   = ::cuda::std::identity,
+  typename AccumT         = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+  typename PolicySelector = policy_selector_from_types<AccumT,
+                                                       reduce::num_items_offset_t<OffsetT>,
+                                                       deterministic_sum_t<AccumT>,
+                                                       __determinism_t::__gpu_to_gpu>,
   typename KernelSource =
     default_kernel_source_t<InputIteratorT, OutputIteratorT, OffsetT, InitValueT, TransformOpT, AccumT, PolicySelector>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -407,34 +476,37 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const auto tile_items =
-    static_cast<OffsetT>(active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
-
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
 
   input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
-  if (num_items <= tile_items)
+  // A deferred problem size cannot be compared against the single-tile capacity on the host, so a deferred
+  // reduction always takes the two-pass path.
+  if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
-    return invoke_single_tile(
-      kernel_source.SingleTileKernel(),
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_unwrapped,
-      d_out,
-      num_items,
-      deterministic_add_t{},
-      init,
-      stream,
-      transform_op,
-      active_policy,
-      launcher_factory);
+    const auto tile_items = static_cast<OffsetT>(active_policy.single_tile.threads_per_block)
+                          * static_cast<OffsetT>(active_policy.single_tile.items_per_thread);
+
+    if (num_items <= tile_items)
+    {
+      return invoke_single_tile(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in_unwrapped,
+        d_out,
+        num_items,
+        deterministic_add_t{},
+        init,
+        stream,
+        transform_op,
+        active_policy,
+        kernel_source,
+        launcher_factory);
+    }
   }
 
   return invoke_passes<typename deterministic_add_t::DeterministicAcc>(
-    kernel_source.ReductionKernel(),
-    kernel_source.SingleTileSecondKernel(),
     d_temp_storage,
     temp_storage_bytes,
     d_in_unwrapped,
@@ -445,6 +517,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     stream,
     transform_op,
     active_policy,
+    kernel_source,
     launcher_factory);
 }
 } // namespace detail::rfa

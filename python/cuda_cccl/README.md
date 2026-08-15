@@ -1,12 +1,12 @@
 # CUDA CCCL Python Package
 
-[`cuda.cccl`](https://nvidia.github.io/cccl/python)
+[`cuda.cccl`](https://nvidia.github.io/cccl/unstable/python)
 provides a Pythonic interface to the
-[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries).
+[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/unstable/cpp.html#cccl-cpp-libraries).
 It provides the following modules:
 
 - **`cuda.compute`** - Device-level parallel algorithms (reduce, scan, sort, etc.) and iterators
-- **`cuda.coop._experimental`** - Block and warp-level cooperative primitives for custom CUDA kernels
+- **`cuda.cccl.headers`** - Programmatic access to CCCL headers
 
 ## Installation
 
@@ -44,6 +44,6 @@ conda install -c conda-forge cccl-python
 
 For complete documentation, examples, and API reference, visit:
 
-- **Full Documentation**: [nvidia.github.io/cccl/python](https://nvidia.github.io/cccl/python)
+- **Full Documentation**: [nvidia.github.io/cccl/unstable/python](https://nvidia.github.io/cccl/unstable/python)
 - **Repository**: [github.com/NVIDIA/cccl](https://github.com/NVIDIA/cccl)
-- **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples) and [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples)
+- **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples)

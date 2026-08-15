@@ -41,6 +41,63 @@ static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 d
   result->t = 0;
 }
 
+C2H_TEST("exec place from an externally-owned CUDA context", "[task][places][cuda_context]")
+{
+  constexpr size_t element_count{1024};
+
+  // Wrap the primary context of device 0 as an exec place
+  CUdevice dev = 0;
+  REQUIRE(cuDeviceGet(&dev, 0) == CUDA_SUCCESS);
+  CUcontext primary_ctx = nullptr;
+  REQUIRE(cuDevicePrimaryCtxRetain(&primary_ctx, dev) == CUDA_SUCCESS);
+
+  // Null context is rejected
+  REQUIRE(stf_exec_place_cuda_context(nullptr, 0) == nullptr);
+
+  // dev_id < 0 is derived from the context
+  const stf_exec_place_handle place_derived = stf_exec_place_cuda_context(primary_ctx, -1);
+  REQUIRE(place_derived != nullptr);
+  REQUIRE(stf_exec_place_is_device(place_derived) != 0);
+  stf_exec_place_destroy(place_derived);
+
+  const stf_exec_place_handle place = stf_exec_place_cuda_context(primary_ctx, 0);
+  REQUIRE(place != nullptr);
+  REQUIRE(stf_exec_place_is_device(place) != 0);
+  REQUIRE(stf_exec_place_is_host(place) == 0);
+
+  // Run a task on the place and fill the buffer through its stream
+  const stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  std::vector<float> x(element_count, 1.0f);
+  const stf_logical_data_handle logical_x = stf_logical_data(ctx, x.data(), element_count * sizeof(float));
+  REQUIRE(logical_x != nullptr);
+
+  const stf_task_handle task = stf_task_create(ctx);
+  REQUIRE(task != nullptr);
+  stf_task_set_exec_place(task, place);
+  stf_task_add_dep(task, logical_x, STF_RW);
+  stf_task_start(task);
+  const CUstream stream = stf_task_get_custream(task);
+  REQUIRE(stream != nullptr);
+  float* const device_x = static_cast<float*>(stf_task_get(task, 0));
+  REQUIRE(device_x != nullptr);
+  REQUIRE(cudaMemsetAsync(device_x, 0, element_count * sizeof(float), stream) == cudaSuccess);
+  stf_task_end(task);
+  stf_task_destroy(task);
+
+  stf_logical_data_destroy(logical_x);
+  stf_ctx_finalize(ctx);
+
+  for (size_t i = 0; i < element_count; i++)
+  {
+    REQUIRE(x[i] == 0.0f);
+  }
+
+  stf_exec_place_destroy(place);
+  REQUIRE(cuDevicePrimaryCtxRelease(dev) == CUDA_SUCCESS);
+}
+
 C2H_TEST("empty stf tasks", "[task]")
 {
   size_t N = 1000000;
@@ -450,6 +507,73 @@ C2H_TEST("exec_place_get_place on grid", "[places][accessor][grid]")
   stf_exec_place_destroy(sub0);
   stf_exec_place_destroy(sub1);
   stf_exec_place_grid_destroy(grid);
+}
+
+C2H_TEST("exec place grid reshape and collapse preserve linear order", "[places][grid][reshape]")
+{
+  constexpr size_t nplaces = 24;
+  stf_exec_place_handle places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = (i % 2 == 0) ? stf_exec_place_host() : stf_exec_place_device(0);
+  }
+
+  const stf_dim4 original_dims     = {2, 3, 4, 1};
+  const stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &original_dims);
+  REQUIRE(grid != nullptr);
+  const stf_dim4 invalid_grid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_create(places, nplaces, &invalid_grid_dims) == nullptr);
+  for (const auto place : places)
+  {
+    stf_exec_place_destroy(place);
+  }
+
+  const stf_dim4 reshaped_dims         = {6, 4, 1, 1};
+  const stf_exec_place_handle reshaped = stf_exec_place_grid_reshape(grid, &reshaped_dims);
+  REQUIRE(reshaped != nullptr);
+
+  const stf_exec_place_handle collapsed = stf_exec_place_grid_collapse_axes(grid, 0, 1);
+  REQUIRE(collapsed != nullptr);
+
+  stf_dim4 actual_dims;
+  stf_exec_place_get_dims(reshaped, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+  stf_exec_place_get_dims(collapsed, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    const stf_exec_place_handle original_place  = stf_exec_place_get_place(grid, i);
+    const stf_exec_place_handle reshaped_place  = stf_exec_place_get_place(reshaped, i);
+    const stf_exec_place_handle collapsed_place = stf_exec_place_get_place(collapsed, i);
+    REQUIRE(original_place != nullptr);
+    REQUIRE(reshaped_place != nullptr);
+    REQUIRE(collapsed_place != nullptr);
+    REQUIRE(stf_exec_place_is_host(original_place) == (i % 2 == 0));
+    REQUIRE(stf_exec_place_is_host(reshaped_place) == stf_exec_place_is_host(original_place));
+    REQUIRE(stf_exec_place_is_host(collapsed_place) == stf_exec_place_is_host(original_place));
+    stf_exec_place_destroy(collapsed_place);
+    stf_exec_place_destroy(reshaped_place);
+    stf_exec_place_destroy(original_place);
+  }
+
+  stf_exec_place_grid_destroy(grid);
+  REQUIRE(stf_exec_place_size(reshaped) == nplaces);
+  REQUIRE(stf_exec_place_size(collapsed) == nplaces);
+
+  const stf_dim4 invalid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_reshape(reshaped, &invalid_dims) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 2, 1) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 0, 4) == nullptr);
+
+  stf_exec_place_grid_destroy(collapsed);
+  stf_exec_place_grid_destroy(reshaped);
 }
 
 C2H_TEST("exec_place_get_place on scalar", "[places][accessor]")

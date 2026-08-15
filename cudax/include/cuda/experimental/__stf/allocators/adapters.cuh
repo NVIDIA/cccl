@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -156,8 +157,8 @@ public:
   // Destructor
   ~stream_adapter()
   {
-    static_assert(::std::is_move_constructible_v<stream_adapter>, "stream_adapter must be move constructible");
-    static_assert(::std::is_move_assignable_v<stream_adapter>, "stream_adapter must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<stream_adapter>, "stream_adapter must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<stream_adapter>, "stream_adapter must be move assignable");
 
     _CCCL_ASSERT(cleared_or_moved, "clear() was not called.");
   }

@@ -1,7 +1,6 @@
 <#
 .SYNOPSIS
-    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop._experimental packages
-    on Windows.
+    Build Python cuda-cccl wheels on Windows.
 
 .DESCRIPTION
     This script is the Windows analog to the Linux ../build_cuda_cccl_python.sh
@@ -21,16 +20,17 @@
 
 .PARAMETER PyVersion
     **Required.** The Python version to use for building the wheel, expressed
-    as `<major>.<minor>` (e.g. `3.11`).
+    as `<major>.<minor>` (e.g. `3.11`) or a free-threaded version such as
+    `3.14t`.
 
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
     When set, only that version is built and the *merge* step is skipped.
 
 .PARAMETER Cuda13Image
-    Optional. The Docker image name used for a nested build of the CUDA 13
-    wheel when the outer container defaults to CUDA 12.9.  The default value
-    matches the RAPIDS dev‑container image that contains the required
+    Optional. The Docker image name used for a nested build of the CUDA 13
+    wheel when the outer container defaults to CUDA 12.9.  The default value
+    matches the RAPIDS dev-container image that contains the required
     toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
@@ -39,7 +39,7 @@
     Action.
 
 .EXAMPLE
-    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
+    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
     # 12 and 13 versions), and, if in CI, upload the resulting wheel as an
     # artifact.
     .\build_cuda_cccl_python.ps1 -PyVersion 3.11
@@ -49,7 +49,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion,
 
     [Parameter(Mandatory = $false)]
@@ -155,7 +155,7 @@ ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu
 function Invoke-Cuda13NestedBuild {
     <#
     .SYNOPSIS
-        Run the nested Docker build for CUDA 13 when we are already inside a
+        Run the nested Docker build for CUDA 13 when we are already inside a
         CUDA 12 builder image.
 
     .DESCRIPTION
@@ -194,12 +194,12 @@ function Invoke-Cuda13NestedBuild {
     }
     Write-Host "DooD appears to be working, continuing..."
 
-    # Detect outer‑container resources so we can set sensible limits.
+    # Detect outer-container resources so we can set sensible limits.
     $os = Get-WmiObject -Class Win32_OperatingSystem
     $totalGB = [math]::Floor($os.TotalVisibleMemorySize / 1MB) # KB -> GB
     $procCount = [Environment]::ProcessorCount
 
-    # Leave a little head‑room so the outer container doesn't starve
+    # Leave a little head-room so the outer container doesn't starve
     $memLimitGB = [math]::Max(2, [int]([math]::Floor($totalGB * 0.9)))
     $cpuCount = [math]::Max(2, $procCount)
 
@@ -224,10 +224,7 @@ function Invoke-Cuda13NestedBuild {
     )
 
     Write-Host ("About to invoke: docker " + ($dockerArgs -join ' '))
-    & docker @dockerArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Nested CUDA 13 wheel build failed'
-    }
+    Invoke-Checked { & docker @dockerArgs } 'Nested CUDA 13 wheel build failed'
 }
 
 function Build-CudaCcclWheel {
@@ -260,7 +257,7 @@ function Build-CudaCcclWheel {
         throw "nvcc not found at $NvccForMajor"
     }
 
-    # Convert Windows paths to Unix‑style for CMake
+    # Convert Windows paths to Unix-style for CMake
     $NvccUnix = Convert-ToUnixPath $NvccForMajor
     $CudaUnix = Convert-ToUnixPath $CudaPathForMajor
 
@@ -285,10 +282,7 @@ function Build-CudaCcclWheel {
     ) + $pipConfigArgs
 
     Write-Host ("python " + ($pythonArgs -join ' '))
-    & $PythonExe @pythonArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Wheel build failed for CUDA $Major"
-    }
+    Invoke-Checked { & $PythonExe @pythonArgs } "Wheel build failed for CUDA $Major"
 
     # Normalise the wheel filename (append .cu12/.cu13) and prune duplicates.
     $builtWheel = Get-OnePathMatch -Path $outDir `
@@ -344,7 +338,7 @@ finally {
 }
 
 
-# Merge the two major‑version wheels (if both were built).  This will fail if
+# Merge the two major-version wheels (if both were built).  This will fail if
 # either wheel can't be found.  This only runs on the outer (non-nested)
 # container image.
 if ($DoMerge) {
@@ -363,21 +357,15 @@ if ($DoMerge) {
     Write-Host "Found CUDA 13 wheel: $Cu13Wheel"
 
     Write-Host 'Merging CUDA wheels...'
-    & $PythonExe -m pip install wheel | Write-Host
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Failed to install wheel for merging'
-    }
+    Invoke-Checked { & $PythonExe -m pip install wheel | Write-Host } 'Failed to install wheel for merging'
 
     $WheelhouseMerged = Join-Path $RepoRoot 'wheelhouse_merged'
     ${null} = New-Item -ItemType Directory -Path $WheelhouseMerged -Force
 
     $mergePy = Join-Path $RepoRoot 'python/cuda_cccl/merge_cuda_wheels.py'
-    & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Merging wheels failed'
-    }
+    Invoke-Checked { & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged } 'Merging wheels failed'
 
-    # Clean up the per‑major directories and move the merged wheel into the
+    # Clean up the per-major directories and move the merged wheel into the
     # final location.
     Get-ChildItem $Wheelhouse -Filter '*.whl' |
     ForEach-Object {
@@ -426,10 +414,7 @@ if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {
         Write-Host "Wheel artifact name: $wheelArtifactName"
 
         $uploadCmd = "ci/util/artifacts/upload.sh $wheelArtifactName 'wheelhouse/.*'"
-        & bash -lc $uploadCmd
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Wheel artifact upload failed'
-        }
+        Invoke-Checked { & bash -lc $uploadCmd } 'Wheel artifact upload failed'
     }
     finally {
         Pop-Location

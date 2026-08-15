@@ -31,13 +31,13 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
-#include <cccl/c/aot.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/three_way_partition.h>
 #include <cccl/c/types.h>
 #include <nvrtc/command_list.h>
@@ -620,9 +620,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_THREE_WAY_PARTITION, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_THREE_WAY_PARTITION, build_ptr->payload_kind, build_ptr->cc);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
   w.write_cstring(build_ptr->three_way_partition_init_kernel_lowered_name);
@@ -647,9 +647,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_THREE_WAY_PARTITION);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_THREE_WAY_PARTITION);
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;
@@ -660,7 +660,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<cub::detail::three_way_partition::policy_selector, decltype(&std::free)> policy(

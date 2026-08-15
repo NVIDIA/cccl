@@ -5,6 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/buffer>
 #include <cuda/std/bit>
@@ -360,8 +361,8 @@ struct vector_compare_result_t
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
 };
 
-template <typename T>
-auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+template <typename LhsRange, typename RhsRange, typename T = typename LhsRange::value_type>
+auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> vector_compare_result_t<T>
 {
   constexpr size_t good_values_before_mismatch = 3;
   constexpr size_t first_mismatches_count      = 5;
@@ -412,6 +413,12 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
 }
 
 template <typename T>
+auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  return compare_host_ranges(actual, expected);
+}
+
+template <typename T>
 auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected) -> vector_compare_result_t<T>
 {
   return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
@@ -421,10 +428,12 @@ template <typename T, typename... LhsProps, typename... RhsProps>
 auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buffer<T, RhsProps...>& expected)
   -> vector_compare_result_t<T>
 {
+  const auto actual_host   = cuda::make_buffer(actual.stream(), cuda::mr::legacy_pinned_memory_resource{}, actual);
+  const auto expected_host = cuda::make_buffer(expected.stream(), cuda::mr::legacy_pinned_memory_resource{}, expected);
+
   actual.stream().sync();
   expected.stream().sync();
-  return compare_vectors<T>(host_vector<T>(actual.begin(), actual.end()),
-                            host_vector<T>(expected.begin(), expected.end()));
+  return compare_host_ranges(actual_host, expected_host);
 }
 
 template <typename LhsVec, typename RhsVec, typename T = typename LhsVec::value_type>
@@ -559,6 +568,18 @@ template <typename... T>
 }
 _CCCL_END_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T, typename... Props>
+::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
+{
+  const auto host_buf = cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
+
+  buffer.stream().sync();
+  os << ::Catch::Detail::stringify(::std::vector<T>{host_buf.begin(), host_buf.end()});
+  return os;
+}
+_CCCL_END_NAMESPACE_CUDA
+
 template <>
 struct Catch::StringMaker<cudaError>
 {
@@ -629,7 +650,8 @@ inline std::size_t get_override_seed_count()
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
   static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds                = override_str ? std::atoi(override_str->c_str()) : 0;
+  static const int override_seeds =
+    override_str ? static_cast<int>(std::strtol(override_str->c_str(), nullptr, 10)) : 0;
   return override_seeds;
 }
 

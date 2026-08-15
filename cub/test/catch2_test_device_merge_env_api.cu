@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-keys-env
   auto keys1  = thrust::device_vector<int>{0, 2, 5};
@@ -46,7 +46,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 5};
@@ -103,7 +103,7 @@ struct MergePolicySelector
 };
 // example-end merge-keys-policy-selector
 
-C2H_TEST("cub::DeviceMerge::MergeKeys env-based API with tuning", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-keys-tuning
   auto keys1  = thrust::device_vector<int>{0, 2, 5};
@@ -118,6 +118,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys env-based API with tuning", "[merge][env]"
     result.begin(),
     cuda::std::less{},
     cuda::execution::tune(MergePolicySelector{}));
+
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
