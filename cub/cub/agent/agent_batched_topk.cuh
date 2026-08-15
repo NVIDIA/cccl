@@ -17,6 +17,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
+#include <cub/detail/batched_topk_output_padding.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -31,22 +32,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-template <typename OutputSegmentsIteratorT, typename PaddingT>
-struct padded_output_segments_iterator;
-
-template <typename OutputSegmentsIteratorT>
-struct agent_batched_topk_output_segments_iterator_traits
-{
-  static constexpr bool is_padded = false;
-};
-
-template <typename OutputSegmentsIteratorT, typename PaddingT>
-struct agent_batched_topk_output_segments_iterator_traits<
-  padded_output_segments_iterator<OutputSegmentsIteratorT, PaddingT>>
-{
-  static constexpr bool is_padded = true;
-};
-
 // Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
 // and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
 // counter on its own cache line for performance.
@@ -116,9 +101,8 @@ struct agent_batched_topk_worker_per_segment
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
-  static constexpr bool pad_output   = agent_batched_topk_output_segments_iterator_traits<KeyOutputItItT>::is_padded;
-  static_assert(is_keys_only
-                  || pad_output == agent_batched_topk_output_segments_iterator_traits<ValueOutputItItT>::is_padded,
+  static constexpr bool pad_output   = is_padded_output_segments_iterator_v<KeyOutputItItT>;
+  static_assert(is_keys_only || pad_output == is_padded_output_segments_iterator_v<ValueOutputItItT>,
                 "key and value output padding must be enabled together");
 
   // -------------------------------------------------------------------------

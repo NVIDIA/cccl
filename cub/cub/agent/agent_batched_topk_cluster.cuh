@@ -46,6 +46,7 @@
 #include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/batched_topk_output_padding.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -88,29 +89,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::batched_topk
-{
-template <typename OutputSegmentsIteratorT, typename PaddingT>
-struct padded_output_segments_iterator;
-} // namespace detail::batched_topk
-
 namespace detail::batched_topk_cluster
 {
-template <typename OutputSegmentsIteratorT>
-struct agent_batched_topk_cluster_output_segments_iterator_traits
-{
-  static constexpr bool is_padded = false;
-  using iterator_type             = OutputSegmentsIteratorT;
-};
-
-template <typename OutputSegmentsIteratorT, typename PaddingT>
-struct agent_batched_topk_cluster_output_segments_iterator_traits<
-  detail::batched_topk::padded_output_segments_iterator<OutputSegmentsIteratorT, PaddingT>>
-{
-  static constexpr bool is_padded = true;
-  using iterator_type             = OutputSegmentsIteratorT;
-};
-
 // Dynamic-SMEM layout shared by dispatch and the agent. `max_block_resident_items` is the physical per-CTA resident
 // capacity. The unaligned head is staged as an edge in static SMEM (`edge_keys`), not a chunk slot, so the full
 // physical capacity is usable (no head reservation).
@@ -215,11 +195,9 @@ struct agent_batched_topk_cluster
   // Keys-only when the value payload type is `cub::NullType` (mirrors the baseline batched top-k agent). The value
   // iterators are then never dereferenced and the final filter's value writes are compiled out.
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
-  static constexpr bool pad_output =
-    agent_batched_topk_cluster_output_segments_iterator_traits<KeyOutputItItT>::is_padded;
+  static constexpr bool pad_output   = detail::batched_topk::is_padded_output_segments_iterator_v<KeyOutputItItT>;
   static_assert(is_keys_only
-                  || pad_output
-                       == agent_batched_topk_cluster_output_segments_iterator_traits<ValueOutputItItT>::is_padded,
+                  || pad_output == detail::batched_topk::is_padded_output_segments_iterator_v<ValueOutputItItT>,
                 "key and value output padding must be enabled together");
 
   // Segment-size type: the smallest unsigned offset type (>= 32-bit) covering the parameter's declared upper bound. The
@@ -1379,7 +1357,7 @@ private:
       detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
 
     identify_op_t identify_op;
-    it_value_t<typename agent_batched_topk_cluster_output_segments_iterator_traits<KeyOutputItItT>::iterator_type>
+    it_value_t<typename detail::batched_topk::output_segments_iterator_traits<KeyOutputItItT>::iterator_type>
       block_keys_out;
     out_offset_t num_cluster_tie_winners;
     out_offset_t num_local_selected;

@@ -231,6 +231,23 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     // conservative 64-bit upper bound here.
     constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
+    const auto dispatch_with_outputs = [&](auto d_keys_out_it, auto d_values_out_it) -> cudaError_t {
+      return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out_it,
+        d_values_in,
+        d_values_out_it,
+        segment_sizes,
+        k,
+        ::cuda::args::constant<SelectDirection>{},
+        num_segments,
+        total_num_items,
+        stream,
+        tuning);
+    };
+
     if constexpr (::cuda::std::execution::__queryable_with<EnvT, batched_topk::get_output_padding_t>)
     {
       const auto& padding         = env.query(batched_topk::get_output_padding_t{});
@@ -242,56 +259,17 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
       const auto padded_keys_out = batched_topk::make_padded_output_segments_iterator(d_keys_out, padding.key);
       if constexpr (is_keys_only)
       {
-        return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in,
-          padded_keys_out,
-          d_values_in,
-          d_values_out,
-          segment_sizes,
-          k,
-          ::cuda::args::constant<SelectDirection>{},
-          num_segments,
-          total_num_items,
-          stream,
-          tuning);
+        return dispatch_with_outputs(padded_keys_out, d_values_out);
       }
       else
       {
         const auto padded_values_out = batched_topk::make_padded_output_segments_iterator(d_values_out, padding.value);
-        return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in,
-          padded_keys_out,
-          d_values_in,
-          padded_values_out,
-          segment_sizes,
-          k,
-          ::cuda::args::constant<SelectDirection>{},
-          num_segments,
-          total_num_items,
-          stream,
-          tuning);
+        return dispatch_with_outputs(padded_keys_out, padded_values_out);
       }
     }
     else
     {
-      return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        segment_sizes,
-        k,
-        ::cuda::args::constant<SelectDirection>{},
-        num_segments,
-        total_num_items,
-        stream,
-        tuning);
+      return dispatch_with_outputs(d_keys_out, d_values_out);
     }
   }
   else
