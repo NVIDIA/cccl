@@ -28,7 +28,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   v[0] = 1;
   v[1] = 0;
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -36,9 +36,9 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
 
   ASSERT_EQUAL(false, result[0]);
 
-  thrust::partition(v.begin(), v.end(), cuda::__is_even());
+  thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -106,7 +106,7 @@ DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
 
 struct is_even_no_const
 {
-  __host__ __device__ bool operator()(int x)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator()(const int x) noexcept
   {
     return (x & 1) == 0;
   }
