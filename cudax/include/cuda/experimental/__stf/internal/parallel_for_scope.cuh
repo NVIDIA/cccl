@@ -33,6 +33,7 @@
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
+#include <cuda/experimental/__stf/internal/bundle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
@@ -784,8 +785,9 @@ public:
 #  if _CCCL_CUDA_COMPILER(NVCC)
     // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
-                            __nv_is_extended_host_device_lambda_closure_type(Fun),
-                          is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
+                            __nv_is_extended_host_device_lambda_closure_type(reserved::bundle_inner_fun_t<Fun>),
+                          is_extended_device_lambda_closure_type =
+                            __nv_is_extended_device_lambda_closure_type(reserved::bundle_inner_fun_t<Fun>);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
     // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
     // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
