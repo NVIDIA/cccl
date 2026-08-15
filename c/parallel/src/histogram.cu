@@ -325,14 +325,20 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
 #endif
 
   const bool is_byte_sample = d_samples.value_type.size == 1;
+  const int num_privatized_bins =
+    is_byte_sample ? cub::detail::histogram::byte_sample_privatized_levels - 1 : num_output_levels_val - 1;
+  const int counter_size_bytes = static_cast<int>(d_output_histograms.value_type.size);
   const auto privatization =
-    is_byte_sample
-      ? cub::detail::histogram::privatization_mode::static_smem
-      : cub::detail::histogram::select_privatization_mode_for_counter_size<true, 1>(
-          active_policy, num_output_levels_val - 1, static_cast<int>(d_output_histograms.value_type.size));
+    is_evenly_segmented
+      ? cub::detail::histogram::select_privatization_mode_for_counter_size<true, 1>(
+          active_policy, num_privatized_bins, counter_size_bytes)
+      : cub::detail::histogram::select_privatization_mode_for_counter_size<false, 1>(
+          active_policy, num_privatized_bins, counter_size_bytes);
   const std::string_view privatization_mode_t =
     privatization == cub::detail::histogram::privatization_mode::static_smem
       ? "cub::detail::histogram::HistogramPrivatizedStaticSmem"
+    : privatization == cub::detail::histogram::privatization_mode::dynamic_smem
+      ? "cub::detail::histogram::HistogramPrivatizedDynamicSmem"
       : "cub::detail::histogram::HistogramPrivatizedGmem";
 
   std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);

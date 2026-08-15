@@ -157,7 +157,7 @@ struct AgentHistogram
   static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
   static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
   static constexpr auto policy            = current_policy<PolicySelector>();
-  static constexpr auto sweep =
+  static constexpr auto privatization_policy =
     uses_static_smem ? policy.static_smem
     : uses_dynamic_smem
       ? policy.dynamic_smem
@@ -166,16 +166,16 @@ struct AgentHistogram
     uses_static_smem ? policy.max_privatized_static_smem_single_channel_bytes / int{sizeof(CounterT)} : 0;
   static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
                 "Static-SMEM privatization requires room for at least one bin");
-  static constexpr int vec_size                    = sweep.vec_size;
-  static constexpr int threads_per_block           = sweep.threads_per_block;
-  static constexpr int pixels_per_thread           = sweep.items_per_thread;
+  static constexpr int vec_size                    = privatization_policy.vec_size;
+  static constexpr int threads_per_block           = privatization_policy.threads_per_block;
+  static constexpr int pixels_per_thread           = privatization_policy.items_per_thread;
   static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
   static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
-  static constexpr bool is_rle_compress            = sweep.rle_compress;
-  static constexpr bool is_work_stealing           = sweep.work_stealing;
-  static constexpr CacheLoadModifier load_modifier = sweep.load_modifier;
+  static constexpr bool is_rle_compress            = privatization_policy.rle_compress;
+  static constexpr bool is_work_stealing           = privatization_policy.work_stealing;
+  static constexpr CacheLoadModifier load_modifier = privatization_policy.load_modifier;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -190,9 +190,10 @@ struct AgentHistogram
                      SampleIteratorT>;
   using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
   using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
-  using BlockLoadSampleT      = BlockLoad<SampleT, threads_per_block, samples_per_thread, sweep.load_algorithm>;
-  using BlockLoadPixelT       = BlockLoad<PixelT, threads_per_block, pixels_per_thread, sweep.load_algorithm>;
-  using BlockLoadVecT         = BlockLoad<VecT, threads_per_block, vecs_per_thread, sweep.load_algorithm>;
+  using BlockLoadSampleT =
+    BlockLoad<SampleT, threads_per_block, samples_per_thread, privatization_policy.load_algorithm>;
+  using BlockLoadPixelT = BlockLoad<PixelT, threads_per_block, pixels_per_thread, privatization_policy.load_algorithm>;
+  using BlockLoadVecT   = BlockLoad<VecT, threads_per_block, vecs_per_thread, privatization_policy.load_algorithm>;
 
   struct _TempStorage
   {
@@ -216,8 +217,8 @@ struct AgentHistogram
   _TempStorage& static_smem_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  const int* num_output_bins; // one for each channel
-  const int* num_privatized_bins; // one for each channel
+  const int* num_output_bins; // array of ints, one for each channel
+  const int* num_privatized_bins; // array of ints, one for each channel
   CounterT* gmem_privatized_histograms[NumActiveChannels]; // one for each channel
   CounterT* dynamic_smem_privatized_histograms[NumActiveChannels]; // dynamic shared-memory channel bases, when enabled
   OutputCounterT** output_histogram; // final output, in global memory
@@ -415,7 +416,7 @@ struct AgentHistogram
     bool is_valid[pixels_per_thread];
 
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-    MarkValid<IsFullTile, sweep.load_algorithm == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
+    MarkValid<IsFullTile, privatization_policy.load_algorithm == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     AccumulatePixels(samples, is_valid, ::cuda::std::bool_constant<is_rle_compress>{});
   }
