@@ -119,6 +119,9 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
+inline constexpr int histogram_init_threads_per_block   = 256;
+inline constexpr int legacy_privatized_static_smem_bins = 256;
+
 enum class privatization_mode
 {
   gmem,
@@ -298,9 +301,6 @@ public:
       constexpr int max_privatized_static_smem_bytes                       = 1024;
       constexpr int max_privatized_dynamic_smem_single_channel_bytes       = 228352;
       constexpr int max_privatized_dynamic_smem_range_bytes_per_channel    = 8192;
-      constexpr int max_privatized_dynamic_smem_2_channel_even_bytes       = 228352;
-      constexpr int max_privatized_dynamic_smem_3_channel_even_bytes       = 228348;
-      constexpr int max_privatized_dynamic_smem_4_channel_even_bytes       = 131072;
       constexpr int max_output_histogram_bytes_for_init_kernel_pdl_trigger = 8192;
 
       // Dynamic-SMEM tuning exists only for combinations that improve on current main.
@@ -323,9 +323,9 @@ public:
         has_dynamic_smem_tuning ? max_privatized_dynamic_smem_single_channel_bytes : 0,
         range_multi_static || range_u64_static ? 3 : 0,
         has_dynamic_smem_tuning ? max_privatized_dynamic_smem_range_bytes_per_channel * num_active_channels : 0,
-        has_dynamic_smem_tuning ? max_privatized_dynamic_smem_2_channel_even_bytes : 0,
-        has_dynamic_smem_tuning ? max_privatized_dynamic_smem_3_channel_even_bytes : 0,
-        has_dynamic_smem_tuning ? max_privatized_dynamic_smem_4_channel_even_bytes : 0,
+        0,
+        0,
+        0,
         init_kernel_pdl_trigger_bytes};
     }
 
