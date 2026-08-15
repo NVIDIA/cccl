@@ -21,6 +21,8 @@
 
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/ptx>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -312,8 +314,8 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
     {
       // vvv regressed case: plain global loads have no ignore_oob, so clamp the tail reads into the input.
       // the clamped values are garbage, but (loc < tile_len) below already zeroes those heads vvv
-      key_idx  = min(key_idx, tile_len - 1);
-      pred_idx = (tile_id == 0) ? max(key_idx - 1, 0) : key_idx - 1;
+      key_idx  = (::cuda::std::min) (key_idx, tile_len - 1);
+      pred_idx = (tile_id == 0) ? (::cuda::std::max) (key_idx - 1, 0) : key_idx - 1;
       // ^^^ regressed case ^^^
     }
 
@@ -429,7 +431,7 @@ struct head_flag_decode_t
     {
       const int shuffled_first_head = __shfl_down_sync(full_mask, lane_first_head_from_word, offset);
       lane_first_head_from_word =
-        min(lane_first_head_from_word, (lane_id + offset < 32) ? shuffled_first_head : 0x7fffffff);
+        (::cuda::std::min) (lane_first_head_from_word, (lane_id + offset < 32) ? shuffled_first_head : 0x7fffffff);
     }
     // now, lane i holds the next head in [i, 32). we precalculate this in parallel
   }
@@ -798,8 +800,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // over-fetch one 16B chunk to the left, so that we get last tiles last key
           // tile 0 has no predecessor and skips the over-fetch
           const bool first_tile = (tile_id == 0);
-          const int tile_len =
-            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
+          const int tile_len    = static_cast<int>(
+            (::cuda::std::min) (static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           load_tile_keys<tile_size, slot_pad>(
             tile_buf + static_cast<size_t>(slot_id) * slot_stride,
             d_keys,
@@ -839,8 +841,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             break;
           }
           // slot is ready!
-          const int tile_len =
-            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
+          const int tile_len = static_cast<int>(
+            (::cuda::std::min) (static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
           position_t* const pos_dst = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           unsigned my_flags;
@@ -1159,8 +1161,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
-          const int tile_len =
-            static_cast<int>(min(static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
+          const int tile_len = static_cast<int>(
+            (::cuda::std::min) (static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
           const bool is_last_tile = (tile_id == num_tiles - 1);
           // same scan as the store warps (lane i = warp-tile i)
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
