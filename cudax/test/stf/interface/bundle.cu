@@ -46,7 +46,7 @@ __host__ __device__ void check_rw_view_types()
 
 void run(context& ctx)
 {
-  const size_t N = 64;
+  constexpr size_t N = 64;
 
   ::std::vector<double> vals(N, 2.0);
   ::std::vector<int> idx(N);
@@ -113,7 +113,7 @@ void run(context& ctx)
   };
 
   // host_launch with structured bindings on the bundle view; verify the results
-  ctx.host_launch(B.read(), lo.read())->*[N](auto b, auto out) {
+  ctx.host_launch(B.read(), lo.read())->*[](auto b, auto out) {
     auto& [v, ix] = b;
     for (size_t i = 0; i < N; i++)
     {
