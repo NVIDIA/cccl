@@ -1900,9 +1900,6 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
                    sm100_policy.max_privatized_dynamic_smem_single_channel_bytes)
                  == 57088);
   STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_multi_channel_range_bytes == 8192);
-  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_2_channel_even_bytes == 228352);
-  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_3_channel_even_bytes == 228348);
-  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_4_channel_even_bytes == 131072);
   STATIC_REQUIRE(sm100_policy.gmem.threads_per_block == 768);
   STATIC_REQUIRE(sm100_policy.gmem.items_per_thread == 12);
   STATIC_REQUIRE(sm100_policy.static_smem == sm100_policy.gmem);
@@ -1931,6 +1928,9 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_even_4ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
       cuda::compute_capability{10, 0});
+  STATIC_REQUIRE(sm100_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == 0);
+  STATIC_REQUIRE(sm100_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == 0);
+  STATIC_REQUIRE(sm100_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == 0);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
   STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);

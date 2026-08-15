@@ -369,7 +369,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_threads_per_block = 256;
   int histogram_init_grid_dims =
     (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
@@ -845,22 +844,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 }
 
 // TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
+template <typename ActivePolicy, typename CounterT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger_bytes(int)
   -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
 {
-  return ActivePolicy::init_kernel_pdl_trigger_max_bins * int{sizeof(unsigned int)};
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins * int{sizeof(CounterT)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
+template <typename ActivePolicy, typename CounterT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger_bytes(long)
 {
   return 0;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
+template <typename ActivePolicy, typename CounterT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
 {
   using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
@@ -873,11 +872,21 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
     sweep::IS_RLE_COMPRESS,
     sweep::IS_WORK_STEALING};
   return {
-    kernel_config, kernel_config, kernel_config, 1024, 0, 0, 0, 0, 0, 0, convert_pdl_trigger_bytes<ActivePolicy>(0)};
+    kernel_config,
+    kernel_config,
+    kernel_config,
+    legacy_privatized_static_smem_bins * int{sizeof(CounterT)},
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    convert_pdl_trigger_bytes<ActivePolicy, CounterT>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
-template <typename MaxPolicy>
+template <typename MaxPolicy, typename CounterT>
 struct policy_selector_from_hub
 {
 private:
@@ -888,7 +897,7 @@ private:
     template <typename ActivePolicy>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
-      policy = convert_legacy_policy<ActivePolicy>();
+      policy = convert_legacy_policy<ActivePolicy, CounterT>();
       return cudaSuccess;
     }
   };
@@ -903,7 +912,7 @@ public:
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
-                      ({ return convert_legacy_policy<typename MaxPolicy::ActivePolicy>(); }));
+                      ({ return convert_legacy_policy<typename MaxPolicy::ActivePolicy, CounterT>(); }));
   }
 };
 
@@ -1554,7 +1563,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     using policy_selector_t                   = ::cuda::std::_If<
       uses_default_policy,
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+      detail::histogram::policy_selector_from_hub<MaxPolicyT, CounterT>>;
     return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1642,7 +1651,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     using policy_selector_t                   = ::cuda::std::_If<
       uses_default_policy,
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+      detail::histogram::policy_selector_from_hub<MaxPolicyT, CounterT>>;
     return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
