@@ -80,7 +80,7 @@ inline void loop_dispatch(
 
   size_t place_cnt = partition.size();
 
-  size_t nthreads = ::cuda::std::min(place_cnt, cnt);
+  const size_t nthreads = ::cuda::std::min(place_cnt, cnt);
 
   int head = -1;
 

@@ -1865,15 +1865,16 @@ inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_i
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
 inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_id)
 {
-  dim4 g_dims = e_place.get_dims();
+  const dim4 g_dims = e_place.get_dims();
 
-  dim4 begin_coords(
+  const dim4 begin_coords(
     tile_id.x * tile_sizes.x, tile_id.y * tile_sizes.y, tile_id.z * tile_sizes.z, tile_id.t * tile_sizes.t);
 
-  dim4 end_coords(::cuda::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
-                  ::cuda::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
-                  ::cuda::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
-                  ::cuda::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
+  const dim4 end_coords(
+    ::cuda::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
+    ::cuda::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
+    ::cuda::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
+    ::cuda::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
 
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.x, tile_sizes.x, tile_id.x);
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.y, tile_sizes.y, tile_id.y);
@@ -1886,10 +1887,10 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
   //    fprintf(stderr, "BEGIN %d END %d\n", begin_coords.z, end_coords.z);
   //    fprintf(stderr, "BEGIN %d END %d\n", begin_coords.t, end_coords.t);
 
-  dim4 size = dim4(end_coords.x - begin_coords.x,
-                   end_coords.y - begin_coords.y,
-                   end_coords.z - begin_coords.z,
-                   end_coords.t - begin_coords.t);
+  const dim4 size(end_coords.x - begin_coords.x,
+                  end_coords.y - begin_coords.y,
+                  end_coords.z - begin_coords.z,
+                  end_coords.t - begin_coords.t);
 
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);

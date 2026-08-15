@@ -673,7 +673,7 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::cuda::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     if constexpr (::cuda::std::is_integral_v<S>)
@@ -695,7 +695,7 @@ public:
             typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::cuda::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized.");

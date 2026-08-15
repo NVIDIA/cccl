@@ -81,7 +81,7 @@ public:
     // element for this part
     if (last_elem > n)
     {
-      size_t extra_elems = ::cuda::std::min(tile_size, last_elem - n);
+      const size_t extra_elems = ::cuda::std::min(tile_size, last_elem - n);
       cnt -= extra_elems;
     }
 
