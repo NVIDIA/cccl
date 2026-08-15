@@ -179,7 +179,7 @@ auto as_dep_tuple(T t)
  *
  * Bundles introduce no new ownership domain: they hold ordinary (refcounted)
  * logical data handles. Every field remains a first-class logical data
- * retrievable with `get_field<I>()`, so bundle-level and per-field task
+ * retrievable with `get_field<Idx>()`, so bundle-level and per-field task
  * dependencies interoperate (they meet at the same logical data).
  *
  * @tparam Fields `field<T, Traits...>` descriptors, in canonical order
@@ -192,8 +192,8 @@ class bundle
 public:
   static constexpr size_t n_fields = sizeof...(Fields);
 
-  template <size_t I>
-  using field_at = ::std::tuple_element_t<I, ::std::tuple<Fields...>>;
+  template <size_t Idx>
+  using field_at = ::std::tuple_element_t<Idx, ::std::tuple<Fields...>>;
 
   /** @brief Adopt existing logical data as the bundle's fields (no context needed) */
   explicit bundle(logical_data<typename Fields::type>... h)
@@ -206,17 +206,17 @@ public:
       : handles(ctx.logical_data(mv(shapes))...)
   {}
 
-  /** @brief Access field `I` as its plain, first-class logical data */
-  template <size_t I>
+  /** @brief Access field `Idx` as its plain, first-class logical data */
+  template <size_t Idx>
   auto& get_field()
   {
-    return ::std::get<I>(handles);
+    return ::std::get<Idx>(handles);
   }
 
-  template <size_t I>
+  template <size_t Idx>
   const auto& get_field() const
   {
-    return ::std::get<I>(handles);
+    return ::std::get<Idx>(handles);
   }
 
   /** @brief Depend on every field with read access */
@@ -256,11 +256,11 @@ public:
   }
 
 private:
-  template <access_mode M, size_t I>
+  template <access_mode M, size_t Idx>
   auto leaf_dep()
   {
-    auto& ld = ::std::get<I>(handles);
-    if constexpr (M == access_mode::read || field_at<I>::is_constant)
+    auto& ld = ::std::get<Idx>(handles);
+    if constexpr (M == access_mode::read || field_at<Idx>::is_constant)
     {
       return ld.read();
     }
