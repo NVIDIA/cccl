@@ -277,7 +277,7 @@ struct subst_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  _V __v_;
+  _CCCL_NO_UNIQUE_ADDRESS _V __v_;
 
   decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
                             [[maybe_unused]] const ::cuda::std::source_location __loc) noexcept
@@ -538,7 +538,7 @@ template <class _Action>
 struct __terminating_action
 {
   using __exception_sink_tag = void;
-  _Action __action_;
+  _CCCL_NO_UNIQUE_ADDRESS _Action __action_;
 
   [[noreturn]] nothing operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
   {
@@ -564,7 +564,7 @@ template <class _E, class _P>
 struct __catch_only_t
 {
   using __exception_sink_tag = void;
-  _P __p_;
+  _CCCL_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -606,7 +606,7 @@ template <class _P>
 struct __as_policy
 {
   using __exception_sink_tag = void;
-  _P __p_;
+  _CCCL_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -679,8 +679,8 @@ inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<_
 template <class _L, class _R>
 struct __composite_hooks
 {
-  _L __l_;
-  _R __r_;
+  _CCCL_NO_UNIQUE_ADDRESS _L __l_;
+  _CCCL_NO_UNIQUE_ADDRESS _R __r_;
 
   template <class _Rr,
             ::cuda::std::enable_if_t<__has_on_success_with<_R, _Rr> || __has_on_success_with<_L, _Rr>, int> = 0>
@@ -988,7 +988,7 @@ _Expr __on_exception(_P& __policy,
 template <class _Reaction>
 struct __on_throw_policy
 {
-  _Reaction __reaction_;
+  _CCCL_NO_UNIQUE_ADDRESS _Reaction __reaction_;
   const ::cuda::std::source_location __loc_;
 };
 
