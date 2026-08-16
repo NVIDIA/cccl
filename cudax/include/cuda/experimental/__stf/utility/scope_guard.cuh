@@ -846,8 +846,12 @@ _Expr __interpret_answer(_P& __policy, const ::std::exception* __exception, cons
 }
 
 // Walk the chain on the exception path: with no hook anywhere, propagate; else interpret.
+// The parameters go unread in the propagate instantiation, which gcc 9 flags without the
+// attribute.
 template <class _Expr, class _P>
-_Expr __on_exception(_P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc)
+_Expr __on_exception(_P& __policy,
+                     [[maybe_unused]] const ::std::exception* __exception,
+                     [[maybe_unused]] const ::cuda::std::source_location __loc)
 {
   if constexpr (!__has_exception_hook<_P>)
   {
