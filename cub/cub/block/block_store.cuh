@@ -840,8 +840,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
-                    && ::cuda::std::__can_to_address<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
