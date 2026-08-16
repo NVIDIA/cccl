@@ -486,7 +486,7 @@ template <int window_size_cap, class PolicySelector, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   tile_partial_state_t* tile_partial_states,
   int tile_id,
-  int& last_seen_tile_id,
+  int& first_unseen_tile_id,
   OffT& last_seen_prefix_run_count,
   OffT& last_seen_prefix_open_length,
   int lane_id,
@@ -495,9 +495,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   constexpr int poll_loads_per_lane = current_policy<PolicySelector>().lookahead.poll_loads_per_lane;
   static_assert(window_size_cap >= 1 && window_size_cap <= detail::warp_threads * poll_loads_per_lane,
                 "the fold window must be covered by the lanes");
-  while (last_seen_tile_id < tile_id)
+  while (first_unseen_tile_id < tile_id)
   {
-    const int remain = tile_id - last_seen_tile_id;
+    const int remain = tile_id - first_unseen_tile_id;
     // # of tiles to fold this iteration
     const int window_size                                  = (::cuda::std::min) (remain, window_size_cap);
     const int lane_tile_count                              = (window_size - lane_id + 31) >> 5;
@@ -514,7 +514,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         // we only try if that state is not published
         if (i < lane_tile_count && packed_words[i].published_tag() != tile_published)
         {
-          packed_words[i] = load_state(tile_partial_states, last_seen_tile_id + (i * detail::warp_threads + lane_id));
+          packed_words[i] =
+            load_state(tile_partial_states, first_unseen_tile_id + (i * detail::warp_threads + lane_id));
           if (packed_words[i].published_tag() != tile_published)
           {
             ready = false;
@@ -565,7 +566,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
                                                           : (last_seen_prefix_open_length + window_open_length);
     last_seen_prefix_run_count   = new_run_count;
     last_seen_prefix_open_length = new_open_length;
-    last_seen_tile_id += window_size;
+    first_unseen_tile_id += window_size;
   }
 }
 
@@ -573,7 +574,7 @@ template <class PolicySelector, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   tile_partial_state_t* tile_partial_states,
   int tile_id,
-  int& last_seen_tile_id,
+  int& first_unseen_tile_id,
   OffT& last_seen_prefix_run_count,
   OffT& last_seen_prefix_open_length,
   int lane_id,
@@ -594,7 +595,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
                       PolicySelector>(
       tile_partial_states,
       tile_id,
-      last_seen_tile_id,
+      first_unseen_tile_id,
       last_seen_prefix_run_count,
       last_seen_prefix_open_length,
       lane_id,
@@ -607,7 +608,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
                       PolicySelector>(
       tile_partial_states,
       tile_id,
-      last_seen_tile_id,
+      first_unseen_tile_id,
       last_seen_prefix_run_count,
       last_seen_prefix_open_length,
       lane_id,
@@ -954,8 +955,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       // if you are poll
       else if (squad == squadPoll)
       {
-        // running prefix state: everything folded so far, i.e. tiles [0, last_seen_tile_id)
-        int last_seen_tile_id             = 0;
+        // running prefix state: everything folded so far, i.e. tiles [0, first_unseen_tile_id)
+        int first_unseen_tile_id          = 0;
         OffT last_seen_prefix_run_count   = 0;
         OffT last_seen_prefix_open_length = 0;
         int poll_dense_mode               = 1;
@@ -979,7 +980,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           poll_and_fold<PolicySelector>(
             tile_partial_states,
             tile_id,
-            last_seen_tile_id,
+            first_unseen_tile_id,
             last_seen_prefix_run_count,
             last_seen_prefix_open_length,
             lane_id,
