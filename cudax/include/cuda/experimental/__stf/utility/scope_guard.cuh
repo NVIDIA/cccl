@@ -180,7 +180,7 @@ struct notify_t
       _CCCL_TRY
       {
         *__os_ << __loc.file_name() << '(' << __loc.line() << ") on_throw violation in " << __loc.function_name()
-               << ": " << (__exception != nullptr ? __exception->what() : "nonstandard exception") << '\n';
+               << ": " << (__exception ? __exception->what() : "nonstandard exception") << '\n';
         __os_->flush();
       }
       _CCCL_CATCH_ALL {}
@@ -192,7 +192,7 @@ struct notify_t
                 __loc.file_name(),
                 __loc.line(),
                 __loc.function_name(),
-                __exception != nullptr ? __exception->what() : "nonstandard exception");
+                __exception ? __exception->what() : "nonstandard exception");
       ::fflush(__file_);
     }
     return ::std::ignore;
@@ -552,7 +552,7 @@ struct __catch_only_t
   template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
   {
-    if (__exception != nullptr && dynamic_cast<const _E*>(__exception) != nullptr)
+    if (__exception && dynamic_cast<const _E*>(__exception))
     {
       return __p_(__exception, __loc);
     }
@@ -562,7 +562,7 @@ struct __catch_only_t
   template <class _Fn, class _PP = _P, ::cuda::std::enable_if_t<__is_rerunning_v<_PP>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if (__exception != nullptr && dynamic_cast<const _E*>(__exception) != nullptr)
+    if (__exception && dynamic_cast<const _E*>(__exception))
     {
       return __p_(__exception, __loc, __fn);
     }
@@ -1489,7 +1489,7 @@ UNITTEST("on_throw")
 
   // Reporting somewhere other than stderr: notify(stream) is a configured copy of notify.
   ::FILE* const log = ::tmpfile();
-  EXPECT(log != nullptr);
+  EXPECT(log);
   const auto site  = ::cuda::std::source_location::current();
   const int logged = on_throw(notify(log), site) << []() -> int {
     throw ::std::runtime_error("boom");
@@ -1502,7 +1502,7 @@ UNITTEST("on_throw")
   ::rewind(log);
   char message[1024]{};
   char expected[1024]{};
-  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  EXPECT(::fgets(message, sizeof(message), log));
   ::snprintf(expected,
              sizeof(expected),
              "%s(%u) on_throw violation in %s: boom\n",
@@ -1510,7 +1510,7 @@ UNITTEST("on_throw")
              site.line(),
              site.function_name());
   EXPECT(::std::string_view{message} == expected);
-  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  EXPECT(::fgets(message, sizeof(message), log));
   ::snprintf(expected,
              sizeof(expected),
              "%s(%u) on_throw violation in %s: nonstandard exception\n",
@@ -1794,7 +1794,7 @@ UNITTEST("policy inventory")
   EXPECT(lazy_calls == 1);
 
   const int s3 = on_throw(subst([](const ::std::exception* e, ::cuda::std::source_location) noexcept {
-                   return e != nullptr ? 1 : 2;
+                   return e ? 1 : 2;
                  }))
               << []() -> int {
     throw 42;
