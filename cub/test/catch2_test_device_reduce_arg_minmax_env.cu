@@ -31,10 +31,10 @@ namespace stdexec = cuda::std::execution;
 CUB_TEST_CASE("Device ArgMinMax works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinMax(
     input.begin(),
@@ -53,10 +53,10 @@ CUB_TEST_CASE("Device ArgMinMax works with default environment", "[reduce][devic
 CUB_TEST_CASE("Device ArgMinLastMax works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinLastMax(
     input.begin(),
@@ -77,10 +77,10 @@ CUB_TEST_CASE("Device ArgMinLastMax works with default environment", "[reduce][d
 CUB_TEST("Device ArgMinMax uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   const auto n = static_cast<::cuda::std::int64_t>(input.size());
 
@@ -110,10 +110,10 @@ CUB_TEST("Device ArgMinMax uses environment", "[reduce][device]", CUB_SMALL)
 CUB_TEST("Device ArgMinLastMax uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   const auto n = static_cast<::cuda::std::int64_t>(input.size());
 
@@ -143,10 +143,10 @@ CUB_TEST("Device ArgMinLastMax uses environment", "[reduce][device]", CUB_SMALL)
 CUB_TEST("Device ArgMinMax with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   const auto n = static_cast<::cuda::std::int64_t>(input.size());
 
@@ -178,10 +178,10 @@ CUB_TEST("Device ArgMinMax with compare_op uses environment", "[reduce][device]"
 CUB_TEST("Device ArgMinLastMax with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input     = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = c2h::device_vector<float>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<float>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<float>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   const auto n = static_cast<::cuda::std::int64_t>(input.size());
 

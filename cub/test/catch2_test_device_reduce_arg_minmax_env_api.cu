@@ -18,10 +18,10 @@ CUB_TEST("cub::DeviceReduce::ArgMinMax API example", "[reduce][env]", CUB_SMALL)
 {
   // example-begin argminmax-env
   auto input      = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_output = thrust::device_vector<float>(1);
-  auto min_index  = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_output = thrust::device_vector<float>(1);
-  auto max_index  = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_output = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index  = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_output = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index  = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   cuda::stream stream{cuda::devices[0]};
 

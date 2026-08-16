@@ -71,10 +71,10 @@ struct abs_less_t
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{8, 6, -7, 5, 3, 1, -9};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -112,10 +112,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_mi
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax basic correctness", "[reduce][arg_minlastmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{8, 6, -7, 5, 3, 1, -9};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -153,10 +153,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax basic correctness", "[reduce][ar
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles zero-length input", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   // For zero-length inputs, no output is written; just verify it does not crash.
   auto error = cub::DeviceReduce::ArgMinMax(
@@ -172,10 +172,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles zero-length input", "[reduce
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles zero-length input", "[reduce][arg_minlastmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   // For zero-length inputs, no output is written; just verify it does not crash.
   auto error = cub::DeviceReduce::ArgMinLastMax(
@@ -191,10 +191,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles zero-length input", "[re
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts stream", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -219,10 +219,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts stream", "[reduce][arg_minma
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax accepts stream", "[reduce][arg_minlastmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -247,10 +247,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax accepts stream", "[reduce][arg_m
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles single element", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{42};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinMax(
     input.begin(),
@@ -270,10 +270,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles single element", "[reduce][a
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles single element", "[reduce][arg_minlastmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{42};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinLastMax(
     input.begin(),
@@ -293,10 +293,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles single element", "[reduc
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax with compare_op", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinMax(
     input.begin(),
@@ -317,10 +317,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax with compare_op", "[reduce][arg_minm
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax with compare_op", "[reduce][arg_minlastmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinLastMax(
     input.begin(),
@@ -342,10 +342,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax with compare_op", "[reduce][arg_
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax tie-breaking: first min and first max", "[reduce][arg_minmax]", CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{5, 5, 5, 5, 5};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinMax(
     input.begin(),
@@ -368,10 +368,10 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax tie-breaking: first min and last
               CUB_SMALL)
 {
   auto input     = thrust::device_vector<int>{5, 5, 5, 5, 5};
-  auto min_out   = thrust::device_vector<int>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<int>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   auto error = cub::DeviceReduce::ArgMinLastMax(
     input.begin(),
