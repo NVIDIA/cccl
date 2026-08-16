@@ -361,6 +361,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   // last head = the highest-index warp that has any run (its last_head is the tile's last head)
   const unsigned warps_with_runs = __ballot_sync(full_mask, warp_run_count > 0);
   // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
+  // headless tile deserves a special branch because it is very common when problem is sparse
   if (warps_with_runs)
   {
     const int last_warp_with_runs = 31 - ::cuda::std::countl_zero(warps_with_runs);
