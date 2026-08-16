@@ -499,7 +499,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   {
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
-    const int window_size                                  = remain < window_size_cap ? remain : window_size_cap;
+    const int window_size                                  = (::cuda::std::min) (remain, window_size_cap);
     const int lane_first_tile_id                           = last_seen_tile_id + lane_id;
     const int lane_tile_count                              = (window_size - lane_id + 31) >> 5;
     tile_partial_state_t packed_words[poll_loads_per_lane] = {}; // must zero initialize
