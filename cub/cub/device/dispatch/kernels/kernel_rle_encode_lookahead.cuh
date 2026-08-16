@@ -358,19 +358,19 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   const int run_count      = __reduce_add_sync(full_mask, warp_run_count);
   // last head = the highest-index warp that has any run (its last_head is the tile's last head)
   const unsigned warps_with_runs = __ballot_sync(full_mask, warp_run_count > 0);
-  int last_head_idx              = -1;
-  // if we have any heads, get last head index
+  // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
   if (warps_with_runs)
   {
     const int last_warp_with_runs = 31 - ::cuda::std::countl_zero(warps_with_runs);
-    // broadcast the index from last lane to all
-    last_head_idx = __shfl_sync(full_mask, active ? slot_warp_last_heads[lane_id] : -1, last_warp_with_runs);
+    if (lane_id == last_warp_with_runs)
+    {
+      const int open_len = tile_len - slot_warp_last_heads[lane_id];
+      publish_state(tile_partial_states, tile_id, run_count, open_len);
+    }
   }
-  if (lane_id == 0)
+  else if (lane_id == 0)
   {
-    const int open_len = (run_count > 0) ? (tile_len - last_head_idx) : tile_len;
-    // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
-    publish_state(tile_partial_states, tile_id, run_count, open_len);
+    publish_state(tile_partial_states, tile_id, run_count, tile_len);
   }
 }
 
