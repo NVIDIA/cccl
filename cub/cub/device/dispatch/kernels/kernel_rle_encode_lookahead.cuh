@@ -357,7 +357,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   const int warp_run_count = active ? slot_warp_run_counts[lane_id] : 0;
   const int run_count      = __reduce_add_sync(full_mask, warp_run_count);
   // last head = the highest-index warp that has any run (its last_head is the tile's last head)
-  const unsigned warps_with_runs = __ballot_sync(full_mask, active && warp_run_count > 0);
+  const unsigned warps_with_runs = __ballot_sync(full_mask, warp_run_count > 0);
   int last_head_idx              = -1;
   // if we have any heads, get last head index
   if (warps_with_runs)
