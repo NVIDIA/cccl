@@ -51,6 +51,9 @@
 #include <cuda/std/__algorithm/includes.h>
 #include <cuda/std/__algorithm/ranges_find_if.h>
 #include <cuda/std/__algorithm/ranges_find_if_not.h>
+#include <cuda/std/__algorithm/ranges_find_last.h>
+#include <cuda/std/__algorithm/ranges_find_last_if.h>
+#include <cuda/std/__algorithm/ranges_find_last_if_not.h>
 #ifdef _CCCL_HAS_SORTING_ALGORITHMS
 #  include <cuda/std/__algorithm/inplace_merge.h>
 #endif // _CCCL_HAS_SORTING_ALGORITHMS
