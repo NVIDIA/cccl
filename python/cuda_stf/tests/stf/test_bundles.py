@@ -107,3 +107,24 @@ def test_bundle_device_logical_data():
     with ctx.task(B.rw()) as t:
         assert t.get(0).vals.__cuda_array_interface__["shape"] == (8,)
     ctx.finalize()
+
+
+def test_stackable_bundle_tokens():
+    """Bundles over stackable contexts: token bundles + launchable replay."""
+    ctx = stf.stackable_context()
+    B = ctx.bundle(rigid=ctx.token(), soft=ctx.token())
+    lx = ctx.logical_data(np.zeros(8, dtype=np.float64))
+
+    # whole-bundle modes distribute over the token fields; one slot each
+    with ctx.task(B.rw(), lx.rw()) as t:
+        # tokens are ordering-only: the bundle slot exists, its views are CAIs
+        # of the token deps' (empty) payloads; the plain dep is slot 1
+        assert t.get(1).__cuda_array_interface__["shape"] == (8,)
+
+    # per-field spelling with exclusion works identically to plain contexts
+    bd = B.dep(rigid=stf.AccessMode.READ, soft=stf.AccessMode.NONE)
+    assert bd.acquired == [True, False]
+    with ctx.task(bd, lx.read()):
+        pass
+
+    ctx.finalize()

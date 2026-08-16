@@ -3504,6 +3504,9 @@ cdef class stackable_logical_data:
 cdef class stackable_task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
+    # One entry per submitted dependency slot: (arity, field names or None,
+    # acquired flags or None). A bundle dependency is ONE slot.
+    cdef list _slot_map
     cdef list _lds_args
     # Retain exec places and per-dep data-place overrides referenced by the task.
     cdef list _owners
@@ -3514,6 +3517,7 @@ cdef class stackable_task:
     cdef _AliveFlag _alive
 
     def __cinit__(self, stackable_context ctx):
+        self._slot_map = []
         self._t = stf_stackable_task_create(ctx._ctx)
         if self._t == NULL:
             raise RuntimeError("failed to create STF stackable task")
@@ -3601,6 +3605,31 @@ cdef class stackable_task:
             raise RuntimeError("cannot materialize a token argument")
         cdef void *ptr = stf_task_get(self._t, index)
         return <uintptr_t>ptr
+
+    def get(self, slot):
+        """Per-slot view access: one submitted dependency is one slot.
+
+        Mirrors :meth:`task.get`: plain dependencies return their CUDA Array
+        Interface view; bundle dependencies return a namedtuple of per-field
+        views (excluded fields are None).
+        """
+        if slot < 0 or slot >= len(self._slot_map):
+            raise IndexError(f"task has {len(self._slot_map)} dependency slots")
+        base = 0
+        for i in range(slot):
+            base += self._slot_map[i][0]
+        arity, names, acquired = self._slot_map[slot]
+        if names is None:
+            return self.get_arg_cai(base)
+        views = []
+        k = 0
+        for got in acquired:
+            if got:
+                views.append(self.get_arg_cai(base + k))
+                k += 1
+            else:
+                views.append(None)
+        return _bundle_view_type(tuple(names))(*views)
 
     def get_arg_cai(self, index):
         """Return the argument as a CUDA Array Interface v3 object.
@@ -4497,6 +4526,12 @@ cdef class stackable_context:
             raise RuntimeError("failed to create stackable token")
         return out
 
+    def bundle(self, **fields):
+        """Create a bundle over stackable logical data (see :meth:`context.bundle`)."""
+        from cuda.stf._experimental.bundles import bundle as _bundle
+
+        return _bundle(self, **fields)
+
     def task(self, *args, symbol=None):
         """Create a task on the head (innermost) scope of this context."""
         exec_place_set = False
@@ -4506,6 +4541,12 @@ cdef class stackable_context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
+                t._slot_map.append((1, None, None))
+            elif getattr(d, "_stf_bundle_dep", False):
+                # a bundle dependency: several flat deps, one slot
+                for leaf in d.deps:
+                    t.add_dep(leaf)
+                t._slot_map.append((len(d.deps), list(d.names), list(d.acquired)))
             elif isinstance(d, exec_place):
                 if exec_place_set:
                     raise ValueError("Only one exec_place can be given")
