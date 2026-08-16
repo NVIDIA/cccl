@@ -380,12 +380,13 @@ stage_head_positions(unsigned my_flags, position_t* pos_dst, int warp_tile_offse
 {
   // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
   // (CRITICAL for MaxSeg=1,2,4)
-  int head_scan = __popc(my_flags); // start: this word's head count
+  const int word_run_count = __popc(my_flags); // this word's head count
   typename WarpScan<int>::TempStorage warp_scan_storage;
-  WarpScan<int>(warp_scan_storage).InclusiveSum(head_scan, head_scan);
+  int head_scan;
+  WarpScan<int>(warp_scan_storage).InclusiveSum(word_run_count, head_scan);
 
   // head_scan is a running sum of run_count, so each lane know each chunk's base
-  const int runs_before_word = head_scan - __popc(my_flags);
+  const int runs_before_word = head_scan - word_run_count;
   if (lane_id < ItemsPerThread)
   {
     const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
