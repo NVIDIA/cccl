@@ -606,19 +606,60 @@ struct __catch_only_t
   }
 };
 
+// Tags a raw capability-bearing callable so normal forms are uniformly sink-typed.
+// Forwards every capability it wraps; adds none. Storage follows the `subst_t<_R>`
+// convention: an lvalue reaction is held by reference, an rvalue moved in.
+template <class _P>
+struct __as_policy
+{
+  using __exception_sink_tag = void;
+  _P __p_;
+
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
+  {
+    return __p_(__exception, __loc);
+  }
+
+  template <class _Fn, class _PP = _P, ::cuda::std::enable_if_t<__is_rerunning_v<_PP>, int> = 0>
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return __p_(__exception, __loc, __fn);
+  }
+
+  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
+  decltype(auto) on_success(_R&& __r)
+  {
+    return __p_.on_success(::cuda::std::forward<_R>(__r));
+  }
+
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
+  decltype(auto) on_success()
+  {
+    return __p_.on_success();
+  }
+};
+
 // Normalize any reaction into a policy object, returned by value (first match wins). A
 // value stored inside carries its own ref-ness (e.g. subst_t<int&> for a reference result).
+// Every normal form is sink-tagged: raw capability-bearing callables wrap in `__as_policy`.
 template <class _R>
 auto __normalize(_R&& __r)
 {
   using _P = ::cuda::std::remove_cvref_t<_R>;
-  if constexpr (__has_any_capability<_P> || __is_exception_sink_v<_P>)
+  if constexpr (__is_exception_sink_v<_P>)
   {
-    // Already a policy (has a capability, or a capability-free tagged type such as noop).
+    // Already sink-tagged (named policies, composites, adapters, noop, ...).
     return static_cast<_P>(::cuda::std::forward<_R>(__r));
+  }
+  else if constexpr (__has_any_capability<_P>)
+  {
+    // Raw callable with a capability: tag it so identity elimination and &/| stay ADL-findable.
+    return __as_policy<_R>{::cuda::std::forward<_R>(__r)};
   }
   else if constexpr (__never_returns<_P&>)
   {
+    // Nullary nothing-returning (abort, terminate, ...): not a capability, must reach here.
     return __terminating_action<_R>{::cuda::std::forward<_R>(__r)};
   }
   else if constexpr (__is_ignore_v<_P>)
@@ -631,10 +672,8 @@ auto __normalize(_R&& __r)
   }
 }
 
-// The type `__normalize` would produce for `_R`, and whether that type is a sink-tagged
-// policy. Identity elimination for `&`/`|` consults this: only a tagged survivor is
-// returned bare; an untagged one (raw effect lambda) must stay inside a composite so
-// the chain remains composable.
+// The type `__normalize` would produce for `_R`. After `__as_policy`, every normal form is
+// sink-tagged, so identity elimination fires for every operand (ADDENDUM-1 §A.5 superseded).
 template <class _R>
 using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
 
@@ -867,7 +906,7 @@ auto __make_or(_Ln&& __l, _Rn&& __r)
   return __policy_or<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
 }
 
-// Composites define re-running-ness explicitly (not by probing their conditional 3-arg hooks).
+// Composites (and the raw-callable adapter) define re-running-ness explicitly.
 template <class _L, class _R>
 inline constexpr bool __is_rerunning_v<__policy_and<_L, _R>> = __is_rerunning_v<_R>;
 
@@ -876,6 +915,9 @@ inline constexpr bool __is_rerunning_v<__policy_or<_L, _R>> = __is_rerunning_v<_
 
 template <class _E, class _P>
 inline constexpr bool __is_rerunning_v<__catch_only_t<_E, _P>> = __is_rerunning_v<_P>;
+
+template <class _P>
+inline constexpr bool __is_rerunning_v<__as_policy<_P>> = __is_rerunning_v<_P>;
 
 template <class _E, class _Normalized>
 auto __make_catch_only(_Normalized&& __p)
@@ -1617,6 +1659,26 @@ UNITTEST("policy algebra")
 
   // Behavior after elimination is unchanged (the r6/r7 identity tests above already
   // exercise the runtime side; keep them).
+
+  // Uniform normal forms: identity elimination is idempotent for every operand,
+  // including raw callables (which now normalize to a tagged adapter).
+  {
+    auto raw = [](const ::std::exception*, const ::cuda::std::source_location) {
+      return 5;
+    };
+    static_assert(::cuda::std::is_same_v<decltype(noop & raw), decltype(noop & (noop & raw))>,
+                  "normalization is idempotent: eliminating noop twice adds nothing");
+    static_assert(::cuda::std::is_same_v<decltype(noop & raw), decltype((noop & raw) & noop)>,
+                  "left and right elimination agree on the normal form");
+    const int v = on_throw(noop & raw) << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(v == 5);
+  }
+
+  // Raw-lambda chains headed by noop keep working across the new adapter.
+  // (The existing r1..r4 heading-noop tests already cover this; they must
+  //  still pass unmodified.)
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
