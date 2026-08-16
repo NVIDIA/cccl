@@ -56,8 +56,8 @@ void arg_minmax(nvbench::state& state, nvbench::type_list<T>)
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::ArgMinMax,
-      "ArgMinMax failed",
+      cub::DeviceReduce::ArgMinLastMax,
+      "ArgMinLastMax failed",
       d_in,
       d_out_extrema,
       d_out_indices,

@@ -170,8 +170,9 @@ struct argminmax_accum_t
   IndexT max_index;
 };
 
-//! @brief Reduction operator for ArgMinMax: first minimum (smallest index on tie), last maximum (largest index on tie).
-template <typename CompareOpT = ::cuda::std::less<>>
+//! @brief Reduction operator for ArgMinMax: selects the first minimum (smallest index on tie) and, if LastMax is true,
+//! the last maximum (largest index on tie), otherwise the first maximum.
+template <typename CompareOpT = ::cuda::std::less<>, bool LastMax = false>
 struct arg_minmax_reduce_op : CompareOpT
 {
   template <typename T, typename IndexT>
@@ -186,8 +187,9 @@ struct arg_minmax_reduce_op : CompareOpT
       result.min_value = b.min_value;
       result.min_index = b.min_index;
     }
-    // last maximum: strictly greater wins; ties keep the larger index
-    if (less(a.max_value, b.max_value) || (!less(b.max_value, a.max_value) && b.max_index > a.max_index))
+    // maximum: strictly greater wins; ties keep the smaller index (first max) or larger index (last max)
+    const bool b_wins_tie = LastMax ? b.max_index > a.max_index : b.max_index < a.max_index;
+    if (less(a.max_value, b.max_value) || (!less(b.max_value, a.max_value) && b_wins_tie))
     {
       result.max_value = b.max_value;
       result.max_index = b.max_index;

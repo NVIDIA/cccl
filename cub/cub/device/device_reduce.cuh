@@ -2012,7 +2012,8 @@ public:
   }
 
 private:
-  template <typename InputIteratorT,
+  template <bool LastMax,
+            typename InputIteratorT,
             typename MinExtremumOutIteratorT,
             typename MinIndexOutIteratorT,
             typename MaxExtremumOutIteratorT,
@@ -2047,7 +2048,7 @@ private:
           d_max_out,
           d_max_index_out,
           static_cast<GlobalOffsetT>(num_items),
-          detail::arg_minmax_reduce_op<CompareOpT>{compare_op},
+          detail::arg_minmax_reduce_op<CompareOpT, LastMax>{compare_op},
           stream,
           tuning_env);
       });
@@ -2055,7 +2056,7 @@ private:
 
 public:
   //! @rst
-  //! Finds the device-wide first minimum and last maximum based on a given comparison operator, also returning their
+  //! Finds the device-wide first minimum and first maximum based on a given comparison operator, also returning their
   //! indices.
   //!
   //! .. versionadded:: 3.6.0
@@ -2064,7 +2065,7 @@ public:
   //! - The maximum value is written to ``d_max_out`` and its index is written to ``d_max_index_out``.
   //! - The offset type written to ``d_min_index_out`` and ``d_max_index_out`` is ``cuda::std::int64_t``.
   //! - On ties for the minimum, the smallest index is returned (first minimum).
-  //! - On ties for the maximum, the largest index is returned (last maximum).
+  //! - On ties for the maximum, the smallest index is returned (first maximum).
   //! - For zero-length inputs, no output is written.
   //! - Does not support non-commutative comparison operators.
   //! - The ranges ``[d_in, d_in + num_items)``, ``d_min_out``, ``d_min_index_out``, ``d_max_out``, and
@@ -2146,7 +2147,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMinMax");
-    return __arg_minmax(
+    return __arg_minmax<false>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2184,7 +2185,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMinMax");
-    return __arg_minmax(
+    return __arg_minmax<false>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2198,7 +2199,7 @@ public:
   }
 
   //! @rst
-  //! Finds the device-wide first minimum and last maximum in a single pass, also returning their indices.
+  //! Finds the device-wide first minimum and first maximum in a single pass, also returning their indices.
   //!
   //! .. versionadded:: 3.6.0
   //!
@@ -2206,7 +2207,7 @@ public:
   //! - The maximum value is written to ``d_max_out`` and its index is written to ``d_max_index_out``.
   //! - The offset type written to ``d_min_index_out`` and ``d_max_index_out`` is ``cuda::std::int64_t``.
   //! - On ties for the minimum, the smallest index is returned (first minimum).
-  //! - On ties for the maximum, the largest index is returned (last maximum).
+  //! - On ties for the maximum, the smallest index is returned (first maximum).
   //! - For zero-length inputs, no output is written.
   //! - Does not support non-commutative comparison operators.
   //! - The ranges ``[d_in, d_in + num_items)``, ``d_min_out``, ``d_min_index_out``, ``d_max_out``, and
@@ -2291,7 +2292,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
     return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
-      return __arg_minmax(
+      return __arg_minmax<false>(
         storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
     });
   }
@@ -2320,7 +2321,152 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
     return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
-      return __arg_minmax(
+      return __arg_minmax<false>(
+        storage,
+        bytes,
+        d_in,
+        d_min_out,
+        d_min_index_out,
+        d_max_out,
+        d_max_index_out,
+        num_items,
+        ::cuda::std::less{},
+        env);
+    });
+  }
+
+  //! @rst
+  //! .. versionadded:: 3.6.0
+  //! @endrst
+  //!
+  //! @note Same as @ref ArgMinMax but returns the last maximum on ties.
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename MinExtremumOutIteratorT,
+                 typename MinIndexOutIteratorT,
+                 typename MaxExtremumOutIteratorT,
+                 typename MaxIndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMinLastMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    MinExtremumOutIteratorT d_min_out,
+    MinIndexOutIteratorT d_min_index_out,
+    MaxExtremumOutIteratorT d_max_out,
+    MaxIndexOutIteratorT d_max_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMinLastMax");
+    return __arg_minmax<true>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_min_index_out,
+      d_max_out,
+      d_max_index_out,
+      num_items,
+      compare_op,
+      env);
+  }
+
+  //! @rst
+  //! .. versionadded:: 3.6.0
+  //! @endrst
+  //!
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename MinExtremumOutIteratorT,
+                 typename MinIndexOutIteratorT,
+                 typename MaxExtremumOutIteratorT,
+                 typename MaxIndexOutIteratorT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>) )
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMinLastMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    MinExtremumOutIteratorT d_min_out,
+    MinIndexOutIteratorT d_min_index_out,
+    MaxExtremumOutIteratorT d_max_out,
+    MaxIndexOutIteratorT d_max_index_out,
+    ::cuda::std::int64_t num_items,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMinLastMax");
+    return __arg_minmax<true>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_min_index_out,
+      d_max_out,
+      d_max_index_out,
+      num_items,
+      ::cuda::std::less{},
+      env);
+  }
+
+  //! @rst
+  //! .. versionadded:: 3.6.0
+  //! @endrst
+  //!
+  //! @note Same as @ref ArgMinMax but returns the last maximum on ties.
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename MinExtremumOutIteratorT,
+                 typename MinIndexOutIteratorT,
+                 typename MaxExtremumOutIteratorT,
+                 typename MaxIndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMinLastMax(
+    InputIteratorT d_in,
+    MinExtremumOutIteratorT d_min_out,
+    MinIndexOutIteratorT d_min_index_out,
+    MaxExtremumOutIteratorT d_max_out,
+    MaxIndexOutIteratorT d_max_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
+    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+      return __arg_minmax<true>(
+        storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
+    });
+  }
+
+  //! @rst
+  //! .. versionadded:: 3.6.0
+  //! @endrst
+  //!
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename MinExtremumOutIteratorT,
+                 typename MinIndexOutIteratorT,
+                 typename MaxExtremumOutIteratorT,
+                 typename MaxIndexOutIteratorT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>) )
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMinLastMax(
+    InputIteratorT d_in,
+    MinExtremumOutIteratorT d_min_out,
+    MinIndexOutIteratorT d_min_index_out,
+    MaxExtremumOutIteratorT d_max_out,
+    MaxIndexOutIteratorT d_max_index_out,
+    ::cuda::std::int64_t num_items,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
+    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+      return __arg_minmax<true>(
         storage,
         bytes,
         d_in,
