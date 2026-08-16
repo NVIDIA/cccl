@@ -500,7 +500,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
     const int window_size                                  = (::cuda::std::min) (remain, window_size_cap);
-    const int lane_first_tile_id                           = last_seen_tile_id + lane_id;
     const int lane_tile_count                              = (window_size - lane_id + 31) >> 5;
     tile_partial_state_t packed_words[poll_loads_per_lane] = {}; // must zero initialize
 
@@ -515,14 +514,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         // we only try if that state is not published
         if (i < lane_tile_count && packed_words[i].published_tag() != tile_published)
         {
-          packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i * 32);
+          packed_words[i] = load_state(tile_partial_states, last_seen_tile_id + (i * detail::warp_threads + lane_id));
           if (packed_words[i].published_tag() != tile_published)
           {
             ready = false;
           }
         }
       }
-    } while (__ballot_sync(full_mask, !ready) != 0u);
+    } while (__any_sync(full_mask, !ready));
 
     int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
     // now, we fold the window
@@ -533,9 +532,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
       {
         // aggregate run_count per lane, this is fine since run_count is commutative
         lane_run_count += packed_words[i].run_count();
-        // norminate the highest tile id with runs
-        lane_last_tile_with_runs_in_window =
-          (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_tile_with_runs_in_window;
+        // nominate the highest tile id with runs
+        if (packed_words[i].run_count() > 0)
+        {
+          lane_last_tile_with_runs_in_window = i * detail::warp_threads + lane_id;
+        }
       }
     }
     // vote for the highest tile id with runs
