@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -269,8 +270,16 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_num_runs_out), 0, sizeof(num_runs_t), stream));
   }
 
-  const int num_tiles =
-    static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
+  const OffsetT num_tiles_wide = ::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size()));
+  if constexpr (sizeof(OffsetT) > sizeof(int))
+  {
+    // one CTA per tile: the x-grid limit caps the supported input size (>= 16 TiB of keys at the smallest tile)
+    if (num_tiles_wide > static_cast<OffsetT>(::cuda::std::numeric_limits<int>::max()))
+    {
+      return CubDebug(cudaErrorInvalidValue);
+    }
+  }
+  const int num_tiles = static_cast<int>(num_tiles_wide);
 
   void* allocations[1]       = {};
   size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(tile_partial_state_t)};

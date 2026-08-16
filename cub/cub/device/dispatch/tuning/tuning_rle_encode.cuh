@@ -787,7 +787,8 @@ struct policy_selector
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the lookback impl.
     // The lookback policy stays populated either way: the dispatch layer re-checks runtime-only facts (device smem
-    // opt-in, tile count, temporary-storage alignment) and may still fall back at launch time.
+    // opt-in, temporary-storage alignment) and may still fall back at launch time. Inputs with more than INT_MAX
+    // tiles are rejected with cudaErrorInvalidValue (at the smallest tile that is a 16 TiB input).
     if (const auto lookahead_policy = get_lookahead_policy(cc))
     {
       if (can_use_lookahead(cc, *lookahead_policy))
