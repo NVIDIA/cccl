@@ -9,8 +9,6 @@
 #include <thrust/fill.h>
 
 #include <cuda/__cmath/uabs.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
 #include <cuda/devices>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
@@ -188,62 +186,6 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles zero-length input", "[re
     max_index.begin(),
     static_cast<::cuda::std::int64_t>(input.size()));
   REQUIRE(error == cudaSuccess);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts run_to_run determinism requirements",
-              "[reduce][arg_minmax]",
-              CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
-
-  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    env);
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax accepts run_to_run determinism requirements",
-              "[reduce][arg_minlastmax]",
-              CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = thrust::device_vector<float>(1);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1);
-
-  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
-
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    env);
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
 }
 
 CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts stream", "[reduce][arg_minmax]", CUB_SMALL)

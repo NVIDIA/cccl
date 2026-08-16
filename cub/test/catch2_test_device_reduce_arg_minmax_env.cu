@@ -22,9 +22,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-
 #include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
