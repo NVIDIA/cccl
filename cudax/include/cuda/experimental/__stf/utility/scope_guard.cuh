@@ -114,25 +114,6 @@ struct nothing final
 };
 
 /**
- * @brief `std::abort` wrapped so that never returning is part of its type: the reaction to
- * pass as in `on_throw(abort) << callable`.
- *
- * Inside this namespace, plain `abort` finds this function before the C library's. Code that
- * sees both through using-directives gets an ambiguity error rather than a silent pick, and
- * disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`.
- */
-[[noreturn]] inline nothing abort() noexcept
-{
-  ::std::abort(); // noreturn, so no value of the value-less result type is owed
-}
-
-//! @brief `std::terminate` wrapped like `abort`, its type proving it never returns.
-[[noreturn]] inline nothing terminate() noexcept
-{
-  ::std::terminate();
-}
-
-/**
  * @brief A suppressing handler policy that reports an exception and resumes (`std::ignore`).
  *
  * `on_throw(notify) << callable` reports on `stderr`. A configured copy reports elsewhere:
@@ -201,6 +182,64 @@ struct notify_t
 };
 // const rather than constexpr: the default destination `stderr` is not a constant expression.
 inline const notify_t notify{};
+
+/**
+ * @brief Reporting ending: report through `notify`, then `std::abort`. Usable as
+ * `on_throw(abort) << callable`, in ternaries (`ready ? front() : abort()`), and as a bare
+ * call `abort()`.
+ *
+ * Inside this namespace, plain `abort` finds this object before the C library's function. Code
+ * that sees both through using-directives gets an ambiguity error rather than a silent pick,
+ * and disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`. A
+ * block-scope using-declaration still hides `::abort`.
+ *
+ * `notify & abort` reports twice (documented). `abort | p` is a dead-| error (hook is
+ * noexcept); `abort & p` is a dead-& error (answers `nothing`).
+ */
+struct abort_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  //! @brief The bare call: usable in ternaries -- `ready ? front() : abort()`.
+  [[noreturn]] nothing operator()() const noexcept
+  {
+    ::std::abort();
+  }
+
+  //! @brief The exception hook: report, then die.
+  template <class _Fn>
+  [[noreturn]] nothing
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
+  {
+    notify(__exception, __loc, __fn);
+    ::std::abort();
+  }
+};
+inline constexpr abort_t abort{};
+
+//! @brief Like @ref abort_t "abort", but ends via `std::terminate`.
+struct terminate_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  [[noreturn]] nothing operator()() const noexcept
+  {
+    ::std::terminate();
+  }
+
+  template <class _Fn>
+  [[noreturn]] nothing
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
+  {
+    notify(__exception, __loc, __fn);
+    ::std::terminate();
+  }
+};
+inline constexpr terminate_t terminate{};
 
 /**
  * @brief The identity element of `&`: a policy with no capabilities at all.
@@ -393,23 +432,9 @@ inline constexpr as_expected_t as_expected{};
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-// Whether invoking _Fn with _Args... provably never returns, its declared result `nothing`
-// having no values. The primary template reads as `false` for a non-invocable pairing; the
-// partial specialization's void_t keeps `invoke_result_t` from hard-erroring in that case.
-template <class _AlwaysVoid, class _Fn, class... _Args>
-inline constexpr bool __never_returns_impl = false;
-
-template <class _Fn, class... _Args>
-inline constexpr bool
-  __never_returns_impl<::cuda::std::void_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, _Fn, _Args...> =
-    ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn, _Args...>>, nothing>;
-
-template <class _Fn, class... _Args>
-inline constexpr bool __never_returns = __never_returns_impl<void, _Fn, _Args...>;
-
 // --- The policy protocol: two optional capabilities discovered by introspection ------------
 //
-// Each probe follows the void_t partial-specialization idiom (see __never_returns_impl above):
+// Each probe follows the void_t partial-specialization idiom:
 // the primary reads false, the specialization is chosen only when the probed expression is
 // well-formed. Probing never instantiates a member that is absent. A policy may arrive
 // cv/ref-qualified, so each probe strips the reference and re-attaches an lvalue reference:
@@ -511,24 +536,6 @@ inline constexpr bool __exception_path_nothrow_v =
 
 // --- Adapters: normalize the historical reactions into policies ----------------------------
 
-// A nullary `nothing`-returning callable (bare `abort`, `terminate`, or a user's ending):
-// report through `notify`, then run it. Its answer type `nothing` proves it never returns.
-template <class _Action>
-struct __terminating_action
-{
-  using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _Action __action_;
-
-  template <class _Fn>
-  [[noreturn]] nothing
-  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept
-  {
-    notify(__exception, __loc, __fn);
-    __action_();
-    _CCCL_UNREACHABLE();
-  }
-};
-
 // `::std::ignore` as a policy: resume with a default-constructed result.
 struct __ignore_policy
 {
@@ -615,11 +622,6 @@ auto __normalize(_R&& __r)
   {
     // Raw callable with a capability: tag it so identity elimination and &/| stay ADL-findable.
     return __as_policy<_R>{::cuda::std::forward<_R>(__r)};
-  }
-  else if constexpr (__never_returns<_P&>)
-  {
-    // Nullary nothing-returning (abort, terminate, ...): not a capability, must reach here.
-    return __terminating_action<_R>{::cuda::std::forward<_R>(__r)};
   }
   else if constexpr (__is_ignore_v<_P>)
   {
@@ -1082,11 +1084,12 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
  * answers are discarded) and `|` (alternation; the left may decline by throwing), and with
  * `*` (n-fold `|`).
  *
- * For backward compatibility `on_throw` also accepts non-policy reactions: `abort` and
- * `terminate` (nullary `nothing`-returning functions) report through `notify` and then run;
- * `std::ignore` resumes with a default-constructed result; and anything else is taken as a
- * substitution value, exactly as `subst(value)`. A substitution passed as an lvalue can serve
- * a reference result, which the policy refers to rather than copies:
+ * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
+ * resumes with a default-constructed result; and anything else is taken as a substitution
+ * value, exactly as `subst(value)` (including a user's nullary `nothing`-returning ending,
+ * which dies silently -- pair with `notify &` to opt the report back in). A substitution
+ * passed as an lvalue can serve a reference result, which the policy refers to rather than
+ * copies:
  *
  * @code
  * int fallback = 42;
@@ -1581,14 +1584,17 @@ UNITTEST("policy algebra")
   static_assert(::cuda::std::is_same_v<decltype(subst(1) | rethrow), decltype(subst(1))>,
                 "rethrow is eliminated on the right");
 
-  // Elimination still normalizes: noop & abort is the terminating adapter, and works.
+  // noop & abort eliminates to abort itself -- no adapter in the type.
+  static_assert(::cuda::std::is_same_v<decltype(noop & abort), abort_t>,
+                "abort is a policy; elimination returns it bare");
   {
-    using cuda::experimental::stf::abort;
+    using cuda::experimental::stf::abort; // block-scope: hides ::abort
     const int kept = on_throw(noop & abort) << [] {
       return 11;
     };
     EXPECT(kept == 11);
   }
+  // (Death paths are untestable here; the report-then-die contract is by inspection.)
 
   // Behavior after elimination is unchanged (the r6/r7 identity tests above already
   // exercise the runtime side; keep them).
