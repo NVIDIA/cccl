@@ -505,6 +505,15 @@ inline constexpr bool __answers_nothing_impl<true, _P> =
 template <class _P>
 inline constexpr bool __answers_nothing = __answers_nothing_impl<__has_exception_hook<_P>, _P>;
 
+// Whether a policy's exception path is nothrow -- the same computation that
+// `operator<<`'s conditional noexcept uses. Declining from `|` means throwing
+// from that path, so a nothrow left side of `|` leaves the right unreachable.
+template <class _P>
+inline constexpr bool __exception_path_nothrow_v =
+  __has_exception_hook<_P>
+  && ::cuda::std::
+    is_nothrow_invocable_v<::cuda::std::remove_reference_t<_P>&, const ::std::exception*, ::cuda::std::source_location>;
+
 // --- Adapters: normalize the historical reactions into policies (§6) -----------------------
 
 // A nullary `nothing`-returning callable (bare `abort`, `terminate`, or a user's ending):
@@ -595,6 +604,16 @@ auto __normalize(_R&& __r)
     return subst_t<_R>{::cuda::std::forward<_R>(__r)};
   }
 }
+
+// The type `__normalize` would produce for `_R`, and whether that type is an stf-tagged
+// policy. Identity elimination for `&`/`|` consults this: only a tagged survivor is
+// returned bare; an untagged one (raw effect lambda) must stay inside a composite so
+// the chain remains composable.
+template <class _R>
+using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
+
+template <class _R>
+inline constexpr bool __normalizes_to_stf_policy_v = __is_stf_policy_v<__normalized_t<_R>>;
 
 // The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`; `_R` answers.
 template <class _L, class _R>
@@ -699,6 +718,8 @@ struct __policy_or
 
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
+  static_assert(!__exception_path_nothrow_v<_L>,
+                "the left policy never declines; alternatives after it are unreachable");
 
   // The answer is `_R`'s if `_L`'s is `nothing`, else `_L`'s; the §4 conversion is where any
   // mismatch surfaces.
@@ -880,9 +901,8 @@ auto __make_on_throw(_Reaction&& __reaction, const ::cuda::std::source_location 
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
-decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
-  __has_exception_hook<_Reaction>
-  && ::cuda::std::is_nothrow_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>)
+decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy,
+                          _Fn&& __fn) noexcept(__exception_path_nothrow_v<_Reaction>)
 {
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
   // program where it stands, so the catch below could never run and the policy would be a
@@ -1082,6 +1102,23 @@ auto operator&(_L&& __l, _R&& __r)
                             detail::__normalize(::cuda::std::forward<_R>(__r)));
 }
 
+//! @brief Left identity of `&`: `noop & p` is `__normalize(p)` when that result is stf-tagged.
+template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_stf_policy_v<_R>, int> = 0>
+auto operator&(noop_t, _R&& __r)
+{
+  return detail::__normalize(::cuda::std::forward<_R>(__r));
+}
+
+//! @brief Right identity of `&`. `noop` itself is excluded so `noop & noop` is not ambiguous.
+template <class _L,
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, noop_t>
+                                     && detail::__normalizes_to_stf_policy_v<_L>,
+                                   int> = 0>
+auto operator&(_L&& __l, noop_t)
+{
+  return detail::__normalize(::cuda::std::forward<_L>(__l));
+}
+
 /**
  * @brief Alternation: `_L` gets first claim; if it declines by throwing, `_R` handles the
  * original exception. `rethrow` is the two-sided identity. Same operand constraint as `&`.
@@ -1093,6 +1130,23 @@ auto operator|(_L&& __l, _R&& __r)
 {
   return detail::__make_or(detail::__normalize(::cuda::std::forward<_L>(__l)),
                            detail::__normalize(::cuda::std::forward<_R>(__r)));
+}
+
+//! @brief Left identity of `|`: `rethrow | p` is `__normalize(p)` when that result is stf-tagged.
+template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_stf_policy_v<_R>, int> = 0>
+auto operator|(rethrow_t, _R&& __r)
+{
+  return detail::__normalize(::cuda::std::forward<_R>(__r));
+}
+
+//! @brief Right identity of `|`. `rethrow` itself is excluded so `rethrow | rethrow` is not ambiguous.
+template <class _L,
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, rethrow_t>
+                                     && detail::__normalizes_to_stf_policy_v<_L>,
+                                   int> = 0>
+auto operator|(_L&& __l, rethrow_t)
+{
+  return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
 #ifdef UNITTESTED_FILE
@@ -1439,6 +1493,32 @@ UNITTEST("policy algebra")
                 "nothrow policy chain must keep the expression noexcept");
   static_assert(!noexcept(on_throw(rethrow, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
                 "a throwing policy must surface in the expression's noexcept");
+
+  // Identity elimination is type-level: composing with a neutral element adds no wrapper.
+  static_assert(::cuda::std::is_same_v<decltype(noop & subst(1)), decltype(subst(1))>,
+                "noop is eliminated on the left");
+  static_assert(::cuda::std::is_same_v<decltype(subst(1) & noop), decltype(subst(1))>,
+                "noop is eliminated on the right");
+  static_assert(::cuda::std::is_same_v<decltype(rethrow | subst(1)), decltype(subst(1))>,
+                "rethrow is eliminated on the left");
+  static_assert(::cuda::std::is_same_v<decltype(subst(1) | rethrow), decltype(subst(1))>,
+                "rethrow is eliminated on the right");
+
+  // Elimination still normalizes: noop & abort is the terminating adapter, and works.
+  {
+    using cuda::experimental::stf::abort;
+    const int kept = on_throw(noop & abort) << [] {
+      return 11;
+    };
+    EXPECT(kept == 11);
+  }
+
+  // Behavior after elimination is unchanged (the r6/r7 identity tests above already
+  // exercise the runtime side; keep them).
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
+  //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
