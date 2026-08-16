@@ -870,8 +870,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // if warptile is non empty (has heads), we get the location of warps first head and last head
           if (nonempty_chunk_mask)
           {
-            const int first_chunk           = __ffs(nonempty_chunk_mask) - 1;
-            const int last_chunk            = 31 - ::cuda::std::countl_zero(nonempty_chunk_mask);
+            const int first_chunk = __ffs(nonempty_chunk_mask) - 1;
+            const int last_chunk  = 31 - ::cuda::std::countl_zero(nonempty_chunk_mask);
+            // measured alternative: letting lanes first_chunk/last_chunk store the heads directly (skipping both
+            // shuffles) regresses ~1%: the conditional stores plus the extra __syncwarp needed before the computed
+            // arrive cost more than the two shuffles
             const unsigned first_chunk_mask = __shfl_sync(full_mask, my_flags, first_chunk);
             const unsigned last_chunk_mask  = __shfl_sync(full_mask, my_flags, last_chunk);
             _CCCL_ASSERT((first_chunk_mask != 0u) && (last_chunk_mask != 0u), "nonempty chunk with an empty mask");
