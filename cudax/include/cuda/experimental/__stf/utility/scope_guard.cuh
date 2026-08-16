@@ -38,9 +38,9 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -480,59 +480,38 @@ namespace detail
 {
 // --- The policy protocol: two optional capabilities discovered by introspection ------------
 //
-// Each probe follows the void_t partial-specialization idiom:
-// the primary reads false, the specialization is chosen only when the probed expression is
-// well-formed. Probing never instantiates a member that is absent. A policy may arrive
-// cv/ref-qualified, so each probe strips the reference and re-attaches an lvalue reference:
-// policies are stored and invoked as non-const lvalues. The exception hook is always
+// Each capability is one archetype alias + `_IsValidExpansion`. The exception hook is always
 // `(const std::exception*, source_location, Fn&)`; Fn-independent probes use a throwaway
-// `void (&)()`.
-
-// Capability 1: the exception hook `p(const std::exception*, source_location, Fn&)`.
-template <class _AlwaysVoid, class _P, class _Fn>
-inline constexpr bool __has_exception_hook_impl = false;
+// `void (&)()`. `__hook_answer_t` IS the hook archetype -- one definition, both roles.
 
 template <class _P, class _Fn>
-inline constexpr bool __has_exception_hook_impl<
-  ::cuda::std::void_t<decltype(::cuda::std::declval<_P&>()(::cuda::std::declval<const ::std::exception*>(),
-                                                           ::cuda::std::declval<::cuda::std::source_location>(),
-                                                           ::cuda::std::declval<_Fn&>()))>,
-  _P,
-  _Fn> = true;
-
-template <class _P, class _Fn = void (&)()>
-inline constexpr bool __has_exception_hook = __has_exception_hook_impl<void, ::cuda::std::remove_reference_t<_P>, _Fn>;
-
-// The hook's return type -- the policy's "answer".
-template <class _P, class _Fn = void (&)()>
-using __hook_answer_t = decltype(::cuda::std::declval<::cuda::std::remove_reference_t<_P>&>()(
+using __exception_hook_of = decltype(::cuda::std::declval<_P&>()(
   ::cuda::std::declval<const ::std::exception*>(),
   ::cuda::std::declval<::cuda::std::source_location>(),
   ::cuda::std::declval<_Fn&>()));
 
+template <class _P, class _Fn = void (&)()>
+inline constexpr bool __has_exception_hook =
+  ::cuda::std::_IsValidExpansion<__exception_hook_of, ::cuda::std::remove_reference_t<_P>, _Fn>::value;
+
+template <class _P, class _Fn = void (&)()>
+using __hook_answer_t = __exception_hook_of<::cuda::std::remove_reference_t<_P>, _Fn>;
+
 // Capability 2a: the success hook `p.on_success(R&&)` for a given result type.
-template <class _AlwaysVoid, class _P, class _R>
-inline constexpr bool __has_on_success_with_impl = false;
+template <class _P, class _R>
+using __on_success_with_of = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_R>()));
 
 template <class _P, class _R>
-inline constexpr bool __has_on_success_with_impl<
-  ::cuda::std::void_t<decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_R>()))>,
-  _P,
-  _R> = true;
-
-template <class _P, class _R>
-inline constexpr bool __has_on_success_with = __has_on_success_with_impl<void, ::cuda::std::remove_reference_t<_P>, _R>;
+inline constexpr bool __has_on_success_with =
+  ::cuda::std::_IsValidExpansion<__on_success_with_of, ::cuda::std::remove_reference_t<_P>, _R>::value;
 
 // Capability 2b: the nullary success hook `p.on_success()` (the void-result channel).
-template <class _AlwaysVoid, class _P>
-inline constexpr bool __has_on_success_void_impl = false;
+template <class _P>
+using __on_success_void_of = decltype(::cuda::std::declval<_P&>().on_success());
 
 template <class _P>
-inline constexpr bool
-  __has_on_success_void_impl<::cuda::std::void_t<decltype(::cuda::std::declval<_P&>().on_success())>, _P> = true;
-
-template <class _P>
-inline constexpr bool __has_on_success_void = __has_on_success_void_impl<void, ::cuda::std::remove_reference_t<_P>>;
+inline constexpr bool __has_on_success_void =
+  ::cuda::std::_IsValidExpansion<__on_success_void_of, ::cuda::std::remove_reference_t<_P>>::value;
 
 // A policy is anything exposing at least one capability (exception hook probed with a throwaway).
 template <class _P>
@@ -541,14 +520,12 @@ inline constexpr bool __has_any_capability = __has_exception_hook<_P> || __has_o
 // Whether a type is one this header defines as an exception-sink policy, marked by the
 // __exception_sink_tag member. This is what &/| require of at least one operand, so they do
 // not hijack unrelated types.
-template <class _AlwaysVoid, class _P>
-inline constexpr bool __is_exception_sink_impl = false;
+template <class _P>
+using __exception_sink_tag_of = typename _P::__exception_sink_tag;
 
 template <class _P>
-inline constexpr bool __is_exception_sink_impl<::cuda::std::void_t<typename _P::__exception_sink_tag>, _P> = true;
-
-template <class _P>
-inline constexpr bool __is_exception_sink_v = __is_exception_sink_impl<void, ::cuda::std::remove_cvref_t<_P>>;
+inline constexpr bool __is_exception_sink_v =
+  ::cuda::std::_IsValidExpansion<__exception_sink_tag_of, ::cuda::std::remove_cvref_t<_P>>::value;
 
 // Whether a reaction is `::std::ignore` (compared as the current code does).
 template <class _P>
@@ -773,11 +750,8 @@ struct __policy_and : __composite_hooks<_L, _R>
   }
 };
 
-template <class _Ln, class _Rn>
-auto __make_and(_Ln&& __l, _Rn&& __r)
-{
-  return __policy_and<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
-}
+template <class _L, class _R>
+__policy_and(_L, _R) -> __policy_and<_L, _R>;
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
@@ -886,11 +860,8 @@ struct __policy_or : __composite_hooks<_L, _R>
   }
 };
 
-template <class _Ln, class _Rn>
-auto __make_or(_Ln&& __l, _Rn&& __r)
-{
-  return __policy_or<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
-}
+template <class _L, class _R>
+__policy_or(_L, _R) -> __policy_or<_L, _R>;
 
 // `p * n`: behaviorally the n-fold `|` of p with itself. One stored policy, invoked up to n
 // times; the active exception is re-observed between iterations exactly as `__policy_or` does
@@ -969,12 +940,6 @@ struct __policy_pow
   }
 };
 
-template <class _Normalized, class... _Es>
-auto __make_catch_only(_Normalized&& __p)
-{
-  return __catch_only_t<_Normalized, _Es...>{::cuda::std::forward<_Normalized>(__p)};
-}
-
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P, class _Fn>
 _Expr __interpret_answer(
@@ -1050,11 +1015,8 @@ struct __on_throw_policy
   const ::cuda::std::source_location __loc_;
 };
 
-template <class _Reaction>
-auto __make_on_throw(_Reaction&& __reaction, const ::cuda::std::source_location __loc)
-{
-  return __on_throw_policy<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __loc};
-}
+template <class _R>
+__on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
@@ -1201,7 +1163,7 @@ template <class _Reaction>
 auto on_throw(_Reaction&& __reaction,
               const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  return detail::__make_on_throw(detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc);
+  return detail::__on_throw_policy{detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
 }
 
 /**
@@ -1221,8 +1183,8 @@ auto catch_only(_P&& __p)
   static_assert(detail::__catch_only_pack_ok<_Es...>,
                 "catch_only<..., Base, ..., Derived, ...>: the Derived entry is dead "
                 "(Base already claims it)");
-  return detail::__make_catch_only<detail::__normalized_t<_P>, _Es...>(
-    detail::__normalize(::cuda::std::forward<_P>(__p)));
+  auto __np = detail::__normalize(::cuda::std::forward<_P>(__p));
+  return detail::__catch_only_t<decltype(__np), _Es...>{::cuda::std::move(__np)};
 }
 
 /**
@@ -1236,8 +1198,8 @@ template <class _L,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 auto operator&(_L&& __l, _R&& __r)
 {
-  return detail::__make_and(detail::__normalize(::cuda::std::forward<_L>(__l)),
-                            detail::__normalize(::cuda::std::forward<_R>(__r)));
+  return detail::__policy_and{
+    detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
 }
 
 //! @brief Left identity of `&`: `noop & p` is `__normalize(p)` when that result is sink-tagged.
@@ -1266,8 +1228,8 @@ template <class _L,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 auto operator|(_L&& __l, _R&& __r)
 {
-  return detail::__make_or(detail::__normalize(::cuda::std::forward<_L>(__l)),
-                           detail::__normalize(::cuda::std::forward<_R>(__r)));
+  return detail::__policy_or{
+    detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
 }
 
 //! @brief Left identity of `|`: `rethrow | p` is `__normalize(p)` when that result is sink-tagged.
