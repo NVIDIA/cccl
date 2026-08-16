@@ -131,6 +131,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_iterators<random_access_iterator<int*>>();
   test_iterators<contiguous_iterator<int*>>();
   test_iterators<forward_iterator<int*>, sentinel_wrapper<forward_iterator<int*>>>();
+  test_iterators<bidirectional_iterator<int*>, sentinel_wrapper<bidirectional_iterator<int*>>>();
 
   {
     // check that the last of several matches is returned, not the first
