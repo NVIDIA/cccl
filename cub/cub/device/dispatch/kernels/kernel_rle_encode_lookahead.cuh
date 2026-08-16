@@ -589,7 +589,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
     // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
     // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
     // overlapping
-    poll_fold_windows<96, PolicySelector>(
+    poll_fold_windows<32 * current_policy<PolicySelector>().lookahead.dense_poll_loads_per_lane, PolicySelector>(
       tile_partial_states,
       tile_id,
       last_seen_tile_id,

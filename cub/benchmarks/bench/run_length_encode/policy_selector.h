@@ -21,7 +21,8 @@ struct bench_encode_policy_selector
     // benched type is lookahead-viable, so the streaming fallback is not instantiated
     return {cub::RleAlgorithm::lookahead,
             cub::RleLookbackPolicy{},
-            cub::RleLookaheadPolicy{TUNE_LA_IPT, TUNE_LA_CW, TUNE_LA_KRS, TUNE_LA_PRS, TUNE_LA_PLL, TUNE_LA_FST}};
+            cub::RleLookaheadPolicy{
+              TUNE_LA_IPT, TUNE_LA_CW, TUNE_LA_KRS, TUNE_LA_PRS, TUNE_LA_PLL, TUNE_LA_DPLL, TUNE_LA_FST}};
 #  else // USES_LOOKAHEAD()
     return {
       cub::RleAlgorithm::lookback,
