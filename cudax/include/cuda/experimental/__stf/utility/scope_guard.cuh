@@ -62,6 +62,15 @@
 #  include <string>
 #endif // UNITTESTED_FILE
 
+// nvcc 12.0 hits an internal compiler error ("error while padding end of structure!") when a
+// [[no_unique_address]] member's type is one of this header's empty policies; newer toolkits
+// are fine. WAR: the attribute is applied only where the compiler survives it.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
+#  define _CCCL_STF_NO_UNIQUE_ADDRESS
+#else // ^^^ nvcc < 12.1 ^^^ / vvv other compilers vvv
+#  define _CCCL_STF_NO_UNIQUE_ADDRESS _CCCL_NO_UNIQUE_ADDRESS
+#endif // nvcc < 12.1
+
 namespace cuda::experimental::stf
 {
 /**
@@ -277,7 +286,7 @@ struct subst_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  _CCCL_NO_UNIQUE_ADDRESS _V __v_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _V __v_;
 
   decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
                             [[maybe_unused]] const ::cuda::std::source_location __loc) noexcept
@@ -538,7 +547,7 @@ template <class _Action>
 struct __terminating_action
 {
   using __exception_sink_tag = void;
-  _CCCL_NO_UNIQUE_ADDRESS _Action __action_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _Action __action_;
 
   [[noreturn]] nothing operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
   {
@@ -564,7 +573,7 @@ template <class _E, class _P>
 struct __catch_only_t
 {
   using __exception_sink_tag = void;
-  _CCCL_NO_UNIQUE_ADDRESS _P __p_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -606,7 +615,7 @@ template <class _P>
 struct __as_policy
 {
   using __exception_sink_tag = void;
-  _CCCL_NO_UNIQUE_ADDRESS _P __p_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -679,8 +688,8 @@ inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<_
 template <class _L, class _R>
 struct __composite_hooks
 {
-  _CCCL_NO_UNIQUE_ADDRESS _L __l_;
-  _CCCL_NO_UNIQUE_ADDRESS _R __r_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _L __l_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _R __r_;
 
   template <class _Rr,
             ::cuda::std::enable_if_t<__has_on_success_with<_R, _Rr> || __has_on_success_with<_L, _Rr>, int> = 0>
@@ -988,7 +997,7 @@ _Expr __on_exception(_P& __policy,
 template <class _Reaction>
 struct __on_throw_policy
 {
-  _CCCL_NO_UNIQUE_ADDRESS _Reaction __reaction_;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _Reaction __reaction_;
   const ::cuda::std::source_location __loc_;
 };
 
