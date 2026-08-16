@@ -307,13 +307,14 @@ auto subst(_V&& __v)
 }
 
 /**
- * @brief Around-hook policy: re-invokes the callable up to `n` times after the first failure
- * (`n + 1` attempts at most), propagating the last exception if all fail.
+ * @brief Re-running exception-path policy: after a failure, re-invokes the callable up to
+ * `n` more times (`n + 1` attempts at most), declining by rethrowing when exhausted.
  *
- * `retry` has no exception hook of its own, so `on_throw(retry(3)) << f` retries and then
- * propagates; pair it with a terminal, as in `retry(3) & subst(fallback)`, to answer the
- * exhausted failure. The counter is mutable state; policies are stored by value per `on_throw`
- * expression, so each `<<` gets its own count.
+ * `retry` answers the exception path by re-running rather than by substitution; it declines
+ * when the retries are spent. Pair it with `|` to answer the exhausted failure, as in
+ * `retry(3) | subst(fallback)`. `retry(n) & p` is rejected: a re-running policy must be the
+ * last element of `&`. The counter is mutable state; policies are stored by value per
+ * `on_throw` expression, so each `<<` gets its own count.
  */
 struct retry_t
 {
@@ -321,25 +322,28 @@ struct retry_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  int __left_;
+  int __left_ = 0;
 
   template <class _Fn>
-  decltype(auto) invoke(_Fn&& __fn)
+  auto operator()([[maybe_unused]] const ::std::exception* __exception,
+                  [[maybe_unused]] const ::cuda::std::source_location __loc,
+                  _Fn& __fn) -> decltype(__fn())
   {
-    for (;; --__left_)
+    for (; __left_ > 0; --__left_)
     {
       _CCCL_TRY
       {
-        return ::cuda::std::forward<_Fn>(__fn)();
+        return __fn(); // legal for void decltype too
       }
       _CCCL_CATCH_ALL
       {
-        if (__left_ == 0)
+        if (__left_ == 1)
         {
-          throw;
+          throw; // exhausted: decline with the last failure
         }
       }
     }
+    throw; // retry(0) declines immediately, like rethrow
   }
 };
 
@@ -408,7 +412,7 @@ inline constexpr bool
 template <class _Fn, class... _Args>
 inline constexpr bool __never_returns = __never_returns_impl<void, _Fn, _Args...>;
 
-// --- The policy protocol: three optional capabilities discovered by introspection ----------
+// --- The policy protocol: two optional capabilities discovered by introspection ------------
 //
 // Each probe follows the void_t partial-specialization idiom (see __never_returns_impl above):
 // the primary reads false, the specialization is chosen only when the probed expression is
@@ -416,7 +420,7 @@ inline constexpr bool __never_returns = __never_returns_impl<void, _Fn, _Args...
 // cv/ref-qualified, so each probe strips the reference and re-attaches an lvalue reference:
 // policies are stored and invoked as non-const lvalues (retry mutates itself).
 
-// Capability 1: the exception hook `p(const std::exception*, source_location)`.
+// Capability 1a: the answering exception hook `p(const std::exception*, source_location)`.
 template <class _AlwaysVoid, class _P>
 inline constexpr bool __has_exception_hook_impl = false;
 
@@ -429,10 +433,36 @@ inline constexpr bool __has_exception_hook_impl<
 template <class _P>
 inline constexpr bool __has_exception_hook = __has_exception_hook_impl<void, ::cuda::std::remove_reference_t<_P>>;
 
-// The exception hook's return type -- the policy's "answer" (only named when the hook exists).
+// The answering hook's return type -- the policy's "answer" (only named when the 2-arg hook exists).
 template <class _P>
 using __hook_answer_t = decltype(::cuda::std::declval<::cuda::std::remove_reference_t<_P>&>()(
   ::cuda::std::declval<const ::std::exception*>(), ::cuda::std::declval<::cuda::std::source_location>()));
+
+// Capability 1b: the re-running exception hook
+// `p(const std::exception*, source_location, Fn&)`. If both arities exist, the 3-arg one is
+// used and the 2-arg one ignored.
+template <class _AlwaysVoid, class _P, class _Fn>
+inline constexpr bool __has_rerunning_hook_impl = false;
+
+template <class _P, class _Fn>
+inline constexpr bool __has_rerunning_hook_impl<
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_P&>()(::cuda::std::declval<const ::std::exception*>(),
+                                                           ::cuda::std::declval<::cuda::std::source_location>(),
+                                                           ::cuda::std::declval<_Fn&>()))>,
+  _P,
+  _Fn> = true;
+
+template <class _P, class _Fn>
+inline constexpr bool __has_rerunning_hook = __has_rerunning_hook_impl<void, ::cuda::std::remove_reference_t<_P>, _Fn>;
+
+// Fn-independent re-running-ness, probed with a throwaway signature. Composites override this
+// explicitly below (do not probe them -- their 3-arg exposure is conditional on their children).
+template <class _P>
+inline constexpr bool __is_rerunning_v = __has_rerunning_hook<_P, void (&)()>;
+
+// Whether a policy can answer the exception path at all (either arity).
+template <class _P>
+inline constexpr bool __answers_exception_path_v = __has_exception_hook<_P> || __is_rerunning_v<_P>;
 
 // Capability 2a: the success hook `p.on_success(R&&)` for a given result type.
 template <class _AlwaysVoid, class _P, class _R>
@@ -458,24 +488,11 @@ inline constexpr bool
 template <class _P>
 inline constexpr bool __has_on_success_void = __has_on_success_void_impl<void, ::cuda::std::remove_reference_t<_P>>;
 
-// Capability 3: the around hook `p.invoke(F&&)` (middleware wrapping the callable).
-template <class _AlwaysVoid, class _P, class _F>
-inline constexpr bool __has_invoke_impl = false;
-
-template <class _P, class _F>
-inline constexpr bool
-  __has_invoke_impl<::cuda::std::void_t<decltype(::cuda::std::declval<_P&>().invoke(::cuda::std::declval<_F>()))>,
-                    _P,
-                    _F> = true;
-
-template <class _P, class _F>
-inline constexpr bool __has_invoke = __has_invoke_impl<void, ::cuda::std::remove_reference_t<_P>, _F>;
-
-// A policy is anything exposing at least one capability; the around probe uses a throwaway
+// A policy is anything exposing at least one capability; the re-running probe uses a throwaway
 // signature good enough to spot the member.
 template <class _P>
 inline constexpr bool __has_any_capability =
-  __has_exception_hook<_P> || __has_on_success_void<_P> || __has_invoke<_P, void (&)()>;
+  __has_exception_hook<_P> || __has_on_success_void<_P> || __is_rerunning_v<_P>;
 
 // Whether a type is one this header defines as an exception-sink policy, marked by the
 // __exception_sink_tag member. This is what &/| require of at least one operand, so they do
@@ -511,9 +528,10 @@ inline constexpr bool __answers_nothing = __answers_nothing_impl<__has_exception
 // Whether a policy's exception path is nothrow -- the same computation that
 // `operator<<`'s conditional noexcept uses. Declining from `|` means throwing
 // from that path, so a nothrow left side of `|` leaves the right unreachable.
+// Re-running policies are never nothrow: they execute a throwing-capable callable.
 template <class _P>
 inline constexpr bool __exception_path_nothrow_v =
-  __has_exception_hook<_P>
+  !__is_rerunning_v<_P> && __has_exception_hook<_P>
   && ::cuda::std::
     is_nothrow_invocable_v<::cuda::std::remove_reference_t<_P>&, const ::std::exception*, ::cuda::std::source_location>;
 
@@ -555,11 +573,22 @@ struct __catch_only_t
   using __exception_sink_tag = void;
   _P __p_;
 
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
   {
     if (__exception != nullptr && dynamic_cast<const _E*>(__exception) != nullptr)
     {
       return __p_(__exception, __loc);
+    }
+    throw; // decline: wrong type, or a non-std exception (nullptr)
+  }
+
+  template <class _Fn, class _PP = _P, ::cuda::std::enable_if_t<__is_rerunning_v<_PP>, int> = 0>
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    if (__exception != nullptr && dynamic_cast<const _E*>(__exception) != nullptr)
+    {
+      return __p_(__exception, __loc, __fn);
     }
     throw; // decline: wrong type, or a non-std exception (nullptr)
   }
@@ -574,12 +603,6 @@ struct __catch_only_t
   decltype(auto) on_success()
   {
     return __p_.on_success();
-  }
-
-  template <class _Fn, ::cuda::std::enable_if_t<__has_invoke<_P, _Fn>, int> = 0>
-  decltype(auto) invoke(_Fn&& __fn)
-  {
-    return __p_.invoke(::cuda::std::forward<_Fn>(__fn));
   }
 };
 
@@ -618,10 +641,9 @@ using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
 template <class _R>
 inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<__normalized_t<_R>>;
 
-// Success- and around-hook forwarding shared by the `&` and `|` composites: the success hook
-// is rightmost-wins (the right element owns the expression type), the around hook nests with
-// the leftmost outermost. The exception hook -- where the two composites differ -- lives in
-// the derived types.
+// Success-hook forwarding shared by the `&` and `|` composites: rightmost-wins (the right
+// element owns the expression type). The exception hook -- where the two composites differ --
+// lives in the derived types.
 template <class _L, class _R>
 struct __composite_hooks
 {
@@ -656,25 +678,6 @@ struct __composite_hooks
       return __l_.on_success();
     }
   }
-
-  template <class _Fn, ::cuda::std::enable_if_t<__has_invoke<_L, _Fn> || __has_invoke<_R, _Fn>, int> = 0>
-  decltype(auto) invoke(_Fn&& __fn)
-  {
-    if constexpr (__has_invoke<_L, _Fn> && __has_invoke<_R, _Fn>)
-    {
-      return __l_.invoke([&]() -> decltype(auto) {
-        return __r_.invoke(::cuda::std::forward<_Fn>(__fn));
-      });
-    }
-    else if constexpr (__has_invoke<_L, _Fn>)
-    {
-      return __l_.invoke(::cuda::std::forward<_Fn>(__fn));
-    }
-    else
-    {
-      return __r_.invoke(::cuda::std::forward<_Fn>(__fn));
-    }
-  }
 };
 
 // The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`; `_R` answers.
@@ -684,15 +687,16 @@ struct __policy_and : __composite_hooks<_L, _R>
   using __exception_sink_tag = void;
 
   static_assert(!__answers_nothing<_L>, "policies after a never-returning policy are unreachable");
+  static_assert(!__is_rerunning_v<_L>, "a re-running policy answers; it must be the last element of &");
 
-  // Exception hook present iff either side has one. `_L` fires (answer discarded), then `_R`
-  // answers; with no `_R` hook the composite's answer is `void`, which `__interpret_answer`
-  // rejects in final position -- correct, since such a chain cannot answer on its own. The
-  // `_LL`/`_RR` defaulted parameters make the constraint depend on this template, so it
-  // SFINAEs away instead of hard-erroring at class instantiation.
-  template <class _LL                                                                             = _L,
-            class _RR                                                                             = _R,
-            ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
+  // Answering (2-arg) hook when `_R` is not re-running. Present iff either side has a 2-arg
+  // hook. `_L` fires (answer discarded), then `_R` answers; with no `_R` hook the composite's
+  // answer is `void`, which `__interpret_answer` rejects in final position -- correct, since
+  // such a chain cannot answer on its own.
+  template <class _LL                     = _L,
+            class _RR                     = _R,
+            ::cuda::std::enable_if_t<!__is_rerunning_v<_RR> && (__has_exception_hook<_LL> || __has_exception_hook<_RR>),
+                                     int> = 0>
   decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
                             [[maybe_unused]] const ::cuda::std::source_location __loc)
   {
@@ -709,6 +713,20 @@ struct __policy_and : __composite_hooks<_L, _R>
       return this->__r_(__exception, __loc);
     }
   }
+
+  // Re-running (3-arg) hook when `_R` is re-running: run `_L`'s 2-arg hook first if any
+  // (answer discarded), then hand the callable to `_R`.
+  template <class _Fn, class _RR = _R, ::cuda::std::enable_if_t<__is_rerunning_v<_RR>, int> = 0>
+  decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
+                            [[maybe_unused]] const ::cuda::std::source_location __loc,
+                            _Fn& __fn)
+  {
+    if constexpr (__has_exception_hook<_L>)
+    {
+      static_cast<void>(this->__l_(__exception, __loc));
+    }
+    return this->__r_(__exception, __loc, __fn);
+  }
 };
 
 template <class _Ln, class _Rn>
@@ -717,22 +735,46 @@ auto __make_and(_Ln&& __l, _Rn&& __r)
   return __policy_and<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
 }
 
+// Forward declaration: the re-running form of `|` reuses this for plain arms (defined below).
+template <class _Expr, class _P>
+_Expr __interpret_answer(_P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc);
+
+// Lazy answer type for a non-re-running `|`: naming `__hook_answer_t` for a re-running-only
+// arm (e.g. `retry`) would hard-error, so the re-running case never asks.
+template <bool _EitherReruns, class _L, class _R>
+struct __or_answer_impl
+{
+  using type = void;
+};
+
+template <class _L, class _R>
+struct __or_answer_impl<false, _L, _R>
+{
+  using type = ::cuda::std::conditional_t<__answers_nothing<_L>, __hook_answer_t<_R>, __hook_answer_t<_L>>;
+};
+
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
-// handles the original (re-observed) exception.
+// handles the original (re-observed) exception. Either arm may be re-running; if either is,
+// the composite exposes the 3-arg hook and interprets a plain (2-arg) arm's answer at
+// `decltype(fn())` via `__interpret_answer`. A plain arm's answer must therefore be
+// interpretable at the callable's result type -- `retry(1) | subst(-1)` works, but
+// `retry(1) | as_expected` does not (an `unexpected` does not convert to the raw result);
+// nest `on_throw(as_expected) << [&]{ return on_throw(retry(n)) << f; }` for that spelling.
 template <class _L, class _R>
 struct __policy_or : __composite_hooks<_L, _R>
 {
   using __exception_sink_tag = void;
 
-  static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
+  static_assert(__answers_exception_path_v<_L> && __answers_exception_path_v<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__exception_path_nothrow_v<_L>,
                 "the left policy never declines; alternatives after it are unreachable");
 
-  // The answer is `_R`'s if `_L`'s is `nothing`, else `_L`'s; the answer-to-expression
-  // conversion in `__interpret_answer` is where any mismatch surfaces.
-  using __answer = ::cuda::std::conditional_t<__answers_nothing<_L>, __hook_answer_t<_R>, __hook_answer_t<_L>>;
+  using __answer = typename __or_answer_impl<__is_rerunning_v<_L> || __is_rerunning_v<_R>, _L, _R>::type;
 
+  template <class _LL                                                                       = _L,
+            class _RR                                                                       = _R,
+            ::cuda::std::enable_if_t<!__is_rerunning_v<_LL> && !__is_rerunning_v<_RR>, int> = 0>
   __answer operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
   {
     _CCCL_TRY
@@ -765,6 +807,58 @@ struct __policy_or : __composite_hooks<_L, _R>
       }
     }
   }
+
+  // Re-running form: each arm is called at its own arity; a plain arm's answer is interpreted
+  // at `decltype(fn())` by `__interpret_answer` (factored reuse of the terminal answer rules).
+  template <class _Fn,
+            class _LL                                                                     = _L,
+            class _RR                                                                     = _R,
+            ::cuda::std::enable_if_t<__is_rerunning_v<_LL> || __is_rerunning_v<_RR>, int> = 0>
+  auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+    -> decltype(__fn())
+  {
+    using _Expr = decltype(__fn());
+    _CCCL_TRY
+    {
+      if constexpr (__is_rerunning_v<_L>)
+      {
+        return this->__l_(__exception, __loc, __fn);
+      }
+      else
+      {
+        return __interpret_answer<_Expr>(this->__l_, __exception, __loc);
+      }
+    }
+    _CCCL_CATCH_ALL
+    {
+      _CCCL_TRY
+      {
+        throw;
+      }
+      _CCCL_CATCH (const ::std::exception& __e)
+      {
+        if constexpr (__is_rerunning_v<_R>)
+        {
+          return this->__r_(&__e, __loc, __fn);
+        }
+        else
+        {
+          return __interpret_answer<_Expr>(this->__r_, &__e, __loc);
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        if constexpr (__is_rerunning_v<_R>)
+        {
+          return this->__r_(nullptr, __loc, __fn);
+        }
+        else
+        {
+          return __interpret_answer<_Expr>(this->__r_, nullptr, __loc);
+        }
+      }
+    }
+  }
 };
 
 template <class _Ln, class _Rn>
@@ -772,6 +866,16 @@ auto __make_or(_Ln&& __l, _Rn&& __r)
 {
   return __policy_or<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
 }
+
+// Composites define re-running-ness explicitly (not by probing their conditional 3-arg hooks).
+template <class _L, class _R>
+inline constexpr bool __is_rerunning_v<__policy_and<_L, _R>> = __is_rerunning_v<_R>;
+
+template <class _L, class _R>
+inline constexpr bool __is_rerunning_v<__policy_or<_L, _R>> = __is_rerunning_v<_L> || __is_rerunning_v<_R>;
+
+template <class _E, class _P>
+inline constexpr bool __is_rerunning_v<__catch_only_t<_E, _P>> = __is_rerunning_v<_P>;
 
 template <class _E, class _Normalized>
 auto __make_catch_only(_Normalized&& __p)
@@ -826,17 +930,21 @@ _Expr __interpret_answer(_P& __policy, const ::std::exception* __exception, cons
   }
 }
 
-// Walk the chain on the exception path: with no hook anywhere, propagate; else interpret.
-// The parameters go unread in the propagate instantiation, which gcc 9 flags without the
-// attribute.
+// Walk the chain on the exception path: with no answering hook anywhere, propagate; else
+// interpret. Re-running reactions are handled in `operator<<` (success-channel delivery) and
+// must not land here. The parameters go unread in the propagate instantiation, which gcc 9
+// flags without the attribute.
 template <class _Expr, class _P>
 _Expr __on_exception(_P& __policy,
                      [[maybe_unused]] const ::std::exception* __exception,
                      [[maybe_unused]] const ::cuda::std::source_location __loc)
 {
-  if constexpr (!__has_exception_hook<_P>)
+  static_assert(!__is_rerunning_v<_P>,
+                "re-running reactions deliver through the success channel in operator<<, "
+                "not through __interpret_answer");
+  if constexpr (!__answers_exception_path_v<_P>)
   {
-    throw; // no element answered (e.g. on_throw(retry(3))): let the exception propagate
+    throw; // no element answered: let the exception propagate
   }
   else
   {
@@ -864,14 +972,17 @@ template <class _Reaction, class _Fn>
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy,
                           _Fn&& __fn) noexcept(__exception_path_nothrow_v<_Reaction>)
 {
+  // Bind as a non-const lvalue: a re-running hook may invoke it again later.
+  _Fn& __f = __fn;
+
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
   // program where it stands, so the catch below could never run and the policy would be a
   // promise nobody keeps.
-  static_assert(!noexcept(::cuda::std::forward<_Fn>(__fn)()),
+  static_assert(!noexcept(__f()),
                 "on_throw has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly");
 
-  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  using _Result = decltype(__f());
   using _P      = _Reaction;
 
   if constexpr (::cuda::std::is_void_v<_Result>)
@@ -882,23 +993,32 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
       using _Expr = decltype(::cuda::std::declval<_P&>().on_success());
       _CCCL_TRY
       {
-        if constexpr (__has_invoke<_P, _Fn>)
-        {
-          __policy.__reaction_.invoke(::cuda::std::forward<_Fn>(__fn));
-        }
-        else
-        {
-          ::cuda::std::forward<_Fn>(__fn)();
-        }
+        __f();
         return __policy.__reaction_.on_success();
       }
       _CCCL_CATCH (const ::std::exception& __exception)
       {
-        return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_);
+        if constexpr (__is_rerunning_v<_P>)
+        {
+          __policy.__reaction_(&__exception, __policy.__loc_, __f);
+          return __policy.__reaction_.on_success();
+        }
+        else
+        {
+          return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_);
+        }
       }
       _CCCL_CATCH_ALL
       {
-        return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_);
+        if constexpr (__is_rerunning_v<_P>)
+        {
+          __policy.__reaction_(nullptr, __policy.__loc_, __f);
+          return __policy.__reaction_.on_success();
+        }
+        else
+        {
+          return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_);
+        }
       }
     }
     else
@@ -906,22 +1026,29 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
       // No success hook: the expression is void, the result passing through.
       _CCCL_TRY
       {
-        if constexpr (__has_invoke<_P, _Fn>)
-        {
-          __policy.__reaction_.invoke(::cuda::std::forward<_Fn>(__fn));
-        }
-        else
-        {
-          ::cuda::std::forward<_Fn>(__fn)();
-        }
+        __f();
       }
       _CCCL_CATCH (const ::std::exception& __exception)
       {
-        return detail::__on_exception<void>(__policy.__reaction_, &__exception, __policy.__loc_);
+        if constexpr (__is_rerunning_v<_P>)
+        {
+          return __policy.__reaction_(&__exception, __policy.__loc_, __f);
+        }
+        else
+        {
+          return detail::__on_exception<void>(__policy.__reaction_, &__exception, __policy.__loc_);
+        }
       }
       _CCCL_CATCH_ALL
       {
-        return detail::__on_exception<void>(__policy.__reaction_, nullptr, __policy.__loc_);
+        if constexpr (__is_rerunning_v<_P>)
+        {
+          return __policy.__reaction_(nullptr, __policy.__loc_, __f);
+        }
+        else
+        {
+          return detail::__on_exception<void>(__policy.__reaction_, nullptr, __policy.__loc_);
+        }
       }
     }
   }
@@ -931,22 +1058,29 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
     using _Expr = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_Result>()));
     _CCCL_TRY
     {
-      if constexpr (__has_invoke<_P, _Fn>)
-      {
-        return __policy.__reaction_.on_success(__policy.__reaction_.invoke(::cuda::std::forward<_Fn>(__fn)));
-      }
-      else
-      {
-        return __policy.__reaction_.on_success(::cuda::std::forward<_Fn>(__fn)());
-      }
+      return __policy.__reaction_.on_success(__f());
     }
     _CCCL_CATCH (const ::std::exception& __exception)
     {
-      return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_);
+      if constexpr (__is_rerunning_v<_P>)
+      {
+        return __policy.__reaction_.on_success(__policy.__reaction_(&__exception, __policy.__loc_, __f));
+      }
+      else
+      {
+        return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_);
+      }
     }
     _CCCL_CATCH_ALL
     {
-      return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_);
+      if constexpr (__is_rerunning_v<_P>)
+      {
+        return __policy.__reaction_.on_success(__policy.__reaction_(nullptr, __policy.__loc_, __f));
+      }
+      else
+      {
+        return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_);
+      }
     }
   }
   else
@@ -956,22 +1090,29 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
     static_assert(!__has_on_success_void<_P>, "the policy's on_success cannot accept the callable's result");
     _CCCL_TRY
     {
-      if constexpr (__has_invoke<_P, _Fn>)
-      {
-        return __policy.__reaction_.invoke(::cuda::std::forward<_Fn>(__fn));
-      }
-      else
-      {
-        return ::cuda::std::forward<_Fn>(__fn)();
-      }
+      return __f();
     }
     _CCCL_CATCH (const ::std::exception& __exception)
     {
-      return detail::__on_exception<_Result>(__policy.__reaction_, &__exception, __policy.__loc_);
+      if constexpr (__is_rerunning_v<_P>)
+      {
+        return __policy.__reaction_(&__exception, __policy.__loc_, __f);
+      }
+      else
+      {
+        return detail::__on_exception<_Result>(__policy.__reaction_, &__exception, __policy.__loc_);
+      }
     }
     _CCCL_CATCH_ALL
     {
-      return detail::__on_exception<_Result>(__policy.__reaction_, nullptr, __policy.__loc_);
+      if constexpr (__is_rerunning_v<_P>)
+      {
+        return __policy.__reaction_(nullptr, __policy.__loc_, __f);
+      }
+      else
+      {
+        return detail::__on_exception<_Result>(__policy.__reaction_, nullptr, __policy.__loc_);
+      }
     }
   }
 }
@@ -985,14 +1126,16 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
  * result when nothing goes wrong -- or to a type owned by a success hook, such as the
  * `std::exception_ptr` of `defer` or the `cuda::std::expected` of `as_expected`.
  *
- * A policy is an object exposing any of three optional capabilities, discovered by compile-time
- * introspection: an exception hook `(const std::exception*, source_location)` whose return
- * value is its answer on the throw path, a success hook `on_success(...)` that observes or
- * replaces the result, and an around hook `invoke(callable)` that wraps the call itself. The
- * named policies are @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer",
- * @ref rethrow_t "rethrow", @ref retry_t "retry", @ref as_expected_t "as_expected",
- * @ref noop_t "noop", and @ref catch_only. Policies compose with `&` (sequence; the last
- * element answers) and `|` (alternation; the left may decline by throwing).
+ * A policy is an object exposing any of two optional capabilities, discovered by compile-time
+ * introspection: an exception hook -- either answering
+ * `(const std::exception*, source_location)` whose return value is its answer on the throw
+ * path, or re-running `(const std::exception*, source_location, Fn&)` which may re-invoke the
+ * guarded callable -- and a success hook `on_success(...)` that observes or replaces the
+ * result. The named policies are @ref notify_t "notify", @ref subst_t "subst",
+ * @ref defer_t "defer", @ref rethrow_t "rethrow", @ref retry_t "retry",
+ * @ref as_expected_t "as_expected", @ref noop_t "noop", and @ref catch_only. Policies compose
+ * with `&` (sequence; the last element answers) and `|` (alternation; the left may decline by
+ * throwing).
  *
  * For backward compatibility `on_throw` also accepts non-policy reactions: `abort` and
  * `terminate` (nullary `nothing`-returning functions) report through `notify` and then run;
@@ -1135,6 +1278,9 @@ UNITTEST("nothing")
 //  - on_throw(defer) << [] { return 1; };          // result has no channel (on_success() only)
 //  - on_throw(notify) << []() noexcept {};         // existing rule, unchanged message
 //  - on_throw(notify & subst(42)) << []() -> int& {...}; // reference result vs owned substitution (existing rule)
+//  - on_throw(retry(1) & subst(0)) << ...;         // "a re-running policy answers; it must be the last element of &"
+//  - on_throw(subst(8) | subst(9)) << ...;         // "the left policy never declines; alternatives after it are
+//  unreachable"
 
 UNITTEST("on_throw")
 {
@@ -1420,9 +1566,9 @@ UNITTEST("policy algebra")
   EXPECT(escaped);
   EXPECT(attempts == 3); // 1 first try + 2 re-invocations
 
-  // retry & terminal: the terminal handles the exhausted failure. Success stops the loop.
+  // retry | terminal: the terminal handles the exhausted failure. Success stops the loop.
   attempts      = 0;
-  const int r13 = on_throw(retry(5) & subst(-1)) << [&]() -> int {
+  const int r13 = on_throw(retry(5) | subst(-1)) << [&]() -> int {
     if (++attempts < 3)
     {
       throw ::std::runtime_error("transient");
@@ -1433,7 +1579,7 @@ UNITTEST("policy algebra")
   EXPECT(attempts == 3);
 
   attempts      = 0;
-  const int r14 = on_throw(retry(1) & subst(-1)) << [&]() -> int {
+  const int r14 = on_throw(retry(1) | subst(-1)) << [&]() -> int {
     ++attempts;
     throw ::std::runtime_error("always");
   };
@@ -1552,6 +1698,166 @@ UNITTEST("policy inventory")
   // Rightmost success hook wins: defer to the right of as_expected owns the expression.
   const ::std::exception_ptr rm = on_throw(as_expected & defer) << [] {};
   EXPECT(!rm);
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("re-running policies")
+{
+  using namespace cuda::experimental::stf;
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  // retry | retry: attempts add up (1 initial + 1 + 1).
+  {
+    int calls    = 0;
+    bool escaped = false;
+    try
+    {
+      on_throw(retry(1) | retry(1)) << [&]() -> int {
+        ++calls;
+        throw ::std::runtime_error("always");
+      };
+    }
+    catch (const ::std::runtime_error&)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+    EXPECT(calls == 3);
+  }
+
+  // Success on a re-attempt returns the callable's result.
+  {
+    int calls   = 0;
+    const int v = on_throw(retry(3)) << [&] {
+      if (++calls < 3)
+      {
+        throw ::std::runtime_error("transient");
+      }
+      return 42;
+    };
+    EXPECT(v == 42);
+    EXPECT(calls == 3);
+  }
+
+  // Void callable: re-attempt success completes the void expression.
+  {
+    int calls = 0;
+    on_throw(retry(1)) << [&] {
+      if (++calls < 2)
+      {
+        throw ::std::runtime_error("once");
+      }
+    };
+    EXPECT(calls == 2);
+  }
+
+  // Effect between attempt groups: the right |-arm's effect fires before its retry.
+  {
+    int calls = 0;
+    int notes = 0;
+    auto note = [&](const ::std::exception*, const ::cuda::std::source_location) {
+      ++notes;
+    };
+    bool escaped = false;
+    try
+    {
+      on_throw(retry(1) | (note & retry(1))) << [&]() -> int {
+        ++calls;
+        throw ::std::runtime_error("always");
+      };
+    }
+    catch (...)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+    EXPECT(calls == 3); // 1 initial + 1 (left) + 1 (right, after the note)
+    EXPECT(notes == 1);
+  }
+
+  // Exhausted retry answered by a | fallback.
+  {
+    int calls   = 0;
+    const int v = on_throw(retry(2) | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3);
+  }
+
+  // A plain ignore-arm after retry resumes with a default-constructed result.
+  {
+    int calls   = 0;
+    const int v = on_throw(retry(1) | ::std::ignore) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(v == 0);
+    EXPECT(calls == 2);
+  }
+
+  // catch_only restricts what gets re-run: wrong type declines without re-running.
+  {
+    int calls   = 0;
+    const int v = on_throw(catch_only<::std::logic_error>(retry(5)) | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("not a logic_error");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 1); // no re-runs: catch_only declined before retry saw it
+  }
+  {
+    int calls   = 0;
+    const int v = on_throw(catch_only<::std::logic_error>(retry(2)) | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::logic_error("is one");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3); // re-run twice, exhausted, then the fallback
+  }
+
+  // RULING: the chain's on_success fires on re-attempt success.
+  {
+    int calls    = 0;
+    const auto r = on_throw(as_expected & retry(1)) << [&] {
+      if (++calls < 2)
+      {
+        throw ::std::runtime_error("once");
+      }
+      return 7;
+    };
+    EXPECT(r.has_value());
+    EXPECT(*r == 7);
+    EXPECT(calls == 2);
+  }
+  {
+    int calls     = 0;
+    const auto ep = on_throw(defer & retry(1)) << [&] {
+      if (++calls < 2)
+      {
+        throw ::std::runtime_error("once");
+      }
+    };
+    EXPECT(!ep); // empty: the re-attempt succeeded, so on_success() supplied the value
+    EXPECT(calls == 2);
+  }
+
+  // noexcept surface: a re-running chain is never noexcept (explicit location; see
+  // the existing comment about nvcc + gcc host and defaulted current()).
+  static_assert(!noexcept(on_throw(retry(1), ::cuda::std::source_location{}) << ::cuda::std::declval<int (&)()>()),
+                "a re-running reaction can always decline");
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(retry(1) & subst(0)) << ...;
+  //      -> "a re-running policy answers; it must be the last element of &"
+  //  - on_throw(retry(1) & retry(1)) << ...;
+  //      -> same error
+  //  - on_throw(subst(1) | retry(1)) << ...;
+  //      -> "the left policy never declines; ..." (existing theorem, unchanged)
+  //  - on_throw(retry(1) | as_expected) << []() -> int { ... };
+  //      -> conversion failure: an unexpected does not convert to the callable's
+  //         result (documented limitation; nested on_throw is the spelling)
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
