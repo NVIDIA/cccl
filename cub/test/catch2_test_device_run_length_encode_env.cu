@@ -371,7 +371,8 @@ CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_S
        ", .delay = 832, .l2_write_latency = 1165 } }"
        ", .lookahead = RleLookaheadPolicy { .items_per_thread = 32, .compute_warps = 8"
        ", .key_ring_stages = 5, .pos_ring_stages = 3"
-       ", .poll_loads_per_lane = 5, .flag_staging_threshold = 32 } }");
+       ", .poll_loads_per_lane = 5, .dense_poll_loads_per_lane = 3"
+       ", .dense_mode_runs_per_tile = 128, .flag_staging_threshold = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
