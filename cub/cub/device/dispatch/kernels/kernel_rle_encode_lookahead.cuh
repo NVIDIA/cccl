@@ -906,10 +906,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // (otherwise, it is cheaper to recalculate positions from head_flags directly)
           // Paired with STORE's predicate; they intentionally disagree at run_count == 0 (see there).
           const bool stage_flags = (local_run_count < staging_threshold);
-          if (stage_flags)
-          {
-            head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
-          }
           // CRITICAL: When stage_flags is true, we skip waiting on the pos_buf barriers too. This buys 3% BWUtil in
           // some cells. Generally, skipping a wait like this would cause a race (phasebit can only encode parity).
           // But we can prove, when 2 * pos_ring_stages >= key_ring_stages, this race would not happen.
@@ -931,6 +927,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // store warps STw, they must have arrived empty(h) for all h <= g - S. Given 2P >= S, they all must have
           // arrived empty(g - 2P). Since we always arrive pos_buf_free before empty, this means they all must have
           // arrived pos_buf_free(g - 2P) too. So there is no race.
+          if (stage_flags)
+          {
+            head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
+          }
           else
           {
             if (pos_ring_stages < key_ring_stages)
