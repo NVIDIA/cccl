@@ -557,8 +557,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     // reduce across the warp, then roll this window into the running prefix
     const int window_run_count   = __reduce_add_sync(full_mask, lane_run_count);
     const int window_open_length = __reduce_add_sync(full_mask, lane_open_length);
-    // dense_mode is true if window_run_count > 128
-    dense_mode = window_run_count > (window_size << 7);
+    // dense_mode is true if the window has more than dense_mode_runs_per_tile runs per tile
+    dense_mode = window_run_count > window_size * current_policy<PolicySelector>().lookahead.dense_mode_runs_per_tile;
     // combine last_seen_prefix with the window_size aggregate
     const OffT new_run_count     = last_seen_prefix_run_count + window_run_count;
     const OffT new_open_length   = (window_run_count > 0) ? static_cast<OffT>(window_open_length)

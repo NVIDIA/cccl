@@ -30,6 +30,7 @@
 // %RANGE% TUNE_LA_PRS prs 2:5:1
 // %RANGE% TUNE_LA_PLL pll 2:8:2
 // %RANGE% TUNE_LA_DPLL dpll 2:5:1
+// %RANGE% TUNE_LA_DMRT dmrt 64:256:64
 // %RANGE% TUNE_LA_FST fst 16:96:16
 
 // The kernel's static_asserts reject invalid combinations at compile time (the pos ring parity bound

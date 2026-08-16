@@ -323,7 +323,7 @@ CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_S
      cub::LOAD_DEFAULT,
      cub::BLOCK_SCAN_WARP_SCANS,
      {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
-    {32, 8, 5, 3, 5, 3, 32}};
+    {32, 8, 5, 3, 5, 3, 128, 32}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -346,6 +346,7 @@ CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_S
       .pos_ring_stages           = 3,
       .poll_loads_per_lane       = 5,
       .dense_poll_loads_per_lane = 3,
+      .dense_mode_runs_per_tile  = 128,
       .flag_staging_threshold    = 32}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
