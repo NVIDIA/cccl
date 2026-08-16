@@ -78,7 +78,7 @@ namespace cuda::experimental::stf
 struct notify_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   // Destination: at most one of these is set. Both null means `stderr`.
@@ -202,7 +202,7 @@ struct nothing final
 struct noop_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 };
 inline constexpr noop_t noop{};
@@ -222,7 +222,7 @@ inline constexpr noop_t noop{};
 struct defer_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   //! @brief Captures the in-flight exception; the answer converts to the expression's type.
@@ -249,7 +249,7 @@ inline constexpr defer_t defer{};
 struct rethrow_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   [[noreturn]] nothing operator()([[maybe_unused]] const ::std::exception* __exception,
@@ -276,7 +276,7 @@ template <class _V>
 struct subst_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   _V __v_;
@@ -318,7 +318,7 @@ auto subst(_V&& __v)
 struct retry_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   int __left_;
@@ -346,6 +346,8 @@ struct retry_t
 //! @brief Creates a retrying policy; see @ref retry_t.
 inline retry_t retry(int __n)
 {
+  // A negative count would decrement past the `== 0` stop and retry effectively forever.
+  _CCCL_ASSERT(__n >= 0, "retry requires a non-negative count");
   return retry_t{__n};
 }
 
@@ -361,7 +363,7 @@ inline retry_t retry(int __n)
 struct as_expected_t
 {
   //! @cond
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   //! @endcond
 
   template <class _R>
@@ -469,22 +471,23 @@ inline constexpr bool
 template <class _P, class _F>
 inline constexpr bool __has_invoke = __has_invoke_impl<void, ::cuda::std::remove_reference_t<_P>, _F>;
 
-// A policy is anything exposing at least one capability (§6.1); the around probe uses a
-// throwaway signature good enough to spot the member.
+// A policy is anything exposing at least one capability; the around probe uses a throwaway
+// signature good enough to spot the member.
 template <class _P>
 inline constexpr bool __has_any_capability =
   __has_exception_hook<_P> || __has_on_success_void<_P> || __has_invoke<_P, void (&)()>;
 
-// Whether a type is one this header defines as a policy, marked by the __stf_policy_tag member.
-// This is what &/| require of at least one operand, so they do not hijack unrelated types.
+// Whether a type is one this header defines as an exception-sink policy, marked by the
+// __exception_sink_tag member. This is what &/| require of at least one operand, so they do
+// not hijack unrelated types.
 template <class _AlwaysVoid, class _P>
-inline constexpr bool __is_stf_policy_impl = false;
+inline constexpr bool __is_exception_sink_impl = false;
 
 template <class _P>
-inline constexpr bool __is_stf_policy_impl<::cuda::std::void_t<typename _P::__stf_policy_tag>, _P> = true;
+inline constexpr bool __is_exception_sink_impl<::cuda::std::void_t<typename _P::__exception_sink_tag>, _P> = true;
 
 template <class _P>
-inline constexpr bool __is_stf_policy_v = __is_stf_policy_impl<void, ::cuda::std::remove_cvref_t<_P>>;
+inline constexpr bool __is_exception_sink_v = __is_exception_sink_impl<void, ::cuda::std::remove_cvref_t<_P>>;
 
 // Whether a reaction is `::std::ignore` (compared as the current code does).
 template <class _P>
@@ -514,14 +517,14 @@ inline constexpr bool __exception_path_nothrow_v =
   && ::cuda::std::
     is_nothrow_invocable_v<::cuda::std::remove_reference_t<_P>&, const ::std::exception*, ::cuda::std::source_location>;
 
-// --- Adapters: normalize the historical reactions into policies (§6) -----------------------
+// --- Adapters: normalize the historical reactions into policies ----------------------------
 
 // A nullary `nothing`-returning callable (bare `abort`, `terminate`, or a user's ending):
 // report through `notify`, then run it. Its answer type `nothing` proves it never returns.
 template <class _Action>
 struct __terminating_action
 {
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   _Action __action_;
 
   [[noreturn]] nothing operator()([[maybe_unused]] const ::std::exception* __exception,
@@ -536,7 +539,7 @@ struct __terminating_action
 // `::std::ignore` as a policy: resume with a default-constructed result.
 struct __ignore_policy
 {
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
 
   decltype(::std::ignore) operator()([[maybe_unused]] const ::std::exception* __exception,
                                      [[maybe_unused]] const ::cuda::std::source_location __loc) const noexcept
@@ -549,7 +552,7 @@ struct __ignore_policy
 template <class _E, class _P>
 struct __catch_only_t
 {
-  using __stf_policy_tag = void;
+  using __exception_sink_tag = void;
   _P __p_;
 
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -580,15 +583,15 @@ struct __catch_only_t
   }
 };
 
-// Normalize any reaction into a policy object, returned by value (§6, first match wins). A
+// Normalize any reaction into a policy object, returned by value (first match wins). A
 // value stored inside carries its own ref-ness (e.g. subst_t<int&> for a reference result).
 template <class _R>
 auto __normalize(_R&& __r)
 {
   using _P = ::cuda::std::remove_cvref_t<_R>;
-  if constexpr (__has_any_capability<_P> || __is_stf_policy_v<_P>)
+  if constexpr (__has_any_capability<_P> || __is_exception_sink_v<_P>)
   {
-    // Already a policy (has a capability, or a capability-free stf type such as noop).
+    // Already a policy (has a capability, or a capability-free tagged type such as noop).
     return static_cast<_P>(::cuda::std::forward<_R>(__r));
   }
   else if constexpr (__never_returns<_P&>)
@@ -605,7 +608,7 @@ auto __normalize(_R&& __r)
   }
 }
 
-// The type `__normalize` would produce for `_R`, and whether that type is an stf-tagged
+// The type `__normalize` would produce for `_R`, and whether that type is a sink-tagged
 // policy. Identity elimination for `&`/`|` consults this: only a tagged survivor is
 // returned bare; an untagged one (raw effect lambda) must stay inside a composite so
 // the chain remains composable.
@@ -613,44 +616,18 @@ template <class _R>
 using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
 
 template <class _R>
-inline constexpr bool __normalizes_to_stf_policy_v = __is_stf_policy_v<__normalized_t<_R>>;
+inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<__normalized_t<_R>>;
 
-// The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`; `_R` answers.
+// Success- and around-hook forwarding shared by the `&` and `|` composites: the success hook
+// is rightmost-wins (the right element owns the expression type), the around hook nests with
+// the leftmost outermost. The exception hook -- where the two composites differ -- lives in
+// the derived types.
 template <class _L, class _R>
-struct __policy_and
+struct __composite_hooks
 {
-  using __stf_policy_tag = void;
   _L __l_;
   _R __r_;
 
-  static_assert(!__answers_nothing<_L>, "policies after a never-returning policy are unreachable");
-
-  // Exception hook present iff either side has one. `_L` fires (answer discarded), then `_R`
-  // answers; with no `_R` hook the composite's answer is `void`, which §3 rejects in final
-  // position -- correct, since such a chain cannot answer on its own. The `_LL`/`_RR`
-  // defaulted parameters make the constraint depend on this template, so it SFINAEs away
-  // instead of hard-erroring at class instantiation.
-  template <class _LL                                                                             = _L,
-            class _RR                                                                             = _R,
-            ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
-                            [[maybe_unused]] const ::cuda::std::source_location __loc)
-  {
-    if constexpr (__has_exception_hook<_L>)
-    {
-      static_cast<void>(__l_(__exception, __loc));
-      if constexpr (__has_exception_hook<_R>)
-      {
-        return __r_(__exception, __loc);
-      }
-    }
-    else
-    {
-      return __r_(__exception, __loc);
-    }
-  }
-
-  // Success hook: rightmost-wins (forward to `_R` if it accepts, else `_L`).
   template <class _Rr,
             ::cuda::std::enable_if_t<__has_on_success_with<_R, _Rr> || __has_on_success_with<_L, _Rr>, int> = 0>
   decltype(auto) on_success(_Rr&& __r)
@@ -680,7 +657,6 @@ struct __policy_and
     }
   }
 
-  // Around hook: leftmost is outermost.
   template <class _Fn, ::cuda::std::enable_if_t<__has_invoke<_L, _Fn> || __has_invoke<_R, _Fn>, int> = 0>
   decltype(auto) invoke(_Fn&& __fn)
   {
@@ -701,28 +677,60 @@ struct __policy_and
   }
 };
 
+// The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`; `_R` answers.
+template <class _L, class _R>
+struct __policy_and : __composite_hooks<_L, _R>
+{
+  using __exception_sink_tag = void;
+
+  static_assert(!__answers_nothing<_L>, "policies after a never-returning policy are unreachable");
+
+  // Exception hook present iff either side has one. `_L` fires (answer discarded), then `_R`
+  // answers; with no `_R` hook the composite's answer is `void`, which `__interpret_answer`
+  // rejects in final position -- correct, since such a chain cannot answer on its own. The
+  // `_LL`/`_RR` defaulted parameters make the constraint depend on this template, so it
+  // SFINAEs away instead of hard-erroring at class instantiation.
+  template <class _LL                                                                             = _L,
+            class _RR                                                                             = _R,
+            ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
+  decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
+                            [[maybe_unused]] const ::cuda::std::source_location __loc)
+  {
+    if constexpr (__has_exception_hook<_L>)
+    {
+      static_cast<void>(this->__l_(__exception, __loc));
+      if constexpr (__has_exception_hook<_R>)
+      {
+        return this->__r_(__exception, __loc);
+      }
+    }
+    else
+    {
+      return this->__r_(__exception, __loc);
+    }
+  }
+};
+
 template <class _Ln, class _Rn>
 auto __make_and(_Ln&& __l, _Rn&& __r)
 {
-  return __policy_and<_Ln, _Rn>{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)};
+  return __policy_and<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
 }
 
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception.
 template <class _L, class _R>
-struct __policy_or
+struct __policy_or : __composite_hooks<_L, _R>
 {
-  using __stf_policy_tag = void;
-  _L __l_;
-  _R __r_;
+  using __exception_sink_tag = void;
 
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__exception_path_nothrow_v<_L>,
                 "the left policy never declines; alternatives after it are unreachable");
 
-  // The answer is `_R`'s if `_L`'s is `nothing`, else `_L`'s; the §4 conversion is where any
-  // mismatch surfaces.
+  // The answer is `_R`'s if `_L`'s is `nothing`, else `_L`'s; the answer-to-expression
+  // conversion in `__interpret_answer` is where any mismatch surfaces.
   using __answer = ::cuda::std::conditional_t<__answers_nothing<_L>, __hook_answer_t<_R>, __hook_answer_t<_L>>;
 
   __answer operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc)
@@ -731,12 +739,12 @@ struct __policy_or
     {
       if constexpr (__answers_nothing<_L>)
       {
-        __l_(__exception, __loc);
+        this->__l_(__exception, __loc);
         _CCCL_UNREACHABLE();
       }
       else
       {
-        return __l_(__exception, __loc);
+        return this->__l_(__exception, __loc);
       }
     }
     _CCCL_CATCH_ALL
@@ -749,60 +757,12 @@ struct __policy_or
       }
       _CCCL_CATCH (const ::std::exception& __e)
       {
-        return __r_(&__e, __loc);
+        return this->__r_(&__e, __loc);
       }
       _CCCL_CATCH_ALL
       {
-        return __r_(nullptr, __loc);
+        return this->__r_(nullptr, __loc);
       }
-    }
-  }
-
-  template <class _Rr,
-            ::cuda::std::enable_if_t<__has_on_success_with<_R, _Rr> || __has_on_success_with<_L, _Rr>, int> = 0>
-  decltype(auto) on_success(_Rr&& __r)
-  {
-    if constexpr (__has_on_success_with<_R, _Rr>)
-    {
-      return __r_.on_success(::cuda::std::forward<_Rr>(__r));
-    }
-    else
-    {
-      return __l_.on_success(::cuda::std::forward<_Rr>(__r));
-    }
-  }
-
-  template <class _LL                                                                               = _L,
-            class _RR                                                                               = _R,
-            ::cuda::std::enable_if_t<__has_on_success_void<_RR> || __has_on_success_void<_LL>, int> = 0>
-  decltype(auto) on_success()
-  {
-    if constexpr (__has_on_success_void<_R>)
-    {
-      return __r_.on_success();
-    }
-    else
-    {
-      return __l_.on_success();
-    }
-  }
-
-  template <class _Fn, ::cuda::std::enable_if_t<__has_invoke<_L, _Fn> || __has_invoke<_R, _Fn>, int> = 0>
-  decltype(auto) invoke(_Fn&& __fn)
-  {
-    if constexpr (__has_invoke<_L, _Fn> && __has_invoke<_R, _Fn>)
-    {
-      return __l_.invoke([&]() -> decltype(auto) {
-        return __r_.invoke(::cuda::std::forward<_Fn>(__fn));
-      });
-    }
-    else if constexpr (__has_invoke<_L, _Fn>)
-    {
-      return __l_.invoke(::cuda::std::forward<_Fn>(__fn));
-    }
-    else
-    {
-      return __r_.invoke(::cuda::std::forward<_Fn>(__fn));
     }
   }
 };
@@ -810,7 +770,7 @@ struct __policy_or
 template <class _Ln, class _Rn>
 auto __make_or(_Ln&& __l, _Rn&& __r)
 {
-  return __policy_or<_Ln, _Rn>{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)};
+  return __policy_or<_Ln, _Rn>{{::cuda::std::forward<_Ln>(__l), ::cuda::std::forward<_Rn>(__r)}};
 }
 
 template <class _E, class _Normalized>
@@ -819,7 +779,7 @@ auto __make_catch_only(_Normalized&& __p)
   return __catch_only_t<_E, _Normalized>{::cuda::std::forward<_Normalized>(__p)};
 }
 
-// Interpret the final element's answer as the expression's value (§3), converting to `_Expr`.
+// Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P>
 _Expr __interpret_answer(_P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc)
 {
@@ -1051,14 +1011,10 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
  *
  * The location defaults to the call site; pass one explicitly to report a different site.
  *
- * @note This is spelled as two overloads rather than the single
- * `on_throw(reaction, loc = source_location::current())` signature. nvcc's front-end (with a
- * gcc host) reports `noexcept(__builtin_LINE()) == false`, so a defaulted
- * `source_location::current()` argument would taint `noexcept(on_throw(notify))` and break the
- * required `noexcept(on_throw(notify) << f)` static_assert -- even though host g++/clang and
- * nvcc with a clang host all treat the builtin as non-throwing. The one-argument overload
- * therefore captures the default location in its body (where the function's `noexcept` masks
- * the builtin) rather than in a defaulted argument. Explicit-location calls are unchanged.
+ * @note When querying `noexcept(on_throw(policy) << f)` in a constant expression, pass a
+ * location explicitly: nvcc's front-end with a gcc host reports the defaulted
+ * `source_location::current()` argument as potentially throwing, tainting the query (the
+ * call itself is `noexcept` either way).
  *
  * @param[in] __reaction The policy (or a reaction normalized into one), owned if passed an
  *            rvalue and referred to if passed an lvalue.
@@ -1095,15 +1051,15 @@ auto catch_only(_P&& __p)
  */
 template <class _L,
           class _R,
-          ::cuda::std::enable_if_t<detail::__is_stf_policy_v<_L> || detail::__is_stf_policy_v<_R>, int> = 0>
+          ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 auto operator&(_L&& __l, _R&& __r)
 {
   return detail::__make_and(detail::__normalize(::cuda::std::forward<_L>(__l)),
                             detail::__normalize(::cuda::std::forward<_R>(__r)));
 }
 
-//! @brief Left identity of `&`: `noop & p` is `__normalize(p)` when that result is stf-tagged.
-template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_stf_policy_v<_R>, int> = 0>
+//! @brief Left identity of `&`: `noop & p` is `__normalize(p)` when that result is sink-tagged.
+template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_R>, int> = 0>
 auto operator&(noop_t, _R&& __r)
 {
   return detail::__normalize(::cuda::std::forward<_R>(__r));
@@ -1112,7 +1068,7 @@ auto operator&(noop_t, _R&& __r)
 //! @brief Right identity of `&`. `noop` itself is excluded so `noop & noop` is not ambiguous.
 template <class _L,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, noop_t>
-                                     && detail::__normalizes_to_stf_policy_v<_L>,
+                                     && detail::__normalizes_to_exception_sink_v<_L>,
                                    int> = 0>
 auto operator&(_L&& __l, noop_t)
 {
@@ -1125,15 +1081,15 @@ auto operator&(_L&& __l, noop_t)
  */
 template <class _L,
           class _R,
-          ::cuda::std::enable_if_t<detail::__is_stf_policy_v<_L> || detail::__is_stf_policy_v<_R>, int> = 0>
+          ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 auto operator|(_L&& __l, _R&& __r)
 {
   return detail::__make_or(detail::__normalize(::cuda::std::forward<_L>(__l)),
                            detail::__normalize(::cuda::std::forward<_R>(__r)));
 }
 
-//! @brief Left identity of `|`: `rethrow | p` is `__normalize(p)` when that result is stf-tagged.
-template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_stf_policy_v<_R>, int> = 0>
+//! @brief Left identity of `|`: `rethrow | p` is `__normalize(p)` when that result is sink-tagged.
+template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_R>, int> = 0>
 auto operator|(rethrow_t, _R&& __r)
 {
   return detail::__normalize(::cuda::std::forward<_R>(__r));
@@ -1142,7 +1098,7 @@ auto operator|(rethrow_t, _R&& __r)
 //! @brief Right identity of `|`. `rethrow` itself is excluded so `rethrow | rethrow` is not ambiguous.
 template <class _L,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, rethrow_t>
-                                     && detail::__normalizes_to_stf_policy_v<_L>,
+                                     && detail::__normalizes_to_exception_sink_v<_L>,
                                    int> = 0>
 auto operator|(_L&& __l, rethrow_t)
 {
