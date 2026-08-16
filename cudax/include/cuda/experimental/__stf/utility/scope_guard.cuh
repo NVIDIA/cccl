@@ -371,16 +371,20 @@ struct as_expected_t
       ::cuda::std::in_place, ::cuda::std::forward<_R>(__r)};
   }
 
-  ::cuda::std::expected<void, ::std::exception_ptr> on_success() const
+  // Templates in name only: laziness keeps expected<void, exception_ptr> (and, through it,
+  // bad_expected_access) from being instantiated in every including TU -- gcc 14/15 at -O3
+  // report a spurious maybe-uninitialized inside the latter's inlined destructor.
+  template <class _Void = void>
+  ::cuda::std::expected<_Void, ::std::exception_ptr> on_success() const
   {
-    return ::cuda::std::expected<void, ::std::exception_ptr>{};
+    return ::cuda::std::expected<_Void, ::std::exception_ptr>{};
   }
 
-  ::cuda::std::unexpected<::std::exception_ptr>
-  operator()([[maybe_unused]] const ::std::exception* __exception,
-             [[maybe_unused]] const ::cuda::std::source_location __loc) const noexcept
+  template <class _Eptr = ::std::exception_ptr>
+  ::cuda::std::unexpected<_Eptr> operator()([[maybe_unused]] const ::std::exception* __exception,
+                                            [[maybe_unused]] const ::cuda::std::source_location __loc) const noexcept
   {
-    return ::cuda::std::unexpected<::std::exception_ptr>{::std::current_exception()};
+    return ::cuda::std::unexpected<_Eptr>{::std::current_exception()};
   }
 };
 inline constexpr as_expected_t as_expected{};
@@ -1482,7 +1486,10 @@ UNITTEST("policy inventory")
   static_assert(::cuda::std::is_same_v<decltype(good), const ::cuda::std::expected<int, ::std::exception_ptr>>,
                 "as_expected owns the expression type");
   EXPECT(good.has_value());
-  EXPECT(good.value() == 5);
+  // Dereference rather than .value(): value() would instantiate bad_expected_access, whose
+  // inlined exception_ptr destructor trips a spurious gcc 14/15 -O3 maybe-uninitialized in
+  // every TU that compiles these tests.
+  EXPECT(*good == 5);
 
   const auto bad = on_throw(as_expected) << []() -> int {
     throw ::std::runtime_error("wrapped");
