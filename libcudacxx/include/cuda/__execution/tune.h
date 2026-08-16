@@ -52,6 +52,37 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
+struct converts_to_anything
+{
+  template <typename T>
+  operator T() const
+  {
+    return {};
+  };
+};
+
+template <class _PolicySelector>
+_CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
+{
+  if constexpr (::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability>)
+  {
+    return decltype(_PolicySelector{}(::cuda::compute_capability{})){};
+  }
+  else
+  {
+    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, converts_to_anything>,
+                  "Policy selectors must be invocable with cuda::compute_capability and an optional policy");
+
+    using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, converts_to_anything{}));
+    static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, converts_to_anything>,
+                  "Policy selectors must return a concrete policy type");
+    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
+                  "Policy selectors with more than one argument must accept the returned policy type as second "
+                  "argument");
+    return ret_t{};
+  }
+}
+
 //! @rst
 //! Creates an environment from a pack of policy selectors that can be passed to device-wide parallel algorithms to
 //! select tunings for different target architectures. See the :ref:`policy selector documentation
@@ -62,14 +93,12 @@ template <class... _PolicySelectors>
 {
   static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Policy selectors must be stateless");
   static_assert((::cuda::std::semiregular<_PolicySelectors> && ...), "Policy selectors must be semiregular types");
-  static_assert((::cuda::std::is_invocable_v<_PolicySelectors, ::cuda::compute_capability> && ...),
-                "Policy selectors must be invocable with cuda::compute_capability");
 
   // since all the tunings are stateless, let's ignore incoming parameters
 
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
-    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::compute_capability{})), _PolicySelectors>...>;
+    ::cuda::std::execution::prop<decltype(__detect_policy_return_type<_PolicySelectors>()), _PolicySelectors>...>;
 
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
