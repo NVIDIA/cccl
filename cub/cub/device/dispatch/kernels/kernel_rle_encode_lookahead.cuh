@@ -524,7 +524,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
       }
     } while (__any_sync(full_mask, !ready));
 
-    int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
+    constexpr int tile_size = current_policy<PolicySelector>().lookahead.tile_size();
+    int lane_run_count = 0, lane_last_packed = -1;
     // now, we fold the window
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < poll_loads_per_lane; ++i)
@@ -533,31 +534,22 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
       {
         // aggregate run_count per lane, this is fine since run_count is commutative
         lane_run_count += packed_words[i].run_count();
-        // nominate the highest tile id with runs
-        if (packed_words[i].run_count() > 0)
-        {
-          lane_last_tile_with_runs_in_window = i * detail::warp_threads + lane_id;
-        }
+        // nominate the highest tile id with runs, carrying its open_len in the low bits
+        const int packed = ((i * detail::warp_threads + lane_id) << 16) | packed_words[i].open_len();
+        lane_last_packed = (packed_words[i].run_count() > 0) ? packed : lane_last_packed;
       }
     }
     // vote for the highest tile id with runs
-    const int last_tile_with_runs_in_window = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_window);
-
-    int lane_open_length = 0;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    // how long is the window_size's unfinished run?
-    for (int i = 0; i < poll_loads_per_lane; ++i)
-    {
-      // if this tile id >= the highest tile id with runs
-      if (i < lane_tile_count && i * 32 + lane_id >= last_tile_with_runs_in_window)
-      {
-        lane_open_length += packed_words[i].open_len();
-      }
-    }
+    const int last_packed = __reduce_max_sync(full_mask, lane_last_packed);
 
     // reduce across the warp, then roll this window into the running prefix
-    const int window_run_count   = __reduce_add_sync(full_mask, lane_run_count);
-    const int window_open_length = __reduce_add_sync(full_mask, lane_open_length);
+    const int window_run_count = __reduce_add_sync(full_mask, lane_run_count);
+    // every folded tile is full, and run-less tiles publish open_len == tile_size, so the open length is the
+    // last run-carrying tile's open_len plus tile_size for each tile after it
+    const int window_open_length =
+      (last_packed < 0)
+        ? window_size * tile_size
+        : (last_packed & 0xffff) + (window_size - 1 - (last_packed >> 16)) * tile_size;
     // dense_mode is true if the window has more than dense_mode_runs_per_tile runs per tile
     dense_mode = window_run_count > window_size * current_policy<PolicySelector>().lookahead.dense_mode_runs_per_tile;
     // combine last_seen_prefix with the window_size aggregate
