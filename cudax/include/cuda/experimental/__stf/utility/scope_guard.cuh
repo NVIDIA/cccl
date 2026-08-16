@@ -594,8 +594,21 @@ struct __ignore_policy
   }
 };
 
-// `catch_only<E>(p)`: run `p`'s exception path only for an `E`, else decline by rethrowing.
-template <class _E, class _P>
+// Intra-pack subsumption: reject when any listed type is derived-or-equal to another
+// (`is_base_of_v<A, A>` catches duplicates). Message names the dead Derived entry.
+template <class...>
+inline constexpr bool __catch_only_pack_ok = true;
+
+template <class _Head, class... _Tail>
+inline constexpr bool __catch_only_pack_ok<_Head, _Tail...> =
+  (!::cuda::std::is_base_of_v<_Head, _Tail> && ...) && (!::cuda::std::is_base_of_v<_Tail, _Head> && ...)
+  && __catch_only_pack_ok<_Tail...>;
+
+// `catch_only<E1, E2, ...>(p)`: run `p`'s exception path when the exception matches ANY listed
+// type (derived-or-equal, dynamic_cast semantics), else decline by rethrowing. Native C++ has
+// no multi-type catch clause; this adds expressivity the language lacks. Policy parameter
+// leads so the exception-type pack trails.
+template <class _P, class... _Es>
 struct __catch_only_t
 {
   using __exception_sink_tag = void;
@@ -604,7 +617,7 @@ struct __catch_only_t
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if (__exception && dynamic_cast<const _E*>(__exception))
+    if (__exception && (... || dynamic_cast<const _Es*>(__exception)))
     {
       return __p_(__exception, __loc, __fn);
     }
@@ -956,10 +969,10 @@ struct __policy_pow
   }
 };
 
-template <class _E, class _Normalized>
+template <class _Normalized, class... _Es>
 auto __make_catch_only(_Normalized&& __p)
 {
-  return __catch_only_t<_E, _Normalized>{::cuda::std::forward<_Normalized>(__p)};
+  return __catch_only_t<_Normalized, _Es...>{::cuda::std::forward<_Normalized>(__p)};
 }
 
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
@@ -1192,18 +1205,24 @@ auto on_throw(_Reaction&& __reaction,
 }
 
 /**
- * @brief Restricts a policy to exceptions deriving from `E`: `catch_only<E>(p)` runs `p`'s
- * exception path when the caught exception is an `E`, and otherwise declines by rethrowing --
- * reconstructing a `catch (const E&)` clause for use as the left arm of a `|` ladder. A
- * non-`std::exception` (which reaches the handler as `nullptr`) always declines. `E` must
- * derive from `std::exception`.
+ * @brief Restricts a policy to exceptions matching any of `E1, E2, ...`: `catch_only<E...>(p)`
+ * runs `p`'s exception path when the caught exception is derived-or-equal to any listed type
+ * (dynamic_cast semantics), and otherwise declines by rethrowing. Native C++ has no multi-type
+ * catch clause; this adds that expressivity. A non-`std::exception` (nullptr) always declines.
+ * Each `E` must derive from `std::exception`. A pack where one type subsumes another is
+ * rejected (the derived entry would be dead).
  */
-template <class _E, class _P>
+template <class... _Es, class _P>
 auto catch_only(_P&& __p)
 {
-  static_assert(::cuda::std::is_base_of_v<::std::exception, _E>,
-                "catch_only<E> requires E to derive from std::exception");
-  return detail::__make_catch_only<_E>(detail::__normalize(::cuda::std::forward<_P>(__p)));
+  static_assert(sizeof...(_Es) > 0, "catch_only requires at least one exception type");
+  static_assert((::cuda::std::is_base_of_v<::std::exception, _Es> && ...),
+                "catch_only<E...> requires every E to derive from std::exception");
+  static_assert(detail::__catch_only_pack_ok<_Es...>,
+                "catch_only<..., Base, ..., Derived, ...>: the Derived entry is dead "
+                "(Base already claims it)");
+  return detail::__make_catch_only<detail::__normalized_t<_P>, _Es...>(
+    detail::__normalize(::cuda::std::forward<_P>(__p)));
 }
 
 /**
@@ -1590,6 +1609,24 @@ UNITTEST("policy algebra")
     throw ::std::runtime_error("derived");
   };
   EXPECT(r11 == 1);
+
+  // Multi-type: either listed exception is claimed; others decline.
+  {
+    const int a = on_throw(catch_only<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2)) << []() -> int {
+      throw ::std::overflow_error("o");
+    };
+    EXPECT(a == 1);
+    const int b = on_throw(catch_only<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2)) << []() -> int {
+      throw ::std::runtime_error("r");
+    };
+    EXPECT(b == 2);
+  }
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - catch_only<::std::exception, ::std::runtime_error>(subst(1));
+  //      -> "... the Derived entry is dead (Base already claims it)"
+  //  - catch_only<::std::runtime_error, ::std::runtime_error>(subst(1));
+  //      -> same (a duplicate subsumes itself)
 
   // & binds tighter than |, so the ladder below parses as intended without parentheses.
   trace.clear();
