@@ -881,8 +881,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int last_chunk            = 31 - ::cuda::std::countl_zero(nonempty_chunk_mask);
             const unsigned first_chunk_mask = __shfl_sync(full_mask, my_flags, first_chunk);
             const unsigned last_chunk_mask  = __shfl_sync(full_mask, my_flags, last_chunk);
-            warp_first_head                 = warp_tile_offset + first_chunk * 32 + (__ffs(first_chunk_mask) - 1);
-            warp_last_head = warp_tile_offset + last_chunk * 32 + 31 - ::cuda::std::countl_zero(last_chunk_mask);
+            _CCCL_ASSERT((first_chunk_mask != 0u) && (last_chunk_mask != 0u), "nonempty chunk with an empty mask");
+            warp_first_head = warp_tile_offset + first_chunk * 32 + (__ffs(first_chunk_mask) - 1);
+            warp_last_head  = warp_tile_offset + last_chunk * 32 + 31 - ::cuda::std::countl_zero(last_chunk_mask);
           }
           // now, we calculate warptile aggregates
           if (lane_id == 0)
