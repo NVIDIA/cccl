@@ -283,6 +283,8 @@ clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_g
   {
     wait_parity(&clc_bar, static_cast<unsigned>(pipeline_gen & 1));
     // try_cancel wrote clc_resp via the async proxy
+    // TODO(nan): possibly unnecessary; the mbarrier try_wait visibility guarantee is documented for cp.async.bulk
+    // but not for CLC (doc gap) -- keep the defensive fence until the PTX docs or gonzalobg confirm
     ptx::fence_proxy_async(ptx::space_shared);
     const uint4 resp_snapshot = clc_resp;
     ptx::fence_proxy_async(ptx::space_shared);
