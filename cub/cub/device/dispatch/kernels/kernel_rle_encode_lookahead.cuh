@@ -493,7 +493,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   int& dense_mode)
 {
   constexpr int poll_loads_per_lane = current_policy<PolicySelector>().lookahead.poll_loads_per_lane;
-  static_assert(window_size_cap >= 1 && window_size_cap <= 32 * poll_loads_per_lane,
+  static_assert(window_size_cap >= 1 && window_size_cap <= detail::warp_threads * poll_loads_per_lane,
                 "the fold window must be covered by the lanes");
   while (last_seen_tile_id < tile_id)
   {
@@ -589,7 +589,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
     // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
     // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
     // overlapping
-    poll_fold_windows<32 * current_policy<PolicySelector>().lookahead.dense_poll_loads_per_lane, PolicySelector>(
+    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.dense_poll_loads_per_lane,
+                      PolicySelector>(
       tile_partial_states,
       tile_id,
       last_seen_tile_id,
@@ -601,7 +602,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   else
   {
     // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
-    poll_fold_windows<32 * current_policy<PolicySelector>().lookahead.poll_loads_per_lane, PolicySelector>(
+    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.poll_loads_per_lane,
+                      PolicySelector>(
       tile_partial_states,
       tile_id,
       last_seen_tile_id,
