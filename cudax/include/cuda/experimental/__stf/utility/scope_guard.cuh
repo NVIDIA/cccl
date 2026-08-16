@@ -314,14 +314,11 @@ auto subst(_V&& __v)
 }
 
 /**
- * @brief Re-running exception-path policy: after a failure, re-invokes the callable up to
- * `n` more times (`n + 1` attempts at most), declining by rethrowing when exhausted.
+ * @brief The unit re-attempt: re-runs the callable once; if the re-run throws, declines with
+ * that exception. Counts come from repetition: `retry * 3` re-attempts up to three times;
+ * `retry * 3 | subst(fallback)` answers the spent failure. `retry` alone is `retry * 1`.
  *
- * `retry` answers the exception path by re-running rather than by substitution; it declines
- * when the retries are spent. Pair it with `|` to answer the exhausted failure, as in
- * `retry(3) | subst(fallback)`. `retry(n) & p` is rejected: a re-running policy must be the
- * last element of `&`. The counter is mutable state; policies are stored by value per
- * `on_throw` expression, so each `<<` gets its own count.
+ * `retry & p` is rejected: a re-running policy must be the last element of `&`.
  */
 struct retry_t
 {
@@ -329,36 +326,13 @@ struct retry_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  int __left_ = 0;
-
   template <class _Fn>
   auto operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn) -> decltype(__fn())
   {
-    for (; __left_ > 0; --__left_)
-    {
-      _CCCL_TRY
-      {
-        return __fn(); // legal for void decltype too
-      }
-      _CCCL_CATCH_ALL
-      {
-        if (__left_ == 1)
-        {
-          throw; // exhausted: decline with the last failure
-        }
-      }
-    }
-    throw; // retry(0) declines immediately, like rethrow
+    return __fn(); // a throw here IS the decline
   }
 };
-
-//! @brief Creates a retrying policy; see @ref retry_t.
-inline retry_t retry(int __n)
-{
-  // A negative count would decrement past the `== 0` stop and retry effectively forever.
-  _CCCL_ASSERT(__n >= 0, "retry requires a non-negative count");
-  return retry_t{__n};
-}
+inline constexpr retry_t retry{};
 
 /**
  * @brief Success-and-exception policy that turns the outcome into a
@@ -795,9 +769,9 @@ struct __or_answer_impl<false, _L, _R>
 // handles the original (re-observed) exception. Either arm may be re-running; if either is,
 // the composite exposes the 3-arg hook and interprets a plain (2-arg) arm's answer at
 // `decltype(fn())` via `__interpret_answer`. A plain arm's answer must therefore be
-// interpretable at the callable's result type -- `retry(1) | subst(-1)` works, but
-// `retry(1) | as_expected` does not (an `unexpected` does not convert to the raw result);
-// nest `on_throw(as_expected) << [&]{ return on_throw(retry(n)) << f; }` for that spelling.
+// interpretable at the callable's result type -- `retry * 1 | subst(-1)` works, but
+// `retry | as_expected` does not (an `unexpected` does not convert to the raw result);
+// nest `on_throw(as_expected) << [&]{ return on_throw(retry * n) << f; }` for that spelling.
 template <class _L, class _R>
 struct __policy_or : __composite_hooks<_L, _R>
 {
@@ -917,6 +891,86 @@ inline constexpr bool __is_rerunning_v<__catch_only_t<_E, _P>> = __is_rerunning_
 
 template <class _P>
 inline constexpr bool __is_rerunning_v<__as_policy<_P>> = __is_rerunning_v<_P>;
+
+// `p * n`: behaviorally the n-fold `|` of p with itself. One stored policy, invoked up to n
+// times; the active exception is re-observed between iterations exactly as `__policy_or` does
+// between arms. `n == 0` declines immediately (the empty fold is rethrow). The stored policy's
+// hook is invoked up to n times; with the inventory now stateless this needs no copying --
+// user-defined policies should likewise tolerate re-invocation.
+template <class _P>
+struct __policy_pow
+{
+  using __exception_sink_tag = void;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
+  int __n_;
+
+  static_assert(__answers_exception_path_v<_P>,
+                "the repeated policy must answer the exception path (have an exception hook)");
+  static_assert(!__exception_path_nothrow_v<_P>,
+                "the repeated policy never declines; repetitions after the first are unreachable");
+
+  template <class _Fn>
+  auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+    -> decltype(__fn())
+  {
+    using _Expr = decltype(__fn());
+    if (__n_ == 0)
+    {
+      throw; // empty fold: decline with the still-active exception
+    }
+
+    // Recurse inside the catch so the re-observed exception pointer stays alive for the
+    // next arm (same lifetime rule as `__policy_or`).
+    const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
+      _CCCL_TRY
+      {
+        if constexpr (__is_rerunning_v<_P>)
+        {
+          return __p_(__cur, __loc, __fn);
+        }
+        else
+        {
+          return __interpret_answer<_Expr>(__p_, __cur, __loc);
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        if (__left == 1)
+        {
+          throw;
+        }
+        _CCCL_TRY
+        {
+          throw;
+        }
+        _CCCL_CATCH (const ::std::exception& __e)
+        {
+          return __self(__self, &__e, __left - 1);
+        }
+        _CCCL_CATCH_ALL
+        {
+          return __self(__self, nullptr, __left - 1);
+        }
+      }
+    };
+    return __go(__go, __exception, __n_);
+  }
+
+  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
+  decltype(auto) on_success(_R&& __r)
+  {
+    return __p_.on_success(::cuda::std::forward<_R>(__r));
+  }
+
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
+  decltype(auto) on_success()
+  {
+    return __p_.on_success();
+  }
+};
+
+template <class _P>
+inline constexpr bool __is_rerunning_v<__policy_pow<_P>> = true;
 
 template <class _E, class _Normalized>
 auto __make_catch_only(_Normalized&& __p)
@@ -1289,6 +1343,34 @@ auto operator|(_L&& __l, rethrow_t)
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
+/**
+ * @brief Repetition: `p * n` is the n-fold `|` of `p` with itself -- behaviorally
+ * `p | p | ... | p` (n copies). Laws: `p * 0` ≡ `rethrow` (empty fold); `p * 1` ≡ `p`
+ * (behaviorally); `p * (m + n)` ≡ `p * m | p * n`. `*` binds tighter than `&` and `|`, so
+ * `(notify & retry) * 3` notifies before each re-attempt, while `notify & retry * 3`
+ * notifies once then re-attempts three times.
+ */
+template <class _P,
+          ::cuda::std::enable_if_t<detail::__is_exception_sink_v<::cuda::std::remove_cvref_t<_P>>
+                                     || detail::__has_any_capability<::cuda::std::remove_cvref_t<_P>>,
+                                   int> = 0>
+auto operator*(_P&& __p, int __n)
+{
+  _CCCL_ASSERT(__n >= 0, "repetition requires a non-negative count");
+  using _Np = detail::__normalized_t<_P>;
+  return detail::__policy_pow<_Np>{{detail::__normalize(::cuda::std::forward<_P>(__p))}, __n};
+}
+
+//! @brief Commuted form of `operator*`: `n * p` is `p * n`.
+template <class _P,
+          ::cuda::std::enable_if_t<detail::__is_exception_sink_v<::cuda::std::remove_cvref_t<_P>>
+                                     || detail::__has_any_capability<::cuda::std::remove_cvref_t<_P>>,
+                                   int> = 0>
+auto operator*(int __n, _P&& __p)
+{
+  return ::cuda::std::forward<_P>(__p) * __n;
+}
+
 #ifdef UNITTESTED_FILE
 UNITTEST("nothing")
 {
@@ -1319,7 +1401,8 @@ UNITTEST("nothing")
 //  - on_throw(defer) << [] { return 1; };          // result has no channel (on_success() only)
 //  - on_throw(notify) << []() noexcept {};         // existing rule, unchanged message
 //  - on_throw(notify & subst(42)) << []() -> int& {...}; // reference result vs owned substitution (existing rule)
-//  - on_throw(retry(1) & subst(0)) << ...;         // "a re-running policy answers; it must be the last element of &"
+//  - on_throw(retry & subst(0)) << ...;            // "a re-running policy answers; it must be the last element of &"
+//  - on_throw(retry * 2 & subst(0)) << ...;        // same (pow is re-running)
 //  - on_throw(subst(8) | subst(9)) << ...;         // "the left policy never declines; alternatives after it are
 //  unreachable"
 
@@ -1595,7 +1678,7 @@ UNITTEST("policy algebra")
   bool escaped = false;
   try
   {
-    on_throw(retry(2)) << [&] {
+    on_throw(retry * 2) << [&] {
       ++attempts;
       throw ::std::runtime_error("always");
     };
@@ -1609,7 +1692,7 @@ UNITTEST("policy algebra")
 
   // retry | terminal: the terminal handles the exhausted failure. Success stops the loop.
   attempts      = 0;
-  const int r13 = on_throw(retry(5) | subst(-1)) << [&]() -> int {
+  const int r13 = on_throw(retry * 5 | subst(-1)) << [&]() -> int {
     if (++attempts < 3)
     {
       throw ::std::runtime_error("transient");
@@ -1620,7 +1703,7 @@ UNITTEST("policy algebra")
   EXPECT(attempts == 3);
 
   attempts      = 0;
-  const int r14 = on_throw(retry(1) | subst(-1)) << [&]() -> int {
+  const int r14 = on_throw(retry * 1 | subst(-1)) << [&]() -> int {
     ++attempts;
     throw ::std::runtime_error("always");
   };
@@ -1773,7 +1856,7 @@ UNITTEST("re-running policies")
     bool escaped = false;
     try
     {
-      on_throw(retry(1) | retry(1)) << [&]() -> int {
+      on_throw(retry | retry) << [&]() -> int {
         ++calls;
         throw ::std::runtime_error("always");
       };
@@ -1789,7 +1872,7 @@ UNITTEST("re-running policies")
   // Success on a re-attempt returns the callable's result.
   {
     int calls   = 0;
-    const int v = on_throw(retry(3)) << [&] {
+    const int v = on_throw(retry * 3) << [&] {
       if (++calls < 3)
       {
         throw ::std::runtime_error("transient");
@@ -1803,7 +1886,7 @@ UNITTEST("re-running policies")
   // Void callable: re-attempt success completes the void expression.
   {
     int calls = 0;
-    on_throw(retry(1)) << [&] {
+    on_throw(retry) << [&] {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -1822,7 +1905,7 @@ UNITTEST("re-running policies")
     bool escaped = false;
     try
     {
-      on_throw(retry(1) | (note & retry(1))) << [&]() -> int {
+      on_throw(retry | (note & retry)) << [&]() -> int {
         ++calls;
         throw ::std::runtime_error("always");
       };
@@ -1839,7 +1922,7 @@ UNITTEST("re-running policies")
   // Exhausted retry answered by a | fallback.
   {
     int calls   = 0;
-    const int v = on_throw(retry(2) | subst(-1)) << [&]() -> int {
+    const int v = on_throw(retry * 2 | subst(-1)) << [&]() -> int {
       ++calls;
       throw ::std::runtime_error("always");
     };
@@ -1850,7 +1933,7 @@ UNITTEST("re-running policies")
   // A plain ignore-arm after retry resumes with a default-constructed result.
   {
     int calls   = 0;
-    const int v = on_throw(retry(1) | ::std::ignore) << [&]() -> int {
+    const int v = on_throw(retry | ::std::ignore) << [&]() -> int {
       ++calls;
       throw ::std::runtime_error("always");
     };
@@ -1861,7 +1944,7 @@ UNITTEST("re-running policies")
   // catch_only restricts what gets re-run: wrong type declines without re-running.
   {
     int calls   = 0;
-    const int v = on_throw(catch_only<::std::logic_error>(retry(5)) | subst(-1)) << [&]() -> int {
+    const int v = on_throw(catch_only<::std::logic_error>(retry * 5) | subst(-1)) << [&]() -> int {
       ++calls;
       throw ::std::runtime_error("not a logic_error");
     };
@@ -1870,7 +1953,7 @@ UNITTEST("re-running policies")
   }
   {
     int calls   = 0;
-    const int v = on_throw(catch_only<::std::logic_error>(retry(2)) | subst(-1)) << [&]() -> int {
+    const int v = on_throw(catch_only<::std::logic_error>(retry * 2) | subst(-1)) << [&]() -> int {
       ++calls;
       throw ::std::logic_error("is one");
     };
@@ -1881,7 +1964,7 @@ UNITTEST("re-running policies")
   // RULING: the chain's on_success fires on re-attempt success.
   {
     int calls    = 0;
-    const auto r = on_throw(as_expected & retry(1)) << [&] {
+    const auto r = on_throw(as_expected & retry) << [&] {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -1894,7 +1977,7 @@ UNITTEST("re-running policies")
   }
   {
     int calls     = 0;
-    const auto ep = on_throw(defer & retry(1)) << [&] {
+    const auto ep = on_throw(defer & retry) << [&] {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -1906,19 +1989,163 @@ UNITTEST("re-running policies")
 
   // noexcept surface: a re-running chain is never noexcept (explicit location; see
   // the existing comment about nvcc + gcc host and defaulted current()).
-  static_assert(!noexcept(on_throw(retry(1), ::cuda::std::source_location{}) << ::cuda::std::declval<int (&)()>()),
+  static_assert(!noexcept(on_throw(retry, ::cuda::std::source_location{}) << ::cuda::std::declval<int (&)()>()),
                 "a re-running reaction can always decline");
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-  //  - on_throw(retry(1) & subst(0)) << ...;
+  //  - on_throw(retry & subst(0)) << ...;
   //      -> "a re-running policy answers; it must be the last element of &"
-  //  - on_throw(retry(1) & retry(1)) << ...;
+  //  - on_throw(retry * 2 & subst(0)) << ...;
+  //      -> same error (pow is re-running)
+  //  - on_throw(retry & retry) << ...;
   //      -> same error
-  //  - on_throw(subst(1) | retry(1)) << ...;
+  //  - on_throw(subst(1) | retry) << ...;
   //      -> "the left policy never declines; ..." (existing theorem, unchanged)
-  //  - on_throw(retry(1) | as_expected) << []() -> int { ... };
+  //  - on_throw(retry | as_expected) << []() -> int { ... };
   //      -> conversion failure: an unexpected does not convert to the callable's
   //         result (documented limitation; nested on_throw is the spelling)
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("repetition")
+{
+  using namespace cuda::experimental::stf;
+  static_assert(::cuda::std::is_empty_v<retry_t>, "retry is the stateless unit re-attempt");
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  // retry * n: 1 + n attempts, then the last failure propagates.
+  {
+    int calls    = 0;
+    bool escaped = false;
+    try
+    {
+      on_throw(retry * 3) << [&]() -> int {
+        ++calls;
+        throw ::std::runtime_error("always");
+      };
+    }
+    catch (const ::std::runtime_error&)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+    EXPECT(calls == 4);
+  }
+
+  // p * 0 is rethrow: no re-attempts, immediate decline.
+  {
+    int calls    = 0;
+    bool escaped = false;
+    try
+    {
+      on_throw(retry * 0) << [&]() -> int {
+        ++calls;
+        throw ::std::runtime_error("once");
+      };
+    }
+    catch (...)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+    EXPECT(calls == 1);
+  }
+
+  // The flagship: (effect & retry) * 3 fires the effect before EACH re-attempt.
+  {
+    int calls = 0;
+    int notes = 0;
+    auto note = [&](const ::std::exception*, const ::cuda::std::source_location) {
+      ++notes;
+    };
+    const int v = on_throw((note & retry) * 3 | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 4);
+    EXPECT(notes == 3);
+  }
+
+  // Precedence contrast: notify-effect once, then the re-attempts.
+  {
+    int calls = 0;
+    int notes = 0;
+    auto note = [&](const ::std::exception*, const ::cuda::std::source_location) {
+      ++notes;
+    };
+    const int v = on_throw(note & retry * 3 | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 4);
+    EXPECT(notes == 1);
+  }
+
+  // Success mid-repetition returns the callable's result (and the success channel).
+  {
+    int calls    = 0;
+    const auto r = on_throw((as_expected & retry) * 3) << [&] {
+      if (++calls < 3)
+      {
+        throw ::std::runtime_error("transient");
+      }
+      return 7;
+    };
+    EXPECT(r.has_value());
+    EXPECT(*r == 7);
+    EXPECT(calls == 3);
+  }
+
+  // The law p*(m+n) == p*m | p*n, observed through attempt counts.
+  {
+    int calls    = 0;
+    bool escaped = false;
+    try
+    {
+      on_throw(retry * 1 | retry * 2) << [&]() -> int {
+        ++calls;
+        throw ::std::runtime_error("always");
+      };
+    }
+    catch (...)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+    EXPECT(calls == 4); // same as retry * 3
+  }
+
+  // Commuted form.
+  {
+    int calls   = 0;
+    const int v = on_throw(2 * retry | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3);
+  }
+
+  // A plain declining arm repeats too: catch_only guards every iteration.
+  {
+    int calls   = 0;
+    const int v = on_throw(catch_only<::std::logic_error>(retry) * 5 | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("not a logic_error");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 1); // declined on type before any re-run, every iteration vacuous
+  }
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(subst(1) * 3) << ...;
+  //      -> "the repeated policy never declines; repetitions after the first are unreachable"
+  //  - on_throw(retry * 2 & subst(0)) << ...;
+  //      -> "a re-running policy answers; it must be the last element of &"
+  //  - on_throw(retry & subst(0)) << ...;   (updated spelling of the existing case)
+  //      -> same error
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
