@@ -25,6 +25,7 @@
 
 #include "almost_satisfies_types.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 #if TEST_STD_VER > 2017
 template <class It, class Sent = It>
@@ -83,12 +84,12 @@ TEST_HOST_DEVICE_FUNC constexpr void test_iterators()
     assert(*ret.begin() == 2);
   }
   {
-    int a              = 0;
-    auto range         = cuda::std::ranges::subrange<It, Sent>(It(&a), Sent(It(&a + 1)));
-    decltype(auto) ret = cuda::std::ranges::find_last(range, 0);
+    int a[]            = {1, 2, 3, 2, 5};
+    auto range         = cuda::std::ranges::subrange<It, Sent>(It(a), Sent(It(a + 5)));
+    decltype(auto) ret = cuda::std::ranges::find_last(range, 2);
     static_assert(cuda::std::same_as<decltype(ret), cuda::std::ranges::subrange<It>>);
-    assert(base(ret.begin()) == &a);
-    assert(base(ret.end()) == &a + 1);
+    assert(base(ret.begin()) == a + 3);
+    assert(base(ret.end()) == a + 5);
   }
   {
     // no match yields an empty subrange at the end of the range

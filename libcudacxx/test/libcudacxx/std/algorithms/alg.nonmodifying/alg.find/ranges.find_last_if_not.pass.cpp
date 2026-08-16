@@ -26,6 +26,7 @@
 #include "almost_satisfies_types.h"
 #include "boolean_testable.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 struct Predicate
 {
@@ -170,6 +171,37 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_iterators<contiguous_iterator<int*>>();
   test_iterators<forward_iterator<int*>, sentinel_wrapper<forward_iterator<int*>>>();
   test_iterators<bidirectional_iterator<int*>, sentinel_wrapper<bidirectional_iterator<int*>>>();
+
+  {
+    // check that projections are used properly and that they are called with the iterator directly
+    struct ToAddress
+    {
+      TEST_HOST_DEVICE_FUNC constexpr int* operator()(int& i) const
+      {
+        return &i;
+      }
+    };
+    struct DoesNotPointToFirst
+    {
+      int* a;
+      TEST_HOST_DEVICE_FUNC constexpr bool operator()(int* i) const
+      {
+        return i != a;
+      }
+    };
+    {
+      int a[]  = {1, 2, 3, 4};
+      auto ret = cuda::std::ranges::find_last_if_not(a, a + 4, DoesNotPointToFirst{a}, ToAddress{});
+      assert(ret.begin() == a);
+      assert(ret.end() == a + 4);
+    }
+    {
+      int a[]  = {1, 2, 3, 4};
+      auto ret = cuda::std::ranges::find_last_if_not(a, DoesNotPointToFirst{a}, ToAddress{});
+      assert(ret.begin() == a);
+      assert(ret.end() == a + 4);
+    }
+  }
 
   {
     // check that the last of several matches is returned, not the first
