@@ -1038,15 +1038,8 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
  * @return A policy object consumed by `operator<<`.
  */
 template <class _Reaction>
-auto on_throw(_Reaction&& __reaction) noexcept
-{
-  return detail::__make_on_throw(
-    detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), ::cuda::std::source_location::current());
-}
-
-//! @brief `on_throw` with an explicit report location; see the one-argument overload.
-template <class _Reaction>
-auto on_throw(_Reaction&& __reaction, const ::cuda::std::source_location __loc) noexcept
+auto on_throw(_Reaction&& __reaction,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
   return detail::__make_on_throw(detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc);
 }
@@ -1430,9 +1423,13 @@ UNITTEST("policy algebra")
   EXPECT(attempts == 2);
 
   // noexcept surface: chains of nothrow hooks keep operator<< noexcept; rethrow removes it.
-  static_assert(noexcept(on_throw(notify) << ::cuda::std::declval<void (&)()>()),
+  // The locations are explicit: under nvcc in C++17 mode with a gcc host, evaluating the
+  // defaulted source_location::current() argument inside a noexcept operand reads as
+  // potentially throwing (the __builtin_LINE machinery), which would taint the query with
+  // something these assertions do not mean to test.
+  static_assert(noexcept(on_throw(notify, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
                 "nothrow policy chain must keep the expression noexcept");
-  static_assert(!noexcept(on_throw(rethrow) << ::cuda::std::declval<void (&)()>()),
+  static_assert(!noexcept(on_throw(rethrow, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
                 "a throwing policy must surface in the expression's noexcept");
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
