@@ -382,22 +382,18 @@ stage_head_positions(unsigned my_flags, position_t* pos_dst, int warp_tile_offse
   // (CRITICAL for MaxSeg=1,2,4)
   const int word_run_count = __popc(my_flags); // this word's head count
   typename WarpScan<int>::TempStorage warp_scan_storage;
-  int head_scan;
-  WarpScan<int>(warp_scan_storage).InclusiveSum(word_run_count, head_scan);
-
-  // head_scan is a running sum of run_count, so each lane know each chunk's base
-  const int runs_before_word = head_scan - word_run_count;
+  int runs_before_word;
+  // runs_before_word is a running sum of run_count, so each lane know each chunk's base
+  WarpScan<int>(warp_scan_storage).ExclusiveSum(word_run_count, runs_before_word);
   if (lane_id < ItemsPerThread)
   {
-    const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
+    const int word_pos = warp_tile_offset + lane_id * detail::warp_threads; // element position of bit 0 of this word
     unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
-    int run_index          = runs_before_word; // run-order slot for this word's next head
-    while (pending_heads)
+    for (int run_index = runs_before_word; pending_heads; ++run_index)
     {
       const int head_offset = __ffs(static_cast<int>(pending_heads)) - 1; // offset (0..31) of the next head within the
                                                                           // word
       pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = static_cast<position_t>(word_pos + head_offset);
-      ++run_index;
       pending_heads &= (pending_heads - 1); // clear the lowest set bit
     }
   }
@@ -589,9 +585,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   // i.e. since we know the residency is 1 CTA per SM, each generation is 148 tiles ahead
   // therefore, with window_size=96, we split it in 2. with window_size=160 we do it in one pass.
   if (dense_mode)
-  // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
-  // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some overlapping
   {
+    // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
+    // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
+    // overlapping
     poll_fold_windows<96, PolicySelector>(
       tile_partial_states,
       tile_id,
@@ -602,8 +599,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
       dense_mode);
   }
   else
-  // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
   {
+    // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
     poll_fold_windows<32 * current_policy<PolicySelector>().lookahead.poll_loads_per_lane, PolicySelector>(
       tile_partial_states,
       tile_id,
