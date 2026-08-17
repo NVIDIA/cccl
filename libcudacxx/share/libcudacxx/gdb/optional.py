@@ -28,7 +28,9 @@ class OptionalPrinter:
     """Expose cuda::std::optional metadata and value to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
-        self.type_name = cccl_common.public_type_name(value.type)
+        # Use strip_typedefs() to resolve type aliases/typedefs (e.g. optional_alias)
+        # while keeping const/reference qualifiers.
+        self.type_name = cccl_common.public_type_name(value.type.strip_typedefs())
         value = cccl_common.strip_reference_value(value)
         self.value = value
         self.type = cccl_common.canonical_type(value.type)

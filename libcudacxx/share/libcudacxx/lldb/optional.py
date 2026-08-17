@@ -25,6 +25,9 @@ def optional_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
     non_syn = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
     val_member = non_syn.GetChildMemberWithName("__value_")
     if val_member.IsValid():
+        # __value_ is a pointer (T*) for the optional<T&> specialization.
+        # Its value is 0 (null) if disengaged, and non-zero if engaged,
+        # regardless of the value of the referenced object itself.
         if val_member.GetValueAsUnsigned(0) == 0:
             return "cuda::std::nullopt"
         return ""
@@ -44,13 +47,17 @@ class OptionalSyntheticProvider:
         self.update()
 
     def get_type_name(self) -> str:
-        type_name = self.raw_value.GetType().GetDisplayTypeName() or ""
+        # Use GetCanonicalType() to desugar any typedefs/aliases (e.g. optional_alias)
+        # while preserving const/reference qualifiers.
+        type_name = self.raw_value.GetType().GetCanonicalType().GetDisplayTypeName() or ""
         return cccl_common._ABI_NAMESPACE_PATTERN.sub("", type_name)
 
     def update(self) -> bool:
         self.size = 0
         val_member = self.value.GetChildMemberWithName("__value_")
         if val_member.IsValid():
+            # __value_ is a pointer (T*) for the optional<T&> specialization.
+            # Its value is 0 (null) if disengaged, and non-zero if engaged.
             self.engaged = val_member.GetValueAsUnsigned(0) != 0
             if self.engaged:
                 self.val = val_member.Dereference()
