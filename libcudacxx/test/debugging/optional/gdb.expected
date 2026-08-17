@@ -1,0 +1,13 @@
+=============== optional.disengaged begin ===============
+cuda::std::nullopt
+=============== optional.disengaged end ===============
+=============== optional.engaged_int begin ===============
+cuda::std::optional<int> = {
+  value = 42
+}
+=============== optional.engaged_int end ===============
+=============== optional.engaged_double begin ===============
+cuda::std::optional<double> = {
+  value = 3.1400000000000001
+}
+=============== optional.engaged_double end ===============
