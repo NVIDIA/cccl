@@ -58,12 +58,6 @@ Environment:
   CCCL_BENCH_LEGACY_COMPARE_BIN
                              Optional nvbench-compare-legacy executable used for
                              Python benchmark comparisons.
-  CCCL_BENCH_DROP_AWS_CREDENTIALS
-                             If set to 1/ON/TRUE/YES, drop AWS and sccache
-                             credentials after CUB builds and before benchmark
-                             execution, comparison, and Python setup.
-  CCCL_BENCH_AWS_CONFIG_DIR  Optional AWS config directory to clear when
-                             CCCL_BENCH_DROP_AWS_CREDENTIALS is enabled.
   CCCL_BENCH_BUILD_ROOT      Root directory for generated build trees.
                              Default: "/tmp/cccl-bench-builds"
 EOF
@@ -812,50 +806,6 @@ run_compare_command_with_pythonpath() {
     "$@"
 }
 
-env_value_is_truthy() {
-  local value="$1"
-  case "${value}" in
-    1 | ON | On | on | TRUE | True | true | YES | Yes | yes)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-drop_aws_credentials_if_requested() {
-  if [[ "${aws_credentials_drop_done}" -ne 0 ]]; then
-    return 0
-  fi
-  aws_credentials_drop_done=1
-
-  if ! env_value_is_truthy "${CCCL_BENCH_DROP_AWS_CREDENTIALS:-}"; then
-    return 0
-  fi
-
-  echo
-  echo "Dropping AWS and sccache credentials before benchmark execution and Python setup."
-
-  if command -v sccache >/dev/null 2>&1; then
-    sccache --stop-server >/dev/null 2>&1 || true
-  fi
-
-  local var_name=""
-  for var_name in ${!AWS_@} ${!SCCACHE_@}; do
-    unset "${var_name}"
-  done
-
-  local aws_config_dir="${CCCL_BENCH_AWS_CONFIG_DIR:-}"
-  if [[ -n "${aws_config_dir}" ]]; then
-    if [[ "${aws_config_dir}" == "/" ]]; then
-      die "Refusing to clear AWS config directory: ${aws_config_dir}" 1
-    fi
-    mkdir -p "${aws_config_dir}"
-    rm -f "${aws_config_dir}/config" "${aws_config_dir}/credentials"
-  fi
-}
-
 run_compare_target() {
   local target="$1"
   local compare_script="$2"
@@ -1274,7 +1224,6 @@ fi
 any_failures=0
 compares_attempted=0
 compares_succeeded=0
-aws_credentials_drop_done=0
 declare -a selected_targets=()
 py_compares_attempted=0
 py_compares_succeeded=0
@@ -1357,8 +1306,6 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     any_failures=1
   fi
 
-  drop_aws_credentials_if_requested
-
   for target in "${selected_targets[@]}"; do
     base_target_run_rc=125
     test_target_run_rc=125
@@ -1437,8 +1384,6 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   if [[ ! -d "${test_py_bench_dir}" ]]; then
     die "Python benchmarks directory not found in test tree: ${test_py_bench_dir}"
   fi
-
-  drop_aws_credentials_if_requested
 
   cuda_major="$(detect_cuda_major_version)"
   echo "Detected CUDA major version: ${cuda_major}"

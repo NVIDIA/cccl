@@ -56,8 +56,7 @@ In `.github/workflows/bench.yml`:
 - Otherwise, args are assembled from `base_ref`, `test_ref`, `arch`, `cub_filters`, `python_filters`, `nvbench_args`, `nvbench_compare_args`, and `nvbench_compare_legacy_args`.
 - `nvbench_compare_args` are passed to `nvbench-compare-robust`; `nvbench_compare_legacy_args` are passed to diagnostic `nvbench-compare-legacy` runs.
 - CUB filters are passed as `--cub-filter` flags. Python filters are passed as `--python-filter` flags.
-- The workflow resolves NVBench `main` once before requesting AWS credentials and passes the resulting SHA to generated CUB build trees.
-- The workflow passes AWS credentials into the benchmark container for possible CUB builds, then asks `compare_paths.sh` to clear AWS/sccache credential state before benchmark execution, comparison, and Python environment setup.
+- The workflow resolves NVBench `main` once and passes the resulting SHA to generated CUB build trees.
 - Malformed quoted input (for example unmatched quotes) fails the workflow step.
 
 ## Python Benchmarks
