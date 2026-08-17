@@ -23,6 +23,11 @@ def is_cuda_optional(value_type: lldb.SBType, _internal_dict: InternalDict) -> b
 
 def optional_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
     non_syn = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
+    val_member = non_syn.GetChildMemberWithName("__value_")
+    if val_member.IsValid():
+        if val_member.GetValueAsUnsigned(0) == 0:
+            return "cuda::std::nullopt"
+        return ""
     engaged_member = non_syn.GetChildMemberWithName("__engaged_")
     if engaged_member.IsValid() and engaged_member.GetValueAsUnsigned(0) == 0:
         return "cuda::std::nullopt"
@@ -33,31 +38,36 @@ class OptionalSyntheticProvider:
     """Expose cuda::std::optional elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.raw_value = value
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.update()
 
+    def get_type_name(self) -> str:
+        type_name = self.raw_value.GetType().GetDisplayTypeName() or ""
+        return cccl_common._ABI_NAMESPACE_PATTERN.sub("", type_name)
+
     def update(self) -> bool:
-        self.type_name = (
-            self.value.GetType()
-            .GetCanonicalType()
-            .GetUnqualifiedType()
-            .GetDisplayTypeName()
-            or ""
-        )
-        self.engaged_member = self.value.GetChildMemberWithName("__engaged_")
         self.size = 0
-        if not self.engaged_member.IsValid():
-            return False
-        self.engaged = self.engaged_member.GetValueAsUnsigned(0) != 0
-        if self.engaged:
-            storage = self.value.GetChildMemberWithName("__storage_")
-            if not storage.IsValid():
+        val_member = self.value.GetChildMemberWithName("__value_")
+        if val_member.IsValid():
+            self.engaged = val_member.GetValueAsUnsigned(0) != 0
+            if self.engaged:
+                self.val = val_member.Dereference()
+                self.size = 1
+        else:
+            engaged_member = self.value.GetChildMemberWithName("__engaged_")
+            if not engaged_member.IsValid():
                 return False
-            self.val = storage.GetChildMemberWithName("__val_")
-            if not self.val.IsValid():
-                return False
-            self.size = 1
+            self.engaged = engaged_member.GetValueAsUnsigned(0) != 0
+            if self.engaged:
+                storage = self.value.GetChildMemberWithName("__storage_")
+                if not storage.IsValid():
+                    return False
+                self.val = storage.GetChildMemberWithName("__val_")
+                if not self.val.IsValid():
+                    return False
+                self.size = 1
         return True
 
     def num_children(self) -> int:

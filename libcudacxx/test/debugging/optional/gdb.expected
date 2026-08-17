@@ -2,12 +2,40 @@
 cuda::std::nullopt
 =============== optional.disengaged end ===============
 =============== optional.engaged_int begin ===============
-cuda::std::optional<int> = {
+const cuda::std::optional<int> & = {
   value = 42
 }
 =============== optional.engaged_int end ===============
 =============== optional.engaged_double begin ===============
-cuda::std::optional<double> = {
+const cuda::std::optional<double> & = {
   value = 3.1400000000000001
 }
 =============== optional.engaged_double end ===============
+=============== optional.update.before begin ===============
+const cuda::std::optional<int> & = {
+  value = 1
+}
+=============== optional.update.before end ===============
+=============== optional.update.after begin ===============
+const cuda::std::optional<int> & = {
+  value = 2
+}
+=============== optional.update.after end ===============
+=============== optional.alias begin ===============
+const optional_alias & = {
+  value = 17
+}
+=============== optional.alias end ===============
+=============== optional.reference begin ===============
+const cuda::std::optional<int &> & = {
+  value = 88
+}
+=============== optional.reference end ===============
+=============== optional.nested begin ===============
+cuda::std::array<cuda::std::optional<int>, 2> = {
+  [0] = cuda::std::optional<int> = {
+    value = 13
+  },
+  [1] = cuda::std::nullopt
+}
+=============== optional.nested end ===============

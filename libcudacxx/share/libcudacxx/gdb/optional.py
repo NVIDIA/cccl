@@ -28,14 +28,19 @@ class OptionalPrinter:
     """Expose cuda::std::optional metadata and value to GDB."""
 
     def __init__(self, value: gdb.Value) -> None:
+        self.type_name = cccl_common.public_type_name(value.type)
         value = cccl_common.strip_reference_value(value)
         self.value = value
         self.type = cccl_common.canonical_type(value.type)
-        self.type_name = cccl_common.public_type_name(self.type)
-        self.engaged = bool(value["__engaged_"])
-        if self.engaged:
-            # __storage_ is a member of the base class __optional_destruct_base
-            self.val = value["__storage_"]["__val_"]
+        if any(field.name == "__value_" for field in value.type.fields()):
+            self.engaged = int(value["__value_"]) != 0
+            if self.engaged:
+                self.val = value["__value_"].dereference()
+        else:
+            self.engaged = bool(value["__engaged_"])
+            if self.engaged:
+                # __storage_ is a member of the base class __optional_destruct_base
+                self.val = value["__storage_"]["__val_"]
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
         if not self.engaged:

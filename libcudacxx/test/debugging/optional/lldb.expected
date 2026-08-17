@@ -1,13 +1,41 @@
 =============== optional.disengaged begin ===============
-(cuda::std::optional<int>) <address> cuda::std::nullopt
+(const cuda::std::optional<int> &) <address> cuda::std::nullopt
 =============== optional.disengaged end ===============
 =============== optional.engaged_int begin ===============
-(cuda::std::optional<int>) <address>: {
+(const cuda::std::optional<int> &) <address>: {
   value = 42
 }
 =============== optional.engaged_int end ===============
 =============== optional.engaged_double begin ===============
-(cuda::std::optional<double>) <address>: {
+(const cuda::std::optional<double> &) <address>: {
   value = 3.1400000000000001
 }
 =============== optional.engaged_double end ===============
+=============== optional.update.before begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 1
+}
+=============== optional.update.before end ===============
+=============== optional.update.after begin ===============
+(const cuda::std::optional<int> &) <address>: {
+  value = 2
+}
+=============== optional.update.after end ===============
+=============== optional.alias begin ===============
+(const optional_alias &) <address>: {
+  value = 17
+}
+=============== optional.alias end ===============
+=============== optional.reference begin ===============
+(const cuda::std::optional<int &> &) <address>: {
+  value = 88
+}
+=============== optional.reference end ===============
+=============== optional.nested begin ===============
+(const cuda::std::array<cuda::std::optional<int>, 2> &) <address>: {
+  [0] = {
+    value = 13
+  }
+  [1] = cuda::std::nullopt
+}
+=============== optional.nested end ===============
