@@ -220,7 +220,7 @@ private:
     return __a;
   }
 
-  static size_t __validate_element_count(const size_t __count, const size_t __alignment)
+  [[nodiscard]] static size_t __validate_element_count(const size_t __count, const size_t __alignment)
   {
     constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
     if (__count > __max_element_count)
@@ -228,8 +228,8 @@ private:
       _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
 
-    const size_t __count_bytes = __count * sizeof(_Tp);
-    if (__count_bytes > __max_element_count - (__alignment - 1))
+    const size_t __count_elements = __count * sizeof(_Tp);
+    if (__count_elements > __max_element_count - (__alignment - 1))
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
     }
@@ -466,6 +466,8 @@ public:
   _CCCL_HOST_API void
   __replace_allocation_discard(::cuda::stream_ref __stream, const size_t __count, const size_t __old_capacity)
   {
+    __validate_element_count(__count, __alignment_);
+
     if (__buf_)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);
@@ -476,7 +478,6 @@ public:
     __stream_ = __stream;
     if (__count != 0)
     {
-      __validate_element_count(__count, __alignment_);
       __buf_ = __mr_.allocate(__stream_, __get_allocation_size(__count), __alignment_);
     }
     __count_ = __count;
