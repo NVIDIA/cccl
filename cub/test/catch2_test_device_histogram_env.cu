@@ -739,6 +739,68 @@ CUB_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][de
   REQUIRE(d_histogram_b == expected_b);
 }
 
+CUB_TEST("DeviceHistogram::MultiHistogramEven handles the device-launch dynamic-SMEM boundary",
+         "[histogram][device]",
+         CUB_SMALL)
+{
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  // The direct-load kernel has no static shared-memory footprint, so 4,096
+  // three-channel counters exactly fill the B200's 48 KiB device-launch limit.
+  constexpr int num_bins   = 4096;
+  constexpr int num_levels = num_bins + 1;
+  auto d_samples           = c2h::device_vector<int>{0, 1, 2, 3};
+
+  cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  cuda::std::array<int, num_active_channels> upper_levels{num_bins, num_bins, num_bins};
+
+  auto d_histogram_r                                                = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_g                                                = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_b                                                = c2h::device_vector<unsigned int>(num_bins, 0);
+  cuda::std::array<unsigned int*, num_active_channels> d_histograms = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
+      nullptr,
+      expected_bytes_allocated,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histograms,
+      levels,
+      lower_levels,
+      upper_levels,
+      1));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()), d_histograms, levels, lower_levels, upper_levels, 1, env);
+
+  auto expected_r = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto expected_g = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto expected_b = c2h::device_vector<unsigned int>(num_bins, 0);
+  expected_r[0]   = 1;
+  expected_g[1]   = 1;
+  expected_b[2]   = 1;
+  REQUIRE(d_histogram_r == expected_r);
+  REQUIRE(d_histogram_g == expected_g);
+  REQUIRE(d_histogram_b == expected_b);
+}
+
 CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
@@ -1886,6 +1948,8 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_wide_counter_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
       cuda::compute_capability{10, 0});
+  constexpr int expected_single_channel_policy_bytes = 228352;
+  constexpr int expected_single_channel_limit_bytes  = expected_single_channel_policy_bytes;
 
   STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
                    sm90_policy.max_privatized_static_smem_single_channel_bytes)
@@ -1894,11 +1958,13 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
                    sm100_policy.max_privatized_static_smem_single_channel_bytes)
                  == 256);
   STATIC_REQUIRE(sm90_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
-  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_single_channel_bytes == 228352);
+  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_single_channel_bytes == expected_single_channel_policy_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 1>(sm100_policy) == expected_single_channel_limit_bytes);
   STATIC_REQUIRE(sm100_wide_counter_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
   STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
                    sm100_policy.max_privatized_dynamic_smem_single_channel_bytes)
-                 == 57088);
+                 == expected_single_channel_policy_bytes / int{sizeof(unsigned int)});
   STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_multi_channel_range_bytes == 8192);
   STATIC_REQUIRE(sm100_policy.gmem.threads_per_block == 768);
   STATIC_REQUIRE(sm100_policy.gmem.items_per_thread == 12);
@@ -1928,9 +1994,24 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_even_4ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
       cuda::compute_capability{10, 0});
-  STATIC_REQUIRE(sm100_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == 0);
-  STATIC_REQUIRE(sm100_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == 0);
-  STATIC_REQUIRE(sm100_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == 0);
+  constexpr int expected_even_2ch_policy_bytes = 65536;
+  constexpr int expected_even_3ch_policy_bytes = 98304;
+  constexpr int expected_even_4ch_policy_bytes = 131072;
+  constexpr int expected_even_2ch_limit_bytes  = expected_even_2ch_policy_bytes;
+  constexpr int expected_even_3ch_limit_bytes  = expected_even_3ch_policy_bytes;
+  constexpr int expected_even_4ch_limit_bytes  = expected_even_4ch_policy_bytes;
+  STATIC_REQUIRE(
+    sm100_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == expected_even_2ch_policy_bytes);
+  STATIC_REQUIRE(
+    sm100_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == expected_even_3ch_policy_bytes);
+  STATIC_REQUIRE(
+    sm100_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == expected_even_4ch_policy_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 2>(sm100_even_2ch_policy) == expected_even_2ch_limit_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 3>(sm100_even_3ch_policy) == expected_even_3ch_limit_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 4>(sm100_even_4ch_policy) == expected_even_4ch_limit_bytes);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
   STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);
@@ -1945,9 +2026,12 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
                  == privatization_mode::static_smem);
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_policy, 257)
                  == privatization_mode::dynamic_smem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_policy, 57088)
+  constexpr int sm100_single_channel_max_dynamic_bins = expected_single_channel_limit_bytes / int{sizeof(unsigned int)};
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(
+                   sm100_policy, sm100_single_channel_max_dynamic_bins)
                  == privatization_mode::dynamic_smem);
-  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_policy, 57089)
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(
+                   sm100_policy, sm100_single_channel_max_dynamic_bins + 1)
                  == privatization_mode::gmem);
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_range_u64_policy, 256)
                  == privatization_mode::static_smem);
@@ -1968,10 +2052,31 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 256)
                  == privatization_mode::static_smem);
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_4ch_max_dynamic_bins = expected_even_4ch_limit_bytes / sizeof(unsigned int) / 4;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(
+                   sm100_even_4ch_policy, sm100_even_4ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(
+                   sm100_even_4ch_policy, sm100_even_4ch_max_dynamic_bins + 1)
                  == privatization_mode::gmem);
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(sm100_even_2ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_2ch_max_dynamic_bins = expected_even_2ch_limit_bytes / sizeof(unsigned int) / 2;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(
+                   sm100_even_2ch_policy, sm100_even_2ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(
+                   sm100_even_2ch_policy, sm100_even_2ch_max_dynamic_bins + 1)
                  == privatization_mode::gmem);
   STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(sm100_even_3ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_3ch_max_dynamic_bins = expected_even_3ch_limit_bytes / sizeof(unsigned int) / 3;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(
+                   sm100_even_3ch_policy, sm100_even_3ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(
+                   sm100_even_3ch_policy, sm100_even_3ch_max_dynamic_bins + 1)
                  == privatization_mode::gmem);
   STATIC_REQUIRE(
     cub::detail::histogram::select_privatization_mode<true, unsigned long long, 1>(sm100_wide_counter_policy, 128)
