@@ -4,12 +4,7 @@
 """Policy for the precompiled-header cache.
 
 This module decides where the cache lives, whether it is enabled, and when it
-is pruned. The backend generates and loads entries at the location it is given;
-it chooses nothing, so a build writes only where this module points it.
-
-The cache fills lazily: the first build needing an entry generates it, which
-costs a few seconds and happens once per (install, architecture, flag-set).
-Builds after that read it.
+is pruned.
 
 Environment:
     CCCL_ENABLE_PCH=0             Disable precompiled headers entirely.

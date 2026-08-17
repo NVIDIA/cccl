@@ -115,12 +115,6 @@ public:
     {
       merged_ = *base;
     }
-
-    // Precompiled-header policy belongs to the caller: whether to enable it,
-    // where the cache lives, and when to prune it. Nothing here reads the
-    // environment or picks a default location, so a build writes only where it
-    // was told to.
-
     // We append at most two paths (cub + thrust). Reserve up front so the
     // owned_strs_/ptrs_ vectors don't reallocate — important because we
     // capture pointers into owned_strs_ for `extra_include_dirs`.
