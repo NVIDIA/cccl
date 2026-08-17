@@ -76,6 +76,42 @@ template <class _T1, class _T2>
 struct __pair_constraints
 {
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _U1, class _U2>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor __select_variadic_constructible() noexcept
+  {
+    // NOLINTBEGIN(bugprone-branch-clone)
+    if constexpr (!is_constructible_v<_T1, _U1>)
+    { // [pairs#pair]-11.1: is_constructible<T1, U1> is true
+      return __select_constructor::__invalid;
+    }
+    else if constexpr (!is_constructible_v<_T2, _U2>)
+    { // [pairs#pair]-11.2: is_constructible<T2, U2> is true
+      return __select_constructor::__invalid;
+    }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+    else if constexpr (reference_constructs_from_temporary_v<_T1, _U1&&>
+                       || reference_constructs_from_temporary_v<_T2, _U2&&>)
+    { // [pairs#pair]-13: This constructor is defined as deleted if
+      // reference_constructs_from_temporary_v<T1, U1&&> or
+      // reference_constructs_from_temporary_v<T2, U2&&> is true
+      return __select_constructor::__deleted;
+    }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+    else if constexpr (is_convertible_v<_U1, _T1> && is_convertible_v<_U2, _T2>)
+    { // [pairs#pair]-13 !is_convertible_v<U1, T1> || !is_convertible_v<U2, T2>
+      return __select_constructor::__implicit;
+    }
+    else
+    {
+      return __select_constructor::__explicit;
+    }
+    // NOLINTEND(bugprone-branch-clone)
+  }
+
+  template <class _U1, class _U2>
+  using __variadic_construction = _ConstructorConstraint<__select_variadic_constructible<_U1, _U2>()>;
+
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor __select_pair_like_constructible() noexcept
   {
@@ -177,8 +213,8 @@ struct __pair_base
   _T2 second;
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_implicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
                                              && is_nothrow_default_constructible_v<_T2>)
       : first()
@@ -186,8 +222,8 @@ struct __pair_base
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_explicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr __pair_base() noexcept(
     is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
       : first()
@@ -219,8 +255,8 @@ struct __pair_base<_T1, _T2, true>
   _T2 second;
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_implicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
                                              && is_nothrow_default_constructible_v<_T2>)
       : first()
@@ -228,8 +264,8 @@ struct __pair_base<_T1, _T2, true>
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_explicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr __pair_base() noexcept(
     is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
       : first()
@@ -289,14 +325,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   using first_type  = _T1;
   using second_type = _T2;
 
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_implicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair() noexcept(is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
       : __base()
   {}
 
-  template <class _Constraint = typename __tuple_constraints<_T1, _T2>::__default_construction,
-            enable_if_t<_Constraint::__can_construct_explicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_T1, _T2>::__select_default_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair() noexcept(is_nothrow_default_constructible_v<_T1>
                                                && is_nothrow_default_constructible_v<_T2>)
       : __base()
@@ -322,7 +358,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1         = _T1,
             class _U2         = _T2,
-            class _Constraint = typename __tuple_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
+            class _Constraint = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
             enable_if_t<_Constraint::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
@@ -331,7 +367,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1         = _T1,
             class _U2         = _T2,
-            class _Constraint = typename __tuple_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
+            class _Constraint = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
             enable_if_t<_Constraint::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
@@ -341,7 +377,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _U1         = _T1,
             class _U2         = _T2,
-            class _Constraint = typename __tuple_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
+            class _Constraint = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
             enable_if_t<_Constraint::__is_deleted, int> = 0>
   constexpr pair(_U1&&, _U2&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY

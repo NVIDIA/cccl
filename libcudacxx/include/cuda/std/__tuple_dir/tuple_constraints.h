@@ -99,7 +99,6 @@ struct __tuple_constraints
       return __select_constructor::__explicit;
     }
   }
-  using __default_construction = _ConstructorConstraint<__select_default_constructible()>;
 
   template <int = 0>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
@@ -285,8 +284,8 @@ struct __tuple_constraints
       else
       {
         using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-        using __defaulted_constraints =
-          typename decltype(::cuda::std::__tuple_get_constraints(__defaulted_list{}))::__default_construction;
+        using __defaulted_constraints = _ConstructorConstraint<decltype(::cuda::std::__tuple_get_constraints(
+          __defaulted_list{}))::__select_default_constructible()>;
         if constexpr (__defaulted_constraints::__can_construct)
         {
           return __select_constructor::__explicit;
@@ -543,14 +542,40 @@ struct __tuple_constraints
 
   // Comparisons
   template <class... _UTypes>
-  static constexpr bool __is_equality_comparable_v = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __is_equality_comparable() noexcept
+  {
+    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+    {
+      return false;
+    }
+    else
+    {
+      return (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
+    }
+  }
+
+  template <class... _UTypes>
+  static constexpr bool __is_equality_comparable_v = __is_equality_comparable<_UTypes...>();
 
   template <class... _UTypes>
   static constexpr bool __is_nothrow_equality_comparable_v =
     (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
 
   template <class... _UTypes>
-  static constexpr bool __is_less_than_comparable_v = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __is_less_than_comparable() noexcept
+  {
+    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+    {
+      return false;
+    }
+    else
+    {
+      return (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
+    }
+  }
+
+  template <class... _UTypes>
+  static constexpr bool __is_less_than_comparable_v = __is_less_than_comparable<_UTypes...>();
 
   template <class... _UTypes>
   static constexpr bool __is_nothrow_less_than_comparable_v =
