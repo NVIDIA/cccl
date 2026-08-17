@@ -17,7 +17,7 @@ InternalDict = dict[str, object]
 
 
 def is_cuda_optional(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = cccl_common.canonical_type_name(value_type)
+    type_name = cccl_common.public_type_name(value_type)
     return _OPTIONAL_PATTERN.fullmatch(type_name) is not None
 
 
@@ -67,7 +67,7 @@ class OptionalSyntheticProvider:
         return self.size != 0
 
     def get_child_index(self, name: str) -> int:
-        if name == "value":
+        if name == "value" and self.size == 1:
             return 0
         return -1
 
