@@ -5,9 +5,10 @@
 // that require implicit type conversions (e.g., float → const double&).
 // This validates that wrapped_function properly handles the conversion chain
 // when user-provided callables expect a different type than the iterator's value_type.
-// When the sequential backend is invoked from device code (CDP) with device_vector
-// iterators, wrapped_function also unwraps proxy references (device_reference<T> → T&)
-// before the implicit conversion occurs.
+// With device_vector iterators, wrapped_function also unwraps proxy references
+// (device_reference<T> → T&) before the implicit conversion occurs. This is the
+// same code path taken when the sequential backend is reached via the CDP fallback
+// in device code.
 
 #include <thrust/adjacent_difference.h>
 #include <thrust/binary_search.h>
@@ -384,11 +385,27 @@ TEST_CASE("SequentialNoneOfProxyReference", "[sequential][proxy_reference]")
   CHECK(thrust::none_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
 
-// thrust::seq runs on the host
-TEST_CASE("SequentialFindIfRealProxyReference", "[sequential][proxy_reference]")
+// device_vector iterators hand out a proxy reference instead of a real float&,
+// so these tests check that wrapped_function unwraps it before converting.
+TEST_CASE("SequentialFindIfDeviceReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(result - vec.begin() == 2);
+}
+
+TEST_CASE("SequentialForEachDeviceReference", "[sequential][proxy_reference]")
+{
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f};
+
+  thrust::for_each(thrust::seq, vec.begin(), vec.end(), double_negate{});
+}
+
+TEST_CASE("SequentialReduceDeviceReference", "[sequential][proxy_reference]")
+{
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f};
+
+  const float result = thrust::reduce(thrust::seq, vec.begin(), vec.end(), 0.0f, double_plus{});
+  CHECK(result == 10.0f);
 }
