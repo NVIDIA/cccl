@@ -573,6 +573,27 @@ struct __ignore_policy
   }
 };
 
+// Success-hook forwarding shared by the single-policy wrappers (`__catch_only_t`,
+// `__as_policy`, `__policy_pow`): both arities delegate to the wrapped policy, which owns
+// the expression type.
+template <class _P>
+struct __forwards_success
+{
+  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
+
+  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
+  decltype(auto) on_success(_R&& __r)
+  {
+    return __p_.on_success(::cuda::std::forward<_R>(__r));
+  }
+
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
+  decltype(auto) on_success()
+  {
+    return __p_.on_success();
+  }
+};
+
 // Intra-pack subsumption: reject when any listed type is derived-or-equal to another
 // (`is_base_of_v<A, A>` catches duplicates). Message names the dead Derived entry.
 template <class...>
@@ -588,31 +609,18 @@ inline constexpr bool __catch_only_pack_ok<_Head, _Tail...> =
 // no multi-type catch clause; this adds expressivity the language lacks. Policy parameter
 // leads so the exception-type pack trails.
 template <class _P, class... _Es>
-struct __catch_only_t
+struct __catch_only_t : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if (__exception && (... || dynamic_cast<const _Es*>(__exception)))
     {
-      return __p_(__exception, __loc, __fn);
+      return this->__p_(__exception, __loc, __fn);
     }
     throw; // decline: wrong type, or a non-std exception (nullptr)
-  }
-
-  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
-  decltype(auto) on_success(_R&& __r)
-  {
-    return __p_.on_success(::cuda::std::forward<_R>(__r));
-  }
-
-  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
-  decltype(auto) on_success()
-  {
-    return __p_.on_success();
   }
 };
 
@@ -620,27 +628,14 @@ struct __catch_only_t
 // Forwards every capability it wraps; adds none. Storage follows the `subst_t<_R>`
 // convention: an lvalue reaction is held by reference, an rvalue moved in.
 template <class _P>
-struct __as_policy
+struct __as_policy : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    return __p_(__exception, __loc, __fn);
-  }
-
-  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
-  decltype(auto) on_success(_R&& __r)
-  {
-    return __p_.on_success(::cuda::std::forward<_R>(__r));
-  }
-
-  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
-  decltype(auto) on_success()
-  {
-    return __p_.on_success();
+    return this->__p_(__exception, __loc, __fn);
   }
 };
 
@@ -871,10 +866,9 @@ __policy_or(_L, _R) -> __policy_or<_L, _R>;
 // hook is invoked up to n times; with the inventory now stateless this needs no copying --
 // user-defined policies should likewise tolerate re-invocation.
 template <class _P>
-struct __policy_pow
+struct __policy_pow : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
   int __n_;
 
   static_assert(__has_exception_hook<_P>,
@@ -903,7 +897,7 @@ struct __policy_pow
     const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
       _CCCL_TRY
       {
-        return __interpret_answer<_Expr>(__p_, __cur, __loc, __fn);
+        return __interpret_answer<_Expr>(this->__p_, __cur, __loc, __fn);
       }
       _CCCL_CATCH_ALL
       {
@@ -935,18 +929,6 @@ struct __policy_pow
       return __go(__go, __exception, __n_);
     }
     _CCCL_DIAG_POP
-  }
-
-  template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
-  decltype(auto) on_success(_R&& __r)
-  {
-    return __p_.on_success(::cuda::std::forward<_R>(__r));
-  }
-
-  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_success_void<_Self>, int> = 0>
-  decltype(auto) on_success()
-  {
-    return __p_.on_success();
   }
 };
 
