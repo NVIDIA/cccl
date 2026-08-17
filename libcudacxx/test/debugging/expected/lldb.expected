@@ -1,0 +1,16 @@
+=============== expected.value begin ===============
+(cuda::std::expected<int, parse_error>) <address> (value = 42)
+=============== expected.value end ===============
+=============== expected.error begin ===============
+(cuda::std::expected<int, parse_error>) <address>: {
+  error = (code = 7)
+}
+=============== expected.error end ===============
+=============== expected.void_value begin ===============
+(cuda::std::expected<void, parse_error>) <address>
+=============== expected.void_value end ===============
+=============== expected.void_error begin ===============
+(cuda::std::expected<void, parse_error>) <address>: {
+  error = (code = 9)
+}
+=============== expected.void_error end ===============
