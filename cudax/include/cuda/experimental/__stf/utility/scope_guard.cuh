@@ -890,7 +890,12 @@ struct __policy_pow
     }
 
     // Recurse inside the catch so the re-observed exception pointer stays alive for the
-    // next arm (same lifetime rule as `__policy_or`).
+    // next arm (same lifetime rule as `__policy_or`). The recursion is bounded: `__left`
+    // decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's
+    // -Winfinite-recursion is blind to exceptional exits and misreads instantiations whose
+    // only normal returns are the recursive calls (e.g. a never-returning repeated policy).
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_GCC("-Winfinite-recursion")
     const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
       _CCCL_TRY
       {
@@ -925,6 +930,7 @@ struct __policy_pow
     {
       return __go(__go, __exception, __n_);
     }
+    _CCCL_DIAG_POP
   }
 
   template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
