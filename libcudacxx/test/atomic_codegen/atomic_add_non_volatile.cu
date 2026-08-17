@@ -26,26 +26,26 @@ __global__ void add_relaxed_system_pointer_non_volatile(int** data, int** out, i
 
 /*
 
-; SM8X-LABEL: .target sm_80
-; SM8X:      .visible .entry [[FUNCTION:_.*add_relaxed_device_non_volatile.*]](
-; SM8X-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
-; SM8X-DAG:  ld.param.{{b|u}}64 %rd[[#RESULT:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
-; SM8X-DAG:  ld.param.{{b|u}}32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_2{{.*}}
-; SM8X-DAG:  cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#RESULT]];
-; SM8X-NEXT: {{/*[[:space:]] *}}atom.add.relaxed.gpu.s32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
-; SM8X-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
-; SM8X-NEXT: ret;
+; SMXX-LABEL: .target sm_{{[0-9]+[af]?}}
+; SMXX:      .visible .entry [[FUNCTION:_.*add_relaxed_device_non_volatile.*]](
+; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
+; SMXX-DAG:  ld.param.{{b|u}}64 %rd[[#RESULT:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
+; SMXX-DAG:  ld.param.{{b|u}}32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_2{{.*}}
+; SMXX-DAG:  cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#RESULT]];
+; SMXX-DAG:  {{/*[[:space:]] *}}atom.add.relaxed.gpu.s32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
+; SMXX-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
+; SMXX-NEXT: ret;
 
-; SM8X-LABEL: .visible .entry {{_.*add_relaxed_block_pointer_non_volatile.*}}(
-; SM8X: {{.*}}atom.add.relaxed.cta.u64{{.*}}
-; SM8X: ret;
+; SMXX-LABEL: .visible .entry {{_.*add_relaxed_block_pointer_non_volatile.*}}(
+; SMXX: {{.*}}atom.add.relaxed.cta.u64{{.*}}
+; SMXX: ret;
 
-; SM8X-LABEL: .visible .entry {{_.*add_relaxed_device_pointer_non_volatile.*}}(
-; SM8X: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
-; SM8X: ret;
+; SMXX-LABEL: .visible .entry {{_.*add_relaxed_device_pointer_non_volatile.*}}(
+; SMXX: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
+; SMXX: ret;
 
-; SM8X-LABEL: .visible .entry {{_.*add_relaxed_system_pointer_non_volatile.*}}(
-; SM8X: {{.*}}atom.add.relaxed.sys.u64{{.*}}
-; SM8X: ret;
+; SMXX-LABEL: .visible .entry {{_.*add_relaxed_system_pointer_non_volatile.*}}(
+; SMXX: {{.*}}atom.add.relaxed.sys.u64{{.*}}
+; SMXX: ret;
 
 */
