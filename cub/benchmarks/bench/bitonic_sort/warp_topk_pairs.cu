@@ -4,239 +4,143 @@
 #include <cub/warp/warp_bitonic_topk.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <cuda/std/limits>
-
-#include <vector>
+#include <cstddef>
+#include <cstdint>
 
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-using key_types    = fundamental_types;
+#include "bitonic_common.cuh"
+
+using modes        = nvbench::enum_type_list<Mode::Latency, Mode::Throughput>;
+using key_types    = nvbench::type_list<std::int16_t, float>;
 using value_types  = offset_types;
-using len_values   = nvbench::enum_type_list<32, 64, 96, 128, 160, 192>;
+using len_values   = nvbench::enum_type_list<32, 64, 96, 128, 160>;
 using max_k_values = nvbench::enum_type_list<32, 64, 96>;
-// the perf is mostly determined by max_k values, so just use k=1
-const std::vector<nvbench::int64_t> k_values{1};
 
-constexpr int WARP_THREADS                  = 32;
-constexpr int NUM_ITERATIONS                = 100;
-constexpr int BLOCK_DIM_FOR_THROUGHPUT_MODE = 128;
+// For array API:
+// (1) k is set to 1 because performance is mostly determined by max_k not k
+// (2) num_items is always set to len (ItemsPerThread * 32), though partial variants accept smaller values.
+//     Because adding a num_items axis would bloat the benchmark combinations, and using a len much larger than
+//     num_items is inefficient for these APIs.
 
-enum class Mode
-{
-  // launch single warp
-  Latency,
-  // launch one full wave of thread blocks. Measure Elem/s.
-  Throughput
-};
-using modes = nvbench::enum_type_list<Mode::Latency, Mode::Throughput>;
-
-NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
-  Mode,
-  // Callable to generate input strings:
-  [](Mode value) {
-    switch (value)
-    {
-      case Mode::Latency:
-        return "latency";
-      case Mode::Throughput:
-        return "throughput";
-      default:
-        return "Unknown";
-    }
-  },
-  // Callable to generate descriptions:
-  [](auto) {
-    return std::string{};
-  })
-
-struct CustomLess
-{
-  template <typename T>
-  __device__ bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs;
-  }
-
-  template <typename T>
-  static constexpr T oob = cuda::std::numeric_limits<T>::max();
-};
-
-template <Mode mode>
-constexpr int calc_block_dim()
-{
-  if constexpr (mode == Mode::Latency)
-  {
-    return WARP_THREADS;
-  }
-  else
-  {
-    return BLOCK_DIM_FOR_THROUGHPUT_MODE;
-  }
-}
-
-template <Mode mode, typename Kernel>
-int calc_grid_dim(int num_SMs, int block_dim, Kernel kernel)
-{
-  if constexpr (mode == Mode::Latency)
-  {
-    return 1;
-  }
-  else
-  {
-    int max_blocks_per_SM = 0;
-    NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_dim, 0));
-    return max_blocks_per_SM * num_SMs;
-  }
-}
-
-template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int LEN, int MAX_K>
-void run_topk(nvbench::state& state, int num_items)
-{
-  if constexpr (MAX_K > LEN)
-  {
-    state.skip("Skipping workload where max_k > len.");
-  }
-  else
-  {
-    const int k = static_cast<int>(state.get_int64("k"));
-    if (k > MAX_K || k > num_items)
-    {
-      state.skip("Skipping workload where k > max_k or k > num_items.");
-      return;
-    }
-
-    constexpr int items_per_thread = LEN / WARP_THREADS;
-    const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int, int>;
-
-    const int num_SMs       = state.get_device().value().get_number_of_sms();
-    constexpr int block_dim = calc_block_dim<mode>();
-    const int grid_dim      = calc_grid_dim<mode>(num_SMs, block_dim, kernel);
-    state.add_element_count(grid_dim * (block_dim / WARP_THREADS) * num_items * NUM_ITERATIONS);
-
-    state.exec([grid_dim, block_dim, kernel, k, num_items](nvbench::launch& launch) {
-      kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(NUM_ITERATIONS, ActionT{}, k, num_items);
-    });
-  }
-}
-
-template <int MAX_K, int ITEMS_PER_THREAD>
+template <int MaxK>
 struct full_op_t
 {
-  template <typename KeyT, typename ValueT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int k, int) const
+  template <typename KeyT, typename ValueT, int ItemsPerThread>
+  __device__ __forceinline__ void
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
-    cub::detail::WarpBitonicTopK<MAX_K, KeyT, ValueT>{}.TopK(keys, values, CustomLess{}, k);
+    cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT>{}.TopK(keys, values, CustomLess{}, 1);
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int LEN, int MAX_K>
-void full(nvbench::state& state,
-          nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<LEN>, nvbench::enum_type<MAX_K>>)
+template <Mode BenchMode, typename KeyT, typename ValueT, int Len, int MaxK>
+void full(
+  nvbench::state& state,
+  nvbench::type_list<nvbench::enum_type<BenchMode>, KeyT, ValueT, nvbench::enum_type<Len>, nvbench::enum_type<MaxK>>)
 {
-  run_topk<full_op_t<MAX_K, LEN / WARP_THREADS>, mode, KeyT, ValueT, LEN, MAX_K>(state, LEN);
+  run_topk<full_op_t<MaxK>, BenchMode, KeyT, ValueT, Len, MaxK>(state);
 }
 
 NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values, max_k_values))
-  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"})
-  .add_int64_axis("k", k_values);
+  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"});
 
-template <int MAX_K, int ITEMS_PER_THREAD>
+template <int MaxK>
 struct partial_oob_op_t
 {
-  template <typename KeyT, typename ValueT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int k, int len) const
+  template <typename KeyT, typename ValueT, int ItemsPerThread>
+  __device__ __forceinline__ void
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
-    cub::detail::WarpBitonicTopK<MAX_K, KeyT, ValueT>{}.TopK(keys, values, CustomLess{}, k, len, CustomLess::oob<KeyT>);
+    cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT>{}.TopK(
+      keys, values, CustomLess{}, 1, ItemsPerThread * warp_threads, CustomLess::oob_default<KeyT>);
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int LEN, int MAX_K>
+template <Mode BenchMode, typename KeyT, typename ValueT, int Len, int MaxK>
 void partial_oob(
   nvbench::state& state,
-  nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<LEN>, nvbench::enum_type<MAX_K>>)
+  nvbench::type_list<nvbench::enum_type<BenchMode>, KeyT, ValueT, nvbench::enum_type<Len>, nvbench::enum_type<MaxK>>)
 {
-  constexpr int num_items = LEN;
-  run_topk<partial_oob_op_t<MAX_K, LEN / WARP_THREADS>, mode, KeyT, ValueT, LEN, MAX_K>(state, num_items);
+  run_topk<partial_oob_op_t<MaxK>, BenchMode, KeyT, ValueT, Len, MaxK>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial_oob, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values, max_k_values))
-  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"})
-  .add_int64_axis("k", k_values);
+  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"});
 
-template <int MAX_K, int ITEMS_PER_THREAD>
+template <int MaxK>
 struct partial_op_t
 {
-  template <typename KeyT, typename ValueT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int k, int len) const
+  template <typename KeyT, typename ValueT, int ItemsPerThread>
+  __device__ __forceinline__ void
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
-    cub::detail::WarpBitonicTopK<MAX_K, KeyT, ValueT>{}.TopK(keys, values, CustomLess{}, k, len);
+    cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT>{}.TopK(
+      keys, values, CustomLess{}, 1, ItemsPerThread * warp_threads);
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int LEN, int MAX_K>
+template <Mode BenchMode, typename KeyT, typename ValueT, int Len, int MaxK>
 void partial(
   nvbench::state& state,
-  nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<LEN>, nvbench::enum_type<MAX_K>>)
+  nvbench::type_list<nvbench::enum_type<BenchMode>, KeyT, ValueT, nvbench::enum_type<Len>, nvbench::enum_type<MaxK>>)
 {
-  constexpr int num_items = LEN;
-  run_topk<partial_op_t<MAX_K, LEN / WARP_THREADS>, mode, KeyT, ValueT, LEN, MAX_K>(state, num_items);
+  run_topk<partial_op_t<MaxK>, BenchMode, KeyT, ValueT, Len, MaxK>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values, max_k_values))
-  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"})
-  .add_int64_axis("k", k_values);
+  .set_type_axes_names({"mode", "KeyT", "ValueT", "len", "max_k"});
 
-template <int THREADS_PER_BLOCK, int MAX_K, typename KeyT, typename ValueT>
+template <int ThreadsPerBlock, int MaxK, typename KeyT, typename ValueT>
 __global__ void iterator_topk_kernel(int num_iterations, KeyT* keys_in, ValueT* values_in, int k, int num_items)
 {
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MAX_K, KeyT, ValueT>;
-  static_assert(THREADS_PER_BLOCK % WARP_THREADS == 0);
-  constexpr int warps_per_block = THREADS_PER_BLOCK / WARP_THREADS;
+  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT>;
+  static_assert(ThreadsPerBlock % warp_threads == 0);
+  constexpr int warps_per_block = ThreadsPerBlock / warp_threads;
 
   __shared__ typename warp_topk_t::TempStorage temp_storage[warps_per_block];
 
-  const int warp_id      = blockIdx.x * warps_per_block + threadIdx.x / WARP_THREADS;
-  const int input_offset = warp_id * num_items * num_iterations;
+  const std::size_t warp_id      = static_cast<std::size_t>(blockIdx.x) * warps_per_block + threadIdx.x / warp_threads;
+  const std::size_t input_offset = warp_id * num_items * num_iterations;
 
-  KeyT keys_out[MAX_K / WARP_THREADS];
-  ValueT values_out[MAX_K / WARP_THREADS];
+  KeyT keys_out[MaxK / warp_threads];
+  ValueT values_out[MaxK / warp_threads];
 
-  warp_topk_t warp_topk(temp_storage[threadIdx.x / WARP_THREADS]);
+  warp_topk_t warp_topk(temp_storage[threadIdx.x / warp_threads]);
   for (int i = 0; i < num_iterations; ++i)
   {
-    const int offset = input_offset + i * num_items;
+    const std::size_t offset = input_offset + i * num_items;
     warp_topk.TopK(keys_in + offset, values_in + offset, CustomLess{}, k, num_items, keys_out, values_out);
     sink(keys_out);
     sink(values_out);
   }
 }
 
-template <Mode mode, typename KeyT, typename ValueT, int MAX_K>
+template <Mode BenchMode, typename KeyT, typename ValueT, int MaxK>
 void iterator(nvbench::state& state,
-              nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<MAX_K>>)
+              nvbench::type_list<nvbench::enum_type<BenchMode>, KeyT, ValueT, nvbench::enum_type<MaxK>>)
 {
   const int num_items = static_cast<int>(state.get_int64("len"));
   const int k         = static_cast<int>(state.get_int64("k"));
 
-  if (MAX_K > num_items || k > MAX_K || k > num_items)
+  if (MaxK > num_items || k > MaxK || k > num_items)
   {
     state.skip("Skipping workload where max_k > len, k > max_k, or k > len.");
     return;
   }
 
-  constexpr int block_dim = calc_block_dim<mode>();
-  const auto kernel       = iterator_topk_kernel<block_dim, MAX_K, KeyT, ValueT>;
+  const auto kernel = iterator_topk_kernel<get_run_params<BenchMode>().block_dim, MaxK, KeyT, ValueT>;
 
-  const int num_SMs  = state.get_device().value().get_number_of_sms();
-  const int grid_dim = calc_grid_dim<mode>(num_SMs, block_dim, kernel);
-
-  const size_t input_items_per_iteration = grid_dim * (block_dim / WARP_THREADS) * num_items;
-  const size_t input_items               = input_items_per_iteration * NUM_ITERATIONS;
+  RunParams run_params = get_run_params<BenchMode>();
+  if (BenchMode == Mode::Throughput)
+  {
+    // scale grid_dim because throughout mode is slow
+    run_params.grid_dim /= num_items / warp_threads;
+  }
+  const std::size_t input_items = count_items(run_params, num_items);
 
   thrust::device_vector<KeyT> keys_in     = generate(input_items);
   thrust::device_vector<ValueT> values_in = generate(input_items);
@@ -244,8 +148,8 @@ void iterator(nvbench::state& state,
   state.add_element_count(input_items);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(
-      NUM_ITERATIONS,
+    kernel<<<run_params.grid_dim, run_params.block_dim, 0, launch.get_stream()>>>(
+      run_params.num_iterations,
       thrust::raw_pointer_cast(keys_in.data()),
       thrust::raw_pointer_cast(values_in.data()),
       k,
