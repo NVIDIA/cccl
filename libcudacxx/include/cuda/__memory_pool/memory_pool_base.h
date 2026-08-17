@@ -26,6 +26,8 @@
 #  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory/is_valid_alignment.h>
+#  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
@@ -481,19 +483,6 @@ protected:
   // Derived pool classes release and destroy this handle.
   ::cudaMemPool_t __pool_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
-  //! @brief Checks whether the passed in alignment is valid.
-  //! @param __alignment the alignment to check.
-  //! @returns true if \p __alignment is valid.
-  [[nodiscard]] _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
-  {
-    if (__alignment == 0)
-    {
-      return false;
-    }
-    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
-        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
-  }
-
 public:
   __memory_pool_base(::cuda::std::nullptr_t) = delete;
 
@@ -513,7 +502,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API void*
   allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
-    if (!__is_valid_alignment(__alignment))
+    if (!::cuda::__is_valid_cuda_alignment(__alignment))
     {
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate_sync.");
     }
@@ -539,7 +528,8 @@ public:
     const size_t,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
+    _CCCL_ASSERT(::cuda::__is_valid_cuda_alignment(__alignment),
+                 "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
     _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
@@ -558,7 +548,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API void*
   allocate(const ::cuda::stream_ref __stream, const size_t __bytes, const size_t __alignment)
   {
-    if (!__is_valid_alignment(__alignment))
+    if (!::cuda::__is_valid_cuda_alignment(__alignment))
     {
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate.");
     }
@@ -600,7 +590,8 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal
     // provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate.");
+    _CCCL_ASSERT(::cuda::__is_valid_cuda_alignment(__alignment),
+                 "Invalid alignment passed to __memory_pool_base::deallocate.");
     deallocate(__stream, __ptr, __bytes);
   }
 
