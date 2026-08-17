@@ -161,6 +161,47 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES swap_args(Predicate) -> swap_args<Predicate>;
 /// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
 using arg_max = arg_reduce_op<swap_args<::cuda::std::less<>>>;
 
+template <typename T, typename IndexT>
+struct argminmax_accum_t
+{
+  T min_value;
+  T max_value;
+  IndexT min_index;
+  IndexT max_index;
+};
+
+//! @brief Reduction operator for ArgMinMax: first minimum (smallest index on tie), last maximum (largest index on tie).
+template <typename CompareOpT = ::cuda::std::less<>>
+struct arg_minmax_reduce_op : CompareOpT
+{
+  template <typename T, typename IndexT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE argminmax_accum_t<T, IndexT>
+  operator()(const argminmax_accum_t<T, IndexT>& a, const argminmax_accum_t<T, IndexT>& b) const
+  {
+    const auto& less = static_cast<const CompareOpT&>(*this);
+    auto result      = a;
+    // first minimum: strictly smaller wins; ties keep the smaller index
+    if (less(b.min_value, a.min_value) || (!less(a.min_value, b.min_value) && b.min_index < a.min_index))
+    {
+      result.min_value = b.min_value;
+      result.min_index = b.min_index;
+    }
+    // last maximum: strictly greater wins; ties keep the larger index
+    if (less(a.max_value, b.max_value) || (!less(b.max_value, a.max_value) && b.max_index > a.max_index))
+    {
+      result.max_value = b.max_value;
+      result.max_index = b.max_index;
+    }
+    return result;
+  }
+};
+
+template <typename CompareOpT>
+arg_minmax_reduce_op(CompareOpT) -> arg_minmax_reduce_op<CompareOpT>;
+
+//! @brief Arg minmax functor using the default less-than comparator
+using arg_minmax = arg_minmax_reduce_op<>;
+
 template <typename ScanOpT>
 struct ScanBySegmentOp
 {
