@@ -279,18 +279,20 @@ struct __tuple_constraints
     else
     { // MSVC has issues with constexpr variables here, so no constexpr variable
       using __arg_list        = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-      using __arg_constraints = typename decltype(::cuda::std::__tuple_get_constraints(
-        __arg_list{}))::template __variadic_construction<_UTypes...>;
-      if constexpr (!__arg_constraints::__can_construct)
+      using __arg_constraints = decltype(::cuda::std::__tuple_get_constraints(__arg_list{}));
+      if constexpr (__arg_constraints::template __select_variadic_constructible<_UTypes...>()
+                      == __select_constructor::__invalid
+                    || __arg_constraints::template __select_variadic_constructible<_UTypes...>()
+                         == __select_constructor::__deleted)
       {
         return __select_constructor::__invalid;
       }
       else
       {
         using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-        using __defaulted_constraints = _ConstructorConstraint<decltype(::cuda::std::__tuple_get_constraints(
-          __defaulted_list{}))::__select_default_constructible()>;
-        if constexpr (__defaulted_constraints::__can_construct)
+        using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints(__defaulted_list{}));
+        if constexpr (__defaulted_constraints::__select_default_constructible() == __select_constructor::__implicit
+                      || __defaulted_constraints::__select_default_constructible() == __select_constructor::__explicit)
         {
           return __select_constructor::__explicit;
         }
