@@ -22,6 +22,8 @@
 
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/from_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -72,8 +74,6 @@ template <class _Tp>
 __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, int __base) noexcept
 {
   const auto __unsigned_base = static_cast<_Tp>(__base);
-  const auto __max_div_base  = numeric_limits<_Tp>::max() / __unsigned_base;
-  const auto __max_mod_base  = numeric_limits<_Tp>::max() % __unsigned_base;
   bool __overflow            = false;
   const char* __it           = __first;
   for (; __it != __last; ++__it)
@@ -86,13 +86,15 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
     if (!__overflow)
     {
       const auto __unsigned_digit = static_cast<_Tp>(__digit.__value_);
-      if (__value > __max_div_base || (__value == __max_div_base && __unsigned_digit > __max_mod_base))
+      const auto __product        = ::cuda::mul_overflow<_Tp>(__value, __unsigned_base);
+      const auto __sum            = ::cuda::add_overflow<_Tp>(__product.value, __unsigned_digit);
+      if (__product.overflow || __sum.overflow)
       {
         __overflow = true;
       }
       else
       {
-        __value = static_cast<_Tp>(__value * __unsigned_base + __unsigned_digit);
+        __value = __sum.value;
       }
     }
   }
