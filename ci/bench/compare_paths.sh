@@ -397,9 +397,7 @@ setup_python_venv() {
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
       '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      if [[ -z \"\${CCCL_BENCH_COMPARE_BIN:-}\" ]]; then
-        '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
-      fi
+      '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
     "
   )
 
