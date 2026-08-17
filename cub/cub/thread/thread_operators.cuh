@@ -139,7 +139,7 @@ struct arg_reduce_op : ValueLessThen
 };
 
 template <typename ValueLessThen>
-arg_reduce_op(ValueLessThen) -> arg_reduce_op<ValueLessThen>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES arg_reduce_op(ValueLessThen) -> arg_reduce_op<ValueLessThen>;
 
 /// @brief Arg min functor (keeps the value and offset of the first occurrence of the smallest item)
 using arg_min = arg_reduce_op<::cuda::std::less<>>;
@@ -156,7 +156,7 @@ struct swap_args : Predicate
 };
 
 template <typename Predicate>
-swap_args(Predicate) -> swap_args<Predicate>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES swap_args(Predicate) -> swap_args<Predicate>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
 using arg_max = arg_reduce_op<swap_args<::cuda::std::less<>>>;

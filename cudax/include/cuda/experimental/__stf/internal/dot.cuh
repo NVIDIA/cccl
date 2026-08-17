@@ -27,6 +27,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -110,7 +114,7 @@ struct per_vertex_info
   //! text associated to the vertex
   ::std::string label;
   //! measured duration of the vertex
-  ::std::optional<float> timing;
+  ::cuda::std::optional<float> timing;
   //! is that a task, fence or prereq ?
   vertex_type type;
 
@@ -145,8 +149,8 @@ public:
   dot_section(::std::string sym)
       : symbol(mv(sym))
   {
-    static_assert(::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
-    static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
   //! RAII guard class for managing DOT section lifecycle
@@ -168,7 +172,7 @@ public:
     // Move constructor: transfer ownership and disable the moved-from guard.
     guard(guard&& other) noexcept
         : pc(mv(other.pc))
-        , active(::std::exchange(other.active, false))
+        , active(::cuda::std::exchange(other.active, false))
     {}
 
     // Move assignment, disable the moved-from guard
@@ -184,7 +188,7 @@ public:
         }
         // Transfer ownership
         pc     = mv(other.pc);
-        active = ::std::exchange(other.active, false);
+        active = ::cuda::std::exchange(other.active, false);
       }
       return *this;
     }
@@ -266,7 +270,7 @@ public:
   ::std::string symbol;
 
 private:
-  int depth = ::std::numeric_limits<int>::min();
+  int depth = ::cuda::std::numeric_limits<int>::min();
 
   // An identifier for that section. This is movable, but non
   // copyable, but we manipulate section by the means of shared_ptr.
@@ -700,8 +704,8 @@ private:
   //! - Proper critical path computation through nested contexts (even empty ones)
   //! - Clean visualization of context boundaries in the DAG
   //! - Correct dependency chaining between parent and child contexts
-  ::std::optional<int> proxy_start_unique_id;
-  ::std::optional<int> proxy_end_unique_id;
+  ::cuda::std::optional<int> proxy_start_unique_id;
+  ::cuda::std::optional<int> proxy_end_unique_id;
 };
 
 class dot : public ::cuda::experimental::meyers_singleton<dot>
@@ -730,7 +734,20 @@ protected:
 
   ~dot()
   {
-    finish();
+    // A trace we failed to write is not worth terminating the program over, which is what
+    // an exception escaping a destructor would do.
+    _CCCL_TRY
+    {
+      finish();
+    }
+    _CCCL_CATCH (const ::std::exception& e)
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s: %s\n", dot_filename.c_str(), e.what());
+    }
+    _CCCL_CATCH_ALL
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s\n", dot_filename.c_str());
+    }
   }
 
 public:
@@ -856,7 +873,7 @@ public:
         statsFile << "#nedges,nvertices,total_work,critical_path\n";
 
         // to display an optional value or NA
-        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+        auto formatOptional = [](const ::cuda::std::optional<float>& opt) -> ::std::string {
           return opt ? ::std::to_string(*opt) : "NA";
         };
 
@@ -1494,8 +1511,8 @@ private:
   ::std::string dot_filename;
 
   // Stats
-  ::std::optional<float> critical_path; // Tinf
-  ::std::optional<float> total_work; // T1
+  ::cuda::std::optional<float> critical_path; // Tinf
+  ::cuda::std::optional<float> total_work; // T1
   size_t edge_count;
   size_t vertex_count;
 

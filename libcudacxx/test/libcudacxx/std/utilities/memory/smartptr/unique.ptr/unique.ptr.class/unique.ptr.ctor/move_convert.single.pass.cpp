@@ -10,9 +10,6 @@
 // UNSUPPORTED: force-tile
 // error: dynamic allocation is not supported in tile mode
 
-// UNSUPPORTED: enable-tile
-// error: invalid deduction of host device tile execution space attributes
-
 // <memory>
 
 // unique_ptr

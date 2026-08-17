@@ -252,7 +252,7 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op              = make_operation("op",
-                                  R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
@@ -308,7 +308,7 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types with well-known 
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op_state        = make_operation("op",
-                                        R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);

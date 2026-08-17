@@ -6,11 +6,10 @@
 #include <cuda/std/array>
 #include <cuda/std/atomic>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 struct alignas(16) payload
 {
@@ -33,97 +32,97 @@ using atomic_alias = cuda::std::atomic<long long>;
 
 [[gnu::noinline]] void inspect_integer(const cuda::std::atomic<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_boolean(const cuda::std::atomic<bool>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_small_object(const cuda::std::atomic<small_payload>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_floating_point(const cuda::std::atomic<double>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_pointer(const cuda::std::atomic<int*>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_locked(const cuda::std::atomic<payload>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_alias(const atomic_alias& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_nested(const cuda::std::array<cuda::std::atomic<int>, 2>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_reference(const cuda::std::atomic_ref<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_locked_reference(const cuda::std::atomic_ref<payload>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_integer(const cuda::atomic<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_reference(const cuda::atomic_ref<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_device_integer(const cuda::atomic<int, cuda::thread_scope_device>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_block_reference(const cuda::atomic_ref<int, cuda::thread_scope_block>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_cuda_thread_integer(const cuda::atomic<int, cuda::thread_scope_thread>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::std::atomic<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::std::atomic<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_reference_before_update(const cuda::std::atomic_ref<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_reference_after_update(const cuda::std::atomic_ref<int>& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 int main()

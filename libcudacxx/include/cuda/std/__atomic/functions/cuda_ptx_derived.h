@@ -44,26 +44,6 @@ using __cuda_atomic_enable_non_native_bitwise = enable_if_t<_Operand::__size <= 
 template <class _Operand>
 using __cuda_atomic_enable_native_bitwise = enable_if_t<_Operand::__size >= 32, bool>;
 
-template <class _Operand>
-using __cuda_atomic_enable_non_native_ld_st = enable_if_t<_Operand::__size <= 8, bool>;
-
-template <class _Operand>
-using __cuda_atomic_enable_native_ld_st = enable_if_t<_Operand::__size >= 16, bool>;
-
-template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
-_CCCL_DEVICE static void
-__cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
-{
-  constexpr uint64_t __alignmask = (sizeof(uint16_t) - 1);
-  uint16_t* __aligned            = (uint16_t*) ((intptr_t) __ptr & (~__alignmask)); // NOLINT(performance-no-int-to-ptr)
-  const uint8_t __offset         = uint16_t((intptr_t) __ptr & __alignmask) * 8;
-
-  uint16_t __value = 0;
-  __cuda_atomic_load(__aligned, __value, _Order{}, __atomic_cuda_operand_b16{}, _Sco{}, __atomic_cuda_mmio_disable{});
-
-  __dst = static_cast<_Type>(__value >> __offset);
-}
-
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
 _CCCL_DEVICE static bool
 __cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Order, _Operand, _Sco)
@@ -210,19 +190,6 @@ _CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op,
     __desired = __op(__expected);
   }
   return __expected;
-}
-
-template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
-_CCCL_DEVICE static void
-__cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
-{
-  // Store requires cas on 8/16b types
-  __cuda_atomic_fetch_update(
-    __ptr,
-    __cuda_atomic_op_bind<_Type, ::cuda::std::__cuda_atomic_op_store>{__val},
-    _Order{},
-    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
-    _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>

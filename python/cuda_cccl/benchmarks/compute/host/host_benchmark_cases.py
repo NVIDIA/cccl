@@ -10,11 +10,11 @@ from typing import Any, Callable, Literal
 
 import cupy as cp
 import numpy as np
+from cuda.core import Device
 
 import cuda.compute as cc
 from cuda.compute._cpp_compile import compile_cpp_op_code
 from cuda.compute.op import RawOp
-from cuda.core import Device
 
 NOOP_TEMP_STORAGE_BYTES = 1
 NUM_ITEMS = 128

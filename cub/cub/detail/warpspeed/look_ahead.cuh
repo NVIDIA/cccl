@@ -43,7 +43,9 @@ namespace detail::warpspeed
 {
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
-#if _CCCL_CUDA_COMPILER(NVHPC)
+#if !_CCCL_HAS_INT128()
+  return 8;
+#elif _CCCL_CUDA_COMPILER(NVHPC)
   return 8;
 #else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)  vvv
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return 16;), (return 8;))
