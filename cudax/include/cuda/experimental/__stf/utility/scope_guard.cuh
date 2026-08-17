@@ -394,13 +394,18 @@ inline constexpr retry_t retry{};
 
 /**
  * @brief Typed expected-owner: `on_throw(expecting<E>) << f` yields
- * `cuda::std::expected<R, E>`. Exact dynamic type match via `typeid` (not `dynamic_cast` --
- * derivatives decline rather than slice). Everything else -- derivatives, unrelated exceptions,
- * non-`std::exception` (null hook pointer) -- declines by rethrowing. Pair with `| subst` for a
- * total policy. Owners cannot be `|` arms (an `unexpected` does not convert to the callable's
- * raw result); nest `on_throw` for that spelling.
+ * `cuda::std::expected<R, E>`. `E` may be ANY catchable type -- a std::exception derivative,
+ * a user struct that never heard of std::exception, even `int` -- the hook re-observes the
+ * active exception at type `E` rather than relying on the std::exception funnel. A polymorphic
+ * `E` is matched by exact dynamic type (a derivative declines rather than slice); a
+ * non-polymorphic `E` matches by ordinary catch-clause rules, exactly as a handwritten
+ * `catch (const E&)` would. Anything that does not match declines by rethrowing. Pair with
+ * `| subst` for a total policy. Owners cannot be `|` arms (an `unexpected` does not convert to
+ * the callable's raw result); nest `on_throw` for that spelling.
  *
- * `expecting<std::exception_ptr>` is the total catch-everything form (today's `as_expected`).
+ * `expecting<std::exception_ptr>` is the total catch-everything form (also spelled
+ * `as_expected`); the one corner it costs is that a literally-thrown `exception_ptr` object
+ * cannot be type-matched.
  */
 template <class _E>
 struct expecting_t
@@ -408,10 +413,6 @@ struct expecting_t
   //! @cond
   using __exception_sink_tag = void;
   //! @endcond
-
-  static_assert(::cuda::std::is_base_of_v<::std::exception, _E>,
-                "expecting<E> requires E to derive from std::exception "
-                "(expecting<std::exception_ptr> is the catch-everything form)");
 
   template <class _R>
   ::cuda::std::expected<::cuda::std::decay_t<_R>, _E> on_success(_R&& __r) const
@@ -426,13 +427,25 @@ struct expecting_t
   }
 
   template <class _Fn>
-  ::cuda::std::unexpected<_E> operator()(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
+  ::cuda::std::unexpected<_E> operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
   {
-    if (__e && typeid(*__e) == typeid(_E))
+    _CCCL_TRY
     {
-      return ::cuda::std::unexpected<_E>{static_cast<const _E&>(*__e)}; // by value, no allocation
+      throw; // re-observe the active exception at type _E
     }
-    throw; // decline: wrong exact type, or a non-std exception
+    _CCCL_CATCH (const _E& __caught)
+    {
+      if constexpr (::cuda::std::is_polymorphic_v<_E>)
+      {
+        if (typeid(__caught) != typeid(_E))
+        {
+          throw; // a derivative: decline rather than slice
+        }
+      }
+      return ::cuda::std::unexpected<_E>{__caught}; // by value, no allocation
+    }
+    _CCCL_CATCH_FALLTHROUGH // no catch-all: an unmatched rethrow propagates, which IS the decline
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -561,7 +574,11 @@ inline constexpr bool __exception_path_nothrow_v =
 
 // --- Adapters: normalize the historical reactions into policies ----------------------------
 
-// `::std::ignore` as a policy: resume with a default-constructed result.
+// `::std::ignore` as a policy: resume with a default-constructed result. Resume is
+// polymorphic substitution of the default: on non-void callables this policy is equivalent to
+// `subst([](auto*, auto, auto& fn) { return decltype(fn())(); })`; the marker exists because a
+// void expression has no value to substitute, yet "resumed" and "merely an effect" must stay
+// distinguishable answers.
 struct __ignore_policy
 {
   using __exception_sink_tag = void;
@@ -2057,9 +2074,48 @@ UNITTEST("expecting")
     EXPECT(calls == 1);
   }
 
+  // Any catchable type works as the error slot -- the former negative-compile case is a feature.
+  {
+    const auto r = on_throw(expecting<int>) << []() -> double {
+      throw 42;
+    };
+    EXPECT(!r.has_value());
+    EXPECT(r.error() == 42);
+  }
+  {
+    struct my_error
+    {
+      int code;
+    };
+    const auto r = on_throw(expecting<my_error>) << []() -> int {
+      throw my_error{7};
+    };
+    EXPECT(!r.has_value());
+    EXPECT(r.error().code == 7);
+  }
+  // A nonstandard polymorphic hierarchy still gets exact matching (derivative declines).
+  {
+    struct poly_base
+    {
+      virtual ~poly_base() = default;
+    };
+    struct poly_derived : poly_base
+    {};
+    bool escaped = false;
+    try
+    {
+      on_throw(expecting<poly_base>) << []() -> int {
+        throw poly_derived{};
+      };
+    }
+    catch (const poly_derived&)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped);
+  }
+
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-  //  - on_throw(expecting<int>) << ...;
-  //      -> "expecting<E> requires E to derive from std::exception ..."
   //  - on_throw(expecting<::std::exception_ptr> | subst(0)) << ...;
   //      -> "the left policy never declines; ..." (the total form can't head a ladder)
 #  endif // _CCCL_HAS_EXCEPTIONS()
