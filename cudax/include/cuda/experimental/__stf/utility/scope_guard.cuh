@@ -611,33 +611,70 @@ struct __forwards_success
   }
 };
 
-// Intra-pack subsumption: reject when any listed type is derived-or-equal to another
-// (`is_base_of_v<A, A>` catches duplicates). Message names the dead Derived entry.
+// `_A` claims `_B` when a `catch (const _A&)` clause would take a thrown `_B`: same type, or
+// publicly derived. is_same covers non-class types (is_base_of_v<int, int> is false).
+template <class _A, class _B>
+inline constexpr bool __claims = ::cuda::std::is_same_v<_A, _B> || ::cuda::std::is_base_of_v<_A, _B>;
+
+template <class _B, class... _As>
+inline constexpr bool __claimed_by_any = (__claims<_As, _B> || ...);
+
+// Intra-pack subsumption: reject when any listed type claims another (duplicates included).
+// Message names the dead Derived entry.
 template <class...>
 inline constexpr bool __catch_only_pack_ok = true;
 
 template <class _Head, class... _Tail>
 inline constexpr bool __catch_only_pack_ok<_Head, _Tail...> =
-  (!::cuda::std::is_base_of_v<_Head, _Tail> && ...) && (!::cuda::std::is_base_of_v<_Tail, _Head> && ...)
-  && __catch_only_pack_ok<_Tail...>;
+  (!__claims<_Head, _Tail> && ...) && (!__claims<_Tail, _Head> && ...) && __catch_only_pack_ok<_Tail...>;
 
-// `catch_only<E1, E2, ...>(p)`: run `p`'s exception path when the exception matches ANY listed
-// type (derived-or-equal, dynamic_cast semantics), else decline by rethrowing. Native C++ has
-// no multi-type catch clause; this adds expressivity the language lacks. Policy parameter
-// leads so the exception-type pack trails.
+// `catch_only<E1, E2, ...>(p)`: run `p`'s exception path when the active exception matches ANY
+// listed type by catch-clause rules (same or publicly derived), else decline by rethrowing.
+// The listed types may be anything catchable, std::exception heritage or not; matching is by
+// re-observation, since a pack cannot expand into sibling catch clauses. Native C++ has no
+// multi-type catch clause; this adds expressivity the language lacks. Policy parameter leads
+// so the exception-type pack trails.
 template <class _P, class... _Es>
 struct __catch_only_t : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
 
+  // Does the active exception match any listed type? A recursive ladder of re-observations;
+  // the binding must be named for the no-exceptions expansion of _CCCL_CATCH.
+  template <class _E0, class... _Rest>
+  static bool __matches_active()
+  {
+    _CCCL_TRY
+    {
+      throw;
+    }
+    _CCCL_CATCH (const _E0& __match)
+    {
+      static_cast<void>(__match);
+      return true;
+    }
+    _CCCL_CATCH_ALL
+    {
+      if constexpr (sizeof...(_Rest) > 0)
+      {
+        return __matches_active<_Rest...>();
+      }
+      else
+      {
+        return false;
+      }
+    }
+  }
+
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if (__exception && (... || dynamic_cast<const _Es*>(__exception)))
+    if (__matches_active<_Es...>())
     {
+      // A matching non-std exception still reaches `_P` as a null pointer, per the funnel.
       return this->__p_(__exception, __loc, __fn);
     }
-    throw; // decline: wrong type, or a non-std exception (nullptr)
+    throw; // decline: no listed type claims the active exception
   }
 };
 
@@ -1177,18 +1214,17 @@ auto on_throw(_Reaction&& __reaction,
 
 /**
  * @brief Restricts a policy to exceptions matching any of `E1, E2, ...`: `catch_only<E...>(p)`
- * runs `p`'s exception path when the caught exception is derived-or-equal to any listed type
- * (dynamic_cast semantics), and otherwise declines by rethrowing. Native C++ has no multi-type
- * catch clause; this adds that expressivity. A non-`std::exception` (nullptr) always declines.
- * Each `E` must derive from `std::exception`. A pack where one type subsumes another is
- * rejected (the derived entry would be dead).
+ * runs `p`'s exception path when the active exception matches any listed type by catch-clause
+ * rules (same or publicly derived), and otherwise declines by rethrowing. The listed types may
+ * be anything catchable -- std::exception derivatives, user structs, even `int`. Native C++
+ * has no multi-type catch clause; this adds that expressivity. A matching exception that does
+ * not derive from `std::exception` reaches `p`'s hook as a null pointer. A pack where one type
+ * claims another (identical or base-of) is rejected -- the claimed entry would be dead.
  */
 template <class... _Es, class _P>
 auto catch_only(_P&& __p)
 {
   static_assert(sizeof...(_Es) > 0, "catch_only requires at least one exception type");
-  static_assert((::cuda::std::is_base_of_v<::std::exception, _Es> && ...),
-                "catch_only<E...> requires every E to derive from std::exception");
   static_assert(detail::__catch_only_pack_ok<_Es...>,
                 "catch_only<..., Base, ..., Derived, ...>: the Derived entry is dead "
                 "(Base already claims it)");
@@ -1591,6 +1627,18 @@ UNITTEST("policy algebra")
       throw ::std::runtime_error("r");
     };
     EXPECT(b == 2);
+  }
+
+  // Nonstandard exception types work as guards: matching is by catch-clause rules.
+  {
+    const int a = on_throw(catch_only<int>(subst(-7)) | subst(0)) << []() -> int {
+      throw 42;
+    };
+    EXPECT(a == -7);
+    const int b = on_throw(catch_only<int>(subst(-7)) | subst(0)) << []() -> int {
+      throw 3.14;
+    };
+    EXPECT(b == 0);
   }
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
