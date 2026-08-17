@@ -809,6 +809,22 @@ template <class _Expr, class _P, class _Fn>
 _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
 
+// The left arm of `|` provably starves the right when: both are catch_only wrappers (or the
+// right is a typed expecting), the left's guard list claims every type the right lists, and
+// the left's inner policy never declines a claimed exception. Sound and incomplete, like
+// every dead-code theorem here: nested composites and raw guards escape the pattern; an
+// inner policy that can decline (nothrow test fails) keeps the right arm live.
+template <class _L, class _R>
+inline constexpr bool __right_arm_starved = false;
+
+template <class _P1, class... _As, class _P2, class... _Bs>
+inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_only_t<_P2, _Bs...>> =
+  __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
+
+template <class _P1, class... _As, class _E>
+inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, expecting_t<_E>> =
+  __exception_path_nothrow_v<_P1> && __claimed_by_any<_E, _As...>;
+
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
 // acceptance is interpreted at `decltype(fn())`. A plain arm's answer must therefore be
@@ -824,6 +840,9 @@ struct __policy_or : __composite_hooks<_L, _R>
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__exception_path_nothrow_v<_L>,
                 "the left policy never declines; alternatives after it are unreachable");
+  static_assert(!__right_arm_starved<_L, _R>,
+                "the left catch_only already claims every exception type the right arm lists; "
+                "the right alternative is unreachable");
 
   template <class _Fn,
             class _LL                                                                             = _L,
@@ -1629,6 +1648,30 @@ UNITTEST("policy algebra")
     EXPECT(b == 2);
   }
 
+  // The correct cascade order -- derived before base -- is legal and behaves.
+  {
+    const int a = on_throw(catch_only<::std::runtime_error>(subst(1)) | catch_only<::std::exception>(subst(2)))
+               << []() -> int {
+      throw ::std::runtime_error("r");
+    };
+    EXPECT(a == 1);
+    const int b = on_throw(catch_only<::std::runtime_error>(subst(1)) | catch_only<::std::exception>(subst(2)))
+               << []() -> int {
+      throw ::std::logic_error("l");
+    };
+    EXPECT(b == 2);
+  }
+
+  // A declining inner policy keeps the right arm live even under a broader left guard: the
+  // starved-arm theorem requires a never-declining inner, and this inner declines non-matches.
+  {
+    const int v = on_throw(catch_only<::std::exception>(catch_only<::std::runtime_error>(subst(1))) | subst(2))
+               << []() -> int {
+      throw ::std::logic_error("l");
+    };
+    EXPECT(v == 2);
+  }
+
   // Nonstandard exception types work as guards: matching is by catch-clause rules.
   {
     const int a = on_throw(catch_only<int>(subst(-7)) | subst(0)) << []() -> int {
@@ -1748,6 +1791,10 @@ UNITTEST("policy algebra")
   //  still pass unmodified.)
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(catch_only<::std::exception>(subst(1)) | catch_only<::std::runtime_error>(subst(2))) << ...;
+  //      -> "the left catch_only already claims every exception type the right arm lists; ..."
+  //  - on_throw(catch_only<::std::exception>(subst(1)) | expecting<::std::runtime_error>) << ...;
+  //      -> same (a typed expecting arm is starved the same way)
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
