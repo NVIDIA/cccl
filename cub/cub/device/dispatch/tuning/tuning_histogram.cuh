@@ -301,14 +301,25 @@ public:
       constexpr int max_privatized_static_smem_bytes                       = 1024;
       constexpr int max_privatized_dynamic_smem_single_channel_bytes       = 228352;
       constexpr int max_privatized_dynamic_smem_range_bytes_per_channel    = 8192;
+      constexpr int max_privatized_dynamic_smem_even_bytes_per_channel     = 32768;
       constexpr int max_output_histogram_bytes_for_init_kernel_pdl_trigger = 8192;
 
-      // Dynamic-SMEM tuning exists only for combinations that improve on current main.
-      // Multi-channel EVEN keeps the established global-memory path above the static tier.
-      const bool has_dynamic_smem_tuning =
-        counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
-        && ((single_channel && (sample_size_bytes == 1 || sample_size_bytes == 4 || sample_size_bytes == 8))
-            || (!is_even && num_channels > 1));
+      const bool supports_dynamic_smem =
+        counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive;
+      const bool has_single_channel_dynamic_smem =
+        supports_dynamic_smem && single_channel
+        && (sample_size_bytes == 1 || sample_size_bytes == 4 || sample_size_bytes == 8);
+      const bool has_multi_channel_dynamic_smem = supports_dynamic_smem && num_channels > 1;
+      int dynamic_smem_single_channel_bytes =
+        has_single_channel_dynamic_smem ? max_privatized_dynamic_smem_single_channel_bytes : 0;
+      int dynamic_smem_multi_channel_range_bytes =
+        has_single_channel_dynamic_smem || (has_multi_channel_dynamic_smem && !is_even)
+          ? max_privatized_dynamic_smem_range_bytes_per_channel * num_active_channels
+          : 0;
+      int dynamic_smem_multi_channel_even_bytes =
+        has_multi_channel_dynamic_smem && is_even
+          ? max_privatized_dynamic_smem_even_bytes_per_channel * num_active_channels
+          : 0;
       const int init_kernel_pdl_trigger_bytes =
         single_channel && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
             && (sample_size_bytes == 1 || sample_size_bytes == 2 || sample_size_bytes == 4 || sample_size_bytes == 8)
@@ -320,12 +331,18 @@ public:
         static_smem,
         gmem,
         max_privatized_static_smem_bytes,
-        has_dynamic_smem_tuning ? max_privatized_dynamic_smem_single_channel_bytes : 0,
+        dynamic_smem_single_channel_bytes,
         range_multi_static || range_u64_static ? 3 : 0,
-        has_dynamic_smem_tuning ? max_privatized_dynamic_smem_range_bytes_per_channel * num_active_channels : 0,
-        0,
-        0,
-        0,
+        dynamic_smem_multi_channel_range_bytes,
+        has_multi_channel_dynamic_smem && is_even && num_active_channels == 2
+          ? dynamic_smem_multi_channel_even_bytes
+          : 0,
+        has_multi_channel_dynamic_smem && is_even && num_active_channels == 3
+          ? dynamic_smem_multi_channel_even_bytes
+          : 0,
+        has_multi_channel_dynamic_smem && is_even && num_active_channels == 4
+          ? dynamic_smem_multi_channel_even_bytes
+          : 0,
         init_kernel_pdl_trigger_bytes};
     }
 
