@@ -157,12 +157,12 @@ public:
 
   _CCCL_DEVICE_API void sync() const noexcept
   {
-    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)

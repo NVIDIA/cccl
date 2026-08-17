@@ -80,12 +80,57 @@ set(
   "${CMAKE_CURRENT_LIST_DIR}/../codegen/dump_and_check.bash"
 )
 
+# Return the concrete CUDA architectures requested for a PTX or SASS test.
+# CMake records the architectures detected for "native" separately, while
+# "all" and "all-major" have compiler-specific expansions.
+function(libcudacxx_codegen_get_cuda_architectures out_var code_kind)
+  if (NOT code_kind MATCHES "^(PTX|SASS)$")
+    message(FATAL_ERROR "Unsupported codegen test kind: ${code_kind}")
+  endif()
+
+  set(requested_architectures)
+  foreach (arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
+    if (arch STREQUAL "native")
+      # Native selects an architecture, rather than a particular output kind.
+      # Strip CMake's -real suffix so both PTX and SASS tests use that arch.
+      foreach (native_arch IN LISTS CMAKE_CUDA_ARCHITECTURES_NATIVE)
+        if (native_arch MATCHES "^([0-9]+[af]?)")
+          list(APPEND requested_architectures "${CMAKE_MATCH_1}")
+        endif()
+      endforeach()
+    elseif (arch STREQUAL "all")
+      list(APPEND requested_architectures ${CMAKE_CUDA_ARCHITECTURES_ALL})
+    elseif (arch STREQUAL "all-major")
+      list(APPEND requested_architectures ${CMAKE_CUDA_ARCHITECTURES_ALL_MAJOR})
+    else()
+      list(APPEND requested_architectures "${arch}")
+    endif()
+  endforeach()
+
+  set(cuda_architectures)
+  foreach (arch IN LISTS requested_architectures)
+    if (arch MATCHES "^([0-9]+[af]?)(-(real|virtual))?$")
+      set(output_kind "${CMAKE_MATCH_3}")
+      if (code_kind STREQUAL "PTX" AND output_kind STREQUAL "real")
+        continue()
+      endif()
+      if (code_kind STREQUAL "SASS" AND output_kind STREQUAL "virtual")
+        continue()
+      endif()
+      list(APPEND cuda_architectures "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES cuda_architectures)
+  set(${out_var} "${cuda_architectures}" PARENT_SCOPE)
+endfunction()
+
 function(libcudacxx_codegen_set_cuda_arch target_name arch)
   if (arch MATCHES "[af]$")
     set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES OFF)
     target_compile_options(
       ${target_name}
-      PRIVATE "--generate-code=arch=compute_${arch},code=sm_${arch}"
+      PRIVATE
+        "--generate-code=arch=compute_${arch},code=[compute_${arch},sm_${arch}]"
     )
   else()
     set_target_properties(
