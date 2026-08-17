@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstring>
 
@@ -75,6 +76,17 @@ _CCCL_HOST_DEVICE_API _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __v
 }
 
 _CCCL_DIAG_POP
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API bool __atomic_small_extended_floating_point_less(_Tp __lhs, _Tp __rhs)
+{
+  bool __result;
+  NV_DISPATCH_TARGET(NV_IS_DEVICE,
+                     (__result = __lhs < __rhs;),
+                     NV_IS_HOST,
+                     (__result = static_cast<float>(__lhs) < static_cast<float>(__rhs);))
+  return __result;
+}
 
 template <typename _Tp>
 struct __atomic_small_storage
@@ -215,20 +227,54 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  static_assert(is_integral_v<_Tp> || __is_extended_floating_point_v<_Tp>);
+  if constexpr (__is_extended_floating_point_v<_Tp>)
+  {
+    auto __expected = __atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
+    while (true)
+    {
+      const auto __old     = __atomic_small_from_32<_Tp>(__expected);
+      const auto __desired = __atomic_small_extended_floating_point_less(__old, _Tp(__val)) ? _Tp(__val) : __old;
+      if (__atomic_compare_exchange_strong_dispatch(
+            &__a->__a_value, &__expected, __atomic_small_to_32(__desired), __order, __order, _Sco{}))
+      {
+        return __old;
+      }
+    }
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(
+      __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  }
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  static_assert(is_integral_v<_Tp> || __is_extended_floating_point_v<_Tp>);
+  if constexpr (__is_extended_floating_point_v<_Tp>)
+  {
+    auto __expected = __atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
+    while (true)
+    {
+      const auto __old     = __atomic_small_from_32<_Tp>(__expected);
+      const auto __desired = __atomic_small_extended_floating_point_less(_Tp(__val), __old) ? _Tp(__val) : __old;
+      if (__atomic_compare_exchange_strong_dispatch(
+            &__a->__a_value, &__expected, __atomic_small_to_32(__desired), __order, __order, _Sco{}))
+      {
+        return __old;
+      }
+    }
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(
+      __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
