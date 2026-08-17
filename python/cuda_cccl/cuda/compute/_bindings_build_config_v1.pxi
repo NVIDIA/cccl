@@ -4,10 +4,9 @@
 #
 # v1's struct has four fields; it carries no enable_pch, because NVRTC has no
 # precompiled-header cache to enable. cuda.compute needs none of the four, so
-# every build passes NULL — exactly what it passed before the `_ex` entry
-# points were adopted. Adopting them uniformly keeps the twelve call sites in
-# _bindings_impl.pyx backend-agnostic; the difference between v1 and v2 lives
-# here.
+# every build passes NULL. Routing all twelve call sites in _bindings_impl.pyx
+# through the `_ex` entry points keeps them backend-agnostic; the difference
+# between v1 and v2 lives here.
 
 cdef extern from "cccl/c/types.h":
     cdef struct cccl_build_config:

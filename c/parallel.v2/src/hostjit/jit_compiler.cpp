@@ -50,9 +50,9 @@ static constexpr const char* pch_preamble_source =
 //
 // This is the cache key. Two compiles that agree on it can share a PCH; two
 // that disagree must not, because clang validates a PCH against the command
-// line it was built with. Keying on (kind, sm_version) alone -- as this did
-// before -- means a source-tree build and an installed wheel, which differ in
-// their include paths, collide on one entry and break each other.
+// line it was built with. Keying on (kind, sm_version) alone would let a
+// source-tree build and an installed wheel, which differ in their include
+// paths, collide on one entry and break each other.
 //
 // The parts are joined with NULs so that adjacent values cannot run together
 // and produce the same digest as a different split, then hashed once.
