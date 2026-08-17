@@ -29,12 +29,12 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-using P_hi = fpemu<double, fpemu_accuracy::high>;
-using P_lo = fpemu<double, fpemu_accuracy::low>;
-using U_hi = fpemu_unpacked<double, fpemu_accuracy::high>;
-using U_lo = fpemu_unpacked<double, fpemu_accuracy::low>;
+using P_hi = cudax::fpemu<double, cudax::fpemu_accuracy::high>;
+using P_lo = cudax::fpemu<double, cudax::fpemu_accuracy::low>;
+using U_hi = cudax::fpemu_unpacked<double, cudax::fpemu_accuracy::high>;
+using U_lo = cudax::fpemu_unpacked<double, cudax::fpemu_accuracy::low>;
 
 // All conversions are explicit: not implicitly convertible ...
 static_assert(!cuda::std::is_convertible_v<P_hi, P_lo>, "accuracy conversion must be explicit");

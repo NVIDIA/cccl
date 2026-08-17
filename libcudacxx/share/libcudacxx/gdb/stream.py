@@ -10,7 +10,7 @@ from collections.abc import Iterator
 from types import ModuleType
 from typing import NamedTuple
 
-import memory_resource
+import cccl_common
 
 import gdb
 import gdb.printing
@@ -37,8 +37,7 @@ class StreamInfo(NamedTuple):
 
 
 def _stream_type_name(value_type: gdb.Type) -> str | None:
-    value_type = value_type.strip_typedefs().unqualified()
-    type_name = memory_resource.public_type_name(value_type)
+    type_name = cccl_common.canonical_type_name(value_type)
     if type_name in _STREAM_TYPES:
         return type_name
     return None
@@ -166,6 +165,7 @@ class StreamPrinter:
     """Expose CUDA stream metadata to GDB."""
 
     def __init__(self, value: gdb.Value, type_name: str) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value
         self.type_name = type_name
         self.info = _stream_info(value["__stream"])

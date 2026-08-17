@@ -13,6 +13,7 @@
 #  pragma nv_diag_suppress 20011
 #endif
 
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/stream>
@@ -52,7 +53,7 @@ C2H_TEST("fixed_capacity_map static capacity — valid capacity and capacity_v",
 {
   // Double hashing rounds a requested slot count up to a prime-cycle capacity, so the valid capacity
   // must be computed from the probing scheme and bucket size before it can name a static map type.
-  using probing                         = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
+  using probing                         = cudax::cuco::double_hashing<1, cuda::hash<int>>;
   [[maybe_unused]] constexpr int bucket = 1;
 
   constexpr ::cuda::std::size_t requested = 1000;

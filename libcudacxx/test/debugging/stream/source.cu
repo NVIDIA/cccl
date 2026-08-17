@@ -2,90 +2,91 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/std/array>
 #include <cuda/std/utility>
 #include <cuda/stream>
-
-#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 [[gnu::noinline]] void inspect_owning(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_without_context(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_ref(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 using stream_ref_alias = cuda::stream_ref;
 
 [[gnu::noinline]] void inspect_alias(const stream_ref_alias& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_default(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_legacy(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_per_thread(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_invalid(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_moved_from(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
-[[gnu::noinline]] void inspect_summary(const std::vector<cuda::stream_ref>& values)
+// cuda::std::array keeps this case on a CCCL formatter. A std::vector would use the
+// system libc++ or libstdc++ container formatter, whose output is not stable across
+// toolchain versions.
+[[gnu::noinline]] void inspect_summary(const cuda::std::array<cuda::stream_ref, 3>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::stream_ref& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_capturing(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 [[gnu::noinline]] void inspect_after_capture(const cuda::stream& value)
 {
-  keep_for_debugger(value);
+  KEEP_FOR_DEBUGGER(value);
 }
 
 int main()
@@ -100,7 +101,7 @@ int main()
   const cuda::stream_ref invalid_stream{cuda::invalid_stream};
   cuda::stream moved_from_stream{device};
   const cuda::stream moved_to_stream{cuda::std::move(moved_from_stream)};
-  const std::vector<cuda::stream_ref> summarized_streams{stream_reference, default_stream, invalid_stream};
+  const cuda::std::array<cuda::stream_ref, 3> summarized_streams{stream_reference, default_stream, invalid_stream};
   cuda::stream_ref updated_stream{default_stream};
   const cuda::stream capture_stream{device};
 
@@ -129,6 +130,7 @@ int main()
   inspect_invalid(invalid_stream);
   inspect_moved_from(moved_from_stream);
   inspect_summary(summarized_streams);
+  KEEP_FOR_DEBUGGER(summarized_streams);
   inspect_before_update(updated_stream);
   updated_stream = owning_stream;
   inspect_after_update(updated_stream);
@@ -154,6 +156,6 @@ int main()
   }
   inspect_after_capture(capture_stream);
 
-  keep_for_debugger(moved_to_stream);
+  KEEP_FOR_DEBUGGER(moved_to_stream);
   return 0;
 }

@@ -26,9 +26,9 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 #if _CCCL_HAS_INT128()
 // 128-bit integer construction and conversion are deliberately deleted: they would
@@ -47,20 +47,20 @@ static_assert(::cuda::std::is_constructible_v<int64_t, ffloat>, "");
 // enough mantissa (~106 bits) to hold a 128-bit float, so quad construction and
 // conversion are deliberately SUPPORTED (not deleted). __fpmp_fp128 is __float128
 // wherever _CCCL_HAS_FLOAT128() and long double on IEEE-128 long double platforms.
-static_assert(::cuda::std::is_constructible_v<fp64mp2, __fpmp_fp128>, "");
-static_assert(::cuda::std::is_constructible_v<__fpmp_fp128, fp64mp2>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, cudax::__fpmp_fp128>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, cudax::fp64mp2>, "");
 
 // fp32mp2 carries ~48 bits, fewer than a double, so quad is not its interchange
 // type: both directions are deliberately deleted, like the 128-bit integers above.
 // Without the deletions the constructor would report an ambiguity and the
 // conversion would silently route through operator double().
-static_assert(!::cuda::std::is_constructible_v<ffloat, __fpmp_fp128>, "");
-static_assert(!::cuda::std::is_constructible_v<__fpmp_fp128, ffloat>, "");
+static_assert(!::cuda::std::is_constructible_v<ffloat, cudax::__fpmp_fp128>, "");
+static_assert(!::cuda::std::is_constructible_v<cudax::__fpmp_fp128, ffloat>, "");
 // The double image stays reachable, spelled out.
-static_assert(::cuda::std::is_constructible_v<__fpmp_fp128, double>, "");
+static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, double>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   using ::cuda::std::int32_t;
   using ::cuda::std::int64_t;

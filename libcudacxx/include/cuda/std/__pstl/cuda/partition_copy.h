@@ -131,13 +131,13 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator1> _CCCL_AND
                    __has_forward_traversal<_OutputIterator2>)
-  [[nodiscard]] _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> operator()(
+  [[nodiscard]] _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator1 __result_true,
     _OutputIterator2 __result_false,
-    _UnaryPred __pred) const
+    _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator1>
