@@ -2080,6 +2080,24 @@ UNITTEST("re-running policies")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
+// Helper exception types for the tests below, at namespace scope on purpose: nvcc <= 12.9 in
+// C++20 mode infers __host__ __device__ for a local class's special members inside an extended
+// lambda, and the inherited std::runtime_error constructor is host-only (error #20011).
+struct __ut_derived_error : ::std::runtime_error
+{
+  using ::std::runtime_error::runtime_error;
+};
+struct __ut_my_error
+{
+  int code;
+};
+struct __ut_poly_base
+{
+  virtual ~__ut_poly_base() = default;
+};
+struct __ut_poly_derived : __ut_poly_base
+{};
+
 UNITTEST("expecting")
 {
   using namespace cuda::experimental::stf;
@@ -2105,18 +2123,14 @@ UNITTEST("expecting")
 
   // A DERIVATIVE declines (no slicing): the full dynamic type survives.
   {
-    struct derived_error : ::std::runtime_error
-    {
-      using ::std::runtime_error::runtime_error;
-    };
     bool escaped = false;
     try
     {
       on_throw(expecting<::std::runtime_error>) << [&]() -> int {
-        throw derived_error{"sliced?"};
+        throw __ut_derived_error{"sliced?"};
       };
     }
-    catch (const derived_error&)
+    catch (const __ut_derived_error&)
     {
       escaped = true;
     }
@@ -2178,32 +2192,22 @@ UNITTEST("expecting")
     EXPECT(r.error() == 42);
   }
   {
-    struct my_error
-    {
-      int code;
-    };
-    const auto r = on_throw(expecting<my_error>) << []() -> int {
-      throw my_error{7};
+    const auto r = on_throw(expecting<__ut_my_error>) << []() -> int {
+      throw __ut_my_error{7};
     };
     EXPECT(!r.has_value());
     EXPECT(r.error().code == 7);
   }
   // A nonstandard polymorphic hierarchy still gets exact matching (derivative declines).
   {
-    struct poly_base
-    {
-      virtual ~poly_base() = default;
-    };
-    struct poly_derived : poly_base
-    {};
     bool escaped = false;
     try
     {
-      on_throw(expecting<poly_base>) << []() -> int {
-        throw poly_derived{};
+      on_throw(expecting<__ut_poly_base>) << []() -> int {
+        throw __ut_poly_derived{};
       };
     }
-    catch (const poly_derived&)
+    catch (const __ut_poly_derived&)
     {
       escaped = true;
     }
