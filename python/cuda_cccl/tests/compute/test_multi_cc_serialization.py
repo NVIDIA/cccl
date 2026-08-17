@@ -22,6 +22,8 @@ import threading
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from cuda.core import Device
+from cuda.core.system import get_num_devices
 
 import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
@@ -45,8 +47,6 @@ from cuda.compute._cccl_interop import (
 from cuda.compute._target_cc import target_cc
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
-from cuda.core import Device
-from cuda.core.system import get_num_devices
 
 try:
     from cuda.compute._build_info import USING_V2

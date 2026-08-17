@@ -87,7 +87,7 @@ _CCCL_HOST_DEVICE_API inline void return_temporary_buffer(_Tp* __p) noexcept
 struct __return_temporary_buffer
 {
   template <class _Tp>
-  _CCCL_HOST_DEVICE_API void operator()(_Tp* __p) const noexcept
+  _CCCL_HOST_DEVICE_API void _CCCL_STATIC_CALL_OPERATOR(_Tp* __p) noexcept
   {
     ::cuda::std::return_temporary_buffer(__p);
   }

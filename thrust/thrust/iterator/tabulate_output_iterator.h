@@ -104,8 +104,8 @@ inline constexpr bool is_proxy_reference_v<tabulate_output_iterator_proxy<Binary
 //!
 //! \see make_tabulate_output_iterator
 template <typename BinaryFunction, typename System = use_default, typename DifferenceT = ptrdiff_t>
-class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead") tabulate_output_iterator
-    : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
+class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead")
+tabulate_output_iterator : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
 {
 public:
   //! \cond

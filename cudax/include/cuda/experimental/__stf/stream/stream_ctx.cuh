@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -695,7 +696,7 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<augmented_stream> user_dstream;
+    ::cuda::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */

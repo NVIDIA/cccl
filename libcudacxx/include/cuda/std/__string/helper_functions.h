@@ -130,7 +130,7 @@ template <class _Traits>
 struct _TraitsWrapperEq
 {
   [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool
-  operator()(typename _Traits::char_type __lhs, typename _Traits::char_type __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(typename _Traits::char_type __lhs, typename _Traits::char_type __rhs) noexcept
   {
     return _Traits::eq(__lhs, __rhs);
   }

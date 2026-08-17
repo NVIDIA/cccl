@@ -12,20 +12,23 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Type alias for the multi-precision floating-point type.
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 // Relative-error check against a double reference. fp32mp2 keeps ~46 mantissa
 // bits (~1.4e-14 relative), so 1e-10 is a safe, still-meaningful bound.
-_CCCL_HOST_DEVICE bool close(double got, double ref)
+TEST_HOST_DEVICE_FUNC bool close(double got, double ref)
 {
   const double scale = ::cuda::std::fabs(ref) > 1.0 ? ::cuda::std::fabs(ref) : 1.0;
   return ::cuda::std::fabs(got - ref) <= 1e-10 * scale;
@@ -33,7 +36,7 @@ _CCCL_HOST_DEVICE bool close(double got, double ref)
 
 // Runs each op in float-float precision and verifies it matches the double
 // reference within tolerance. Returns true on success.
-_CCCL_HOST_DEVICE void run_test(double dx, double dy, double dz)
+TEST_HOST_DEVICE_FUNC void run_test(double dx, double dy, double dz)
 {
   // double -> fp32mp2 is a narrowing conversion, so construct explicitly.
   ffloat ex = ffloat(dx);
@@ -47,7 +50,7 @@ _CCCL_HOST_DEVICE void run_test(double dx, double dy, double dz)
   assert(close((double) fma(ex, ey, ez), ::cuda::std::fma(dx, dy, dz)));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // High-precision constants (as in the original example).
   const double dx = 1.123456782345678936;

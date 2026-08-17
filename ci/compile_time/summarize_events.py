@@ -444,9 +444,9 @@ def regex_filter(pattern: str) -> FilterSpec:
         label=f"regex-{slugify(pattern)}",
         description=f"event name or detail matches /{pattern}/i",
         matches=lambda event: (
-            bool(compiled.search(event.name)) or bool(compiled.search(event.detail))
-        )
-        and not event.synthetic,
+            (bool(compiled.search(event.name)) or bool(compiled.search(event.detail)))
+            and not event.synthetic
+        ),
     )
 
 

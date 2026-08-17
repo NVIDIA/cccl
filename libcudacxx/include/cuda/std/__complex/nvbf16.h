@@ -72,22 +72,38 @@ template <>
 inline constexpr size_t __complex_alignment_v<__nv_bfloat16> = alignof(__nv_bfloat162);
 
 template <>
-struct __type_to_vector<__nv_bfloat16>
-{
-  using __type = __nv_bfloat162;
-};
-
-template <>
 struct __cccl_complex_overload_traits<__nv_bfloat16, false, false>
 {
   using _ValueType   = __nv_bfloat16;
   using _ComplexType = complex<__nv_bfloat16>;
 };
 
+#  if _CCCL_TILE_COMPILATION()
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) __complex_fake_nv_bfloat162
+{
+  _CCCL_HIDE_FROM_ABI __complex_fake_nv_bfloat162() noexcept = default;
+  _CCCL_API __complex_fake_nv_bfloat162(__nv_bfloat16 x, __nv_bfloat16 y) noexcept
+      : x(x)
+      , y(y)
+  {}
+  __nv_bfloat16 x;
+  __nv_bfloat16 y;
+};
+using __complex_nv_bfloat_repr_t = __complex_fake_nv_bfloat162;
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
+template <>
+struct __type_to_vector<__nv_bfloat16>
+{
+  using __type = __nv_bfloat162;
+};
+
+using __complex_nv_bfloat_repr_t = __nv_bfloat162;
+#  endif // !_CCCL_TILE_COMPILATION()
+
 template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
 {
-  __nv_bfloat162 __repr_;
+  __complex_nv_bfloat_repr_t __repr_;
 
   template <class _Up>
   friend class complex;
@@ -96,17 +112,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
   friend struct __get_complex_impl;
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
   {
     return __value;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
   {
     return ::__float2bfloat16(__value);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
   {
     return ::__double2bfloat16(__value);
   }
@@ -114,8 +130,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
 public:
   using value_type = __nv_bfloat16;
 
-  _CCCL_HOST_DEVICE_API inline complex(const value_type& __re = value_type(),
-                                       const value_type& __im = value_type()) noexcept
+  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type()) noexcept
       : __repr_(__re, __im)
   {}
 
@@ -132,18 +147,18 @@ public:
 #  endif // !_CCCL_COMPILER(GCC, <, 10)
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
-  _CCCL_HOST_DEVICE_API inline complex(const complex<_Up>& __c) noexcept
+  _CCCL_API inline complex(const complex<_Up>& __c) noexcept
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<value_type, _Up>, int>                                      = 0>
-  _CCCL_HOST_DEVICE_API inline explicit complex(const complex<_Up>& __c) noexcept
+  _CCCL_API inline explicit complex(const complex<_Up>& __c) noexcept
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const value_type& __re) noexcept
+  _CCCL_API inline complex& operator=(const value_type& __re) noexcept
   {
     __repr_.x = __re;
     __repr_.y = value_type();
@@ -151,7 +166,7 @@ public:
   }
 
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const complex<_Up>& __c) noexcept
+  _CCCL_API inline complex& operator=(const complex<_Up>& __c) noexcept
   {
     __repr_.x = __convert_to_bfloat16(__c.real());
     __repr_.y = __convert_to_bfloat16(__c.imag());
@@ -160,12 +175,12 @@ public:
 
 #  if _CCCL_HOSTED()
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex(const ::std::complex<_Up>& __other) noexcept
+  _CCCL_API inline complex(const ::std::complex<_Up>& __other) noexcept
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
   {}
 
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const ::std::complex<_Up>& __other) noexcept
+  _CCCL_API inline complex& operator=(const ::std::complex<_Up>& __other) noexcept
   {
     __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
     __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
@@ -178,51 +193,51 @@ public:
   }
 #  endif // _CCCL_HOSTED()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type real() const
+  [[nodiscard]] _CCCL_API inline value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type imag() const
+  [[nodiscard]] _CCCL_API inline value_type imag() const
   {
     return __repr_.y;
   }
 
-  _CCCL_HOST_DEVICE_API inline void real(value_type __re)
+  _CCCL_API inline void real(value_type __re)
   {
     __repr_.x = __re;
   }
-  _CCCL_HOST_DEVICE_API inline void imag(value_type __im)
+  _CCCL_API inline void imag(value_type __im)
   {
     __repr_.y = __im;
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API inline value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
   {
     return __repr_.y;
   }
 
-  _CCCL_HOST_DEVICE_API inline complex& operator+=(const value_type& __re)
+  _CCCL_API inline complex& operator+=(const value_type& __re)
   {
     __repr_.x = ::__hadd(__repr_.x, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator-=(const value_type& __re)
+  _CCCL_API inline complex& operator-=(const value_type& __re)
   {
     __repr_.x = ::__hsub(__repr_.x, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator*=(const value_type& __re)
+  _CCCL_API inline complex& operator*=(const value_type& __re)
   {
     __repr_.x = ::__hmul(__repr_.x, __re);
     __repr_.y = ::__hmul(__repr_.y, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator/=(const value_type& __re)
+  _CCCL_API inline complex& operator/=(const value_type& __re)
   {
     __repr_.x = ::__hdiv(__repr_.x, __re);
     __repr_.y = ::__hdiv(__repr_.y, __re);
@@ -230,41 +245,55 @@ public:
   }
 
   // We can utilize vectorized operations for those operators
-  _CCCL_HOST_DEVICE_API inline friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API inline friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    __lhs.__repr_.x = ::__hadd(__lhs.__repr_.x, __rhs.__repr_.x);
+    __lhs.__repr_.y = ::__hadd(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     __lhs.__repr_ = ::__hadd2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
     return __lhs;
   }
 
-  _CCCL_HOST_DEVICE_API inline friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API inline friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    __lhs.__repr_.x = ::__hsub(__lhs.__repr_.x, __rhs.__repr_.x);
+    __lhs.__repr_.y = ::__hsub(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     __lhs.__repr_ = ::__hsub2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
     return __lhs;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    return ::__heq(__lhs.__repr_.x, __rhs.__repr_.x) && ::__heq(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     return ::__hbeq2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 };
 
 template <> // complex<float>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<float>::complex(const complex<__nv_bfloat16>& __c)
+_CCCL_API inline complex<float>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(::__bfloat162float(__c.real()))
     , __im_(::__bfloat162float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<double>::complex(const complex<__nv_bfloat16>& __c)
+_CCCL_API inline complex<double>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(::__bfloat162float(__c.real()))
     , __im_(::__bfloat162float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__nv_bfloat16>
-_CCCL_HOST_DEVICE_API inline complex<float>& complex<float>::operator=(const complex<__nv_bfloat16>& __c)
+_CCCL_API inline complex<float>& complex<float>::operator=(const complex<__nv_bfloat16>& __c)
 {
   __re_ = ::__bfloat162float(__c.real());
   __im_ = ::__bfloat162float(__c.imag());
@@ -273,63 +302,36 @@ _CCCL_HOST_DEVICE_API inline complex<float>& complex<float>::operator=(const com
 
 template <> // complex<double>
 template <> // complex<__nv_bfloat16>
-_CCCL_HOST_DEVICE_API inline complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
+_CCCL_API inline complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
 {
   __re_ = ::__bfloat162float(__c.real());
   __im_ = ::__bfloat162float(__c.imag());
   return *this;
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 real(const complex<__nv_bfloat16>& __c) noexcept
-{
-  return __c.real();
-}
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 imag(const complex<__nv_bfloat16>& __c) noexcept
-{
-  return __c.imag();
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> conj(const complex<__nv_bfloat16>& __c)
-{
-  return complex<__nv_bfloat16>(__c.real(), ::__hneg(__c.imag()));
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> proj(const complex<__nv_bfloat16>& __c)
-{
-  complex<__nv_bfloat16> __r = __c;
-  if (::cuda::std::isinf(__c.real()) || ::cuda::std::isinf(__c.imag()))
-  {
-    __r = complex<__nv_bfloat16>(
-      numeric_limits<__nv_bfloat16>::infinity(), ::cuda::std::copysign(::__float2bfloat16(0.0f), __c.imag()));
-  }
-  return __r;
 }
 
 template <>
 struct __get_complex_impl<__nv_bfloat16>
 {
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
   {
     return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr const __nv_bfloat16&
-  get(const complex<__nv_bfloat16>& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr const __nv_bfloat16& get(const complex<__nv_bfloat16>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr const __nv_bfloat16&&
-  get(const complex<__nv_bfloat16>&& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
   {
     return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }

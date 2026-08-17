@@ -2080,7 +2080,7 @@ struct ProxyRange
 
 template <cuda::std::ranges::input_range R>
   requires cuda::std::ranges::viewable_range<R&&>
-ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
 #endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
 namespace types

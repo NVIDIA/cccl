@@ -315,7 +315,7 @@ protected:
     iterator __curr = __dest;
     for (; __first != __last; ++__curr, (void) ++__first)
     {
-      ::new (::cuda::std::__voidify(*__curr)) _Tp(::cuda::std::ranges::__iter_move_cpo{}(__first));
+      ::new (::cuda::std::__voidify(*__curr)) _Tp(::cuda::std::ranges::iter_move(__first));
     }
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
@@ -328,7 +328,7 @@ protected:
     auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
-      ::new (::cuda::std::__voidify(*__curr)) _Tp(::cuda::std::ranges::__iter_move_cpo{}(__first));
+      ::new (::cuda::std::__voidify(*__curr)) _Tp(::cuda::std::ranges::iter_move(__first));
     }
     __guard.__complete();
     this->__size_ += static_cast<__size_type>(__curr - __dest);
@@ -579,14 +579,14 @@ protected:
   _CCCL_API constexpr void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     ::cuda::std::copy(__first, __last, __dest);
-    __size_ += static_cast<__size_type>(::cuda::std::ranges::__distance_cpo{}(__first, __last));
+    __size_ += static_cast<__size_type>(::cuda::std::ranges::distance(__first, __last));
   }
 
   template <class _Iter>
   _CCCL_API constexpr void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     ::cuda::std::copy(__first, __last, __dest);
-    __size_ += static_cast<__size_type>(::cuda::std::ranges::__distance_cpo{}(__first, __last));
+    __size_ += static_cast<__size_type>(::cuda::std::ranges::distance(__first, __last));
   }
 };
 
@@ -787,11 +787,11 @@ public:
   _CCCL_API constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
-    auto __last  = ::cuda::std::ranges::__end_cpo{}(__range);
+    auto __first      = ::cuda::std::ranges::begin(__range);
+    const auto __last = ::cuda::std::ranges::end(__range);
     for (; __first != __last; ++__first)
     {
-      emplace_back(::cuda::std::ranges::__iter_move_cpo{}(__first));
+      emplace_back(::cuda::std::ranges::iter_move(__first));
     }
   }
 
@@ -802,7 +802,7 @@ public:
   _CCCL_API constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
-    const auto __size = ::cuda::std::ranges::__size_cpo{}(__range);
+    const auto __size = ::cuda::std::ranges::size(__range);
     if (__size > 0)
     {
       if (_Capacity < __size)
@@ -811,7 +811,7 @@ public:
       }
 
       this->__uninitialized_move(
-        ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__unwrap_end(__range), this->begin());
+        ::cuda::std::ranges::begin(__range), ::cuda::std::ranges::__unwrap_end(__range), this->begin());
     }
   }
 
@@ -822,8 +822,8 @@ public:
   _CCCL_API constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
-    const auto __count = static_cast<size_t>(::cuda::std::ranges::__distance_cpo{}(
-      ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range)));
+    const auto __count = static_cast<size_t>(
+      ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range)));
     if (__count > 0)
     {
       if (_Capacity < __count)
@@ -832,7 +832,7 @@ public:
       }
 
       this->__uninitialized_move(
-        ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__unwrap_end(__range), this->begin());
+        ::cuda::std::ranges::begin(__range), ::cuda::std::ranges::__unwrap_end(__range), this->begin());
     }
   }
 
@@ -949,8 +949,8 @@ public:
     !::cuda::std::ranges::forward_range<_Range>))
   _CCCL_API constexpr void assign_range(_Range&& __range)
   {
-    auto __first      = ::cuda::std::ranges::__begin_cpo{}(__range);
-    const auto __last = ::cuda::std::ranges::__end_cpo{}(__range);
+    auto __first      = ::cuda::std::ranges::begin(__range);
+    const auto __last = ::cuda::std::ranges::end(__range);
     iterator __end    = this->end();
     for (iterator __current = this->begin(); __current != __end; ++__current, (void) ++__first)
     {
@@ -974,13 +974,13 @@ public:
       _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_API constexpr void assign_range(_Range&& __range)
   {
-    const auto __size = ::cuda::std::ranges::__size_cpo{}(__range);
+    const auto __size = ::cuda::std::ranges::size(__range);
     if (_Capacity < __size)
     {
       _CCCL_THROW(::std::bad_alloc);
     }
 
-    const auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
+    const auto __first = ::cuda::std::ranges::begin(__range);
     const auto __last  = ::cuda::std::ranges::__unwrap_end(__range);
     if (static_cast<size_type>(__size) < this->size())
     {
@@ -1001,9 +1001,9 @@ public:
       _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
   _CCCL_API constexpr void assign_range(_Range&& __range)
   {
-    const auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
+    const auto __first = ::cuda::std::ranges::begin(__range);
     const auto __last  = ::cuda::std::ranges::__unwrap_end(__range);
-    const auto __size  = static_cast<size_type>(::cuda::std::ranges::__distance_cpo{}(__first, __last));
+    const auto __size  = static_cast<size_type>(::cuda::std::ranges::distance(__first, __last));
     if (_Capacity < __size)
     {
       _CCCL_THROW(::std::bad_alloc);
@@ -1303,8 +1303,8 @@ public:
   _CCCL_API constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
-    auto __first             = ::cuda::std::ranges::__begin_cpo{}(__range);
-    auto __last              = ::cuda::std::ranges::__end_cpo{}(__range);
+    auto __first             = ::cuda::std::ranges::begin(__range);
+    const auto __last        = ::cuda::std::ranges::end(__range);
     const iterator __old_end = this->end();
     for (; __first != __last; ++__first)
     {
@@ -1321,7 +1321,7 @@ public:
     ::cuda::std::ranges::__container_compatible_range<_Range, _Tp> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
   _CCCL_API constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
+    const auto __first = ::cuda::std::ranges::begin(__range);
     return insert(__cpos, __first, ::cuda::std::ranges::__unwrap_end(__range));
   }
 
@@ -1330,8 +1330,8 @@ public:
     !::cuda::std::ranges::forward_range<_Range>))
   _CCCL_API constexpr void append_range(_Range&& __range)
   {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
-    auto __last  = ::cuda::std::ranges::__end_cpo{}(__range);
+    auto __first      = ::cuda::std::ranges::begin(__range);
+    const auto __last = ::cuda::std::ranges::end(__range);
     for (; __first != __last; ++__first)
     {
       emplace_back(*__first);
@@ -1343,7 +1343,7 @@ public:
     ::cuda::std::ranges::__container_compatible_range<_Range, _Tp> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
   _CCCL_API constexpr void append_range(_Range&& __range)
   {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
+    const auto __first = ::cuda::std::ranges::begin(__range);
     insert(this->end(), __first, ::cuda::std::ranges::__unwrap_end(__range));
   }
 
@@ -1435,56 +1435,6 @@ public:
       return {};
     }
     return optional<reference>{in_place, this->unchecked_emplace_back(::cuda::std::move(__value))};
-  }
-
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp> _CCCL_AND(
-    !::cuda::std::ranges::forward_range<_Range>))
-  _CCCL_API constexpr ::cuda::std::ranges::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
-  {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__range);
-    auto __last  = ::cuda::std::ranges::__end_cpo{}(__range);
-    for (; this->size() != _Capacity && __first != __last; ++__first)
-    {
-      emplace_back(*__first);
-    }
-    return __first;
-  }
-
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(
-    ::cuda::std::ranges::__container_compatible_range<_Range, _Tp> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>
-      _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
-  _CCCL_API constexpr ::cuda::std::ranges::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
-  {
-    const auto __capacity = _Capacity - this->size();
-    const auto __size     = ::cuda::std::ranges::__size_cpo{}(__range);
-    const auto __diff     = __size < __capacity ? __size : __capacity;
-
-    auto __first  = ::cuda::std::ranges::__begin_cpo{}(__range);
-    auto __middle = ::cuda::std::ranges::__next_cpo{}(__first, __diff);
-    this->__uninitialized_move(__first, __middle, this->end());
-    return __middle;
-  }
-
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(
-    ::cuda::std::ranges::__container_compatible_range<_Range, _Tp> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>
-      _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
-  _CCCL_API constexpr ::cuda::std::ranges::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
-  {
-    const auto __capacity = static_cast<ptrdiff_t>(_Capacity - this->size());
-    auto __first          = ::cuda::std::ranges::__begin_cpo{}(__range);
-    const auto __size     = static_cast<ptrdiff_t>(
-      ::cuda::std::ranges::__distance_cpo{}(__first, ::cuda::std::ranges::__unwrap_end(__range)));
-    const ptrdiff_t __diff = __size < __capacity ? __size : __capacity;
-
-    auto __middle = ::cuda::std::ranges::__next_cpo{}(__first, __diff);
-    this->__uninitialized_move(__first, __middle, this->end());
-    return __middle;
   }
 
   using __base::unchecked_emplace_back;
@@ -1773,7 +1723,7 @@ public:
   _CCCL_API constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
-    if (::cuda::std::ranges::__begin_cpo{}(__range) != ::cuda::std::ranges::__end_cpo{}(__range))
+    if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {
       _CCCL_THROW(::std::bad_alloc);
     }
@@ -1822,7 +1772,7 @@ public:
   _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
   _CCCL_API constexpr void assign_range(_Range&& __range)
   {
-    if (::cuda::std::ranges::__begin_cpo{}(__range) != ::cuda::std::ranges::__end_cpo{}(__range))
+    if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {
       _CCCL_THROW(::std::bad_alloc);
     }
@@ -1978,7 +1928,7 @@ public:
   _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
   _CCCL_API constexpr iterator insert_range(const_iterator, _Range&& __range)
   {
-    if (::cuda::std::ranges::__begin_cpo{}(__range) != ::cuda::std::ranges::__end_cpo{}(__range))
+    if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {
       _CCCL_THROW(::std::bad_alloc);
     }
@@ -1989,7 +1939,7 @@ public:
   _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
   _CCCL_API constexpr void append_range(_Range&& __range)
   {
-    if (::cuda::std::ranges::__begin_cpo{}(__range) != ::cuda::std::ranges::__end_cpo{}(__range))
+    if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {
       _CCCL_THROW(::std::bad_alloc);
     }
@@ -2031,13 +1981,6 @@ public:
   _CCCL_API constexpr optional<reference> try_push_back(_Tp&&) noexcept
   {
     return {};
-  }
-
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
-  _CCCL_API constexpr ::cuda::std::ranges::iterator_t<_Range> try_append_range(_Range&& __range) noexcept
-  {
-    return ::cuda::std::ranges::__begin_cpo{}(__range);
   }
 
   using __base::unchecked_emplace_back;

@@ -146,23 +146,23 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
   static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
   static constexpr auto large_policy                 = active_policy.large_segment;
   using LargeSegmentPolicyT                          = detail::agent_radix_sort_downsweep_policy<
-                             0,
-                             0,
-                             void,
-                             large_policy.load_algorithm,
-                             large_policy.load_modifier,
-                             large_policy.rank_algorithm,
-                             large_policy.scan_algorithm,
-                             large_policy.radix_bits,
-                             NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
+    0,
+    0,
+    void,
+    large_policy.load_algorithm,
+    large_policy.load_modifier,
+    large_policy.rank_algorithm,
+    large_policy.scan_algorithm,
+    large_policy.radix_bits,
+    NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
   static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT                 = agent_sub_warp_merge_sort_policy<
-                    medium_policy.threads_per_block,
-                    medium_policy.threads_per_warp,
-                    medium_policy.items_per_thread,
-                    medium_policy.load_algorithm,
-                    medium_policy.load_modifier,
-                    medium_policy.store_algorithm>;
+    medium_policy.threads_per_block,
+    medium_policy.threads_per_warp,
+    medium_policy.items_per_thread,
+    medium_policy.load_algorithm,
+    medium_policy.load_modifier,
+    medium_policy.store_algorithm>;
 
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
@@ -351,20 +351,20 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
   static constexpr auto small_policy                 = active_policy.small_segment;
   using SmallPolicyT                                 = agent_sub_warp_merge_sort_policy<
-                                    small_policy.threads_per_block,
-                                    small_policy.threads_per_warp,
-                                    small_policy.items_per_thread,
-                                    small_policy.load_algorithm,
-                                    small_policy.load_modifier,
-                                    small_policy.store_algorithm>;
+    small_policy.threads_per_block,
+    small_policy.threads_per_warp,
+    small_policy.items_per_thread,
+    small_policy.load_algorithm,
+    small_policy.load_modifier,
+    small_policy.store_algorithm>;
   static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT                 = agent_sub_warp_merge_sort_policy<
-                    medium_policy.threads_per_block,
-                    medium_policy.threads_per_warp,
-                    medium_policy.items_per_thread,
-                    medium_policy.load_algorithm,
-                    medium_policy.load_modifier,
-                    medium_policy.store_algorithm>;
+    medium_policy.threads_per_block,
+    medium_policy.threads_per_warp,
+    medium_policy.items_per_thread,
+    medium_policy.load_algorithm,
+    medium_policy.load_modifier,
+    medium_policy.store_algorithm>;
 
   constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
@@ -481,15 +481,15 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
 {
   static constexpr SegmentedSortRadixSortPolicy large_policy = current_policy<PolicySelector>().large_segment;
   using LargeSegmentPolicyT                                  = detail::agent_radix_sort_downsweep_policy<
-                                     0,
-                                     0,
-                                     void,
-                                     large_policy.load_algorithm,
-                                     large_policy.load_modifier,
-                                     large_policy.rank_algorithm,
-                                     large_policy.scan_algorithm,
-                                     large_policy.radix_bits,
-                                     NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
+    0,
+    0,
+    void,
+    large_policy.load_algorithm,
+    large_policy.load_modifier,
+    large_policy.rank_algorithm,
+    large_policy.scan_algorithm,
+    large_policy.radix_bits,
+    NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
 
   using local_segment_index_t = local_segment_index_t;
 
