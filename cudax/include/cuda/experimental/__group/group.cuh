@@ -159,6 +159,22 @@ public:
       , __synchronizer_instance_{__make_synchronizer_instance(__unit, __synchronizer_, __parent, __mapping_result_)}
   {}
 
+  // todo(dabayer): Delete copy constructor.
+  // group(const group&) = delete;
+
+  _CCCL_DEVICE_API ~group()
+  {
+    // Skip the synchronization for threads that are not part of this group.
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result_.is_valid())
+      {
+        return;
+      }
+    }
+    __synchronizer_instance_.deinit(__mapping_result_, __hier_);
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
     return __hier_;
@@ -187,7 +203,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
@@ -200,7 +216,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
