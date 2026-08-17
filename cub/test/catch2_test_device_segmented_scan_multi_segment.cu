@@ -23,6 +23,7 @@
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -238,8 +239,9 @@ struct constant_value_op
 };
 } // namespace
 
-C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
-         "[multi_segment][segmented][scan]")
+CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
+         "[multi_segment][segmented][scan]",
+         CUB_SMALL)
 {
   using op_t     = impl::bicyclic_monoid_op<unsigned int>;
   using pair_t   = typename op_t::pair_t;
@@ -287,7 +289,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -402,7 +404,8 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   }
 }
 
-C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", integral_types)
+CUB_TEST(
+  "segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", CUB_SMALL, integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
@@ -463,7 +466,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   {
     compute_exclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       h_init,
       op);
@@ -522,8 +525,9 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   }
 }
 
-C2H_TEST("Segmented inclusive scan works correctly for integer types",
+CUB_TEST("Segmented inclusive scan works correctly for integer types",
          "[multi_segment][segmented][scan]",
+         CUB_SMALL,
          integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
@@ -572,7 +576,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -631,8 +635,9 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   }
 }
 
-C2H_TEST("Segmented inclusive scan with init works for integer types",
+CUB_TEST("Segmented inclusive scan with init works for integer types",
          "[multi_segment][segmented][scan]",
+         CUB_SMALL,
          integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
@@ -692,7 +697,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -791,7 +796,7 @@ make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
   return {offsets, offsets_with_gaps};
 }
 
-C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", itp_list)
+CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", CUB_SMALL, itp_list)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -920,7 +925,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   }
 }
 
-C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]")
+CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]", CUB_SMALL)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -1105,7 +1110,7 @@ void run_dispatch_scan_iterator(
   );
 }
 
-C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[multi_segment][segmented][scan]")
+CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[multi_segment][segmented][scan]", CUB_SMALL)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -1170,12 +1175,14 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
 
-    for (offset_t offset = h_offsets[segment_id]; offset < h_offsets[segment_id + 1]; ++offset)
+    for (offset_t offset = h_offsets[segment_id];
+         offset < h_offsets[segment_id + 1]; // NOLINT(bugprone-misplaced-widening-cast)
+         ++offset)
     {
       h_expected[offset] = init_op<value_t>{}(h_expected[offset]);
     }
@@ -1322,7 +1329,9 @@ void run_partitioned_segmented_sum(
   );
 }
 
-C2H_TEST("Segmented inclusive sum works with partitioned segment sizes", "[multi_segment][segmented][scan]")
+CUB_TEST_CASE("Segmented inclusive sum works with partitioned segment sizes",
+              "[multi_segment][segmented][scan]",
+              CUB_SMALL)
 {
   using offset_t  = cuda::std::uint32_t;
   using segment_t = segment_descriptor<offset_t>;

@@ -22,12 +22,15 @@
 #endif // no system header
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -73,7 +76,10 @@ template <class _Key,
 class fixed_capacity_map_ref
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
-  static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
+  static_assert(::cuda::is_power_of_two(sizeof(_Key)), "key_type size must be a power of two");
+  static_assert(sizeof(_Tp) <= 8, "sizeof(mapped_type) must be no larger than 8 bytes.");
+  static_assert(::cuda::is_power_of_two(sizeof(::cuda::std::pair<_Key, _Tp>)),
+                "value_type size must be a power of two");
   static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
                 "bitwise comparison via specialization of cuda::is_bitwise_comparable_v<Key>.");
@@ -232,6 +238,69 @@ public:
     return __impl.probing_scheme();
   }
 
+  // ===== Rebind =====
+
+  //! @brief Makes a copy of this ref with the given key comparator.
+  //!
+  //! @tparam _NewKeyEqual New key comparator type
+  //!
+  //! @param __predicate New key comparator
+  //!
+  //! @return Copy of this ref using the new key comparator
+  template <class _NewKeyEqual>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_key_eq(const _NewKeyEqual& __predicate) const noexcept
+  {
+    using __rebound_ref =
+      fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+
+    return ::cuda::experimental::cuco::detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           __predicate,
+                           probing_scheme(),
+                           storage_span()}
+           : __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           erased_key<_Key>{erased_key_sentinel()},
+                           __predicate,
+                           probing_scheme(),
+                           storage_span()};
+  }
+
+  //! @brief Makes a copy of this ref with the given hash function.
+  //!
+  //! @tparam _NewHash New hash function type
+  //!
+  //! @param __hash New hash function
+  //!
+  //! @return Copy of this ref using the new hash function
+  template <class _NewHash>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
+  {
+    const auto __probing_scheme = probing_scheme().rebind_hash_function(__hash);
+    using __rebound_ref =
+      fixed_capacity_map_ref<_Key,
+                             _Tp,
+                             _Scope,
+                             _KeyEqual,
+                             ::cuda::std::decay_t<decltype(__probing_scheme)>,
+                             _BucketSize,
+                             _Capacity>;
+
+    return ::cuda::experimental::cuco::detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           key_eq(),
+                           __probing_scheme,
+                           storage_span()}
+           : __rebound_ref{empty_key<_Key>{empty_key_sentinel()},
+                           empty_value<_Tp>{empty_value_sentinel()},
+                           erased_key<_Key>{erased_key_sentinel()},
+                           key_eq(),
+                           __probing_scheme,
+                           storage_span()};
+  }
+
   //! @brief Returns a const iterator to one past the last slot (the end sentinel).
   //!
   //! @return Past-the-end const iterator
@@ -311,6 +380,35 @@ public:
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl.contains(__group, __key);
+  }
+
+  //! @brief Finds the slot associated with a key.
+  //!
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator find(_ProbeKey __key) const noexcept
+  {
+    return __impl.find(__key);
+  }
+
+  //! @brief Cooperative-group variant of `find`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ParentCG, class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator
+  find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    return __impl.find(__group, __key);
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

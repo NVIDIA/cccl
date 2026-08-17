@@ -43,6 +43,7 @@ struct agent_adjacent_difference_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
@@ -104,7 +105,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(LoadIt(input_it))
+      , load_it(try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)

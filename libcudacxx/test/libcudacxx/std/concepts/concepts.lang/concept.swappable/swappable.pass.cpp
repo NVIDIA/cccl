@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // template<class T>
 // concept swappable = // see below
 

@@ -42,16 +42,17 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn, class _FallbackCallable, class... _Args)
   _CCCL_REQUIRES(::cuda::std::__is_callable_v<_Fn, _Args...>)
-  _CCCL_API constexpr auto operator()(_Fn __fn, _FallbackCallable&&, _Args&&... __args) const
-    noexcept(::cuda::std::__is_nothrow_callable_v<_Fn, _Args...>) -> ::cuda::std::__call_result_t<_Fn, _Args...>
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Fn __fn, _FallbackCallable&&, _Args&&... __args) noexcept(
+    ::cuda::std::__is_nothrow_callable_v<_Fn, _Args...>) -> ::cuda::std::__call_result_t<_Fn, _Args...>
   {
     return __fn(::cuda::std::forward<_Args>(__args)...);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _FallbackCallable, class... _Args>
-  _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _FallbackCallable&& __fallback, _Args&&...) const
-    noexcept(::cuda::std::__is_nothrow_callable_v<_FallbackCallable>) -> ::cuda::std::__call_result_t<_FallbackCallable>
+  _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(::cuda::std::__ignore_t, _FallbackCallable&& __fallback, _Args&&...) noexcept(
+    ::cuda::std::__is_nothrow_callable_v<_FallbackCallable>) -> ::cuda::std::__call_result_t<_FallbackCallable>
   {
     return ::cuda::std::forward<_FallbackCallable>(__fallback)();
   }

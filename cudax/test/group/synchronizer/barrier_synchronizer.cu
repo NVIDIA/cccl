@@ -27,6 +27,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 {
   constexpr cuda::std::size_t nbarriers = 8;
 
+  const auto& hierarchy = config.hierarchy();
+
   // Test constructor from static span of barriers.
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
@@ -97,20 +99,21 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     const cudax::group_by mapping{4};
     const cudax::barrier_synchronizer synchronizer{barriers};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
-    const auto synchronizer_instance =
-      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
+    const auto mapping_result        = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+    const auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping_result);
 
     // Test do_sync(...).
-    static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync(mapping_result, synchronizer);
+    static_assert(
+      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy)));
+    synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy);
 
     // Test do_sync_aligned(...).
     static_assert(
-      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync_aligned(mapping_result, synchronizer);
+      cuda::std::is_same_v<void,
+                           decltype(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy)));
+    synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy);
   }
 }
 

@@ -20,9 +20,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
@@ -40,16 +40,21 @@ struct MergePolicy
   bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
   bool unroll = true; //<! Whether to unroll the loops inside the serial merge implementation
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
+    // gcc 8 folds comparisons of adjacent bool members within one expression into a BIT_FIELD_REF, which its
+    // constexpr evaluator cannot handle (ICE in cxx_eval_bit_field_ref, fixed in gcc 9). Keep each bool
+    // comparison in a separate statement to avoid the fold.
+    const bool same_bulk_copy_for_keys   = lhs.use_bulk_copy_for_keys == rhs.use_bulk_copy_for_keys;
+    const bool same_bulk_copy_for_values = lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values;
+    const bool same_unroll               = lhs.unroll == rhs.unroll;
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
-        && lhs.use_bulk_copy_for_keys == rhs.use_bulk_copy_for_keys
-        && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values && lhs.unroll == rhs.unroll;
+        && same_bulk_copy_for_keys && same_bulk_copy_for_values && same_unroll;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -90,10 +95,10 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergePolicy
   {
-    const int tune_type_size = key_size + value_size;
-    const int ipt_800_plus   = nominal_4B_items_to_items(15, tune_type_size);
-    const bool can_bulk_keys = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
-                            && key_iterator_value_types_are_the_same;
+    const int tune_type_size   = key_size + value_size;
+    const int ipt_800_plus     = nominal_4B_items_to_items(15, tune_type_size);
+    const bool can_bulk_keys   = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
+                              && key_iterator_value_types_are_the_same;
     const bool can_bulk_values = (value_size == value_align) && value_is_trivially_relocatable
                               && value_iterators_are_contiguous && value_iterator_value_types_are_the_same;
 
@@ -163,12 +168,12 @@ struct policy_selector_from_types
     return policy_selector{
       int{sizeof(key_t)},
       int{alignof(key_t)},
-      THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t>,
+      ::cuda::is_trivially_copyable_v<key_t>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt1> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt2>,
       ::cuda::std::is_same_v<key_t, it_value_t<KeysIt2>>,
       ::cuda::std::is_same_v<item_t, NullType> ? 0 : int{sizeof(item_t)},
       int{alignof(item_t)},
-      THRUST_NS_QUALIFIER::is_trivially_relocatable_v<item_t>,
+      ::cuda::is_trivially_copyable_v<item_t>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt1>
         && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt2>,
       ::cuda::std::is_same_v<item_t, it_value_t<ItemsIt2>>,

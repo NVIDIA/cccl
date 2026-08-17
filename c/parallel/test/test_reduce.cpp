@@ -24,10 +24,10 @@
 #include "test_util.h"
 #include <cccl/c/reduce.h>
 
-// AoT serialize/deserialize is a v1-only feature; the header does not exist in
+// serialize/deserialize is a v1-only feature; the header does not exist in
 // the v2 (HostJIT) include tree, and the tests using it are guarded the same way.
 #ifndef CCCL_C_PARALLEL_V2
-#  include <cccl/c/aot.h>
+#  include <cccl/c/serialization.h>
 #endif
 
 using BuildResultT = cccl_device_reduce_build_result_t;
@@ -229,7 +229,7 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op              = make_operation("op",
-                                  R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -266,7 +266,7 @@ C2H_TEST("Reduce works with custom types with well-known operations", "[reduce][
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op_state        = make_operation("op",
-                                        R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -587,7 +587,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
+C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][serialization]")
 {
   using T = int32_t;
 
@@ -657,7 +657,7 @@ C2H_TEST("Reduce works with not_guaranteed determinism and plus", "[reduce][nond
   REQUIRE(output == expected);
 }
 
-C2H_TEST("Reduce compile/load round-trip", "[reduce][aot]")
+C2H_TEST("Reduce compile/load round-trip", "[reduce][serialization]")
 {
   using T = int32_t;
 
@@ -724,7 +724,7 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
-C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
+C2H_TEST("Reduce link_ltoir round-trip", "[reduce][serialization]")
 {
   using T = int32_t;
 
@@ -806,7 +806,7 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
-C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][aot]")
+C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][serialization]")
 {
   using T = int32_t;
 
@@ -881,10 +881,10 @@ C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][aot]")
   REQUIRE(result == expected);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_b));
-  cccl_aot_buffer_free(blob);
+  cccl_serialization_buffer_free(blob);
 }
 
-C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduce][aot]")
+C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduce][serialization]")
 {
   using T = int32_t;
 
@@ -957,10 +957,10 @@ C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduc
 
   REQUIRE(output_ptr[0] == std::accumulate(input.begin(), input.end(), T{0}));
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_b));
-  cccl_aot_buffer_free(blob);
+  cccl_serialization_buffer_free(blob);
 }
 
-C2H_TEST("Reduce deserialize rejects bad blobs", "[reduce][aot]")
+C2H_TEST("Reduce deserialize rejects bad blobs", "[reduce][serialization]")
 {
   BuildResultT build{};
 

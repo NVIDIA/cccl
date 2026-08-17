@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -32,7 +32,7 @@ struct TestParsedSpecValues
 };
 
 template <class CharT>
-TEST_FUNC TestParsedSpecValues<CharT> make_test_parsed_spec_values() noexcept
+TEST_HOST_DEVICE_FUNC TestParsedSpecValues<CharT> make_test_parsed_spec_values() noexcept
 {
   cuda::std::__fmt_spec_std value_std{};
   value_std.__alignment_            = cuda::std::to_underlying(cuda::std::__fmt_spec_alignment::__center);
@@ -51,7 +51,7 @@ TEST_FUNC TestParsedSpecValues<CharT> make_test_parsed_spec_values() noexcept
 }
 
 template <class CharT>
-TEST_FUNC void verify_parsed_spec(const cuda::std::__fmt_parsed_spec<CharT>& value) noexcept
+TEST_HOST_DEVICE_FUNC void verify_parsed_spec(const cuda::std::__fmt_parsed_spec<CharT>& value) noexcept
 {
   const auto ref = make_test_parsed_spec_values<CharT>();
   assert(value.__std_.__alignment_ == ref.std.__alignment_);
@@ -65,7 +65,7 @@ TEST_FUNC void verify_parsed_spec(const cuda::std::__fmt_parsed_spec<CharT>& val
 }
 
 template <class CharT>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_parsed_spec<CharT>) == 16);
   assert(offsetof(cuda::std::__fmt_parsed_spec<CharT>, __std_) == 0);
@@ -84,7 +84,7 @@ TEST_FUNC void test()
   verify_parsed_spec(value);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

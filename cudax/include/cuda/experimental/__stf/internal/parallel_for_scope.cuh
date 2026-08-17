@@ -21,6 +21,11 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
@@ -29,6 +34,10 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+
+#include <type_traits>
+#include <utility>
 
 namespace cuda::experimental::stf
 {
@@ -42,6 +51,33 @@ struct owning_container_of;
 
 namespace reserved
 {
+//! Detects shapes carrying a coordinate predicate (e.g. cute_sub_shape):
+//! enumerated coordinates outside the predicate are skipped, which is how
+//! interior regions and padding phantoms are handled (predication rather than
+//! restructured iteration).
+//!
+//! NVCC 12.0 may diagnose a missing contains member even in a discarded
+//! if constexpr branch. Keep the member access inside overload SFINAE so it
+//! is never instantiated for ordinary shapes.
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr auto __shape_contains(const _Shape& __shape, const _Coords& __coords, int)
+  -> decltype(static_cast<bool>(__shape.contains(__coords)))
+{
+  return static_cast<bool>(__shape.contains(__coords));
+}
+
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr bool __shape_contains(const _Shape&, const _Coords&, long)
+{
+  return true;
+}
+
+template <typename _Fn, typename _Tuple>
+_CCCL_HOST_DEVICE_API constexpr decltype(auto) __apply_coords(_Fn&& __fn, _Tuple&& __coords)
+{
+  return ::cuda::std::apply(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Tuple>(__coords));
+}
+
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -73,7 +109,12 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+      {
+        continue;
+      }
+      ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
   };
   // Moving from `targs` here is not useful because `explode_args` uses it multiple times.
@@ -315,7 +356,12 @@ __global__ void loop_redux(
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+      {
+        continue;
+      }
+      ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
   };
 
@@ -435,6 +481,20 @@ private:
  *
  * @tparam deps_t
  */
+//! Detects partitioners exposing the classic type-defined interface (a static
+//! get_executor usable as a bare partition function pointer); partitioners
+//! whose ownership depends on their object value provide member functions.
+template <typename T, typename = void>
+struct has_static_get_executor : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_static_get_executor<
+  T,
+  ::cuda::std::void_t<decltype(::cuda::experimental::places::partition_fn_t{&T::get_executor})>>
+    : ::cuda::std::true_type
+{};
+
 template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
@@ -454,6 +514,60 @@ class parallel_for_scope
    * @return A tuple containing the result of `dep.instance(t)` for each dependency,
    *         with `std::ignore` in positions where the result type is `void_interface&`.
    */
+  //! Resolve one instance onto this place's member of a replicated data
+  //! place: each shard reads the ordinary instance living at member(r),
+  //! straight from the place-keyed instance table. The tuple's dep copy may
+  //! still hold the DEFERRED form (acquire materialized and wrote back into
+  //! the task's dep vector, not this copy), so the member place is resolved
+  //! against the launch's own execution place in that case.
+  template <typename Inst, typename Dep>
+  void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
+  {
+    const data_place& dp = dep.get_dplace();
+    if (dp.is_invalid() || !dp.is_replicated())
+    {
+      return;
+    }
+    const data_place member =
+      ::cuda::experimental::places::replicated_is_deferred(dp)
+        ? e_place.get_place(place_index).affine_data_place()
+        : dp.member(dp.instance_of(place_index));
+    auto data = dep.get_data();
+    inst      = data.template instance<Inst>(data.find_instance_id(member));
+  }
+
+  //! Walk (dep index J, instance index K) in lockstep: deps_tup_t filters
+  //! void_interface dependencies out of the instances tuple, so the two
+  //! tuples are NOT aligned index-for-index -- a token dep advances J only.
+  template <size_t J, size_t K>
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index)
+  {
+    if constexpr (J < sizeof...(deps_ops_t))
+    {
+      using dep_t = ::std::tuple_element_t<J, ::std::tuple<deps_ops_t...>>;
+      if constexpr (::std::is_same_v<typename dep_t::dep_type, void_interface>)
+      {
+        rebase_replicated_impl<J + 1, K>(instances, place_index);
+      }
+      else
+      {
+        rebase_replicated_one(::std::get<K>(instances), ::std::get<J>(deps), place_index);
+        rebase_replicated_impl<J + 1, K + 1>(instances, place_index);
+      }
+    }
+  }
+
+  //! Each shard of a grid dispatch reads its own member instance of any dep
+  //! placed at a replicated data place (place 0 uses the instance as fetched)
+  void rebase_replicated_instances(deps_tup_t& instances, size_t place_index)
+  {
+    if (place_index == 0)
+    {
+      return;
+    }
+    rebase_replicated_impl<0, 0>(instances, place_index);
+  }
+
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
   {
     return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
@@ -486,6 +600,17 @@ public:
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
+  {}
+
+  /// @brief Constructor keeping the partitioner instance (required when
+  /// ownership depends on the partitioner value; type-defined policies cost
+  /// nothing thanks to [[no_unique_address]])
+  parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
+      : deps(mv(deps)...)
+      , ctx(ctx)
+      , e_place(mv(e_place))
+      , shape(mv(shape))
+      , p_(mv(p))
   {}
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
@@ -554,8 +679,16 @@ public:
       // Grids need a composite data place
       if (e_place.size() > 1)
       {
-        // Create a composite data place defined by the grid of places + the partitioning function
-        t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
+        // Create a composite data place defined by the grid of places + the partitioner
+        if constexpr (has_static_get_executor<partitioner_t>::value)
+        {
+          t.set_affine_data_place(data_place::composite(p_, e_place.as_grid()));
+        }
+        else
+        {
+          // Value-defined partitioner (found by ADL in the partitioner's namespace)
+          t.set_affine_data_place(make_composite_data_place(e_place.as_grid(), p_));
+        }
       }
     }
 
@@ -574,6 +707,18 @@ public:
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
+    {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    SCOPE(success)
     {
       t.end_uncleared();
       if constexpr (::std::is_same_v<context, stream_ctx>)
@@ -601,6 +746,11 @@ public:
       t.clear();
     };
 
+    SCOPE(fail)
+    {
+      t.end();
+    };
+
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       if (record_time)
@@ -617,16 +767,18 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
@@ -686,7 +838,7 @@ public:
           for (size_t i = 0; i < e_place.size(); i++)
           {
             auto active          = t.activate_place(i);
-            const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
+            const auto sub_shape = p_.apply(shape, pos4(i), e_place.get_dims());
             do_parallel_for(f, active.place(), sub_shape, t, i);
           }
         }
@@ -940,6 +1092,7 @@ public:
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
+    rebase_replicated_instances(arg_instances, place_index);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
@@ -1008,34 +1161,43 @@ public:
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
-      auto p = static_cast<decltype(args)>(untyped_args);
+      // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
+      // it.
+      on_throw(::std::abort) << [untyped_args] {
+        auto p = static_cast<decltype(args)>(untyped_args);
 
-      auto& data               = ::std::get<0>(*p);
-      const size_t n           = ::std::get<1>(*p);
-      Fun& f                   = ::std::get<2>(*p);
-      const sub_shape_t& shape = ::std::get<3>(*p);
+        auto& data               = ::std::get<0>(*p);
+        const size_t n           = ::std::get<1>(*p);
+        Fun& f                   = ::std::get<2>(*p);
+        const sub_shape_t& shape = ::std::get<3>(*p);
 
-      // deps_ops_t are pairs of data instance type, and a reduction operator,
-      // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, auto&&... data) {
-        auto h = [&](auto&&... coords) {
-          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+        // deps_ops_t are pairs of data instance type, and a reduction operator,
+        // this gets only the data instance types (eg. slice<double>)
+        auto explode_coords = [&](size_t i, auto&&... data) {
+          auto h = [&](auto&&... coords) {
+            f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+          };
+          auto coords = shape.index_to_coords(i);
+          if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+          {
+            return;
+          }
+          ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
         };
-        ::std::apply(h, shape.index_to_coords(i));
+
+        // Finally we get to do the workload on every 1D item of the shape
+        for (size_t i = 0; i < n; ++i)
+        {
+          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+        }
+
+        // For stream contexts, delete immediately (no replay risk)
+        // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        {
+          delete p;
+        }
       };
-
-      // Finally we get to do the workload on every 1D item of the shape
-      for (size_t i = 0; i < n; ++i)
-      {
-        ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
-      }
-
-      // For stream contexts, delete immediately (no replay risk)
-      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<context, graph_ctx>)
-      {
-        delete p;
-      }
     };
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
@@ -1071,6 +1233,14 @@ private:
   exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
+
+  //! Empty stand-in stored when no partitioner is used (null_partition is
+  //! only forward-declared here, and nothing reads p_ in that case)
+  struct no_partitioner_t
+  {};
+  using stored_partitioner_t =
+    ::std::conditional_t<::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
+  [[no_unique_address]] stored_partitioner_t p_{};
 };
 } // end namespace reserved
 

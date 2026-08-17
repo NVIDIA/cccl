@@ -38,7 +38,7 @@ struct SegmentedScanBlockPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for block scanning
   int max_segments; //!< Maximum number of segments processed per block
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanBlockPolicy& lhs, const SegmentedScanBlockPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -47,7 +47,7 @@ struct SegmentedScanBlockPolicy
         && lhs.max_segments == rhs.max_segments;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedScanBlockPolicy& lhs, const SegmentedScanBlockPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -137,13 +137,13 @@ struct SegmentedScanPolicy
   SegmentedScanWarpPolicy warp;
   SegmentedScanThreadPolicy thread;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
     return lhs.block == rhs.block && lhs.warp == rhs.warp && lhs.thread == rhs.thread;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

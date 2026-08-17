@@ -79,6 +79,8 @@ struct DeviceUniqueByKeyKernelSource
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for DeviceSelect
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam KeyInputIteratorT
  *   Random-access input iterator type for keys
  *
@@ -123,7 +125,7 @@ template <
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
   typename ValueT                = detail::it_value_t<ValueInputIteratorT>>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect::UniqueByKey") DispatchUniqueByKey
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey") DispatchUniqueByKey
 {
   /******************************************************************************
    * Types and constants

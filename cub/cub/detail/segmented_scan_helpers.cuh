@@ -582,8 +582,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
   ScanOpT scan_op,
   InitValueT initial_value)
 {
+  constexpr auto items_per_tile = static_cast<OffsetT>(TileItems);
+
   const OffsetT segment_items = (::cuda::std::max) (input_end_idx, input_begin_idx) - input_begin_idx;
-  const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, TileItems);
+  const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, items_per_tile);
 
   AccumT exclusive_prefix{};
   worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
@@ -591,8 +593,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
   AccumT thread_values[ItemsPerThread];
   for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
   {
-    const OffsetT chunk_begin = input_begin_idx + chunk_id * TileItems;
-    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TileItems, input_end_idx);
+    const OffsetT chunk_begin = input_begin_idx + chunk_id * items_per_tile;
+    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + items_per_tile, input_end_idx);
 
     // chunk_size <= TileItems, casting to int is safe
     const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
@@ -611,7 +613,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
     }
     scope.sync();
 
-    scope.store_single(d_out + output_begin_idx + chunk_id * TileItems, thread_values, chunk_size);
+    const OffsetT output_offset = output_begin_idx + chunk_id * items_per_tile;
+    scope.store_single(d_out + output_offset, thread_values, chunk_size);
 
     // Avoiding synchronization at the end of last chunk could save up to 10% of performance for very short segments
     if (++chunk_id < n_chunks)
@@ -697,7 +700,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
   using augmented_accum_t   = augmented_value_t<AccumT>;
   using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
 
-  const OffsetT n_chunks = ::cuda::ceil_div(items_per_worker, TileItems);
+  constexpr auto items_per_tile = static_cast<OffsetT>(TileItems);
+
+  const OffsetT n_chunks = ::cuda::ceil_div(items_per_worker, items_per_tile);
 
   augmented_scan_op_t augmented_scan_op{scan_op};
 
@@ -707,8 +712,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
   augmented_accum_t thread_flag_values[ItemsPerThread];
   for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
   {
-    const OffsetT chunk_begin = chunk_id * TileItems;
-    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TileItems, items_per_worker);
+    const OffsetT chunk_begin = chunk_id * items_per_tile;
+    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + items_per_tile, items_per_worker);
 
     // chunk_size <= TileItems, casting to int is safe
     const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
@@ -758,7 +763,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
 
     // store prefix-scan values, discarding head flags
     {
-      const OffsetT output_offset = chunk_id * TileItems;
+      const OffsetT output_offset = chunk_id * items_per_tile;
 
       if constexpr (IsInclusive)
       {

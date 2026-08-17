@@ -11,13 +11,13 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -27,9 +27,11 @@ from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
-class _SegmentedReduce:
+class _SegmentedReduce(Serializable):
     __slots__ = [
-        "build_result",
+        "_bound_build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "start_offsets_in_cccl",
@@ -37,6 +39,16 @@ class _SegmentedReduce:
         "h_init_cccl",
         "op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("h_init_cccl", VALUE),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceSegmentedReduceBuildResult)),
+    )
 
     def __init__(
         self,
@@ -46,6 +58,7 @@ class _SegmentedReduce:
         end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -58,14 +71,25 @@ class _SegmentedReduce:
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
+            d_in,
+            d_out,
+            start_offsets_in,
+            end_offsets_in,
+            op,
+            h_init,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceSegmentedReduceBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                self.op_cccl,
+                self.h_init_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -82,6 +106,11 @@ class _SegmentedReduce:
         max_segment_size: int | None = None,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(
                 "Segmented sort does not currently support more than 2^31-1 segments."
@@ -122,7 +151,7 @@ class _SegmentedReduce:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -147,6 +176,7 @@ def make_segmented_reduce(
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
+    compute_capability=None,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -167,13 +197,24 @@ def make_segmented_reduce(
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the reduction
     """
     op_adapter = make_op_adapter(op)
     return _SegmentedReduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
+        d_in,
+        d_out,
+        start_offsets_in,
+        end_offsets_in,
+        op_adapter,
+        h_init,
+        compute_capability=compute_capability,
     )
 
 

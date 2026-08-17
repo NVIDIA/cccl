@@ -106,7 +106,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      nullptr);
+      __policy);
 
     {
       // Allocate memory for result
@@ -123,7 +123,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
         ::cuda::std::move(__output_wrapper),
         __storage.template __get_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
@@ -132,12 +132,12 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __middle,
     _InputIterator __last,
-    _OutputIterator __result) const
+    _OutputIterator __result)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

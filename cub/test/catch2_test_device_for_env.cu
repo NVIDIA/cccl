@@ -12,7 +12,9 @@
 #include <cuda/devices>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include <sstream>
+
+#include "cub_test_macros.h"
 
 struct square_ref_op
 {
@@ -49,7 +51,7 @@ struct odd_count_op
 // Bulk
 // -----------------------------------------------------------------------
 
-C2H_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]")
+CUB_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   square_idx_op op{thrust::raw_pointer_cast(vec.data())};
@@ -69,7 +71,7 @@ C2H_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]")
 // ForEachN
 // -----------------------------------------------------------------------
 
-C2H_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]")
+CUB_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   square_ref_op op{};
@@ -89,7 +91,7 @@ C2H_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]")
 // ForEach
 // -----------------------------------------------------------------------
 
-C2H_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]")
+CUB_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   square_ref_op op{};
@@ -109,7 +111,7 @@ C2H_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]")
 // ForEachCopyN
 // -----------------------------------------------------------------------
 
-C2H_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]")
+CUB_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
   auto count = c2h::device_vector<int>(1);
@@ -130,7 +132,7 @@ C2H_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]")
 // ForEachCopy
 // -----------------------------------------------------------------------
 
-C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
+CUB_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
   auto count = c2h::device_vector<int>(1);
@@ -172,7 +174,7 @@ struct block_size_extracting_op
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-C2H_TEST("DeviceFor::Bulk can be tuned", "[for][device]", block_sizes)
+CUB_TEST("DeviceFor::Bulk can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -183,7 +185,7 @@ C2H_TEST("DeviceFor::Bulk can be tuned", "[for][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", block_sizes)
+CUB_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
@@ -195,7 +197,7 @@ C2H_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceFor::ForEach can be tuned", "[for][device]", block_sizes)
+CUB_TEST("DeviceFor::ForEach can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
@@ -207,7 +209,7 @@ C2H_TEST("DeviceFor::ForEach can be tuned", "[for][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", block_sizes)
+CUB_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
@@ -219,7 +221,7 @@ C2H_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
+CUB_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
@@ -232,7 +234,7 @@ C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ForPolicy", "[for][device]")
+CUB_TEST("Test ForPolicy properties", "[for][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ForPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ForPolicy>);
@@ -250,5 +252,12 @@ C2H_TEST("ForPolicy", "[for][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1) == "ForPolicy { .threads_per_block = 128, .items_per_thread = 4 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

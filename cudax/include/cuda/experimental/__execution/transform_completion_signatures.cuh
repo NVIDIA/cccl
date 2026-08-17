@@ -166,7 +166,7 @@ struct __transform_all_fn
 };
 
 template <class _TransformOne>
-__transform_all_fn(_TransformOne) -> __transform_all_fn<_TransformOne>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __transform_all_fn(_TransformOne) -> __transform_all_fn<_TransformOne>;
 
 template <class _Completions,
           class _ValueFn   = __default_transform_fn<set_value_t>,

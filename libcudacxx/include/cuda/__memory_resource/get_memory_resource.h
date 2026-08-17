@@ -60,7 +60,7 @@ struct __get_memory_resource_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_synchronous_resource_env<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr _Tp& operator()(_Tp& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp& __t) noexcept -> _Tp&
   {
     return __t;
   }
@@ -68,7 +68,7 @@ struct __get_memory_resource_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_resource<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(const _Tp& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) _CCCL_STATIC_CALL_OPERATOR(const _Tp& __t) noexcept
   {
     static_assert(noexcept(__t.get_memory_resource()), "get_memory_resource must be noexcept");
     return __t.get_memory_resource();
@@ -77,12 +77,12 @@ struct __get_memory_resource_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_memory_resource<_Env>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) _CCCL_STATIC_CALL_OPERATOR(const _Env& __env) noexcept
   {
-    static_assert(noexcept(__env.query(*this)), "get_memory_resource_t query must be noexcept");
-    static_assert(resource<::cuda::std::remove_cvref_t<decltype(__env.query(*this))>>,
+    static_assert(noexcept(__env.query(__get_memory_resource_t{})), "get_memory_resource_t query must be noexcept");
+    static_assert(resource<::cuda::std::remove_cvref_t<decltype(__env.query(__get_memory_resource_t{}))>>,
                   "get_memory_resource_t query must return a cuda::mr::resource");
-    return __env.query(*this);
+    return __env.query(__get_memory_resource_t{});
   }
 };
 

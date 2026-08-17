@@ -13,15 +13,19 @@
 #  pragma nv_diag_suppress 20011
 #endif
 
-#include <thrust/device_vector.h>
-#include <thrust/fill.h>
-#include <thrust/host_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/logical.h>
 
+#include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/memory_pool>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -33,7 +37,8 @@ namespace cudax = cuda::experimental;
 template <int _N>
 using _int_c = ::cuda::std::integral_constant<int, _N>;
 
-using key_types     = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t>;
+using key_types =
+  c2h::type_list<::cuda::std::uint8_t, ::cuda::std::uint16_t, ::cuda::std::int32_t, ::cuda::std::int64_t>;
 using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
 using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
 using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
@@ -47,6 +52,26 @@ struct iota_pair
   }
 };
 
+// Present keys [0, num_keys) are found, absent keys [num_keys, ...) are not
+struct match_expected
+{
+  const int* found;
+  int num_keys;
+
+  __device__ bool operator()(int i) const noexcept
+  {
+    return static_cast<bool>(found[i]) == (i < num_keys);
+  }
+};
+
+struct is_nonzero
+{
+  __device__ bool operator()(int v) const noexcept
+  {
+    return v != 0;
+  }
+};
+
 C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                             = c2h::get<0, TestType>;
@@ -54,7 +79,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
   [[maybe_unused]] constexpr int bucket_size = c2h::get<2, TestType>::value;
   [[maybe_unused]] constexpr int probing     = c2h::get<3, TestType>::value;
 
-  using hasher = cudax::cuco::hash<key_type>;
+  using hasher = cuda::hash<key_type>;
   using probing_type =
     ::cuda::std::conditional_t<probing == 0,
                                cudax::cuco::linear_probing<cg_size, hasher>,
@@ -69,35 +94,58 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
     bucket_size>;
   using value_type = typename map_type::value_type;
 
-  constexpr int num_keys = 400;
+  constexpr int num_keys = (::cuda::std::numeric_limits<key_type>::max() > 800) ? 400 : 100;
 
-  map_type map{static_cast<::cuda::std::size_t>(num_keys * 2),
-               cudax::cuco::empty_key{key_type{-1}},
-               cudax::cuco::empty_value{key_type{-1}}};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  map_type map{stream,
+               mr,
+               static_cast<::cuda::std::size_t>(num_keys * 2),
+               cudax::cuco::empty_key{static_cast<key_type>(-1)},
+               cudax::cuco::empty_value{static_cast<key_type>(-1)}};
 
   auto __pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
-  map.insert(__pairs, __pairs + num_keys);
+  map.insert(stream, __pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  ::thrust::device_vector<int> found(2 * num_keys, 0);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  auto found = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  map.contains(
+    stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
 
-  ::thrust::host_vector<int> h_found(found);
-  int mismatches = 0;
-  for (int i = 0; i < 2 * num_keys; ++i)
-  {
-    const bool expected = i < num_keys; // present keys found, absent keys not
-    mismatches += (static_cast<bool>(h_found[i]) != expected);
-  }
-  REQUIRE(mismatches == 0);
+  REQUIRE(::thrust::all_of(
+    ::thrust::cuda::par.on(stream.get()),
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{2 * num_keys},
+    match_expected{found.data(), num_keys}));
 
   // After clear the map is empty, so none of the previously inserted keys are found
-  map.clear();
-  ::thrust::fill(found.begin(), found.end(), 1);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(::thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
-    return v != 0;
-  }));
+  map.clear(stream);
+  auto cleared = ::cuda::make_buffer<int>(stream, mr, num_keys, 1);
+  map.contains(
+    stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, cleared.begin());
+  REQUIRE(
+    ::thrust::none_of(::thrust::cuda::par.on(stream.get()), cleared.data(), cleared.data() + num_keys, is_nonzero{}));
+}
+
+template <class _Key, class _Tp>
+using __map_of = cudax::cuco::fixed_capacity_map<
+  _Key,
+  _Tp,
+  ::cuda::std::dynamic_extent,
+  ::cuda::thread_scope_device,
+  ::cuda::std::equal_to<_Key>,
+  cudax::cuco::linear_probing<1, cuda::hash<_Key>>,
+  1>;
+
+C2H_TEST("fixed_capacity_map key and slot size constraint", "[container]")
+{
+  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint8_t>::value_type) == 2,
+                "<uint8_t, uint8_t> is a valid 2-byte slot");
+  static_assert(sizeof(typename __map_of<::cuda::std::uint16_t, ::cuda::std::uint16_t>::value_type) == 4,
+                "<uint16_t, uint16_t> is a valid 4-byte slot");
+  static_assert(sizeof(typename __map_of<::cuda::std::uint32_t, ::cuda::std::uint32_t>::value_type) == 8,
+                "<uint32_t, uint32_t> is a valid 8-byte slot");
+  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
+                "a mismatched <uint8_t, uint32_t> slot is a valid 8-byte slot");
 }

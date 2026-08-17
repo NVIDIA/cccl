@@ -26,7 +26,7 @@
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
-//! C2H_TEST("Reduce test", "[device][reduce]")
+//! CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and
@@ -238,7 +238,7 @@ struct kernel_scope
 };
 
 template <size_t... Is, class TplT, class EnvT>
-auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, EnvT env)
+auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const EnvT& env)
 {
   return cuda::std::make_tuple(cuda::std::get<Is>(tpl)..., env);
 }

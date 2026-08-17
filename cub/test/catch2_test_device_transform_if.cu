@@ -6,15 +6,16 @@
 #include <cub/device/device_transform.cuh>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformIf, transform_if);
 
-C2H_TEST("DeviceTransform::TransformIf conditional BabelStream add",
+CUB_TEST("DeviceTransform::TransformIf conditional BabelStream add",
          "[device][transform_if]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;

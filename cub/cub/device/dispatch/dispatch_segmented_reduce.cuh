@@ -116,6 +116,8 @@ public:
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -161,7 +163,7 @@ template <
     InitValueT,
     AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedReduce") DispatchSegmentedReduce
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -501,15 +503,15 @@ template <
     decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource   = DeviceSegmentedReduceKernelSource<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      OffsetT,
-      ReductionOpT,
-      InitValueT,
-      AccumT>,
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT,
+    OffsetT,
+    ReductionOpT,
+    InitValueT,
+    AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
@@ -709,13 +711,13 @@ template <typename OverrideAccumT = use_default,
             static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource   = DeviceFixedSizeSegmentedReduceKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitValueT,
-              AccumT>,
+            PolicySelector,
+            InputIteratorT,
+            OutputIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitValueT,
+            AccumT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<OffsetT>, int> = 0>
 #if _CCCL_HAS_CONCEPTS()
@@ -784,7 +786,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return cudaSuccess;
     }
 
-    const auto num_segments_per_invocation =
+    constexpr auto num_segments_per_invocation =
       static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
@@ -814,7 +816,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
         return error;
       }
 
-      d_in += num_segments_per_invocation * segment_size;
+      d_in += num_segments_per_invocation * segment_size; // NOLINT(bugprone-misplaced-widening-cast)
       d_out += num_segments_per_invocation;
 
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -925,7 +927,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return error;
     }
 
-    d_in += num_segments_per_invocation * segment_size;
+    d_in += num_segments_per_invocation * segment_size; // NOLINT(bugprone-misplaced-widening-cast)
     d_out += num_segments_per_invocation;
 
     if (const auto error = CubDebug(cudaPeekAtLastError()))

@@ -40,7 +40,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_string
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(convertible_to<const _Tp&, basic_string_view<_CharT>>)
-  _CCCL_API _CCCL_CONSTEVAL basic_format_string(const _Tp& __str)
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL basic_format_string(const _Tp& __str)
       : __str_{__str}
   {
     if constexpr (sizeof...(_Args) > 0)
@@ -59,11 +59,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_string
     }
   }
 
-  _CCCL_API constexpr basic_format_string(__dynamic_format_string<_CharT> __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_format_string(__dynamic_format_string<_CharT> __s) noexcept
       : __str_{__s.__get()}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr basic_string_view<_CharT> get() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_string_view<_CharT> get() const noexcept
   {
     return __str_;
   }
