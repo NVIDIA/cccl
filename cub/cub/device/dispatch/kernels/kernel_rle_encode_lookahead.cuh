@@ -1025,7 +1025,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // staged positions
           const position_t* run_positions = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
-          const int warp_tile_run_count   = __shfl_sync(full_mask, lane_warp_tile_run_count, warp_tile_id);
+          const int warp_tile_run_count   = warp_run_counts[slot_id][warp_tile_id];
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
           // if the compute warp decided to skip staging for this warp tile, the positions were never staged:
           // decode them from the head flags and buffer intermediate results in register
