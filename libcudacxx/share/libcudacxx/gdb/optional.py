@@ -17,8 +17,12 @@ import gdb.printing
 
 def _is_cuda_optional(value_type: gdb.Type) -> bool:
     value_type = cccl_common.canonical_type(value_type)
-    template_name = cccl_common.template_name(cccl_common.public_type_name(value_type))
-    return template_name == "cuda::std::optional"
+    public_name = cccl_common.public_type_name(value_type)
+    template_name = cccl_common.template_name(value_type)
+    return (
+        public_name.startswith("cuda::std::")
+        and template_name.rsplit("::", 1)[-1] == "optional"
+    )
 
 
 def _has_field(value_type: gdb.Type, name: str) -> bool:
