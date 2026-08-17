@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_void.h>
 
@@ -39,6 +40,25 @@ template <class _Tp = void>
   else
   {
     return __alignment >= alignof(_Tp) && ::cuda::is_power_of_two(__alignment);
+  }
+}
+
+//! @brief Checks whether the passed in alignment is valid
+//! @param __alignment The user provided alignment
+//! @returns true if \p __alignment is less or equal than default_cuda_malloc_alignment and
+//! default_cuda_malloc_alignment is divisible by \p __alignment
+template <class _Tp = void>
+[[nodiscard]] _CCCL_API constexpr bool __is_valid_cuda_alignment(const size_t __alignment) noexcept
+{
+  if constexpr (::cuda::std::is_void_v<_Tp>)
+  {
+    return __alignment > 0 && __alignment <= ::cuda::mr::default_cuda_malloc_alignment
+        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
+  }
+  else
+  {
+    return __alignment >= alignof(_Tp) && __alignment <= ::cuda::mr::default_cuda_malloc_alignment
+        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
 }
 

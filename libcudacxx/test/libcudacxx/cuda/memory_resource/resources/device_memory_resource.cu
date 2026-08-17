@@ -328,77 +328,45 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
 #if _CCCL_HAS_EXCEPTIONS()
   { // allocate with zero alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 0);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
+    REQUIRE_THROWS_MATCHES(
+      res.allocate_sync(5, 0),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate_sync."));
   }
 
   { // allocate with too small alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 42);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
+    REQUIRE_THROWS_MATCHES(
+      res.allocate_sync(5, 42),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate_sync."));
   }
 
   { // allocate with non matching alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 1337);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
+    REQUIRE_THROWS_MATCHES(
+      res.allocate_sync(5, 1337),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate_sync."));
   }
+
+  { // allocate with zero alignment
+    REQUIRE_THROWS_MATCHES(
+      res.allocate(raw_stream, 5, 0),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate."));
+  }
+
   { // allocate with too small alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate(raw_stream, 5, 42);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
+    REQUIRE_THROWS_MATCHES(
+      res.allocate(raw_stream, 5, 42),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate."));
   }
 
   { // allocate with non matching alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate(raw_stream, 5, 1337);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
+    REQUIRE_THROWS_MATCHES(
+      res.allocate(raw_stream, 5, 1337),
+      ::std::invalid_argument,
+      Catch::Matchers::ExceptionMessageMatcher("Invalid alignment passed to __memory_pool_base::allocate."));
   }
 #endif // _CCCL_HAS_EXCEPTIONS()
   {

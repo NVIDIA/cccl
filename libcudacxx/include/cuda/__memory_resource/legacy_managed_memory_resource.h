@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory/is_valid_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
@@ -72,7 +73,7 @@ public:
   allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    if (!__is_valid_alignment(__alignment))
+    if (!::cuda::__is_valid_cuda_alignment(__alignment))
     {
       _CCCL_THROW(::std::invalid_argument,
                   "Invalid alignment passed to legacy_managed_memory_resource::allocate_sync.");
@@ -93,7 +94,7 @@ public:
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment),
+    _CCCL_ASSERT(::cuda::__is_valid_cuda_alignment(__alignment),
                  "Invalid alignment passed to legacy_managed_memory_resource::deallocate_sync.");
     _CCCL_ASSERT_CUDA_API(::cuda::__driver::__freeNoThrow,
                           "legacy_managed_memory_resource::deallocate_sync failed",
@@ -125,17 +126,6 @@ public:
   _CCCL_HOST_API friend constexpr void
   get_property(legacy_managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept
   {}
-
-  //! @brief Checks whether the passed in alignment is valid
-  [[nodiscard]] _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
-  {
-    if (__alignment == 0)
-    {
-      return false;
-    }
-    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
-        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
-  }
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 
