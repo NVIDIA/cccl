@@ -587,9 +587,10 @@ CUB_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[hi
   }
 
   using counter_t      = unsigned int;
-  const int num_levels = GENERATE(1025, 4097);
+  const int num_levels = GENERATE(1025, 4097, 8193);
 
   test_even_and_range<int, 1, 1, counter_t>(num_levels - 1, num_levels, 4096, 4);
+  test_even_and_range<int, 4, 3, counter_t>(num_levels - 1, num_levels, 4096, 4);
 }
 
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
