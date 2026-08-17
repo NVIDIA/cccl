@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/ptx>
 #include <cuda/std/__algorithm/max.h>
@@ -219,11 +220,11 @@ struct warp_tile_run_scan_t
 };
 
 // we need this because STORE and BOOKKEEPER both recalculate from slot_warp_run_counts
-template <int compute_warps>
+template <int ComputeWarps>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_tile_run_scan_t
 scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
 {
-  const int lane_run_count = (lane_id < compute_warps) ? slot_warp_run_counts[lane_id] : 0;
+  const int lane_run_count = (lane_id < ComputeWarps) ? slot_warp_run_counts[lane_id] : 0;
   typename WarpScan<int>::TempStorage warp_scan_storage;
   int lane_scan;
   WarpScan<int>(warp_scan_storage).ExclusiveSum(lane_run_count, lane_scan);
@@ -311,7 +312,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned compute_head_flags(
   for (int iter = 0; iter < ItemsPerThread; ++iter)
   {
     // each iteration handles one 32-element chunk of the warp tile; lane i compares element i of the chunk
-    const int loc = warp_tile_offset + iter * 32 + lane_id;
+    const int loc = warp_tile_offset + iter * detail::warp_threads + lane_id;
     int key_idx;
     int pred_idx;
     if constexpr (KeysStaged)
@@ -421,13 +422,11 @@ struct head_flag_decode_t
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE head_flag_decode_t(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
   {
-    lane_head_flag_word           = slot_head_flags[warp_tile_id * 32 + lane_id];
+    lane_head_flag_word           = slot_head_flags[warp_tile_id * detail::warp_threads + lane_id];
     const int lane_word_run_count = __popc(lane_head_flag_word);
     typename WarpScan<int>::TempStorage warp_scan_storage;
-    int lane_word_run_count_scan;
-    WarpScan<int>(warp_scan_storage).InclusiveSum(lane_word_run_count, lane_word_run_count_scan);
+    WarpScan<int>(warp_scan_storage).ExclusiveSum(lane_word_run_count, lane_runs_before_word);
     // lane i: # of runs starting in head_flag words [0, i), i.e. in elements [0, i*32)
-    lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
     // lane i -> first head position in head flag words [i, 32)
     // if our own run_count is >0, the head is here!
     // empty should be +infinity, since we use min
@@ -456,7 +455,7 @@ struct head_flag_decode_t
       // propose candidate
       const int candidate_word_idx = flag_word_idx + step;
       // read the i'th row
-      const int candidate_runs_before = __shfl_sync(full_mask, lane_runs_before_word, candidate_word_idx & 31);
+      const int candidate_runs_before = __shfl_sync(full_mask, lane_runs_before_word, candidate_word_idx);
       if (candidate_word_idx < ItemsPerThread && candidate_runs_before <= run_idx)
       {
         flag_word_idx = candidate_word_idx;
@@ -495,8 +494,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   int lane_id,
   int& dense_mode)
 {
-  constexpr int poll_loads_per_lane = current_policy<PolicySelector>().lookahead.poll_loads_per_lane;
-  static_assert(window_size_cap >= 1 && window_size_cap <= detail::warp_threads * poll_loads_per_lane,
+  constexpr int poll_items_per_thread = current_policy<PolicySelector>().lookahead.poll_items_per_thread;
+  static_assert(window_size_cap >= 1 && window_size_cap <= detail::warp_threads * poll_items_per_thread,
                 "the fold window must be covered by the lanes");
   while (first_unseen_tile_id < tile_id)
   {
@@ -504,7 +503,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     // # of tiles to fold this iteration
     const int window_size     = (::cuda::std::min) (remain, window_size_cap);
     const int lane_tile_count = (window_size - lane_id + (detail::warp_threads - 1)) >> detail::log2_warp_threads;
-    tile_partial_state_t packed_words[poll_loads_per_lane] = {}; // must zero initialize
+    tile_partial_state_t packed_words[poll_items_per_thread] = {}; // must zero initialize
 
     bool ready;
     // first, all tile state in window must be ready
@@ -512,7 +511,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     {
       ready = true;
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < poll_loads_per_lane; ++i)
+      for (int i = 0; i < poll_items_per_thread; ++i)
       {
         // we only try if that state is not published
         if (i < lane_tile_count && packed_words[i].published_tag() != tile_published)
@@ -531,7 +530,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
     int lane_run_count = 0, lane_last_packed = -1;
     // now, we fold the window
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < poll_loads_per_lane; ++i)
+    for (int i = 0; i < poll_items_per_thread; ++i)
     {
       if (i < lane_tile_count)
       {
@@ -586,7 +585,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
     // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
     // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
     // overlapping
-    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.dense_poll_loads_per_lane,
+    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.dense_poll_items_per_thread,
                       PolicySelector>(
       tile_partial_states,
       tile_id,
@@ -599,7 +598,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   else
   {
     // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
-    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.poll_loads_per_lane,
+    poll_fold_windows<detail::warp_threads * current_policy<PolicySelector>().lookahead.poll_items_per_thread,
                       PolicySelector>(
       tile_partial_states,
       tile_id,
@@ -649,12 +648,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(
     policy.tile_size() <= 0xffff && policy.tile_size() - 1 <= ::cuda::std::numeric_limits<position_t>::max(),
     "tile_size must fit the 16-bit state words and the staged position type");
-  static_assert(policy.poll_loads_per_lane >= 3 && policy.poll_loads_per_lane <= 32,
-                "poll_loads_per_lane must be in [3, 32] so the fold windows cover the dense cap and the int "
+  static_assert(policy.poll_items_per_thread >= 3 && policy.poll_items_per_thread <= 32,
+                "poll_items_per_thread must be in [3, 32] so the fold windows cover the dense cap and the int "
                 "open-length accumulator cannot overflow");
 
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
-  static_assert(policy.buf_per_lane() * (static_cast<int>(sizeof(KeyT)) + 4) <= 64,
+  static_assert(policy.decode_items_per_thread() * int{sizeof(KeyT) + sizeof(int)} <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
   static_assert(
     (::cuda::std::is_same_v<OffT, ::cuda::std::int32_t> || ::cuda::std::is_same_v<OffT, ::cuda::std::int64_t>)
@@ -687,7 +686,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
                                                    // try_cancel)
   __shared__ int warp_run_counts[max_key_ring_stages][compute_warps]; // per compute warp run counts
-  __shared__ unsigned head_flag_buf[max_key_ring_stages][compute_warps * 32]; // staged head-flag words
+  __shared__ unsigned head_flag_buf[max_key_ring_stages][compute_warps * detail::warp_threads]; // staged head-flag
+                                                                                                // words
   __shared__ int warp_first_heads[max_key_ring_stages][compute_warps]; // per compute warp first head idx (-1 if none)
   __shared__ int warp_last_heads[max_key_ring_stages][compute_warps]; // per compute warp last head idx (-1 if none)
 
@@ -928,7 +928,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // arrived pos_buf_free(g - 2P) too. So there is no race.
           if (stage_flags)
           {
-            head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
+            head_flag_buf[slot_id][compute_warp_id * detail::warp_threads + lane_id] = my_flags;
           }
           else
           {
@@ -1035,21 +1035,22 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           {
             // wait for staged_warp_tile (2/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
-            constexpr int buf_per_lane = policy.buf_per_lane();
-            KeyT buf_key[buf_per_lane];
-            int buf_run_length[buf_per_lane];
+            constexpr int decode_items_per_thread = policy.decode_items_per_thread();
+            KeyT buf_key[decode_items_per_thread];
+            int buf_run_length[decode_items_per_thread];
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
-            const int num_rounds       = (warp_tile_run_count + 31) >> 5;
+            const int num_rounds       = ::cuda::ceil_div(warp_tile_run_count, detail::warp_threads);
+            _CCCL_ASSERT(num_rounds <= decode_items_per_thread, "register buffer must cover all decoding rounds");
             const head_flag_decode_t<items_per_thread> dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
             _CCCL_PRAGMA_UNROLL_FULL()
-            for (int it = 0; it < buf_per_lane; ++it)
+            for (int it = 0; it < decode_items_per_thread; ++it)
             {
               if (it >= num_rounds)
               {
                 break;
               }
-              const int run_idx    = it * 32 + lane_id;
+              const int run_idx    = it * detail::warp_threads + lane_id;
               const run_span_t run = dec.decode_run(run_idx);
               buf_key[it]          = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
               // note: this is garbage for the last run head
@@ -1069,13 +1070,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             wait_parity(&prefixed[slot_id], key_ring.parity);
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
             _CCCL_PRAGMA_UNROLL_FULL()
-            for (int it = 0; it < buf_per_lane; ++it)
+            for (int it = 0; it < decode_items_per_thread; ++it)
             {
               if (it >= num_rounds)
               {
                 break;
               }
-              const int run_idx = it * 32 + lane_id;
+              const int run_idx = it * detail::warp_threads + lane_id;
               if (run_idx < warp_tile_run_count)
               {
                 const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
@@ -1110,7 +1111,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           {
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
             _CCCL_PRAGMA_UNROLL(2)
-            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
+            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += detail::warp_threads)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
@@ -1129,7 +1130,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // vvv regressed case vvv
             const KeyT* tile_keys = d_keys + static_cast<size_t>(tile_id) * tile_size;
             _CCCL_PRAGMA_UNROLL(2)
-            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
+            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += detail::warp_threads)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);

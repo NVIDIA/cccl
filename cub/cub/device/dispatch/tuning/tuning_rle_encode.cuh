@@ -119,9 +119,9 @@ struct RleLookaheadPolicy
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
   // so it can be SHALLOWER than the keys ring and this buys room for more key_ring_stages
   int pos_ring_stages; //!< Depth of the run-positions ring; 2 * pos_ring_stages >= key_ring_stages must hold
-  int poll_loads_per_lane; //!< Number of tile-state loads each poll-warp lane keeps in flight
-  int dense_poll_loads_per_lane; //!< Loads per lane for the smaller poll window used in dense mode; the window is
-                                 //!< warp_threads * dense_poll_loads_per_lane tile states
+  int poll_items_per_thread; //!< Number of tile-state loads each poll-warp lane keeps in flight
+  int dense_poll_items_per_thread; //!< Loads per lane for the smaller poll window used in dense mode; the window is
+                                   //!< warp_threads * dense_poll_items_per_thread tile states
   int dense_mode_runs_per_tile; //!< Average runs per tile in a folded window above which the poll switches to the
                                 //!< smaller dense-mode window
   // when should compute warps stage?
@@ -139,11 +139,10 @@ struct RleLookaheadPolicy
   }
 
   // store buffers one key + one length per reg-buf round in registers
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int buf_per_lane() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int decode_items_per_thread() const noexcept
   {
-    return ((flag_staging_threshold - 1 + (detail::warp_threads - 1)) / detail::warp_threads > 0)
-           ? (flag_staging_threshold - 1 + (detail::warp_threads - 1)) / detail::warp_threads
-           : 1;
+    const int rounds_candidate = ::cuda::ceil_div(flag_staging_threshold - 1, detail::warp_threads);
+    return (::cuda::std::max) (rounds_candidate, 1);
   }
 
   // for each input tile, we need to store the keys and in-tile positions
@@ -197,8 +196,8 @@ struct RleLookaheadPolicy
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.compute_warps == rhs.compute_warps
         && lhs.key_ring_stages == rhs.key_ring_stages && lhs.pos_ring_stages == rhs.pos_ring_stages
-        && lhs.poll_loads_per_lane == rhs.poll_loads_per_lane
-        && lhs.dense_poll_loads_per_lane == rhs.dense_poll_loads_per_lane
+        && lhs.poll_items_per_thread == rhs.poll_items_per_thread
+        && lhs.dense_poll_items_per_thread == rhs.dense_poll_items_per_thread
         && lhs.dense_mode_runs_per_tile == rhs.dense_mode_runs_per_tile
         && lhs.flag_staging_threshold == rhs.flag_staging_threshold;
   }
@@ -215,8 +214,8 @@ struct RleLookaheadPolicy
     return os
         << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
         << ", .key_ring_stages = " << p.key_ring_stages << ", .pos_ring_stages = " << p.pos_ring_stages
-        << ", .poll_loads_per_lane = " << p.poll_loads_per_lane << ", .dense_poll_loads_per_lane = "
-        << p.dense_poll_loads_per_lane << ", .dense_mode_runs_per_tile = " << p.dense_mode_runs_per_tile
+        << ", .poll_items_per_thread = " << p.poll_items_per_thread << ", .dense_poll_items_per_thread = "
+        << p.dense_poll_items_per_thread << ", .dense_mode_runs_per_tile = " << p.dense_mode_runs_per_tile
         << ", .flag_staging_threshold = " << p.flag_staging_threshold << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -750,19 +749,19 @@ struct policy_selector
     constexpr int target_key_bytes_per_lane = 128;
     const int items_per_thread  = (::cuda::std::min) (int{detail::warp_threads}, target_key_bytes_per_lane / key_size);
     constexpr int compute_warps = 8;
-    constexpr int key_ring_stages           = 5;
-    constexpr int pos_ring_stages           = 3;
-    constexpr int poll_loads_per_lane       = 5;
-    constexpr int dense_poll_loads_per_lane = 3;
-    constexpr int dense_mode_runs_per_tile  = 128;
-    constexpr int flag_staging_threshold    = detail::warp_threads;
+    constexpr int key_ring_stages             = 5;
+    constexpr int pos_ring_stages             = 3;
+    constexpr int poll_items_per_thread       = 5;
+    constexpr int dense_poll_items_per_thread = 3;
+    constexpr int dense_mode_runs_per_tile    = 128;
+    constexpr int flag_staging_threshold      = detail::warp_threads;
     return RleLookaheadPolicy{
       items_per_thread,
       compute_warps,
       key_ring_stages,
       pos_ring_stages,
-      poll_loads_per_lane,
-      dense_poll_loads_per_lane,
+      poll_items_per_thread,
+      dense_poll_items_per_thread,
       dense_mode_runs_per_tile,
       flag_staging_threshold};
   }
