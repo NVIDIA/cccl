@@ -374,13 +374,15 @@ struct retry_t
   using __exception_sink_tag = void;
   //! @endcond
 
+  // decltype(auto), not auto: a reference-returning callable must re-run to the same object,
+  // not to a copy (the ignore branch deduces a reference to the global, which never dangles).
   template <class _Fn>
-  auto operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
+  decltype(auto) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
   {
     if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
     {
       __fn(); // a throw here IS the decline
-      return ::std::ignore; // resume: the void expression is complete
+      return (::std::ignore); // resume: the void expression is complete
     }
     else
     {
@@ -778,7 +780,7 @@ struct __policy_or : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> && __has_exception_hook<_RR>, int> = 0>
-  auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Raw = decltype(__fn());
 
@@ -837,7 +839,7 @@ struct __policy_or : __composite_hooks<_L, _R>
         if constexpr (::cuda::std::is_void_v<_Raw>)
         {
           __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-          return ::std::ignore;
+          return (::std::ignore);
         }
         else
         {
@@ -849,7 +851,7 @@ struct __policy_or : __composite_hooks<_L, _R>
         if constexpr (::cuda::std::is_void_v<_Raw>)
         {
           __reobserve_right();
-          return ::std::ignore;
+          return (::std::ignore);
         }
         else
         {
@@ -881,7 +883,7 @@ struct __policy_pow
                 "the repeated policy never declines; repetitions after the first are unreachable");
 
   template <class _Fn>
-  auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Expr = decltype(__fn());
     if (__n_ == 0)
@@ -926,7 +928,7 @@ struct __policy_pow
     if constexpr (::cuda::std::is_void_v<_Expr>)
     {
       __go(__go, __exception, __n_);
-      return ::std::ignore;
+      return (::std::ignore);
     }
     else
     {
@@ -1954,6 +1956,22 @@ UNITTEST("re-running policies")
     EXPECT(calls == 2);
   }
 
+  // References survive re-running: the re-run hands back the same object, not a copy
+  // (this is why the hooks are decltype(auto), not auto).
+  {
+    static int obj = 5;
+    int calls      = 0;
+    int& r         = on_throw(retry) << [&]() -> int& {
+      if (++calls < 2)
+      {
+        throw ::std::runtime_error("once");
+      }
+      return obj;
+    };
+    EXPECT(&r == &obj);
+    EXPECT(calls == 2);
+  }
+
   // noexcept surface: a re-running chain is never noexcept (explicit location; see
   // the existing comment about nvcc + gcc host and defaulted current()).
   static_assert(!noexcept(on_throw(retry, ::cuda::std::source_location{}) << ::cuda::std::declval<int (&)()>()),
@@ -2195,6 +2213,21 @@ UNITTEST("repetition")
     };
     EXPECT(v == -1);
     EXPECT(calls == 1); // declined on type before any re-run, every iteration vacuous
+  }
+
+  // Repetition preserves reference results too (the | walk is decltype(auto) throughout).
+  {
+    static int obj = 9;
+    int calls      = 0;
+    int& r         = on_throw(retry * 2) << [&]() -> int& {
+      if (++calls < 3)
+      {
+        throw ::std::runtime_error("transient");
+      }
+      return obj;
+    };
+    EXPECT(&r == &obj);
+    EXPECT(calls == 3);
   }
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
