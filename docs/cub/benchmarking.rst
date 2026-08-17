@@ -19,16 +19,12 @@ Starting from scratch:
 
     git clone https://github.com/NVIDIA/cccl.git
     cd cccl
-    mkdir build
-    cd build
-    cmake .. --preset=benchmark
+    cmake -S . --preset=benchmark
 
-You clone the repository, create a build directory and configure the build with CMake.
-The preset `benchmark` takes care of everything.
+You clone the repository, and configure the build with CMake. The preset `benchmark` takes
+care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
-
-We use Ninja as CMake generator in this guide, but you can use any other generator you prefer.
 
 You can then proceed to build the benchmarks.
 
@@ -36,7 +32,7 @@ You can list the available cmake build targets with, if you intend to only build
 
 .. code-block:: bash
 
-    ninja -t targets | grep '\.bench\.'
+    cmake --build build/benchmark --target help | grep '\.bench\.'
     cub.bench.adjacent_difference.subtract_left.base: phony
     cub.bench.copy.memcpy.base: phony
     ...
@@ -47,7 +43,7 @@ We also provide a target to build all benchmarks:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
+    cmake --build build/benchmark --target cub.all.benches
 
 
 .. _cub-benchmarking-running:
@@ -59,7 +55,7 @@ After we built a benchmark, we can run it as follows:
 
 .. code-block:: bash
 
-    ./bin/cub.bench.adjacent_difference.subtract_left.base\
+    ./build/benchmark/bin/cub.bench.adjacent_difference.subtract_left.base\
         -d 0\
         --stopping-criterion entropy\
         --json base.json\
@@ -98,7 +94,7 @@ If you are only interested in a subset of workloads, you can restrict benchmarki
 
 .. code-block:: bash
 
-    ./bin/cub.bench.adjacent_difference.subtract_left.base ...\
+    ./build/benchmark/bin/cub.bench.adjacent_difference.subtract_left.base ...\
         -a 'T{ct}=I32'\
         -a 'OffsetT{ct}=I32'\
         -a 'Elements{io}[pow2]=[24,28]'\
@@ -186,11 +182,13 @@ For example, inside a build directory you can run:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
-    benchmarks=$(ls bin | grep cub.bench); n=$(echo $benchmarks | wc -w); i=1; \
+    cmake --build build/benchmark --target cub.all.benches
+    benchmarks=$(ls build/benchmark/bin | grep cub.bench); \
+    n=$(echo $benchmarks | wc -w); \
+    i=1; \
     for b in $benchmarks; do \
       echo "=== Running $b ($i/$n) ==="; \
-      ./bin/$b -d 0 --stopping-criterion entropy --json $b.json --md $b.md; \
+      build/benchmark/bin/$b -d 0 --stopping-criterion entropy --json $b.json --md $b.md; \
       ((i++)); \
     done
 
@@ -209,7 +207,7 @@ Furthermore, the tuning scripts require some additional python dependencies, whi
 
 .. code-block:: bash
 
-    ninja clean
+    cmake --build build/benchmark --target clean
     pip install --user fpzip pandas scipy
 
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
@@ -347,7 +345,7 @@ A typical invocation, if you work on a remote cluster, could look like this:
 
 .. code-block:: bash
 
-    ncu --set full --import-source yes -o base.ncu-rep -f ./bin/thrust.bench.transform.basic.base -d 0 --profile
+    ncu --set full --import-source yes -o base.ncu-rep -f build/benchmark/bin/thrust.bench.transform.basic.base -d 0 --profile
 
 The option `--set full` instructs `ncu` to collect all metrics.
 This requires rerunning some kernels and takes more time.
