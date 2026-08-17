@@ -59,8 +59,8 @@ interpreter therefore fails at dependency resolution with an error like
 ``No matching distribution found for numba-cuda``. Use a minimal
 extra instead and supply pre-compiled operators (``OpKind`` or ``RawOp``).
 If a Numba build that does not support free-threading is imported to
-compile a Python-callable operator, ``cuda.compute`` raises a
-``RuntimeWarning`` and the GIL is re-enabled for the process.
+compile a Python-callable operator, the GIL is re-enabled for the
+process and ``cuda.compute`` emits a ``RuntimeWarning`` reporting it.
 
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~
