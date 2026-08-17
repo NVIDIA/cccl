@@ -19,11 +19,7 @@
 int main(int, char**)
 {
   int ia[] = {1, 2, 3};
-#if _CCCL_TILE_COMPILATION()
-  int* i = cuda::std::__begin_cpo{}(ia);
-#else
-  int* i = cuda::std::begin(ia);
-#endif // !_CCCL_TILE_COMPILATION()
+  int* i   = cuda::std::begin(ia);
   assert(*i == 1);
   *i = 2;
   assert(ia[0] == 2);

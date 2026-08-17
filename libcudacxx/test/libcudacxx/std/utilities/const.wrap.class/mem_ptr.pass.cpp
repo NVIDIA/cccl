@@ -15,6 +15,7 @@
 //   Internal compiler error. Try simplifying or changing the program near the locations listed above.
 // UNSUPPORTED: msvc
 
+// NTTP may not have a class type in C++17.
 // REQUIRES: !c++17
 
 // constant_wrapper

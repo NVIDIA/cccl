@@ -15,6 +15,27 @@ cccl_get_c2h()
 cccl_get_cudatoolkit()
 cccl_get_nvtx()
 
+cccl_get_rapids_test()
+rapids_test_init()
+
+# GCC 7 does not ship <filesystem> (it arrived in GCC 8), which the
+# rapids-cmake resource-spec detector includes. Shadow the header with a
+# minimal local shim on that compiler. Remove when GCC 7 support ends.
+if (
+  TARGET generate_ctest_json
+  AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0
+)
+  target_include_directories(
+    generate_ctest_json
+    BEFORE
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc7_filesystem_shim"
+  )
+endif()
+
+set(CCCL_TEST_GPU_PERCENT_SMALL 15)
+set(CCCL_TEST_GPU_PERCENT_LARGE 100)
+
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
@@ -56,6 +77,20 @@ endfunction()
 function(_cub_is_fail_test result_var test_src)
   string(FIND "${test_src}" "_fail" idx)
   if (idx EQUAL -1)
+    set(${result_var} FALSE PARENT_SCOPE)
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_has_large_tests
+#
+# If the test source declares a CUB_LARGE test, `result_var` will be set to
+# TRUE.
+function(_cub_has_large_tests result_var test_src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
+  string(FIND "${test_source}" "CUB_LARGE" cub_large_test)
+  if (cub_large_test EQUAL -1)
     set(${result_var} FALSE PARENT_SCOPE)
   else()
     set(${result_var} TRUE PARENT_SCOPE)
@@ -118,6 +153,7 @@ function(
   launcher_id
 )
   _cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_has_large_tests(has_large_tests "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
   # The actual name of the test's target:
@@ -164,21 +200,47 @@ function(
     )
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
-    add_test(
+    rapids_test_add(
       NAME ${test_target}
       # gersemi: off
       COMMAND
         "${CMAKE_COMMAND}"
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
+           "-DARGS=[small-mem]"
+           "-DALLOW_RUNNING_NO_TESTS=ON"
            "-DTYPE=Catch2"
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       # gersemi: on
+      GPUS 1
+      PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
     )
     set_tests_properties(
       ${test_target}
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
     )
+
+    if (has_large_tests)
+      rapids_test_add(
+        NAME ${test_target}.large
+        # gersemi: off
+        COMMAND
+          "${CMAKE_COMMAND}"
+             "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+             "-DTEST=$<TARGET_FILE:${test_target}>"
+             "-DARGS=[large-mem]"
+             "-DALLOW_RUNNING_NO_TESTS=ON"
+             "-DTYPE=Catch2"
+             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+        # gersemi: on
+        GPUS 1
+        PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+      )
+      set_tests_properties(
+        ${test_target}.large
+        PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+      )
+    endif()
 
     if ("${test_target}" MATCHES "nvrtc")
       configure_file(
@@ -277,6 +339,7 @@ function(
       "${test_src}" MATCHES "test_future_arch\\.cu$"
       AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
       AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+      AND NOT "$ENV{CCCL_TEST_MODE}" MATCHES "^compute-sanitizer"
     )
       # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
       # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
@@ -298,7 +361,12 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      add_test(
+      if (has_large_tests)
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_LARGE})
+      else()
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
+      endif()
+      rapids_test_add(
         NAME ${test_target}
         # gersemi: off
         COMMAND
@@ -307,6 +375,8 @@ function(
             "-DTEST=$<TARGET_FILE:${test_target}>"
             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         # gersemi: on
+        GPUS 1
+        PERCENT ${_cub_gpu_percent}
       )
       set_tests_properties(
         ${test_target}
@@ -320,6 +390,25 @@ function(
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+  # The unsupported-arch xfail test omits the CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
+  # keeps the strict compile-time diagnostic. Its two %PARAM% variants pin their own arch lists (independent of the
+  # preset) so the diagnostic fires regardless: `arch_0` a single pre-SM90 arch (89-virtual, the highest without cluster
+  # support), and `arch_1` a mixed list adding a cluster-capable 90-virtual to show the diagnostic fires when *any*
+  # targeted arch is unsupported.
+  if ("${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_0$")
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual"
+    )
+  elseif (
+    "${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_1$"
+  )
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual;90-virtual"
+    )
+  endif()
 
   # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
   if (

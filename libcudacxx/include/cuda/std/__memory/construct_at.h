@@ -48,7 +48,7 @@ namespace std
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+          class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
 #    if defined(_CCCL_BUILTIN_ADDRESSOF)
@@ -166,7 +166,7 @@ _CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
+    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
   }
   else
   {
@@ -209,7 +209,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __l
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
+    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
   }
   else
   {

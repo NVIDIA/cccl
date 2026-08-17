@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -67,6 +69,9 @@ inline const ::std::string_view type_name{
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
 {
+  // Host-only by construction (::std::apply, ::std::tuple), so this forwards with the host stdlib.
+  // The __host__ __device__ ::cuda::std::forward crashes nvcc 12.0's front end in this lambda when
+  // the host compiler is clang.
   return ::std::apply(
     [&](auto&&... x) {
       return ::std::tuple(f(::std::forward<decltype(x)>(x))...);
@@ -133,7 +138,7 @@ template <typename T, size_t n>
 using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
 
 // Mini-unittest
-static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
+static_assert(::cuda::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
 
 namespace reserved
 {
@@ -203,15 +208,15 @@ template <typename T, size_t N>
 template <typename T, typename P0, typename... P>
 T only_convertible(P0&& p0, [[maybe_unused]] P&&... p)
 {
-  if constexpr (::std::is_convertible_v<P0, T>)
+  if constexpr (::cuda::std::is_convertible_v<P0, T>)
   {
-    static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
-    return ::std::forward<P0>(p0);
+    static_assert(!(::cuda::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
+    return ::cuda::std::forward<P0>(p0);
   }
   else
   {
     // Ignore current head and recurse to tail
-    return only_convertible<T>(::std::forward<P>(p)...);
+    return only_convertible<T>(::cuda::std::forward<P>(p)...);
   }
 }
 
@@ -248,7 +253,7 @@ auto all_convertible(P&&... p)
 {
   // We use a union here to prevent the compiler from calling the destructor of the array.
   // All construction/destruction will be done manually for efficiency purposes.
-  static constexpr size_t size = (::std::is_convertible_v<P, T> + ...);
+  static constexpr size_t size = (::cuda::std::is_convertible_v<P, T> + ...);
   unsigned char buffer[size * sizeof(T)];
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
@@ -263,13 +268,13 @@ auto all_convertible(P&&... p)
   auto __guard = ::cuda::std::__make_exception_guard(rollback);
   each_in_pack(
     [&](auto&& e) {
-      if constexpr (::std::is_convertible_v<decltype(e), T>)
+      if constexpr (::cuda::std::is_convertible_v<decltype(e), T>)
       {
-        new (result.data() + i) T(::std::forward<decltype(e)>(e));
+        new (result.data() + i) T(::cuda::std::forward<decltype(e)>(e));
         ++i;
       }
     },
-    ::std::forward<P>(p)...);
+    ::cuda::std::forward<P>(p)...);
   __guard.__complete();
   return mv(result);
 }
@@ -291,13 +296,13 @@ namespace reserved
 template <typename T, typename... P>
 T only_convertible_or([[maybe_unused]] T default_v, [[maybe_unused]] P&&... p)
 {
-  if constexpr (!(::std::is_convertible_v<P, T> || ...))
+  if constexpr (!(::cuda::std::is_convertible_v<P, T> || ...))
   {
     return default_v;
   }
   else
   {
-    return only_convertible<T>(::std::forward<P>(p)...);
+    return only_convertible<T>(::cuda::std::forward<P>(p)...);
   }
 }
 
@@ -309,7 +314,7 @@ struct check_initialization
 {
   /* Yields the number of types in `Ts` to which `T` can be converted. */
   template <typename T>
-  static constexpr int count_convertibilty = (::std::is_convertible_v<T, DataTypes> + ... + 0);
+  static constexpr int count_convertibilty = (::cuda::std::is_convertible_v<T, DataTypes> + ... + 0);
 
   template <typename... ArgTypes>
   static constexpr void from()
@@ -452,7 +457,7 @@ template <typename F, typename Tuple>
 inline constexpr bool is_applicable_v = false;
 
 template <typename F, typename... Args>
-inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::std::is_invocable_v<F, Args...>;
+inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::cuda::std::is_invocable_v<F, Args...>;
 
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.
@@ -466,7 +471,9 @@ struct has_ostream_operator : ::std::false_type
 {};
 
 template <typename T>
-struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
+struct has_ostream_operator<
+  T,
+  decltype(void(::cuda::std::declval<::std::ostream&>() << ::cuda::std::declval<const T&>()), void())>
     : ::std::true_type
 {};
 } // end namespace reserved

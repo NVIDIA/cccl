@@ -1,5 +1,5 @@
 =============== stream.without_context begin ===============
-(const cuda::stream) handle=<address>, unique_id=<id> {
+(const cuda::stream &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -7,7 +7,7 @@
 }
 =============== stream.without_context end ===============
 =============== stream.owning begin ===============
-(const cuda::stream) handle=<address>, unique_id=<id> {
+(const cuda::stream &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -15,7 +15,7 @@
 }
 =============== stream.owning end ===============
 =============== stream.ref begin ===============
-(const cuda::stream_ref) handle=<address>, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -23,7 +23,7 @@
 }
 =============== stream.ref end ===============
 =============== stream.alias begin ===============
-(const stream_ref_alias) handle=<address>, unique_id=<id> {
+(const stream_ref_alias &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -31,7 +31,7 @@
 }
 =============== stream.alias end ===============
 =============== stream.default begin ===============
-(const cuda::stream_ref) handle=default, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=default, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -39,7 +39,7 @@
 }
 =============== stream.default end ===============
 =============== stream.legacy begin ===============
-(const cuda::stream_ref) handle=legacy, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=legacy, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -47,7 +47,7 @@
 }
 =============== stream.legacy end ===============
 =============== stream.per_thread begin ===============
-(const cuda::stream_ref) handle=per-thread, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=per-thread, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -55,13 +55,13 @@
 }
 =============== stream.per_thread end ===============
 =============== stream.invalid begin ===============
-(const cuda::stream_ref) handle=invalid, unique_id=unavailable
+(const cuda::stream_ref &) <address> handle=invalid, unique_id=unavailable
 =============== stream.invalid end ===============
 =============== stream.moved_from begin ===============
-(cuda::stream) handle=invalid, unique_id=unavailable
+(const cuda::stream &) <address> handle=invalid, unique_id=unavailable
 =============== stream.moved_from end ===============
 =============== stream.summary begin ===============
-(const std::vector<cuda::stream_ref>) size=3 {
+(const cuda::std::array<cuda::stream_ref, 3> &) <address>: {
   [0] = handle=<address>, unique_id=<id> {
     device = 0
     priority = 0
@@ -78,7 +78,7 @@
 }
 =============== stream.summary end ===============
 =============== stream.update.before begin ===============
-(cuda::stream_ref) handle=default, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=default, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -86,7 +86,7 @@
 }
 =============== stream.update.before end ===============
 =============== stream.update.after begin ===============
-(cuda::stream_ref) handle=<address>, unique_id=<id> {
+(const cuda::stream_ref &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false
@@ -94,12 +94,12 @@
 }
 =============== stream.update.after end ===============
 =============== stream.capturing begin ===============
-(const cuda::stream) handle=<address>, unique_id=unavailable {
+(const cuda::stream &) <address> handle=<address>, unique_id=unavailable: {
   is_capturing = true
 }
 =============== stream.capturing end ===============
 =============== stream.after_capture begin ===============
-(const cuda::stream) handle=<address>, unique_id=<id> {
+(const cuda::stream &) <address> handle=<address>, unique_id=<id>: {
   device = 0
   priority = 0
   is_capturing = false

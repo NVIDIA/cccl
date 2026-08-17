@@ -16,12 +16,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #if _CCCL_CUDA_COMPILATION()
 template <typename MP2>
@@ -68,8 +71,8 @@ TEST_DEVICE_FUNC void test_shfl()
 
 __global__ void test_kernel()
 {
-  test_shfl<fp32mp2>();
-  test_shfl<fp64mp2>();
+  test_shfl<cudax::fp32mp2>();
+  test_shfl<cudax::fp64mp2>();
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -80,7 +81,7 @@ public:
     // element for this part
     if (last_elem > n)
     {
-      size_t extra_elems = ::std::min(tile_size, last_elem - n);
+      const size_t extra_elems = ::cuda::std::min(tile_size, last_elem - n);
       cnt -= extra_elems;
     }
 

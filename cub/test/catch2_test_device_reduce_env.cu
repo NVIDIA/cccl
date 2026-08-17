@@ -644,35 +644,35 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          decltype(d_in.begin()),
-          decltype(d_out.begin()),
-          offset_t,
-          op_t,
-          init_value_t,
-          accumulator_t,
-          transform_t>),
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_value_t,
+        accumulator_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceKernel<
-          policy_t,
-          /* StableReductionOrder */ true,
-          decltype(d_in.begin()),
-          accumulator_t*,
-          offset_t,
-          offset_t,
-          op_t,
-          accumulator_t,
-          init_value_t,
-          transform_t>),
+        policy_t,
+        /* StableReductionOrder */ true,
+        decltype(d_in.begin()),
+        accumulator_t*,
+        offset_t,
+        offset_t,
+        op_t,
+        accumulator_t,
+        init_value_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          accumulator_t*,
-          decltype(d_out.begin()),
-          int, // always used with int offset
-          op_t,
-          init_value_t,
-          accumulator_t>)};
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_value_t,
+        accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
@@ -706,35 +706,35 @@ CUB_TEST("Device sum not_guaranteed falls back when output type differs from acc
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          decltype(d_in.begin()),
-          decltype(d_out.begin()),
-          offset_t,
-          op_t,
-          init_value_t,
-          accumulator_t,
-          transform_t>),
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_value_t,
+        accumulator_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceKernel<
-          policy_t,
-          /* StableReductionOrder */ true,
-          decltype(d_in.begin()),
-          accumulator_t*,
-          offset_t,
-          offset_t,
-          op_t,
-          accumulator_t,
-          init_value_t,
-          transform_t>),
+        policy_t,
+        /* StableReductionOrder */ true,
+        decltype(d_in.begin()),
+        accumulator_t*,
+        offset_t,
+        offset_t,
+        op_t,
+        accumulator_t,
+        init_value_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          accumulator_t*,
-          decltype(d_out.begin()),
-          int, // always used with int offset
-          op_t,
-          init_value_t,
-          accumulator_t>)};
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_value_t,
+        accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
@@ -1182,13 +1182,13 @@ CUB_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]", CUB_SMALL)
   constexpr auto p2 = cub::ReduceByKeyPolicy{
     .algorithm = cub::ReduceByKeyAlgorithm::lookback,
     .lookback  = cub::ReduceByKeyLookbackPolicy{
-       .threads_per_block = 128,
-       .items_per_thread  = 7,
-       .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+      .threads_per_block = 128,
+      .items_per_thread  = 7,
+      .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::LOAD_DEFAULT,
+      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay    = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

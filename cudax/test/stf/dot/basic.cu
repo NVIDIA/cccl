@@ -15,6 +15,10 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#if !_CCCL_COMPILER(MSVC)
+#  include <unistd.h> // access(), unlink()
+#endif // !_CCCL_COMPILER(MSVC)
+
 using namespace cuda::experimental::stf;
 
 int main()

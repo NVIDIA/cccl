@@ -17,6 +17,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory>
 #include <cuda/memory_pool>
@@ -34,7 +35,7 @@ constexpr int empty_key   = -1;
 constexpr int empty_value = -1;
 
 // A static-capacity map with cg_size 1 so the test can use scalar device inserts.
-using probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+using probing               = cudax::cuco::linear_probing<1, cuda::hash<int>>;
 inline constexpr int bucket = 1;
 inline constexpr ::cuda::std::size_t static_capacity =
   cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{512});
