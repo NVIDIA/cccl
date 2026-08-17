@@ -398,14 +398,14 @@ CUB_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]
   constexpr auto p2 = cub::RleNonTrivialRunsPolicy{
     .algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
     .lookback  = cub::RleNonTrivialRunsLookbackPolicy{
-       .threads_per_block       = 128,
-       .items_per_thread        = 7,
-       .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-       .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
-       .store_with_time_slicing = false,
-       .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay          = cub::LookbackDelayPolicy{
-                  .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+      .threads_per_block       = 128,
+      .items_per_thread        = 7,
+      .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+      .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+      .store_with_time_slicing = false,
+      .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay          = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
