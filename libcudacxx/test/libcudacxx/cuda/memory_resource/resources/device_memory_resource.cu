@@ -327,6 +327,21 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
   }
 
 #if _CCCL_HAS_EXCEPTIONS()
+  { // allocate with zero alignment
+    while (true)
+    {
+      try
+      {
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 0);
+      }
+      catch (std::invalid_argument&)
+      {
+        break;
+      }
+      CHECK(false);
+    }
+  }
+
   { // allocate with too small alignment
     while (true)
     {
