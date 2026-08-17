@@ -23,6 +23,7 @@
 
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,7 +37,9 @@ struct __atomic_ref_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
-  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
+  // GCC 7 cannot correctly evaluate is_trivially_copyable_v for volatile-qualified types.
+  static_assert(is_trivially_copyable_v<remove_cv_t<_Tp>>,
+                "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
   static_assert(sizeof(__underlying_t) <= 16, "cuda::std::atomic_ref<Tp> only supports sizeof(Tp) <= 16");
 

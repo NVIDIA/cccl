@@ -100,7 +100,7 @@ _CCCL_HOST_DEVICE_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order 
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -162,7 +162,7 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_weak_dispatch(
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -173,7 +173,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, m
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -184,7 +184,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, m
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -195,7 +195,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern,
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -206,7 +206,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, 
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -217,7 +217,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern,
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_IF_TARGET(
     NV_IS_DEVICE,
@@ -227,7 +227,7 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, mem
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+  -> __atomic_underlying_remove_cv_t<_Sto>
 {
   NV_IF_TARGET(
     NV_IS_DEVICE,
