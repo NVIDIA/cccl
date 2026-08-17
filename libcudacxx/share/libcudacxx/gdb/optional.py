@@ -34,7 +34,7 @@ class OptionalPrinter:
         value = cccl_common.strip_reference_value(value)
         self.value = value
         self.type = cccl_common.canonical_type(value.type)
-        if any(field.name == "__value_" for field in value.type.fields()):
+        if any(field.name == "__value_" for field in self.type.fields()):
             self.engaged = int(value["__value_"]) != 0
             if self.engaged:
                 self.val = value["__value_"].dereference()
