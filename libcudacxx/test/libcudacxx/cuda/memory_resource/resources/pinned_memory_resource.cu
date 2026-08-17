@@ -146,6 +146,21 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   }
 
 #if _CCCL_HAS_EXCEPTIONS()
+  { // allocate_sync with zero
+    while (true)
+    {
+      try
+      {
+        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 0);
+      }
+      catch (std::invalid_argument&)
+      {
+        break;
+      }
+      CHECK(false);
+    }
+  }
+
   { // allocate_sync with too small alignment
     while (true)
     {

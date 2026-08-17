@@ -486,6 +486,10 @@ protected:
   //! @returns true if \p __alignment is valid.
   [[nodiscard]] _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
+    if (__alignment == 0)
+    {
+      return false;
+    }
     return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
         && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
