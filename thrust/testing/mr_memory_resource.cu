@@ -1,6 +1,11 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
+
+#include <cstddef>
 
 #include <unittest/unittest.h>
 
