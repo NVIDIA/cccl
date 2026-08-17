@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <algorithm_common.h>
+#include <determinism_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -106,12 +107,14 @@ MULTI_GPU_TEST("inclusive_scan single-comm, supported determinism requirements",
   constexpr Op op{};
 
   auto comms = this->communicators();
+  auto rng   = make_rng(C2H_SEED(2));
 
-  constexpr auto values_per_rank = 10;
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
-  for (int r = 0; r < comms.front().size(); ++r)
+
+  const auto total_count = inputs_by_rank.size() * large_values_per_rank;
+  for (auto& values : inputs_by_rank)
   {
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, static_cast<T>(r));
+    values = make_random_values<T>(large_values_per_rank, total_count, rng);
   }
 
   auto streams = nccl_test_util::make_streams();
@@ -140,19 +143,35 @@ MULTI_GPU_TEST("inclusive_scan single-comm, supported determinism requirements",
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::inclusive_scan(
-      cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
-  });
+  std::vector<cuda::buffer<T, cuda::mr::host_accessible>> expected;
 
-  for (cuda::std::size_t i = 0; i < out.size(); ++i)
+  expected.reserve(comms.size());
+  for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
-    INFO("device = " << i);
+    expected.emplace_back(cuda::make_buffer<T>(
+      out[i].stream(),
+      cuda::mr::legacy_pinned_memory_resource{},
+      expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op)));
+  }
 
-    const auto expected_values = expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op);
-    const auto expected =
-      cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
+  // Every run is checked against the same reference, so the runs must also agree with each other.
+  // The repeat catches a result that changes between two runs of the same input.
+  constexpr int num_runs = 4;
 
-    REQUIRE_THAT(out[i], Equals(expected));
+  for (int run = 0; run < num_runs; ++run)
+  {
+    INFO("run = " << run);
+
+    run_threaded(comms.size(), [&](cuda::std::size_t i) {
+      cudax::inclusive_scan(
+        cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
+    });
+
+    for (cuda::std::size_t i = 0; i < out.size(); ++i)
+    {
+      INFO("device = " << i);
+
+      check_against_reference(out[i], expected[i]);
+    }
   }
 }
