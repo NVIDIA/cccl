@@ -127,13 +127,7 @@ typedef struct cccl_build_config
   int enable_pch; // Cache precompiled headers on disk to speed up repeated builds
   int verbose; // Log PCH generation/usage and compiler args to build diagnostics
   // Directory holding the precompiled-header cache. Required when enable_pch is
-  // set: this library does not pick a location of its own, so that a caller
-  // always knows where its build writes. NULL or empty disables PCH regardless
-  // of enable_pch.
-  //
-  // Appended last on purpose: every field above keeps the offset it had, so a
-  // caller built against the previous header still lays out the fields it knows
-  // about identically.
+  // set. NULL or empty disables PCH regardless of enable_pch.
   const char* pch_cache_dir;
 } cccl_build_config;
 

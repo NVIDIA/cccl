@@ -45,28 +45,8 @@ static constexpr const char* pch_preamble_source =
   "#include <cub/device/device_select.cuh>\n"
   "#include <cub/device/device_transform.cuh>\n";
 
-// Digest everything that determines the contents of a PCH: the preamble text,
+// The cache key is everything that determines the contents of a PCH: the preamble text,
 // the PCH kind, and every option handed to libnvcc.
-//
-// This is the cache key. Two compiles that agree on it can share a PCH; two
-// that disagree must not, because clang validates a PCH against the command
-// line it was built with. Keying on (kind, sm_version) alone would let a
-// source-tree build and an installed wheel, which differ in their include
-// paths, collide on one entry and break each other.
-//
-// The parts are joined with NULs so that adjacent values cannot run together
-// and produce the same digest as a different split, then hashed once.
-// `std::hash` is implementation-defined rather than a fixed algorithm, which
-// only means a library upgrade can change the key: entries under the old key
-// are simply never looked up again and age out of the cache. It is stable
-// across processes for a given binary, which is the property a cache shared
-// between builds actually needs.
-//
-// Header *contents* are deliberately not hashed: reading every CUB header to
-// digest it would cost about as much as the parse the PCH exists to avoid. An
-// in-place CCCL upgrade therefore keeps the same key and leaves a stale PCH
-// behind; clang's own size/mtime validation rejects it, and the
-// retry-without-PCH path in JITCompiler::compile recovers.
 std::string hash_pch_options(const std::vector<std::string>& options, const std::string& kind_name)
 {
   std::string blob;
@@ -105,15 +85,7 @@ std::string get_pch_source_path(const std::filesystem::path& dir, const std::str
 }
 
 // Record that an entry was used, so whoever prunes the cache can order entries
-// by recency. Every use refreshes the timestamp: skipping recent ones would make
-// an entry rebuilt and then hammered look older than one touched once and
-// abandoned, which inverts the ordering exactly where it matters. One timestamp
-// write is immaterial next to the compile it accompanies.
-//
-// Only the .pch is touched. A PCH records its preamble as an input and clang
-// validates that input's mtime, so rewriting the preamble's timestamp would
-// invalidate the very entry this is trying to keep alive. The preamble needs no
-// timestamp of its own: it is evicted with its .pch, never independently.
+// by recency.
 void touch_pch_entry(const std::string& pch_path)
 {
   const auto now = std::filesystem::file_time_type::clock::now();
@@ -122,26 +94,11 @@ void touch_pch_entry(const std::string& pch_path)
 }
 
 // Best-effort exclusive guard around PCH generation, held across processes and
-// threads alike.
-//
-// Generating a PCH costs seconds of CPU and writes tens of megabytes. Without a
-// guard, every process that starts against a cold cache generates its own copy
-// of the same file -- a test runner fanning out eight workers against a cold
-// cache would otherwise do eight identical generations at once.
-//
-// Deliberately non-blocking: a caller that cannot take the lock builds without
-// a PCH instead of waiting for the holder. Waiting would trade one slow build
-// for a slow build *plus* a stall, and would need timeout handling for a holder
-// that died. Taking the slow path costs exactly what the build would have cost
-// with PCH disabled.
+// threads alike. Deliberately non-blocking: a caller that cannot take the lock
+// builds without a PCH instead of waiting for the holder.
 //
 // A directory is the lock: create_directory is atomic on POSIX and Windows and
 // reports whether it did the creating, which is precisely test-and-set.
-//
-// A lock left behind by a killed process is reclaimed by whoever prunes the
-// cache, not here. How long to wait before presuming a holder dead is a
-// judgment about the cache rather than a property of taking a lock, and it
-// belongs with the rest of the pruning rules.
 class PCHGenerationLock
 {
 public:
@@ -184,9 +141,6 @@ bool create_pch_if_needed(
 {
   pch_path.clear();
 
-  // The caller supplies the location; this library never picks one. An empty
-  // path means "no PCH", which is how a caller that does not want the feature
-  // (or could not resolve a writable directory) turns it off.
   const std::filesystem::path cache_dir{config.pch_cache_dir};
   if (cache_dir.empty())
   {
@@ -222,12 +176,6 @@ bool create_pch_if_needed(
   std::vector<std::string> options;
   config.appendCommandLineArguments(options);
 
-  // The arch appears in the filename for readability only -- the hash already
-  // covers it, because libnvcc takes one option list for both PCH kinds and
-  // that list carries the target. (Clang's *host* frontend arguments contain no
-  // arch, so host PCHs could in principle be shared across GPUs; that is not
-  // exploitable here without assuming what libnvcc does with the option
-  // internally, and guessing wrong would mean handing a compile the wrong PCH.)
   const std::string label = kind_name + "_sm" + std::to_string(config.sm_version);
   const std::string key   = hash_pch_options(options, kind_name);
   pch_path                = get_pch_path(cache_dir, label, key);

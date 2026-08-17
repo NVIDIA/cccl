@@ -729,53 +729,15 @@ Precompiled headers (v2 HostJIT only)
 
 Parsing the CUB / libcudacxx / Thrust bundle dominates a HostJIT build. The v2
 backend caches that parse as a pair of precompiled headers on disk — one device,
-one host — and ``cuda.compute`` enables them for every build. A single pair
-serves all twelve algorithms, because nothing per-algorithm or per-operator
+one host. ``cuda.compute`` enables them for every build. A single pair
+serves all algorithms, because nothing per-algorithm or per-operator
 reaches the compiler's argument list: the user's operator is linked as bitcode
 *after* the frontend runs, and the entry-point name only drives post-compile
 LLVM passes.
 
-Measured on sm_89, one build per process:
-
-.. list-table::
-   :header-rows: 1
-
-   * - Case
-     - reduce
-     - scan
-     - transform
-     - merge_sort
-   * - Cold cache, PCH off
-     - 3.14 s
-     - 3.02 s
-     - 2.77 s
-     - 3.11 s
-   * - Warm cache, PCH on
-     - 0.77 s
-     - 0.76 s
-     - 0.92 s
-     - 1.30 s
-   * - Speedup
-     - 4.08x
-     - 3.98x
-     - 3.00x
-     - 2.38x
-
-Generating the pair costs ~4.2 s once per target and consumes ~85 MB of cache.
-The benchmark that produced these numbers is linked from the pull request that
-introduced them; it is not carried in-tree, since it is a one-off measurement
-rather than something CI runs.
-
-Note that generation costs more than an entire cold build, so a first build
-against an empty cache (~4.7 s) is *slower* than one with PCH off (~3.1 s). PCH
-only pays for itself from the second build onward.
-
-The cache is populated lazily: the first build that needs an entry generates
-it. There is deliberately no warm-up. Generating an entry happens once per
-(install, architecture, flag-set) — in practice about once per ``cuda.compute``
-version on a given machine — and front-loading it at import would have meant
-initializing the CUDA driver as a side effect of importing the package. That is
-a much larger behavioral change than the one-time cost it avoids.
+The cache is populated lazily: the first build that needs an entry generates it.
+Generating an entry happens once per (install, architecture, flag-set) — in practice
+about once per ``cuda.compute`` version on a given machine.
 
 The cache is keyed by a hash of the compiler arguments, not by architecture
 alone. This matters because a source-tree build and an installed wheel differ in
@@ -819,11 +781,6 @@ Clearing only costs the time to regenerate. Reach for it to reclaim disk, or to
 force regeneration after changing something the cache key does not cover —
 notably an in-place CCCL header upgrade, which is otherwise detected only when
 clang rejects the stale entry and the build retries without it.
-
-Note that ``clear_all_caches()`` does **not** touch this. That function is
-process-local (per-thread wrapper caches and the shared build-result cache); the
-PCH cache is on disk and shared across processes, so clearing it is a separate,
-explicit act.
 
 Environment variables:
 
