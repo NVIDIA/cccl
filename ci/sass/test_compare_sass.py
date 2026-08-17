@@ -232,8 +232,118 @@ def test_a_demangled_kernel_name_is_parsed() -> None:
 def test_a_dump_with_no_recognized_kernel_is_a_fault() -> None:
     """Silently dropping the instructions would read as "nothing changed"."""
     broken = DEMANGLED.replace("Function :", "aasdasdasd :")
-    with pytest.raises(ValueError, match="no `Function :` line"):
+    with pytest.raises(AssertionError, match="no `Function :` line"):
         normalized_text(broken)
+
+
+#: `cuobjdump -sass` of a raw cubin, as `nvcc -arch=sm_90 -cubin` writes it.
+#: There is no `Fatbin elf code:` container, thus no `arch =` line, and the
+#: architecture is named by `code for sm_90` only.
+CUBIN_BASE = """
+\tcode for sm_90
+\t.target\tsm_90
+
+\t\tFunction : _Z5scalePii
+\t.headerflags\t@"EF_CUDA_SM90 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM90)"
+        /*00b0*/                   LDG.E R0, desc[UR4][R2.64] ;   /* 0x0000000402007981 */
+                                                                  /* 0x000ea4000c1e1900 */
+        /*00c0*/                   LEA R5, R0, 0x1, 0x1 ;         /* 0x0000000100057811 */
+                                                                  /* 0x004fca00078e08ff */
+        /*00d0*/                   STG.E desc[UR4][R2.64], R5 ;   /* 0x0000000502007986 */
+                                                                  /* 0x000fe2000c101904 */
+        /*00e0*/                   EXIT ;                         /* 0x000000000000794d */
+                                                                  /* 0x000fea0003800000 */
+\t\t..........
+"""
+
+#: The same kernel with `d[i]*2+1` changed to `d[i]*3+1`. The multiply no longer
+#: folds into a `LEA`.
+CUBIN_TEST = """
+\tcode for sm_90
+\t.target\tsm_90
+
+\t\tFunction : _Z5scalePii
+\t.headerflags\t@"EF_CUDA_SM90 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM90)"
+        /*00b0*/                   LDG.E R0, desc[UR4][R2.64] ;   /* 0x0000000402007981 */
+                                                                  /* 0x000ea2000c1e1900 */
+        /*00c0*/                   HFMA2.MMA R5, -RZ, RZ, 0, 1.78813934326171875e-07 ;
+                                                                  /* 0x000fd400000001ff */
+        /*00d0*/                   IMAD R5, R0, R5, 0x1 ;         /* 0x0000000100057424 */
+                                                                  /* 0x004fca00078e0205 */
+        /*00e0*/                   STG.E desc[UR4][R2.64], R5 ;   /* 0x0000000502007986 */
+                                                                  /* 0x000fe2000c101904 */
+        /*00f0*/                   EXIT ;                         /* 0x000000000000794d */
+                                                                  /* 0x000fea0003800000 */
+\t\t..........
+"""
+
+
+def test_cubin_arch_header() -> None:
+    """Without `arch =` the dump must still be split by `code for`.
+
+    An unrecognized architecture drops every instruction, both sides normalize
+    to the same empty result, and every target compares as unchanged.
+    """
+    text = normalized_text(CUBIN_BASE)
+    assert list(text) == ["sm_90"]
+    assert "LEA R5, R0, 0x1, 0x1 ;" in text["sm_90"]
+
+
+def test_cubin_change(compared) -> None:
+    """The reported false negative: two cubins that really do differ."""
+    results = {entry.arch: entry for entry in compared(CUBIN_BASE, CUBIN_TEST)}
+    assert results["sm_90"].changed
+    text = "\n".join(results["sm_90"].diff.excerpt)
+    assert "-LEA R5, R0, 0x1, 0x1 ;" in text
+    assert "+IMAD R5, R0, R5, 0x1 ;" in text
+
+
+def test_fatbin_arch_once() -> None:
+    """A fatbin holds both `arch = sm_90` and `code for sm_90`.
+
+    The second one reopens the block the first one opened, so it must not add a
+    second entry or move the kernels into a block of their own.
+    """
+    text = normalized_text(BASELINE)
+    assert list(text) == ["sm_75", "sm_90"]
+    assert text["sm_75"].count("Function : ") == 2
+
+
+def test_unknown_arch_raises() -> None:
+    """Silently dropping the instructions would read as "nothing changed"."""
+    broken = CUBIN_BASE.replace("code for", "cade faar")
+    with pytest.raises(AssertionError, match="failed to detect the architecture"):
+        normalized_text(broken)
+
+
+def test_orphan_instruction_raises() -> None:
+    """An instruction after `Fatbin elf code:` belongs to no architecture.
+
+    The container header closes the open block, so an instruction before the
+    next `arch =` line has nowhere to go.
+    """
+    orphan = BASELINE.replace(
+        "arch = sm_75",
+        "        /*0000*/                   EXIT ;\narch = sm_75",
+    )
+    with pytest.raises(AssertionError, match="failed to detect the architecture"):
+        normalized_text(orphan)
+
+
+def test_unknown_function_header_raises() -> None:
+    """A block with instructions but no `Function :` line drops every one."""
+    broken = CUBIN_BASE.replace("Function :", "Funktschn :")
+    with pytest.raises(AssertionError, match="no `Function :` line"):
+        normalized_text(broken)
+
+
+def test_an_empty_kernel_raises() -> None:
+    """A named kernel with no instruction means the parse lost them."""
+    empty = "\n".join(
+        line for line in CUBIN_BASE.splitlines() if not line.lstrip().startswith("/*")
+    )
+    with pytest.raises(AssertionError, match="has no instructions"):
+        normalized_text(empty)
 
 
 def test_addresses_encoded_words_and_padding_are_noise() -> None:

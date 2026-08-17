@@ -18,7 +18,8 @@ only moved is equal. Opcodes, modifiers, predicates, registers, immediates,
 constant-bank offsets and the control flow are all compared.
 
 `cuobjdump -sass` prints every architecture into one stream. Each architecture
-is split out and compared on its own.
+is split out and compared on its own. A fatbin names it in an `arch =` line, and
+a raw cubin in a `code for` line.
 
 This script gives status 1 when the SASS changed. This is for use from a shell.
 CI does not read that status. CI reads `changed` from report.json, because
@@ -45,6 +46,11 @@ _FATBIN_RE = re.compile(r"^\s*Fatbin elf code\s*:")
 
 # `arch = sm_90`
 _ARCH_RE = re.compile(r"^\s*arch\s*=\s*(?P<arch>\S+)\s*$")
+
+# `	code for sm_90`. A raw cubin has no `Fatbin elf code:` container, thus no
+# `arch =` line, and starts here. In a fatbin this line follows the `arch =` line
+# of the same architecture, so it reopens the block that is already open.
+_CODE_FOR_RE = re.compile(r"^\s*code for\s+(?P<arch>\S+)\s*$")
 
 # `                Function : void kernel<int>(T1 *, const T1 *, int)`
 # The dump goes through `cu++filt`, thus the name is demangled and holds spaces
@@ -139,10 +145,10 @@ def _kernels(lines: list[str]) -> list[Kernel]:
     kernel: Kernel | None = None
     saw_instruction = False
 
-    for line in lines:
+    for line in filter(None, map(str.strip, lines)):
         # Over 99% of the lines are instructions or encoded words, and only those
         # start with `/*`. This test keeps the other patterns off the hot path.
-        if not line.lstrip().startswith("/*"):
+        if not line.startswith("/*"):
             if function_match := _FUNCTION_RE.match(line):
                 kernel = Kernel(name=function_match.group("name"))
                 kernels.append(kernel)
@@ -169,7 +175,7 @@ def _kernels(lines: list[str]) -> list[Kernel]:
         kernel.instructions.append(text)
 
     if saw_instruction and not kernels:
-        raise ValueError(
+        raise AssertionError(
             "The dump holds instructions but no `Function :` line was "
             "recognized. `_FUNCTION_RE` does not match what cuobjdump prints."
         )
@@ -178,6 +184,10 @@ def _kernels(lines: list[str]) -> list[Kernel]:
     # is a result of the kernel size, not of the generated code.
     for entry in kernels:
         end = len(entry.instructions)
+        if end == 0:
+            raise AssertionError(
+                f"Kernel {entry} has no instructions. This should never happen."
+            )
         while end > 0 and _NOP_RE.match(entry.instructions[end - 1]):
             end -= 1
         del entry.instructions[end:]
@@ -191,11 +201,14 @@ def normalized_text(raw: str) -> dict[str, str]:
     The same architecture can occur in more than one `Fatbin elf code:` block,
     because the binary can contain more than one linked object. The blocks are
     merged by architecture name.
+
+    Raises on an instruction that belongs to no architecture. Dropping it would
+    let both sides normalize to the same result and compare as unchanged.
     """
     blocks: dict[str, list[str]] = {}
     current: list[str] | None = None
 
-    for line in raw.splitlines():
+    for line in filter(None, map(str.strip, raw.splitlines())):
         if _FATBIN_RE.match(line):
             current = None
             continue
@@ -204,8 +217,19 @@ def normalized_text(raw: str) -> dict[str, str]:
             current = blocks.setdefault(arch_match.group("arch"), [])
             continue
 
-        if current is not None:
-            current.append(line)
+        if code_for_match := _CODE_FOR_RE.match(line):
+            current = blocks.setdefault(code_for_match.group("arch"), [])
+            continue
+
+        if current is None:
+            if line.startswith("/*"):
+                raise AssertionError(
+                    f"Current arch for {line} is none. We have failed "
+                    "to detect the architecture for this kernel."
+                )
+            continue
+
+        current.append(line)
 
     return {
         arch: Listing(arch=arch, kernels=_kernels(lines)).text()
