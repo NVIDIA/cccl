@@ -895,6 +895,8 @@ struct __policy_pow
     // -Winfinite-recursion is blind to exceptional exits and misreads instantiations whose
     // only normal returns are the recursive calls (e.g. a never-returning repeated policy).
     _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_GCC("-Wpragmas") // gcc < 12 does not know the warning below; without this
+                                         // line the unknown name itself trips -Werror=pragmas
     _CCCL_DIAG_SUPPRESS_GCC("-Winfinite-recursion")
     const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
       _CCCL_TRY
