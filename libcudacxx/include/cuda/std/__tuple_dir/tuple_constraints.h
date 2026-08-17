@@ -230,6 +230,10 @@ struct __tuple_constraints
       { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
         return __select_constructor::__invalid;
       }
+      else if constexpr (is_same_v<_UType, const _Type&> || is_same_v<_UType, _Type&&>)
+      {
+        return __select_constructor::__invalid;
+      }
       else if constexpr (!is_constructible_v<_Type, _UType>)
       { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
         return __select_constructor::__invalid;
