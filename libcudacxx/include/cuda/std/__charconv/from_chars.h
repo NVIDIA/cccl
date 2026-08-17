@@ -71,8 +71,11 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr from_chars_result
 __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, int __base) noexcept
 {
-  bool __overflow  = false;
-  const char* __it = __first;
+  const auto __unsigned_base = static_cast<_Tp>(__base);
+  const auto __max_div_base  = numeric_limits<_Tp>::max() / __unsigned_base;
+  const auto __max_mod_base  = numeric_limits<_Tp>::max() % __unsigned_base;
+  bool __overflow            = false;
+  const char* __it           = __first;
   for (; __it != __last; ++__it)
   {
     const auto __digit = ::cuda::std::__from_chars_char_to_value(*__it, __base);
@@ -82,12 +85,15 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
     }
     if (!__overflow)
     {
-      const auto __new_value = static_cast<_Tp>(__value * _Tp(__base) + _Tp(__digit.__value_));
-      if (__new_value < __value)
+      const auto __unsigned_digit = static_cast<_Tp>(__digit.__value_);
+      if (__value > __max_div_base || (__value == __max_div_base && __unsigned_digit > __max_mod_base))
       {
         __overflow = true;
       }
-      __value = __new_value;
+      else
+      {
+        __value = static_cast<_Tp>(__value * __unsigned_base + __unsigned_digit);
+      }
     }
   }
   return {__it, (__overflow) ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
