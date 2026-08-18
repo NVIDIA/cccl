@@ -35,14 +35,6 @@ struct my_policy_hub
   };
 };
 
-struct is_even_t
-{
-  __host__ __device__ bool operator()(int value) const
-  {
-    return (value & 1) == 0;
-  }
-};
-
 CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]", CUB_SMALL)
 {
   using value_t  = int;
