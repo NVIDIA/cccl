@@ -43,6 +43,8 @@ template <class _Tp = void>
   }
 }
 
+#if _CCCL_HAS_CTK()
+
 //! @brief Checks whether the passed in alignment is valid
 //! @param __alignment The user provided alignment
 //! @returns true if \p __alignment is less or equal than default_cuda_malloc_alignment and
@@ -61,6 +63,8 @@ template <class _Tp = void>
         && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
 }
+
+#endif // _CCCL_HAS_CTK()
 
 _CCCL_END_NAMESPACE_CUDA
 
