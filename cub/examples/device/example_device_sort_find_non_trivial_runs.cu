@@ -17,7 +17,12 @@
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_run_length_encode.cuh>
-#include <cub/util_allocator.cuh>
+
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <algorithm>
 #include <cstdio>
@@ -31,7 +36,6 @@ using namespace cub;
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
-CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
 // Test generation
@@ -193,6 +197,12 @@ int main(int argc, char** argv)
   // Initialize device
   CubDebugExit(args.DeviceInit());
 
+  int device_ordinal = 0;
+  CubDebugExit(cudaGetDevice(&device_ordinal));
+  const cuda::device_ref device{device_ordinal};
+  const cuda::stream_ref stream{cudaStream_t{}};
+  cuda::device_memory_pool_ref device_memory_resource = cuda::device_default_memory_pool(device);
+
   // Allocate host arrays (problem and reference solution)
 
   Key* h_keys              = new Key[num_items];
@@ -218,17 +228,17 @@ int main(int argc, char** argv)
   for (int i = 0; i <= timing_iterations; ++i)
   {
     // Allocate and initialize device arrays for sorting
-    DoubleBuffer<Key> d_keys;
-    DoubleBuffer<Value> d_values;
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[0], sizeof(Key) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[1], sizeof(Key) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[0], sizeof(Value) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[1], sizeof(Value) * num_items));
+    auto d_keys_0   = cuda::make_buffer<Key>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_keys_1   = cuda::make_buffer<Key>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_values_0 = cuda::make_buffer<Value>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_values_1 = cuda::make_buffer<Value>(stream, device_memory_resource, num_items, cuda::no_init);
+    DoubleBuffer<Key> d_keys{d_keys_0.data(), d_keys_1.data()};
+    DoubleBuffer<Value> d_values{d_values_0.data(), d_values_1.data()};
 
     CubDebugExit(
-      cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
+      cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(Key) * num_items, cudaMemcpyHostToDevice));
     CubDebugExit(
-      cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice));
+      cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(Value) * num_items, cudaMemcpyHostToDevice));
 
     // Start timer
     gpu_timer.Start();
@@ -236,63 +246,76 @@ int main(int argc, char** argv)
     // Allocate temporary storage for sorting
     size_t temp_storage_bytes = 0;
     void* d_temp_storage      = nullptr;
-    CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
-    CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+    CubDebugExit(DeviceRadixSort::SortPairs(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(Key) * 8, stream.get()));
+    auto sort_temp_storage =
+      cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
     // Do the sort
-    CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
+    CubDebugExit(DeviceRadixSort::SortPairs(
+      sort_temp_storage.data(), temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(Key) * 8, stream.get()));
 
     // Free unused buffers and sorting temporary storage
-    if (d_keys.d_buffers[d_keys.selector ^ 1])
+    if (d_keys.selector == 0)
     {
-      CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[d_keys.selector ^ 1]));
+      d_keys_1.destroy(stream);
     }
-    if (d_values.d_buffers[d_values.selector ^ 1])
+    else
     {
-      CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[d_values.selector ^ 1]));
+      d_keys_0.destroy(stream);
     }
-    if (d_temp_storage)
+    if (d_values.selector == 0)
     {
-      CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
+      d_values_1.destroy(stream);
     }
+    else
+    {
+      d_values_0.destroy(stream);
+    }
+    sort_temp_storage.destroy(stream);
 
     // Start timer
     gpu_rle_timer.Start();
 
     // Allocate device arrays for enumerating non-trivial runs
-    int* d_offests_out = nullptr;
-    int* d_lengths_out = nullptr;
-    int* d_num_runs    = nullptr;
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_offests_out, sizeof(int) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_lengths_out, sizeof(int) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_runs, sizeof(int) * 1));
+    auto d_offsets_out = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_lengths_out = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_num_runs    = cuda::make_buffer<int>(stream, device_memory_resource, 1, cuda::no_init);
 
     // Allocate temporary storage for isolating non-trivial runs
-    d_temp_storage = nullptr;
+    d_temp_storage     = nullptr;
+    temp_storage_bytes = 0;
     CubDebugExit(DeviceRunLengthEncode::NonTrivialRuns(
       d_temp_storage,
       temp_storage_bytes,
       d_keys.d_buffers[d_keys.selector],
-      d_offests_out,
-      d_lengths_out,
-      d_num_runs,
-      num_items));
-    CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+      d_offsets_out.data(),
+      d_lengths_out.data(),
+      d_num_runs.data(),
+      num_items,
+      stream.get()));
+    auto rle_temp_storage =
+      cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
     // Do the isolation
     CubDebugExit(DeviceRunLengthEncode::NonTrivialRuns(
-      d_temp_storage,
+      rle_temp_storage.data(),
       temp_storage_bytes,
       d_keys.d_buffers[d_keys.selector],
-      d_offests_out,
-      d_lengths_out,
-      d_num_runs,
-      num_items));
+      d_offsets_out.data(),
+      d_lengths_out.data(),
+      d_num_runs.data(),
+      num_items,
+      stream.get()));
 
     // Free keys buffer
-    if (d_keys.d_buffers[d_keys.selector])
+    if (d_keys.selector == 0)
     {
-      CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[d_keys.selector]));
+      d_keys_0.destroy(stream);
+    }
+    else
+    {
+      d_keys_1.destroy(stream);
     }
 
     //
@@ -308,15 +331,15 @@ int main(int argc, char** argv)
       // First iteration is a warmup: // Check for correctness (and display results, if specified)
 
       printf("\nRUN OFFSETS: \n");
-      int compare = CompareDeviceResults(h_offsets_reference, d_offests_out, num_runs, true, g_verbose);
+      int compare = CompareDeviceResults(h_offsets_reference, d_offsets_out.data(), num_runs, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       printf("\nRUN LENGTHS: \n");
-      compare |= CompareDeviceResults(h_lengths_reference, d_lengths_out, num_runs, true, g_verbose);
+      compare |= CompareDeviceResults(h_lengths_reference, d_lengths_out.data(), num_runs, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       printf("\nNUM RUNS: \n");
-      compare |= CompareDeviceResults(&num_runs, d_num_runs, 1, true, g_verbose);
+      compare |= CompareDeviceResults(&num_runs, d_num_runs.data(), 1, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       AssertEquals(0, compare);
@@ -325,29 +348,6 @@ int main(int argc, char** argv)
     {
       elapsed_millis += gpu_timer.ElapsedMillis();
       elapsed_rle_millis += gpu_rle_timer.ElapsedMillis();
-    }
-
-    // GPU cleanup
-
-    if (d_values.d_buffers[d_values.selector])
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[d_values.selector]));
-    }
-    if (d_offests_out)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_offests_out));
-    }
-    if (d_lengths_out)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_lengths_out));
-    }
-    if (d_num_runs)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_num_runs));
-    }
-    if (d_temp_storage)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
     }
   }
 
