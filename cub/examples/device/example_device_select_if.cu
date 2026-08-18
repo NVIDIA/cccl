@@ -147,12 +147,12 @@ int main(int argc, char** argv)
   }
 
   // Initialize device
-  CubDebugExit(args.DeviceInit());
   int device_ordinal{};
-  CubDebugExit(cudaGetDevice(&device_ordinal));
-  const cuda::device_ref device{device_ordinal};
-  const cuda::stream_ref stream{cudaStream_t{}};
-  cuda::device_memory_pool_ref device_memory_resource = cuda::device_default_memory_pool(device);
+  args.GetCmdLineArgument("device", device_ordinal);
+  CubDebugExit(args.DeviceInit(device_ordinal));
+  const auto device                 = cuda::devices[device_ordinal];
+  const auto stream                 = cuda::stream_ref{cudaStream_t{}};
+  const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   // Allocate host arrays
   int* h_in        = new int[num_items];
