@@ -2267,6 +2267,22 @@ inline size_t data_place::instance_count() const
 inline data_place data_place::member(size_t r) const
 {
   _CCCL_ASSERT(r < instance_count(), "member index out of range");
+  if (instance_count() == 1)
+  {
+    return *this;
+  }
+  // Fast path for the axis-replicated place, kept static on purpose: with
+  // member_impl() as the only resolution path here, nvcc 12.0-13.3
+  // misclassifies unrelated STF host types as __host__ __device__ in TUs
+  // that combine STF with CUB (deferred #20011 errors naming event_list /
+  // task / task_dep_untyped, attributed to mdspan headers; see
+  // examples/stf/08-cub-reduce.cu). The static branch anchors the
+  // classification; the virtual below covers every other multi-instance
+  // place (e.g. a composite place with replicated partition axes).
+  if (const auto* rep = dynamic_cast<const data_place_replicated*>(get_impl().get()))
+  {
+    return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+  }
   if (auto m = pimpl_->member_impl(r))
   {
     return data_place(mv(m));
