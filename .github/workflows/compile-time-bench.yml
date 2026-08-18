@@ -336,7 +336,8 @@ jobs:
   comment:
     name: "Compile-time comment: ${{ inputs.name }}"
     needs: run
-    if: ${{ always() && inputs.comment == 'true' && inputs.pr_number != '' }}
+    # Temporarily disable posting compile-time results to pull requests.
+    if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
