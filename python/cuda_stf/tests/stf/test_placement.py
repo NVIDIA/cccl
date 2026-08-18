@@ -368,14 +368,19 @@ def test_multi_gpu_residency():
     ptr = dp.allocate((n,), elemsize=4)
     try:
         for half in range(2):
-            err, ordinal = cu.cuPointerGetAttribute(
-                cu.CUpointer_attribute.CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
-                ptr + half * granularity,
-            )
+            # CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL resolves the whole VA
+            # reservation, not the per-offset backing: query the retained
+            # allocation handle instead, which names the physical owner.
+            err, handle = cu.cuMemRetainAllocationHandle(ptr + half * granularity)
             assert err == cu.CUresult.CUDA_SUCCESS
-            assert int(ordinal) == half, (
-                "block is not resident on the place that owns it"
-            )
+            try:
+                err, hprop = cu.cuMemGetAllocationPropertiesFromHandle(handle)
+                assert err == cu.CUresult.CUDA_SUCCESS
+                assert int(hprop.location.id) == half, (
+                    "block is not resident on the place that owns it"
+                )
+            finally:
+                cu.cuMemRelease(handle)
     finally:
         dp.deallocate(ptr, n * 4)
 
