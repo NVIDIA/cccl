@@ -643,10 +643,9 @@ TEST_HOST_DEVICE_FUNC constexpr cuda::std::array<TestItem, 26> get_test_items<36
   }};
 }
 
-// Avoid cloning the parser into every table-driven check in the device kernel. The exhaustive table stays
-// runtime-only; overflow.pass.cpp provides bounded constexpr coverage.
+// Avoid cloning the parser into every table-driven check in the device kernel.
 template <class T>
-TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test_from_chars(
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE constexpr void test_from_chars(
   const char* data,
   cuda::std::ptrdiff_t size,
   int base,
@@ -696,7 +695,7 @@ TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test_from_chars(
 }
 
 template <class T>
-TEST_HOST_DEVICE_FUNC void test_from_chars(const TestItem& item, int base, bool overflow = false)
+TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(const TestItem& item, int base, bool overflow = false)
 {
   static_assert(
     cuda::std::is_same_v<
@@ -749,7 +748,7 @@ TEST_HOST_DEVICE_FUNC void test_from_chars(const TestItem& item, int base, bool 
 }
 
 template <class T>
-TEST_HOST_DEVICE_FUNC void test_overflow()
+TEST_HOST_DEVICE_FUNC constexpr void test_overflow()
 {
   constexpr int base = 10;
 
@@ -787,7 +786,7 @@ TEST_HOST_DEVICE_FUNC void test_overflow()
 }
 
 template <int Base>
-TEST_HOST_DEVICE_FUNC void test_base()
+TEST_HOST_DEVICE_FUNC constexpr bool test_base()
 {
   constexpr auto items = get_test_items<Base>();
 
@@ -805,18 +804,21 @@ TEST_HOST_DEVICE_FUNC void test_base()
     test_overflow<cuda::std::int8_t>();
     test_overflow<cuda::std::uint8_t>();
   }
+
+  return true;
 }
 
 struct TestBaseInvoker
 {
   template <int Base>
-  TEST_HOST_DEVICE_FUNC void operator()(cuda::std::integral_constant<int, Base>) const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()(cuda::std::integral_constant<int, Base>) const
   {
     test_base<Base>();
+    static_assert(test_base<Base>());
   }
 };
 
-TEST_HOST_DEVICE_FUNC void test()
+TEST_HOST_DEVICE_FUNC constexpr void test()
 {
   cuda::static_for<int, first_base, last_base + 1>(TestBaseInvoker{});
 }

@@ -77,6 +77,23 @@ TEST_HOST_DEVICE_FUNC constexpr void test_upward_wrap(int base, bool negative = 
 }
 
 template <class T>
+TEST_HOST_DEVICE_FUNC constexpr void test_signed_base3_positive_wrap()
+{
+  using U = cuda::std::make_unsigned_t<T>;
+  char input[cuda::std::numeric_limits<U>::digits + 1]{};
+
+  U max_value            = static_cast<U>((cuda::std::numeric_limits<T>::max)());
+  cuda::std::size_t size = write_digits(input, max_value, 3);
+  input[size++]          = '2';
+
+  T value     = static_cast<T>(23);
+  auto result = cuda::std::from_chars(input, input + size, value, 3);
+  assert(result.ptr == input + size);
+  assert(result.ec == cuda::std::errc::result_out_of_range);
+  assert(value == static_cast<T>(23));
+}
+
+template <class T>
 TEST_HOST_DEVICE_FUNC constexpr void test_unsigned_boundary(int base)
 {
   char input[cuda::std::numeric_limits<T>::digits]{};
@@ -155,8 +172,14 @@ TEST_HOST_DEVICE_FUNC constexpr void test_signed_width()
     test_signed_boundaries<T>(base);
   }
 
-  // For bases 2 and 3, an upward wrap cannot land within the signed range, so
-  // the signed range check detects it independently of the generic accumulator.
+  // max(T) * 3 + 2 wraps back to max(T), so comparing the wrapped value with
+  // the previous accumulator does not detect positive overflow.
+  test_signed_base3_positive_wrap<T>();
+
+  // A base-3 negative overflow can wrap to the minimum signed magnitude.
+  test_upward_wrap<T>(3, true);
+
+  // The remaining upward wraps that can land within the signed range start at base 4.
   for (int base = 4; base <= 36; ++base)
   {
     test_upward_wrap<T>(base);
@@ -204,16 +227,6 @@ TEST_HOST_DEVICE_FUNC void test_runtime()
 }
 
 template <class T, cuda::std::size_t Size>
-TEST_HOST_DEVICE_FUNC constexpr void test_constexpr_success(const char (&input)[Size], int base, T expected)
-{
-  T value     = static_cast<T>(23);
-  auto result = cuda::std::from_chars(input, input + Size - 1, value, base);
-  assert(result.ptr == input + Size - 1);
-  assert(result.ec == cuda::std::errc{});
-  assert(value == expected);
-}
-
-template <class T, cuda::std::size_t Size>
 TEST_HOST_DEVICE_FUNC constexpr void test_constexpr_out_of_range(const char (&input)[Size], int base)
 {
   T value     = static_cast<T>(23);
@@ -223,156 +236,36 @@ TEST_HOST_DEVICE_FUNC constexpr void test_constexpr_out_of_range(const char (&in
   assert(value == static_cast<T>(23));
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_8_bit()
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr()
 {
-  using I = cuda::std::int8_t;
-  using U = cuda::std::uint8_t;
+  // Multiplication overflow that wraps upward instead of below the previous value.
+  test_constexpr_out_of_range<cuda::std::uint8_t>("kz", 36);
+  test_constexpr_out_of_range<cuda::std::uint16_t>("1g10", 36);
+  test_constexpr_out_of_range<cuda::std::uint32_t>("2126880", 36);
+  test_constexpr_out_of_range<cuda::std::uint64_t>("405jklntyr810", 36);
+#if _CCCL_HAS_INT128()
+  test_constexpr_out_of_range<__uint128_t>("fl7524438ymb31pfwhzzmf480", 36);
+#endif // _CCCL_HAS_INT128()
 
-  test_constexpr_success<U>("255", 10, (cuda::std::numeric_limits<U>::max)());
+  // The multiplication fits, but adding the final digit overflows.
+  test_constexpr_out_of_range<cuda::std::uint8_t>("256", 10);
 
-  // Multiplication overflow that wraps upward to a representable value.
-  test_constexpr_out_of_range<U>("kz", 36);
-
-  // The multiplication (25 * 10) fits, but adding the final digit does not.
-  test_constexpr_out_of_range<U>("256", 10);
-
-  test_constexpr_success<I>("127", 10, (cuda::std::numeric_limits<I>::max)());
-  test_constexpr_success<I>("-128", 10, (cuda::std::numeric_limits<I>::min)());
-  test_constexpr_out_of_range<I>("128", 10);
-  test_constexpr_out_of_range<I>("-129", 10);
-
-  if constexpr (cuda::std::is_signed_v<char>)
+  // Parsing continues after overflow and stops at the first invalid character.
   {
-    test_constexpr_success<char>("127", 10, (cuda::std::numeric_limits<char>::max)());
-    test_constexpr_success<char>("-128", 10, (cuda::std::numeric_limits<char>::min)());
-    test_constexpr_out_of_range<char>("128", 10);
-    test_constexpr_out_of_range<char>("-129", 10);
-  }
-  else
-  {
-    test_constexpr_success<char>("255", 10, (cuda::std::numeric_limits<char>::max)());
-    test_constexpr_out_of_range<char>("256", 10);
-  }
-
-  // Parsing must continue after overflow to locate the first invalid character.
-  {
-    constexpr char input[] = "kz0!";
-    U value                = 23;
-    auto result            = cuda::std::from_chars(input, input + 4, value, 36);
+    constexpr char input[]   = "kz0!";
+    cuda::std::uint8_t value = 23;
+    auto result              = cuda::std::from_chars(input, input + 4, value, 36);
     assert(result.ptr == input + 3);
     assert(result.ec == cuda::std::errc::result_out_of_range);
     assert(value == 23);
   }
-  return true;
-}
 
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_16_bit()
-{
-  using I = cuda::std::int16_t;
-  using U = cuda::std::uint16_t;
-
-  test_constexpr_success<U>("65535", 10, (cuda::std::numeric_limits<U>::max)());
-  test_constexpr_out_of_range<U>("65536", 10);
-  test_constexpr_out_of_range<U>("1g10", 36);
-
-  test_constexpr_success<I>("32767", 10, (cuda::std::numeric_limits<I>::max)());
-  test_constexpr_success<I>("-32768", 10, (cuda::std::numeric_limits<I>::min)());
-  test_constexpr_out_of_range<I>("32768", 10);
-  test_constexpr_out_of_range<I>("-32769", 10);
-  return true;
-}
-
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_32_bit()
-{
-  using I = cuda::std::int32_t;
-  using U = cuda::std::uint32_t;
-
-  test_constexpr_success<U>("4294967295", 10, (cuda::std::numeric_limits<U>::max)());
-  test_constexpr_out_of_range<U>("4294967296", 10);
-  test_constexpr_out_of_range<U>("2126880", 36);
-
-  test_constexpr_success<I>("2147483647", 10, (cuda::std::numeric_limits<I>::max)());
-  test_constexpr_success<I>("-2147483648", 10, (cuda::std::numeric_limits<I>::min)());
-  test_constexpr_out_of_range<I>("2147483648", 10);
-  test_constexpr_out_of_range<I>("-2147483649", 10);
-  return true;
-}
-
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_64_bit()
-{
-  using I = cuda::std::int64_t;
-  using U = cuda::std::uint64_t;
-
-  test_constexpr_success<U>("18446744073709551615", 10, (cuda::std::numeric_limits<U>::max)());
-  test_constexpr_out_of_range<U>("18446744073709551616", 10);
-  test_constexpr_out_of_range<U>("405jklntyr810", 36);
-
-  test_constexpr_success<I>("9223372036854775807", 10, (cuda::std::numeric_limits<I>::max)());
-  test_constexpr_success<I>("-9223372036854775808", 10, (cuda::std::numeric_limits<I>::min)());
-  test_constexpr_out_of_range<I>("9223372036854775808", 10);
-  test_constexpr_out_of_range<I>("-9223372036854775809", 10);
-  return true;
-}
-
-#if _CCCL_HAS_INT128()
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_128_bit()
-{
-  using I = __int128_t;
-  using U = __uint128_t;
-
-  test_constexpr_success<U>("340282366920938463463374607431768211455", 10, (cuda::std::numeric_limits<U>::max)());
-  test_constexpr_out_of_range<U>("340282366920938463463374607431768211456", 10);
-  test_constexpr_out_of_range<U>("fl7524438ymb31pfwhzzmf480", 36);
-
-  test_constexpr_success<I>("170141183460469231731687303715884105727", 10, (cuda::std::numeric_limits<I>::max)());
-  test_constexpr_success<I>("-170141183460469231731687303715884105728", 10, (cuda::std::numeric_limits<I>::min)());
-  test_constexpr_out_of_range<I>("170141183460469231731687303715884105728", 10);
-  test_constexpr_out_of_range<I>("-170141183460469231731687303715884105729", 10);
-  return true;
-}
-#endif // _CCCL_HAS_INT128()
-
-TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_syntax()
-{
-  {
-    constexpr char input[]    = "7B!";
-    cuda::std::uint32_t value = 23;
-    auto result               = cuda::std::from_chars(input, input + 3, value, 16);
-    assert(result.ptr == input + 2);
-    assert(result.ec == cuda::std::errc{});
-    assert(value == 123);
-  }
-
-  {
-    constexpr char input[]   = "+1";
-    cuda::std::int32_t value = 23;
-    auto result              = cuda::std::from_chars(input, input + 2, value);
-    assert(result.ptr == input);
-    assert(result.ec == cuda::std::errc::invalid_argument);
-    assert(value == 23);
-  }
-
-  {
-    constexpr char input[]    = "-1";
-    cuda::std::uint32_t value = 23;
-    auto result               = cuda::std::from_chars(input, input + 2, value);
-    assert(result.ptr == input);
-    assert(result.ec == cuda::std::errc::invalid_argument);
-    assert(value == 23);
-  }
   return true;
 }
 
 int main(int, char**)
 {
   test_runtime();
-  static_assert(test_constexpr_8_bit());
-  static_assert(test_constexpr_16_bit());
-  static_assert(test_constexpr_32_bit());
-  static_assert(test_constexpr_64_bit());
-#if _CCCL_HAS_INT128()
-  static_assert(test_constexpr_128_bit());
-#endif // _CCCL_HAS_INT128()
-  static_assert(test_constexpr_syntax());
+  static_assert(test_constexpr());
   return 0;
 }
