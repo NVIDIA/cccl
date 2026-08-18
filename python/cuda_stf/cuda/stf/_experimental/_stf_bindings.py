@@ -47,6 +47,7 @@ _BINDING_EXPORTS = (
     "logical_data",
     "locality_domain_count",
     "machine_init",
+    "native_partition_fn",
     "partition_fn_blocked",
     "partition_fn_cyclic",
     "read",

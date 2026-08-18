@@ -481,8 +481,20 @@ def _make_mapper_callback(mapper, data_rank, grid_rank):
         result_ptr[0].z = 0
         result_ptr[0].t = 0
         try:
+            native_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
+            # A declared rank that is too small is provably wrong: the data has
+            # a real (extent > 1) dimension the mapper would never see. The
+            # converse (data_rank too large) is undetectable here -- a public
+            # (n,) tensor and a public (1, n) tensor have identical native
+            # dims -- so it is a documented contract instead.
+            if any(e > 1 for e in native_dims[data_rank:]):
+                raise ValueError(
+                    f"composite mapper was created with data_rank={data_rank}, but the "
+                    f"partitioned data has a higher rank (native dims {native_dims}); "
+                    f"data_rank must equal the tensor's number of dimensions"
+                )
             coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)[:data_rank][::-1]
-            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)[:data_rank][::-1]
+            data_dims = native_dims[:data_rank][::-1]
             grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)[:grid_rank][::-1]
             result = mapper(coords, data_dims, grid_dims)
             if isinstance(result, int):
@@ -1783,9 +1795,11 @@ cdef class exec_place_grid(exec_place):
             Signature: ``(data_coords, data_dims, grid_dims) -> grid_coords``,
             all C-order tuples (see :meth:`data_place.composite`).
         data_rank : int, keyword-only
-            Rank of the tensors the mapper partitions. Required when
-            ``mapper`` is a Python callable (the callback is shape-free, so
-            the rank cannot be inferred).
+            Rank of the tensors the mapper partitions; must equal their
+            number of dimensions. Required when ``mapper`` is a Python
+            callable (the callback is shape-free, so the rank cannot be
+            inferred); rejected for a native partitioner (see
+            :meth:`data_place.composite`).
         """
         cdef size_t n = len(places)
         if n == 0:
@@ -1856,10 +1870,36 @@ def _public_axis_to_native(axis, int rank, what="axis"):
     return rank - 1 - axis
 
 
+class native_partition_fn:
+    """A native (C++) partition function, as returned by
+    :func:`partition_fn_blocked` and :func:`partition_fn_cyclic`.
+
+    Wraps the raw function pointer so APIs taking a partitioner can tell a
+    hardcoded native policy apart from a Python callable by type: native
+    policies run entirely in C++ on the native representation (no FFI
+    callback cost) and are shape-free, so they never take ``data_rank``.
+    ``int(fn)`` exposes the raw pointer for advanced FFI use.
+    """
+
+    __slots__ = ("_ptr",)
+
+    def __init__(self, ptr):
+        ptr = int(ptr)
+        if ptr == 0:
+            raise ValueError("native partition function pointer must not be NULL")
+        self._ptr = ptr
+
+    def __index__(self):
+        return self._ptr
+
+    def __repr__(self):
+        return f"native_partition_fn(0x{self._ptr:x})"
+
+
 def partition_fn_blocked(int axis=0, data_rank=None):
     """Native blocked partition function along a public (C-order) tensor
-    axis, as an int usable wherever a mapper is expected (no FFI callback
-    cost).
+    axis, as a :class:`native_partition_fn` usable wherever a partitioner is
+    expected (no FFI callback cost).
 
     ``axis`` 0 (the outermost dimension) without ``data_rank`` uses the
     native adaptive default: it splits along the outermost dimension whose
@@ -1873,17 +1913,17 @@ def partition_fn_blocked(int axis=0, data_rank=None):
     if axis == 0 and data_rank is None:
         # Native -1 selects the highest-rank dimension, which is always the
         # public outermost axis regardless of rank.
-        return <uintptr_t>stf_partition_fn_blocked(-1)
+        return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(-1))
     if data_rank is None:
         raise ValueError("partition_fn_blocked requires data_rank for a nonzero axis")
-    return <uintptr_t>stf_partition_fn_blocked(
-        <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis"))
+    return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(
+        <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis")))
 
 
 def partition_fn_cyclic():
-    """Native cyclic (round-robin) partition function, as an int usable
-    wherever a mapper is expected."""
-    return <uintptr_t>stf_partition_fn_cyclic()
+    """Native cyclic (round-robin) partition function, as a
+    :class:`native_partition_fn` usable wherever a partitioner is expected."""
+    return native_partition_fn(<uintptr_t>stf_partition_fn_cyclic())
 
 
 #: Per-dimension policies accepted by cute_partition.from_spec
@@ -2307,22 +2347,48 @@ cdef class data_place:
             grid = exec_place_grid.from_devices([0, 1])
             dplace = data_place.composite(grid, blocked_1d, data_rank=1)
 
-        ``data_rank`` is required for Python callables: the callback API is
-        shape-free, so the tensor rank cannot be inferred. Instead of a
-        Python callable, a native partition function pointer (as returned by
-        :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`) can be
-        passed as an int, avoiding any FFI callback cost (and any need for
-        ``data_rank``).
+        Three kinds of partitioner are accepted, distinguished by type:
+
+        ============================================  =============  ==============
+        partitioner                                   ``data_rank``  runs in
+        ============================================  =============  ==============
+        Python callable                               required       Python (FFI)
+        :class:`native_partition_fn`                  rejected       C++
+        :class:`cute_partition` (via
+        :meth:`composite_cute`)                       rejected       C++
+        ============================================  =============  ==============
+
+        ``data_rank`` is required for Python callables because the callback
+        API is shape-free: the tensor rank cannot be inferred, and it must
+        equal the partitioned tensor's number of dimensions. A too-small
+        value is detected and raises when the mapper runs; a too-large value
+        is indistinguishable from data with leading extent-1 axes and would
+        silently change which axes the mapper sees. Native partitioners (from
+        :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`) are
+        shape-free by construction and reject ``data_rank``.
+
+        What the mapper partitions depends on how the place is used. Shaped
+        allocations (``allocate((extents, ...), elemsize=...)``, a
+        :class:`DeviceArray` on this place) invoke it with true element
+        coordinates of the declared rank. A logical data created from a host
+        array currently reaches the native layer as a flat byte buffer
+        (``stf_logical_data(addr, nbytes)``), so on the task path the mapper
+        sees rank-1 byte-offset coordinates with ``data_dims == (nbytes,)``
+        regardless of the array's Python-side shape.
         """
         cdef data_place p = data_place.__new__(data_place)
         cdef uintptr_t ptr_val
         cdef object state
         if isinstance(mapper, bool):
-            raise TypeError("mapper must be a partition function pointer or a callable, not a bool")
-        if isinstance(mapper, int):
-            if mapper == 0:
+            raise TypeError("mapper must be a partition function or a callable, not a bool")
+        if isinstance(mapper, native_partition_fn) or isinstance(mapper, int):
+            if data_rank is not None:
+                raise ValueError(
+                    "data_rank only applies to Python callables; a native partition "
+                    "function is shape-free")
+            ptr_val = <uintptr_t>int(mapper)
+            if ptr_val == 0:
                 raise ValueError("mapper function pointer must not be NULL")
-            ptr_val = <uintptr_t>mapper
         elif callable(mapper):
             if data_rank is None:
                 raise ValueError(
@@ -2334,7 +2400,7 @@ cdef class data_place:
         else:
             raise TypeError(
                 "mapper must be callable (data_coords, data_dims, grid_dims) -> grid_coords "
-                "or a native partition function pointer (int)")
+                "or a native_partition_fn")
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
             raise RuntimeError("failed to create composite data_place")
@@ -2408,6 +2474,19 @@ cdef class data_place:
         if isinstance(size_or_dims, (tuple, list)):
             _fill_dim4_c_order(size_or_dims, &dims, u"extents")
             ptr = stf_data_place_allocate_nd(self._h, &dims, <uint64_t>elemsize, s)
+            # A Python mapper failure during a composite allocation cannot
+            # cross the C boundary: it is stashed in the callback state (the
+            # native side falls back to place 0). Surface it here, before the
+            # generic failure, so misuse raises instead of silently
+            # misplacing every block. The fallback-placed allocation, if any,
+            # is released first: the caller never sees its pointer.
+            if self._mapper_callback is not None and self._mapper_callback.error is not None:
+                if ptr != NULL:
+                    nbytes_alloc = <uint64_t>elemsize
+                    for e in size_or_dims:
+                        nbytes_alloc *= <uint64_t>e
+                    stf_data_place_deallocate(self._h, ptr, <size_t>nbytes_alloc, s)
+                self._mapper_callback.raise_if_error()
             if ptr == NULL:
                 raise MemoryError(
                     f"data_place.allocate failed for extents {tuple(size_or_dims)} x {elemsize} bytes")
