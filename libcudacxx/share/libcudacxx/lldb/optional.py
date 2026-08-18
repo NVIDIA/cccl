@@ -21,18 +21,29 @@ def is_cuda_optional(value_type: lldb.SBType, _internal_dict: InternalDict) -> b
     return _OPTIONAL_PATTERN.fullmatch(type_name) is not None
 
 
-def optional_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
+def _optional_resolved_value(value: lldb.SBValue) -> lldb.SBValue | None:
     non_syn = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
     val_member = non_syn.GetChildMemberWithName("__value_")
     if val_member.IsValid():
         # __value_ is a pointer (T*) for the optional<T&> specialization.
         # Its value is 0 (null) if disengaged, and non-zero if engaged,
         # regardless of the value of the referenced object itself.
-        if val_member.GetValueAsUnsigned(0) == 0:
-            return "cuda::std::nullopt"
-        return ""
-    engaged_member = non_syn.GetChildMemberWithName("__engaged_")
-    if engaged_member.IsValid() and engaged_member.GetValueAsUnsigned(0) == 0:
+        if val_member.GetValueAsUnsigned(0) != 0:
+            return val_member.Dereference()
+    else:
+        engaged_member = non_syn.GetChildMemberWithName("__engaged_")
+        if engaged_member.IsValid() and engaged_member.GetValueAsUnsigned(0) != 0:
+            storage = non_syn.GetChildMemberWithName("__storage_")
+            if storage.IsValid():
+                val = storage.GetChildMemberWithName("__val_")
+                if val.IsValid():
+                    return val
+    return None
+
+
+def optional_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
+    resolved = _optional_resolved_value(value)
+    if resolved is None:
         return "cuda::std::nullopt"
     return ""
 
@@ -42,8 +53,6 @@ class OptionalSyntheticProvider:
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
         self.raw_value = value
-        value = cccl_common.strip_reference_value(value)
-        self.value = value.GetNonSyntheticValue()
         self.update()
 
     def get_type_name(self) -> str:
@@ -55,44 +64,23 @@ class OptionalSyntheticProvider:
         return cccl_common._ABI_NAMESPACE_PATTERN.sub("", type_name)
 
     def update(self) -> bool:
-        self.size = 0
-        val_member = self.value.GetChildMemberWithName("__value_")
-        if val_member.IsValid():
-            # __value_ is a pointer (T*) for the optional<T&> specialization.
-            # Its value is 0 (null) if disengaged, and non-zero if engaged.
-            self.engaged = val_member.GetValueAsUnsigned(0) != 0
-            if self.engaged:
-                self.val = val_member.Dereference()
-                self.size = 1
-        else:
-            engaged_member = self.value.GetChildMemberWithName("__engaged_")
-            if not engaged_member.IsValid():
-                return False
-            self.engaged = engaged_member.GetValueAsUnsigned(0) != 0
-            if self.engaged:
-                storage = self.value.GetChildMemberWithName("__storage_")
-                if not storage.IsValid():
-                    return False
-                self.val = storage.GetChildMemberWithName("__val_")
-                if not self.val.IsValid():
-                    return False
-                self.size = 1
+        self.resolved_value = _optional_resolved_value(self.raw_value)
         return True
 
     def num_children(self) -> int:
-        return self.size
+        return 1 if self.resolved_value is not None else 0
 
     def has_children(self) -> bool:
-        return self.size != 0
+        return self.resolved_value is not None
 
     def get_child_index(self, name: str) -> int:
-        if name == "value" and self.size == 1:
+        if name == "value" and self.resolved_value is not None:
             return 0
         return -1
 
     def get_child_at_index(self, index: int) -> lldb.SBValue | None:
-        if index == 0 and self.size == 1:
-            return self.val.Clone("value")
+        if index == 0 and self.resolved_value is not None:
+            return self.resolved_value.Clone("value")
         return None
 
 
