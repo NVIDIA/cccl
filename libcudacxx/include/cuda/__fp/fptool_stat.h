@@ -50,35 +50,80 @@
 //! ## What Is Collected
 //!
 //! Each binary `+`, `-`, `*`, `/` - including the compound assignments, `++`, `--`, the
-//! mixed value/scalar overloads and `atomicAdd`/`atomicSub` - increments its counter and
-//! summarizes its two operands and its result into `fpmp2_stat_data::arg[0]`, `arg[1]`
-//! and `result`. A summary (`fpmp2_stat_value`) records the exponent range of the `hi`
-//! limb, how often the value or its `lo` limb was zero, how often infinities, NaNs and
-//! subnormals appeared, and the range of the gap between the `hi` and `lo` limbs, which tells
-//! how much of the double-word precision the computation actually uses: the gap is 0 or 1 for
-//! a normalized pair, negative where the limbs overlap - which `overlap_count` counts, and
-//! `invert_count` for the dangerous extreme of a `lo` that outweighs its `hi` - and larger
-//! where precision is held in reserve.
+//! mixed value/scalar overloads and `atomicAdd`/`atomicSub` - increments its own counter,
+//! classifies the operation as a whole through four event counters, and summarizes its two
+//! operands and its result into `fpmp2_stat_data::arg[0]`, `arg[1]` and `result`.
 //!
 //! Each of the three slots receives exactly one value per counted operation, so
 //! `ops_count` is the total to divide by when turning a count into a share, as in
 //! `zero_lo_count / ops_count`.
 //!
-//! Four further counters classify the operation as a whole rather than its values, which
-//! takes the operands and the result together. They apply where both operands were finite
-//! and non-zero, so that a degenerate result cannot simply be an operand passing through:
+//! `sqrt`, `rsqrt`, `fma`, `mad`, `renormalize` and the math functions are not counted:
+//! they are composites whose internal operations would swamp the counters. `arg[2]` is
+//! reserved for a future ternary operation.
 //!
-//! | Counter                | Operation | Result                                       |
-//! |------------------------|-----------|----------------------------------------------|
-//! | `full_cancel_count`    | `+` `-`   | exact zero, i.e. the operands cancelled      |
-//! | `partial_cancel_count` | `+` `-`   | more than half the significand cancelled     |
-//! | `underflow_count`      | `*` `/`   | exact zero, i.e. too small to represent      |
-//! | `overflow_count`       | any       | non-finite                                   |
+//! ## Metrics
+//!
+//! The record is one `fpmp2_stat_data`: nine counters describing operations, and four
+//! `fpmp2_stat_value` summaries describing the values that passed through the slots. The
+//! fields carry a one-line description each; what they mean and what they are good for is
+//! here.
+//!
+//! ### Operation Counters
+//!
+//! | Counter     | Incremented by               |
+//! |-------------|------------------------------|
+//! | `ops_count` | any of the four below        |
+//! | `add_count` | `+`, `+=`, `++`, `atomicAdd` |
+//! | `sub_count` | `-`, `-=`, `--`, `atomicSub` |
+//! | `mul_count` | `*`, `*=`                    |
+//! | `div_count` | `/`, `/=`                    |
+//!
+//! Together they are the operation mix of the instrumented region. Most kernels have a
+//! closed form for it, and checking that prediction against these four is the cheapest
+//! confirmation available that the region is the intended one, that nothing was optimized
+//! away and that nothing outside it contributed. The division share is where both a
+//! performance and an accuracy review start, division being the most expensive and least
+//! accurate pair operation, and the subtraction count is what shows that a compensated
+//! algorithm is really computing its corrections.
+//!
+//! ### Numerical Events
+//!
+//! These four classify the operation as a whole rather than its values, which takes the
+//! operands and the result together. They apply where both operands were finite and
+//! non-zero, so that a degenerate result cannot simply be an operand passing through:
+//!
+//! | Counter                | Operation | Result                                   |
+//! |------------------------|-----------|------------------------------------------|
+//! | `full_cancel_count`    | `+` `-`   | exact zero, i.e. the operands cancelled  |
+//! | `partial_cancel_count` | `+` `-`   | more than half the significand cancelled |
+//! | `underflow_count`      | `*` `/`   | exact zero, i.e. too small to represent  |
+//! | `overflow_count`       | any       | non-finite                               |
 //!
 //! The split between cancellation and underflow needs no heuristic, because the operation
 //! decides it: the difference of two distinct values is a non-zero multiple of the smaller
-//! one's ulp and so never rounds to zero, which makes an additive zero proof of exact
-//! cancellation, while multiplication and division have nothing to cancel at all.
+//! one's ulp and so never rounds to zero, which makes an additive zero proof that the
+//! operands were equal and opposite, while multiplication and division have nothing to
+//! cancel at all. A cancelling result is therefore exact, which makes `full_cancel_count` a
+//! report of where the significance went rather than of an error. Complete underflow is the
+//! opposite case, the result vanishing entirely; where a result survives but its precision
+//! degrades - gradual underflow - `fpmp2_stat_value::denorm_count` is what reports it.
+//!
+//! Partial cancellation is measured as `max(ilogb of the operands) - ilogb of the result`,
+//! the number of leading bits that cancelled, against a threshold of half the significand:
+//! 23 bits of 46 for `fp32mp2`, 52 of 104 for `fp64mp2`. It is invisible in
+//! `full_cancel_count`, the result not being zero. What it measures is the drop in
+//! magnitude, which is not the same as bits gone from the representation: a cancellation
+//! this deep usually leaves fewer surviving bits than a single limb holds, so the result
+//! comes back with a zero `lo` and the pair really has lost half its width, but one bit past
+//! the threshold the tail can still need the second limb, and then the pair keeps its full
+//! width relative to its new, smaller magnitude. These are the prime suspects for
+//! reformulation or for compensated summation.
+//!
+//! `overflow_count` counts NaN as well as infinity, because an `fpmp2` overflow usually
+//! produces a NaN: the `hi` limb goes infinite and the tail is then computed as `inf - inf`.
+//! That is unambiguous, since ordinary arithmetic on finite non-zero operands can produce
+//! neither. Division by zero is not counted, one of its operands being zero.
 //!
 //! Read the cancellation counters as occurrences, not as damage. The subtraction itself is
 //! exact, so a cancelling operation loses no accuracy of its own; what makes cancellation
@@ -87,9 +132,112 @@
 //! whole purpose is to extract a small residual from two nearly equal values - therefore run
 //! up large counts while being at their most accurate.
 //!
-//! `sqrt`, `rsqrt`, `fma`, `mad`, `renormalize` and the math functions are not counted:
-//! they are composites whose internal operations would swamp the counters. `arg[2]` is
-//! reserved for a future ternary operation.
+//! ### Per-Slot Value Statistics
+//!
+//! One `fpmp2_stat_value` per slot, fed exactly once per counted operation:
+//!
+//! | Field                            | Records                                           |
+//! |----------------------------------|---------------------------------------------------|
+//! | `min_exp`, `max_exp`             | exponent range of the leading limb                |
+//! | `zero_count`                     | both limbs zero                                   |
+//! | `zero_lo_count`                  | non-zero `hi` and zero `lo`, no extra precision   |
+//! | `inf_count`, `nan_count`         | an infinite, resp. NaN, limb                      |
+//! | `infnan_count`                   | limbs infinite with opposite signs, so a NaN pair |
+//! | `denorm_count`                   | a subnormal limb                                  |
+//! | `overlap_count`                  | the limbs overlap, i.e. the gap is negative       |
+//! | `invert_count`                   | the limbs are inverted, `abs(lo) > abs(hi)`       |
+//! | `min_hi_lo_gap`, `max_hi_lo_gap` | range of the gap between the limbs                |
+//! | `min_hi_lo_gap_sample_hi`, `_lo` | the limbs of a value that lowered the gap minimum |
+//!
+//! Every count is per value rather than per limb. A range says what the worst case was and
+//! never how often it happened, so it is read together with the counter beside it:
+//! `denorm_count` for the bottom of the exponent range, `overlap_count` and `invert_count`
+//! for the bottom of the gap range. Both ranges start out empty, i.e. `min > max`, which is
+//! how they say that nothing has been sampled yet.
+//!
+//! The **exponent range** is unbiased, as `ilogb` reports it, and is taken from the limb
+//! that leads the pair: `hi` for anything a renormalizing accuracy level produces, `lo` for
+//! an unnormalized pair led by `lo`, including one whose `hi` is zero. It is the dynamic
+//! range the data actually exercises - how much headroom is left before overflow, and
+//! whether a narrower format would hold it. `fp32mp2` inherits the exponent range of
+//! `float`, which is the usual surprise when porting from `double`.
+//!
+//! **`zero_lo_count`** is the best single indicator of whether a pair type is earning its
+//! cost: a high share means the second limb is idle for most of the data, and a narrower or
+//! cheaper type may do the same job.
+//!
+//! **`inf_count`, `nan_count` and `infnan_count`** are the corruption detectors, and the
+//! place to look once `overflow_count` has fired. The third is a pair whose two limbs are
+//! infinities of opposite sign: reading such a pair adds them, so the value as a whole is a
+//! NaN, and it is a specific pathological encoding that is easy to produce and hard to spot.
+//! `zero_count`, by contrast, is unremarkable - it says how many of the operations were
+//! trivial.
+//!
+//! **`denorm_count`** says the computation reached the bottom of the exponent range, where
+//! precision degrades gradually. `lo` normally sits `digits` binades below `hi` and cannot
+//! stay there once it is subnormal, so it reaches the limit long before `hi` does, and this
+//! counter usually reports a pair that lost its tail rather than a subnormal result. It is
+//! also a domain check: the `low` and `mid` accuracy levels support the normal range only,
+//! so any subnormal means such a configuration is being used outside its domain.
+//!
+//! **`overlap_count` and `invert_count`** are about how the two limbs are placed with
+//! respect to each other, not about how small they became. Overlap is the frequency behind
+//! `min_hi_lo_gap`, and the two answer different questions: a minimum of -3 could be one
+//! value in a billion or every second one, which call for opposite responses. Only the
+//! `low` accuracy level, which skips renormalization, produces either case through
+//! arithmetic, so this is what says whether such a configuration needs `renormalize` after
+//! all; the two-limb constructor can produce them at any level.
+//!
+//! An **inverted** pair is the worst thing a pair can be, and the one number here that
+//! should always be zero: the tail no longer describes a correction to the head but
+//! outweighs it, so anything that reads the pair through its `hi` limb - a comparison, a
+//! conversion, a sign test, a branch on magnitude - reaches the wrong answer, and every
+//! later operation inherits it. A pair whose `hi` is zero while `lo` is not is the extreme
+//! of this, and `invert_count` is the only counter that names it, its gap being deliberately
+//! not sampled. Every inverted pair with two non-zero limbs is also an overlap, inverting
+//! implying a gap of at most `-digits`; the reverse does not hold, an overlap of a few bits
+//! being untidy but still describing the value correctly, which is why the two are worth
+//! reading separately. Equal magnitudes are not counted, `abs(lo) > abs(hi)` being strict:
+//! such a pair is degenerate in its own way - opposite signs make it an exact zero written
+//! in two non-zero limbs - and shows up at the bottom of the gap range instead.
+//!
+//! ### Reading the Limb Gap
+//!
+//! The gap is `exp(hi) - exp(lo) - digits`, the raw exponent difference with the mantissa
+//! width of the base type taken out, so it says how far the pair is from being tightly
+//! normalized rather than how wide the format is:
+//!
+//! | Gap                   | Meaning                                                     |
+//! |-----------------------|-------------------------------------------------------------|
+//! | `0` or `1`            | normalized: no bits wasted, none overlapping                |
+//! | negative              | the limbs overlap, so fewer significant bits than they hold |
+//! | much greater than `1` | `lo` carries almost nothing, that many bits held in reserve |
+//!
+//! A normalized `lo` is at most half an ulp of `hi`, which puts its exponent exactly
+//! `digits` places below, hence two values rather than one for a normalized pair: `0` is the
+//! tie, `abs(lo)` exactly half an ulp of `hi`, which needs a set bit exactly `digits` places
+//! below the leading one and so shows up for values with few significant bits; `1` is
+//! anything strictly below, which is what an inexact division or a value with a dense
+//! significand gives.
+//!
+//! Only pairs with two non-zero limbs are sampled. A gap places one limb against the other,
+//! so a value with either limb zero has none to report: `zero_lo_count` covers the ordinary
+//! case of a missing tail, and a pair whose `hi` alone is zero - which needs an unnormalized
+//! value - is measured by `lo` in the exponent range instead. Subnormal limbs are measured
+//! by their leading significant bit, as `ilogb` would report them, so a subnormal `lo` does
+//! not fake an overlap; it does mean the pair lost part of its tail, which `denorm_count`
+//! reports.
+//!
+//! ### Which Metric Answers Which Question
+//!
+//! | Question                             | Metrics that answer it                         |
+//! |--------------------------------------|------------------------------------------------|
+//! | Is the pair type earning its cost?   | `zero_lo_count`, `max_hi_lo_gap`               |
+//! | Am I measuring the intended region?  | the four operation counters                    |
+//! | Is `low` accuracy safe on this data? | `overlap_count`, `invert_count`, gap minimum   |
+//! | Where does the precision go?         | the two cancellation counters                  |
+//! | Is the dynamic range near an edge?   | exponent range, `denorm_count`, over/underflow |
+//! | Is anything silently corrupt?        | `invert_count`, `nan_count`, `infnan_count`    |
 //!
 //! ## Collection Is Device-Only
 //!
@@ -97,10 +245,10 @@
 //! runs on the GPU is observed. The very same code compiles and runs on the host, where
 //! the wrapper is a transparent pass-through and no counters are gathered.
 //!
-//! | Function                                     | Description                             |
-//! |----------------------------------------------|-----------------------------------------|
-//! | `fpmp2_stat_reset_device_data(stream_ref)`   | Clear counters, arm the range sentinels |
-//! | `fpmp2_stat_read_device_data(stream_ref)`    | Return the record, read on that stream  |
+//! | Function                                   | Description                             |
+//! |--------------------------------------------|-----------------------------------------|
+//! | `fpmp2_stat_reset_device_data(stream_ref)` | Clear counters, arm the range sentinels |
+//! | `fpmp2_stat_read_device_data(stream_ref)`  | Return the record, read on that stream  |
 //!
 //! The record is per-device state, so both take the stream that says which device to touch
 //! and when: the clear is enqueued on it, and the read waits on it before handing the
@@ -154,14 +302,10 @@ namespace cuda::experimental
 
 //! @brief Summary of the fpmp2 values that passed through one operand or result slot
 //!
-//! Exponents are unbiased, as `ilogb` reports them, and are sampled from the `hi` limb
-//! of finite non-zero values only. The two sentinel-initialized ranges say "no sample
-//! yet" through an empty range, i.e. `min > max`; `fpmp2_stat_reset_device_data` arms
-//! them.
-//!
-//! A range says what the worst case was, never how often it happened, so the counter beside
-//! it carries the frequency: `overlap_count` and `invert_count` for `min_hi_lo_gap` and
-//! `denorm_count` for the bottom of the exponent range.
+//! One of these is fed exactly once per counted operation. What the fields mean, and what
+//! each is good for, is in the metrics reference in this file's documentation; the ranges
+//! start out empty, i.e. `min > max`, to say that nothing has been sampled yet, and
+//! `fpmp2_stat_reset_device_data` arms them.
 //!
 //! The field types are the ones the device-side atomics take, which is also what makes
 //! them the portable choice here: `unsigned long long int` is what `atomicAdd` accepts
@@ -172,15 +316,9 @@ namespace cuda::experimental
 //! `atomicMin`/`atomicMax`, and identical to `int32_t` wherever CCCL builds.
 struct fpmp2_stat_value
 {
-  //! @brief Largest exponent seen, `numeric_limits<int>::min()` until a value is sampled
-  //!
-  //! `ilogb` of the limb that leads the pair, which is `hi` for anything a renormalizing
-  //! accuracy level produces. An unnormalized pair may be led by `lo`, including one whose
-  //! `hi` is zero, and is measured by `lo` accordingly.
+  //! @brief Largest exponent of the leading limb, `numeric_limits<int>::min()` until sampled
   int max_exp;
-  //! @brief Smallest exponent seen, `numeric_limits<int>::max()` until a value is sampled
-  //!
-  //! Defined as for `max_exp`.
+  //! @brief Smallest exponent of the leading limb, `numeric_limits<int>::max()` until sampled
   int min_exp;
   //! @brief Values whose `hi` and `lo` limbs were both zero
   unsigned long long int zero_count;
@@ -193,82 +331,14 @@ struct fpmp2_stat_value
   //! @brief Values whose limbs were infinities of opposite signs, whose sum is a NaN
   unsigned long long int infnan_count;
   //! @brief Values with a subnormal `hi` or `lo`, counted once per value
-  //!
-  //! A non-zero count says the computation reached the bottom of the exponent range, where
-  //! precision degrades gradually. It matters for two reasons beyond the usual performance
-  //! concern: the `low` and `mid` accuracy levels support the normal range only, so any
-  //! subnormal means such a configuration is being used outside its domain; and a subnormal
-  //! `lo` costs the pair its tail, since `lo` normally sits `digits` binades below `hi` and
-  //! cannot go there once it is subnormal.
-  //!
-  //! `lo` reaches that limit long before `hi` does, so this counter usually reports the
-  //! precision loss rather than a subnormal result.
   unsigned long long int denorm_count;
   //! @brief Values whose limbs overlapped, i.e. whose gap was negative
-  //!
-  //! How often what `min_hi_lo_gap` reports as the worst case actually happened. The two
-  //! answer different questions and a diagnosis needs both: a minimum of -3 could be one
-  //! value in a billion or every second one, which call for opposite responses. Only the
-  //! `low` accuracy level, which skips renormalization, produces overlap at all, so this is
-  //! the counter that says whether such a configuration needs `renormalize` after all.
-  //!
-  //! Nothing to do with `denorm_count` above, which is about how small the limbs became; this
-  //! one is about how the two of them are placed with respect to each other.
   unsigned long long int overlap_count;
-  //! @brief Values whose limbs were inverted, i.e. `|lo| > |hi|`
-  //!
-  //! The worst thing a pair can be, and the reason to watch it separately from
-  //! `overlap_count`: the tail no longer describes a correction to the head but outweighs it,
-  //! so anything that reads the pair through its `hi` limb - a comparison, a conversion, a
-  //! sign test, a branch on magnitude - reaches the wrong answer, and every later operation
-  //! inherits it. A pair whose `hi` is zero while `lo` is not is the extreme of this.
-  //!
-  //! Every inverted pair with two non-zero limbs also counts as an overlap, since inverting
-  //! implies a gap of at most `-digits`. The reverse does not hold: an overlap of a few bits
-  //! is untidy but still describes the value correctly, which is why this counter is worth
-  //! reading on its own. It is also the only counter that names the `hi`-is-zero case, whose
-  //! gap is deliberately not sampled.
-  //!
-  //! Equal magnitudes are not counted, `|lo| > |hi|` being strict. Such a pair is degenerate
-  //! in its own way - opposite signs make it an exact zero written in two non-zero limbs - and
-  //! shows up at the bottom of the gap range.
-  //!
-  //! Only the `low` accuracy level, which skips renormalization, can produce this through
-  //! arithmetic; the two-limb constructor can produce it at any level.
+  //! @brief Values whose limbs were inverted, i.e. `abs(lo) > abs(hi)`
   unsigned long long int invert_count;
-  //! @brief Largest gap between the limbs seen, `numeric_limits<int>::min()` until a value
-  //! is sampled
-  //!
-  //! The gap is `exp(hi) - exp(lo) - digits`, i.e. the raw exponent difference with the
-  //! mantissa width of the base type taken out, so it says how far the pair is from being
-  //! tightly normalized rather than how wide the format is:
-  //!
-  //! - `0` or `1`: normalized. A normalized `lo` is at most half an ulp of `hi`, which puts
-  //!   its exponent exactly `digits` places below, so no bits are wasted and none overlap.
-  //!   The two differ by where in that bound the tail landed: `0` is the tie, `|lo|` exactly
-  //!   half an ulp of `hi`, which needs a set bit exactly `digits` places below the leading
-  //!   one and so shows up for values with few significant bits; `1` is anything strictly
-  //!   below, which is what an inexact division or a value with a dense significand gives.
-  //! - negative: the limbs overlap, so the pair carries fewer significant bits than its two
-  //!   limbs suggest. Only the `low` accuracy level, which skips renormalization, produces
-  //!   this.
-  //! - much greater than `1`: `lo` sits well below half an ulp of `hi`, so the second limb
-  //!   is barely carrying anything and the pair has that many bits of accuracy in reserve.
-  //!
-  //! Subnormal limbs are measured by their leading significant bit, as `ilogb` would report
-  //! them, so a subnormal `lo` does not fake an overlap. It does mean the pair lost part of
-  //! its tail, which `denorm_count` reports.
-  //!
-  //! Only pairs with two non-zero limbs are sampled. A gap places one limb against the
-  //! other, so a value with either limb zero has none to report: `zero_lo_count` covers the
-  //! ordinary case of a missing tail, and a pair whose `hi` alone is zero - which needs an
-  //! unnormalized value - is measured by `lo` in the exponent range instead.
+  //! @brief Largest limb gap seen, `numeric_limits<int>::min()` until a value is sampled
   int max_hi_lo_gap;
-  //! @brief Smallest gap between the limbs seen, `numeric_limits<int>::max()` until a value
-  //! is sampled
-  //!
-  //! Defined as for `max_hi_lo_gap`. This is the interesting end of the range: a negative
-  //! minimum reports that unnormalized pairs occurred, and how badly the limbs overlapped.
+  //! @brief Smallest limb gap seen, `numeric_limits<int>::max()` until a value is sampled
   int min_hi_lo_gap;
   //! @brief `hi` limb of a value that lowered `min_hi_lo_gap`, for inspection
   double min_hi_lo_gap_sample_hi;
@@ -279,57 +349,28 @@ struct fpmp2_stat_value
 //! @brief The record a `_stat` type fills in on the device
 //!
 //! Counters are shared by every `fpmp2_stat` instantiation, so a program that uses more
-//! than one of them sees their operations summed.
+//! than one of them sees their operations summed. What the fields mean, and what each is
+//! good for, is in the metrics reference in this file's documentation.
 struct fpmp2_stat_data
 {
   //! @brief Instrumented binary operations, the sum of the four counters below
   unsigned long long int ops_count;
-  //! @brief Instrumented additions, including `+=` and `++`
+  //! @brief Instrumented additions, including `+=`, `++` and `atomicAdd`
   unsigned long long int add_count;
-  //! @brief Instrumented subtractions, including `-=` and `--`
+  //! @brief Instrumented subtractions, including `-=`, `--` and `atomicSub`
   unsigned long long int sub_count;
   //! @brief Instrumented multiplications, including `*=`
   unsigned long long int mul_count;
   //! @brief Instrumented divisions, including `/=`
   unsigned long long int div_count;
   //! @brief Additive operations that cancelled completely, i.e. returned an exact zero
-  //!
-  //! Only an additive operation can land here. The difference of two distinct values is a
-  //! non-zero multiple of the smaller one's ulp and so can never round to zero, which makes
-  //! an additive zero proof that the operands were equal and opposite. Such a result is
-  //! exact, so this counter reports a loss of information rather than a loss of accuracy.
   unsigned long long int full_cancel_count;
-  //! @brief Additive operations whose result fell more than half the significand below its
-  //! operands, without reaching zero
-  //!
-  //! Measured as `max(ilogb of the operands) - ilogb of the result`, the number of leading
-  //! bits that cancelled, against a threshold of `digits / 2` - 23 bits of 46 for `fp32mp2`,
-  //! 52 of 104 for `fp64mp2`. It is invisible in `full_cancel_count` because the result is
-  //! not zero.
-  //!
-  //! What the count reports is the drop in magnitude, which is not the same as bits gone
-  //! from the representation. A cancellation this deep usually leaves fewer surviving bits
-  //! than a single limb holds, so the result comes back with a zero `lo` and the pair really
-  //! has lost half its width; at one bit past the threshold, though, the tail can still need
-  //! the second limb, and then the pair keeps its full width relative to its new, smaller
-  //! magnitude. Either way the operation is worth counting, because the accuracy the
-  //! operands carried into it is what the cancellation exposes - see the note on reading the
-  //! cancellation counters in the file comment.
+  //! @brief Additive operations that lost more than half the significand to cancellation
+  //! without reaching zero
   unsigned long long int partial_cancel_count;
-  //! @brief Operations whose non-zero operands produced an exact zero, other than additive
-  //! ones
-  //!
-  //! Complete underflow: the result was too small to represent at all. Multiplication and
-  //! division have nothing to cancel, so this is the only way they reach zero from non-zero
-  //! operands. Gradual underflow, where precision degrades but the result survives, is
-  //! reported by `fpmp2_stat_value::denorm_count` instead.
+  //! @brief Multiplications and divisions whose non-zero operands produced an exact zero
   unsigned long long int underflow_count;
   //! @brief Operations whose finite non-zero operands produced a non-finite result
-  //!
-  //! Counts NaN as well as infinity, because an `fpmp2` overflow usually produces a NaN: the
-  //! `hi` limb goes infinite and the tail is then computed as `inf - inf`. That is
-  //! unambiguous, since ordinary arithmetic on finite non-zero operands can produce neither.
-  //! Division by zero is excluded, as one of its operands is zero.
   unsigned long long int overflow_count;
   //! @brief Operand summaries: `arg[0]` and `arg[1]` are the binary operands, `arg[2]`
   //! is reserved for a future ternary operation
@@ -594,7 +635,7 @@ __fpmp2_stat_accumulate(fpmp2_stat_value* __slot, _FpType __hi, _FpType __lo) no
       // Measured against a tightly normalized pair rather than as a raw exponent
       // difference: a normalized `lo` is at most half an ulp of `hi`, which puts its
       // exponent `digits` places below, so subtracting `digits` makes 0 the tight case and
-      // a negative value an overlap. See the field documentation.
+      // a negative value an overlap. See the metrics reference in the file documentation.
       constexpr int __digits = ::cuda::std::numeric_limits<_FpType>::digits;
 
       const int __gap      = __p_hi.__exp_ilogb - __p_lo.__exp_ilogb - __digits;
@@ -606,7 +647,7 @@ __fpmp2_stat_accumulate(fpmp2_stat_value* __slot, _FpType __hi, _FpType __lo) no
         ::atomicAdd(&__slot->overlap_count, 1ull);
       }
 
-      // Best-effort sample of the tightest pair seen, see the note in the file comment.
+      // Best-effort sample of the tightest pair seen, see the note in the file documentation.
       if (__gap < __prev_min)
       {
         __slot->min_hi_lo_gap_sample_hi = static_cast<double>(__hi);
@@ -661,7 +702,8 @@ _CCCL_DEVICE_API inline void __fpmp2_stat_note_binop(
     else if (__s_r.__is_zero)
     {
       // Only an additive operation can reach zero by cancelling; a multiplicative one has
-      // nothing to cancel, so its zero is an underflow. See the field documentation.
+      // nothing to cancel, so its zero is an underflow. See the metrics reference in the
+      // file documentation.
       ::atomicAdd(__is_additive ? &__data.full_cancel_count : &__data.underflow_count, 1ull);
     }
     else if (__is_additive)
