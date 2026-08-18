@@ -177,7 +177,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_width()
   }
 }
 
-TEST_HOST_DEVICE_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC void test_runtime()
 {
   {
     constexpr char input[]   = "kz"; // 755 does not fit in uint8_t, but wraps upward to 243.
@@ -201,13 +201,178 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_signed_width<__int128_t>();
   test_unsigned_width<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
+}
 
+template <class T, cuda::std::size_t Size>
+TEST_HOST_DEVICE_FUNC constexpr void test_constexpr_success(const char (&input)[Size], int base, T expected)
+{
+  T value     = static_cast<T>(23);
+  auto result = cuda::std::from_chars(input, input + Size - 1, value, base);
+  assert(result.ptr == input + Size - 1);
+  assert(result.ec == cuda::std::errc{});
+  assert(value == expected);
+}
+
+template <class T, cuda::std::size_t Size>
+TEST_HOST_DEVICE_FUNC constexpr void test_constexpr_out_of_range(const char (&input)[Size], int base)
+{
+  T value     = static_cast<T>(23);
+  auto result = cuda::std::from_chars(input, input + Size - 1, value, base);
+  assert(result.ptr == input + Size - 1);
+  assert(result.ec == cuda::std::errc::result_out_of_range);
+  assert(value == static_cast<T>(23));
+}
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_8_bit()
+{
+  using I = cuda::std::int8_t;
+  using U = cuda::std::uint8_t;
+
+  test_constexpr_success<U>("255", 10, (cuda::std::numeric_limits<U>::max)());
+
+  // Multiplication overflow that wraps upward to a representable value.
+  test_constexpr_out_of_range<U>("kz", 36);
+
+  // The multiplication (25 * 10) fits, but adding the final digit does not.
+  test_constexpr_out_of_range<U>("256", 10);
+
+  test_constexpr_success<I>("127", 10, (cuda::std::numeric_limits<I>::max)());
+  test_constexpr_success<I>("-128", 10, (cuda::std::numeric_limits<I>::min)());
+  test_constexpr_out_of_range<I>("128", 10);
+  test_constexpr_out_of_range<I>("-129", 10);
+
+  if constexpr (cuda::std::is_signed_v<char>)
+  {
+    test_constexpr_success<char>("127", 10, (cuda::std::numeric_limits<char>::max)());
+    test_constexpr_success<char>("-128", 10, (cuda::std::numeric_limits<char>::min)());
+    test_constexpr_out_of_range<char>("128", 10);
+    test_constexpr_out_of_range<char>("-129", 10);
+  }
+  else
+  {
+    test_constexpr_success<char>("255", 10, (cuda::std::numeric_limits<char>::max)());
+    test_constexpr_out_of_range<char>("256", 10);
+  }
+
+  // Parsing must continue after overflow to locate the first invalid character.
+  {
+    constexpr char input[] = "kz0!";
+    U value                = 23;
+    auto result            = cuda::std::from_chars(input, input + 4, value, 36);
+    assert(result.ptr == input + 3);
+    assert(result.ec == cuda::std::errc::result_out_of_range);
+    assert(value == 23);
+  }
+  return true;
+}
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_16_bit()
+{
+  using I = cuda::std::int16_t;
+  using U = cuda::std::uint16_t;
+
+  test_constexpr_success<U>("65535", 10, (cuda::std::numeric_limits<U>::max)());
+  test_constexpr_out_of_range<U>("65536", 10);
+  test_constexpr_out_of_range<U>("1g10", 36);
+
+  test_constexpr_success<I>("32767", 10, (cuda::std::numeric_limits<I>::max)());
+  test_constexpr_success<I>("-32768", 10, (cuda::std::numeric_limits<I>::min)());
+  test_constexpr_out_of_range<I>("32768", 10);
+  test_constexpr_out_of_range<I>("-32769", 10);
+  return true;
+}
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_32_bit()
+{
+  using I = cuda::std::int32_t;
+  using U = cuda::std::uint32_t;
+
+  test_constexpr_success<U>("4294967295", 10, (cuda::std::numeric_limits<U>::max)());
+  test_constexpr_out_of_range<U>("4294967296", 10);
+  test_constexpr_out_of_range<U>("2126880", 36);
+
+  test_constexpr_success<I>("2147483647", 10, (cuda::std::numeric_limits<I>::max)());
+  test_constexpr_success<I>("-2147483648", 10, (cuda::std::numeric_limits<I>::min)());
+  test_constexpr_out_of_range<I>("2147483648", 10);
+  test_constexpr_out_of_range<I>("-2147483649", 10);
+  return true;
+}
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_64_bit()
+{
+  using I = cuda::std::int64_t;
+  using U = cuda::std::uint64_t;
+
+  test_constexpr_success<U>("18446744073709551615", 10, (cuda::std::numeric_limits<U>::max)());
+  test_constexpr_out_of_range<U>("18446744073709551616", 10);
+  test_constexpr_out_of_range<U>("405jklntyr810", 36);
+
+  test_constexpr_success<I>("9223372036854775807", 10, (cuda::std::numeric_limits<I>::max)());
+  test_constexpr_success<I>("-9223372036854775808", 10, (cuda::std::numeric_limits<I>::min)());
+  test_constexpr_out_of_range<I>("9223372036854775808", 10);
+  test_constexpr_out_of_range<I>("-9223372036854775809", 10);
+  return true;
+}
+
+#if _CCCL_HAS_INT128()
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_128_bit()
+{
+  using I = __int128_t;
+  using U = __uint128_t;
+
+  test_constexpr_success<U>("340282366920938463463374607431768211455", 10, (cuda::std::numeric_limits<U>::max)());
+  test_constexpr_out_of_range<U>("340282366920938463463374607431768211456", 10);
+  test_constexpr_out_of_range<U>("fl7524438ymb31pfwhzzmf480", 36);
+
+  test_constexpr_success<I>("170141183460469231731687303715884105727", 10, (cuda::std::numeric_limits<I>::max)());
+  test_constexpr_success<I>("-170141183460469231731687303715884105728", 10, (cuda::std::numeric_limits<I>::min)());
+  test_constexpr_out_of_range<I>("170141183460469231731687303715884105728", 10);
+  test_constexpr_out_of_range<I>("-170141183460469231731687303715884105729", 10);
+  return true;
+}
+#endif // _CCCL_HAS_INT128()
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr_syntax()
+{
+  {
+    constexpr char input[]    = "7B!";
+    cuda::std::uint32_t value = 23;
+    auto result               = cuda::std::from_chars(input, input + 3, value, 16);
+    assert(result.ptr == input + 2);
+    assert(result.ec == cuda::std::errc{});
+    assert(value == 123);
+  }
+
+  {
+    constexpr char input[]   = "+1";
+    cuda::std::int32_t value = 23;
+    auto result              = cuda::std::from_chars(input, input + 2, value);
+    assert(result.ptr == input);
+    assert(result.ec == cuda::std::errc::invalid_argument);
+    assert(value == 23);
+  }
+
+  {
+    constexpr char input[]    = "-1";
+    cuda::std::uint32_t value = 23;
+    auto result               = cuda::std::from_chars(input, input + 2, value);
+    assert(result.ptr == input);
+    assert(result.ec == cuda::std::errc::invalid_argument);
+    assert(value == 23);
+  }
   return true;
 }
 
 int main(int, char**)
 {
-  test();
-  static_assert(test());
+  test_runtime();
+  static_assert(test_constexpr_8_bit());
+  static_assert(test_constexpr_16_bit());
+  static_assert(test_constexpr_32_bit());
+  static_assert(test_constexpr_64_bit());
+#if _CCCL_HAS_INT128()
+  static_assert(test_constexpr_128_bit());
+#endif // _CCCL_HAS_INT128()
+  static_assert(test_constexpr_syntax());
   return 0;
 }

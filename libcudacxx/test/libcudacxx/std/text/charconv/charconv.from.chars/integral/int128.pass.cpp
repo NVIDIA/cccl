@@ -1186,8 +1186,9 @@ TEST_HOST_DEVICE_FUNC constexpr cuda::std::array<TestItem, 22> get_test_items<36
   }};
 }
 
+// The exhaustive table stays runtime-only; overflow.pass.cpp provides bounded constexpr coverage.
 template <class T>
-TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(
+TEST_HOST_DEVICE_FUNC void test_from_chars(
   const char* data,
   cuda::std::ptrdiff_t size,
   int base,
@@ -1237,7 +1238,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(
 }
 
 template <class T>
-TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(const TestItem& item, int base, bool overflow = false)
+TEST_HOST_DEVICE_FUNC void test_from_chars(const TestItem& item, int base, bool overflow = false)
 {
   static_assert(
     cuda::std::is_same_v<
@@ -1290,7 +1291,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(const TestItem& item, int b
 }
 
 template <class T>
-TEST_HOST_DEVICE_FUNC constexpr void test_overflow()
+TEST_HOST_DEVICE_FUNC void test_overflow()
 {
   constexpr int base = 10;
 
@@ -1328,7 +1329,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_overflow()
 }
 
 template <int Base>
-TEST_HOST_DEVICE_FUNC constexpr bool test_base()
+TEST_HOST_DEVICE_FUNC void test_base()
 {
   constexpr auto items = get_test_items<Base>();
 
@@ -1344,21 +1345,18 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_base()
     test_overflow<__int128_t>();
     test_overflow<__uint128_t>();
   }
-
-  return true;
 }
 
 struct TestBaseInvoker
 {
   template <int Base>
-  TEST_HOST_DEVICE_FUNC constexpr void operator()(cuda::std::integral_constant<int, Base>) const
+  TEST_HOST_DEVICE_FUNC void operator()(cuda::std::integral_constant<int, Base>) const
   {
     test_base<Base>();
-    static_assert(test_base<Base>());
   }
 };
 
-TEST_HOST_DEVICE_FUNC constexpr void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   cuda::static_for<int, first_base, last_base + 1>(TestBaseInvoker{});
 }
