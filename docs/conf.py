@@ -73,8 +73,9 @@ breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
 cpp_index_common_prefix = ["cub::"]
-# The NVIDIA theme mutates these defaults before the environment is pickled.
-# Set the final values explicitly to avoid invalidating the doctree cache.
+# The NVIDIA theme changes toc_object_entries_show_parents from "domain" to
+# "hide" and maximum_signature_line_length from None to 70 before the environment
+# is pickled. Set the final values explicitly to avoid invalidating the cache.
 toc_object_entries_show_parents = "hide"
 maximum_signature_line_length = 70
 
