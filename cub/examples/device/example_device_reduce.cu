@@ -16,7 +16,12 @@
 #define CUB_STDERR
 
 #include <cub/device/device_reduce.cuh>
-#include <cub/util_allocator.cuh>
+
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <cstdio>
 
@@ -29,7 +34,6 @@ using namespace cub;
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
-CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
 // Test generation
@@ -101,6 +105,11 @@ int main(int argc, char** argv)
 
   // Initialize device
   CubDebugExit(args.DeviceInit());
+  int device_ordinal{};
+  CubDebugExit(cudaGetDevice(&device_ordinal));
+  const cuda::device_ref device{device_ordinal};
+  const cuda::stream_ref stream{cudaStream_t{}};
+  cuda::device_memory_pool_ref device_memory_resource = cuda::device_default_memory_pool(device);
 
   printf("cub::DeviceReduce::Sum() %d items (%d-byte elements)\n", num_items, (int) sizeof(int));
   fflush(stdout);
@@ -114,29 +123,28 @@ int main(int argc, char** argv)
   Solve(h_in, h_reference, num_items);
 
   // Allocate problem device arrays
-  int* d_in = nullptr;
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_in, sizeof(int) * num_items));
+  auto d_in = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
 
   // Initialize device input
-  CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice));
+  CubDebugExit(cudaMemcpy(d_in.data(), h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice));
 
   // Allocate device output array
-  int* d_out = nullptr;
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(int) * 1));
+  auto d_out = cuda::make_buffer<int>(stream, device_memory_resource, 1, cuda::no_init);
 
   // example-begin temp-storage-query
   // Request and allocate temporary storage
-  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
-  CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+  CubDebugExit(DeviceReduce::Sum(nullptr, temp_storage_bytes, d_in.data(), d_out.data(), num_items, stream.get()));
+  auto d_temp_storage =
+    cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
   // Run
-  CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
+  CubDebugExit(
+    DeviceReduce::Sum(d_temp_storage.data(), temp_storage_bytes, d_in.data(), d_out.data(), num_items, stream.get()));
   // example-end temp-storage-query
 
   // Check for correctness (and display results, if specified)
-  int compare = CompareDeviceResults(&h_reference, d_out, 1, g_verbose, g_verbose);
+  int compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose);
   printf("\t%s", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
@@ -144,18 +152,6 @@ int main(int argc, char** argv)
   if (h_in)
   {
     delete[] h_in;
-  }
-  if (d_in)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_in));
-  }
-  if (d_out)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_out));
-  }
-  if (d_temp_storage)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
   }
 
   printf("\n\n");
