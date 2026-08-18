@@ -353,7 +353,6 @@ TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
 TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 
@@ -398,7 +397,6 @@ TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
 TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 

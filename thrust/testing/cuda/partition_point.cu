@@ -45,7 +45,6 @@ TEST_CASE("TestPartitionPointDeviceDevice", "[partition_point]")
 TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
 {
   using Vector   = thrust::device_vector<int>;
-  using T        = Vector::value_type;
   using Iterator = Vector::iterator;
 
   Vector v(4);
