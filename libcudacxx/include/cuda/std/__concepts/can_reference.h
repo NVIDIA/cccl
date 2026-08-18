@@ -32,8 +32,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 _CCCL_CONCEPT __can_reference = _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp);
 #else // ^^^ have __is_referenceable ^^^ / vvv no builtin vvv
+
 template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __ref)(__ref);
+using __with_reference = _Tp&;
+
+template <class _Tp>
+_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __ref)(typename(__with_reference<_Tp>), (__ref));
 #endif // ^^^ no builtin ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
