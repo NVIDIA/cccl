@@ -87,7 +87,7 @@ class OptionalSyntheticProvider:
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     """Register the cuda::std::optional formatter in an LLDB category."""
     debugger.HandleCommand(
-        f"type summary add --category {category} --python-function {module}.optional_summary "
+        f"type summary add --category {category} --expand --python-function {module}.optional_summary "
         f"--recognizer-function {module}.is_cuda_optional"
     )
     debugger.HandleCommand(
