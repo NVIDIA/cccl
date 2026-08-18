@@ -42,6 +42,12 @@ template <class T, class RNG>
 [[nodiscard]] std::vector<T> make_random_values(cuda::std::size_t count, cuda::std::size_t total_count, RNG& rng)
 {
   static_assert(cuda::std::is_arithmetic_v<T>);
+  std::vector<T> values(count);
+
+  if (count == 0 || total_count == 0)
+  {
+    return values;
+  }
 
   if constexpr (cuda::std::is_floating_point_v<T>)
   {
@@ -54,24 +60,28 @@ template <class T, class RNG>
     REQUIRE(bound > 0);
 
     cuda::std::uniform_int_distribution<long long> dist{-bound, bound};
-    std::vector<T> values(count);
 
     std::generate(values.begin(), values.end(), [&] {
       return static_cast<T>(dist(rng));
     });
-    return values;
   }
   else
   {
-    // The factor of two keeps the extreme case away from the exact limit.
-    const auto bound = static_cast<T>(cuda::std::numeric_limits<T>::max() / static_cast<T>(2 * total_count));
+    // The division stays in `size_t` so that a narrow `T` cannot wrap the denominator. The factor of
+    // two keeps the extreme case away from the exact limit.
+    const auto bound =
+      static_cast<T>(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<T>::max()) / (2 * total_count));
 
-    cuda::std::uniform_int_distribution<T> dist{static_cast<T>(-bound), bound};
-    std::vector<T> values(count);
+    // The input is too large to fold exactly in this integer type
+    REQUIRE(bound > 0);
+
+    // An unsigned type has no negative values to draw from.
+    const T lower = cuda::std::is_signed_v<T> ? static_cast<T>(-bound) : static_cast<T>(0);
+    cuda::std::uniform_int_distribution<T> dist{lower, bound};
 
     std::generate(values.begin(), values.end(), [&] {
       return dist(rng);
     });
-    return values;
   }
+  return values;
 }
