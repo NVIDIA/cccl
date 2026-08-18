@@ -267,8 +267,13 @@ IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
 HTML_DIR="${BUILDDIR}/html"
 VERSIONED_HTML_DIR="${HTML_DIR}/${VERSION}"
 
-# Build Sphinx HTML documentation directly into the versioned directory so
-# repeated local builds can reuse existing outputs incrementally.
+# Full builds validate the regenerated API sources from a fresh Sphinx state.
+# Fast local builds preserve the caches and HTML outputs for incremental reuse.
+if [[ "${CCCL_DOCS_SKIP_AUTO_API_GENERATOR:-0}" != "1" ]]; then
+    rm -rf "${BUILDDIR}/doctrees" "${VERSIONED_HTML_DIR}"
+fi
+
+# Build Sphinx HTML documentation directly into the versioned directory.
 echo "Building documentation with Sphinx..."
 mkdir -p "${VERSIONED_HTML_DIR}"
 # Use the virtual environment's Python

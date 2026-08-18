@@ -73,11 +73,10 @@ breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
 cpp_index_common_prefix = ["cub::"]
-# The NVIDIA theme mutates Sphinx's default from "domain" to "hide" before the
-# environment is pickled. Set the final value explicitly to avoid invalidating
-# the doctree cache on every incremental build.
+# The NVIDIA theme mutates these defaults before the environment is pickled.
+# Set the final values explicitly to avoid invalidating the doctree cache.
 toc_object_entries_show_parents = "hide"
-maximum_signature_line_length = None
+maximum_signature_line_length = 70
 
 # Preprocessor definitions for Breathe to handle CCCL macros
 cpp_id_attributes = [

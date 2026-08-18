@@ -102,9 +102,11 @@ reference pages::
 
   CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1 ./docs/gen_docs.bash
 
-Use this shortcut only for local iteration on handwritten docs. Run
-:file:`docs/gen_docs.bash` before final validation so the Doxygen-backed API
-pages are regenerated and checked.
+Use this shortcut only for local iteration on handwritten docs. Cached HTML
+for a deleted or renamed source page may remain until the next full build. Run
+:file:`docs/gen_docs.bash` before final validation; full builds discard the
+Sphinx caches and versioned HTML output before regenerating and checking the
+Doxygen-backed API pages.
 
 ``git_bisect.sh``
 -----------------
