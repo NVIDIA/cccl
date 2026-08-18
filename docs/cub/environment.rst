@@ -216,9 +216,10 @@ accepts an environment:
    :start-after: example-begin env-mr-fallback-run
    :end-before: example-end env-mr-fallback-run
 
-On devices without memory pool support, every allocation and deallocation made through
-this resource blocks the calling thread and synchronizes the device. That cost is
-inherent to ``cudaMalloc``/``cudaFree``; the explicit opt-in only makes it visible.
+On devices without memory pool support, every allocation made through this resource
+blocks the calling thread, and every deallocation additionally synchronizes the device.
+That cost is inherent to ``cudaMalloc``/``cudaFree``; the explicit opt-in only makes it
+visible.
 Note that ``cudaMalloc`` allocates on the device that is *current* at the time of the
 call, so use the resource on the device it was created for.
 

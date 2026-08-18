@@ -23,8 +23,8 @@
 #include "../../test/test_util.h"
 
 // example-begin env-mr-fallback-definition
-// A synchronous memory resource on top of cudaMalloc/cudaFree. Every allocation and
-// deallocation blocks the calling thread and synchronizes the device; passing it
+// A synchronous memory resource on top of cudaMalloc/cudaFree. Allocations block the
+// calling thread; deallocations additionally synchronize the device. Passing it
 // explicitly makes that behavior a visible, deliberate choice. Allocations are made
 // on the device that is current at the time of the call.
 struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_memory_resource>
