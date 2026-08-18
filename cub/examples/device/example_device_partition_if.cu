@@ -175,11 +175,8 @@ int main(int argc, char** argv)
          (int) sizeof(int));
   fflush(stdout);
 
-  // Allocate problem device arrays
-  auto d_in = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
-
-  // Initialize device input
-  CubDebugExit(cudaMemcpyAsync(d_in.data(), h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice, stream.get()));
+  // Allocate and initialize problem device arrays
+  auto d_in = cuda::make_buffer<int>(stream, device_memory_resource, h_in, h_in + num_items);
 
   // Allocate device output array and num selected
   auto d_out              = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
