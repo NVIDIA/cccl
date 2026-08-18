@@ -18,19 +18,7 @@ using PartitionTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, 
 template <typename Vector>
 void TestPartitionSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
-
-  // GCC 11 miscompiles and segfaults for certain versions of this test.
-  // It's not reproducible on other compilers, and the test passes when
-  // optimizations are disabled. It only affects 32-bit value types, and
-  // impacts all CPU host/device combinations tested.
-#ifdef WAIVE_GCC11_FAILURES
-  if (sizeof(T) == 4)
-  {
-    return;
-  }
-#endif
 
   Vector data{1, 2, 1, 1, 2};
 
@@ -46,7 +34,6 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionSimple);
 template <typename Vector>
 void TestPartitionStencilSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector data{0, 1, 0, 0, 1};
@@ -65,8 +52,6 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionStencilSimple);
 template <typename Vector>
 void TestPartitionCopySimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);
@@ -89,8 +74,6 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopySimple);
 template <typename Vector>
 void TestPartitionCopyStencilSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{0, 1, 0, 0, 1};
 
   Vector stencil{1, 2, 1, 1, 2};
@@ -115,7 +98,6 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopyStencilSimple);
 template <typename Vector>
 void TestStablePartitionSimple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector data{1, 2, 1, 3, 2};
@@ -150,8 +132,6 @@ DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilSimple);
 template <typename Vector>
 void TestStablePartitionCopySimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);

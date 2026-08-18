@@ -457,7 +457,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with explicit prefetch policies",
   c2h::device_vector<int> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
 
-  const is_even_t<int> is_even{};
+  const is_even_t is_even{};
   const c2h::host_vector<int> reference = get_reference(in, flags, is_even);
   const int num_selected                = static_cast<int>(reference.size());
 

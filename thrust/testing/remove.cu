@@ -130,8 +130,6 @@ DECLARE_UNITTEST(TestRemoveCopyDispatchImplicit);
 template <typename Vector>
 void TestRemoveIfSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
 
   typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), cuda::__is_even{});
@@ -234,8 +232,6 @@ DECLARE_UNITTEST(TestRemoveIfStencilDispatchImplicit);
 template <typename Vector>
 void TestRemoveCopyIfSimple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
 
   Vector result(5);
