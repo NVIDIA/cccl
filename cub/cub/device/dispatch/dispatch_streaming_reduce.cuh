@@ -183,6 +183,131 @@ struct write_arg_minmax_result_op
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
 
+template <typename PerPartitionAccumT,
+          typename GlobalAccumT,
+          typename PerPartitionOffsetT,
+          typename ArgIndexInputIteratorT,
+          typename InputIteratorT,
+          typename ResultOutIteratorT,
+          typename GlobalOffsetT,
+          typename ReductionOpT,
+          typename TransformOpT,
+          typename InitValueT,
+          typename PromoteToGlobalOpT,
+          typename TuningEnvT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce_impl(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  ResultOutIteratorT d_result_out,
+  GlobalOffsetT num_items,
+  ReductionOpT reduce_op,
+  TransformOpT transform_op,
+  InitValueT init_value,
+  PromoteToGlobalOpT promote_op,
+  cudaStream_t stream,
+  const TuningEnvT& = {})
+{
+  // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived policy
+  using default_policy_selector_t = policy_selector_from_types<PerPartitionAccumT, PerPartitionOffsetT, ReductionOpT>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+
+#  if _CCCL_HAS_CONCEPTS()
+  static_assert(reduce_policy_selector<policy_selector_t>);
+#  endif // _CCCL_HAS_CONCEPTS()
+
+  // Upper bound at which we want to cut the input into multiple partitions. Align to 4096 bytes for performance reasons
+  static constexpr PerPartitionOffsetT max_offset_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
+  static constexpr PerPartitionOffsetT max_partition_size =
+    max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
+
+  // Whether the given number of items fits into a single partition
+  const bool is_single_partition =
+    static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
+
+  // The largest partition size ever encountered
+  const auto largest_partition_size =
+    is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
+
+  // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning of
+  // the current partition, i.e., [0, partition_size), offset by the current partition's offset
+  ArgIndexInputIteratorT d_indexed_in(d_in);
+
+  // Reduction operator that enables accumulating per-partition results to a global reduction result
+  auto accumulating_out_op =
+    accumulating_transform_output_op<GlobalAccumT, PromoteToGlobalOpT, ReductionOpT, ResultOutIteratorT>{
+      true, is_single_partition, nullptr, nullptr, d_result_out, promote_op, reduce_op};
+
+  // Query temporary storage requirements for per-partition reduction
+  void* allocations[2]       = {nullptr, nullptr};
+  size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
+  if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
+        nullptr,
+        allocation_sizes[0],
+        d_indexed_in,
+        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+        static_cast<PerPartitionOffsetT>(largest_partition_size),
+        reduce_op,
+        init_value,
+        stream,
+        transform_op,
+        policy_selector_t{})))
+  {
+    return error;
+  }
+
+  // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
+  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  // Return if the caller is simply requesting the size of the storage allocation
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
+  GlobalAccumT* const d_global_aggregates = static_cast<GlobalAccumT*>(allocations[1]);
+
+  accumulating_out_op.d_previous_aggregate = d_global_aggregates;
+  accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
+
+  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
+       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
+  {
+    const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
+    const GlobalOffsetT current_num_items =
+      (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
+
+    d_indexed_in = ArgIndexInputIteratorT(d_in + current_partition_offset);
+
+    if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_indexed_in,
+          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+          static_cast<PerPartitionOffsetT>(current_num_items),
+          reduce_op,
+          init_value,
+          stream,
+          transform_op,
+          policy_selector_t{})))
+    {
+      return error;
+    }
+
+    // Whether the next partition will be the last partition
+    const bool next_partition_is_last =
+      (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
+    accumulating_out_op.advance(current_num_items, next_partition_is_last);
+  }
+
+  return cudaSuccess;
+}
+
 // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`.
 // Streaming, here, refers to the approach used for large number of items that are processed in multiple partitions.
 //
@@ -224,65 +349,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   GlobalOffsetT num_items,
   ReductionOpT reduce_op,
   cudaStream_t stream,
-  const TuningEnvT& = {})
+  const TuningEnvT& tuning_env = {})
 {
   using input_value_t = detail::it_value_t<InputIteratorT>;
   // TODO(bgruber): we should use the input_value_t in the accumulator and for comparison, and only covert when writing
   // the final result
-  using output_extremum_t         = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
-  using default_policy_selector_t = detail::reduce::
-    policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, ReductionOpT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+  using output_extremum_t     = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
+  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_extremum_t>;
+  using global_accum_t        = KeyValuePair<GlobalOffsetT, output_extremum_t>;
 
-#  if _CCCL_HAS_CONCEPTS()
-  static_assert(reduce_policy_selector<policy_selector_t>);
-#  endif // _CCCL_HAS_CONCEPTS()
+  // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
+  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
 
   // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
   auto d_result_out = ::cuda::make_tabulate_output_iterator(
     detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
-
-  // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
-  // We make sure to offset the user-provided input iterator by the current partition's offset
-  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
-
-  // The output tuple type (i.e., extremum plus index tuples)
-  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_extremum_t>;
-  using global_accum_t        = KeyValuePair<GlobalOffsetT, output_extremum_t>;
-
-  // Unary promotion operator type that is used to transform a per-partition result to a global result
-  // operator()(per_partition_accum_t) -> global_accum_t
-  using local_to_global_op_t = local_to_global_op<GlobalOffsetT>;
-
-  // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
-  // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
-  // input iterator by the current partition's offset
-  arg_index_input_iterator_t d_indexed_offset_in(d_in);
-
-  // Transforms the per-partition result to a global result by adding the current partition's offset to the arg result
-  // of a partition
-  local_to_global_op_t local_to_global_op{GlobalOffsetT{0}};
-
-  // Upper bound at which we want to cut the input into multiple partitions. Align to 4096 bytes for performance
-  // reasons
-  static constexpr PerPartitionOffsetT max_offset_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
-  static constexpr PerPartitionOffsetT max_partition_size =
-    max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
-
-  // Whether the given number of items fits into a single partition
-  const bool is_single_partition =
-    static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
-
-  // The largest partition size ever encountered
-  const auto largest_partition_size =
-    is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
-
-  // Reduction operator type that enables accumulating per-partition results to a global reduction result
-  using accumulating_transform_output_op_t =
-    accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, decltype(d_result_out)>;
-  auto accumulating_out_op = accumulating_transform_output_op_t{
-    true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
   // Initial value for empty problems, according to documented contract
   const auto empty_problem_extremum = static_cast<output_extremum_t>([] {
@@ -303,72 +384,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }());
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
-  void* allocations[2]       = {nullptr, nullptr};
-  size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
-
-  // Query temporary storage requirements for per-partition reduction
-  reduce::dispatch<per_partition_accum_t>(
-    nullptr,
-    allocation_sizes[0],
-    d_indexed_offset_in,
-    ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-    static_cast<PerPartitionOffsetT>(largest_partition_size),
+  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
+                                            global_accum_t,
+                                            PerPartitionOffsetT,
+                                            arg_index_input_iterator_t>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_result_out,
+    num_items,
     reduce_op,
-    initial_value,
-    stream,
     ::cuda::std::identity{},
-    policy_selector_t{});
-
-  // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
-
-  // Return if the caller is simply requesting the size of the storage allocation
-  if (d_temp_storage == nullptr)
-  {
-    return cudaSuccess;
-  }
-
-  // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-  global_accum_t* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
-
-  accumulating_out_op.d_previous_aggregate = d_global_aggregates;
-  accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
-
-  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
-  {
-    const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
-    const GlobalOffsetT current_num_items =
-      (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
-
-    d_indexed_offset_in = arg_index_input_iterator_t(d_in + current_partition_offset);
-
-    if (const auto error = reduce::dispatch<per_partition_accum_t>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_indexed_offset_in,
-          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-          static_cast<PerPartitionOffsetT>(current_num_items),
-          reduce_op,
-          initial_value,
-          stream,
-          ::cuda::std::identity{},
-          policy_selector_t{}))
-    {
-      return error;
-    }
-
-    // Whether the next partition will be the last partition
-    const bool next_partition_is_last =
-      (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
-    accumulating_out_op.advance(current_num_items, next_partition_is_last);
-  }
-
-  return cudaSuccess;
+    initial_value,
+    local_to_global_op<GlobalOffsetT>{GlobalOffsetT{0}},
+    stream,
+    tuning_env);
 }
+
 // Internal dispatch routine for computing a device-wide combined argument minimum and maximum in a single pass.
 // Streaming, here, refers to the approach used for large number of items that are processed in multiple partitions.
 //
@@ -416,34 +448,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
   GlobalOffsetT num_items,
   ReductionOpT reduce_op,
   cudaStream_t stream,
-  const TuningEnvT& = {})
+  const TuningEnvT& tuning_env = {})
 {
   using input_value_t         = it_value_t<InputIteratorT>;
   using per_partition_accum_t = argminmax_accum_t<input_value_t, PerPartitionOffsetT>;
-  using default_policy_selector_t =
-    policy_selector_from_types<per_partition_accum_t, PerPartitionOffsetT, ReductionOpT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+  using global_accum_t        = argminmax_accum_t<input_value_t, GlobalOffsetT>;
 
-#  if _CCCL_HAS_CONCEPTS()
-  static_assert(reduce_policy_selector<policy_selector_t>);
-#  endif // _CCCL_HAS_CONCEPTS()
-
-  // Upper bound at which we want to cut the input into multiple partitions. Align to 4096 bytes for performance
-  static constexpr PerPartitionOffsetT max_offset_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
-  static constexpr PerPartitionOffsetT max_partition_size =
-    max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
-
-  // Whether the given number of items fits into a single partition
-  const bool is_single_partition =
-    static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
-
-  // The largest partition size ever encountered
-  const auto largest_partition_size =
-    is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
-
-  // Transforms the per-partition result to a global result by adding the current partition's offset
-  auto local_to_global_op = local_to_global_minmax_op<GlobalOffsetT>{GlobalOffsetT{0}};
+  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT>;
 
   // output iterator that splits the accumulator and writes to the four user-provided output iterators
   auto d_result_out = ::cuda::make_tabulate_output_iterator(
@@ -452,79 +463,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
                                MaxExtremumOutIteratorT,
                                MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
-  auto d_indexed_in = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT>(d_in);
-
-  // reduction operator type that enables accumulating per-partition results to a global reduction result
-  using global_accum_t = argminmax_accum_t<input_value_t, GlobalOffsetT>;
-  auto accumulating_out_op =
-    accumulating_transform_output_op<global_accum_t, decltype(local_to_global_op), ReductionOpT, decltype(d_result_out)>{
-      true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
-
-  // Query temporary storage requirements for per-partition reduction
-  void* allocations[2]       = {nullptr, nullptr};
-  size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
-  if (const auto error = CubDebug(reduce::dispatch<per_partition_accum_t>(
-        nullptr,
-        allocation_sizes[0],
-        d_indexed_in,
-        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-        static_cast<PerPartitionOffsetT>(largest_partition_size),
-        reduce_op,
-        no_init,
-        stream,
-        kvp_to_argminmax_accum{},
-        policy_selector_t{})))
-  {
-    return error;
-  }
-
-  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
-
-  // Return if the caller is simply requesting the size of the storage allocation
-  if (d_temp_storage == nullptr)
-  {
-    return cudaSuccess;
-  }
-
-  // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-  const auto d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
-
-  accumulating_out_op.d_previous_aggregate = d_global_aggregates;
-  accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
-
-  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
-  {
-    const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
-    const GlobalOffsetT current_num_items =
-      (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
-    d_indexed_in = {d_in + current_partition_offset};
-
-    if (const auto error = CubDebug(reduce::dispatch<per_partition_accum_t>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_indexed_in,
-          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-          static_cast<PerPartitionOffsetT>(current_num_items),
-          reduce_op,
-          no_init,
-          stream,
-          kvp_to_argminmax_accum{},
-          policy_selector_t{})))
-    {
-      return error;
-    }
-
-    // Whether the next partition will be the last partition
-    const bool next_partition_is_last =
-      (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
-    accumulating_out_op.advance(current_num_items, next_partition_is_last);
-  }
-
-  return cudaSuccess;
+  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
+                                            global_accum_t,
+                                            PerPartitionOffsetT,
+                                            arg_index_input_iterator_t>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_result_out,
+    num_items,
+    reduce_op,
+    kvp_to_argminmax_accum{},
+    no_init,
+    local_to_global_minmax_op<GlobalOffsetT>{GlobalOffsetT{0}},
+    stream,
+    tuning_env);
 }
 } // namespace detail::reduce
 CUB_NAMESPACE_END
