@@ -121,7 +121,7 @@ MULTI_GPU_TEST("reduce single-comm, accepted determinism requirements", atomic_v
       {
         INFO("device = " << i);
 
-        check_against_reference(out[i], exp[i]);
+        REQUIRE_THAT(out[i], Equals(exp[i]));
       }
     }
   };

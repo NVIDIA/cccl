@@ -171,7 +171,7 @@ MULTI_GPU_TEST("inclusive_scan single-comm, supported determinism requirements",
     {
       INFO("device = " << i);
 
-      check_against_reference(out[i], expected[i]);
+      REQUIRE_THAT(out[i], Equals(expected[i]));
     }
   }
 }
