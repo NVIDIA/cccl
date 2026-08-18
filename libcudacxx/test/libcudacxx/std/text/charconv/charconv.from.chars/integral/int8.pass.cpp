@@ -643,8 +643,9 @@ TEST_HOST_DEVICE_FUNC constexpr cuda::std::array<TestItem, 26> get_test_items<36
   }};
 }
 
+// Avoid cloning the parser into every table-driven check in the device kernel.
 template <class T>
-TEST_HOST_DEVICE_FUNC constexpr void test_from_chars(
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE constexpr void test_from_chars(
   const char* data,
   cuda::std::ptrdiff_t size,
   int base,
