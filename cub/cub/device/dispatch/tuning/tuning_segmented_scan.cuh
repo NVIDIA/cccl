@@ -76,7 +76,7 @@ struct SegmentedScanWarpPolicy
   WarpStoreAlgorithm store_algorithm; //!< The @ref WarpStoreAlgorithm used for storing items to global memory
   int max_segments; //!< Maximum number of segments processed per warp
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanWarpPolicy& lhs, const SegmentedScanWarpPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -84,7 +84,7 @@ struct SegmentedScanWarpPolicy
         && lhs.store_algorithm == rhs.store_algorithm && lhs.max_segments == rhs.max_segments;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedScanWarpPolicy& lhs, const SegmentedScanWarpPolicy& rhs)
   {
     return !(lhs == rhs);
@@ -109,14 +109,14 @@ struct SegmentedScanThreadPolicy
   int items_per_thread; //!< Number of items processed per thread
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
   {
     return !(lhs == rhs);
