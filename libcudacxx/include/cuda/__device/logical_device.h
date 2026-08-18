@@ -41,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 class __logical_device : public __logical_device_ref
 {
 public:
-  _CCCL_HOST_API static constexpr __logical_device from_native_handle(device_ref __device, ::CUgreenCtx __gctx) noexcept
+  _CCCL_HOST_API static __logical_device from_native_handle(device_ref __device, ::CUgreenCtx __gctx) noexcept
   {
     return {__device, __gctx};
   }
