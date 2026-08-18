@@ -169,14 +169,16 @@ __all__ = ["pytorch_task", "tensor_arg", "tensor_arguments"]
 # not) — the enabler for compiler-side detection in consumers.
 # ---------------------------------------------------------------------------
 
-import sys as _sys
-import weakref as _weakref
-from dataclasses import dataclass as _dataclass, field as _field
-from typing import Any as _Any
+import sys as _sys  # noqa: E402
+import weakref as _weakref  # noqa: E402
+from dataclasses import dataclass as _dataclass  # noqa: E402
+from dataclasses import field as _field  # noqa: E402
+from typing import Any as _Any  # noqa: E402
 
 
 def _np_dtype_tables():
     import numpy as np  # noqa: PLC0415
+
     torch = _import_torch()
 
     direct = {
@@ -232,25 +234,7 @@ class LocalizedMeta:
     _keepalive: list = _field(default_factory=list, repr=False)
 
 
-@_dataclass
-class ReplicatedMeta:
-    """Placement metadata for one replicated allocation.
-
-    One canonical physical copy backs the tensor; the grid names the places
-    that hold their own copy when the tensor is READ at
-    ``data_place.replicated(grid)`` (the runtime broadcasts on first use and
-    reuses the replicas afterwards). The write-once-read-replicated shape of
-    model weights.
-    """
-
-    shape: tuple
-    dtype: _Any
-    grid: _Any
-    lifetime: str = "pinned"  # "pinned" (CAI + registry) | "gc" (DLPack)
-    _keepalive: list = _field(default_factory=list, repr=False)
-
-
-#: base storage pointer -> LocalizedMeta | ReplicatedMeta (guarded by the
+#: base storage pointer -> LocalizedMeta (guarded by the
 #: GIL; allocation and lookup are host-side).
 _REGISTRY: dict = {}
 
@@ -364,7 +348,9 @@ def localized_parameter(
     """
     torch = _import_torch()
     return torch.nn.Parameter(
-        localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime),
+        localized_empty(
+            shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime
+        ),
         requires_grad=requires_grad,
     )
 
@@ -389,7 +375,9 @@ def localized_ones(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pinn
     return t
 
 
-def localized_full(shape, fill_value, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"):
+def localized_full(
+    shape, fill_value, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"
+):
     """:func:`localized_empty` filled with ``fill_value`` (see :func:`localized_zeros`)."""
     t = localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime)
     t.fill_(fill_value)
@@ -438,78 +426,6 @@ def localized_full_like(tensor, fill_value, *, dtype=None, lifetime=None):
     return t
 
 
-def replicated_empty(shape, dtype, grid, *, device=0, canonical=None, lifetime="pinned"):
-    """Allocate a ``torch.Tensor`` intended to be replicated over *grid*.
-
-    The sibling of :func:`localized_empty` for the other half of the
-    placement vocabulary: instead of striping one allocation over the grid,
-    the tensor is a single canonical copy (plain device memory on
-    ``device``) that tasks READ at ``data_place.replicated(grid)`` — the
-    runtime materializes one replica per grid member on first use. Write the
-    tensor at its canonical place (weight loading), read it replicated:
-    replicated places are read-only by contract.
-
-    Use :func:`replicated_dplace` to obtain the read-side data place for
-    task dependencies. ``lifetime`` follows :func:`localized_empty`:
-    ``"pinned"`` (CAI import, freed via :func:`release`) or ``"gc"``
-    (DLPack import, storage owns the allocation).
-
-    ``canonical`` optionally names the data place of the canonical copy
-    (overriding ``device``). Pass the first member's place (e.g. a
-    locality-domain place on a domain grid) so the canonical copy IS
-    replica 0: the runtime then materializes only N-1 broadcast copies
-    instead of leaving an extra never-read build copy behind (N+1 total).
-    """
-    from .. import DeviceArray, data_place  # noqa: PLC0415
-
-    torch = _import_torch()
-    if isinstance(shape, int):
-        shape = (shape,)
-    shape = tuple(int(s) for s in shape)
-    if lifetime not in ("pinned", "gc"):
-        raise ValueError(f'lifetime must be "pinned" or "gc", got {lifetime!r}')
-
-    np_dtype = _np_dtype(dtype)
-    meta = ReplicatedMeta(shape=shape, dtype=dtype, grid=grid, lifetime=lifetime)
-
-    dplace = canonical if canonical is not None else data_place.device(int(device))
-    buf = DeviceArray(shape, np_dtype, dplace)
-
-    if lifetime == "gc":
-        t = torch.from_dlpack(buf)
-    else:
-        t = torch.as_tensor(buf)
-    _, storage_dtypes = _np_dtype_tables()
-    if isinstance(dtype, torch.dtype) and dtype in storage_dtypes:
-        t = t.view(dtype)
-    t = t.view(shape)
-
-    base = t.untyped_storage().data_ptr()
-    if lifetime == "gc":
-        _weakref.finalize(buf, _evict, base, meta)
-    else:
-        meta._keepalive.extend((buf, dplace))
-    _REGISTRY[base] = meta
-    return t
-
-
-def replicated_dplace(tensor):
-    """Read-side data place for a :func:`replicated_empty` tensor.
-
-    Returns ``data_place.replicated(meta.grid)`` for use in read
-    dependencies (write access at a replicated place raises at dependency
-    construction).
-    """
-    from .. import data_place  # noqa: PLC0415
-
-    meta = get_meta(tensor)
-    if meta is None:
-        raise ValueError("tensor is not a registered STF allocation")
-    if not isinstance(meta, ReplicatedMeta):
-        raise TypeError("tensor is a localized allocation, not a replicated one")
-    return data_place.replicated(meta.grid)
-
-
 def release(tensor):
     """Explicitly release *tensor*'s localized allocation.
 
@@ -548,15 +464,13 @@ def get_meta(tensor):
 
 def spec_of(tensor):
     """Placement spec of a registered allocation: the ``cute_partition``
-    (structured tier), the mapper (callback tier), or ``None`` for a
-    replicated allocation. Looked up by base storage pointer, so views,
-    reshapes and ``nn.Parameter`` wrapping all resolve to their root
-    allocation (tensor attributes would not survive those)."""
+    (structured tier) or the mapper (callback tier). Looked up by base
+    storage pointer, so views, reshapes and ``nn.Parameter`` wrapping all
+    resolve to their root allocation (tensor attributes would not survive
+    those)."""
     meta = get_meta(tensor)
     if meta is None:
         raise ValueError("tensor is not a registered STF allocation")
-    if isinstance(meta, ReplicatedMeta):
-        return None
     return meta.partition if meta.partition is not None else meta.mapper
 
 
@@ -586,17 +500,13 @@ def placement_report(tensor, probes: int = 4096):
     if meta is None:
         raise ValueError("tensor is not a localized allocation")
     np_dtype = _np_dtype(meta.dtype)
-    if isinstance(meta, ReplicatedMeta):
-        raise ValueError(
-            "tensor is a replicated allocation: one full copy per grid "
-            "member by construction (no block-owner decision to report)"
-        )
     if meta.partition is not None:
         return placement_evaluate(meta.grid, meta.partition, None, np_dtype.itemsize)
     numel = 1
     for s in meta.shape:
         numel *= s
     return placement_evaluate(meta.grid, meta.mapper, (numel * np_dtype.itemsize,), 1)
+
 
 # ---------------------------------------------------------------------------
 # map: per-die execution of a map expression over localized operands.
@@ -611,7 +521,6 @@ def _partitions_equal(a, b):
         and tuple(a.grid_dims) == tuple(b.grid_dims)
         and a.place_leaves == b.place_leaves
         and a.local_leaves == b.local_leaves
-        and a.replicate_over == b.replicate_over
     )
 
 
@@ -674,9 +583,8 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
 
     The iteration spec is inferred from the operands: all localized
     operands must share one partition (validated eagerly from the
-    registry); replicated allocations and ordinary broadcast scalars pass
-    through whole. ``spec=`` overrides only when no localized operand
-    carries one.
+    registry); ordinary broadcast scalars pass through whole. ``spec=``
+    overrides only when no localized operand carries one.
 
     Execution forks one launch per die on a cached per-die stream (the
     event-based fork/join idiom, which stream capture follows), each over
@@ -694,8 +602,8 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
     view_args = []  # per operand: partition or None (pass-through)
     for t in tensors:
         meta = get_meta(t) if isinstance(t, torch.Tensor) else None
-        if meta is None or isinstance(meta, ReplicatedMeta):
-            view_args.append(None)  # scalars, plain tensors, replicated: whole
+        if meta is None:
+            view_args.append(None)  # scalars and plain tensors: whole
             continue
         if meta.partition is None:
             raise ValueError(
@@ -707,7 +615,7 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
         elif not _partitions_equal(part, meta.partition):
             raise ValueError(
                 "misaligned operands: all localized operands of map must "
-                "share one partition (or be replicated)"
+                "share one partition"
             )
         view_args.append(meta.partition)
     if part is None:
