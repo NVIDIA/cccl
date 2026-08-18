@@ -112,7 +112,8 @@ a map expression (eager, or a stock `torch.compile` artifact — fusion stays
 torch's job) once per die, each over a strided view of exactly the die's
 elements, forked/joined with events so the whole thing is CUDA-graph
 capturable. The iteration split is inferred from the operands' placement
-(all localized operands must share one spec; replicated ones pass whole).
+(all localized operands must share one spec; ordinary broadcast scalars
+pass whole).
 Valid bodies are maps w.r.t. the split axes: pointwise always, dim-wise ops
 along unsplit dims (softmax/LayerNorm over hidden with a batch split) too;
 reductions over a split dim are per-die partials over
@@ -133,50 +134,6 @@ this as `lifetime="pinned"` (CAI + registry, freed by `release()`) versus
 is the default — owns the pages, freed when the module is unloaded). See
 `tests/stf/test_device_array_dlpack.py` and
 `tests/stf/interop/test_localized_weights_example.py`.
-
-Its sibling `interop.pytorch.replicated_empty` covers the other half of the
-placement vocabulary: one canonical copy, read by tasks at
-`replicated_dplace(t)` (= `data_place.replicated(grid)`, read-only) so the
-runtime materializes one replica per grid member — the
-write-once-read-replicated shape of model weights. Partition specs express
-partial replication with
-`cute_partition.from_spec(..., replicate_over=(axis,...))` — the poster
-child is a weight sharded over one grid axis with one copy per coordinate
-of the other (tensor-parallel shards replicated across the remaining axis):
-
-```python
-# (P, Q) grid: blocked over axis 0, one copy per coordinate of axis 1
-part = stf.cute_partition.from_spec((K,), (("blocked", 0),), (P, Q), replicate_over=(1,))
-```
-
-(End-to-end shaped-grid execution from Python arrives with the grid-reshape
-bindings; the descriptor, `placement_evaluate` and the C/C++ layers handle
-it today.) In general:
-
-**Pointer model.** Sharding and replication differ in one fundamental way:
-a localized allocation keeps the single-base-pointer illusion because page
-translation is many-to-one (one VA range, pages physically striped), while
-replication is one-to-many per page, which no single translation can
-express. Consumers therefore fall into three tiers: *naive* code (loaders,
-plain torch kernels) uses the one canonical pointer -- always correct, no
-locality win; *STF tasks* still see a plain tensor, rebased to their
-shard's replica at dispatch (replicas are layout-homogeneous, so only the
-base differs); *placement-aware* code detects `ReplicatedMeta` via
-`get_meta` and obtains per-replica bases with freeze + `get(member)`. This
-is also why direct allocation on a replicated place is rejected: "give me
-the pointer" has no answer when there are several. Consequently
-`replicated_empty` is a *primitive*, not a drop-in weight abstraction: it
-returns the canonical copy (plus registry metadata), and a consumer that
-wants per-replica access needs both a multi-tensor wrapper (the
-single-process analog of DTensor's ``Replicate()`` placement) and sharded
-execution -- a whole-device kernel takes one pointer per argument and
-cannot read "the right replica per domain". That wrapper belongs to the
-consuming framework layer, where the execution sharding lives.
-`placement_evaluate` reports the per-member copies
-(`stats.replication_factor`, `stats.resident_bytes`), and a composite data
-place built from such a partition is itself replicated (read-only) — through
-a logical data it resolves to one composite VMM allocation per replicated
-coordinate, each striped over its fiber's places.
 
 ## Documentation
 
