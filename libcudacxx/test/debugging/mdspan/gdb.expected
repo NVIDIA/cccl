@@ -193,3 +193,31 @@ cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=
   [2] = 15
 }
 =============== mdspan.update.after end ===============
+=============== mdspan.aliased.before.whole begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[4], data=<address> = {
+  [0] = 31,
+  [1] = 32,
+  [2] = 33,
+  [3] = 34
+}
+=============== mdspan.aliased.before.whole end ===============
+=============== mdspan.aliased.before.prefix begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[2], data=<address> = {
+  [0] = 31,
+  [1] = 32
+}
+=============== mdspan.aliased.before.prefix end ===============
+=============== mdspan.aliased.after.whole begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[4], data=<address> = {
+  [0] = -41,
+  [1] = -42,
+  [2] = -43,
+  [3] = -44
+}
+=============== mdspan.aliased.after.whole end ===============
+=============== mdspan.aliased.after.prefix begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, dynamic_extent>> rank=1, extents=[2], data=<address> = {
+  [0] = -41,
+  [1] = -42
+}
+=============== mdspan.aliased.after.prefix end ===============
