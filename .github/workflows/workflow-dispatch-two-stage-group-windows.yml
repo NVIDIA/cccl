@@ -25,7 +25,6 @@ on:
 jobs:
   dispatch-pcs:
     name: ${{ matrix.id }}
-    needs: validate-repo
     permissions:
       id-token: write
       contents: read
