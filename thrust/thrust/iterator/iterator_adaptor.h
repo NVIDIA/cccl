@@ -141,7 +141,7 @@ public:
   /*! This constructor copies from a given instance of the \p Base iterator.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
+  _CCCL_API explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
   {}
 
