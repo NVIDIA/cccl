@@ -27,9 +27,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/underlying_type.h>
-#include <cuda/std/climits>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
@@ -88,11 +86,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
     tile_state_t<AccumT> tmp{scanState, aggr};
 
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
-    __nv_atomic_store(reinterpret_cast<__as_integer*>(ptrTileStates + index),
-                      reinterpret_cast<__as_integer*>(&tmp),
-                      __NV_ATOMIC_RELAXED,
-                      __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
       tmp, ::cuda::std::memory_order_relaxed);
@@ -118,11 +112,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
-    __nv_atomic_load(reinterpret_cast<__as_integer*>(ptrTileStates + index),
-                     reinterpret_cast<__as_integer*>(&res),
-                     __NV_ATOMIC_RELAXED,
-                     __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
       ::cuda::std::memory_order_relaxed);
