@@ -214,13 +214,13 @@ public:
   {}
 
 private:
-  static size_t __validate_alignment_param(size_t __a)
+  _CCCL_HOST_API static size_t __validate_alignment_param(size_t __a)
   {
     ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
     return __a;
   }
 
-  [[nodiscard]] static size_t __validate_element_count(const size_t __count, const size_t __alignment)
+  _CCCL_HOST_API static size_t __validate_element_count(const size_t __count, const size_t __alignment)
   {
     constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
     if (__count > __max_element_count)
