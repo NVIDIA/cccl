@@ -15,16 +15,6 @@
 
 #include "cub_test_macros.h"
 
-// example-begin segmented-select-iseven
-struct is_even_t
-{
-  __host__ __device__ bool operator()(int flag) const
-  {
-    return !(flag % 2);
-  }
-};
-// example-end segmented-select-iseven
-
 CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]", CUB_SMALL)
 {
   // example-begin segmented-select-flaggedif
