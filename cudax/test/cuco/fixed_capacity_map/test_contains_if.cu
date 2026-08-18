@@ -132,13 +132,16 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
   const auto pairs = ::cuda::transform_iterator{::cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{}};
   map.insert(stream, pairs, pairs + num_present);
 
+  // Offset the stencil from the keys so that `pred(stencil[i])` and `pred(first[i])` disagree
+  const auto stencil = ::cuda::counting_iterator<int>{1};
+
   auto results = ::cuda::make_buffer<int>(stream, mr, num_queries, 1);
   map.contains_if(
     stream,
     ::cuda::counting_iterator<key_type>{0},
     ::cuda::counting_iterator<key_type>{num_queries},
-    ::cuda::counting_iterator<int>{0},
-    is_even{},
+    stencil,
+    is_odd{},
     results.begin());
 
   REQUIRE(::cuda::std::all_of(
@@ -151,8 +154,8 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
     stream,
     ::cuda::counting_iterator<key_type>{0},
     ::cuda::counting_iterator<key_type>{num_present},
-    ::cuda::counting_iterator<int>{0},
-    is_odd{},
+    stencil,
+    is_even{},
     results.begin());
 
   REQUIRE(::cuda::std::all_of(
@@ -167,8 +170,8 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
     stream,
     ::cuda::counting_iterator<key_type>{0},
     ::cuda::counting_iterator<key_type>{0},
-    ::cuda::counting_iterator<int>{0},
-    is_even{},
+    stencil,
+    is_odd{},
     results.begin());
 
   REQUIRE(::cuda::std::all_of(policy, results.begin(), results.end(), equals_value{unchanged_value}));
