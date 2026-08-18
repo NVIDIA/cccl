@@ -302,6 +302,10 @@ def localized_empty(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pin
         for s in shape:
             numel *= s
         nbytes = numel * np_dtype.itemsize
+        # The buffer below is allocated flat (dims=(nbytes,), elemsize=1), so
+        # the mapper's contract on this path is byte space: data_rank=1 with
+        # data_dims == (nbytes,) and byte-offset coordinates, matching the
+        # documented task-path behavior of data_place.composite.
         dplace = data_place.composite(grid, mapper, data_rank=1)
         buf = DeviceArray(numel, np_dtype, dplace, dims=(nbytes,), elemsize=1)
         meta.mapper = mapper
