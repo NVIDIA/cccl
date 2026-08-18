@@ -41,12 +41,12 @@ public:
       , __gctx_{__gctx}
   {}
 
-  _CCCL_HOST_API [[nodiscard]] constexpr device_ref underlying_device() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr device_ref underlying_device() const noexcept
   {
     return __device_;
   }
 
-  _CCCL_HOST_API [[nodiscard]] constexpr ::CUgreenCtx green_context() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr ::CUgreenCtx green_context() const noexcept
   {
     return __gctx_;
   }
@@ -56,7 +56,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the same logical device
-  _CCCL_HOST_API [[nodiscard]] friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator==(const __logical_device_ref& __lhs, const __logical_device_ref& __rhs) noexcept
   {
     return __lhs.__device_ == __rhs.__device_ && __lhs.__gctx_ == __rhs.__gctx_;
@@ -68,7 +68,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the different logical device
-  _CCCL_HOST_API [[nodiscard]] friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(const __logical_device_ref& __lhs, const __logical_device_ref& __rhs) noexcept
   {
     return !(__lhs == __rhs);
