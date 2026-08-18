@@ -12,30 +12,17 @@ on:
         type: string
         required: true
       repo:
-        description: "Repository to checkout (e.g. 'NVIDIA/cccl')."
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
         type: string
         required: false
-        default: ""
+        default: ${{ github.repository }}
       commit:
         description: "Commit SHA or branch/ref to checkout."
         type: string
         required: false
-        default: ""
+        default: ${{ github.sha }}
 
 jobs:
-  validate-repo:
-    name: Validate repo
-    if: inputs.repo != ''
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check repo value
-        run: |
-          REPO_LOWER=$(echo "${{ inputs.repo }}" | tr '[:upper:]' '[:lower:]')
-          if [[ "$REPO_LOWER" != "nvidia/cccl" && "$REPO_LOWER" != "NVIDIA-dev/cccl_private" ]]; then
-            echo "::error::repo must be 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private' (got: ${{ inputs.repo }})"
-            exit 1
-          fi
-
   dispatch-pcs:
     name: ${{ matrix.id }}
     needs: validate-repo
@@ -50,5 +37,5 @@ jobs:
     with:
       producers: ${{ toJSON(matrix.producers) }}
       consumers: ${{ toJSON(matrix.consumers) }}
-      repo:      ${{ inputs.repo || github.repository }}
-      commit:    ${{ inputs.commit || github.sha }}
+      repo: ${{ inputs.repo }}
+      commit: ${{ inputs.commit }}
