@@ -243,25 +243,6 @@ int main(int argc, char** argv)
     CubDebugExit(DeviceRadixSort::SortPairs(
       sort_temp_storage.data(), temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(Key) * 8, stream.get()));
 
-    // Free unused buffers and sorting temporary storage
-    if (d_keys.selector == 0)
-    {
-      d_keys_1.destroy(stream);
-    }
-    else
-    {
-      d_keys_0.destroy(stream);
-    }
-    if (d_values.selector == 0)
-    {
-      d_values_1.destroy(stream);
-    }
-    else
-    {
-      d_values_0.destroy(stream);
-    }
-    sort_temp_storage.destroy(stream);
-
     // Start timer
     const auto rle_start_event = stream.record_timed_event();
 
@@ -295,16 +276,6 @@ int main(int argc, char** argv)
       d_num_runs.data(),
       num_items,
       stream.get()));
-
-    // Free keys buffer
-    if (d_keys.selector == 0)
-    {
-      d_keys_0.destroy(stream);
-    }
-    else
-    {
-      d_keys_1.destroy(stream);
-    }
 
     //
     // Hypothetically do stuff with the original key-indices corresponding to non-trivial runs of identical keys
