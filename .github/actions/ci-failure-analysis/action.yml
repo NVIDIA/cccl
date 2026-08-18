@@ -5,6 +5,7 @@ description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 # - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
 #   `pr_number` is provided.
 # - Finish the relevant target jobs before invoking the action.
+# - Inject a runner-local `output_dir` as the action's working directory.
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
@@ -12,15 +13,21 @@ inputs:
   run_id:
     description: "Workflow run in this repository to analyze."
     required: true
+  output_dir:
+    description: "Runner-local working directory."
+    required: true
   pr_number:
     description: "Optional pull request corresponding to the run, for collecting its diff."
     required: false
     default: ""
 
 outputs:
-  markdown:
-    description: "Rendered Markdown failure analysis."
-    value: ${{ steps.export-analysis.outputs.markdown }}
+  github_report:
+    description: "Full failure analysis report for GitHub."
+    value: ${{ steps.export-analysis.outputs.github_report }}
+  slack_summary:
+    description: "Abbreviated failure analysis summary for Slack."
+    value: ${{ steps.export-analysis.outputs.slack_summary }}
 
 runs:
   using: "composite"
@@ -37,10 +44,12 @@ runs:
           "${RUN_ID}" \
           "${PR_NUMBER}"
 
-    - name: Configure agent permissions
+    - name: Prepare analysis environment
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        mkdir -p "${RUNNER_TEMP}/codex-home"
+        mkdir -p "${RUNNER_TEMP}/codex-home" "${OUTPUT_DIR}"
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
 
     - name: Investigate the workflow run
@@ -58,30 +67,44 @@ runs:
         model: openai/openai/gpt-5.6-sol
         effort: medium
         codex-args: --strict-config --ignore-rules --ephemeral
-        output-file: ${{ runner.temp }}/agent-analysis.json
+        output-file: ${{ inputs.output_dir }}/analysis.json
         output-schema-file: ${{ github.action_path }}/output.schema.json
         prompt-file: ${{ github.action_path }}/failure_triage_prompt.md
 
-    - name: Validate and render failure analysis
+    - name: Assemble analysis context
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        cp /tmp/ci-logs/run.json "${OUTPUT_DIR}/run.json"
+        cp /tmp/ci-logs/jobs.json "${OUTPUT_DIR}/jobs.json"
+
+    - name: Render failure analysis outputs
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         python3 "${GITHUB_ACTION_PATH}/render.py" \
-          --analysis "${RUNNER_TEMP}/agent-analysis.json" \
-          --schema "${GITHUB_ACTION_PATH}/output.schema.json" \
-          --jobs /tmp/ci-logs/jobs.json \
+          --analysis-dir "${OUTPUT_DIR}" \
           --repository "${GITHUB_REPOSITORY}" \
-          --run-id "$(jq -er '.id | tostring' /tmp/ci-logs/run.json)" \
-          --head-sha "$(jq -er '.head_sha' /tmp/ci-logs/run.json)" \
-          --output "${RUNNER_TEMP}/agent-summary.md"
+          --github-report-output "${OUTPUT_DIR}/github-report.md" \
+          --slack-summary-output "${OUTPUT_DIR}/slack-summary.txt"
 
-    - name: Export failure analysis
+    - name: Export failure analysis outputs
       id: export-analysis
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        test -s "${RUNNER_TEMP}/agent-summary.md"
-        delimiter="EOF_$(openssl rand -hex 16)"
+        test -s "${OUTPUT_DIR}/github-report.md"
+        test -s "${OUTPUT_DIR}/slack-summary.txt"
+        github_report_delimiter="EOF_$(openssl rand -hex 16)"
+        slack_summary_delimiter="EOF_$(openssl rand -hex 16)"
         {
-          echo "markdown<<${delimiter}"
-          cat "${RUNNER_TEMP}/agent-summary.md"
-          printf '\n%s\n' "${delimiter}"
+          echo "github_report<<${github_report_delimiter}"
+          cat "${OUTPUT_DIR}/github-report.md"
+          echo "${github_report_delimiter}"
+          echo "slack_summary<<${slack_summary_delimiter}"
+          cat "${OUTPUT_DIR}/slack-summary.txt"
+          echo "${slack_summary_delimiter}"
         } >> "${GITHUB_OUTPUT}"

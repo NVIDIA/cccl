@@ -174,3 +174,69 @@ jobs:
     uses: ./.github/workflows/build-pytorch.yml
     with:
       enable_slack_alerts: true
+
+  analyze-failures:
+    name: Analyze nightly failures
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        (
+          needs.build-workflow.result == 'failure' ||
+          needs.verify-workflow.result == 'failure' ||
+          needs.build-rapids.result == 'failure' ||
+          needs.build-matx.result == 'failure' ||
+          needs.build-pytorch.result == 'failure'
+        )
+      }}
+    needs:
+      - build-workflow
+      - verify-workflow
+      - build-rapids
+      - build-matx
+      - build-pytorch
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      slack_summary: ${{ steps.failure-analysis.outputs.slack_summary }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Analyze failures
+        id: failure-analysis
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
+          output_dir: ${{ runner.temp }}/ci-failure-analysis
+
+      - name: Add failure analysis to workflow summary
+        env:
+          GITHUB_REPORT: ${{ steps.failure-analysis.outputs.github_report }}
+        run: |
+          test -n "${GITHUB_REPORT}"
+          printf '%s\n' "${GITHUB_REPORT}" >> "${GITHUB_STEP_SUMMARY}"
+
+  publish-failure-analysis:
+    name: Post AI failure summary to Slack
+    if: ${{ !cancelled() && needs.analyze-failures.result == 'success' }}
+    needs: analyze-failures
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send AI failure summary
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack-message: ${{ needs.analyze-failures.outputs.slack_summary }}
