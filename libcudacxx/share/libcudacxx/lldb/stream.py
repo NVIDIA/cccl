@@ -163,10 +163,17 @@ def _snapshot_fields(value: lldb.SBValue, handle: int) -> dict[str, int] | None:
         top_level.SetUnwindOnError(True)
         top_level.SetTopLevel(True)
         top_level.SetLanguage(lldb.eLanguageTypeC_plus_plus)
-        # A top-level expression has no result, so it reports a generic error
-        # even when it compiled.
-        error = frame.EvaluateExpression(definition, top_level).GetError()
-        _snapshot_fields.installed = error.GetType() != lldb.eErrorTypeExpression
+        frame.EvaluateExpression(definition, top_level)
+        # A top-level expression has no result, and it goes to the JIT, so it
+        # appears in no symbol table. A call is the only proof that it compiled.
+        probe = lldb.SBExpressionOptions()
+        probe.SetIgnoreBreakpoints(True)
+        probe.SetUnwindOnError(True)
+        _snapshot_fields.installed = (
+            frame.EvaluateExpression("__cccl_stream_snapshot((void*)0)", probe)
+            .GetError()
+            .Success()
+        )
     if not _snapshot_fields.installed:
         return None
 

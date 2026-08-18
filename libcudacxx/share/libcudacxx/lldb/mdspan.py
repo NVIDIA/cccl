@@ -328,6 +328,7 @@ class MdspanSyntheticProvider:
     """Expose cuda::std::mdspan elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.declared_type = value.GetType()
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.info: MdspanInfo | None = None
@@ -404,7 +405,9 @@ class MdspanSyntheticProvider:
         return self.num_children() != 0
 
     def get_type_name(self) -> str:
-        name = cccl_common.canonical_type_name(self.value.GetType())
+        # Report the declared type, so a reference parameter keeps its "const &".
+        # canonical_type_name() strips the reference, which hides it from the user.
+        name = self.declared_type.GetDisplayTypeName() or ""
         dynamic_extent = _dynamic_extent(self.value.GetTarget())
         return _readable_type_name(name, dynamic_extent)
 

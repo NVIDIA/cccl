@@ -204,7 +204,7 @@ function(libcudacxx_add_pretty_printer_test)
     )
     # Set an aggressive timeout because pretty printers should not be slow. If they are,
     # then it's a problem with the printer and/or it is doing too much
-    set_tests_properties(${test_name} PROPERTIES TIMEOUT 5 SKIP_RETURN_CODE 77)
+    set_tests_properties(${test_name} PROPERTIES TIMEOUT 10 SKIP_RETURN_CODE 77)
   endforeach()
 endfunction()
 

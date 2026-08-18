@@ -139,7 +139,7 @@ class BufferSyntheticProvider:
             self.size = info.size
         except cccl_common.StagingError:
             pass
-        # Staging advances the stop ID, so record what the next call will see.
+        # Staging advances the stop ID, so record what the next call sees.
         self.stop_id = self._current_stop_id()
         return True
 
