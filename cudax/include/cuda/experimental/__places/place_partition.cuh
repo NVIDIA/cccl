@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -376,6 +377,6 @@ private:
 template <typename... Args>
 auto exec_place::partition_by_scope(Args&&... args)
 {
-  return place_partition(*this, ::std::forward<Args>(args)...).to_exec_place();
+  return place_partition(*this, ::cuda::std::forward<Args>(args)...).to_exec_place();
 }
 } // end namespace cuda::experimental::places

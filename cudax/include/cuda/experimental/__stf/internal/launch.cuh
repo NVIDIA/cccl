@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -56,7 +58,8 @@ template <typename _Prefix, typename... _Ts>
 {
   return ::std::apply(
     [&](auto&&... __elements) {
-      return ::cuda::std::tuple<_Prefix, _Ts...>(mv(__prefix), ::std::forward<decltype(__elements)>(__elements)...);
+      return ::cuda::std::tuple<_Prefix, _Ts...>(
+        mv(__prefix), ::cuda::std::forward<decltype(__elements)>(__elements)...);
     },
     mv(__tuple));
 }
@@ -323,8 +326,17 @@ public:
   launch_scope(const launch_scope&)            = delete;
   launch_scope& operator=(const launch_scope&) = delete;
 
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A launch_scope holds host-only state (a std::string, host containers) and only ever lives on
+  // the host, so the members below are exempted from the execution space check.
+
   /// Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   launch_scope(launch_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~launch_scope() = default;
 
   /**
    * @brief Set the symbol for the task.
@@ -421,7 +433,7 @@ public:
 
     // Free launch-scoped managed temps between end_uncleared and clear on both paths.
     auto free_launch_temps = [&] {
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         void* sys_mem = interpreted_policy.get_system_mem();
         if (sys_mem)
@@ -446,7 +458,7 @@ public:
       t.end_uncleared();
       free_launch_temps();
 
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         if (start_event && end_event)
         {
@@ -484,7 +496,7 @@ public:
     // Put all data instances in a tuple (requires a started task).
     auto args = data2inst<decltype(t), Deps...>(t);
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -522,7 +534,7 @@ public:
     for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
       auto p = e_place.get_place(p_rank);
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
       }

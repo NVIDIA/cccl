@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,8 +67,8 @@ public:
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
     // example
-    bounds[target_dim].first  = ::std::min(dim_beg + part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min(dim_beg + part_size * place_position.x, dim_end);
+    bounds[target_dim].second = ::cuda::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
 
     return box(bounds);
   }
@@ -96,8 +97,8 @@ public:
     // The last dimension is split across the different places
     size_t nplaces            = grid_dims.x;
     size_t part_size          = (in.extent(target_dim) + nplaces - 1) / nplaces;
-    bounds[target_dim].first  = ::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::std::min((::std::ptrdiff_t) part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);
+    bounds[target_dim].second = ::cuda::std::min((::std::ptrdiff_t) part_size * (place_position.x + 1), dim_end);
 
     return box<dimensions>(bounds);
   }
