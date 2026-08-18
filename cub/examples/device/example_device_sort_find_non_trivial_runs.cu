@@ -221,17 +221,12 @@ int main(int argc, char** argv)
   for (int i = 0; i <= timing_iterations; ++i)
   {
     // Allocate and initialize device arrays for sorting
-    auto d_keys_0   = cuda::make_buffer<Key>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_keys_0   = cuda::make_buffer<Key>(stream, device_memory_resource, h_keys, h_keys + num_items);
     auto d_keys_1   = cuda::make_buffer<Key>(stream, device_memory_resource, num_items, cuda::no_init);
-    auto d_values_0 = cuda::make_buffer<Value>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_values_0 = cuda::make_buffer<Value>(stream, device_memory_resource, h_values, h_values + num_items);
     auto d_values_1 = cuda::make_buffer<Value>(stream, device_memory_resource, num_items, cuda::no_init);
     DoubleBuffer<Key> d_keys{d_keys_0.data(), d_keys_1.data()};
     DoubleBuffer<Value> d_values{d_values_0.data(), d_values_1.data()};
-
-    CubDebugExit(cudaMemcpyAsync(
-      d_keys.d_buffers[d_keys.selector], h_keys, sizeof(Key) * num_items, cudaMemcpyHostToDevice, stream.get()));
-    CubDebugExit(cudaMemcpyAsync(
-      d_values.d_buffers[d_values.selector], h_values, sizeof(Value) * num_items, cudaMemcpyHostToDevice, stream.get()));
 
     // Start timer
     const auto start_event = stream.record_timed_event();

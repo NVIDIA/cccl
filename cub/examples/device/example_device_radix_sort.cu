@@ -139,10 +139,10 @@ int main(int argc, char** argv)
   // Initialize problem and solution on host
   Initialize(h_keys, h_values, h_reference_keys, h_reference_values, num_items);
 
-  // Allocate device arrays
-  auto d_keys_0   = cuda::make_buffer<float>(stream, device_memory_resource, num_items, cuda::no_init);
+  // Allocate and initialize device arrays
+  auto d_keys_0   = cuda::make_buffer<float>(stream, device_memory_resource, h_keys, h_keys + num_items);
   auto d_keys_1   = cuda::make_buffer<float>(stream, device_memory_resource, num_items, cuda::no_init);
-  auto d_values_0 = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+  auto d_values_0 = cuda::make_buffer<int>(stream, device_memory_resource, h_values, h_values + num_items);
   auto d_values_1 = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
   DoubleBuffer<float> d_keys{d_keys_0.data(), d_keys_1.data()};
   DoubleBuffer<int> d_values{d_values_0.data(), d_values_1.data()};
@@ -153,12 +153,6 @@ int main(int argc, char** argv)
     nullptr, temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(float) * 8, stream.get()));
   auto d_temp_storage =
     cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
-
-  // Initialize device arrays
-  CubDebugExit(cudaMemcpyAsync(
-    d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice, stream.get()));
-  CubDebugExit(cudaMemcpyAsync(
-    d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice, stream.get()));
 
   // Run
   CubDebugExit(DeviceRadixSort::SortPairs(
