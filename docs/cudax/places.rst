@@ -645,14 +645,23 @@ Partitioning grids
 
 The ``place_partition`` class partitions an execution place at a given
 granularity. This is useful for splitting a multi-device grid into its
-constituent devices, or for partitioning a device into green contexts or
-CUDA streams.
+constituent devices, or for partitioning a device into locality domains,
+green contexts or CUDA streams.
 
 The partitioning granularity is specified by ``place_partition_scope``:
 
 - ``place_partition_scope::cuda_device`` -- partition into individual devices
+- ``place_partition_scope::locality_domain`` -- partition into locality
+  domains (devices without locality-domain support contribute a single
+  whole-device domain; an optional ``locality_domain_sm_split`` argument
+  selects the SM split method)
 - ``place_partition_scope::green_context`` -- partition into green contexts (CUDA 12.4+)
 - ``place_partition_scope::cuda_stream`` -- partition into CUDA streams
+
+Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
+the machine-wide form: it yields every locality domain of every device. The
+single-device helper ``make_locality_domain_grid(dev_id)`` is convenience
+sugar over this mechanism.
 
 .. code:: c++
 

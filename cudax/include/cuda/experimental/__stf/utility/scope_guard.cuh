@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -432,7 +434,7 @@ enum class success
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
-  static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
+  static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
   on_throw(::std::abort, loc) << f;
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
@@ -452,14 +454,14 @@ auto operator->*(with_location<exit> where, F&& f)
     int exceptions = 0;
 
     result(F&& f, ::cuda::std::source_location loc)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , loc(loc)
     {}
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     ~result() noexcept
@@ -471,7 +473,7 @@ auto operator->*(with_location<exit> where, F&& f)
     }
   };
 
-  return result{::std::forward<F>(f), where.loc};
+  return result{::cuda::std::forward<F>(f), where.loc};
 }
 
 template <typename F>
@@ -485,7 +487,7 @@ auto operator->*(with_location<fail> where, F&& f)
     int exceptions;
 
     result(F&& f, ::cuda::std::source_location loc, int exceptions)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , loc(loc)
         , exceptions(exceptions)
     {}
@@ -493,7 +495,7 @@ auto operator->*(with_location<fail> where, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     ~result() noexcept
@@ -506,14 +508,15 @@ auto operator->*(with_location<fail> where, F&& f)
   };
 
   // Run only if an exception is in flight: uncaught count is one above creation-time count.
-  return result{::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
+  return result{::cuda::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
 }
 
 template <typename F>
 auto operator->*(success, F&& f)
 {
   // success may throw, so it does not go through invoke_nothrow; keep the same void check.
-  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
+  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
+                "SCOPE requires a void-returning callable");
 
   struct result
   {
@@ -522,13 +525,13 @@ auto operator->*(success, F&& f)
     int exceptions;
 
     result(F&& f, int exceptions)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , exceptions(exceptions)
     {}
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     // May throw — unlike exit/fail.
@@ -541,7 +544,7 @@ auto operator->*(success, F&& f)
     }
   };
 
-  return result{::std::forward<F>(f), ::std::uncaught_exceptions()};
+  return result{::cuda::std::forward<F>(f), ::std::uncaught_exceptions()};
 }
 } // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
