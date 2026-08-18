@@ -617,7 +617,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      analysis: ${{ steps.failure-analysis.outputs.markdown }}
+      github_report: ${{ steps.failure-analysis.outputs.github_report }}
       pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
@@ -641,6 +641,7 @@ jobs:
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
+          output_dir: ${{ runner.temp }}/ci-failure-analysis
           pr_number: ${{ steps.pull-request.outputs.pr_number }}
 
   publish-failure-analysis:
@@ -657,5 +658,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
           number: ${{ needs.analyze-failures.outputs.pr_number }}
-          message: ${{ needs.analyze-failures.outputs.analysis }}
+          message: ${{ needs.analyze-failures.outputs.github_report }}
           append: true

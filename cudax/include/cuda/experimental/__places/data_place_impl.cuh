@@ -28,6 +28,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
@@ -73,12 +75,12 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot allocate from invalid data_place");
+    _CCCL_THROW(::std::logic_error, "Cannot allocate from invalid data_place");
   }
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot deallocate from invalid data_place");
+    _CCCL_THROW(::std::logic_error, "Cannot deallocate from invalid data_place");
   }
 
   bool allocation_is_stream_ordered() const override
@@ -347,12 +349,12 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot allocate from affine data_place directly");
+    _CCCL_THROW(::std::logic_error, "Cannot allocate from affine data_place directly");
   }
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot deallocate from affine data_place directly");
+    _CCCL_THROW(::std::logic_error, "Cannot deallocate from affine data_place directly");
   }
 
   bool allocation_is_stream_ordered() const override
@@ -398,12 +400,12 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot allocate from device_auto data_place directly");
+    _CCCL_THROW(::std::logic_error, "Cannot allocate from device_auto data_place directly");
   }
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Cannot deallocate from device_auto data_place directly");
+    _CCCL_THROW(::std::logic_error, "Cannot deallocate from device_auto data_place directly");
   }
 
   bool allocation_is_stream_ordered() const override
