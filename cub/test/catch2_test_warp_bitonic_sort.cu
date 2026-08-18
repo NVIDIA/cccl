@@ -24,9 +24,14 @@ inline constexpr int block_threads = 2 * warp_threads;
 // Number of logical warps taking part in the sort. When the logical warp is smaller than the
 // architectural warp, this deliberately leaves the last architectural warp partially occupied, so
 // that the collective has to restrict itself to the lanes of its own logical warp.
-constexpr int num_logical_warps(int logical_warp_threads)
+template <int LogicalWarpThreads>
+constexpr int num_logical_warps()
 {
-  const int logical_warps_per_warp = warp_threads / logical_warp_threads;
+  constexpr int logical_warps_per_warp = warp_threads / LogicalWarpThreads;
+  // The kernels below map threads to logical warps by plain division, which only tiles the
+  // architectural warp when the logical warp size divides it evenly.
+  static_assert(logical_warps_per_warp * LogicalWarpThreads == warp_threads,
+                "the logical warp size must evenly divide the architectural warp size");
   return (logical_warps_per_warp == 1) ? 2 : (2 * logical_warps_per_warp - 1);
 }
 
@@ -371,7 +376,7 @@ struct params_t
   static constexpr int logical_warp_threads = c2h::get<1, TestType>::value;
   static constexpr int items_per_thread     = c2h::get<2, TestType>::value;
   static constexpr int num_block_dims       = c2h::get<3, TestType>::value;
-  static constexpr int total_warps          = num_logical_warps(logical_warp_threads);
+  static constexpr int total_warps          = num_logical_warps<logical_warp_threads>();
   static constexpr int max_valid_items      = items_per_thread * logical_warp_threads;
 };
 
