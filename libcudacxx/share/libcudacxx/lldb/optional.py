@@ -49,7 +49,9 @@ class OptionalSyntheticProvider:
     def get_type_name(self) -> str:
         # Use GetCanonicalType() to desugar any typedefs/aliases (e.g. optional_alias)
         # while preserving const/reference qualifiers.
-        type_name = self.raw_value.GetType().GetCanonicalType().GetDisplayTypeName() or ""
+        type_name = (
+            self.raw_value.GetType().GetCanonicalType().GetDisplayTypeName() or ""
+        )
         return cccl_common._ABI_NAMESPACE_PATTERN.sub("", type_name)
 
     def update(self) -> bool:

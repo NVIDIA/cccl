@@ -7,7 +7,7 @@
 
 #define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
-using optional_alias = cuda::std::optional<int>;
+using optional_alias     = cuda::std::optional<int>;
 using optional_ref_alias = cuda::std::optional<int&>;
 
 [[gnu::noinline]] void inspect_disengaged(const cuda::std::optional<int>& values)
