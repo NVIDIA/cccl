@@ -15,6 +15,16 @@ on:
         description: "The dispatch.json's linux_two_stage.jobs.<name>[*].consumers array."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl')."
+        type: string
+        required: false
+        default: ""
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ""
 
 jobs:
   # Accumulating results from multiple producers is not easily implemented. For now, only a single producer is supported.
@@ -30,6 +40,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo || github.repository }}
+          ref: ${{ inputs.commit || github.sha }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
@@ -57,6 +69,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo || github.repository }}
+          ref: ${{ inputs.commit || github.sha }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:

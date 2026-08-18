@@ -11,6 +11,16 @@ on:
         description: "The dispatch.json's windows_standalone.jobs.<name> array of dispatch jobs."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl')."
+        type: string
+        required: false
+        default: ""
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ""
 
 jobs:
   run-jobs:
@@ -28,6 +38,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo || github.repository }}
+          ref: ${{ inputs.commit || github.sha }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-windows
         with:
