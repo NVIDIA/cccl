@@ -127,7 +127,6 @@ int main(int argc, char** argv)
   {
     printf("%s "
            "[--n=<input items> "
-           "[--device=<device-id>] "
            "[--maxseg=<max segment length>] "
            "[--v] "
            "\n",
@@ -135,12 +134,9 @@ int main(int argc, char** argv)
     exit(0);
   }
 
-  // Initialize device
-  int device_ordinal{};
-  args.GetCmdLineArgument("device", device_ordinal);
-  CubDebugExit(args.DeviceInit(device_ordinal));
-  const auto device                 = cuda::devices[device_ordinal];
-  const auto stream                 = cuda::stream_ref{cudaStream_t{}};
+  // Set up device, stream, and memory resource
+  const auto device                 = cuda::devices[0];
+  const auto stream                 = cuda::stream{device};
   const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   // Allocate host arrays
@@ -164,8 +160,9 @@ int main(int argc, char** argv)
   auto d_flags = cuda::make_buffer<unsigned char>(stream, device_memory_resource, num_items, cuda::no_init);
 
   // Initialize device input
-  CubDebugExit(cudaMemcpy(d_in.data(), h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice));
-  CubDebugExit(cudaMemcpy(d_flags.data(), h_flags, sizeof(unsigned char) * num_items, cudaMemcpyHostToDevice));
+  CubDebugExit(cudaMemcpyAsync(d_in.data(), h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice, stream.get()));
+  CubDebugExit(
+    cudaMemcpyAsync(d_flags.data(), h_flags, sizeof(unsigned char) * num_items, cudaMemcpyHostToDevice, stream.get()));
 
   // Allocate device output array and num selected
   auto d_out              = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
@@ -197,6 +194,7 @@ int main(int argc, char** argv)
     stream));
 
   // Check for correctness (and display results, if specified)
+  stream.sync();
   int compare = CompareDeviceResults(h_reference, d_out.data(), num_selected, true, g_verbose);
   printf("\t Data %s ", compare ? "FAIL" : "PASS");
   compare |= CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose);

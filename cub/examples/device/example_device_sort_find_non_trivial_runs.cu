@@ -184,7 +184,6 @@ int main(int argc, char** argv)
   if (args.CheckCmdLineFlag("help"))
   {
     printf("%s "
-           "[--device=<device-id>] "
            "[--i=<timing iterations> "
            "[--n=<input items, default 40> "
            "[--maxkey=<max key, default 20 (use -1 to test only unique keys)>]"
@@ -194,12 +193,9 @@ int main(int argc, char** argv)
     exit(0);
   }
 
-  // Initialize device
-  int device_ordinal{};
-  args.GetCmdLineArgument("device", device_ordinal);
-  CubDebugExit(args.DeviceInit(device_ordinal));
-  const auto device                 = cuda::devices[device_ordinal];
-  const auto stream                 = cuda::stream_ref{cudaStream_t{}};
+  // Set up device, stream, and memory resource
+  const auto device                 = cuda::devices[0];
+  const auto stream                 = cuda::stream{device};
   const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   // Allocate host arrays (problem and reference solution)
@@ -220,8 +216,6 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Repeat for performance timing
-  GpuTimer gpu_timer;
-  GpuTimer gpu_rle_timer;
   float elapsed_millis     = 0.0;
   float elapsed_rle_millis = 0.0;
   for (int i = 0; i <= timing_iterations; ++i)
@@ -234,13 +228,13 @@ int main(int argc, char** argv)
     DoubleBuffer<Key> d_keys{d_keys_0.data(), d_keys_1.data()};
     DoubleBuffer<Value> d_values{d_values_0.data(), d_values_1.data()};
 
-    CubDebugExit(
-      cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(Key) * num_items, cudaMemcpyHostToDevice));
-    CubDebugExit(
-      cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(Value) * num_items, cudaMemcpyHostToDevice));
+    CubDebugExit(cudaMemcpyAsync(
+      d_keys.d_buffers[d_keys.selector], h_keys, sizeof(Key) * num_items, cudaMemcpyHostToDevice, stream.get()));
+    CubDebugExit(cudaMemcpyAsync(
+      d_values.d_buffers[d_values.selector], h_values, sizeof(Value) * num_items, cudaMemcpyHostToDevice, stream.get()));
 
     // Start timer
-    gpu_timer.Start();
+    const auto start_event = stream.record_timed_event();
 
     // Allocate temporary storage for sorting
     size_t temp_storage_bytes = 0;
@@ -274,7 +268,7 @@ int main(int argc, char** argv)
     sort_temp_storage.destroy(stream);
 
     // Start timer
-    gpu_rle_timer.Start();
+    const auto rle_start_event = stream.record_timed_event();
 
     // Allocate device arrays for enumerating non-trivial runs
     auto d_offsets_out = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
@@ -322,8 +316,8 @@ int main(int argc, char** argv)
     //
 
     // Stop sort timer
-    gpu_timer.Stop();
-    gpu_rle_timer.Stop();
+    const auto end_event = stream.record_timed_event();
+    stream.sync();
 
     if (i == 0)
     {
@@ -345,8 +339,8 @@ int main(int argc, char** argv)
     }
     else
     {
-      elapsed_millis += gpu_timer.ElapsedMillis();
-      elapsed_rle_millis += gpu_rle_timer.ElapsedMillis();
+      elapsed_millis += static_cast<float>((end_event - start_event).count()) / 1.0e6f;
+      elapsed_rle_millis += static_cast<float>((end_event - rle_start_event).count()) / 1.0e6f;
     }
   }
 
