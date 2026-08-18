@@ -223,7 +223,7 @@ function build_preset {
     $sccache_json = "${preset_dir}/sccache_stats.json"
 
     # Compile all the objects first
-    $duration = (Measure-Command -Expression {
+    $duration_1 = (Measure-Command -Expression {
         & bash -c "xargs -r \`
             cmake --build --preset '$PRESET' --parallel '$env:PARALLEL_LEVEL' -v --target < <(`
                 cmake --build --preset '$PRESET' -- -t inputs all | grep -E '\.o(bj)?\b' | sed 's@\\\\@/@g'`
@@ -236,7 +236,7 @@ function build_preset {
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
     If ($test_result -ne 0) {
-        & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
+        & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration_1"
         sccache --show-adv-stats
         If($CURRENT_PATH -ne "windows") {
             popd
@@ -249,9 +249,11 @@ function build_preset {
 
     Write-Host $build_command
 
-    $duration += (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
+    $duration_2 += (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
 
     $test_result = $LastExitCode
+
+    $duration = $duration_1 + $duration_2
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
