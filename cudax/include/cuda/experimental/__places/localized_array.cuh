@@ -82,6 +82,11 @@ struct localized_stats
   size_t total_samples    = 0;
   size_t matching_samples = 0;
 
+  //! Copies of each byte along replicated partition axes (1 = no
+  //! replication). Total resident bytes = vm_bytes * replication_factor;
+  //! bytes_per_place / bytes_per_grid_index already count every copy.
+  size_t replication_factor = 1;
+
   //! Bytes backed by each place, keyed by data_place::to_string()
   ::std::unordered_map<::std::string, size_t> bytes_per_place;
 

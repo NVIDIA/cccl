@@ -324,12 +324,14 @@ public:
     const ::std::vector<layout_leaf>& local_leaves,
     dim4 padded_dims,
     dim4 true_dims,
-    dim4 grid_dims)
+    dim4 grid_dims,
+    unsigned replicated_axes_mask = 0)
       : num_place_leaves_(place_leaves.size())
       , num_local_leaves_(local_leaves.size())
       , padded_dims_(padded_dims)
       , true_dims_(true_dims)
       , grid_dims_(grid_dims)
+      , replicated_axes_mask_(replicated_axes_mask)
   {
     if (place_leaves.size() > max_leaves || local_leaves.size() > max_leaves)
     {
@@ -342,6 +344,17 @@ public:
     ::cuda::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
     ::cuda::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
     ::cuda::std::copy(local_leaves.begin(), local_leaves.end(), local_leaves_.begin());
+
+    // Replication over an extent-1 axis is a no-op: normalize it away so a
+    // degenerate mask does not leave a single-instance place claiming to be
+    // replicated (rejecting direct allocation and writes for no reason).
+    for (size_t a = 0; a < 4; a++)
+    {
+      if ((replicated_axes_mask_ & (1u << a)) && grid_dims_.get(a) == 1)
+      {
+        replicated_axes_mask_ &= ~(1u << a);
+      }
+    }
 
     validate();
 
@@ -863,6 +876,33 @@ public:
     return offset;
   }
 
+  //! Bit a set = grid axis a is REPLICATED: it is bound to no tensor
+  //! dimension and every coordinate along it holds one copy of the bytes its
+  //! fiber owns. Evaluation reports the per-member copies; through a logical
+  //! data, a composite place with replicated axes resolves to one composite
+  //! allocation per replicated coordinate (data_place::member), read-only
+  //! like every replicated place. Direct allocate_nd is rejected (one VA
+  //! range cannot hold the copies), same as data_place_replicated::allocate.
+  unsigned replicated_axes_mask() const
+  {
+    return replicated_axes_mask_;
+  }
+
+  //! Number of copies the replicated axes imply (product of their grid
+  //! extents; 1 when no axis is replicated)
+  size_t replication_factor() const
+  {
+    size_t n = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (replicated_axes_mask_ & (1u << a))
+      {
+        n *= grid_dims_.get(a);
+      }
+    }
+    return n;
+  }
+
   //! Structural comparison (used for data place ordering)
   int cmp(const cute_partition_descriptor& o) const
   {
@@ -927,7 +967,7 @@ public:
         return c;
       }
     }
-    return 0;
+    return cmp_sizes(replicated_axes_mask_, o.replicated_axes_mask_);
   }
 
   bool operator==(const cute_partition_descriptor& o) const
@@ -1002,18 +1042,27 @@ private:
           _CCCL_THROW(::std::invalid_argument, "cute_partition: grid axis bound to more than one place leaf");
         }
       }
+      if (replicated_axes_mask_ & (1u << static_cast<unsigned>(a)))
+      {
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition: a replicated grid axis cannot also be bound to a tensor dimension");
+      }
     }
 
-    // Without replication, every grid axis with extent > 1 must be bound to a
-    // tensor dimension; otherwise owner() pins that axis to coordinate 0 and
-    // the remaining places on that axis own no bytes. Relax this only if
-    // replication is introduced.
-    if (num_places() != grid_dims_.size())
+    if ((replicated_axes_mask_ & ~0xFu) != 0)
+    {
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: replicated axes are grid axes 0..3");
+    }
+
+    // Every grid axis with extent > 1 must be either bound to a tensor
+    // dimension or explicitly REPLICATED; otherwise owner() pins that axis to
+    // coordinate 0 and the remaining places on that axis own no bytes.
+    if (num_places() * replication_factor() != grid_dims_.size())
     {
       _CCCL_THROW(::std::invalid_argument,
                   "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
-                  "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
-                  "tensor dimension.");
+                  "tensor dimension and not replicated). Collapse the unused grid axes, bind them to a tensor "
+                  "dimension, or declare them replicated.");
     }
 
     for (size_t d = 0; d < 4; d++)
@@ -1083,6 +1132,7 @@ private:
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
+  unsigned replicated_axes_mask_ = 0;
 };
 
 //! A tensor dimension that is local to every grid place.
@@ -1191,6 +1241,7 @@ public:
       : padded_dims_(descriptor.padded_dims())
       , true_dims_(descriptor.true_dims())
       , grid_dims_(descriptor.grid_dims())
+      , replicated_axes_mask_(descriptor.replicated_axes_mask())
   {
     if (descriptor.place_leaves().size() != num_place_leaves || descriptor.place_axes().size() != num_place_leaves
         || descriptor.local_leaves().size() != num_local_leaves)
@@ -1225,6 +1276,12 @@ public:
   _CCCL_HOST_DEVICE const dim4& grid_dims() const
   {
     return grid_dims_;
+  }
+
+  //! See cute_partition_descriptor::replicated_axes_mask()
+  _CCCL_HOST_DEVICE unsigned replicated_axes_mask() const
+  {
+    return replicated_axes_mask_;
   }
 
   _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> place_leaves() const
@@ -1451,6 +1508,7 @@ private:
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
+  unsigned replicated_axes_mask_ = 0;
 };
 
 /**
@@ -1460,15 +1518,29 @@ private:
  * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up
  * to divisibility, which is what makes the resulting layout exact (see the
  * file-level documentation). Every grid axis with extent > 1 must be bound by
- * some entry; unbound axes would leave those places idle (replication is not
- * supported) and are rejected at construction time.
+ * some entry or declared REPLICATED via \p replicated_axes; axes that are
+ * neither would leave those places idle and are rejected at construction
+ * time. Evaluation reports one copy of the fiber's bytes per coordinate
+ * along replicated axes; through a logical data, the composite place
+ * resolves to one composite allocation per replicated coordinate (the
+ * composite counterpart of data_place::replicated, read-only like every
+ * replicated place). Direct allocation is rejected: allocate through a
+ * logical data.
  *
  * @param true_dims True tensor extents (dimension 0 fastest)
  * @param spec One entry per tensor dimension (at most 4)
  * @param grid_dims Extents of the grid of places
+ * @param replicated_axes Bitmask of grid axes holding one copy per
+ *        coordinate (bit a = axis a; 0 = no replication)
+ *
+ * Example -- a weight blocked over grid axis 0 (tensor-parallel shards) with
+ * one copy per coordinate of grid axis 1:
+ *
+ *   auto part = make_partition_descriptor(
+ *     dim4(K), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(P, Q), 0x2);
  */
-inline cute_partition_descriptor
-make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
+inline cute_partition_descriptor make_partition_descriptor(
+  dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims, unsigned replicated_axes = 0)
 {
   if (spec.size() > 4)
   {
@@ -1587,7 +1659,8 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
     mv(local_leaves),
     dim4(padded[0], padded[1], padded[2], padded[3]),
     true_dims,
-    grid_dims);
+    grid_dims,
+    replicated_axes);
 }
 
 inline dim_spec __make_runtime_dim_spec(whole_dim_spec)
@@ -1712,11 +1785,50 @@ template <typename Partition>
     probes,
     stats);
 
+  // Replicated axes multiply the placement: every coordinate along them
+  // holds its own copy of the bytes its fiber owns, and owner() pins those
+  // axes to 0, so fan each owner run out to all member coordinates.
+  const unsigned rep_mask  = partition.replicated_axes_mask();
+  const dim4 gdims         = grid.get_dims();
+  stats.replication_factor = 1;
+  for (size_t a = 0; a < 4; a++)
+  {
+    if (rep_mask & (1u << a))
+    {
+      stats.replication_factor *= gdims.get(a);
+    }
+  }
+
   for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
-    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
-    stats.nallocs++;
+    ::cuda::std::array<size_t, 4> c = {
+      static_cast<size_t>(p.x), static_cast<size_t>(p.y), static_cast<size_t>(p.z), static_cast<size_t>(p.t)};
+    // Mixed-radix walk over the replicated axes' coordinates
+    while (true)
+    {
+      const pos4 q(c[0], c[1], c[2], c[3]);
+      const data_place place = grid.get_place(q).affine_data_place();
+      stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+      stats.bytes_per_grid_index[gdims.get_index(q)] += num_blocks * block_size;
+      stats.nallocs++;
+
+      size_t a = 0;
+      for (; a < 4; a++)
+      {
+        if (!(rep_mask & (1u << a)))
+        {
+          continue;
+        }
+        if (++c[a] < gdims.get(a))
+        {
+          break;
+        }
+        c[a] = 0;
+      }
+      if (a == 4)
+      {
+        break;
+      }
+    }
   });
 
   return stats;
@@ -1743,6 +1855,17 @@ template <typename Partition>
 inline auto make_partition_placement_provider(
   const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
 {
+  if (partition.replicated_axes_mask() != 0)
+  {
+    // One VA range maps every page exactly once, so a single composite
+    // allocation cannot hold the per-instance copies. Same contract as
+    // data_place_replicated::allocate: the copies materialize through a
+    // logical data (one composite allocation per replicated coordinate,
+    // via data_place::member).
+    _CCCL_THROW(::std::invalid_argument,
+                "cute_partition: a partition with replicated axes resolves to one composite allocation per replicated "
+                "coordinate: allocate through a logical data");
+  }
   return [partition, data_dims, total_size, elemsize](
            size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
     // Budget the analytic walks against what the sampled fallback would
@@ -1832,6 +1955,137 @@ public:
       return 0;
     }
     return (grid_ < o.grid_) ? -1 : 1;
+  }
+
+  //! With replicated axes, a dependency at this place resolves to one full
+  //! copy per coordinate of those axes -- the composite counterpart of
+  //! data_place_replicated: each instance is an ordinary composite
+  //! allocation striped over its fiber's bound-axes places, materialized
+  //! through a logical data by the generic per-instance path (READ-ONLY,
+  //! like every replicated place).
+  bool is_replicated() const noexcept override
+  {
+    return partition_.replicated_axes_mask() != 0;
+  }
+
+  size_t instance_count() const override
+  {
+    return partition_.replication_factor();
+  }
+
+  //! Mixed radix over the replicated axes (dimension 0 fastest), like
+  //! data_place_replicated::instance_of
+  size_t instance_of(size_t place_index) const override
+  {
+    const unsigned mask = partition_.replicated_axes_mask();
+    if (mask == 0)
+    {
+      return 0;
+    }
+    const dim4 gd  = grid_.get_dims();
+    const pos4 pos = gd.index_to_pos(place_index);
+    size_t idx = 0, mult = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (mask & (1u << a))
+      {
+        idx += static_cast<size_t>(pos.get(a)) * mult;
+        mult *= gd.get(a);
+      }
+    }
+    return idx;
+  }
+
+  //! The r-th instance's place: the whole tensor, striped by the mask-free
+  //! partition over the fiber of grid places whose replicated coordinates
+  //! equal instance r's
+  ::std::shared_ptr<data_place_interface> member_impl(size_t r) const override
+  {
+    const unsigned mask = partition_.replicated_axes_mask();
+    if (mask == 0)
+    {
+      return nullptr;
+    }
+    const dim4 gd = grid_.get_dims();
+
+    // Replicated coordinates of instance r (mixed radix, dimension 0 fastest)
+    ::cuda::std::array<size_t, 4> rep_coord = {0, 0, 0, 0};
+    size_t rest                             = r;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (mask & (1u << a))
+      {
+        rep_coord[a] = rest % gd.get(a);
+        rest /= gd.get(a);
+      }
+    }
+
+    // Fiber sub-grid: places whose replicated coordinates match, in
+    // grid-linear order. Removing the fixed replicated digits preserves the
+    // relative order of the bound digits, so this ordering matches the
+    // compacted sub-descriptor's linearization below.
+    ::std::vector<exec_place> places;
+    places.reserve(gd.size() / partition_.replication_factor());
+    for (size_t i = 0; i < gd.size(); i++)
+    {
+      const pos4 p = gd.index_to_pos(i);
+      bool match   = true;
+      for (size_t a = 0; a < 4; a++)
+      {
+        if ((mask & (1u << a)) && static_cast<size_t>(p.get(a)) != rep_coord[a])
+        {
+          match = false;
+          break;
+        }
+      }
+      if (match)
+      {
+        places.push_back(grid_.get_place(p));
+      }
+    }
+
+    // A one-place fiber degenerates to that place's affine data place: the
+    // instance holds the whole tensor on a single owner
+    if (places.size() == 1)
+    {
+      return places[0].affine_data_place().get_impl();
+    }
+
+    // Compact the bound axes into the leading axes of a mask-free
+    // sub-descriptor over the fiber
+    ::cuda::std::array<int, 4> axis_remap    = {-1, -1, -1, -1};
+    ::cuda::std::array<size_t, 4> sub_extent = {1, 1, 1, 1};
+    int next                                 = 0;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (!(mask & (1u << a)))
+      {
+        axis_remap[a]                         = next;
+        sub_extent[static_cast<size_t>(next)] = gd.get(a);
+        next++;
+      }
+    }
+
+    ::std::vector<layout_leaf> pl(partition_.place_leaves().begin(), partition_.place_leaves().end());
+    ::std::vector<int> pa;
+    pa.reserve(partition_.place_axes().size());
+    for (const int a : partition_.place_axes())
+    {
+      pa.push_back(axis_remap[static_cast<size_t>(a)]);
+    }
+    ::std::vector<layout_leaf> ll(partition_.local_leaves().begin(), partition_.local_leaves().end());
+
+    cute_partition_descriptor sub(
+      mv(pl),
+      mv(pa),
+      mv(ll),
+      partition_.padded_dims(),
+      partition_.true_dims(),
+      dim4(sub_extent[0], sub_extent[1], sub_extent[2], sub_extent[3]));
+
+    // Read the dims before mv(sub): argument evaluation order is unspecified
+    const dim4 sub_dims = sub.grid_dims();
+    return ::std::make_shared<data_place_cute_composite>(make_grid(mv(places), sub_dims), mv(sub));
   }
 
   void* allocate(::cuda::std::ptrdiff_t, cudaStream_t) const override
@@ -1940,6 +2194,112 @@ UNITTEST("make_partition blocked leaves and owners")
     {
       EXPECT(part.owner(pos4(x, y)) == pos4(y / 2));
     }
+  }
+};
+
+UNITTEST("blocked on one grid axis, replicated on the other")
+{
+  // The poster child: a 1-D weight blocked over grid axis 0 (tensor-parallel
+  // shards), with one copy per coordinate of grid axis 1 (replicated across
+  // the other axis). Grid (2, 2): 4 places, 2 shards x 2 copies.
+  const dim4 true_dims(8);
+  const dim4 grid_dims(2, 2);
+  const auto part =
+    make_partition_descriptor(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims, /*replicated_axes=*/0x2);
+
+  EXPECT(part.replicated_axes_mask() == 0x2u);
+  EXPECT(part.replication_factor() == 2);
+  EXPECT(part.num_places() == 2); // the bound axis only
+
+  // owner() pins the replicated axis to 0: both copies of a shard share it
+  for (size_t x = 0; x < 8; x++)
+  {
+    EXPECT(part.owner(pos4(x)) == pos4(x / 4, 0));
+  }
+
+  // The composite place is a replicated place resolving to one composite
+  // allocation per coordinate of the replicated axis
+  ::std::vector<exec_place> places(4, exec_place::device(0));
+  const exec_place grid = make_grid(mv(places), grid_dims);
+  const data_place dp   = make_composite_data_place(grid, part);
+
+  EXPECT(dp.is_replicated());
+  EXPECT(dp.instance_count() == 2);
+  // Linear place i has coordinates (i % 2, i / 2): the instance is the
+  // replicated-axis coordinate
+  EXPECT(dp.instance_of(0) == 0);
+  EXPECT(dp.instance_of(1) == 0);
+  EXPECT(dp.instance_of(2) == 1);
+  EXPECT(dp.instance_of(3) == 1);
+
+  // Each instance is an ordinary (mask-free, single-instance) composite
+  // place striped over its two-place fiber
+  for (size_t r = 0; r < 2; r++)
+  {
+    const data_place m = dp.member(r);
+    EXPECT(m.is_composite());
+    EXPECT(!m.is_replicated());
+    EXPECT(m.instance_count() == 1);
+  }
+
+  // Fully replicated degenerate: no bound axis, both axes replicated; each
+  // one-place fiber collapses to the place's affine data place
+  const auto full = make_partition_descriptor(true_dims, {dim_spec{}}, grid_dims, /*replicated_axes=*/0x3);
+  EXPECT(full.replication_factor() == 4);
+  ::std::vector<exec_place> places2(4, exec_place::device(0));
+  const data_place dp_full = make_composite_data_place(make_grid(mv(places2), grid_dims), full);
+  EXPECT(dp_full.instance_count() == 4);
+  EXPECT(dp_full.member(0).is_device());
+  EXPECT(!dp_full.member(0).is_composite());
+};
+
+UNITTEST("replication over extent-1 axes normalizes away")
+{
+  // A no-op declaration must not leave a single-instance place claiming to
+  // be replicated: it would reject direct allocation and writes for nothing
+  const auto part =
+    make_partition_descriptor(dim4(8), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2, 1), /*replicated_axes=*/0x2);
+  EXPECT(part.replicated_axes_mask() == 0u);
+  EXPECT(part.replication_factor() == 1);
+
+  ::std::vector<exec_place> places(2, exec_place::device(0));
+  const data_place dp = make_composite_data_place(make_grid(mv(places), dim4(2, 1)), part);
+  EXPECT(!dp.is_replicated());
+  EXPECT(dp.instance_count() == 1);
+};
+
+UNITTEST("replication over multiple grid axes composes as the product")
+{
+  // 3-D grid (2, 2, 2): blocked over axis 0, one copy per (axis 1, axis 2)
+  // coordinate -- factor 4, mixed radix over both replicated axes
+  const dim4 true_dims(8);
+  const dim4 grid_dims(2, 2, 2);
+  const auto part =
+    make_partition_descriptor(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims, /*replicated_axes=*/0x6);
+
+  EXPECT(part.replicated_axes_mask() == 0x6u);
+  EXPECT(part.replication_factor() == 4);
+
+  ::std::vector<exec_place> places(8, exec_place::device(0));
+  const data_place dp = make_composite_data_place(make_grid(mv(places), grid_dims), part);
+  EXPECT(dp.is_replicated());
+  EXPECT(dp.instance_count() == 4);
+
+  // Linear place i = (x, y, z) with x fastest; the instance index is the
+  // mixed-radix rank of the replicated coordinates: y + 2 * z
+  for (size_t i = 0; i < 8; i++)
+  {
+    const size_t y = (i / 2) % 2;
+    const size_t z = i / 4;
+    EXPECT(dp.instance_of(i) == y + 2 * z);
+  }
+
+  // Every instance stripes the whole tensor over its two-place fiber
+  for (size_t r = 0; r < 4; r++)
+  {
+    const data_place m = dp.member(r);
+    EXPECT(m.is_composite());
+    EXPECT(m.instance_count() == 1);
   }
 };
 

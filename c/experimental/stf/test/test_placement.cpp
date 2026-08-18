@@ -70,7 +70,7 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   const stf_dim4 grid_dims{3, 1, 1, 1};
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
 
-  stf_cute_partition_handle part = stf_cute_partition_create(&true_dims, &grid_dims, spec, 1);
+  stf_cute_partition_handle part = stf_cute_partition_create(&true_dims, &grid_dims, spec, 1, 0);
   REQUIRE(part != nullptr);
 
   stf_dim4 out{};
@@ -200,7 +200,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   // Same flow through a structured partition
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
   const stf_dim4 grid_dims{2, 1, 1, 1};
-  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0);
   REQUIRE(part != nullptr);
   stf_data_place_handle dpc = stf_data_place_composite_cute(grid, part);
   REQUIRE(dpc != nullptr);
@@ -215,6 +215,90 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   stf_data_place_deallocate(dpc, ptr2, n * sizeof(int), nullptr);
 
   stf_data_place_destroy(dpc);
+  stf_cute_partition_destroy(part);
+  stf_exec_place_destroy(grid);
+}
+
+C2H_TEST("replicated partition axes report per-member copies", "[places][placement]")
+{
+  stf_exec_place_handle grid = make_dev0_grid(2);
+
+  const stf_dim4 dims{4 * MiB, 1, 1, 1};
+  const stf_dim4 grid_dims{2, 1, 1, 1};
+  // Rank-1 whole spec: the tensor is not distributed; grid axis 0 holds one
+  // copy per coordinate instead.
+  const stf_partition_dim_spec spec[1] = {{STF_DIM_WHOLE, -1, 0}};
+
+  // A grid axis with extent > 1 must be bound or declared replicated
+  REQUIRE(stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0) == nullptr);
+  // ... and a replicated axis must not also be bound by the spec
+  const stf_partition_dim_spec bound[1] = {{STF_DIM_BLOCKED, 0, 0}};
+  REQUIRE(stf_cute_partition_create(&dims, &grid_dims, bound, 1, 0x1) == nullptr);
+
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0x1);
+  REQUIRE(part != nullptr);
+  REQUIRE(stf_cute_partition_replicated_axes(part) == 0x1);
+  REQUIRE(stf_cute_partition_replication_factor(part) == 2);
+
+  stf_placement_stats stats{};
+  uint64_t bytes_per_pos[2] = {0, 0};
+  REQUIRE(stf_placement_evaluate_partition(grid, part, 1, 0, 2 * MiB, &stats, bytes_per_pos) == 0);
+  REQUIRE(stats.replication_factor == 2);
+  // Every member of the replicated axis holds a full copy
+  REQUIRE(bytes_per_pos[0] == 4 * MiB);
+  REQUIRE(bytes_per_pos[1] == 4 * MiB);
+  REQUIRE(stats.nallocs == 2);
+
+  // The composite place is itself replicated (read-only through deps); a
+  // DIRECT allocation cannot hold the per-instance copies and is rejected
+  // (through a logical data it resolves to one allocation per coordinate)
+  stf_data_place_handle dpc = stf_data_place_composite_cute(grid, part);
+  REQUIRE(dpc != nullptr);
+  REQUIRE(stf_data_place_is_replicated(dpc) == 1);
+  REQUIRE(stf_data_place_allocate_nd(dpc, &dims, 1, nullptr) == nullptr);
+  stf_data_place_destroy(dpc);
+
+  stf_cute_partition_destroy(part);
+  stf_exec_place_destroy(grid);
+}
+
+C2H_TEST("blocked plus replicated partition evaluation on a 2-D grid", "[places][placement]")
+{
+  // The poster child: a weight blocked over grid axis 0 (tensor-parallel
+  // shards) with one copy per coordinate of grid axis 1.
+  std::vector<stf_exec_place_handle> places(4);
+  for (auto& p : places)
+  {
+    p = stf_exec_place_device(0);
+    REQUIRE(p != nullptr);
+  }
+  const stf_dim4 gdims{2, 2, 1, 1};
+  stf_exec_place_handle grid = stf_exec_place_grid_create(places.data(), places.size(), &gdims);
+  REQUIRE(grid != nullptr);
+  for (auto& p : places)
+  {
+    stf_exec_place_destroy(p);
+  }
+
+  const stf_dim4 dims{8 * MiB, 1, 1, 1};
+  const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
+  stf_cute_partition_handle part       = stf_cute_partition_create(&dims, &gdims, spec, 1, /*axis 1*/ 0x2);
+  REQUIRE(part != nullptr);
+  REQUIRE(stf_cute_partition_replicated_axes(part) == 0x2);
+  REQUIRE(stf_cute_partition_replication_factor(part) == 2);
+
+  stf_placement_stats stats{};
+  uint64_t bytes_per_pos[4] = {0, 0, 0, 0};
+  REQUIRE(stf_placement_evaluate_partition(grid, part, 1, 0, 2 * MiB, &stats, bytes_per_pos) == 0);
+  REQUIRE(stats.replication_factor == 2);
+  // Position (x, y) holds copy y of shard x: half the tensor each
+  for (int i = 0; i < 4; i++)
+  {
+    REQUIRE(bytes_per_pos[i] == 4 * MiB);
+  }
+  REQUIRE(stats.nallocs == 4);
+  REQUIRE(stats.matching_samples == stats.total_samples);
+
   stf_cute_partition_destroy(part);
   stf_exec_place_destroy(grid);
 }
