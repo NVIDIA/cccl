@@ -126,8 +126,6 @@ TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
 template <typename Vector>
 void test_remove_if_simple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
 
   const typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), is_even<T>());
@@ -227,8 +225,6 @@ TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
 template <typename Vector>
 void test_remove_copy_if_simple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 3, 2};
 
   Vector result(5);
