@@ -367,16 +367,16 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
   if (static_max_segment_size <= 2048 && max_k <= 1024)
   {
     return cluster_topk_policy{
-      /*threads_per_block=*/416,
+      /*threads_per_block=*/352,
       /*min_blocks_per_sm=*/1,
       /*min_chunks_per_block=*/1,
-      /*chunk_bytes=*/23 * 1024,
-      /*load_align_bytes=*/16,
-      /*pipeline_stages=*/4,
+      /*chunk_bytes=*/31 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/6,
       /*single_block_max_seg_size=*/8 * 1024,
       /*bits_per_pass=*/8,
-      /*histogram_items_per_thread=*/3,
-      /*tie_break_items_per_thread=*/1,
+      /*histogram_items_per_thread=*/4,
+      /*tie_break_items_per_thread=*/2,
       /*copy_items_per_thread=*/4,
       /*max_blocks_per_cluster=*/0,
       /*max_chunk_slots_per_block=*/0};
@@ -436,16 +436,16 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
   {
     return cluster_topk_policy{
       /*threads_per_block=*/512,
-      /*min_blocks_per_sm=*/2,
+      /*min_blocks_per_sm=*/1,
       /*min_chunks_per_block=*/1,
-      /*chunk_bytes=*/23 * 1024,
+      /*chunk_bytes=*/28 * 1024,
       /*load_align_bytes=*/16,
-      /*pipeline_stages=*/8,
+      /*pipeline_stages=*/3,
       /*single_block_max_seg_size=*/8 * 1024,
       /*bits_per_pass=*/11,
-      /*histogram_items_per_thread=*/3,
-      /*tie_break_items_per_thread=*/2,
-      /*copy_items_per_thread=*/16,
+      /*histogram_items_per_thread=*/9,
+      /*tie_break_items_per_thread=*/3,
+      /*copy_items_per_thread=*/14,
       /*max_blocks_per_cluster=*/0,
       /*max_chunk_slots_per_block=*/0};
   }
@@ -457,11 +457,11 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
       /*min_chunks_per_block=*/1,
       /*chunk_bytes=*/30 * 1024,
       /*load_align_bytes=*/32,
-      /*pipeline_stages=*/13,
+      /*pipeline_stages=*/9,
       /*single_block_max_seg_size=*/8 * 1024,
       /*bits_per_pass=*/9,
       /*histogram_items_per_thread=*/9,
-      /*tie_break_items_per_thread=*/4,
+      /*tie_break_items_per_thread=*/3,
       /*copy_items_per_thread=*/4,
       /*max_blocks_per_cluster=*/0,
       /*max_chunk_slots_per_block=*/0};
@@ -472,9 +472,9 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
       /*threads_per_block=*/512,
       /*min_blocks_per_sm=*/1,
       /*min_chunks_per_block=*/1,
-      /*chunk_bytes=*/29 * 1024,
-      /*load_align_bytes=*/32,
-      /*pipeline_stages=*/6,
+      /*chunk_bytes=*/12 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/4,
       /*single_block_max_seg_size=*/8 * 1024,
       /*bits_per_pass=*/11,
       /*histogram_items_per_thread=*/4,
@@ -483,6 +483,129 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
       /*max_blocks_per_cluster=*/0,
       /*max_chunk_slots_per_block=*/0};
   }
+  if (static_max_segment_size <= 16384 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/352,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/11 * 1024,
+      /*load_align_bytes=*/64,
+      /*pipeline_stages=*/6,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/13,
+      /*tie_break_items_per_thread=*/3,
+      /*copy_items_per_thread=*/4,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  if (static_max_segment_size <= 16384 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/352,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/10 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/4,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/5,
+      /*tie_break_items_per_thread=*/3,
+      /*copy_items_per_thread=*/20,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  if (static_max_segment_size <= 16384 && max_k <= 2048)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/256,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/9 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/11,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/8,
+      /*tie_break_items_per_thread=*/4,
+      /*copy_items_per_thread=*/20,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  // No dedicated 32Ki/512 bucket: the tuned candidates for that shape regress 7-9% at high segment
+  // counts, so k <= 512 shares the 32Ki/1024 config below.
+  if (static_max_segment_size <= 32768 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/256,
+      /*min_blocks_per_sm=*/2,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/8 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/5,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/4,
+      /*tie_break_items_per_thread=*/4,
+      /*copy_items_per_thread=*/17,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  if (static_max_segment_size <= 32768 && max_k <= 2048)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/384,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/9 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/11,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/3,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/16,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  if (static_max_segment_size <= 65536 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/256,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/10 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/9,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/5,
+      /*tie_break_items_per_thread=*/5,
+      /*copy_items_per_thread=*/8,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  if (static_max_segment_size <= 65536 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/384,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/11 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/4,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/14,
+      /*tie_break_items_per_thread=*/4,
+      /*copy_items_per_thread=*/3,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
+  }
+  // 64Ki/k2048 and sizes above 64Ki stay on the default policy: their tuned candidates
+  // fail the never-slower bar (no clean worst case, means fading to 1.0-1.04).
   return make_cluster_policy();
 }
 
@@ -495,6 +618,14 @@ static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 2048
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 1024)));
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 1024)));
 
 // -----------------------------------------------------------------------------
 // Backend selection
