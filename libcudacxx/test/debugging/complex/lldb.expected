@@ -11,7 +11,7 @@
 (cuda::std::complex<float>) <address> (real = -3.5, imag = 0.25)
 =============== complex.alias end ===============
 =============== complex.nested begin ===============
-(cuda::std::array<cuda::std::complex<float>, 2>) <address>: {
+(const cuda::std::array<cuda::std::complex<float>, 2> &) <address>: {
   [0] = (real = 13.5, imag = -5.5)
   [1] = (real = 0.25, imag = 88.5)
 }

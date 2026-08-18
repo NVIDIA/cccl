@@ -307,14 +307,49 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
 //! detail on stderr).
 uint32_t stf_locality_domain_count(int dev_id);
 
+//! \brief SM split methods for locality-domain execution places.
+//!
+//! Selects how a locality-domain execution place's SM partition is carved
+//! out of the device (native backend only; other backends ignore it):
+//! - BACKFILL (the default): every domain place is sized to an even share
+//!   of the device total and backfilled by the driver (target domain first,
+//!   then SMs outside any domain, then other domains), so the domain places
+//!   together cover the whole device. Backfilled SMs may sit outside the
+//!   place's domain (no memory affinity with it), and the partition does
+//!   not support launching thread-block clusters.
+//! - ALIGNED: only SMs of the domain that form complete co-scheduled groups
+//!   at the device's default alignment. Strictly domain-affine and
+//!   cluster-capable, but incomplete groups and SMs outside any domain are
+//!   left out of the partition.
+//! - FINE: all of the domain's SMs at the finest co-scheduling granularity.
+//!   Strictly domain-affine, at the cost of thread-block cluster launches.
+typedef enum stf_locality_domain_sm_split
+{
+  STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL = 0,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED  = 1,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_FINE     = 2,
+} stf_locality_domain_sm_split;
+
 //! \brief Execution place pinned to one locality domain of a device (the
 //! whole device with the fallback backend). Ordinals are identity tokens,
-//! validated lazily at use (native backend).
+//! validated lazily at use (native backend). Uses the default SM split
+//! method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
 stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
 
+//! \brief Like \ref stf_exec_place_locality_domain with an explicit SM
+//! split method. Returns NULL on an invalid \p split value.
+stf_exec_place_handle
+stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split);
+
 //! \brief Grid with one execution place per locality domain of \p dev_id
-//! (a single whole-device place with the fallback backend).
+//! (a single whole-device place with the fallback backend). Uses the
+//! default SM split method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
 stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
+
+//! \brief Like \ref stf_exec_place_locality_domain_grid with an explicit SM
+//! split method applied to every place of the grid. Returns NULL on an
+//! invalid \p split value.
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split);
 
 //! \brief Data place whose allocations are localized to one locality
 //! domain of a device (plain device memory with the fallback backend).
