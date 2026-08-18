@@ -23,8 +23,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/type_traits/integer_sequence.h>
-
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/__utility/static_for.h>
