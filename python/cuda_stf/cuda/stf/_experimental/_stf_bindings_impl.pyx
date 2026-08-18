@@ -2316,7 +2316,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
     scored (and its parameters tuned) before committing memory.
 
     ``mapper`` is a :class:`cute_partition`, a native partition function
-    pointer (int, see :func:`partition_fn_blocked`), or a Python callable
+    (:class:`native_partition_fn`, see :func:`partition_fn_blocked`), or a
+    Python callable
     ``(data_coords, data_dims, grid_dims) -> grid_coords`` where every tuple
     is C-order (``data_coords``/``data_dims`` have ``len(data_dims)`` entries
     and ``grid_dims``/``grid_coords`` the grid's rank). Note the callable
@@ -2354,10 +2355,10 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
             mapper_state = None
             if isinstance(mapper, bool):
                 raise TypeError("mapper must not be a bool")
-            elif isinstance(mapper, int):
-                if mapper == 0:
+            elif isinstance(mapper, (native_partition_fn, int)):
+                ptr_val = <uintptr_t>int(mapper)
+                if ptr_val == 0:
                     raise ValueError("mapper function pointer must not be NULL")
-                ptr_val = <uintptr_t>mapper
             elif callable(mapper):
                 mapper_state = _make_mapper_callback(
                     mapper, len(public_dims), _exec_place_grid_rank(grid))
