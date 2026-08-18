@@ -5,7 +5,7 @@
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -20,8 +20,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -34,16 +32,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -57,9 +53,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -73,9 +70,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -86,13 +84,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -103,17 +101,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -127,8 +120,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -140,16 +131,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -162,9 +151,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -177,9 +167,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -189,13 +180,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -205,17 +196,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -230,8 +216,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -244,16 +228,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -267,9 +249,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -283,9 +266,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -296,13 +280,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -313,17 +297,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -337,8 +316,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -350,16 +327,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -372,9 +347,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -387,9 +363,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -399,13 +376,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -415,17 +392,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -440,8 +412,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
@@ -454,16 +424,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -477,9 +445,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -493,9 +462,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -506,13 +476,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -523,17 +493,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -547,8 +512,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
@@ -560,16 +523,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -582,9 +543,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -597,9 +559,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -609,13 +572,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -625,17 +588,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -650,8 +608,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
@@ -664,16 +620,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -687,9 +641,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -703,9 +658,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -716,13 +672,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -733,17 +689,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -757,8 +708,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
@@ -770,16 +719,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -792,9 +739,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -807,9 +755,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -819,13 +768,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -835,17 +784,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -860,8 +804,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -874,16 +816,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -897,9 +837,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -913,9 +854,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -926,13 +868,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -943,17 +885,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -967,8 +904,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -980,16 +915,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1002,9 +935,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1017,9 +951,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1029,13 +964,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1045,17 +980,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1070,8 +1000,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -1084,16 +1012,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1107,9 +1033,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1123,9 +1050,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1136,13 +1064,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1153,17 +1081,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1177,8 +1100,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -1190,16 +1111,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1212,9 +1131,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1227,9 +1147,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1239,13 +1160,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1255,17 +1176,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1280,8 +1196,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -1294,16 +1208,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1317,9 +1229,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1333,9 +1246,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1346,13 +1260,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1363,17 +1277,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1387,8 +1296,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -1400,16 +1307,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1422,9 +1327,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1437,9 +1343,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1449,13 +1356,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1465,17 +1372,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1490,8 +1392,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -1504,16 +1404,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1527,9 +1425,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1543,9 +1442,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1556,13 +1456,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1573,17 +1473,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1597,8 +1492,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -1610,16 +1503,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1632,9 +1523,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1647,9 +1539,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1659,13 +1552,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1675,17 +1568,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1700,8 +1588,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -1714,16 +1600,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1737,9 +1621,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1753,9 +1638,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1766,13 +1652,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1783,17 +1669,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1807,8 +1688,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -1820,16 +1699,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1842,9 +1719,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1857,9 +1735,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1869,13 +1748,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1885,17 +1764,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -1910,8 +1784,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -1924,16 +1796,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1947,9 +1817,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1963,9 +1834,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1976,13 +1848,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -1993,17 +1865,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2017,8 +1884,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -2030,16 +1895,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2052,9 +1915,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2067,9 +1931,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2079,13 +1944,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2095,17 +1960,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2120,8 +1980,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
@@ -2134,16 +1992,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2157,9 +2013,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2173,9 +2030,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2186,13 +2044,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2203,17 +2061,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2227,8 +2080,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
@@ -2240,16 +2091,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2262,9 +2111,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2277,9 +2127,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2289,13 +2140,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2305,17 +2156,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2330,8 +2176,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
@@ -2344,16 +2188,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2367,9 +2209,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2383,9 +2226,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2396,13 +2240,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2413,17 +2257,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2437,8 +2276,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
@@ -2450,16 +2287,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2472,9 +2307,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2487,9 +2323,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2499,13 +2336,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2515,17 +2352,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2540,8 +2372,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -2554,16 +2384,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2577,9 +2405,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2593,9 +2422,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2606,13 +2436,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2623,17 +2453,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2647,8 +2472,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -2660,16 +2483,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2682,9 +2503,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2697,9 +2519,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2709,13 +2532,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2725,17 +2548,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2750,8 +2568,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -2764,16 +2580,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2787,9 +2601,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2803,9 +2618,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2816,13 +2632,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2833,17 +2649,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2857,8 +2668,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -2870,16 +2679,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2892,9 +2699,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2907,9 +2715,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2919,13 +2728,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2935,17 +2744,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -2960,8 +2764,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -2974,16 +2776,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -2997,9 +2797,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3013,9 +2814,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3026,13 +2828,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3043,17 +2845,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3067,8 +2864,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -3080,16 +2875,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3102,9 +2895,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3117,9 +2911,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3129,13 +2924,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3145,17 +2940,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3170,8 +2960,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -3184,16 +2972,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3207,9 +2993,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3223,9 +3010,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3236,13 +3024,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3253,17 +3041,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3277,8 +3060,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -3290,16 +3071,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3312,9 +3091,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3327,9 +3107,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3339,13 +3120,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3355,17 +3136,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3380,8 +3156,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -3394,16 +3168,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3417,9 +3189,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3433,9 +3206,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3446,13 +3220,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3463,17 +3237,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3487,8 +3256,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -3500,16 +3267,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3522,9 +3287,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3537,9 +3303,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3549,13 +3316,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3565,17 +3332,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3590,8 +3352,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -3604,16 +3364,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3627,9 +3385,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3643,9 +3402,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3656,13 +3416,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3673,17 +3433,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3697,8 +3452,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -3710,16 +3463,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3732,9 +3483,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3747,9 +3499,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3759,13 +3512,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3775,17 +3528,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3800,8 +3548,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
@@ -3814,16 +3560,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3837,9 +3581,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3853,9 +3598,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3866,13 +3612,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3883,17 +3629,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -3907,8 +3648,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
@@ -3920,16 +3659,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3942,9 +3679,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3957,9 +3695,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3969,13 +3708,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -3985,17 +3724,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4010,8 +3744,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
@@ -4024,16 +3756,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4047,9 +3777,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4063,9 +3794,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4076,13 +3808,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4093,17 +3825,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4117,8 +3844,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
@@ -4130,16 +3855,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4152,9 +3875,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4167,9 +3891,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4179,13 +3904,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4195,17 +3920,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4220,8 +3940,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -4234,16 +3952,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4257,9 +3973,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4273,9 +3990,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4286,13 +4004,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4303,17 +4021,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4327,8 +4040,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -4340,16 +4051,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4362,9 +4071,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4377,9 +4087,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4389,13 +4100,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4405,17 +4116,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4430,8 +4136,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -4444,16 +4148,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4467,9 +4169,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4483,9 +4186,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4496,13 +4200,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4513,17 +4217,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4537,8 +4236,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -4550,16 +4247,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4572,9 +4267,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4587,9 +4283,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4599,13 +4296,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4615,17 +4312,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4640,8 +4332,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -4654,16 +4344,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4677,9 +4365,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4693,9 +4382,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4706,13 +4396,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4723,17 +4413,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4747,8 +4432,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -4760,16 +4443,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4782,9 +4463,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4797,9 +4479,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4809,13 +4492,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4825,17 +4508,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4850,8 +4528,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -4864,16 +4540,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4887,9 +4561,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4903,9 +4578,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4916,13 +4592,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4933,17 +4609,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -4957,8 +4628,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -4970,16 +4639,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -4992,9 +4659,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5007,9 +4675,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5019,13 +4688,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5035,17 +4704,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5060,8 +4724,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -5074,16 +4736,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5097,9 +4757,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5113,9 +4774,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5126,13 +4788,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5143,17 +4805,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5167,8 +4824,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -5180,16 +4835,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5202,9 +4855,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5217,9 +4871,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5229,13 +4884,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5245,17 +4900,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5270,8 +4920,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -5284,16 +4932,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5307,9 +4953,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5323,9 +4970,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5336,13 +4984,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5353,17 +5001,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5377,8 +5020,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
@@ -5390,16 +5031,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5412,9 +5051,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5427,9 +5067,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5439,13 +5080,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5455,17 +5096,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5480,8 +5116,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
@@ -5494,16 +5128,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5517,9 +5149,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5533,9 +5166,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5546,13 +5180,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5563,17 +5197,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5587,8 +5216,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
@@ -5600,16 +5227,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5622,9 +5247,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5637,9 +5263,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5649,13 +5276,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5665,17 +5292,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5690,8 +5312,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
@@ -5704,16 +5324,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5727,9 +5345,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5743,9 +5362,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5756,13 +5376,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5773,17 +5393,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5797,8 +5412,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
@@ -5810,16 +5423,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5832,9 +5443,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5847,9 +5459,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5859,13 +5472,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5875,17 +5488,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -5900,8 +5508,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -5914,16 +5520,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5937,9 +5541,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5953,9 +5558,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5966,13 +5572,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -5983,17 +5589,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6007,8 +5608,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -6020,16 +5619,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6042,9 +5639,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6057,9 +5655,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6069,13 +5668,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6085,17 +5684,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6110,8 +5704,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -6124,16 +5716,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6147,9 +5737,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6163,9 +5754,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6176,13 +5768,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6193,17 +5785,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6217,8 +5804,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
@@ -6230,16 +5815,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6252,9 +5835,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6267,9 +5851,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6279,13 +5864,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6295,17 +5880,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6320,8 +5900,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -6334,16 +5912,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6357,9 +5933,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6373,9 +5950,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6386,13 +5964,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6403,17 +5981,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86,
-SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6427,8 +6000,6 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -6440,16 +6011,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6462,9 +6031,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6477,9 +6047,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6489,13 +6060,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], %1, %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6505,17 +6076,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
-zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6530,8 +6096,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   uint64_t zero_column_mask_desc);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -6544,16 +6108,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6567,9 +6129,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6583,9 +6146,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6596,13 +6160,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d, %5; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6613,17 +6177,12 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "l"(__zero_column_mask_desc)
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA
-86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .cta_group = { .cta_group::1 }
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 template <cuda::ptx::dot_kind Kind>
@@ -6637,8 +6196,6 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
@@ -6650,16 +6207,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6672,9 +6227,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   else if constexpr (__kind == kind_tf32)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6687,9 +6243,10 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   else if constexpr (__kind == kind_f8f6f4)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6699,13 +6256,13 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-#  elif _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
-  if constexpr (__kind == kind_i8)
+  else if constexpr (__kind == kind_i8)
   {
     asm volatile(
-      "{\n\t .reg .pred PRED_enable_input_d; \n\t"
-      "setp.ne.b32 PRED_enable_input_d, %4, 0;\n\t"
-      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d;\n\t"
+      "{\n\t"
+      ".reg .pred PRED_enable_input_d; \n\t"
+      "setp.ne.b32 PRED_enable_input_d, %4, 0; \n\t"
+      "tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard [%0], [%1], %2, %3, PRED_enable_input_d; \n"
       "}"
       :
       : "r"(__d_tmem),
@@ -6715,11 +6272,6 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
