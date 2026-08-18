@@ -1,17 +1,17 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDA___DEVICE_LOGICAL_DEVICE_H
 #define _CUDA___DEVICE_LOGICAL_DEVICE_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,12 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/logical_device_ref.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/move.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/logical_device_ref.h>
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__utility/exchange.h>
+#  include <cuda/std/__utility/move.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 // Forward declare so we dont need CUDA 12.5 headers
 struct CUgreenCtx_st;
@@ -77,7 +81,9 @@ private:
   {
     if (__gctx_)
     {
+#  if _CCCL_CTK_AT_LEAST(12, 5)
       static_cast<void>(::cuda::__driver::__greenCtxDestroyNoThrow(__gctx_));
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
       __gctx_ = nullptr;
     }
   }
@@ -85,6 +91,8 @@ private:
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___DEVICE_LOGICAL_DEVICE_CUH
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_LOGICAL_DEVICE_H // _CUDA___DEVICE_LOGICAL_DEVICE_CUH

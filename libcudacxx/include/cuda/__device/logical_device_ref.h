@@ -1,17 +1,17 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDA___DEVICE_LOGICAL_DEVICE_REF_H
 #define _CUDA___DEVICE_LOGICAL_DEVICE_REF_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/device_ref.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__device/device_ref.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 // Forward declare so we dont need CUDA 12.5 headers
 struct CUgreenCtx_st;
@@ -60,7 +62,7 @@ public:
     return __lhs.__device_ == __rhs.__device_ && __lhs.__gctx_ == __rhs.__gctx_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two logical_devices for inequality
   //!
   //! @param __lhs The first `logical_device` to compare
@@ -71,7 +73,7 @@ public:
   {
     return !(__lhs == __rhs);
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
 protected:
   device_ref __device_{0};
@@ -80,6 +82,8 @@ protected:
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___DEVICE_LOGICAL_DEVICE_REF_CUH
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___DEVICE_LOGICAL_DEVICE_REF_H
