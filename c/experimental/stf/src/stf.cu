@@ -119,7 +119,7 @@ template <class P>
   {
     return static_cast<stf_host_launch_handle>(opaque_bits);
   }
-  else if constexpr (::std::is_same_v<P, reserved::host_launch_deps>)
+  else if constexpr (::std::is_same_v<P, host_launch_deps>)
   {
     return static_cast<stf_host_launch_deps_handle>(opaque_bits);
   }
@@ -172,7 +172,7 @@ template <class Opaque>
   }
   else if constexpr (::std::is_same_v<Opaque*, stf_host_launch_deps_handle>)
   {
-    return static_cast<const reserved::host_launch_deps*>(opaque_bits);
+    return static_cast<const host_launch_deps*>(opaque_bits);
   }
   else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_scope_handle>)
   {
@@ -897,7 +897,7 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
     auto builder = context_ptr->host_launch();
     builder.add_deps(task_dep_untyped(*ld_ptr, access_mode::read));
     builder.set_symbol("wait");
-    builder->*[dst, cap](reserved::host_launch_deps& deps) {
+    builder->*[dst, cap](host_launch_deps& deps) {
       auto data      = deps.get<slice<char>>(0);
       size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
       // The destination must not overlap the logical data range: in practice the
@@ -1276,7 +1276,7 @@ void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callb
   _CCCL_ASSERT(callback != nullptr, "callback must not be null");
 
   auto* scope_ptr = static_cast<context::host_launch_builder*>(static_cast<void*>(h));
-  (*scope_ptr)->*[callback](cuda::experimental::stf::reserved::host_launch_deps& deps) {
+  (*scope_ptr)->*[callback](cuda::experimental::stf::host_launch_deps& deps) {
     callback(to_opaque(&deps));
   };
 }
@@ -2041,7 +2041,7 @@ void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callbac
   _CCCL_ASSERT(callback != nullptr, "callback must not be null");
 
   auto* scope_ptr = static_cast<context::host_launch_builder*>(static_cast<void*>(h));
-  (*scope_ptr)->*[callback](reserved::host_launch_deps& deps) {
+  (*scope_ptr)->*[callback](host_launch_deps& deps) {
     callback(to_opaque(&deps));
   };
 }

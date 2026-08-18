@@ -34,7 +34,7 @@ void test_stream_basic()
 
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::read));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 1);
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
@@ -63,7 +63,7 @@ void test_stream_multiple_deps()
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::read));
   scope.add_deps(task_dep_untyped(lY, access_mode::read));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 2);
     auto sX = deps.get<slice<double>>(0);
     auto sY = deps.get<slice<double>>(1);
@@ -91,7 +91,7 @@ void test_stream_user_data()
 
   auto scope = ctx.host_launch();
   scope.set_user_data(&uctx, sizeof(uctx));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 0);
     EXPECT(deps.user_data() != nullptr);
     EXPECT(deps.user_data_size() == sizeof(my_ctx));
@@ -117,7 +117,7 @@ void test_stream_write_back()
 
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::rw));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
@@ -140,7 +140,7 @@ void test_stream_no_user_data()
   stream_ctx ctx;
 
   auto scope = ctx.host_launch();
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 0);
     EXPECT(deps.user_data() == nullptr);
     EXPECT(deps.user_data_size() == 0);
@@ -163,7 +163,7 @@ void test_stream_chained()
 
   auto s1 = ctx.host_launch();
   s1.add_deps(task_dep_untyped(lX, access_mode::rw));
-  s1->*[](reserved::host_launch_deps& deps) {
+  s1->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
@@ -173,7 +173,7 @@ void test_stream_chained()
 
   auto s2 = ctx.host_launch();
   s2.add_deps(task_dep_untyped(lX, access_mode::rw));
-  s2->*[](reserved::host_launch_deps& deps) {
+  s2->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
@@ -209,7 +209,7 @@ void test_graph_basic()
 
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::read));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 1);
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
@@ -238,7 +238,7 @@ void test_graph_multiple_deps()
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::read));
   scope.add_deps(task_dep_untyped(lY, access_mode::read));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 2);
     auto sX = deps.get<slice<double>>(0);
     auto sY = deps.get<slice<double>>(1);
@@ -266,7 +266,7 @@ void test_graph_user_data()
 
   auto scope = ctx.host_launch();
   scope.set_user_data(&uctx, sizeof(uctx));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 0);
     EXPECT(deps.user_data() != nullptr);
     EXPECT(deps.user_data_size() == sizeof(my_ctx));
@@ -292,7 +292,7 @@ void test_graph_write_back()
 
   auto scope = ctx.host_launch();
   scope.add_deps(task_dep_untyped(lX, access_mode::rw));
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
@@ -315,7 +315,7 @@ void test_graph_no_user_data()
   graph_ctx ctx;
 
   auto scope = ctx.host_launch();
-  scope->*[](reserved::host_launch_deps& deps) {
+  scope->*[](host_launch_deps& deps) {
     EXPECT(deps.size() == 0);
     EXPECT(deps.user_data() == nullptr);
     EXPECT(deps.user_data_size() == 0);
@@ -338,7 +338,7 @@ void test_graph_chained()
 
   auto s1 = ctx.host_launch();
   s1.add_deps(task_dep_untyped(lX, access_mode::rw));
-  s1->*[](reserved::host_launch_deps& deps) {
+  s1->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
@@ -348,7 +348,7 @@ void test_graph_chained()
 
   auto s2 = ctx.host_launch();
   s2.add_deps(task_dep_untyped(lX, access_mode::rw));
-  s2->*[](reserved::host_launch_deps& deps) {
+  s2->*[](host_launch_deps& deps) {
     auto sX = deps.get<slice<double>>(0);
     for (size_t i = 0; i < 64; i++)
     {
