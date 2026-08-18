@@ -931,7 +931,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {}) -> cudaError
+  KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
   using offset_t = num_items_offset_t<OffsetT>;
 

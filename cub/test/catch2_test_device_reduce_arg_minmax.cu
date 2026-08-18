@@ -90,7 +90,7 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_mi
     static_cast<::cuda::std::int64_t>(input.size()));
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   error = cub::DeviceReduce::ArgMinMax(
@@ -131,7 +131,7 @@ CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax basic correctness", "[reduce][ar
     static_cast<::cuda::std::int64_t>(input.size()));
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   error = cub::DeviceReduce::ArgMinLastMax(
@@ -695,18 +695,15 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
     {
       abs_less_t compare_op;
 
-      // Prepare verification data
-      c2h::host_vector<item_t> host_items_abs(in_items);
-
       // First minimum by abs value: first element with smallest |value|
-      auto exp_min_it          = cuda::std::min_element(host_items_abs.cbegin(), host_items_abs.cend(), compare_op);
+      auto exp_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
       const auto exp_min       = static_cast<output_t>(*exp_min_it);
-      const auto exp_min_index = static_cast<cuda::std::int64_t>(exp_min_it - host_items_abs.cbegin());
+      const auto exp_min_index = static_cast<cuda::std::int64_t>(exp_min_it - host_items.cbegin());
 
       // First maximum by abs value: first element with largest |value|
-      auto exp_first_max_it    = cuda::std::max_element(host_items_abs.cbegin(), host_items_abs.cend(), compare_op);
-      const auto exp_first_max = static_cast<output_t>(*exp_first_max_it);
-      const auto exp_first_max_index = static_cast<cuda::std::int64_t>(exp_first_max_it - host_items_abs.cbegin());
+      auto exp_first_max_it          = cuda::std::max_element(host_items.cbegin(), host_items.cend(), compare_op);
+      const auto exp_first_max       = static_cast<output_t>(*exp_first_max_it);
+      const auto exp_first_max_index = static_cast<cuda::std::int64_t>(exp_first_max_it - host_items.cbegin());
 
       device_arg_minmax(
         unwrap_it(d_in_it),
@@ -729,19 +726,16 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
     {
       abs_less_t compare_op;
 
-      // Prepare verification data
-      c2h::host_vector<item_t> host_items_abs(in_items);
-
       // First minimum by abs value: first element with smallest |value|
-      auto exp_min_it          = cuda::std::min_element(host_items_abs.cbegin(), host_items_abs.cend(), compare_op);
+      auto exp_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
       const auto exp_min       = static_cast<output_t>(*exp_min_it);
-      const auto exp_min_index = static_cast<cuda::std::int64_t>(exp_min_it - host_items_abs.cbegin());
+      const auto exp_min_index = static_cast<cuda::std::int64_t>(exp_min_it - host_items.cbegin());
 
       // Last maximum by abs value: last element with largest |value|
-      auto exp_last_max_it    = cuda::std::max_element(host_items_abs.crbegin(), host_items_abs.crend(), compare_op);
-      const auto exp_last_max = static_cast<output_t>(*exp_last_max_it);
-      const auto exp_last_max_index = static_cast<cuda::std::int64_t>(host_items_abs.size()) - 1
-                                    - static_cast<cuda::std::int64_t>(exp_last_max_it - host_items_abs.crbegin());
+      auto exp_last_max_it          = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
+      const auto exp_last_max       = static_cast<output_t>(*exp_last_max_it);
+      const auto exp_last_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
+                                    - static_cast<cuda::std::int64_t>(exp_last_max_it - host_items.crbegin());
 
       device_arg_minlastmax(
         unwrap_it(d_in_it),

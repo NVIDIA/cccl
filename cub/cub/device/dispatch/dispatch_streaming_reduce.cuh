@@ -132,7 +132,8 @@ struct unzip_and_write_arg_extremum_op
 struct kvp_to_argminmax_accum
 {
   template <typename T, typename OffsetT>
-  _CCCL_HOST_DEVICE auto operator()(KeyValuePair<OffsetT, T> kv) const -> argminmax_accum_t<T, OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(KeyValuePair<OffsetT, T> kv) const
+    -> argminmax_accum_t<T, OffsetT>
   {
     return {kv.value, kv.value, kv.key, kv.key};
   }

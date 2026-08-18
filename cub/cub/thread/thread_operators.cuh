@@ -199,7 +199,7 @@ struct arg_minmax_reduce_op : CompareOpT
 };
 
 template <typename CompareOpT>
-arg_minmax_reduce_op(CompareOpT) -> arg_minmax_reduce_op<CompareOpT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES arg_minmax_reduce_op(CompareOpT) -> arg_minmax_reduce_op<CompareOpT>;
 
 template <typename ScanOpT>
 struct ScanBySegmentOp
