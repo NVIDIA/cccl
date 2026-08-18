@@ -608,7 +608,7 @@ public:
 
   /// @brief Constructor keeping the partitioner instance (required when
   /// ownership depends on the partitioner value; type-defined policies cost
-  /// nothing thanks to [[no_unique_address]])
+  /// nothing thanks to _CCCL_NO_UNIQUE_ADDRESS)
   parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : deps(mv(deps)...)
       , ctx(ctx)
@@ -1254,7 +1254,7 @@ private:
   {};
   using stored_partitioner_t =
     ::cuda::std::conditional_t<::cuda::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
-  [[no_unique_address]] stored_partitioner_t p_{};
+  _CCCL_NO_UNIQUE_ADDRESS stored_partitioner_t p_{};
 };
 } // end namespace reserved
 
