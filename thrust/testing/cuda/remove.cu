@@ -366,7 +366,6 @@ DECLARE_UNITTEST(TestRemoveCopyCudaStreams);
 void TestRemoveIfCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 
@@ -413,7 +412,6 @@ DECLARE_UNITTEST(TestRemoveIfStencilCudaStreams);
 void TestRemoveCopyIfCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 

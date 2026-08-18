@@ -47,7 +47,6 @@ DECLARE_UNITTEST(TestPartitionPointDeviceDevice);
 void TestPartitionPointCudaStreams()
 {
   using Vector   = thrust::device_vector<int>;
-  using T        = Vector::value_type;
   using Iterator = Vector::iterator;
 
   Vector v(4);
