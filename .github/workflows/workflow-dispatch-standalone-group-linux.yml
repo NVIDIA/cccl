@@ -34,6 +34,14 @@ jobs:
       contents: read
     runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'ubuntu-latest' }}
     steps:
+      - name: Validate repo parameter
+        if: inputs.repo != ''
+        run: |
+          REPO_LOWER=$(echo "${{ inputs.repo }}" | tr '[:upper:]' '[:lower:]')
+          if [[ "$REPO_LOWER" != "nvidia/cccl" && "$REPO_LOWER" != "NVIDIA-dev/cccl_private" ]]; then
+            echo "::error::repo must be 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private' (got: ${{ inputs.repo }})"
+            exit 1
+          fi
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
