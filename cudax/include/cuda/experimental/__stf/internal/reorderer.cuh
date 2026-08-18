@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -185,7 +186,7 @@ private:
       {
         const auto& succ = task_map.at(s);
         assert(succ.upward_rank != -1);
-        second_term = ::std::max(second_term, comm_cost + succ.upward_rank);
+        second_term = ::cuda::std::max(second_term, comm_cost + succ.upward_rank);
       }
 
       ::std::pair<double, int> stats;

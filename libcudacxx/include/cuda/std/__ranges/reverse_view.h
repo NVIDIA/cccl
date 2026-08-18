@@ -202,11 +202,6 @@ struct __unwrapped_reverse_subrange<
 template <class _Tp>
 using __unwrapped_reverse_subrange_t = typename __unwrapped_reverse_subrange<_Tp>::type;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Range)
@@ -244,10 +239,6 @@ struct __fn : __range_adaptor_closure<__fn>
     return reverse_view{::cuda::std::forward<_Range>(__range)};
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 
