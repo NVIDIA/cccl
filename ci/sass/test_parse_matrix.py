@@ -76,6 +76,26 @@ def test_the_entry_carries_the_resolved_launch_args() -> None:
     assert cuda[0].isdigit()
 
 
+def test_the_row_keys_are_the_workflow_inputs() -> None:
+    """A key the workflow does not declare is dead, and a missing one breaks it.
+
+    The caller passes every required input of `sass-diff.yml` from the matrix
+    row, except `base_ref`, which comes from the `build-workflow` job.
+    """
+    workflow_path = (
+        MATRIX_PATH.parent.parent / ".github" / "workflows" / "sass-diff.yml"
+    )
+    with workflow_path.open() as f:
+        workflow = yaml.safe_load(f)
+
+    # `on` reads as the YAML 1.1 boolean `True`, which is why the key is not "on".
+    inputs = workflow[True]["workflow_call"]["inputs"]
+    required = {name for name, spec in inputs.items() if spec.get("required")}
+
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    assert set(row) == required - {"base_ref"}
+
+
 def test_the_filters_reach_the_workflow_as_json() -> None:
     """A matrix value cannot hold a list, so the filters are serialized."""
     import json

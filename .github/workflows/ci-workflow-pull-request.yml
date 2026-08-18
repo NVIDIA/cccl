@@ -556,7 +556,6 @@ jobs:
     uses: ./.github/workflows/sass-diff.yml
     with:
       id: ${{ matrix.id }}
-      gpu: ${{ matrix.gpu }}
       launch_args: ${{ matrix.launch_args }}
       preset: ${{ matrix.preset }}
       archs: ${{ matrix.archs }}

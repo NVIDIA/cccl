@@ -11,10 +11,6 @@ on:
         description: "Stable SASS comparison config id."
         required: true
         type: string
-      gpu:
-        description: "GPU selector. Only used to pick the devcontainer image."
-        required: true
-        type: string
       launch_args:
         description: "'.devcontainer/launch.sh -d' additional args."
         required: true

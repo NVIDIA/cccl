@@ -52,7 +52,6 @@ def matrix_entry(matrix: dict[str, Any], config: dict[str, Any]) -> dict[str, An
     """Convert one `sass:` entry to a matrix row."""
     return {
         "id": config["id"],
-        "gpu": config["gpu"],
         "launch_args": (
             f"--cuda {resolve_ctk(matrix, config['ctk'])} "
             f"--host {resolve_cxx(matrix, config['cxx'])} "

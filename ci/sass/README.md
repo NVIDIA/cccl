@@ -158,7 +158,6 @@ it can be trimmed without a change to any script:
 sass:
   pull_request:
     - id: cub-benchmarks
-      gpu: h100
       ctk: '13.X'
       cxx: 'gcc13'
       preset: cub-benchmark
