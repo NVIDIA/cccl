@@ -29,7 +29,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct __is_even
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_API _CCCL_HOST_DEVICE constexpr bool operator()(const _Tp& __value) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __value) const noexcept
   {
     return (static_cast<long long>(__value) & 1) == 0;
   }
