@@ -44,6 +44,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief A simple caching allocator for device memory allocations.
  *
+ * Deprecated [Since 3.6]
+ *
  * @par Overview
  * The allocator is thread-safe and stream-safe and is capable of managing cached
  * device allocations on multiple devices.  It behaves as follows:
@@ -80,7 +82,8 @@ CUB_NAMESPACE_BEGIN
  * and sets a maximum of 6,291,455 cached bytes per device
  *
  */
-struct CachingDeviceAllocator
+struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use cuda::device_memory_pool or "
+                               "cuda::device_default_memory_pool instead.") CachingDeviceAllocator
 {
   //---------------------------------------------------------------------
   // Constants
