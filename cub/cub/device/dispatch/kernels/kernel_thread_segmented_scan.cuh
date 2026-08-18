@@ -289,7 +289,8 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT operator()(int segment_id) const
     {
-      return thread_work_id0 + static_cast<OffsetT>(segment_id * threads_per_block);
+      const auto work_id = static_cast<OffsetT>(segment_id);
+      return thread_work_id0 + work_id * threads_per_block;
     }
   };
 
@@ -323,13 +324,14 @@ private:
   //! This approach is not efficient when segment size is smaller than items_per_thread.
   _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_one_segment_at_a_time(int segments_per_thread)
   {
-    const auto segments_per_block = static_cast<OffsetT>(threads_per_block * segments_per_thread);
+    const auto segments_per_block = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(segments_per_thread);
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
 
     for (int segment_id = 0; segment_id < segments_per_thread; ++segment_id)
     {
-      const OffsetT work_id = thread_work_id0 + static_cast<OffsetT>(segment_id * threads_per_block);
+      const OffsetT work_id =
+        thread_work_id0 + static_cast<OffsetT>(segment_id) * static_cast<OffsetT>(threads_per_block);
       if (work_id < n_segments)
       {
         const OffsetT input_begin_idx  = d_input_begin_idx[work_id];
@@ -353,7 +355,7 @@ private:
   //! scan operation
   _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_multi_segment(int segments_per_thread)
   {
-    const auto segments_per_block = static_cast<OffsetT>(threads_per_block * segments_per_thread);
+    const auto segments_per_block = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(segments_per_thread);
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
 
