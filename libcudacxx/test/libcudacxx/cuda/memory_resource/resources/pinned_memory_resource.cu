@@ -171,9 +171,9 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   if constexpr (cuda::mr::resource<pinned_resource>)
   {
     const char* error_msg =
-      cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>
-        ? "Invalid alignment passed to __memory_pool_base::allocate."
-        : "Invalid alignment passed to legacy_pinned_memory_resource::allocate.";
+      cuda::std::is_same_v<pinned_resource, cuda::mr::legacy_pinned_memory_resource>
+        ? "Invalid alignment passed to legacy_pinned_memory_resource::allocate."
+        : "Invalid alignment passed to __memory_pool_base::allocate.";
 
     { // allocate_sync with zero alignment
       REQUIRE_THROWS_MATCHES(
