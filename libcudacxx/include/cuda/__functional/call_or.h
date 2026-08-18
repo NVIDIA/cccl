@@ -29,11 +29,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 //! @brief `__call_or` is an higher-order function that accepts a function, a default
 //! value, and arguments to call the function with. If the function is callable with the
 //! provided arguments, it invokes the function and returns the result. Otherwise, it
@@ -64,10 +59,6 @@ _CCCL_GLOBAL_CONSTANT auto __call_or = __call_or_t{};
 
 template <class _Fn, class _Fallback, class... _Args>
 using __call_result_or_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<__call_or_t, _Fn, _Fallback, _Args...>;
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 

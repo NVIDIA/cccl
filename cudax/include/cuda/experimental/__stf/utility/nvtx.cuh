@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -50,8 +52,8 @@ public:
                       && !defined(NVTX_DISABLE)
     nvtxRangePushA(message);
 #endif
-    static_assert(::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
-    static_assert(::std::is_move_assignable_v<nvtx_range>, "nvtx_range must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<nvtx_range>, "nvtx_range must be move assignable");
   }
 
   // Noncopyable to avoid multiple pops
@@ -60,7 +62,7 @@ public:
 
   // Move constructor
   nvtx_range(nvtx_range&& other) noexcept
-      : active(::std::exchange(other.active, false))
+      : active(::cuda::std::exchange(other.active, false))
   {}
 
   // Move assignment
@@ -69,7 +71,7 @@ public:
     if (this != &other)
     {
       end(); // Ensure the current range is properly closed
-      active = std::exchange(other.active, false);
+      active = ::cuda::std::exchange(other.active, false);
     }
     return *this;
   }

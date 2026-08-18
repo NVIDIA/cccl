@@ -124,3 +124,65 @@ def test_machine_grid_granularities():
     ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
     ctx.finalize()
     assert abs(results[0] - float(X.sum())) < 1e-4
+
+
+def test_sm_split_methods_construct():
+    """Every SM split method builds usable places for every reported
+    domain; unknown methods are rejected."""
+    n = stf.locality_domain_count(0)
+    for method in ("backfill", "aligned", "fine"):
+        for d in range(n):
+            p = stf.exec_place.locality_domain(0, d, sm_split=method)
+            assert p is not None
+        g = stf.exec_place_grid.locality_domains(0, sm_split=method)
+        assert g is not None
+
+    # The default is backfill: passing it explicitly is equivalent (both
+    # construct; place equality is not exposed through the bindings).
+    assert stf.exec_place.locality_domain(0, 0) is not None
+    assert stf.exec_place.locality_domain(0, 0, sm_split="backfill") is not None
+
+    with pytest.raises(ValueError, match="sm_split"):
+        stf.exec_place.locality_domain(0, 0, sm_split="bogus")
+    with pytest.raises(ValueError, match="sm_split"):
+        stf.exec_place_grid.locality_domains(0, sm_split="bogus")
+
+
+def test_sm_split_method_task():
+    """A task pinned to each domain, for each SM split method."""
+    stf.machine_init()
+    n = stf.locality_domain_count(0)
+
+    N = 256
+    ctx = stf.context()
+    X = np.zeros(N, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_dom_split")
+
+    for method in ("backfill", "aligned", "fine"):
+        for d in range(n):
+            with ctx.task(
+                stf.exec_place.locality_domain(0, d, sm_split=method), lX.rw()
+            ):
+                pass
+
+    ctx.finalize()
+
+
+def test_sm_split_method_grid_task():
+    """A grid task over the device's domains built with a strict
+    per-domain split method."""
+    stf.machine_init()
+    grid = stf.exec_place_grid.locality_domains(0, sm_split="fine")
+
+    N = 512
+    ctx = stf.context()
+    X = np.arange(N, dtype=np.float32)
+    lX = ctx.logical_data(X, name="X_dom_split_grid")
+
+    with ctx.task(grid, lX.read(stf.data_place.replicated(grid))):
+        pass
+
+    results = []
+    ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
+    ctx.finalize()
+    assert abs(results[0] - float(X.sum())) < 1e-4

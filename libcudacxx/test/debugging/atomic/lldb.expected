@@ -26,7 +26,7 @@
 (cuda::std::atomic<long long>) <address> (value = -31)
 =============== atomic.alias end ===============
 =============== atomic.nested begin ===============
-(cuda::std::array<cuda::std::atomic<int>, 2>) <address>: {
+(const cuda::std::array<cuda::std::atomic<int>, 2> &) <address>: {
   [0] = (value = 17)
   [1] = (value = -64)
 }

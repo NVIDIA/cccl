@@ -33,7 +33,8 @@
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__bit/rotl.h>
+#include <cuda/std/__bit/rotr.h>
 #include <cuda/std/__bit/shl.h>
 #include <cuda/std/__bit/shr.h>
 #include <cuda/std/version>
