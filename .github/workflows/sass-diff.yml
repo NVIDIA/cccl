@@ -96,7 +96,7 @@ jobs:
 
       # A SASS change is a result, not a fault. Thus it does not fail this job. The result
       # is in result/report.json, and the comment artifact holds a copy for
-      # `sass-results`. That job fails when the SASS changed.
+      # `sass-results`. That job posts the result but does not fail on a change.
       - name: Compare SASS
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}

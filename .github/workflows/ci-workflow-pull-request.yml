@@ -538,8 +538,8 @@ jobs:
 
   dispatch-sass-diff:
     name: SASS Diff (${{ matrix.id }})
-    # The job is intentionally omitted from the aggregate `ci` branch-protection job, so
-    # neither a SASS difference nor a script failure blocks merging a PR.
+    # A SASS difference does not fail this job. Only an infrastructure or script failure
+    # does, and that failure blocks the merge through the aggregate `ci` job.
     if: >-
       ${{
         needs.build-workflow.outputs.sass_enabled == 'true' &&
@@ -690,14 +690,6 @@ jobs:
           hide: true
           hide_classify: "OUTDATED"
 
-      # This step is last, so that the comment goes to the PR first. A failed job tells
-      # the reviewer that a benchmark run is necessary.
-      - name: Mark the job as failed when the SASS changed
-        if: ${{ steps.compose.outputs.outcome == 'CHANGE' }}
-        run: |
-          echo "::error::The SASS changed. See the PR comment and the job summary."
-          exit 1
-
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -713,6 +705,8 @@ jobs:
       - docs-build
       - test-cpu-import
       - dispatch-bench
+      - dispatch-sass-diff
+      - sass-results
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -743,6 +737,24 @@ jobs:
             expected_bench_result="success"
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
+
+          expected_sass_result="skipped"
+          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
+            && [[ "${{ toJSON(fromJSON(needs.build-workflow.outputs.sass_matrix).include) }}" != "[]" ]]; then
+            expected_sass_result="success"
+          fi
+          check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
+
+          # sass-results skips when dispatch-sass-diff fails. dispatch-sass-diff reports
+          # that failure, so only check sass-results when the dispatch job succeeded.
+          if [[ "${{ needs.dispatch-sass-diff.result }}" == "${expected_sass_result}" ]]; then
+            expected_sass_results_result="skipped"
+            if [[ "${expected_sass_result}" == "success" ]] \
+              && [[ "${{ needs.build-workflow.outputs.pr_number }}" != "" ]]; then
+              expected_sass_results_result="success"
+            fi
+            check_result "sass-results" "${expected_sass_results_result}" "${{needs.sass-results.result}}"
+          fi
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
           if [[ "${bench_enabled}" == "true" ]]; then
