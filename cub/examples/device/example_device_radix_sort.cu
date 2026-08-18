@@ -113,19 +113,15 @@ int main(int argc, char** argv)
   {
     printf("%s "
            "[--n=<input items> "
-           "[--device=<device-id>] "
            "[--v] "
            "\n",
            argv[0]);
     exit(0);
   }
 
-  // Initialize device
-  int device_ordinal{};
-  args.GetCmdLineArgument("device", device_ordinal);
-  CubDebugExit(args.DeviceInit(device_ordinal));
-  const auto device                 = cuda::devices[device_ordinal];
-  const auto stream                 = cuda::stream_ref{cudaStream_t{}};
+  // Set up device, stream, and memory resource
+  const auto device                 = cuda::devices[0];
+  const auto stream                 = cuda::stream{device};
   const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   printf("cub::DeviceRadixSort::SortPairs() %d items (%d-byte keys %d-byte values)\n",
@@ -159,16 +155,17 @@ int main(int argc, char** argv)
     cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
   // Initialize device arrays
-  CubDebugExit(
-    cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
-  CubDebugExit(
-    cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice));
+  CubDebugExit(cudaMemcpyAsync(
+    d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice, stream.get()));
+  CubDebugExit(cudaMemcpyAsync(
+    d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice, stream.get()));
 
   // Run
   CubDebugExit(DeviceRadixSort::SortPairs(
     d_temp_storage.data(), temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(float) * 8, stream.get()));
 
   // Check for correctness (and display results, if specified)
+  stream.sync();
   int compare = CompareDeviceResults(h_reference_keys, d_keys.Current(), num_items, true, g_verbose);
   printf("\t Compare keys (selector %d): %s\n", d_keys.selector, compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
