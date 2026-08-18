@@ -22,16 +22,19 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#ifdef _CCCL_BUILTIN_IS_REFERENCEABLE
 template <class _Tp>
-using __with_reference = _Tp&;
-
+_CCCL_CONCEPT __can_reference = _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp);
+#else // ^^^ have __is_referenceable ^^^ / vvv no builtin vvv
 template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), )(typename(__with_reference<_Tp>));
+_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __ref)(__ref);
+#endif // ^^^ no builtin ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
