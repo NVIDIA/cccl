@@ -230,7 +230,7 @@ function build_preset {
 
     Write-Host $build_command
 
-    $duration += (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
+    $duration = (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
 
     $test_result = $LastExitCode
 
@@ -277,7 +277,7 @@ function test_preset {
 
     Write-Host $build_command
 
-    $duration += (Measure-Command { Invoke-Expression $test_command | Out-Default }).Seconds
+    $duration = (Measure-Command { Invoke-Expression $test_command | Out-Default }).Seconds
     $test_result = $LastExitCode
 
     & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
