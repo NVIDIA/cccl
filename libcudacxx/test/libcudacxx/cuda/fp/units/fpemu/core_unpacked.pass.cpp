@@ -8,22 +8,14 @@
 //  Drives the low-level packed (__fp64emu_*) and unpacked (__fp64emu_unpacked_*)
 //  emulation cores on raw __fpbits64 / __fpbits64_unpacked values for a small set
 //  of composite operations, checking each against the native double reference
-//  within a tight tolerance. The same _CCCL_HOST_DEVICE run_test() runs on the
-//  host and, under CUDA, on the device.
+//  within a tight tolerance.
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/fpemu>
 #include <cuda/std/cmath>
 
-#include <cstdio>
-
-#ifndef _CCCL_FP_STANDALONE_UNIT_TESTS
-#  include <c2h/catch2_test_helper.h> // must be included in every C2H file
-#endif
-
-#include <cuda/fpemu>
-
-#include "fp_test_targets.h"
+#include "test_macros.h"
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
@@ -36,7 +28,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 #define C6 (1.0 / 5040.0)
 #define C7 (1.0 / 40320.0)
 
-_CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
+TEST_FUNC void test(double dx, double dy, double dz, double dw)
 {
   const double ref[5] = {
     dx * dy * dz * dw,
@@ -101,41 +93,20 @@ _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
   };
 
   const double tol = 1e-10;
-  bool ok          = true;
   for (int i = 0; i < 5; i++)
   {
-    ok = ok && ::cuda::std::fabs(packed[i] - ref[i]) <= tol;
-    ok = ok && ::cuda::std::fabs(unpacked[i] - ref[i]) <= tol;
+    assert(cuda::std::fabs(packed[i] - ref[i]) <= tol);
+    assert(cuda::std::fabs(unpacked[i] - ref[i]) <= tol);
   }
-  return ok;
 }
 
-#if _CCCL_CUDA_COMPILATION()
-__global__ void run_test_kernel(bool* out, double dx, double dy, double dz, double dw)
-{
-  *out = run_test(dx, dy, dz, dw);
-}
-#endif // _CCCL_CUDA_COMPILATION()
-
-C2H_TEST("fpemu packed + unpacked core builtins", "[fpemu]")
+int main(int, char**)
 {
   const double dx = 0.23451432345642;
   const double dy = -2.34561234567899;
   const double dz = 3.45678726352678;
   const double dw = -4.56787263526789;
+  test(dx, dy, dz, dw);
 
-  fp_ran_on_host();
-  REQUIRE(run_test(dx, dy, dz, dw));
-
-#if _CCCL_CUDA_COMPILATION()
-  fp_ran_on_device();
-  bool* d_ok = nullptr;
-  REQUIRE_CUDART(cudaMallocManaged(&d_ok, sizeof(bool)));
-  *d_ok = false;
-  run_test_kernel<<<1, 1>>>(d_ok, dx, dy, dz, dw);
-  REQUIRE_CUDART(cudaGetLastError());
-  REQUIRE_CUDART(cudaDeviceSynchronize());
-  REQUIRE(*d_ok);
-  REQUIRE_CUDART(cudaFree(d_ok));
-#endif // _CCCL_CUDA_COMPILATION()
+  return 0;
 }

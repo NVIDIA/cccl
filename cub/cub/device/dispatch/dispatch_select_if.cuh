@@ -216,14 +216,14 @@ struct make_vsmem_helper
 {
   static constexpr SelectPolicy active_policy = DefaultPolicyGetter{}();
   using agent_policy_t                        = detail::agent_select_if_policy<
-                           active_policy.threads_per_block,
-                           active_policy.items_per_thread,
-                           active_policy.load_algorithm,
-                           active_policy.load_modifier,
-                           active_policy.scan_algorithm,
-                           delay_constructor_t<active_policy.lookback_delay.kind,
-                                               active_policy.lookback_delay.delay,
-                                               active_policy.lookback_delay.l2_write_latency>>;
+                           active_policy.lookback.threads_per_block,
+                           active_policy.lookback.items_per_thread,
+                           active_policy.lookback.load_algorithm,
+                           active_policy.lookback.load_modifier,
+                           active_policy.lookback.scan_algorithm,
+                           delay_constructor_t<active_policy.lookback.lookback_delay.kind,
+                                               active_policy.lookback.lookback_delay.delay,
+                                               active_policy.lookback.lookback_delay.l2_write_latency>>;
   using type = vsmem_helper_default_fallback_policy_t<
     agent_policy_t,
     bind_selection_opt<SelectionOpt>::template agent_t,
@@ -395,12 +395,13 @@ struct policy_selector_from_hub
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return SelectPolicy{
-      active_policy::BLOCK_THREADS,
-      active_policy::ITEMS_PER_THREAD,
-      active_policy::LOAD_ALGORITHM,
-      active_policy::LOAD_MODIFIER,
-      active_policy::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      SelectAlgorithm::lookback,
+      {active_policy::BLOCK_THREADS,
+       active_policy::ITEMS_PER_THREAD,
+       active_policy::LOAD_ALGORITHM,
+       active_policy::LOAD_MODIFIER,
+       active_policy::SCAN_ALGORITHM,
+       lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>}};
   }
 };
 } // namespace detail::select
