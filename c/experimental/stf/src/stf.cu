@@ -785,11 +785,7 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
 }
 
 stf_cute_partition_handle stf_cute_partition_create(
-  const stf_dim4* true_dims,
-  const stf_dim4* grid_dims,
-  const stf_partition_dim_spec* spec,
-  size_t rank,
-  uint32_t replicated_axes_mask)
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
 {
   _CCCL_ASSERT(true_dims != nullptr, "true_dims must not be null");
   _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
@@ -809,21 +805,8 @@ stf_cute_partition_handle stf_cute_partition_create(
       cpp_spec[d].mesh_axis = spec[d].mesh_axis;
       cpp_spec[d].block     = spec[d].block;
     }
-    return new cute_partition_descriptor(
-      ::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd, replicated_axes_mask));
+    return new cute_partition_descriptor(::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd));
   }));
-}
-
-uint32_t stf_cute_partition_replicated_axes(stf_cute_partition_handle p)
-{
-  _CCCL_ASSERT(p != nullptr, "partition handle must not be null");
-  return static_cast<uint32_t>(from_opaque(p)->replicated_axes_mask());
-}
-
-uint64_t stf_cute_partition_replication_factor(stf_cute_partition_handle p)
-{
-  _CCCL_ASSERT(p != nullptr, "partition handle must not be null");
-  return static_cast<uint64_t>(from_opaque(p)->replication_factor());
 }
 
 stf_cute_partition_handle stf_cute_partition_from_leaves(

@@ -44,7 +44,7 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   const stf_dim4 grid_dims{3, 1, 1, 1};
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
 
-  stf_cute_partition_handle part = stf_cute_partition_create(&true_dims, &grid_dims, spec, 1, 0);
+  stf_cute_partition_handle part = stf_cute_partition_create(&true_dims, &grid_dims, spec, 1);
   REQUIRE(part != nullptr);
 
   stf_dim4 out{};
@@ -147,7 +147,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   // Same flow through a structured partition
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
   const stf_dim4 grid_dims{2, 1, 1, 1};
-  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0);
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
   REQUIRE(part != nullptr);
   stf_data_place_handle dpc = stf_data_place_composite_cute(grid, part);
   REQUIRE(dpc != nullptr);

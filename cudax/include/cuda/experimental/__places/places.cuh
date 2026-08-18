@@ -2078,7 +2078,7 @@ public:
 
   //! Instance index of a linear grid place: mixed radix over the
   //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
-  size_t instance_of(size_t place_index) const override
+  size_t instance_of(size_t place_index) const
   {
     if (deferred_)
     {
@@ -2096,12 +2096,6 @@ public:
       }
     }
     return idx;
-  }
-
-  //! The r-th instance's place: the representative member's affine place
-  ::std::shared_ptr<data_place_interface> member_impl(size_t r) const override
-  {
-    return grid_.get_place(representative_place(r)).affine_data_place().get_impl();
   }
 
   //! Linear grid place of the instance's representative (shared coords = 0)
@@ -2231,22 +2225,13 @@ private:
 //! Whether this replicated data place still needs its grid bound
 inline bool replicated_is_deferred(const data_place& dp)
 {
-  // Only the axis-replicated place has a deferred form; other replicated
-  // places (e.g. a composite place with replicated partition axes) are
-  // always concrete.
-  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
-  return rep != nullptr && rep->is_deferred();
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
 }
 
-//! Grid of an axis-replicated data place
+//! Grid of a replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
 {
-  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
-  if (rep == nullptr)
-  {
-    _CCCL_THROW(::std::invalid_argument, "replicated_grid: not an axis-replicated data place");
-  }
-  return rep->get_grid();
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
 }
 
 inline bool data_place::is_composite() const
@@ -2271,28 +2256,17 @@ inline data_place data_place::member(size_t r) const
   {
     return *this;
   }
-  // Fast path for the axis-replicated place, kept static on purpose: with
-  // member_impl() as the only resolution path here, nvcc 12.0-13.3
-  // misclassifies unrelated STF host types as __host__ __device__ in TUs
-  // that combine STF with CUB (deferred #20011 errors naming event_list /
-  // task / task_dep_untyped, attributed to mdspan headers; see
-  // examples/stf/08-cub-reduce.cu). The static branch anchors the
-  // classification; the virtual below covers every other multi-instance
-  // place (e.g. a composite place with replicated partition axes).
-  if (const auto* rep = dynamic_cast<const data_place_replicated*>(get_impl().get()))
-  {
-    return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
-  }
-  if (auto m = pimpl_->member_impl(r))
-  {
-    return data_place(mv(m));
-  }
-  return *this;
+  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
+  return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
 }
 
 inline size_t data_place::instance_of(size_t place_index) const
 {
-  return pimpl_->instance_of(place_index);
+  if (!is_replicated())
+  {
+    return 0;
+  }
+  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)

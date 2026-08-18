@@ -13,7 +13,6 @@ remain dimension-0-fastest; the tests below use non-square shapes so an
 accidental order reversal at the boundary is visible.
 """
 
-import numpy as np
 import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
@@ -245,80 +244,6 @@ def test_tensor_of_tiles_from_spec():
         )
 
 
-def test_cute_partition_replicate_over():
-    """Replicated grid axes: declared, never bound, and visible as properties."""
-    # 2-D grid: tensor dim 0 blocked over grid axis 0, grid axis 1 replicated
-    part = stf.cute_partition.from_spec(
-        (8,), (("blocked", 0),), (2, 3), replicate_over=(1,)
-    )
-    assert part.replicate_over == (1,)
-    assert part.replication_factor == 3
-
-    # No replication: empty tuple, factor 1
-    plain = stf.cute_partition.from_spec((8,), (("blocked", 0),), (2,))
-    assert plain.replicate_over == ()
-    assert plain.replication_factor == 1
-
-    # An unbound grid axis without replicate_over is still rejected
-    with pytest.raises(ValueError):
-        stf.cute_partition.from_spec((8,), (("blocked", 0),), (2, 3))
-
-    # A replicated axis must not also be bound by the spec
-    with pytest.raises(ValueError):
-        stf.cute_partition.from_spec((8,), (("blocked", 0),), (2,), replicate_over=(0,))
-
-    # Replicated axes are grid axes: out-of-range is rejected
-    with pytest.raises(ValueError, match="replicate_over axis"):
-        stf.cute_partition.from_spec(
-            (8,), (("blocked", 0),), (2, 3), replicate_over=(2,)
-        )
-
-
-def test_replicated_partition_direct_allocation_rejected():
-    """Direct allocation cannot hold per-instance copies: same contract as
-    data_place.replicated, allocate through a logical data."""
-    _require_device()
-    stf.machine_init()
-    grid = stf.exec_place_grid.from_devices([0, 0])
-
-    n = 4 * MiB
-    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
-    dplace = stf.data_place.composite_cute(grid, part)
-    # The C++ detail ("allocate through a logical data") goes to stderr; the
-    # Python surface is the MemoryError.
-    with pytest.raises(MemoryError):
-        stf.DeviceArray((n,), "uint8", dplace)
-
-
-def test_replicated_partition_read_dep():
-    """A composite place with replicated axes is a replicated place: read
-    deps materialize one copy per replicated coordinate, writes are rejected
-    at dependency construction."""
-    _require_device()
-    stf.machine_init()
-    grid = stf.exec_place_grid.from_devices([0, 0])
-
-    n = 512
-    part = stf.cute_partition.from_spec((n,), (None,), (2,), replicate_over=(0,))
-    dplace = stf.data_place.composite_cute(grid, part)
-
-    ctx = stf.context()
-    X = np.arange(n, dtype=np.float32)
-    lX = ctx.logical_data(X, name="X_rep_partition")
-
-    # Replicated places only support read access
-    with pytest.raises(ValueError, match="read"):
-        lX.write(dplace)
-
-    with ctx.task(grid, lX.read(dplace)):
-        pass
-
-    results = []
-    ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
-    ctx.finalize()
-    assert abs(results[0] - float(X.sum())) < 1e-4
-
-
 def test_partition_fn_returns_typed_wrapper():
     """Native partitioners are typed (not bare ints) so composite() can tell
     them apart from Python callables; int() still exposes the raw pointer."""
@@ -460,6 +385,10 @@ def test_invalid_inputs_raise_cleanly():
     # Zero-extent grid axis
     with pytest.raises(ValueError):
         stf.cute_partition.from_spec((8,), (("blocked", 0),), (0,))
+
+    # A grid axis bound to no tensor dimension leaves places unused
+    with pytest.raises(ValueError):
+        stf.cute_partition.from_spec((8,), (("blocked", 0),), (2, 3))
 
     # One spec entry per dimension, in the same C order
     with pytest.raises(ValueError, match="one entry per dimension"):
