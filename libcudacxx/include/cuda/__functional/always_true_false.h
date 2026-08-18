@@ -25,11 +25,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 //! @brief Function object that always returns \c true regardless of the arguments passed.
 struct always_true
 {
@@ -49,10 +44,6 @@ struct always_false
     return false;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -36,11 +36,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Operator>
 struct __convert_to_bool
 {
@@ -54,10 +49,6 @@ struct __convert_to_bool
     return _Operator{}(::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)

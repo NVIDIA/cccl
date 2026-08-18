@@ -36,8 +36,8 @@ int main()
 
     ::std::vector<exec_place> places(4, exec_place::current_device());
     auto grid = make_grid(mv(places), dim4(2, 2));
-    auto part = make_partition_descriptor(
-      dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2, 2), /*replicated_axes=*/0x2);
+    auto part =
+      make_partition_descriptor(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2, 2), /*replicated_axes=*/0x2);
     auto cdp = make_composite_data_place(grid, part);
 
     EXPECT(cdp.is_replicated());
@@ -60,8 +60,7 @@ int main()
       EXPECT(!member.is_replicated());
 
       auto s = fx.get(member, stream);
-      cuda_safe_call(
-        cudaMemcpyAsync(host.data(), s.data_handle(), n * sizeof(double), cudaMemcpyDeviceToHost, stream));
+      cuda_safe_call(cudaMemcpyAsync(host.data(), s.data_handle(), n * sizeof(double), cudaMemcpyDeviceToHost, stream));
       cuda_safe_call(cudaStreamSynchronize(stream));
       for (size_t i = 0; i < n; i++)
       {

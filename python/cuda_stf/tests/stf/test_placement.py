@@ -288,9 +288,7 @@ def test_cute_partition_replicate_over():
 
     # A replicated axis must not also be bound by the spec
     with pytest.raises(ValueError):
-        stf.cute_partition.from_spec(
-            (8,), (("blocked", 0),), (2,), replicate_over=(0,)
-        )
+        stf.cute_partition.from_spec((8,), (("blocked", 0),), (2,), replicate_over=(0,))
 
     # Replicated axes are grid axes: out-of-range is rejected
     with pytest.raises(ValueError, match="replicate_over axis"):
@@ -419,6 +417,16 @@ def test_placement_evaluate_majority_tie_breaking():
     )
     assert s1.matching_samples == s2.matching_samples
     assert s1.bytes_per_grid_index == s2.bytes_per_grid_index
+
+
+def test_partition_fn_returns_typed_wrapper():
+    """Native partitioners are typed (not bare ints) so composite() can tell
+    them apart from Python callables; int() still exposes the raw pointer."""
+    fn = stf.partition_fn_blocked()
+    assert isinstance(fn, stf.native_partition_fn)
+    assert int(fn) != 0
+    assert isinstance(stf.partition_fn_cyclic(), stf.native_partition_fn)
+    assert int(stf.partition_fn_blocked(1, data_rank=2)) != 0
 
 
 def test_shaped_allocation_on_composite_places():
@@ -565,6 +573,11 @@ def test_invalid_inputs_raise_cleanly():
         stf.placement_evaluate(
             grid, wrong_rank_mapper, (4 * MiB,), 1, block_size=2 * MiB
         )
+
+    # Conversely a native partitioner never takes one: rejecting it loudly
+    # keeps data_rank's meaning unambiguous (Python-callable tuples only)
+    with pytest.raises(ValueError, match="data_rank"):
+        stf.data_place.composite(grid, stf.partition_fn_blocked(), data_rank=1)
 
     # Zero-extent grid axis
     with pytest.raises(ValueError):

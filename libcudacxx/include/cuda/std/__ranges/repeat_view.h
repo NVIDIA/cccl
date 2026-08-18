@@ -305,14 +305,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _B
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn
 {
   template <class _Tp>
@@ -331,18 +326,14 @@ struct __fn
     return ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel));
   }
 };
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 

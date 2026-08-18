@@ -38,12 +38,6 @@ template <class _Iter, class _Func>
 using for_each_n_result = in_fun_result<_Iter, _Func>;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__for_each_n)
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _Iter, class _Func, class _Proj = identity)
@@ -59,11 +53,6 @@ struct __fn
     return {::cuda::std::move(__first), ::cuda::std::move(__func)};
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

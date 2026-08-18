@@ -34,13 +34,8 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 _CCCL_BEGIN_NAMESPACE_CPO(__min)
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
@@ -90,11 +85,6 @@ struct __fn
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

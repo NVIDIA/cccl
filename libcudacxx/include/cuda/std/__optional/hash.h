@@ -29,12 +29,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
@@ -48,11 +42,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, re
     return static_cast<bool>(__opt) ? hash<remove_const_t<_Tp>>()(*__opt) : 0;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #define C0 (1.0)
 #define C1 (1.0 / 2.0)
@@ -46,25 +46,25 @@ TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
   };
 
   // Packed C++ API.
-  fp64emu ex = dx, ey = dy, ez = dz, ew = dw;
+  cudax::fp64emu ex = dx, ey = dy, ez = dz, ew = dw;
   const double packed[5] = {
-    (double) (__dmul_rn(ex, ey) * ez * ew),
-    (double) (__dadd_rn(ex, ey) + ez + ew),
-    (double) mad(ex, ey, ez),
-    (double) dot(ex, ez, ey, ew),
+    (double) (cudax::__dmul_rn(ex, ey) * ez * ew),
+    (double) (cudax::__dadd_rn(ex, ey) + ez + ew),
+    (double) cudax::mad(ex, ey, ez),
+    (double) cudax::dot(ex, ez, ey, ew),
     (double) (POLY(ex)),
   };
 
   // Unpacked C++ API (explicit conversion to disambiguate from the packed type).
-  fp64emu_unpacked ux      = (fp64emu_unpacked) dx;
-  fp64emu_unpacked uy      = (fp64emu_unpacked) dy;
-  fp64emu_unpacked uz      = (fp64emu_unpacked) dz;
-  fp64emu_unpacked uw      = (fp64emu_unpacked) dw;
-  const double unpacked[5] = {
-    (double) (__dmul_rn(ex, ey) * ez * ew),
-    (double) (__dadd_rn(ux, uy) + uz + uw),
-    (double) mad(ux, uy, uz),
-    (double) dot(ux, uz, uy, uw),
+  cudax::fp64emu_unpacked ux = (cudax::fp64emu_unpacked) dx;
+  cudax::fp64emu_unpacked uy = (cudax::fp64emu_unpacked) dy;
+  cudax::fp64emu_unpacked uz = (cudax::fp64emu_unpacked) dz;
+  cudax::fp64emu_unpacked uw = (cudax::fp64emu_unpacked) dw;
+  const double unpacked[5]   = {
+    (double) (cudax::__dmul_rn(ex, ey) * ez * ew),
+    (double) (cudax::__dadd_rn(ux, uy) + uz + uw),
+    (double) cudax::mad(ux, uy, uz),
+    (double) cudax::dot(ux, uz, uy, uw),
     (double) (POLY(ux)),
   };
 
