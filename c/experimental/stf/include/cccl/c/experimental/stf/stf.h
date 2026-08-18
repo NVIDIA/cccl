@@ -488,9 +488,6 @@ typedef struct stf_placement_stats
   uint64_t nallocs; //!< physical allocations after merging same-owner runs
   uint64_t total_samples; //!< probes drawn by the block-owner sampler
   uint64_t matching_samples; //!< probes agreeing with the chosen block owner
-  uint64_t replication_factor; //!< copies of each byte along replicated partition axes (1 = none);
-                               //!< total resident bytes = vm_bytes * replication_factor, and the
-                               //!< bytes_per_grid_index output already counts every copy
 } stf_placement_stats;
 
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
@@ -561,27 +558,8 @@ int stf_placement_evaluate_partition(
 //! \param spec      One entry per tensor dimension (must not be NULL)
 //! \param rank      Number of entries in \p spec (at most 4)
 //! \return New partition handle, or NULL on invalid input
-//! \param replicated_axes_mask Bitmask of grid axes holding one copy of their
-//! fiber's bytes per coordinate (bit a = native grid axis a; 0 = none). A
-//! replicated axis must not be bound by any spec entry.
-//! stf_placement_evaluate_partition() reports the per-member copies, and a
-//! composite data place built from such a partition is REPLICATED (read-only;
-//! stf_data_place_is_replicated() returns 1): through a logical data it
-//! resolves to one composite allocation per replicated coordinate. Direct
-//! allocation is rejected -- allocate through a logical data, like
-//! stf_data_place_replicated().
 stf_cute_partition_handle stf_cute_partition_create(
-  const stf_dim4* true_dims,
-  const stf_dim4* grid_dims,
-  const stf_partition_dim_spec* spec,
-  size_t rank,
-  uint32_t replicated_axes_mask);
-
-//! \brief Bitmask of replicated grid axes of \p p (native axis numbering)
-uint32_t stf_cute_partition_replicated_axes(stf_cute_partition_handle p);
-
-//! \brief Number of copies the replicated axes of \p p imply (1 = none)
-uint64_t stf_cute_partition_replication_factor(stf_cute_partition_handle p);
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank);
 
 //! \brief Build a structured partition directly from flattened
 //! (extent, stride) leaves (expert form; see the C++ cute_partition docs).
