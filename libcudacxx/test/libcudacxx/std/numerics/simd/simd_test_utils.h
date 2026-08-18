@@ -54,7 +54,7 @@ struct is_even
   template <typename I>
   TEST_HOST_DEVICE_FUNC constexpr bool operator()(I i) const noexcept
   {
-    return cuda::__is_even(i);
+    return cuda::__is_even{}(i);
   }
 };
 
