@@ -1370,7 +1370,7 @@ CUB_TEST_CASE("Segmented inclusive sum works with partitioned segment sizes",
   }
 
   const int num_segments = static_cast<int>(h_segments.size());
-  const int num_items    = offset;
+  const int num_items    = static_cast<int>(offset);
 
   c2h::device_vector<segment_t> segments{h_segments.begin(), h_segments.end()};
   c2h::device_vector<segment_t> moderate_segments(num_segments);
@@ -1440,9 +1440,10 @@ CUB_TEST_CASE("Segmented inclusive sum works with partitioned segment sizes",
   c2h::host_vector<int> h_expected(num_items, thrust::no_init);
   for (const auto segment : h_segments)
   {
+    int expected_val = 0;
     for (offset_t i = segment.begin; i < segment.end; ++i)
     {
-      h_expected[i] = i - segment.begin + 1;
+      h_expected[i] = ++expected_val;
     }
   }
 
