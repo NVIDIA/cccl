@@ -50,7 +50,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __feistel_bijection() noexcept = default;
 
   template <class _RNG>
-  _CCCL_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+  _CCCL_HOST_DEVICE_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
   {
     // Calculate number of bits needed to represent num_elements - 1
     // Prevent zero
@@ -72,12 +72,12 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t size() const noexcept
   {
     return 1ull << (__L_bits_ + __R_bits_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
   {
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.

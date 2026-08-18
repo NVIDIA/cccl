@@ -54,25 +54,33 @@ public:
       return {};
     }
 
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const lane_synchronizer&) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
 
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void
-    do_sync_aligned(const _MappingResult& __mapping_result, const lane_synchronizer&) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
+
+    [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const noexcept
+    {
+      return *this;
+    }
+
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) noexcept
+    {}
   };
 
   _CCCL_HIDE_FROM_ABI explicit lane_synchronizer() = default;
 
-  template <class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&, const _ParentGroup&, const _Mapping&, const _MappingResult& __mapping_result) const noexcept
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const noexcept
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
     static_assert(__group_mapping_result<_MappingResult>);

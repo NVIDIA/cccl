@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -31,6 +33,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <deque>
 
@@ -205,7 +208,7 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    throwproof->*[&] {
+    on_throw(::std::abort) << [&] {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -349,13 +352,13 @@ public:
     }
 
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t>)
     {
-      ::std::forward<Fun>(fun)(get_stream());
+      ::cuda::std::forward<Fun>(fun)(get_stream());
     }
     else
     {
-      ::std::forward<Fun>(fun)(*this);
+      ::cuda::std::forward<Fun>(fun)(*this);
     }
   }
 
@@ -605,21 +608,21 @@ public:
       cuda_try<cudaEventRecord>(start_event, get_stream());
     }
 
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
       auto t = tuple_prepend(get_stream(), typed_deps());
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else if constexpr (reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Data...>>)
     {
       // Use the filtered tuple
       auto t = tuple_prepend(get_stream(), reserved::remove_void_interface(typed_deps()));
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else
     {
-      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
+      constexpr bool fun_invocable_task_deps = ::cuda::std::is_invocable_v<Fun, decltype(*this), Data...>;
       constexpr bool fun_invocable_task_non_void_deps =
         reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<decltype(*this), Data...>>;
 
@@ -629,11 +632,11 @@ public:
 
       if constexpr (fun_invocable_task_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
+        return ::std::apply(::cuda::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun),
+        return ::std::apply(::cuda::std::forward<Fun>(fun),
                             tuple_prepend(*this, reserved::remove_void_interface(typed_deps())));
       }
     }

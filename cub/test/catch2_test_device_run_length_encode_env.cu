@@ -26,7 +26,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_r
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -36,7 +36,8 @@ struct rle_encode_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
     return {cub::RleAlgorithm::lookback,
-            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}},
+            {}};
   }
 };
 
@@ -55,7 +56,7 @@ using block_sizes =
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[run_length_encode][device]")
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_unique_out   = c2h::device_vector<int>(8);
@@ -77,7 +78,9 @@ TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[run_
   REQUIRE(d_counts_out == expected_counts);
 }
 
-TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environment", "[run_length_encode][device]")
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environment",
+              "[run_length_encode][device]",
+              CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_offsets_out  = c2h::device_vector<int>(8);
@@ -101,7 +104,7 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environment"
 
 #endif
 
-C2H_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][device]")
+CUB_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{1, 1, 1, 2, 2, 3, 4, 4, 4, 4};
   auto d_unique_out   = c2h::device_vector<int>(10);
@@ -137,7 +140,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][
   REQUIRE(d_counts_out == expected_counts);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_encode][device]")
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{1, 1, 1, 2, 2, 3, 4, 4, 4, 4};
   auto d_offsets_out  = c2h::device_vector<int>(10);
@@ -173,7 +176,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_
   REQUIRE(d_lengths_out == expected_lengths);
 }
 
-TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encode][device]")
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_unique_out   = c2h::device_vector<int>(8);
@@ -215,7 +218,7 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   REQUIRE(d_counts_out == expected_counts);
 }
 
-TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]")
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_offsets_out  = c2h::device_vector<int>(8);
@@ -259,7 +262,7 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
 
 #if TEST_LAUNCH != 1
 
-C2H_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][device]", block_sizes)
+CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   constexpr int num_items                  = 256;
@@ -281,7 +284,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_encode][device]", block_sizes)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_encode][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   constexpr int num_items                  = 256;
@@ -306,7 +309,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
+CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RleEncodePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleEncodePolicy>);
@@ -319,20 +322,32 @@ C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
      cub::BLOCK_LOAD_DIRECT,
      cub::LOAD_DEFAULT,
      cub::BLOCK_SCAN_WARP_SCANS,
-     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
+    {32, 8, 5, 3, 5, 3, 128, 32}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::RleEncodePolicy{
     .algorithm = cub::RleAlgorithm::lookback,
-    .lookback  = cub::RleLookbackPolicy{
-       .threads_per_block = 128,
-       .items_per_thread  = 7,
-       .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+    .lookback =
+      cub::RleLookbackPolicy{
+        .threads_per_block = 128,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .lookback_delay =
+          cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}},
+    .lookahead = cub::RleLookaheadPolicy{
+      .items_per_thread            = 32,
+      .compute_warps               = 8,
+      .key_ring_stages             = 5,
+      .pos_ring_stages             = 3,
+      .poll_items_per_thread       = 5,
+      .dense_poll_items_per_thread = 3,
+      .dense_mode_runs_per_tile    = 128,
+      .flag_staging_threshold      = 32}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -346,18 +361,23 @@ C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
-             ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 } } }");
+  REQUIRE(
+    to_string(p1)
+    == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
+       ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 832, .l2_write_latency = 1165 } }"
+       ", .lookahead = RleLookaheadPolicy { .items_per_thread = 32, .compute_warps = 8"
+       ", .key_ring_stages = 5, .pos_ring_stages = 3"
+       ", .poll_items_per_thread = 5, .dense_poll_items_per_thread = 3"
+       ", .dense_mode_runs_per_tile = 128, .flag_staging_threshold = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]")
+CUB_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RleNonTrivialRunsPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleNonTrivialRunsPolicy>);
@@ -378,14 +398,14 @@ C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]
   constexpr auto p2 = cub::RleNonTrivialRunsPolicy{
     .algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
     .lookback  = cub::RleNonTrivialRunsLookbackPolicy{
-       .threads_per_block       = 128,
-       .items_per_thread        = 7,
-       .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-       .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
-       .store_with_time_slicing = false,
-       .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay          = cub::LookbackDelayPolicy{
-                  .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+      .threads_per_block       = 128,
+      .items_per_thread        = 7,
+      .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+      .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+      .store_with_time_slicing = false,
+      .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay          = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

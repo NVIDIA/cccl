@@ -9,6 +9,9 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/atomic>
 
 // using atomic_int_least8_t   = atomic<int_least8_t>;

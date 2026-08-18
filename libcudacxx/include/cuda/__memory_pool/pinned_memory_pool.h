@@ -152,7 +152,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
     enable_access_from(cuda::devices);
   }
 
-  ~pinned_memory_pool() noexcept
+  _CCCL_HOST_API ~pinned_memory_pool() noexcept
   {
     if (__pool_ != nullptr)
     {
@@ -186,7 +186,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   pinned_memory_pool& operator=(const pinned_memory_pool&) = delete;
 
 private:
-  pinned_memory_pool(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API pinned_memory_pool(::cudaMemPool_t __pool) noexcept
       : pinned_memory_pool_ref(__pool)
   {}
 };
@@ -200,7 +200,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 //! @brief Returns the default pinned memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default pinned memory pool.
-[[nodiscard]] inline pinned_memory_pool_ref& pinned_default_memory_pool()
+[[nodiscard]] _CCCL_HOST_API inline pinned_memory_pool_ref& pinned_default_memory_pool()
 {
 #    if _CCCL_CTK_AT_LEAST(13, 0)
   static pinned_memory_pool_ref __default_pool{[]() {

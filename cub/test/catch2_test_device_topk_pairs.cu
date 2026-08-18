@@ -17,7 +17,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,
@@ -119,7 +119,7 @@ using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>
 
 using custom_value_t = cuda::std::uint32_t;
 
-C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_types, value_types, directions)
+CUB_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", CUB_SMALL, key_types, value_types, directions)
 {
   using key_t              = c2h::get<0, TestType>;
   using value_t            = c2h::get<1, TestType>;
@@ -177,7 +177,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_typ
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", key_types, value_types)
+CUB_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", CUB_SMALL, key_types, value_types)
 {
   using key_t              = c2h::get<0, TestType>;
   using value_t            = c2h::get<1, TestType>;
@@ -218,7 +218,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", 
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device]", num_items_types)
+CUB_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device]", CUB_LARGE, num_items_types)
 {
   using key_t              = cuda::std::uint32_t;
   using value_t            = cuda::std::uint32_t;
@@ -262,7 +262,8 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[pairs][topk][device]", directions)
+CUB_TEST(
+  "DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[pairs][topk][device]", CUB_SMALL, directions)
 {
   using key_t              = topk_custom_key_t;
   using value_t            = custom_value_t;

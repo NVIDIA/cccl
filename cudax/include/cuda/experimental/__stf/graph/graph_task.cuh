@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <mutex>
 
@@ -127,7 +130,7 @@ public:
 
     // DOT tracing and set_ready_prereqs must not throw after capture has begun,
     // or the stream would be left capturing. Abort instead.
-    throwproof->*[&] {
+    on_throw(::std::abort) << [&] {
       if (dot.is_tracing())
       {
         dot.template add_vertex<task, logical_data_untyped>(*this);
@@ -395,7 +398,7 @@ public:
     };
 
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t>)
     {
       //
       // CAPTURE the lambda
@@ -752,7 +755,7 @@ public:
       clear();
     };
 
-    constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
+    constexpr bool fun_invocable_stream_deps = ::cuda::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
       reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Deps...>>;
 
@@ -795,7 +798,7 @@ public:
       else if constexpr (fun_invocable_stream_non_void_deps)
       {
         // Remove void arguments
-        ::std::apply(::std::forward<Fun>(f),
+        ::std::apply(::cuda::std::forward<Fun>(f),
                      tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
@@ -825,7 +828,7 @@ public:
       else if constexpr (fun_invocable_stream_non_void_deps)
       {
         // Remove void arguments
-        ::std::apply(::std::forward<Fun>(f),
+        ::std::apply(::cuda::std::forward<Fun>(f),
                      tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
@@ -840,7 +843,7 @@ public:
     }
     else
     {
-      constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
+      constexpr bool fun_invocable_graph_deps = ::cuda::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
       constexpr bool fun_invocable_graph_non_void_deps =
         reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaGraph_t, Deps...>>;
 

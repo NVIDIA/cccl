@@ -47,7 +47,7 @@ namespace cuda::experimental
 // ------------------------------------------------------------------------
 
 // Magnitude mask: all bits except the sign bit.
-static constexpr __fpbits64 __fp64emu_cmp_abs_mask = _CCCL_FPEMU_ABS_64;
+inline constexpr __fpbits64 __fp64emu_cmp_abs_mask = _CCCL_FPEMU_ABS_64;
 
 //! @brief True if the bit pattern encodes a NaN (max exponent, nonzero mantissa).
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_is_nan_bits(__fpbits64 __ui) noexcept
@@ -123,7 +123,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_ge(__fpbits64 __x, __f
 //     +0 / -0 differ only in the sign field.
 // eq and lt are the primitives; le/ne/gt/ge derive from them and inherit the
 // IEEE unordered (NaN) semantics for free.
-static constexpr int32_t __fp64emu_unp_nan_exp = 0x0007ff00;
+inline constexpr int32_t __fp64emu_unp_nan_exp = 0x0007ff00;
 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_unp_is_nan(__fpbits64_unpacked __u) noexcept
 {

@@ -22,7 +22,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
@@ -62,7 +62,7 @@ using types =
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-C2H_TEST("DevicePartition::If can run with empty input", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -79,7 +79,7 @@ C2H_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DevicePartition::If handles all matched", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If handles all matched", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -98,7 +98,7 @@ C2H_TEST("DevicePartition::If handles all matched", "[device][partition_if]", ty
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::If handles no matched", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If handles no matched", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -120,7 +120,7 @@ C2H_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::If does not change input", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If does not change input", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -144,7 +144,7 @@ C2H_TEST("DevicePartition::If does not change input", "[device][partition_if]", 
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
+CUB_TEST("DevicePartition::If is stable", "[device][partition_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -174,7 +174,8 @@ C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DevicePartition::If works with user provided memory and environment", "[device][partition_if]", types)
+CUB_TEST(
+  "DevicePartition::If works with user provided memory and environment", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -276,7 +277,7 @@ C2H_TEST("DevicePartition::If works with user provided memory and environment", 
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", all_types)
+CUB_TEST("DevicePartition::If works with iterators", "[device][partition_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -305,7 +306,7 @@ C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", a
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::If works with pointers", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If works with pointers", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -355,7 +356,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DevicePartition::If works with a different output type", "[device][partition_if]")
+CUB_TEST("DevicePartition::If works with a different output type", "[device][partition_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -384,8 +385,9 @@ C2H_TEST("DevicePartition::If works with a different output type", "[device][par
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::If works for very large number of items",
+CUB_TEST("DevicePartition::If works for very large number of items",
          "[device][partition_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
          offset_types)
 try
 {

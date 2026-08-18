@@ -24,7 +24,7 @@
 template <typename InputT>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
     return {cub::SelectAlgorithm::lookback,
             {TUNE_THREADS_PER_BLOCK,

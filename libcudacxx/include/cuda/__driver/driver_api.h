@@ -443,11 +443,17 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-_CCCL_HOST_API inline ::cuda::std::size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
+_CCCL_HOST_API inline void __mempoolGetAttributeImpl(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
 {
-  ::cuda::std::size_t __value = 0;
-  static auto __driver_fn     = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, &__value);
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, __value);
+}
+
+template <class _Tp>
+_CCCL_HOST_API inline _Tp __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
+{
+  _Tp __value{};
+  ::cuda::__driver::__mempoolGetAttributeImpl(__pool, __attr, &__value);
   return __value;
 }
 
@@ -770,6 +776,15 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamDestroy);
   return static_cast<::cudaError_t>(__driver_fn(__stream));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUstreamCaptureStatus __streamIsCapturing(::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamIsCapturing);
+  ::CUstreamCaptureStatus __ret{};
+
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get the capture status of a stream", __stream, &__ret);
+  return __ret;
 }
 
 // Event management

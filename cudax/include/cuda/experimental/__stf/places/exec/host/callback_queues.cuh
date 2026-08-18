@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
@@ -274,10 +275,13 @@ public:
 
   static void* callback_queue_worker(void* args)
   {
-    fprintf(stderr, "CALLBACK RUNNING...\n");
-    class callback_queue* cbq = (callback_queue*) args;
-    cudaCallbackQueueProgress(cbq, 1);
-    fprintf(stderr, "CALLBACK HALTING...\n");
+    // pthread calls this, so an exception must not leave it either.
+    on_throw(::std::abort) << [args] {
+      fprintf(stderr, "CALLBACK RUNNING...\n");
+      class callback_queue* cbq = (callback_queue*) args;
+      cudaCallbackQueueProgress(cbq, 1);
+      fprintf(stderr, "CALLBACK HALTING...\n");
+    };
 
     return NULL;
   }
@@ -296,27 +300,33 @@ inline int* cf_pop(callback_queue* q)
 
 inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 {
-  class cb* cb_               = (cb*) userData;
-  class callback_queue* queue = cb_->queue;
+  // The CUDA runtime calls this back, so an exception must not leave it; it would also strand
+  // the queue mutex.
+  on_throw(::std::abort) << [userData] {
+    class cb* cb_               = (cb*) userData;
+    class callback_queue* queue = cb_->queue;
 
-  // Protect the queue
-  pthread_mutex_lock(&queue->mutex);
-  queue->dq.push_back(cb_);
-  pthread_cond_broadcast(&queue->cond);
-  pthread_mutex_unlock(&queue->mutex);
+    // Protect the queue
+    pthread_mutex_lock(&queue->mutex);
+    queue->dq.push_back(cb_);
+    pthread_cond_broadcast(&queue->cond);
+    pthread_mutex_unlock(&queue->mutex);
+  };
 }
 
 inline void cudagraph_callback_dispatcher(void* userData)
 {
-  cb* cb_ = (cb*) userData;
+  on_throw(::std::abort) << [userData] {
+    cb* cb_ = (cb*) userData;
 
-  class callback_queue* queue = cb_->queue;
+    class callback_queue* queue = cb_->queue;
 
-  // Protect the queue
-  pthread_mutex_lock(&queue->mutex);
-  queue->dq.push_back(cb_);
-  pthread_cond_broadcast(&queue->cond);
-  pthread_mutex_unlock(&queue->mutex);
+    // Protect the queue
+    pthread_mutex_lock(&queue->mutex);
+    queue->dq.push_back(cb_);
+    pthread_cond_broadcast(&queue->cond);
+    pthread_mutex_unlock(&queue->mutex);
+  };
 }
 
 // There is likely a more efficient way in the current implementation of callbacks !
