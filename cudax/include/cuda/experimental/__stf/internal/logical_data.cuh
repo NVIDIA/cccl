@@ -17,6 +17,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -132,11 +136,11 @@ struct logical_data_state
 
   // Task currently making a write access : future readers or writer will
   // have to wait for it (RaW or WaW accesses)
-  ::std::optional<task> current_writer;
+  ::cuda::std::optional<task> current_writer;
 
   // Previous writer which all new readers will need to sync with (RaW accesses)
   // We use a vector so that we don't store a null task
-  ::std::optional<task> previous_writer;
+  ::cuda::std::optional<task> previous_writer;
 
   /* If we are tracing dependencies to generate a DOT output, we keep track
    * of the identifiers of the tasks which performed a reduction access on
@@ -224,6 +228,9 @@ public:
     inst.reclaimable = false;
   }
 
+  // erase() writes data back and unfreezes it. A failure part-way through leaves the data
+  // in a state no caller could recover from, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~logical_data_untyped_impl()
   {
     erase();
@@ -302,7 +309,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> unfreeze_fake_task;
+  ::cuda::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -1885,7 +1892,7 @@ inline event_list enforce_stf_deps_before(
   const instance_id_t instance_id,
   const task_type& task,
   const access_mode mode,
-  const ::std::optional<exec_place> eplace)
+  const ::cuda::std::optional<exec_place> eplace)
 {
   auto result  = event_list();
   auto& ctx_st = bctx.get_state();
@@ -2065,7 +2072,7 @@ inline void fetch_data(
   const instance_id_t instance_id,
   task& t,
   access_mode mode,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   const data_place& dplace,
   event_list& result)
 {
@@ -2112,12 +2119,12 @@ reserved::logical_data_untyped_impl::get_frozen(task& fake_task, const data_plac
   // deps !). Then, if the data wasn't available on the data place, it can be
   // allocated and a copy from a valid source can be made.
   // This will also update the MSI states of the logical data instances.
-  reserved::fetch_data(ctx, d, id, fake_task, m, ::std::nullopt, dplace, prereqs);
+  reserved::fetch_data(ctx, d, id, fake_task, m, ::cuda::std::nullopt, dplace, prereqs);
 
   // Make sure we now have a valid copy (unless this is a token, because
   // fetch_data will only enforce dependencies and will not move or allocate
   // data)
-  if constexpr (!::std::is_same_v<T, void_interface>)
+  if constexpr (!::cuda::std::is_same_v<T, void_interface>)
   {
     assert(used_instances[int(id)].is_allocated());
     assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
@@ -2357,8 +2364,8 @@ public:
                   "Cannot add state here because it would be lost through slicing");
 
     EXPECT(get_ctx());
-    static_assert(::std::is_same_v<T, typename U::element_type>);
-    static_assert(::std::is_same_v<shape_of<T>, typename U::shape_t>);
+    static_assert(::cuda::std::is_same_v<T, typename U::element_type>);
+    static_assert(::cuda::std::is_same_v<shape_of<T>, typename U::shape_t>);
   }
 
   ///@{ @name Execution place getter
@@ -2414,31 +2421,31 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::cuda::std::monostate, false>(*this, access_mode::read, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto relaxed(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::relaxed, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::cuda::std::forward<Pack>(pack)...);
   }
 
   /* If we do not pass the no_init{} tag type there, this is going to
@@ -2446,7 +2453,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::cuda::std::forward<Pack>(pack)...);
   }
 
   ///@}

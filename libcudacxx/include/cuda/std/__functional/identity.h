@@ -32,11 +32,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 inline constexpr bool __is_identity_v = false;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct identity
 {
   template <class _Tp>
@@ -47,10 +42,6 @@ struct identity
 
   using is_transparent = void;
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <>
 inline constexpr bool __is_identity_v<identity> = true;

@@ -19,6 +19,7 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -558,6 +559,27 @@ uint32_t stf_locality_domain_count(int dev_id)
   }
 }
 
+namespace
+{
+// C enum -> C++ enum, rejecting out-of-range values (throws, so the
+// stf_try_allocate wrappers below report NULL with detail on stderr).
+::cuda::experimental::places::locality_domain_sm_split stf_to_cpp_sm_split(stf_locality_domain_sm_split split)
+{
+  switch (split)
+  {
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL:
+      return ::cuda::experimental::places::locality_domain_sm_split::backfill;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED:
+      return ::cuda::experimental::places::locality_domain_sm_split::aligned;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_FINE:
+      return ::cuda::experimental::places::locality_domain_sm_split::fine;
+    default:
+      throw ::std::invalid_argument(
+        "invalid stf_locality_domain_sm_split value " + ::std::to_string(static_cast<int>(split)));
+  }
+}
+} // namespace
+
 stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
 {
   return to_opaque(stf_try_allocate([&] {
@@ -565,10 +587,24 @@ stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
   }));
 }
 
+stf_exec_place_handle stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id, stf_to_cpp_sm_split(split)));
+  }));
+}
+
 stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
 {
   return to_opaque(stf_try_allocate([&] {
     return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id, stf_to_cpp_sm_split(split)));
   }));
 }
 
