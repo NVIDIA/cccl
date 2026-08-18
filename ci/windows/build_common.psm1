@@ -58,7 +58,7 @@ if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
     $mem_available = [math]::Floor($mem_available * 95 / 100)
     # Total job count is available memory after accounting for `nproc` concurrent preprocessor
     # calls divided by the amount of memory required to invoke the sccache thin client process
-    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job / 10)
+    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job)
 }
 
 if ($PARALLEL_LEVEL -le 0) {
@@ -83,6 +83,13 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
+
+# Assume linker jobs could take up to 4GiB of memory, so tell ninja
+# to limit the number of concurrent link steps to avoid OOM'ing CI
+$link_jobs = [math]::Max(1, [math]::Floor((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 4Mb))
+$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOLS=link_jobs=' + "$link_jobs" + '"'
+$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOL_LINK=link_jobs"'
+
 if ($CUDA_ARCH) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
 }
@@ -100,10 +107,6 @@ if (-not $env:CCCL_BUILD_INFIX) {
 
 # Presets will be configured in this directory:
 $BUILD_DIR = "$PSScriptRoot/../../build/$env:CCCL_BUILD_INFIX"
-
-# If(!(test-path -PathType container "../build")) {
-#     New-Item -ItemType Directory -Path "../build"
-# }
 
 # The most recent build will always be symlinked to cccl/build/latest
 New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
@@ -222,38 +225,14 @@ function build_preset {
     $preset_dir = "${BUILD_DIR}/${PRESET}"
     $sccache_json = "${preset_dir}/sccache_stats.json"
 
-    # Compile all the objects first
-    $duration_1 = (Measure-Command -Expression {
-        & bash -c "xargs -r \`
-            cmake --build --preset '$PRESET' --parallel '$env:PARALLEL_LEVEL' -v --target < <(`
-                cmake --build --preset '$PRESET' -- -t inputs all | grep -E '\.o(bj)?\b' | sed 's@\\\\@/@g'`
-            )`
-        " | Out-Default
-    }).Seconds
-
-    $test_result = $LastExitCode
-
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}"
-
-    If ($test_result -ne 0) {
-        & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration_1"
-        sccache --show-adv-stats
-        If($CURRENT_PATH -ne "windows") {
-            popd
-        }
-        throw "$step Failed"
-    }
-
     # Echo and execute command to stdout:
-    $build_command = "cmake --build --preset $PRESET -v --parallel $env:CMAKE_BUILD_PARALLEL_LEVEL"
+    $build_command = "cmake --build --preset $PRESET -v --parallel $env:PARALLEL_LEVEL"
 
     Write-Host $build_command
 
-    $duration_2 += (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
+    $duration += (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
 
     $test_result = $LastExitCode
-
-    $duration = $duration_1 + $duration_2
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 

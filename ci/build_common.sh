@@ -136,6 +136,16 @@ if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
 
+# Available memory (in KB), for more details see free(1).
+mem_available="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
+# Assume linker jobs could take up to 4GiB of memory, so tell ninja
+# to limit the number of concurrent link steps to avoid OOM'ing CI
+link_jobs="$((mem_available / (4 * 1024 * 1024)))"
+GLOBAL_CMAKE_OPTIONS+=(
+    "-DCMAKE_JOB_POOLS=link_jobs=$((link_jobs > 1 ? link_jobs : 1))"
+    "-DCMAKE_JOB_POOL_LINK=link_jobs"
+)
+
 # Default to pedantic mode in CI
 if [[ -z "${PEDANTIC}" && -n "${GITHUB_ACTIONS:-}" ]]; then
     PEDANTIC=1
@@ -455,18 +465,7 @@ function build_preset() {
     pushd .. > /dev/null
     status=0
 
-    local -a build_command=(cmake --build --preset "$PRESET" ${VERBOSE:+-v} "${EXTRA_ARGS[@]}")
-
-    if [[ "${#EXTRA_ARGS[@]}" -eq 0 ]]; then
-        run_ci_timed_command "$GROUP_NAME (objects)" xargs -r \
-            "${build_command[@]}" --parallel "$PARALLEL_LEVEL" --target < <(
-                cmake --build --preset "$PRESET" -- -t inputs all | grep -E '\.o(bj)?\b'
-            ) || status=$?
-    fi
-
-    if [[ "$status" -eq 0 ]]; then
-        run_ci_timed_command "$GROUP_NAME" "${build_command[@]}" --parallel "$CMAKE_BUILD_PARALLEL_LEVEL" || status=$?
-    fi
+    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset "$PRESET" ${VERBOSE:+-v} "${EXTRA_ARGS[@]}" || status=$?
 
     popd > /dev/null
 
