@@ -38,12 +38,12 @@
 //!
 //! using Real = fp32mp2_stat; // instead of fp32mp2
 //!
-//! fpmp2_stat_reset_device_data();  // clear the counters
-//! my_kernel<<<blocks, threads>>>(); // run the region of interest
-//! cudaDeviceSynchronize();
+//! cuda::stream_ref stream = ...;
 //!
-//! fpmp2_stat_data stats{};
-//! fpmp2_stat_read_device_data(&stats);
+//! fpmp2_stat_reset_device_data(stream);          // clear the counters
+//! my_kernel<<<blocks, threads, 0, stream.get()>>>(); // run the region of interest
+//!
+//! const fpmp2_stat_data stats = fpmp2_stat_read_device_data(stream);
 //! printf("%llu adds, %llu muls\n", stats.add_count, stats.mul_count);
 //! ```
 //!
@@ -97,13 +97,16 @@
 //! runs on the GPU is observed. The very same code compiles and runs on the host, where
 //! the wrapper is a transparent pass-through and no counters are gathered.
 //!
-//! | Function                                        | Description                             |
-//! |-------------------------------------------------|-----------------------------------------|
-//! | `fpmp2_stat_reset_device_data()`                | Clear counters, arm the range sentinels |
-//! | `fpmp2_stat_read_device_data(fpmp2_stat_data*)` | Copy the record back to the host        |
+//! | Function                                     | Description                             |
+//! |----------------------------------------------|-----------------------------------------|
+//! | `fpmp2_stat_reset_device_data(stream_ref)`   | Clear counters, arm the range sentinels |
+//! | `fpmp2_stat_read_device_data(stream_ref)`    | Return the record, read on that stream  |
 //!
-//! Both return the `cudaError_t` of the underlying symbol copy, and both are host-only,
-//! so they do not exist under NVRTC, whose translation unit has no host side.
+//! The record is per-device state, so both take the stream that says which device to touch
+//! and when: the clear is enqueued on it, and the read waits on it before handing the
+//! record back. Both throw `cuda::cuda_error` if the copy fails, rather than leaving a
+//! status to be checked, and both are host-only, so they do not exist under NVRTC, whose
+//! translation unit has no host side.
 //!
 //! The record lives in one program-wide copy shared by all translation units. On the
 //! device that sharing needs relocatable device code (`-rdc=true`); in whole-program
@@ -129,8 +132,15 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+// The host side of the record: a stream-ordered copy to and from the device global
+#  include <cuda/__memory/get_device_address.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/stream_ref.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+
 #if _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-// Include the CUDA runtime for host-side functions like cudaMemcpyToSymbol
+// Include the CUDA runtime for the host-side reset and read
 #  include <cuda_runtime.h>
 #endif // _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
 
@@ -146,7 +156,7 @@ namespace cuda::experimental
 //!
 //! Exponents are unbiased, as `ilogb` reports them, and are sampled from the `hi` limb
 //! of finite non-zero values only. The two sentinel-initialized ranges say "no sample
-//! yet" through an empty range, i.e. `min > max`; `fpmp2_stat_reset_device_data()` arms
+//! yet" through an empty range, i.e. `min > max`; `fpmp2_stat_reset_device_data` arms
 //! them.
 //!
 //! A range says what the worst case was, never how often it happened, so the counter beside
@@ -378,26 +388,50 @@ _CCCL_DEVICE fpmp2_stat_data __fpmp2_stat_device_data = __fpmp2_stat_cleared_dat
 
 //! @brief Clear the device record and arm its range sentinels
 //!
-//! Call it before the region of interest. Counting starts as soon as the next kernel
-//! runs, so no synchronization beyond the usual stream ordering is needed.
+//! Call it before the region of interest. The clear is enqueued on `__stream`, so counting
+//! starts with the next kernel that runs there and no synchronization is needed. The record
+//! is per-device state, and the device it is cleared on is the stream's.
 //!
-//! @return The `cudaError_t` of the symbol copy
-_CCCL_HOST_API inline cudaError_t fpmp2_stat_reset_device_data() noexcept
+//! @param __stream Stream to order the clear against, and whose device to clear on
+//! @throws cuda::cuda_error if the copy cannot be enqueued
+_CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __stream)
 {
+  // A pageable host-to-device copy consumes its source before returning, so the cleared
+  // record does not have to outlive the call.
   const fpmp2_stat_data __cleared = __fpmp2_stat_cleared_data();
-  return cudaMemcpyToSymbol(__fpmp2_stat_device_data<>, &__cleared, sizeof(fpmp2_stat_data));
+  fpmp2_stat_data* __data_ptr     = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to clear the fpmp2_stat device record",
+    __data_ptr,
+    &__cleared,
+    sizeof(fpmp2_stat_data),
+    ::cudaMemcpyHostToDevice,
+    __stream.get());
 }
 
 //! @brief Copy the device record to the host
 //!
-//! The kernels that produced the numbers must have finished, e.g. through
-//! `cudaDeviceSynchronize()`.
+//! Waits on `__stream`, so the kernels enqueued there have finished and their counts are
+//! included. Work on other streams has to be synchronized by the caller.
 //!
-//! @param __dst Destination record
-//! @return The `cudaError_t` of the symbol copy
-_CCCL_HOST_API inline cudaError_t fpmp2_stat_read_device_data(fpmp2_stat_data* __dst) noexcept
+//! @param __stream Stream to read the record through, and whose device to read from
+//! @return The record as of the end of that stream's work
+//! @throws cuda::cuda_error if the copy fails
+[[nodiscard]] _CCCL_HOST_API inline fpmp2_stat_data fpmp2_stat_read_device_data(::cuda::stream_ref __stream)
 {
-  return cudaMemcpyFromSymbol(__dst, __fpmp2_stat_device_data<>, sizeof(fpmp2_stat_data));
+  fpmp2_stat_data __dst{};
+  const fpmp2_stat_data* __data_ptr = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to read the fpmp2_stat device record",
+    &__dst,
+    __data_ptr,
+    sizeof(fpmp2_stat_data),
+    ::cudaMemcpyDeviceToHost,
+    __stream.get());
+  __stream.sync();
+  return __dst;
 }
 
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)

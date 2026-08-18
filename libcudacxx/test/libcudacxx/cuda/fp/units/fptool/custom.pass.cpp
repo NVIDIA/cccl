@@ -31,6 +31,7 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include "test_macros.h"
 
@@ -286,6 +287,79 @@ TEST_HOST_DEVICE_FUNC bool test_type_surface()
   return ok;
 }
 
+// The way out of fp_custom follows the requested format. double is always implicit, the
+// value being held in one. float is implicit exactly where binary32 represents the format,
+// i.e. within 8 exponent and 23 mantissa bits, and takes a cast anywhere else.
+//
+// is_convertible cannot tell the two apart, because the implicit conversion to double
+// reaches float through the standard double -> float conversion whatever the format is. What
+// the specifier decides is overload resolution: a format that fits offers float and double
+// on equal terms, which makes an overload set holding both ambiguous, while a wider format
+// leaves double as the only way in. The cast is available either way.
+static_assert(::cuda::std::is_convertible_v<fp_reduced, double>, "");
+static_assert(::cuda::std::is_convertible_v<cudax::fp64_custom<>, double>, "");
+static_assert(::cuda::std::is_constructible_v<float, fp_reduced>, "");
+static_assert(::cuda::std::is_constructible_v<float, cudax::fp64_custom<8, 23>>, "");
+
+TEST_HOST_DEVICE_FUNC int pick(float)
+{
+  return 1;
+}
+TEST_HOST_DEVICE_FUNC int pick(double)
+{
+  return 2;
+}
+
+template <class _Tp, class = void>
+struct picks_ambiguously : ::cuda::std::true_type
+{};
+template <class _Tp>
+struct picks_ambiguously<_Tp, decltype(void(pick(::cuda::std::declval<_Tp>())))> : ::cuda::std::false_type
+{};
+
+static_assert(picks_ambiguously<cudax::fp64_custom<8, 23>>::value, "");
+static_assert(picks_ambiguously<cudax::fp64_custom<5, 10>>::value, "");
+static_assert(!picks_ambiguously<fp_reduced>::value, ""); // 23 bits, but 11 of exponent
+static_assert(!picks_ambiguously<cudax::fp64_custom<8, 24>>::value, "");
+static_assert(!picks_ambiguously<cudax::fp64_custom<>>::value, "");
+// A runtime size is unknown here, so it takes the explicit conversion, as it has to.
+static_assert(!picks_ambiguously<cudax::fp64_custom<8, cudax::fp_custom_dynamic_size>>::value, "");
+static_assert(!picks_ambiguously<cudax::fp64_custom<cudax::fp_custom_dynamic_size, 23>>::value, "");
+
+// What the implicit conversion promises: the value arrives in the float unchanged, and the
+// conversion does not draw mixed arithmetic away from fp_custom.
+TEST_HOST_DEVICE_FUNC bool test_float_conversion()
+{
+  using fp_float = cudax::fp64_custom<8, 23>;
+  using fp_half  = cudax::fp64_custom<5, 10>;
+
+  bool ok = true;
+
+  // A format wider than binary32 reaches a float sink only through double, which is what
+  // the overload set below shows, and which is why float stays explicit there.
+  ok = ok && pick(fp_reduced(1.0)) == 2;
+
+  const fp_float third = fp_float(1.0) / fp_float(3.0);
+  const float narrow   = third; // implicit, and exact
+  ok                   = ok && static_cast<double>(narrow) == static_cast<double>(third);
+
+  const fp_half tenth       = fp_half(1.0) / fp_half(10.0);
+  const float half_as_float = tenth;
+  ok                        = ok && static_cast<double>(half_as_float) == static_cast<double>(tenth);
+
+  // Overflow of the reduced exponent range lands on an infinity, which float also has.
+  const fp_float huge  = fp_float(1e30) * fp_float(1e30);
+  const float huge_out = huge;
+  ok                   = ok && ::cuda::std::isinf(huge_out);
+
+  // Arithmetic still goes through fp_custom: a float operand is promoted rather than the
+  // fp_custom value demoted.
+  ok = ok && ::cuda::std::is_same_v<decltype(third + 1.0f), fp_float>;
+  ok = ok && ::cuda::std::is_same_v<decltype(1.0f * third), fp_float>;
+
+  return ok;
+}
+
 // A qualified cuda::std::sqrt or cuda::std::fma call suppresses ADL, and a plain double
 // operand in an fma makes ::fma(double, double, double) viable. Both must still reduce
 // rather than quietly compute at full FP64 precision.
@@ -315,11 +389,109 @@ TEST_HOST_DEVICE_FUNC void test()
   assert(test_power_of_two());
   assert(test_type_surface());
   assert(test_standard_spellings());
+  assert(test_float_conversion());
 }
+
+#if _CCCL_CUDA_COMPILATION()
+// Runtime sizes, which fp_custom_dynamic_size selects, live in a device variable rather
+// than in the type.
+using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size, cudax::fp_custom_dynamic_size>;
+
+// Reports both what the arithmetic did with the current sizes and what the sizes are, so a
+// stale device copy would be visible either way.
+__global__ void dynamic_size_kernel(double* sum, int* mant_size)
+{
+  const fp_dynamic __one(1.0), __tiny(0x1p-30);
+  *sum       = static_cast<double>(__one + __tiny);
+  *mant_size = cudax::fp_custom_get_device_mantissa_size();
+}
+
+// The device-side setter, which is what a JIT-compiled program has instead of the host one.
+// One block, so nothing else is reading the size while thread 0 writes it.
+__global__ void device_set_size_kernel(int new_size, int* observed)
+{
+  cudax::fp_custom_set_device_mantissa_size(new_size);
+  __syncthreads();
+  *observed = cudax::fp_custom_get_device_mantissa_size();
+}
+#endif // _CCCL_CUDA_COMPILATION()
+
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+// A device size is per-device state written through a stream: the write is ordered against
+// the kernels that read it, so a kernel launched afterwards on the same stream must compute
+// in the new format without any synchronization in between.
+void test_runtime_sizes(cuda::stream_ref stream)
+{
+  double* sum           = nullptr;
+  int* mant_size        = nullptr;
+  const double sum_full = 1.0 + 0x1p-30;
+  assert(cudaMallocManaged(&sum, sizeof(double)) == cudaSuccess);
+  assert(cudaMallocManaged(&mant_size, sizeof(int)) == cudaSuccess);
+
+  // Untouched, the sizes are the native ones, so the small term survives.
+  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
+  assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
+
+  dynamic_size_kernel<<<1, 1, 0, stream.get()>>>(sum, mant_size);
+  assert(cudaGetLastError() == cudaSuccess);
+  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  assert(*sum == sum_full);
+  assert(*mant_size == 52);
+
+  // 23 bits cannot hold a term 30 binades down, and the kernel needs no synchronization to
+  // see the new size: the copy is ahead of it on the stream.
+  cudax::fp_custom_set_device_mantissa_size(23, stream);
+  dynamic_size_kernel<<<1, 1, 0, stream.get()>>>(sum, mant_size);
+  assert(cudaGetLastError() == cudaSuccess);
+  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  assert(*sum == 1.0);
+  assert(*mant_size == 23);
+  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 23);
+
+  // The exponent is the other axis, and independent: 5 bits keep 1.0 but flush 2^-30.
+  cudax::fp_custom_set_device_exponent_size(5, stream);
+  assert(cudax::fp_custom_get_device_exponent_size(stream) == 5);
+  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 23);
+
+  // The host copy of the sizes is separate state, which the device writes must not have
+  // touched.
+  assert(cudax::fp_custom_get_host_mantissa_size() == 52);
+  assert(cudax::fp_custom_get_host_exponent_size() == 11);
+
+  // A write from device code reaches the same variable the host accessors see.
+  int* observed = nullptr;
+  assert(cudaMallocManaged(&observed, sizeof(int)) == cudaSuccess);
+  device_set_size_kernel<<<1, 32, 0, stream.get()>>>(40, observed);
+  assert(cudaGetLastError() == cudaSuccess);
+  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  assert(*observed == 40);
+  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 40);
+
+  // Leave the native format behind for anything that runs later.
+  cudax::fp_custom_set_device_mantissa_size(52, stream);
+  cudax::fp_custom_set_device_exponent_size(11, stream);
+  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
+  assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
+
+  assert(cudaFree(sum) == cudaSuccess);
+  assert(cudaFree(mant_size) == cudaSuccess);
+  assert(cudaFree(observed) == cudaSuccess);
+}
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 int main(int, char**)
 {
   test();
+
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+  // force_include.h runs this main on the host and then inside a kernel; only the host run
+  // can create a stream and launch, so NV_IS_HOST selects the driver, not the code tested.
+  NV_IF_TARGET(NV_IS_HOST,
+               (cudaStream_t raw_stream = nullptr; //
+                assert(cudaStreamCreate(&raw_stream) == cudaSuccess);
+                test_runtime_sizes(cuda::stream_ref{raw_stream});
+                assert(cudaStreamDestroy(raw_stream) == cudaSuccess);))
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
   return 0;
 }

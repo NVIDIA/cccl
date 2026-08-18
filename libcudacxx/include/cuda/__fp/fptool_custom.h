@@ -119,29 +119,39 @@
 //!
 //! ### Size Accessors
 //!
-//! | Function                                   | Target | Description                        |
-//! |--------------------------------------------|--------|------------------------------------|
-//! | `fp_custom_set_host_mantissa_size(int)`    | CPU    | Set mantissa bits on host (0-52)   |
-//! | `fp_custom_set_host_exponent_size(int)`    | CPU    | Set exponent bits on host (2-11)   |
-//! | `fp_custom_get_host_mantissa_size()`       | CPU    | Read mantissa bits on host         |
-//! | `fp_custom_get_host_exponent_size()`       | CPU    | Read exponent bits on host         |
-//! | `fp_custom_set_device_mantissa_size(int)`  | GPU    | Set mantissa bits on device (0-52) |
-//! | `fp_custom_set_device_exponent_size(int)`  | GPU    | Set exponent bits on device (2-11) |
-//! | `fp_custom_get_device_mantissa_size()`     | GPU    | Read mantissa bits on device       |
-//! | `fp_custom_get_device_exponent_size()`     | GPU    | Read exponent bits on device       |
+//! | Function                                               | Called from | Description               |
+//! |--------------------------------------------------------|-------------|---------------------------|
+//! | `fp_custom_set_host_mantissa_size(int)`                | host        | Set host mantissa (0-52)  |
+//! | `fp_custom_set_host_exponent_size(int)`                | host        | Set host exponent (2-11)  |
+//! | `fp_custom_get_host_mantissa_size()`                   | host        | Read host mantissa        |
+//! | `fp_custom_get_host_exponent_size()`                   | host        | Read host exponent        |
+//! | `fp_custom_set_device_mantissa_size(int, stream_ref)`  | host        | Set device mantissa       |
+//! | `fp_custom_set_device_exponent_size(int, stream_ref)`  | host        | Set device exponent       |
+//! | `fp_custom_get_device_mantissa_size(stream_ref)`       | host        | Read device mantissa      |
+//! | `fp_custom_get_device_exponent_size(stream_ref)`       | host        | Read device exponent      |
+//! | `fp_custom_set_device_mantissa_size(int)`              | device      | Set device mantissa       |
+//! | `fp_custom_set_device_exponent_size(int)`              | device      | Set device exponent       |
+//! | `fp_custom_get_device_mantissa_size()`                 | device      | Read device mantissa      |
+//! | `fp_custom_get_device_exponent_size()`                 | device      | Read device exponent      |
 //!
 //! Host and device sizes are independent — changing one does not affect the other.
-//! The device accessors use `cudaMemcpyToSymbol` / `cudaMemcpyFromSymbol` when called
-//! from host code; a `cudaDeviceSynchronize()` before the next kernel launch ensures a
-//! new value is visible on the GPU. Called from device code they touch the variable
-//! directly, and only thread 0 of block 0 writes it, to avoid races.
+//!
+//! A device size is per-device state, so the host accessors say which device to touch and
+//! when, through one `cuda::stream_ref`: the write is enqueued on that stream, and every
+//! kernel that runs after it there sees the new size. Reading waits on the stream, since
+//! the value has to come back to the host. The accessors throw `cuda::cuda_error` if the
+//! copy fails, rather than leaving a status to be checked.
+//!
+//! From device code the accessors touch the variable directly. Only thread 0 of block 0
+//! writes it, and nothing propagates the value to the rest of the grid, so a write from a
+//! kernel belongs in a single-block setup kernel.
 //!
 //! The sizes live in one program-wide copy each, shared by all translation units. On the
 //! device that sharing needs relocatable device code (`-rdc=true`); in whole-program mode
 //! each translation unit necessarily gets its own device copy.
 //!
-//! Under NVRTC only the device accessors exist, since a JIT compilation has no host side.
-//! They are then reached from device code, where they touch the variable directly.
+//! Under NVRTC only the device-code accessors exist, since a JIT compilation has no host
+//! side to set the sizes from.
 //!
 //! @note There is a small performance cost compared to fixed sizes because the sizes are
 //! read from memory instead of being folded into the code.
@@ -158,8 +168,15 @@
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+// The host half of the runtime size control: a stream-ordered copy to the device globals
+#  include <cuda/__memory/get_device_address.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/stream_ref.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+
 #if _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-// Include the CUDA runtime for host-side functions like cudaMemcpyToSymbol
+// Include the CUDA runtime for the host-side accessors
 #  include <cuda_runtime.h>
 #endif // _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
 
@@ -212,6 +229,16 @@ template <>
 struct __fp_custom_native_sizes<_Float64> : __fp_custom_native_sizes<double>
 {};
 #endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+
+// Whether float holds every value the requested format can take. binary32 has 8 exponent
+// and 23 mantissa bits, and the reduction clamps whatever leaves the reduced exponent
+// range to zero or infinity, so a format inside those two bounds reaches float without
+// rounding. fp_custom_dynamic_size is above both, which answers false, as it has to: the
+// size is not known here. _FpType carries the base format, and makes the value dependent
+// where the conversion operators use it as a constraint.
+template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
+inline constexpr bool __fp_custom_fits_in_float_v =
+  __fp_custom_is_supported_fp_v<_FpType> && _ExpSize <= 8 && _MantSize <= 23;
 
 // === runtime sizes ===
 // Sizes used by instantiations that pass fp_custom_dynamic_size, initialised to the
@@ -281,56 +308,151 @@ template <typename _FpType = double>
 
 #if _CCCL_CUDA_COMPILATION()
 
-//! @brief Set the mantissa size used by device code (0-52)
+// === device sizes, from device code ===
+// These touch the globals directly and are the form NVRTC has, a JIT compilation having
+// no host side. Host code goes through the stream-ordered overloads further down.
+
+//! @brief Set the mantissa size used by device code (0-52), from a kernel
 //!
-//! From host code the write goes through `cudaMemcpyToSymbol`; from device code only
-//! thread 0 of block 0 performs it.
+//! Only thread 0 of block 0 writes, so that a whole grid calling this does not race, but
+//! nothing makes the new size visible to the rest of the grid: this is for a single-block
+//! setup kernel, or for a JIT-compiled program that has no host side to set it from.
 template <typename _FpType = double>
-_CCCL_HOST_DEVICE_API inline void fp_custom_set_device_mantissa_size(int __new_size) noexcept
+_CCCL_DEVICE_API inline void fp_custom_set_device_mantissa_size(int __new_size) noexcept
 {
   _CCCL_ASSERT(__new_size >= 0 && __new_size <= __fp_custom_native_sizes<_FpType>::__mant_size,
                "fp_custom mantissa size out of range");
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (if (threadIdx.x == 0 && blockIdx.x == 0) { __fp_custom_device_mantissa_size<_FpType> = __new_size; }),
-    (cudaMemcpyToSymbol(__fp_custom_device_mantissa_size<_FpType>, &__new_size, sizeof(int));))
+  if (threadIdx.x == 0 && blockIdx.x == 0)
+  {
+    __fp_custom_device_mantissa_size<_FpType> = __new_size;
+  }
 }
 
-//! @brief Set the exponent size used by device code (2-11)
+//! @brief Set the exponent size used by device code (2-11), from a kernel
+//! @copydetails fp_custom_set_device_mantissa_size
 template <typename _FpType = double>
-_CCCL_HOST_DEVICE_API inline void fp_custom_set_device_exponent_size(int __new_size) noexcept
+_CCCL_DEVICE_API inline void fp_custom_set_device_exponent_size(int __new_size) noexcept
 {
   _CCCL_ASSERT(__new_size >= 2 && __new_size <= __fp_custom_native_sizes<_FpType>::__exp_size,
                "fp_custom exponent size out of range");
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (if (threadIdx.x == 0 && blockIdx.x == 0) { __fp_custom_device_exponent_size<_FpType> = __new_size; }),
-    (cudaMemcpyToSymbol(__fp_custom_device_exponent_size<_FpType>, &__new_size, sizeof(int));))
+  if (threadIdx.x == 0 && blockIdx.x == 0)
+  {
+    __fp_custom_device_exponent_size<_FpType> = __new_size;
+  }
 }
 
-//! @brief Read the mantissa size used by device code
+//! @brief Read the mantissa size used by device code, from a kernel
 template <typename _FpType = double>
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline int fp_custom_get_device_mantissa_size() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline int fp_custom_get_device_mantissa_size() noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (return __fp_custom_device_mantissa_size<_FpType>;),
-    (int __size = 0; cudaMemcpyFromSymbol(&__size, __fp_custom_device_mantissa_size<_FpType>, sizeof(int));
-     return __size;))
+  return __fp_custom_device_mantissa_size<_FpType>;
 }
 
-//! @brief Read the exponent size used by device code
+//! @brief Read the exponent size used by device code, from a kernel
 template <typename _FpType = double>
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline int fp_custom_get_device_exponent_size() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline int fp_custom_get_device_exponent_size() noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (return __fp_custom_device_exponent_size<_FpType>;),
-    (int __size = 0; cudaMemcpyFromSymbol(&__size, __fp_custom_device_exponent_size<_FpType>, sizeof(int));
-     return __size;))
+  return __fp_custom_device_exponent_size<_FpType>;
 }
 
 #endif // _CCCL_CUDA_COMPILATION()
+
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+
+// === device sizes, from host code ===
+// A size is per-device state, so where to write it is part of the call: the device comes
+// from the stream, which also orders the write against the kernels that read it. The
+// value being copied is an ordinary host object, which a pageable host-to-device copy
+// consumes before returning, so it needs to outlive the call no longer than that.
+
+//! @brief Set the mantissa size used by device code (0-52) on the stream's device
+//!
+//! The copy is enqueued on `__stream`, so every kernel that runs after it there sees the
+//! new size and no synchronization is needed. A program using several devices sets the
+//! size once per device.
+//!
+//! @param __new_size Mantissa bits to keep
+//! @param __stream Stream to order the write against, and whose device to write on
+//! @throws cuda::cuda_error if the copy cannot be enqueued
+template <typename _FpType = double>
+_CCCL_HOST_API void fp_custom_set_device_mantissa_size(int __new_size, ::cuda::stream_ref __stream)
+{
+  _CCCL_ASSERT(__new_size >= 0 && __new_size <= __fp_custom_native_sizes<_FpType>::__mant_size,
+               "fp_custom mantissa size out of range");
+  int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to set the fp_custom device mantissa size",
+    __size_ptr,
+    &__new_size,
+    sizeof(int),
+    ::cudaMemcpyHostToDevice,
+    __stream.get());
+}
+
+//! @brief Set the exponent size used by device code (2-11) on the stream's device
+//! @copydetails fp_custom_set_device_mantissa_size
+template <typename _FpType = double>
+_CCCL_HOST_API void fp_custom_set_device_exponent_size(int __new_size, ::cuda::stream_ref __stream)
+{
+  _CCCL_ASSERT(__new_size >= 2 && __new_size <= __fp_custom_native_sizes<_FpType>::__exp_size,
+               "fp_custom exponent size out of range");
+  int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to set the fp_custom device exponent size",
+    __size_ptr,
+    &__new_size,
+    sizeof(int),
+    ::cudaMemcpyHostToDevice,
+    __stream.get());
+}
+
+//! @brief Read the mantissa size used by device code on the stream's device
+//!
+//! Waits on `__stream`, so a size set on it is included and the value read is the one the
+//! next kernel there would use.
+//!
+//! @param __stream Stream to order the read against, and whose device to read from
+//! @return The mantissa size in effect on that device
+//! @throws cuda::cuda_error if the copy fails
+template <typename _FpType = double>
+[[nodiscard]] _CCCL_HOST_API int fp_custom_get_device_mantissa_size(::cuda::stream_ref __stream)
+{
+  int __size            = 0;
+  const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to read the fp_custom device mantissa size",
+    &__size,
+    __size_ptr,
+    sizeof(int),
+    ::cudaMemcpyDeviceToHost,
+    __stream.get());
+  __stream.sync();
+  return __size;
+}
+
+//! @brief Read the exponent size used by device code on the stream's device
+//! @copydetails fp_custom_get_device_mantissa_size
+template <typename _FpType = double>
+[[nodiscard]] _CCCL_HOST_API int fp_custom_get_device_exponent_size(::cuda::stream_ref __stream)
+{
+  int __size            = 0;
+  const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemcpyAsync,
+    "failed to read the fp_custom device exponent size",
+    &__size,
+    __size_ptr,
+    sizeof(int),
+    ::cudaMemcpyDeviceToHost,
+    __stream.get());
+  __stream.sync();
+  return __size;
+}
+
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 //! @brief Mantissa size in effect for a given _MantSize argument
 //!
@@ -646,13 +768,43 @@ public:
   }
 
   // === conversions ===
-  //! @brief Convert to double (implicit, preserves full precision)
+  //! @brief Convert to double (implicit, always exact)
+  //!
+  //! The value is held in the base type, so this hands it over unchanged whatever the
+  //! requested sizes are.
   _CCCL_HOST_DEVICE_API operator double() const noexcept
   {
     return ::cuda::std::bit_cast<double>(__bits_);
   }
 
-  //! @brief Convert to float (explicit, may lose precision)
+  /*
+  // Conversion to float follows the requested format: implicit where float represents it
+  // exactly, so the conversion is a widening one and the analog of the implicit IEEE-754
+  // float -> double, explicit where the low mantissa bits or the exponent range would be
+  // lost. fp64_custom<8, 23> is the case that makes this worth doing: it emulates binary32,
+  // and a float sink is then the natural place to put its value.
+  //
+  // The specifier cannot depend on the class parameters directly before C++20, hence the
+  // constrained templates, whose condition has to run through _Up to stay dependent. They
+  // come with a limitation worth knowing: a conversion function template only enters
+  // overload resolution when the target type matches its conversion-type-id exactly, so
+  // float is the only sink these reach, static_cast the only spelling for the explicit one.
+  // Once C++20 is the baseline, explicit(!__fp_custom_fits_in_float_v<...>) on a single
+  // non-template operator expresses the same intent without the limitation.
+  //
+  // Where the conversion is implicit, float and double are offered on equal terms, so an
+  // overload set holding both is ambiguous for such an instantiation and needs a cast at the
+  // call. That is the cost of not narrowing silently on the way to a float.
+  */
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fp_custom_fits_in_float_v<_Up, _ExpSize, _MantSize>)
+  _CCCL_HOST_DEVICE_API operator float() const noexcept
+  {
+    return static_cast<float>(::cuda::std::bit_cast<double>(__bits_));
+  }
+
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_fits_in_float_v<_Up, _ExpSize, _MantSize>) )
   _CCCL_HOST_DEVICE_API explicit operator float() const noexcept
   {
     return static_cast<float>(::cuda::std::bit_cast<double>(__bits_));
