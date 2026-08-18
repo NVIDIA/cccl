@@ -737,15 +737,26 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(block1)
+
+  const auto block1_str = to_string(block1);
+  REQUIRE(block1_str
           == "SegmentedScanBlockPolicy { .threads_per_block = 128, .items_per_thread = 9"
              ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
              ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .max_segments_per_block = 512 }");
-  REQUIRE(to_string(p1)
-          == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
-             ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
-             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 } }");
+  const auto warp1_str = to_string(warp1);
+  REQUIRE(warp1_str
+          == "SegmentedScanWarpPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = WARP_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = WARP_STORE_TRANSPOSE, .max_segments_per_warp = 64 }");
+  const auto thread1_str = to_string(thread1);
+  REQUIRE(thread1_str
+          == "SegmentedScanThreadPolicy { .threads_per_block = 128, .items_per_thread = 5"
+             ", .load_modifier = LOAD_DEFAULT }");
+
+  std::stringstream expected;
+  expected << "SegmentedScanPolicy { .block = " << block1_str << ", .warp = " << warp1_str
+           << ", .thread = " << thread1_str << " }";
+  REQUIRE(to_string(p1) == expected.str());
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
