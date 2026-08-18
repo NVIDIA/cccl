@@ -14,6 +14,7 @@
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include "catch2_test_device_reduce.cuh"
@@ -68,330 +69,148 @@ struct abs_less_t
   }
 };
 
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax basic correctness", "[reduce][arg_minmax]", CUB_SMALL)
+template <typename... Args>
+cudaError_t call_argminmax_api(bool last_max, Args&&... args)
 {
+  return last_max ? cub::DeviceReduce::ArgMinLastMax(::cuda::std::forward<Args>(args)...)
+                  : cub::DeviceReduce::ArgMinMax(::cuda::std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void call_argminmax_launch_wrapper(bool last_max, Args&&... args)
+{
+  if (last_max)
+  {
+    device_arg_minlastmax(::cuda::std::forward<Args>(args)...);
+  }
+  else
+  {
+    device_arg_minmax(::cuda::std::forward<Args>(args)...);
+  }
+}
+
+CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max basic correctness", "[reduce][arg_minmax][arg_minlastmax]", CUB_SMALL)
+{
+  const bool last_max = GENERATE(false, true);
+
   auto input     = thrust::device_vector<int>{8, 6, -7, 5, 3, 1, -9};
   auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
   auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
   auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
   auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  void* d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    d_temp_storage,
-    temp_storage_bytes,
+  call_argminmax_launch_wrapper(
+    last_max,
     input.begin(),
     min_out.begin(),
     min_index.begin(),
     max_out.begin(),
     max_index.begin(),
     static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
-
-  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  error = cub::DeviceReduce::ArgMinMax(
-    d_temp_storage,
-    temp_storage_bytes,
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
   REQUIRE(min_out[0] == -9);
   REQUIRE(min_index[0] == 6);
   REQUIRE(max_out[0] == 8);
   REQUIRE(max_index[0] == 0);
 }
 
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax basic correctness", "[reduce][arg_minlastmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{8, 6, -7, 5, 3, 1, -9};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  void* d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
-
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    d_temp_storage,
-    temp_storage_bytes,
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
-
-  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  error = cub::DeviceReduce::ArgMinLastMax(
-    d_temp_storage,
-    temp_storage_bytes,
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == -9);
-  REQUIRE(min_index[0] == 6);
-  REQUIRE(max_out[0] == 8);
-  REQUIRE(max_index[0] == 0);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles zero-length input", "[reduce][arg_minmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  // For zero-length inputs, no output is written; just verify it does not crash.
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles zero-length input", "[reduce][arg_minlastmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  // For zero-length inputs, no output is written; just verify it does not crash.
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-  REQUIRE(error == cudaSuccess);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax accepts stream", "[reduce][arg_minmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    stream_ref);
-  stream.sync();
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax accepts stream", "[reduce][arg_minlastmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
-
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    stream_ref);
-  stream.sync();
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax handles single element", "[reduce][arg_minmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{42};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 42);
-  REQUIRE(min_index[0] == 0);
-  REQUIRE(max_out[0] == 42);
-  REQUIRE(max_index[0] == 0);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax handles single element", "[reduce][arg_minlastmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{42};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 42);
-  REQUIRE(min_index[0] == 0);
-  REQUIRE(max_out[0] == 42);
-  REQUIRE(max_index[0] == 0);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax with compare_op", "[reduce][arg_minmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    cuda::std::less{});
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
-}
-
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax with compare_op", "[reduce][arg_minlastmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
-  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  auto error = cub::DeviceReduce::ArgMinLastMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()),
-    cuda::std::less{});
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 0.0f);
-  REQUIRE(min_index[0] == 3);
-  REQUIRE(max_out[0] == 4.0f);
-  REQUIRE(max_index[0] == 2);
-}
-
-// All-same values: first minimum at index 0, first maximum at index 0
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinMax tie-breaking: first min and first max", "[reduce][arg_minmax]", CUB_SMALL)
-{
-  auto input     = thrust::device_vector<int>{5, 5, 5, 5, 5};
-  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
-  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
-
-  auto error = cub::DeviceReduce::ArgMinMax(
-    input.begin(),
-    min_out.begin(),
-    min_index.begin(),
-    max_out.begin(),
-    max_index.begin(),
-    static_cast<::cuda::std::int64_t>(input.size()));
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(min_out[0] == 5);
-  REQUIRE(min_index[0] == 0); // first minimum: smallest index on tie
-  REQUIRE(max_out[0] == 5);
-  REQUIRE(max_index[0] == 0); // first maximum: smallest index on tie
-}
-
-// All-same values: first minimum at index 0, last maximum at last index
-CUB_TEST_CASE("cub::DeviceReduce::ArgMinLastMax tie-breaking: first min and last max",
-              "[reduce][arg_minlastmax]",
+CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max handles zero-length input",
+              "[reduce][arg_minmax][arg_minlastmax]",
               CUB_SMALL)
 {
-  auto input     = thrust::device_vector<int>{5, 5, 5, 5, 5};
+  const bool last_max = GENERATE(false, true);
+
+  auto input     = thrust::device_vector<int>{};
   auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
   auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
   auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
   auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
-  auto error = cub::DeviceReduce::ArgMinLastMax(
+  // For zero-length inputs, no output is written; just verify it does not crash.
+  call_argminmax_launch_wrapper(
+    last_max,
     input.begin(),
     min_out.begin(),
     min_index.begin(),
     max_out.begin(),
     max_index.begin(),
     static_cast<::cuda::std::int64_t>(input.size()));
+}
 
-  REQUIRE(error == cudaSuccess);
+CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max handles single element",
+              "[reduce][arg_minmax][arg_minlastmax]",
+              CUB_SMALL)
+{
+  const bool last_max = GENERATE(false, true);
+
+  auto input     = thrust::device_vector<int>{42};
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  call_argminmax_launch_wrapper(
+    last_max,
+    input.begin(),
+    min_out.begin(),
+    min_index.begin(),
+    max_out.begin(),
+    max_index.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()));
+  REQUIRE(min_out[0] == 42);
+  REQUIRE(min_index[0] == 0);
+  REQUIRE(max_out[0] == 42);
+  REQUIRE(max_index[0] == 0);
+}
+
+CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max with compare_op", "[reduce][arg_minmax][arg_minlastmax]", CUB_SMALL)
+{
+  const bool last_max = GENERATE(false, true);
+
+  auto input     = thrust::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<float>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  call_argminmax_launch_wrapper(
+    last_max,
+    input.begin(),
+    min_out.begin(),
+    min_index.begin(),
+    max_out.begin(),
+    max_index.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    cuda::std::less{});
+  REQUIRE(min_out[0] == 0.0f);
+  REQUIRE(min_index[0] == 3);
+  REQUIRE(max_out[0] == 4.0f);
+  REQUIRE(max_index[0] == 2);
+}
+
+// All-same values: first minimum at index 0. The maximum is the first occurrence (index 0) for ArgMinMax and the last
+// occurrence (last index) for ArgMinLastMax.
+CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max tie-breaking", "[reduce][arg_minmax][arg_minlastmax]", CUB_SMALL)
+{
+  const bool last_max = GENERATE(false, true);
+
+  auto input     = thrust::device_vector<int>{5, 5, 5, 5, 5};
+  auto min_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto min_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = thrust::device_vector<int>(1, thrust::no_init);
+  auto max_index = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  call_argminmax_launch_wrapper(
+    last_max,
+    input.begin(),
+    min_out.begin(),
+    min_index.begin(),
+    max_out.begin(),
+    max_index.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()));
   REQUIRE(min_out[0] == 5);
   REQUIRE(min_index[0] == 0); // first minimum: smallest index on tie
   REQUIRE(max_out[0] == 5);
-  REQUIRE(max_index[0] == 4); // last maximum: largest index on tie
+  REQUIRE(max_index[0] == (last_max ? 4 : 0));
 }
 
-CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
-         "[reduce][device][arg_minmax][arg_minlastmax]",
-         CUB_SMALL,
-         full_type_list)
+CUB_TEST(
+  "Device ArgMinMax and ArgMinLastMax works", "[reduce][device][arg_minmax][arg_minlastmax]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -429,7 +248,7 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
 
   constexpr int num_segments = 1;
 
-  // Precompute reference values shared by both sections
+  // Precompute reference values shared by both APIs
   c2h::host_vector<item_t> host_items(in_items);
 
   auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend());
@@ -451,248 +270,35 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
   c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
   c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
 
-  SECTION("argminmax")
+  SECTION("default")
   {
-    device_arg_minmax(
-      unwrap_it(d_in_it), d_min_out.data(), d_min_index.data(), d_max_out.data(), d_max_index.data(), num_items);
+    const bool last_max           = GENERATE(false, true);
+    const auto expected_max       = last_max ? expected_last_max : expected_first_max;
+    const auto expected_max_index = last_max ? expected_last_max_index : expected_first_max_index;
 
-    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-    REQUIRE(expected_min == gpu_min);
-    REQUIRE(expected_min_index == d_min_index[0]);
-    REQUIRE(expected_first_max == gpu_max);
-    REQUIRE(expected_first_max_index == d_max_index[0]);
-  }
-
-  SECTION("argminlastmax")
-  {
-    device_arg_minlastmax(
-      unwrap_it(d_in_it), d_min_out.data(), d_min_index.data(), d_max_out.data(), d_max_index.data(), num_items);
-
-    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-    REQUIRE(expected_min == gpu_min);
-    REQUIRE(expected_min_index == d_min_index[0]);
-    REQUIRE(expected_last_max == gpu_max);
-    REQUIRE(expected_last_max_index == d_max_index[0]);
-  }
-
-  // GCC7 ICEs (finish_member_declaration, cp/semantics.c:3029) on the generic lambda used below to
-  // exercise the various environment/stream argument types, so skip this section there. The behavior
-  // is compiler-independent and remains covered by newer compilers and the *_env test files.
-#if !_CCCL_COMPILER(GCC, <, 8)
-  SECTION("argminmax with user provided memory and environment")
-  {
-    const auto num_items_i64 = static_cast<cuda::std::int64_t>(num_items);
-
-    size_t expected_allocation_size = 0;
-    auto error                      = cub::DeviceReduce::ArgMinMax(
-      static_cast<void*>(nullptr),
-      expected_allocation_size,
+    call_argminmax_launch_wrapper(
+      last_max,
       unwrap_it(d_in_it),
       d_min_out.data(),
       d_min_index.data(),
       d_max_out.data(),
       d_max_index.data(),
-      num_items_i64);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+      num_items);
 
-    auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
-
-    auto test_argminmax = [&](const auto& env) {
-      size_t num_bytes = 0;
-      error            = cub::DeviceReduce::ArgMinMax(
-        static_cast<void*>(nullptr),
-        num_bytes,
-        unwrap_it(d_in_it),
-        d_min_out.data(),
-        d_min_index.data(),
-        d_max_out.data(),
-        d_max_index.data(),
-        num_items_i64,
-        env);
-      REQUIRE(error == cudaSuccess);
-      REQUIRE(cudaSuccess == cudaPeekAtLastError());
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-      REQUIRE(expected_allocation_size == num_bytes);
-
-      error = cub::DeviceReduce::ArgMinMax(
-        temp_storage,
-        num_bytes,
-        unwrap_it(d_in_it),
-        d_min_out.data(),
-        d_min_index.data(),
-        d_max_out.data(),
-        d_max_index.data(),
-        num_items_i64,
-        env);
-      REQUIRE(error == cudaSuccess);
-      REQUIRE(cudaSuccess == cudaPeekAtLastError());
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-      output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-      output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-      REQUIRE(expected_min == gpu_min);
-      REQUIRE(expected_min_index == d_min_index[0]);
-      REQUIRE(expected_first_max == gpu_max);
-      REQUIRE(expected_first_max_index == d_max_index[0]);
-    };
-
-    int current_device;
-    error = cudaGetDevice(&current_device);
-    REQUIRE(error == cudaSuccess);
-
-    SECTION("DeviceReduce::ArgMinMax works with cudaStream_t")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      test_argminmax(stream.get());
-    }
-
-    SECTION("DeviceReduce::ArgMinMax works with cuda::stream")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      test_argminmax(stream);
-    }
-
-    SECTION("DeviceReduce::ArgMinMax works with cuda::stream_ref")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      cuda::stream_ref stream_ref{stream};
-      test_argminmax(stream_ref);
-    }
-
-    SECTION("DeviceReduce::ArgMinMax works with cuda::std::execution::env")
-    {
-      cuda::std::execution::env env{};
-      test_argminmax(env);
-    }
-
-    SECTION("DeviceReduce::ArgMinMax works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_argminmax(policy);
-    }
-
-    SECTION("DeviceReduce::ArgMinMax works with cuda::execution::gpu with stream")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_argminmax(policy);
-    }
+    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
+    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
+    REQUIRE(expected_min == gpu_min);
+    REQUIRE(expected_min_index == d_min_index[0]);
+    REQUIRE(expected_max == gpu_max);
+    REQUIRE(expected_max_index == d_max_index[0]);
   }
-
-  SECTION("argminlastmax with user provided memory and environment")
-  {
-    const auto num_items_i64 = static_cast<cuda::std::int64_t>(num_items);
-
-    size_t expected_allocation_size = 0;
-    auto error                      = cub::DeviceReduce::ArgMinLastMax(
-      static_cast<void*>(nullptr),
-      expected_allocation_size,
-      unwrap_it(d_in_it),
-      d_min_out.data(),
-      d_min_index.data(),
-      d_max_out.data(),
-      d_max_index.data(),
-      num_items_i64);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
-
-    auto test_argminlastmax = [&](const auto& env) {
-      size_t num_bytes = 0;
-      error            = cub::DeviceReduce::ArgMinLastMax(
-        static_cast<void*>(nullptr),
-        num_bytes,
-        unwrap_it(d_in_it),
-        d_min_out.data(),
-        d_min_index.data(),
-        d_max_out.data(),
-        d_max_index.data(),
-        num_items_i64,
-        env);
-      REQUIRE(error == cudaSuccess);
-      REQUIRE(cudaSuccess == cudaPeekAtLastError());
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-      REQUIRE(expected_allocation_size == num_bytes);
-
-      error = cub::DeviceReduce::ArgMinLastMax(
-        temp_storage,
-        num_bytes,
-        unwrap_it(d_in_it),
-        d_min_out.data(),
-        d_min_index.data(),
-        d_max_out.data(),
-        d_max_index.data(),
-        num_items_i64,
-        env);
-      REQUIRE(error == cudaSuccess);
-      REQUIRE(cudaSuccess == cudaPeekAtLastError());
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-      output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-      output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-      REQUIRE(expected_min == gpu_min);
-      REQUIRE(expected_min_index == d_min_index[0]);
-      REQUIRE(expected_last_max == gpu_max);
-      REQUIRE(expected_last_max_index == d_max_index[0]);
-    };
-
-    int current_device;
-    error = cudaGetDevice(&current_device);
-    REQUIRE(error == cudaSuccess);
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cudaStream_t")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      test_argminlastmax(stream.get());
-    }
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cuda::stream")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      test_argminlastmax(stream);
-    }
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cuda::stream_ref")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      cuda::stream_ref stream_ref{stream};
-      test_argminlastmax(stream_ref);
-    }
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cuda::std::execution::env")
-    {
-      cuda::std::execution::env env{};
-      test_argminlastmax(env);
-    }
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_argminlastmax(policy);
-    }
-
-    SECTION("DeviceReduce::ArgMinLastMax works with cuda::execution::gpu with stream")
-    {
-      cuda::stream stream{cuda::devices[current_device]};
-      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_argminlastmax(policy);
-    }
-  }
-#endif // !_CCCL_COMPILER(GCC, <, 8)
 
   // abs comparison via cuda::uabs only compiles for integral scalar types
   if constexpr (cuda::std::is_integral_v<item_t>)
   {
-    SECTION("argminmax-abs_less_t")
+    SECTION("abs_less_t")
     {
+      const bool last_max = GENERATE(false, true);
       abs_less_t compare_op;
 
       // First minimum by abs value: first element with smallest |value|
@@ -705,39 +311,17 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
       const auto exp_first_max       = static_cast<output_t>(*exp_first_max_it);
       const auto exp_first_max_index = static_cast<cuda::std::int64_t>(exp_first_max_it - host_items.cbegin());
 
-      device_arg_minmax(
-        unwrap_it(d_in_it),
-        d_min_out.data(),
-        d_min_index.data(),
-        d_max_out.data(),
-        d_max_index.data(),
-        num_items,
-        compare_op);
-
-      output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-      output_t gpu_max = static_cast<output_t>(d_max_out[0]);
-      REQUIRE(exp_min == gpu_min);
-      REQUIRE(exp_min_index == d_min_index[0]);
-      REQUIRE(exp_first_max == gpu_max);
-      REQUIRE(exp_first_max_index == d_max_index[0]);
-    }
-
-    SECTION("argminlastmax-abs_less_t")
-    {
-      abs_less_t compare_op;
-
-      // First minimum by abs value: first element with smallest |value|
-      auto exp_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
-      const auto exp_min       = static_cast<output_t>(*exp_min_it);
-      const auto exp_min_index = static_cast<cuda::std::int64_t>(exp_min_it - host_items.cbegin());
-
       // Last maximum by abs value: last element with largest |value|
       auto exp_last_max_it          = cuda::std::max_element(host_items.crbegin(), host_items.crend(), compare_op);
       const auto exp_last_max       = static_cast<output_t>(*exp_last_max_it);
       const auto exp_last_max_index = static_cast<cuda::std::int64_t>(host_items.size()) - 1
                                     - static_cast<cuda::std::int64_t>(exp_last_max_it - host_items.crbegin());
 
-      device_arg_minlastmax(
+      const auto exp_max       = last_max ? exp_last_max : exp_first_max;
+      const auto exp_max_index = last_max ? exp_last_max_index : exp_first_max_index;
+
+      call_argminmax_launch_wrapper(
+        last_max,
         unwrap_it(d_in_it),
         d_min_out.data(),
         d_min_index.data(),
@@ -750,8 +334,8 @@ CUB_TEST("Device ArgMinMax and ArgMinLastMax work with all device interfaces",
       output_t gpu_max = static_cast<output_t>(d_max_out[0]);
       REQUIRE(exp_min == gpu_min);
       REQUIRE(exp_min_index == d_min_index[0]);
-      REQUIRE(exp_last_max == gpu_max);
-      REQUIRE(exp_last_max_index == d_max_index[0]);
+      REQUIRE(exp_max == gpu_max);
+      REQUIRE(exp_max_index == d_max_index[0]);
     }
   }
 }
