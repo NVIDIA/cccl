@@ -66,14 +66,15 @@ struct SegmentedScanBlockPolicy
 #endif // _CCCL_HOSTED()
 };
 
+//! The policy for warp-level kernels in @ref DeviceSegmentedScan.
 struct SegmentedScanWarpPolicy
 {
-  int threads_per_block;
-  int items_per_thread;
-  WarpLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  WarpStoreAlgorithm store_algorithm;
-  int max_segments;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  WarpLoadAlgorithm load_algorithm; //!< The @ref WarpLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  WarpStoreAlgorithm store_algorithm; //!< The @ref WarpStoreAlgorithm used for storing items to global memory
+  int max_segments; //!< Maximum number of segments processed per warp
 
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const SegmentedScanWarpPolicy& lhs, const SegmentedScanWarpPolicy& rhs)
@@ -101,11 +102,12 @@ struct SegmentedScanWarpPolicy
 #endif // _CCCL_HOSTED()
 };
 
+//! The policy for thread-level kernels in @ref DeviceSegmentedScan.
 struct SegmentedScanThreadPolicy
 {
-  int threads_per_block;
-  int items_per_thread;
-  CacheLoadModifier load_modifier;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
