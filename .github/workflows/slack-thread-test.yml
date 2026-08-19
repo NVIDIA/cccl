@@ -1,0 +1,107 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Test AI Slack thread
+
+on:
+  push:
+    branches:
+      - codex/nightly-ai-slack-links
+    paths:
+      - .github/workflows/slack-thread-test.yml
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Prepare test messages
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    runs-on: ubuntu-latest
+    outputs:
+      slack_thread: ${{ steps.fixture.outputs.slack_thread }}
+    steps:
+      - name: Build fixture
+        id: fixture
+        env:
+          PARENT_BODY: |-
+            :test_tube: *TEST — AI failure analysis Slack thread*
+            3 failure groups covering 12 primary failed jobs.
+
+            1. CUB segmented-sort selector fails aggregate return on GCC 8/9 · 8 jobs
+            2. atomic_ref rejects volatile scalar types · 3 jobs
+            3. operator* overload fails iterator validation · 1 job
+          REPLY_1: |-
+            *1. CUB segmented-sort selector fails aggregate return on GCC 8/9* — 8 jobs
+            *Summary:* GCC 8 and 9 reject the selector's aggregate return while compiling the segmented-sort environment tests.
+            *Root cause:* The selector returns an untyped braced initializer that these toolchains cannot convert to SegmentedSortPolicy.
+            *Next:* Return an explicitly typed policy and rebuild only the affected segmented-sort test objects.
+          REPLY_2: |-
+            *2. atomic_ref rejects volatile scalar types* — 3 jobs
+            *Summary:* Older toolchains reject the volatile atomic_ref test during its type-trait validation.
+            *Root cause:* The trivially-copyable check is applied before removing cv-qualifiers from the underlying type.
+            *Next:* Evaluate the trait on the cv-unqualified type and compile the focused atomic_ref test.
+          REPLY_3: |-
+            *3. operator* overload fails iterator validation* — 1 job
+            *Summary:* This title intentionally contains an asterisk to exercise Slack bold formatting.
+            *Root cause:* The test fixture is checking whether model-generated punctuation can break the reply heading.
+            *Next:* Confirm the complete title is bold and readable in the thread.
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          parent="${PARENT_BODY}
+
+          <${run_url}|Test workflow run>"
+          slack_thread="$(
+            jq -cn \
+              --arg parent "${parent}" \
+              --arg reply_1 "${REPLY_1}" \
+              --arg reply_2 "${REPLY_2}" \
+              --arg reply_3 "${REPLY_3}" \
+              '{parent: $parent, replies: [$reply_1, $reply_2, $reply_3]}'
+          )"
+          printf 'slack_thread=%s\n' "${slack_thread}" >> "${GITHUB_OUTPUT}"
+
+  publish-parent:
+    name: Post test parent message
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    needs: prepare
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      thread_ts: ${{ steps.post.outputs.thread_ts }}
+    steps:
+      - name: Post thread summary
+        id: post
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          slack-message: ${{ fromJSON(needs.prepare.outputs.slack_thread).parent }}
+          payload: '{"parse":"none","unfurl_links":false,"unfurl_media":false}'
+
+  publish-replies:
+    name: Post test group reply
+    if: ${{ !cancelled() && needs.publish-parent.result == 'success' }}
+    needs:
+      - prepare
+      - publish-parent
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        message: ${{ fromJSON(needs.prepare.outputs.slack_thread).replies }}
+    steps:
+      - name: Post group analysis
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          slack-message: ${{ matrix.message }}
+          payload: >-
+            {"thread_ts":"${{ needs.publish-parent.outputs.thread_ts }}",
+            "parse":"none","unfurl_links":false,"unfurl_media":false}
