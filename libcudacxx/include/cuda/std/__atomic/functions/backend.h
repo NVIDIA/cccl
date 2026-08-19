@@ -63,6 +63,22 @@ struct __cuda_atomic_runtime_cas_order
   memory_order __failure;
 };
 
+struct __cuda_atomic_cas_strong
+{};
+
+struct __cuda_atomic_cas_weak : __cuda_atomic_cas_strong
+{};
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __cuda_atomic_cas_is_weak(__cuda_atomic_cas_strong)
+{
+  return false;
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __cuda_atomic_cas_is_weak(__cuda_atomic_cas_weak)
+{
+  return true;
+}
+
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
 _CCCL_HOST_DEVICE_API void
 __cuda_atomic_load_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)

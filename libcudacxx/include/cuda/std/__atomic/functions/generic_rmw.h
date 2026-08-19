@@ -189,7 +189,7 @@ _CCCL_HOST_DEVICE static __cuda_atomic_rmw_result<_Type> __cuda_atomic_rmw(
 
     const __rmw_type __attempt = __window::__replace(__old, __update.__value, __offset);
     if (__cuda_atomic_compare_exchange(
-          __backend, __aligned, __old, __old, __attempt, true, __order, _RmwOperand{}, __scope))
+          __backend, __aligned, __old, __old, __attempt, __cuda_atomic_cas_weak{}, __order, _RmwOperand{}, __scope))
     {
       return {__logical_old, true};
     }
