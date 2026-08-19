@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cuda_smoke_common.cuh"
+#include <cuda_smoke_common.cuh>
 
 // smoke test for mapped pinned host memory
 

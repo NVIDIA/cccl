@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cuda_smoke_common.cuh"
+#include <cuda_smoke_common.cuh>
 
 TEST_CASE("CUDA device is available", "[cuda_smoke]")
 {
