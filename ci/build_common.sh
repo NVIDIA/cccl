@@ -138,16 +138,6 @@ if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
 
-# Available memory (in KB), for more details see free(1).
-mem_available="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
-# Assume linker jobs could take up to 4GiB of memory, so tell ninja
-# to limit the number of concurrent link steps to avoid OOM'ing CI
-link_jobs="$((mem_available / (4 * 1024 * 1024)))"
-GLOBAL_CMAKE_OPTIONS+=(
-    "-DCMAKE_JOB_POOLS=link_jobs=$((link_jobs > 1 ? link_jobs : 1))"
-    "-DCMAKE_JOB_POOL_LINK=link_jobs"
-)
-
 # Default to pedantic mode in CI
 if [[ -z "${PEDANTIC}" && -n "${GITHUB_ACTIONS:-}" ]]; then
     PEDANTIC=1
@@ -206,6 +196,12 @@ export PARALLEL_LEVEL
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+
+# limit the number of concurrent link steps to avoid OOM'ing CI
+GLOBAL_CMAKE_OPTIONS+=(
+    "-DCMAKE_JOB_POOLS=link_jobs=$N_CPUS_MINUS_1"
+    "-DCMAKE_JOB_POOL_LINK=link_jobs"
+)
 
 mkdir -p ../build
 # Absolute path to cccl/build

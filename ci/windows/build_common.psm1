@@ -84,10 +84,8 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
 
-# Assume linker jobs could take up to 4GiB of memory, so tell ninja
-# to limit the number of concurrent link steps to avoid OOM'ing CI
-$link_jobs = [math]::Max(1, [math]::Floor((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 4Mb))
-$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOLS=link_jobs=' + "$link_jobs" + '"'
+# limit the number of concurrent link steps to avoid OOM'ing CI
+$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOLS=link_jobs=' + "$N_CPUS_MINUS_1" + '"'
 $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOL_LINK=link_jobs"'
 
 if ($CUDA_ARCH) {
