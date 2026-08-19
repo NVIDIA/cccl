@@ -110,14 +110,14 @@ _CCCL_HOST_API void __cuda_atomic_store(
   __atomic_store(&__atomic_force_align_host(__ptr)->__atom, &__val, __atomic_order_to_int(__order));
 }
 
-template <class _Type, class _Operand>
+template <class _Type, class _Cas, class _Operand>
 _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_host_backend,
   _Type* __ptr,
   _Type& __dst,
   _Type __cmp,
   _Type __op,
-  bool __weak,
+  _Cas __cas,
   __cuda_atomic_runtime_cas_order __order,
   _Operand,
   __thread_scope_tag)
@@ -129,19 +129,19 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
     // This is only alignment wrapped in order to prevent GCC-6 from triggering an unused warning.
     &__atomic_force_align_host(&__dst)->__atom,
     &__op,
-    __weak,
+    __cuda_atomic_cas_is_weak(__cas),
     __atomic_order_to_int(__order.__success),
     __atomic_failure_order_to_int(__order.__failure));
 }
 
-template <class _Type, class _Operand>
+template <class _Type, class _Cas, class _Operand>
 _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_host_backend __backend,
   _Type* __ptr,
   _Type& __dst,
   _Type __cmp,
   _Type __op,
-  bool __weak,
+  _Cas __cas,
   memory_order __order,
   _Operand __operand,
   __thread_scope_tag __scope)
@@ -152,7 +152,7 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
     __dst,
     __cmp,
     __op,
-    __weak,
+    __cas,
     __cuda_atomic_runtime_cas_order{__order, __cuda_atomic_failure_order(__order)},
     __operand,
     __scope);

@@ -32,13 +32,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Backend,
           class _Type,
+          class _Cas,
           class _Order,
           class _Operand,
           class _Sco,
           enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size < _Backend::__smallest_cas),
                       bool> = false>
 _CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Cas, _Order __order, _Operand, _Sco __scope)
 {
   constexpr size_t __rmw_size = _Backend::__smallest_cas;
   static_assert(__rmw_size <= _Backend::__widest_cas, "atomic CAS cannot be widened beyond the backend's widest CAS");
@@ -59,13 +60,14 @@ _CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
 
 template <class _Backend,
           class _Type,
+          class _Cas,
           class _Order,
           class _Operand,
           class _Sco,
           enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size > _Backend::__widest_cas),
                       bool> = false>
 _CCCL_HOST_DEVICE static bool
-__cuda_atomic_compare_exchange(_Backend, _Type*, _Type&, _Type, _Type, bool, _Order, _Operand, _Sco)
+__cuda_atomic_compare_exchange(_Backend, _Type*, _Type&, _Type, _Type, _Cas, _Order, _Operand, _Sco)
 {
   static_assert(_Operand::__size < _Backend::__widest_cas, "the backend must provide its widest CAS operation");
   return false;

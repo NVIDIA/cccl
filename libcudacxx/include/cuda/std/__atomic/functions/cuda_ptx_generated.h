@@ -1878,167 +1878,167 @@ template <class _Fn, class _Sco>
 
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_block_tag)
 { asm volatile("atom.cas.acquire.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.acquire.cluster.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_device_tag)
 { asm volatile("atom.cas.acquire.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b32, __thread_scope_system_tag)
 { asm volatile("atom.cas.acquire.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_block_tag)
 { asm volatile("atom.cas.relaxed.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.relaxed.cluster.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_device_tag)
 { asm volatile("atom.cas.relaxed.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b32, __thread_scope_system_tag)
 { asm volatile("atom.cas.relaxed.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_block_tag)
 { asm volatile("atom.cas.release.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.release.cluster.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_device_tag)
 { asm volatile("atom.cas.release.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b32, __thread_scope_system_tag)
 { asm volatile("atom.cas.release.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_block_tag)
 { asm volatile("atom.cas.acq_rel.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.acq_rel.cluster.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_device_tag)
 { asm volatile("atom.cas.acq_rel.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b32, __thread_scope_system_tag)
 { asm volatile("atom.cas.acq_rel.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_block_tag)
 { asm volatile("atom.cas.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.cluster.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_device_tag)
 { asm volatile("atom.cas.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b32, __thread_scope_system_tag)
 { asm volatile("atom.cas.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr), "r"(__cmp), "r"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_block_tag)
 { asm volatile("atom.cas.acquire.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.acquire.cluster.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_device_tag)
 { asm volatile("atom.cas.acquire.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b64, __thread_scope_system_tag)
 { asm volatile("atom.cas.acquire.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_block_tag)
 { asm volatile("atom.cas.relaxed.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.relaxed.cluster.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_device_tag)
 { asm volatile("atom.cas.relaxed.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b64, __thread_scope_system_tag)
 { asm volatile("atom.cas.relaxed.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_block_tag)
 { asm volatile("atom.cas.release.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.release.cluster.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_device_tag)
 { asm volatile("atom.cas.release.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b64, __thread_scope_system_tag)
 { asm volatile("atom.cas.release.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_block_tag)
 { asm volatile("atom.cas.acq_rel.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.acq_rel.cluster.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_device_tag)
 { asm volatile("atom.cas.acq_rel.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b64, __thread_scope_system_tag)
 { asm volatile("atom.cas.acq_rel.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_block_tag)
 { asm volatile("atom.cas.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_cluster_tag)
 { asm volatile("atom.cas.cluster.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_device_tag)
 { asm volatile("atom.cas.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b64, __thread_scope_system_tag)
 { asm volatile("atom.cas.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr), "l"(__cmp), "l"(__op) : "memory"); return __dst == __cmp; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_block_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2057,7 +2057,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2076,7 +2076,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_device_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2095,7 +2095,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acquire, __cuda_atomic_operand_b128, __thread_scope_system_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2114,7 +2114,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_block_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2133,7 +2133,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2152,7 +2152,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_device_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2171,7 +2171,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_relaxed, __cuda_atomic_operand_b128, __thread_scope_system_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2190,7 +2190,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_block_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2209,7 +2209,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2228,7 +2228,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_device_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2247,7 +2247,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_release, __cuda_atomic_operand_b128, __thread_scope_system_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2266,7 +2266,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_block_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2285,7 +2285,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2304,7 +2304,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_device_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2323,7 +2323,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_acq_rel, __cuda_atomic_operand_b128, __thread_scope_system_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2342,7 +2342,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_block_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_block_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2361,7 +2361,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_cluster_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2380,7 +2380,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_device_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_device_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2399,7 +2399,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_system_tag)
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, __cuda_atomic_order_volatile, __cuda_atomic_operand_b128, __thread_scope_system_tag)
 {
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -2419,27 +2419,26 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type, typename _Tag, typename _Cas, typename _Sco>
 struct __cuda_atomic_bind_compare_exchange {
   _Backend __backend;
   _Type* __ptr;
   _Type* __exp;
   _Type* __des;
-  bool __weak;
 
   template <typename _Atomic_Memorder>
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
     return __cuda_atomic_compare_exchange(
-      __backend, __ptr, *__exp, *__exp, *__des, __weak, __order, _Tag{}, _Sco{});
+      __backend, __ptr, *__exp, *__exp, *__des, _Cas{}, __order, _Tag{}, _Sco{});
   }
 };
-template <class _Backend, class _Type, class _Sco>
+template <class _Backend, class _Type, class _Cas, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type* __ptr,
   _Type* __exp,
   _Type __des,
-  bool __weak,
+  _Cas,
   memory_order __success,
   memory_order __failure,
   _Sco __scope)
@@ -2454,18 +2453,18 @@ template <class _Backend, class _Type, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_compare_swap{
-    __backend, __ptr_proxy, __exp_proxy, __des_proxy, __weak};
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+    __backend, __ptr_proxy, __exp_proxy, __des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope);
 }
-template <class _Backend, class _Type, class _Sco>
+template <class _Backend, class _Type, class _Cas, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type volatile* __ptr,
   _Type* __exp,
   _Type __des,
-  bool __weak,
+  _Cas,
   memory_order __success,
   memory_order __failure,
   _Sco __scope)
@@ -2480,8 +2479,8 @@ template <class _Backend, class _Type, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_compare_swap{
-    __backend, __ptr_proxy, __exp_proxy, __des_proxy, __weak};
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+    __backend, __ptr_proxy, __exp_proxy, __des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope);
 }

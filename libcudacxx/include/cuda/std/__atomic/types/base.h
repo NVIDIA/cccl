@@ -122,7 +122,14 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {})
 {
   _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
-    __cuda_atomic_compare_exchange_dispatch, _Sco{}, __a->get(), __expected, __val, false, __success, __failure);
+    __cuda_atomic_compare_exchange_dispatch,
+    _Sco{},
+    __a->get(),
+    __expected,
+    __val,
+    __cuda_atomic_cas_strong{},
+    __success,
+    __failure);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -130,7 +137,14 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_weak_dispatch(
   _Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {})
 {
   _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
-    __cuda_atomic_compare_exchange_dispatch, _Sco{}, __a->get(), __expected, __val, true, __success, __failure);
+    __cuda_atomic_compare_exchange_dispatch,
+    _Sco{},
+    __a->get(),
+    __expected,
+    __val,
+    __cuda_atomic_cas_weak{},
+    __success,
+    __failure);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>

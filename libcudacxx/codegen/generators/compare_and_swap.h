@@ -64,7 +64,7 @@ template <class _Fn, class _Sco>
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, {4}, __cuda_atomic_operand_{0}{1}, {6})
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, {4}, __cuda_atomic_operand_{0}{1}, {6})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -85,7 +85,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, bool, {4}, __cuda_atomic_operand_{0}{1}, {6})
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __cuda_atomic_cas_strong, {4}, __cuda_atomic_operand_{0}{1}, {6})
 {{ asm volatile("atom.cas{3}{5}.{0}{1} %0,[%1],%2,%3;" : "={2}"(__dst) : "l"(__ptr), "{2}"(__cmp), "{2}"(__op) : "memory"); return __dst == __cmp; }})XXX";
 
   constexpr Operand supported_types[] = {
@@ -163,27 +163,26 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
       << R"XXX(
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type, typename _Tag, typename _Cas, typename _Sco>
 struct __cuda_atomic_bind_compare_exchange {
   _Backend __backend;
   _Type* __ptr;
   _Type* __exp;
   _Type* __des;
-  bool __weak;
 
   template <typename _Atomic_Memorder>
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
     return __cuda_atomic_compare_exchange(
-      __backend, __ptr, *__exp, *__exp, *__des, __weak, __order, _Tag{}, _Sco{});
+      __backend, __ptr, *__exp, *__exp, *__des, _Cas{}, __order, _Tag{}, _Sco{});
   }
 };
-template <class _Backend, class _Type, class _Sco>
+template <class _Backend, class _Type, class _Cas, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type* __ptr,
   _Type* __exp,
   _Type __des,
-  bool __weak,
+  _Cas,
   memory_order __success,
   memory_order __failure,
   _Sco __scope)
@@ -198,18 +197,18 @@ template <class _Backend, class _Type, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_compare_swap{
-    __backend, __ptr_proxy, __exp_proxy, __des_proxy, __weak};
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+    __backend, __ptr_proxy, __exp_proxy, __des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope);
 }
-template <class _Backend, class _Type, class _Sco>
+template <class _Backend, class _Type, class _Cas, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type volatile* __ptr,
   _Type* __exp,
   _Type __des,
-  bool __weak,
+  _Cas,
   memory_order __success,
   memory_order __failure,
   _Sco __scope)
@@ -224,8 +223,8 @@ template <class _Backend, class _Type, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_compare_swap{
-    __backend, __ptr_proxy, __exp_proxy, __des_proxy, __weak};
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_t, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+    __backend, __ptr_proxy, __exp_proxy, __des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope);
 }
