@@ -1881,6 +1881,50 @@ example, operations that are not suitable for a ``host_launch`` callback):
 
     // The host can now safely operate on the externally managed state.
 
+Thread safety
+-------------
+
+CUDASTF supports submitting tasks to a single context from multiple host
+threads concurrently. A context object (and its copies, which share state) may
+be shared between threads, and the task submission path — ``ctx.task``,
+``ctx.parallel_for``, ``ctx.launch``, ``ctx.cuda_kernel``, ``ctx.host_launch``,
+and the creation and destruction of ``logical_data`` — is safe to call
+concurrently. Internally, dependencies between tasks are enforced with one
+mutex per logical data, acquired in a canonical order for the duration of the
+task's dependency acquisition, and the runtime's own bookkeeping (stream
+pools, cross-stream synchronization caches, allocators, and — for the graph
+backend — insertion of nodes into the context's CUDA graph) is synchronized.
+Note that this only makes the runtime's bookkeeping race-free: as in the
+single-threaded case, accesses to the same logical data are ordered by the
+task dependency graph, not by submission order, so two threads racing to
+submit ``rw()`` tasks on the same data will execute them in an unspecified
+(but serialized and coherent) order.
+
+The following operations are **not** thread-safe, and require that the
+application quiesces all submitter threads first (e.g. by joining them):
+
+- Phase transitions: ``ctx.finalize()``, ``ctx.submit()``, ``ctx.fence()``,
+  ``ctx.task_fence()``, ``ctx.wait()``, and — for the graph backend —
+  ``change_stage()`` and ``finalize_as_graph()``. These synchronize with and
+  tear down state that in-flight submissions read.
+- Context configuration: ``ctx.set_allocator()``, ``set_uncached_allocator()``,
+  ``update_uncached_allocator()``, ``set_graph_cache_policy()``, and creating
+  custom ``block_allocator`` objects must happen before concurrent submission
+  starts (or after it ends).
+- ``freeze``/``unfreeze`` of a logical data concurrently with task submission
+  on that same logical data (see the freeze section above for the
+  single-threaded contract).
+- The deferred task API (``deferred_task``, ``deferred_parallel_for``, ...) is
+  single-threaded by design.
+- Opt-in diagnostic and heuristic features are currently single-threaded:
+  DOT sections (``ctx.dot_section``), task calibration/statistics
+  (``CUDASTF_CALIBRATION_FILE``), and the automatic schedulers/reorderers
+  (``CUDASTF_SCHEDULE``, ``CUDASTF_TASK_ORDER``). Plain DOT tracing
+  (``CUDASTF_DOT_FILE``) of concurrently submitted tasks is supported.
+
+Affinity (``ctx.push_affinity`` / ``ctx.pop_affinity``) is thread-local: it
+applies to constructs submitted by the calling thread only.
+
 Debugging
 ---------
 
