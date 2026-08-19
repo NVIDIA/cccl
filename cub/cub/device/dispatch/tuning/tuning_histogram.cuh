@@ -64,6 +64,7 @@ struct HistogramPolicy
   HistogramPrivatizationPolicy gmem; //!< Policy for global-memory privatization
   HistogramPrivatizationPolicy static_smem; //!< Policy for compile-time-sized shared-memory privatization
   HistogramPrivatizationPolicy dynamic_smem; //!< Policy for runtime-sized shared-memory privatization
+  int init_threads_per_block; //!< Number of threads in a histogram initialization block
   int max_privatized_static_smem_single_channel_bytes; //!< Single-channel compile-time-sized SMEM limit
   int max_privatized_dynamic_smem_single_channel_bytes; //!< Single-channel runtime-sized SMEM limit
   int static_smem_min_blocks_per_sm; //!< Minimum blocks per SM requested by the static-SMEM launch bounds
@@ -71,12 +72,13 @@ struct HistogramPolicy
   int max_privatized_dynamic_smem_2_channel_even_bytes; //!< Two-channel HistogramEven SMEM limit
   int max_privatized_dynamic_smem_3_channel_even_bytes; //!< Three-channel HistogramEven SMEM limit
   int max_privatized_dynamic_smem_4_channel_even_bytes; //!< Four-channel HistogramEven SMEM limit
-  int max_output_histogram_bytes_for_init_kernel_pdl_trigger; //!< Largest output allocation for init-kernel PDL
+  int max_output_histogram_bytes_for_init_kernel_pdl; //!< Largest output allocation for init-kernel PDL
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
     return lhs.gmem == rhs.gmem && lhs.static_smem == rhs.static_smem && lhs.dynamic_smem == rhs.dynamic_smem
+        && lhs.init_threads_per_block == rhs.init_threads_per_block
         && lhs.max_privatized_static_smem_single_channel_bytes == rhs.max_privatized_static_smem_single_channel_bytes
         && lhs.max_privatized_dynamic_smem_single_channel_bytes == rhs.max_privatized_dynamic_smem_single_channel_bytes
         && lhs.static_smem_min_blocks_per_sm == rhs.static_smem_min_blocks_per_sm
@@ -85,8 +87,7 @@ struct HistogramPolicy
         && lhs.max_privatized_dynamic_smem_2_channel_even_bytes == rhs.max_privatized_dynamic_smem_2_channel_even_bytes
         && lhs.max_privatized_dynamic_smem_3_channel_even_bytes == rhs.max_privatized_dynamic_smem_3_channel_even_bytes
         && lhs.max_privatized_dynamic_smem_4_channel_even_bytes == rhs.max_privatized_dynamic_smem_4_channel_even_bytes
-        && lhs.max_output_histogram_bytes_for_init_kernel_pdl_trigger
-             == rhs.max_output_histogram_bytes_for_init_kernel_pdl_trigger;
+        && lhs.max_output_histogram_bytes_for_init_kernel_pdl == rhs.max_output_histogram_bytes_for_init_kernel_pdl;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -100,8 +101,9 @@ struct HistogramPolicy
   {
     return os
         << "HistogramPolicy { .gmem = " << p.gmem << ", .static_smem = " << p.static_smem
-        << ", .dynamic_smem = " << p.dynamic_smem << ", .max_privatized_static_smem_single_channel_bytes = "
-        << p.max_privatized_static_smem_single_channel_bytes << ", .max_privatized_dynamic_smem_single_channel_bytes = "
+        << ", .dynamic_smem = " << p.dynamic_smem << ", .init_threads_per_block = " << p.init_threads_per_block
+        << ", .max_privatized_static_smem_single_channel_bytes = " << p.max_privatized_static_smem_single_channel_bytes
+        << ", .max_privatized_dynamic_smem_single_channel_bytes = "
         << p.max_privatized_dynamic_smem_single_channel_bytes << ", .static_smem_min_blocks_per_sm = "
         << p.static_smem_min_blocks_per_sm << ", .max_privatized_dynamic_smem_multi_channel_range_bytes = "
         << p.max_privatized_dynamic_smem_multi_channel_range_bytes
@@ -110,18 +112,14 @@ struct HistogramPolicy
         << ", .max_privatized_dynamic_smem_3_channel_even_bytes = "
         << p.max_privatized_dynamic_smem_3_channel_even_bytes
         << ", .max_privatized_dynamic_smem_4_channel_even_bytes = "
-        << p.max_privatized_dynamic_smem_4_channel_even_bytes
-        << ", .max_output_histogram_bytes_for_init_kernel_pdl_trigger = "
-        << p.max_output_histogram_bytes_for_init_kernel_pdl_trigger << " }";
+        << p.max_privatized_dynamic_smem_4_channel_even_bytes << ", .max_output_histogram_bytes_for_init_kernel_pdl = "
+        << p.max_output_histogram_bytes_for_init_kernel_pdl << " }";
   }
 #endif
 };
 
 namespace detail::histogram
 {
-inline constexpr int histogram_init_threads_per_block   = 256;
-inline constexpr int legacy_privatized_static_smem_bins = 256;
-
 enum class privatization_mode
 {
   gmem,
@@ -298,11 +296,12 @@ public:
 
       // All storage thresholds are byte budgets. Dispatch derives the corresponding
       // bin limits from the local counter width and active channel count.
-      constexpr int max_privatized_static_smem_bytes                       = 1024;
-      constexpr int max_privatized_dynamic_smem_single_channel_bytes       = 228352;
-      constexpr int max_privatized_dynamic_smem_range_bytes_per_channel    = 8192;
-      constexpr int max_privatized_dynamic_smem_even_bytes_per_channel     = 32768;
-      constexpr int max_output_histogram_bytes_for_init_kernel_pdl_trigger = 8192;
+      constexpr int max_privatized_static_smem_bytes                    = 1024;
+      constexpr int max_privatized_dynamic_smem_single_channel_bytes    = 228352;
+      constexpr int max_privatized_dynamic_smem_range_bytes_per_channel = 8192;
+      constexpr int max_privatized_dynamic_smem_even_bytes_per_channel  = 32768;
+      constexpr int init_threads_per_block                              = 256;
+      constexpr int max_output_histogram_bytes_for_init_kernel_pdl      = 8192;
 
       const bool supports_dynamic_smem =
         counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive;
@@ -323,13 +322,14 @@ public:
       const int init_kernel_pdl_trigger_bytes =
         single_channel && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
             && (sample_size_bytes == 1 || sample_size_bytes == 2 || sample_size_bytes == 4 || sample_size_bytes == 8)
-          ? max_output_histogram_bytes_for_init_kernel_pdl_trigger
+          ? max_output_histogram_bytes_for_init_kernel_pdl
           : 0;
 
       return HistogramPolicy{
         gmem,
         static_smem,
         gmem,
+        init_threads_per_block,
         max_privatized_static_smem_bytes,
         dynamic_smem_single_channel_bytes,
         range_multi_static || range_u64_static ? 3 : 0,
@@ -365,20 +365,32 @@ public:
           sweep = HistogramPrivatizationPolicy{960, 10, 4, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, false};
         }
       }
-      constexpr int max_privatized_static_smem_bytes                       = 1024;
-      constexpr int max_output_histogram_bytes_for_init_kernel_pdl_trigger = 8192;
+      constexpr int max_privatized_static_smem_bytes               = 1024;
+      constexpr int init_threads_per_block                         = 256;
+      constexpr int max_output_histogram_bytes_for_init_kernel_pdl = 8192;
       const int init_kernel_pdl_trigger_bytes =
         num_channels == 1 && num_active_channels == 1 && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)}
             && sample_is_primitive && (sample_size_bytes == 1 || sample_size_bytes == 2)
-          ? max_output_histogram_bytes_for_init_kernel_pdl_trigger
+          ? max_output_histogram_bytes_for_init_kernel_pdl
           : 0;
       return HistogramPolicy{
-        sweep, sweep, sweep, max_privatized_static_smem_bytes, 0, 0, 0, 0, 0, 0, init_kernel_pdl_trigger_bytes};
+        sweep,
+        sweep,
+        sweep,
+        init_threads_per_block,
+        max_privatized_static_smem_bytes,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        init_kernel_pdl_trigger_bytes};
     }
 
     // Architectures before SM90 use the longstanding generic histogram tuning.
     const auto sweep = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
-    return HistogramPolicy{sweep, sweep, sweep, 1024, 0, 0, 0, 0, 0, 0, 0};
+    return HistogramPolicy{sweep, sweep, sweep, 256, 1024, 0, 0, 0, 0, 0, 0, 0};
   }
 };
 
