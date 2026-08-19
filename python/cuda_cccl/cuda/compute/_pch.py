@@ -130,7 +130,7 @@ def resolve_cache_dir() -> Path | None:
 def _backend_has_pch() -> bool:
     """True on the v2 (HostJIT) backend, the only one with a PCH cache."""
     try:
-        from ._build_info import USING_V2
+        from ._build_info import USING_V2  # type: ignore[import-not-found]
     except ImportError:
         return False
     return bool(USING_V2)
