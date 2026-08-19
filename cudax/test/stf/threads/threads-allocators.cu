@@ -91,7 +91,7 @@ static void run(alloc_kind kind)
 
   ::std::atomic<size_t> n_ready{0};
 
-  auto worker = [&](size_t tid) {
+  const auto worker = [&](const size_t tid) {
     // Rendezvous: no thread submits until all workers exist, so submissions
     // genuinely overlap instead of running serially as threads spawn.
     n_ready.fetch_add(1);

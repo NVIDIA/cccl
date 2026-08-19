@@ -51,7 +51,7 @@ int main()
 
   ::std::atomic<size_t> n_ready{0};
 
-  auto worker = [&](size_t tid) {
+  const auto worker = [&](const size_t tid) {
     // Rendezvous: no thread submits until all workers exist, so graph-node
     // insertions genuinely overlap instead of running serially as threads
     // spawn.
