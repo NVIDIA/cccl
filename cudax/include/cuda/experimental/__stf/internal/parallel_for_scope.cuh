@@ -1231,7 +1231,12 @@ public:
       params.userData = args;
       params.fn       = host_func;
 
-      // Put this host node into the child graph that implements the graph_task<>
+      // Put this host node into the child graph that implements the graph_task<>.
+      // The context graph is shared by all tasks in a graph_ctx, including those
+      // submitted concurrently from other host threads; cudaGraphAddHostNode is
+      // not thread-safe per graph, so serialize on graph_mutex exactly like the
+      // device parallel_for path above and cuda_kernel/host_launch.
+      auto lock    = t.lock_ctx_graph();
       t.get_node() = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
     }
     else
