@@ -1049,7 +1049,7 @@ __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-e
 [[nodiscard]] _CCCL_HOST_API inline ::CUstream
 __greenCtxStreamCreate(::CUgreenCtx __green_ctx, unsigned int __flags, int __priority)
 {
-  static auto __driver_fn =
+  static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxStreamCreate, cuGreenCtxStreamCreate, 12, 5);
   ::CUstream __result{};
 

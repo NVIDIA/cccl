@@ -52,12 +52,14 @@ struct stream : stream_ref
     __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 
+#  if _CCCL_CTK_AT_LEAST(12, 5)
   _CCCL_HOST_API explicit stream(__logical_device_ref __device, int __priority = default_priority)
       : stream_ref{
           // We do not need __ensure_current_context here, the driver explicitly states it
           // ignores any context that is current for this call.
           ::cuda::__driver::__greenCtxStreamCreate(__device.green_context(), ::CU_STREAM_NON_BLOCKING, __priority)}
   {}
+#  endif
 
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
