@@ -80,12 +80,8 @@ _CCCL_DIAG_POP
 template <class _Tp>
 _CCCL_HOST_DEVICE_API bool __atomic_small_extended_floating_point_less(_Tp __lhs, _Tp __rhs)
 {
-  bool __result;
-  NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                     (__result = __lhs < __rhs;),
-                     NV_IS_HOST,
-                     (__result = static_cast<float>(__lhs) < static_cast<float>(__rhs);))
-  return __result;
+  // Intentionally unqualified to avoid including <cuda_fp16.h> and <cuda_bf16.h>.
+  return __hlt(__lhs, __rhs);
 }
 
 template <typename _Tp>
@@ -227,9 +223,10 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  using _Tp = __atomic_underlying_t<_Sto>;
-  static_assert(is_integral_v<_Tp> || __is_extended_floating_point_v<_Tp>);
-  if constexpr (__is_extended_floating_point_v<_Tp>)
+  using _Tp                                             = __atomic_underlying_t<_Sto>;
+  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
+  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
+  if constexpr (__is_supported_extended_floating_point)
   {
     auto __expected = __atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
     while (true)
@@ -254,9 +251,10 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  using _Tp = __atomic_underlying_t<_Sto>;
-  static_assert(is_integral_v<_Tp> || __is_extended_floating_point_v<_Tp>);
-  if constexpr (__is_extended_floating_point_v<_Tp>)
+  using _Tp                                             = __atomic_underlying_t<_Sto>;
+  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
+  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
+  if constexpr (__is_supported_extended_floating_point)
   {
     auto __expected = __atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
     while (true)

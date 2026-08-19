@@ -13,10 +13,12 @@
 
 // <cuda/atomic>
 
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
+// clang-format off
+#include <disable_nvfp_conversions_and_operators.h>
+// clang-format on
 
 #include <cuda/atomic>
+#include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
@@ -27,7 +29,13 @@
 template <class T>
 TEST_HOST_DEVICE_FUNC bool equal(T lhs, T rhs)
 {
-  return static_cast<float>(lhs) == static_cast<float>(rhs);
+  return ::__heq(lhs, rhs);
+}
+
+template <class T>
+TEST_HOST_DEVICE_FUNC T value(float val)
+{
+  return cuda::std::__fp_cast<T>(val);
 }
 
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
@@ -40,68 +48,68 @@ struct TestFn
       using A = cuda::atomic<T, ThreadScope>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
-      t    = T(-1.0f);
-      assert(equal(t.fetch_min(T(-5.0f)), T(-1.0f)));
-      assert(equal(t.load(), T(-5.0f)));
+      t    = value<T>(-1.0f);
+      assert(equal(t.fetch_min(value<T>(-5.0f)), value<T>(-1.0f)));
+      assert(equal(t.load(), value<T>(-5.0f)));
     }
     {
       using A = cuda::atomic<T, ThreadScope>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
-      t             = T(-1.0f);
-      assert(equal(t.fetch_min(T(-5.0f)), T(-1.0f)));
-      assert(equal(t.load(), T(-5.0f)));
+      t             = value<T>(-1.0f);
+      assert(equal(t.fetch_min(value<T>(-5.0f)), value<T>(-1.0f)));
+      assert(equal(t.load(), value<T>(-5.0f)));
     }
     // Test not lesser
     {
       using A = cuda::atomic<T, ThreadScope>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
-      t    = T(-1.0f);
-      assert(equal(t.fetch_min(T(4.0f)), T(-1.0f)));
-      assert(equal(t.load(), T(-1.0f)));
+      t    = value<T>(-1.0f);
+      assert(equal(t.fetch_min(value<T>(4.0f)), value<T>(-1.0f)));
+      assert(equal(t.load(), value<T>(-1.0f)));
     }
     {
       using A = cuda::atomic<T, ThreadScope>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
-      t             = T(-1.0f);
-      assert(equal(t.fetch_min(T(4.0f)), T(-1.0f)));
-      assert(equal(t.load(), T(-1.0f)));
+      t             = value<T>(-1.0f);
+      assert(equal(t.fetch_min(value<T>(4.0f)), value<T>(-1.0f)));
+      assert(equal(t.load(), value<T>(-1.0f)));
     }
     // Fetch max
     {
       using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
-      t    = T(1.0f);
-      assert(equal(t.fetch_max(T(2.0f)), T(1.0f)));
-      assert(equal(t.load(), T(2.0f)));
+      t    = value<T>(1.0f);
+      assert(equal(t.fetch_max(value<T>(2.0f)), value<T>(1.0f)));
+      assert(equal(t.load(), value<T>(2.0f)));
     }
     {
       using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
-      t             = T(1.0f);
-      assert(equal(t.fetch_max(T(2.0f)), T(1.0f)));
-      assert(equal(t.load(), T(2.0f)));
+      t             = value<T>(1.0f);
+      assert(equal(t.fetch_max(value<T>(2.0f)), value<T>(1.0f)));
+      assert(equal(t.load(), value<T>(2.0f)));
     }
     // Test not greater
     {
       using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
-      t    = T(3.0f);
-      assert(equal(t.fetch_max(T(2.0f)), T(3.0f)));
-      assert(equal(t.load(), T(3.0f)));
+      t    = value<T>(3.0f);
+      assert(equal(t.fetch_max(value<T>(2.0f)), value<T>(3.0f)));
+      assert(equal(t.load(), value<T>(3.0f)));
     }
     {
       using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
-      t             = T(3.0f);
-      assert(equal(t.fetch_max(T(2.0f)), T(3.0f)));
-      assert(equal(t.load(), T(3.0f)));
+      t             = value<T>(3.0f);
+      assert(equal(t.fetch_max(value<T>(2.0f)), value<T>(3.0f)));
+      assert(equal(t.load(), value<T>(3.0f)));
     }
   }
 };
