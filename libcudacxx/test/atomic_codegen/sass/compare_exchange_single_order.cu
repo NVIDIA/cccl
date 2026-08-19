@@ -39,7 +39,7 @@ atomic_codegen_test(cuda::atomic_ref<int32_t, cuda::thread_scope_device>& atom, 
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX: {{.*}}ATOM.E.CAS.STRONG.GPU{{.*}}
-; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}

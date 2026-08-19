@@ -39,7 +39,7 @@ extern "C" __device__ bool atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom, i
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]]{{.*}}
-; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}

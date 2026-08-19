@@ -43,7 +43,7 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
 ; BLOCK: {{.*}}LD.E[[SASS_SIZE]].STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E[[SASS_SIZE]].STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
-; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}

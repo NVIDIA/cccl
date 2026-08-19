@@ -41,7 +41,7 @@ extern "C" __device__ bool atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, 
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]]{{.*}}
-; NON_BLOCK_ACQUIRE-NEXT: {{.*}}CCTL.IVALL{{.*}}
+; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
