@@ -528,8 +528,9 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    ::cuda::static_for<num_stages>(
-      [&](auto stage) { merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op); });
+    ::cuda::static_for<num_stages>([&](auto stage) {
+      merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op);
+    });
   }
 
   template <typename CompareOp, bool Reverse>
@@ -545,8 +546,9 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    ::cuda::static_for<num_stages>(
-      [&](auto stage) { merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items); });
+    ::cuda::static_for<num_stages>([&](auto stage) {
+      merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items);
+    });
   }
 
   template <typename CompareOp, bool Reverse>
