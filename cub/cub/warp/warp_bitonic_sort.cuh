@@ -20,13 +20,13 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
@@ -153,7 +153,11 @@ public:
   //! - All threads in the calling logical warp must invoke this collective.
   //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
-  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
+  //!   every key within the `valid_items` boundaries is ordered strictly before `oob_default`. If a key compares
+  //!   equivalent to `oob_default`, the sort may place an out-of-bound key within the `valid_items` boundaries and
+  //!   displace the equivalent key past them. This is observable whenever `compare_op` orders only part of the key's
+  //!   state, for example a struct compared by a single member. Use the `Sort(keys, compare_op, valid_items)` overload
+  //!   if keys may compare equivalent to `oob_default`.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -521,23 +525,11 @@ private:
   int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
   unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
 
-  //! @brief Runs the given stages of the bitonic sorting network in order.
-  template <typename CompareOp, bool Reverse, bool Full, int... Stages>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_stages(
-    ::cuda::std::integer_sequence<int, Stages...>,
-    KeyT* keys,
-    ValueT* values,
-    CompareOp compare_op,
-    int valid_items = -1) const
-  {
-    (merge_stage<CompareOp, Reverse, Full, Stages>(keys, values, compare_op, valid_items), ...);
-  }
-
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    merge_stages<CompareOp, Reverse, true>(
-      ::cuda::std::make_integer_sequence<int, num_stages>{}, keys, values, compare_op);
+    ::cuda::static_for<num_stages>(
+      [&](auto stage) { merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op); });
   }
 
   template <typename CompareOp, bool Reverse>
@@ -553,8 +545,8 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    merge_stages<CompareOp, Reverse, false>(
-      ::cuda::std::make_integer_sequence<int, num_stages>{}, keys, values, compare_op, valid_items);
+    ::cuda::static_for<num_stages>(
+      [&](auto stage) { merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items); });
   }
 
   template <typename CompareOp, bool Reverse>

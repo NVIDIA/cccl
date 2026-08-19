@@ -392,8 +392,8 @@ CUB_TEST("Warp sort on keys-only works",
   using type   = typename params::type;
 
   // Prepare test data
-  const int valid_items = params::max_valid_items;
-  const int total_items = params::total_warps * valid_items;
+  constexpr int valid_items = params::max_valid_items;
+  constexpr int total_items = params::total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
   c2h::device_vector<type> d_out(total_items);
   c2h::gen(C2H_SEED(10), d_in);
@@ -459,8 +459,8 @@ CUB_TEST("Warp sort on keys-value pairs works",
   using value_type = typename c2h::get<4, TestType>;
 
   // Prepare test data
-  const int valid_items = params::max_valid_items;
-  const int total_items = params::total_warps * valid_items;
+  constexpr int valid_items = params::max_valid_items;
+  constexpr int total_items = params::total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
   c2h::device_vector<key_type> d_keys_out(total_items);
   c2h::device_vector<value_type> d_values_in(total_items);
