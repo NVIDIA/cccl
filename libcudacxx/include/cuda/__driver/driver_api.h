@@ -358,26 +358,25 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
       && ::cuda::__driver::__has_no_current_context();
 }
 
-#  define _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE(_MSG) \
+#  define _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE(_MSG)                                                       \
     _MSG ". The NULL/default stream requires a current CUDA context. Set the current device or make a CUDA context " \
          "current before using the NULL/default stream."
 
-#  define _CCCLRT_STREAM_ERROR_MESSAGE(_STREAM, _MSG) \
+#  define _CCCLRT_STREAM_ERROR_MESSAGE(_STREAM, _MSG)                       \
     (::cuda::__driver::__is_default_stream_without_current_context(_STREAM) \
-       ? _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE(_MSG) \
+       ? _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE(_MSG)               \
        : _MSG)
 
-#  define _CCCLRT_CALL_STREAM_DRIVER_FN(_FN, _DIAGNOSTIC_STREAM, _MSG, ...) \
-    do \
-    { \
-      const ::CUresult __status = _FN(__VA_ARGS__); \
-      if (__status != ::CUDA_SUCCESS) \
-      { \
-        _CCCL_THROW( \
-          ::cuda::cuda_error, \
-          static_cast<::cudaError_t>(__status), \
-          _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
-      } \
+#  define _CCCLRT_CALL_STREAM_DRIVER_FN(_FN, _DIAGNOSTIC_STREAM, _MSG, ...)  \
+    do                                                                       \
+    {                                                                        \
+      const ::CUresult __status = _FN(__VA_ARGS__);                          \
+      if (__status != ::CUDA_SUCCESS)                                        \
+      {                                                                      \
+        _CCCL_THROW(::cuda::cuda_error,                                      \
+                    static_cast<::cudaError_t>(__status),                    \
+                    _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
+      }                                                                      \
     } while (0)
 
 // Memory management
@@ -775,8 +774,7 @@ struct __ctx_from_stream
   ::CUcontext __ctx   = nullptr;
   ::CUgreenCtx __gctx = nullptr;
   __ctx_from_stream __result;
-  _CCCLRT_CALL_STREAM_DRIVER_FN(
-    __driver_fn, __stream, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
+  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
   if (__gctx)
   {
     __result.__ctx_kind_  = __ctx_from_stream::__kind::__green;
@@ -797,8 +795,7 @@ struct __ctx_from_stream
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetDevice, cuStreamGetDevice, 12, 8);
   ::CUdevice __result{};
-  _CCCLRT_CALL_STREAM_DRIVER_FN(
-    __driver_fn, __stream, "Failed to get the device of the stream", __stream, &__result);
+  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get the device of the stream", __stream, &__result);
   return __result;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
@@ -835,8 +832,7 @@ __streamQueryNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exception-
 {
   int __priority;
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetPriority);
-  _CCCLRT_CALL_STREAM_DRIVER_FN(
-    __driver_fn, __stream, "Failed to get the priority of a stream", __stream, &__priority);
+  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get the priority of a stream", __stream, &__priority);
   return __priority;
 }
 
@@ -860,8 +856,7 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamIsCapturing);
   ::CUstreamCaptureStatus __ret{};
 
-  _CCCLRT_CALL_STREAM_DRIVER_FN(
-    __driver_fn, __stream, "Failed to get the capture status of a stream", __stream, &__ret);
+  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get the capture status of a stream", __stream, &__ret);
   return __ret;
 }
 
