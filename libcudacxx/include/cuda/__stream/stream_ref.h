@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -218,16 +218,7 @@ public:
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    const auto __result = ::cuda::__driver::__streamQueryNoThrow(__stream);
-    switch (__result)
-    {
-      case ::cudaErrorNotReady:
-        return false;
-      case ::cudaSuccess:
-        return true;
-      default:
-        _CCCL_THROW(::cuda::cuda_error, __result, "Failed to query stream.");
-    }
+    return ::cuda::__driver::__streamQuery(__stream);
   }
 
   //! @brief Queries if all operations on the wrapped stream have completed.
