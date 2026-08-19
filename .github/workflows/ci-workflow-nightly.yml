@@ -229,44 +229,24 @@ jobs:
     name: Post AI failure analysis to Slack
     if: ${{ !cancelled() && needs.analyze-failures.result == 'success' }}
     needs: analyze-failures
-    permissions: {}
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      thread_ts: ${{ steps.post.outputs.thread_ts }}
+    timeout-minutes: 10
     steps:
-      - name: Post thread summary
-        id: post
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
-          slack-message: ${{ fromJSON(needs.analyze-failures.outputs.slack_thread).parent }}
-          payload: '{"parse":"none","unfurl_links":false,"unfurl_media":false}'
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_thread.py
+          sparse-checkout-cone-mode: false
 
-  publish-failure-analysis-replies:
-    name: Post AI failure group to Slack
-    if: ${{ !cancelled() && needs.publish-failure-analysis.result == 'success' }}
-    needs:
-      - analyze-failures
-      - publish-failure-analysis
-    permissions: {}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        message: ${{ fromJSON(needs.analyze-failures.outputs.slack_thread).replies }}
-    steps:
-      - name: Post group analysis
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+      - name: Post failure analysis thread
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-        with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
-          slack-message: ${{ matrix.message }}
-          payload: >-
-            {"thread_ts":"${{ needs.publish-failure-analysis.outputs.thread_ts }}",
-            "parse":"none","unfurl_links":false,"unfurl_media":false}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_thread.py
