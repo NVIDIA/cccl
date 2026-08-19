@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -45,6 +46,11 @@ _TEMP_STALE_SECONDS = 3600
 _ACTIVE_SECONDS = 120
 
 _FALSEY = {"0", "false", "off", "no"}
+
+# Guards the one-time resolution in ensure_configured against a race between
+# concurrent first builds.
+_configured = False
+_config_lock = threading.Lock()
 
 
 def _enabled() -> bool:
@@ -119,6 +125,65 @@ def resolve_cache_dir() -> Path | None:
         except OSError:
             continue
     return None
+
+
+def _backend_has_pch() -> bool:
+    """True on the v2 (HostJIT) backend, the only one with a PCH cache."""
+    try:
+        from ._build_info import USING_V2
+    except ImportError:
+        return False
+    return bool(USING_V2)
+
+
+def _apply(directory: Path | None) -> None:
+    """Record `directory` in the build config, or disable PCH when None. Never raises."""
+    try:
+        from ._bindings import set_pch_cache_dir  # type: ignore[attr-defined]
+    except ImportError:
+        return
+    try:
+        set_pch_cache_dir(str(directory) if directory else None)
+    except Exception:
+        pass
+
+
+def ensure_configured() -> None:
+    """Resolve the cache directory and record it in the build config, once per process.
+
+    Runs on the first build, so importing the package has no filesystem side
+    effects. Never raises: the cache is an optimization.
+    """
+    global _configured
+    if _configured:
+        return
+    with _config_lock:
+        if _configured:
+            return
+        if _backend_has_pch():
+            _apply(resolve_cache_dir())
+        _configured = True
+
+
+def reconfigure(cache_dir: str | os.PathLike[str] | None = None) -> None:
+    """Change the precompiled-header cache directory for this process.
+
+    With no argument, re-resolves from the environment — the same chain the
+    first build uses, so changing ``CCCL_PCH_CACHE_DIR`` / ``CCCL_ENABLE_PCH``
+    and calling this takes effect immediately. With ``cache_dir`` given, that
+    path is used verbatim (like ``CCCL_PCH_CACHE_DIR``), bypassing the chain.
+
+    A test and power-user hook; ordinary use never needs it.
+    """
+    global _configured
+    with _config_lock:
+        if cache_dir is not None:
+            _apply(Path(cache_dir))
+        elif _backend_has_pch():
+            _apply(resolve_cache_dir())
+        else:
+            _apply(None)
+        _configured = True
 
 
 def _sweep_debris(directory: Path) -> int:
@@ -270,6 +335,7 @@ def cache_dir() -> Path | None:
     Returns None on the v1 (NVRTC) backend, which has no PCH cache, and when no
     writable location could be resolved.
     """
+    ensure_configured()
     try:
         from ._bindings import pch_cache_dir  # type: ignore[attr-defined]
     except ImportError:
