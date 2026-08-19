@@ -217,14 +217,16 @@ def _sweep_debris(directory: Path) -> int:
         except OSError:
             continue
 
-    # A preamble whose header is gone is dead weight -- it is only ever an input
-    # to that header. Nothing else would find it: entries are enumerated by
-    # header, so an orphan is invisible to that scan and would linger forever.
+    # A preamble whose header is gone is dead weight, but age-gate it like a temp
+    # file: a live generation writes the preamble before its .pch, so a fresh
+    # orphan may be one being generated right now.
     for preamble in directory.glob("*_preamble.cu"):
         pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
         if pch.exists():
             continue
         try:
+            if preamble.stat().st_mtime >= temp_cutoff:
+                continue
             size = preamble.stat().st_size
             preamble.unlink()
             reclaimed += size
@@ -362,18 +364,18 @@ def clear_cache() -> int:
     if directory is None or not directory.is_dir():
         return 0
 
+    # Only HostJIT artifacts: CCCL_PCH_CACHE_DIR is taken verbatim, so it may
+    # hold unrelated files that this must not touch.
     removed = 0
-    for entry in directory.iterdir():
-        try:
-            if entry.is_dir():
-                # Generation locks; a live one belongs to a build in flight, but
-                # removing it only risks a duplicate generation, not corruption.
-                shutil.rmtree(entry, ignore_errors=True)
-            else:
+    for pattern in ("*.pch", "*_preamble.cu", "*.tmp"):
+        for entry in directory.glob(pattern):
+            try:
                 entry.unlink()
                 removed += 1
-        except OSError:
-            # In use (Windows), or removed by someone else between listing and
-            # unlinking. Neither is worth failing over.
-            continue
+            except OSError:
+                # In use (Windows), or removed by someone else between listing
+                # and unlinking. Neither is worth failing over.
+                continue
+    for lock in directory.glob("*.lock"):  # generation locks are directories
+        shutil.rmtree(lock, ignore_errors=True)
     return removed

@@ -303,6 +303,17 @@ def _ensure_pch_configured():
         pass
 
 
+def _evict_pch():
+    # Prune the PCH cache after a build that may have added to it. A failed
+    # prune must never fail a build that already succeeded.
+    try:
+        from ._pch import evict
+
+        evict()
+    except Exception:
+        pass
+
+
 def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     """Build (compile + load) via ``build_impl_fn``, supplying compute capability and paths.
 
@@ -326,17 +337,7 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
         temp_cubin_file_name = _check_compile_result(cubin)
         os.unlink(temp_cubin_file_name)
 
-    # Keep the on-disk precompiled-header cache within its size cap, after the
-    # build that may have added to it. Stat'ing a handful of files costs far
-    # less than the build itself, and a failed prune must never fail a build
-    # that already succeeded.
-    try:
-        from ._pch import evict
-
-        evict()
-    except Exception:
-        pass
-
+    _evict_pch()
     return result
 
 
@@ -353,7 +354,9 @@ def call_compile(build_impl_cls: Callable, *args, cc, **kwargs):
     common_data = _common_data_for_cc(cc)
     # build_impl_cls is a Device<Algo>BuildResult class exposing a compile()
     # staticmethod; it's typed Callable here, so silence the attr check.
-    return build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    result = build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    _evict_pch()
+    return result
 
 
 def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kwargs):

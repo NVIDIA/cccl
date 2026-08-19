@@ -229,17 +229,36 @@ bool create_pch_if_needed(
     return false;
   }
 
+  // Generate to a temp path and rename into place. libnvccCreatePCH does not
+  // publish atomically, so writing pch_path directly lets a concurrent build
+  // that finds it present read a half-written file. Stale temps (from a killed
+  // generation) are reclaimed by the cache sweep.
+  const std::string tmp_path = pch_path + ".tmp";
+  std::error_code tmp_ec;
+  std::filesystem::remove(tmp_path, tmp_ec);
+
   auto pch_result = libnvccCreatePCH(
     program.program,
     kind,
     source_path.c_str(),
-    pch_path.c_str(),
+    tmp_path.c_str(),
     static_cast<int>(option_ptrs.size()),
     option_ptrs.empty() ? nullptr : option_ptrs.data());
   if (pch_result != LIBNVCC_SUCCESS)
   {
     diagnostics += kind_name + " PCH generation failed: " + hostjit::detail::get_libnvcc_program_log(program.program);
     diagnostics += "\n";
+    std::filesystem::remove(tmp_path, tmp_ec);
+    pch_path.clear();
+    return false;
+  }
+
+  std::error_code rename_ec;
+  std::filesystem::rename(tmp_path, pch_path, rename_ec);
+  if (rename_ec)
+  {
+    diagnostics += kind_name + " PCH publish failed: " + rename_ec.message() + "\n";
+    std::filesystem::remove(tmp_path, rename_ec);
     pch_path.clear();
     return false;
   }
@@ -372,12 +391,14 @@ bool JITCompiler::compile(const std::string& source_code)
   const bool used_pch = !libnvcc_config.device_pch_path.empty() || !libnvcc_config.host_pch_path.empty();
   if (compile_result != LIBNVCC_SUCCESS && used_pch)
   {
-    discard_pch(libnvcc_config.device_pch_path);
-    discard_pch(libnvcc_config.host_pch_path);
     if (config_.verbose)
     {
-      std::cout << "PCH rejected by the compiler; retrying without it\n";
+      std::cout << "Compile failed with a PCH; retrying without it\n";
     }
+
+    // Keep the paths so the PCHs are discarded only if the retry succeeds.
+    const std::string rejected_device_pch = libnvcc_config.device_pch_path;
+    const std::string rejected_host_pch   = libnvcc_config.host_pch_path;
 
     libnvcc_config.enable_pch = false;
     libnvcc_config.device_pch_path.clear();
@@ -409,6 +430,15 @@ bool JITCompiler::compile(const std::string& source_code)
     // The retry owns the rest of this build: linking below reuses `program`'s
     // handle for its log, so hand ownership over.
     std::swap(program.program, retry_program.program);
+
+    // Discard the PCHs only if building without them succeeded -- that proves
+    // they were at fault. If the retry also failed, the error is in the user's
+    // program, so keep the (valid) PCHs.
+    if (compile_result == LIBNVCC_SUCCESS)
+    {
+      discard_pch(rejected_device_pch);
+      discard_pch(rejected_host_pch);
+    }
   }
 
   if (compile_result != LIBNVCC_SUCCESS)

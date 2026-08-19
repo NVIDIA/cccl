@@ -315,12 +315,19 @@ def test_concurrent_cold_builds_generate_once(cache):
     clear_all_caches()
     dtypes = [np.int16, np.int32, np.int64, np.float32]
     errors: list[BaseException] = []
+    # Release every thread into make_reduce_into together, so they genuinely
+    # contend for the generation lock rather than finishing one after another.
+    ready = threading.Barrier(len(dtypes))
 
     def worker(dtype):
         try:
             d_in = DeviceArray.from_numpy(np.arange(4, dtype=dtype))
             d_out = DeviceArray.empty(1, dtype)
             h_init = np.zeros(1, dtype=dtype)
+            try:
+                ready.wait(timeout=120)
+            except threading.BrokenBarrierError:
+                pass  # a sibling failed to arrive; build anyway
             cc.make_reduce_into(
                 d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init
             )
