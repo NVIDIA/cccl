@@ -31,7 +31,13 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
-#include <cuda/stream>
+
+// <cuda/stream> is only usable where the CUDA runtime is: under NVRTC cuda::stream_ref is left
+// undefined while get_stream.h still returns it by value. The stream-based runtime-size tests
+// below are host-side and carry the same guard.
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #include "test_macros.h"
 
