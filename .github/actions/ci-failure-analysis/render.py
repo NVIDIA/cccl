@@ -391,11 +391,11 @@ def render_slack_summary_group(index, group):
     job_label = "job" if len(job_ids) == 1 else "jobs"
     return [
         (
-            f"*{index}.* `{sanitize_slack(group['title'], limit=100)}` — "
+            f"*{index}.* {sanitize_slack(group['title'], limit=100)} — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"Root cause: `{sanitize_slack(group['root_cause'], limit=360)}`",
-        f"Next: `{sanitize_slack(group['next_steps'], limit=360)}`",
+        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=360)}",
+        f"*Next:* {sanitize_slack(group['next_steps'], limit=360)}",
     ]
 
 
