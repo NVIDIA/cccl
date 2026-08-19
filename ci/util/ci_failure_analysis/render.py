@@ -79,8 +79,7 @@ def validate_schema(value, schema, location="$"):
             validate_schema(item, schema["items"], f"{location}[{index}]")
 
 
-def load_job_manifest(path):
-    job_items = load_json(path)
+def validate_job_manifest(job_items):
     if not isinstance(job_items, list):
         raise ValidationError("job manifest must be an array")
 
@@ -163,7 +162,7 @@ def validate_run(run):
     if not isinstance(run, dict):
         raise ValidationError("workflow run metadata must be an object")
 
-    for field, label in (("id", "id"), ("run_number", "number")):
+    for field, label in (("id", "id"), ("number", "number")):
         value = run.get(field)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             raise ValidationError(f"workflow run {label} must be a positive integer")
@@ -175,15 +174,27 @@ def validate_run(run):
         )
 
 
-def load_analysis_context(analysis_dir):
+def load_analysis_context(analysis_file):
+    context = load_json(analysis_file)
+    if not isinstance(context, dict):
+        raise ValidationError("analysis context must be an object")
+
+    expected_fields = {"run", "jobs", "groups"}
+    missing = sorted(expected_fields - set(context))
+    if missing:
+        raise ValidationError(f"analysis context is missing fields {missing}")
+    extra = sorted(set(context) - expected_fields)
+    if extra:
+        raise ValidationError(f"analysis context has unexpected fields {extra}")
+
     schema = load_json(Path(__file__).with_name("output.schema.json"))
-    analysis = load_json(analysis_dir / "analysis.json")
+    analysis = {"groups": context["groups"]}
     validate_schema(analysis, schema)
 
-    jobs, step_numbers, failed_job_ids = load_job_manifest(analysis_dir / "jobs.json")
+    jobs, step_numbers, failed_job_ids = validate_job_manifest(context["jobs"])
     validate_job_references(analysis, step_numbers, failed_job_ids)
 
-    run = load_json(analysis_dir / "run.json")
+    run = context["run"]
     validate_run(run)
     return analysis, jobs, run
 
@@ -386,14 +397,61 @@ def sanitize_slack(value, limit=1200):
     value = " ".join(clean_text(value, limit).split())
     value = value.replace("&", "&amp;")
     value = value.replace("<", "&lt;").replace(">", "&gt;")
-    return value.replace("`", "'")
+    return value.replace("`", "'").replace("*", "∗")
 
 
 def sanitize_slack_title(value):
-    return sanitize_slack(value, limit=100).replace("*", "∗")
+    return sanitize_slack(value, limit=100)
 
 
-def render_slack_thread_reply(index, group):
+def sanitize_slack_link_label(value, limit):
+    return sanitize_slack(value, limit).replace("|", "¦")
+
+
+def render_slack_evidence(group, jobs, repository, run_id):
+    for evidence in group["evidence"]:
+        for line in evidence["lines"]:
+            rendered_line = sanitize_slack(line, limit=700)
+            if not rendered_line:
+                continue
+
+            job_id = evidence["job_id"]
+            step_number = evidence["step_number"]
+            label = sanitize_slack_link_label(jobs[job_id], limit=300)
+            url = job_url(repository, run_id, job_id)
+            if step_number > 0:
+                label += f", step {step_number}"
+                url += f"#step:{step_number}:1"
+            return f"*Evidence:* {rendered_line} — <{url}|{label}>"
+    return None
+
+
+def render_slack_sources(group, repository, head_sha):
+    links = []
+    for source in group["source_locations"]:
+        url = source_url(repository, head_sha, source["path"], source["line"])
+        if not url:
+            continue
+        label = sanitize_slack_link_label(
+            f"{source['path']}:{source['line']}",
+            limit=500,
+        )
+        links.append(f"<{url}|{label}>")
+        if len(links) == 2:
+            break
+    if not links:
+        return None
+    return f"*Sources:* {', '.join(links)}"
+
+
+def render_slack_thread_reply(
+    index,
+    group,
+    jobs,
+    repository,
+    run_id,
+    head_sha,
+):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
     lines = [
@@ -401,10 +459,15 @@ def render_slack_thread_reply(index, group):
             f"*{index}. {sanitize_slack_title(group['title'])}* — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"*Summary:* {sanitize_slack(group['explanation'], limit=500)}",
-        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=700)}",
-        f"*Next:* {sanitize_slack(group['next_steps'], limit=700)}",
+        f"*Diagnosis:* {sanitize_slack(group['root_cause'], limit=700)}",
     ]
+    evidence = render_slack_evidence(group, jobs, repository, run_id)
+    if evidence:
+        lines.append(evidence)
+    sources = render_slack_sources(group, repository, head_sha)
+    if sources:
+        lines.append(sources)
+    lines.append(f"*Next:* {sanitize_slack(group['next_steps'], limit=700)}")
 
     reply = "\n".join(lines) + "\n"
     if len(reply) > SLACK_REPLY_LIMIT:
@@ -416,9 +479,11 @@ def render_slack_thread_reply(index, group):
 
 def render_slack_thread(
     analysis,
+    jobs,
     repository,
     run_id,
     run_number,
+    head_sha,
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
@@ -453,7 +518,14 @@ def render_slack_thread(
         )
 
     replies = [
-        render_slack_thread_reply(index, group)
+        render_slack_thread_reply(
+            index,
+            group,
+            jobs,
+            repository,
+            run_id,
+            head_sha,
+        )
         for index, group in enumerate(analysis["groups"], start=1)
     ]
     return {"parent": parent, "replies": replies}
@@ -464,52 +536,52 @@ def render_slack_thread(
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Validate and render CI failure analysis outputs."
+        description="Validate and render a structured CI failure analysis."
     )
-    parser.add_argument("--analysis-dir", type=Path, required=True)
+    parser.add_argument("--analysis-file", type=Path, required=True)
+    parser.add_argument("--format", choices=("github", "slack"), required=True)
     parser.add_argument("--repository", required=True)
-    parser.add_argument("--github-report-output", type=Path, required=True)
-    parser.add_argument("--slack-thread-output", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     validate_repository(args.repository)
-    analysis, jobs, run = load_analysis_context(args.analysis_dir)
+    analysis, jobs, run = load_analysis_context(args.analysis_file)
     run_id = str(run["id"])
 
-    github_report = render_github_report(
-        analysis,
-        jobs,
-        args.repository,
-        run_id,
-        run["head_sha"],
-    )
-    slack_thread_json = None
-    if args.slack_thread_output:
-        slack_thread = render_slack_thread(
+    if args.format == "github":
+        rendered = render_github_report(
             analysis,
+            jobs,
             args.repository,
             run_id,
-            str(run["run_number"]),
+            run["head_sha"],
         )
-        slack_thread_json = json.dumps(
-            slack_thread,
-            ensure_ascii=False,
-            separators=(",", ":"),
+    else:
+        slack_thread = render_slack_thread(
+            analysis,
+            jobs,
+            args.repository,
+            run_id,
+            str(run["number"]),
+            run["head_sha"],
         )
-        if len(slack_thread_json.encode("utf-8")) > SLACK_THREAD_LIMIT:
+        rendered = (
+            json.dumps(
+                slack_thread,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            + "\n"
+        )
+        if len(rendered.encode("utf-8")) > SLACK_THREAD_LIMIT:
             raise ValidationError(
                 f"rendered Slack thread exceeds {SLACK_THREAD_LIMIT:,} bytes"
             )
 
-    args.github_report_output.write_text(github_report, encoding="utf-8")
-    if args.slack_thread_output:
-        args.slack_thread_output.write_text(
-            slack_thread_json + "\n",
-            encoding="utf-8",
-        )
+    args.output.write_text(rendered, encoding="utf-8")
 
 
 if __name__ == "__main__":

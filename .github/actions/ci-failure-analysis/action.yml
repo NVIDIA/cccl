@@ -5,7 +5,7 @@ description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 # - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
 #   `pr_number` is provided.
 # - Finish the relevant target jobs before invoking the action.
-# - Inject a runner-local `output_dir` as the action's working directory.
+# - Inject a runner-local `output_file` for the normalized analysis JSON.
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
@@ -13,21 +13,13 @@ inputs:
   run_id:
     description: "Workflow run in this repository to analyze."
     required: true
-  output_dir:
-    description: "Runner-local working directory."
+  output_file:
+    description: "Runner-local normalized analysis JSON output file."
     required: true
   pr_number:
     description: "Optional pull request corresponding to the run, for collecting its diff."
     required: false
     default: ""
-
-outputs:
-  github_report:
-    description: "Full failure analysis report for GitHub."
-    value: ${{ steps.export-analysis.outputs.github_report }}
-  slack_thread:
-    description: "JSON containing the Slack parent message and ordered thread replies."
-    value: ${{ steps.export-analysis.outputs.slack_thread }}
 
 runs:
   using: "composite"
@@ -46,10 +38,12 @@ runs:
 
     - name: Prepare analysis environment
       env:
-        OUTPUT_DIR: ${{ inputs.output_dir }}
+        ANALYSIS_DIR: ${{ runner.temp }}/ci-failure-analysis
+        OUTPUT_FILE: ${{ inputs.output_file }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        mkdir -p "${RUNNER_TEMP}/codex-home" "${OUTPUT_DIR}"
+        output_parent="$(dirname -- "${OUTPUT_FILE}")"
+        mkdir -p "${RUNNER_TEMP}/codex-home" "${ANALYSIS_DIR}" "${output_parent}"
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
 
     - name: Investigate the workflow run
@@ -69,44 +63,38 @@ runs:
         model: openai/openai/gpt-5.6-sol
         effort: medium
         codex-args: --strict-config --ignore-rules --ephemeral
-        output-file: ${{ inputs.output_dir }}/analysis.json
-        output-schema-file: ${{ github.action_path }}/output.schema.json
+        output-file: ${{ runner.temp }}/ci-failure-analysis/analysis.json
+        output-schema-file: ${{ github.workspace }}/ci/util/ci_failure_analysis/output.schema.json
         prompt-file: ${{ github.action_path }}/failure_triage_prompt.md
 
-    - name: Assemble analysis context
+    - name: Assemble normalized analysis
       env:
-        OUTPUT_DIR: ${{ inputs.output_dir }}
+        ANALYSIS_FILE: ${{ runner.temp }}/ci-failure-analysis/analysis.json
+        OUTPUT_FILE: ${{ inputs.output_file }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        cp /tmp/ci-logs/run.json "${OUTPUT_DIR}/run.json"
-        cp /tmp/ci-logs/jobs.json "${OUTPUT_DIR}/jobs.json"
-
-    - name: Render failure analysis outputs
-      env:
-        OUTPUT_DIR: ${{ inputs.output_dir }}
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        python3 "${GITHUB_ACTION_PATH}/render.py" \
-          --analysis-dir "${OUTPUT_DIR}" \
-          --repository "${GITHUB_REPOSITORY}" \
-          --github-report-output "${OUTPUT_DIR}/github-report.md" \
-          --slack-thread-output "${OUTPUT_DIR}/slack-thread.json"
-
-    - name: Export failure analysis outputs
-      id: export-analysis
-      env:
-        OUTPUT_DIR: ${{ inputs.output_dir }}
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        test -s "${OUTPUT_DIR}/github-report.md"
-        test -s "${OUTPUT_DIR}/slack-thread.json"
-        github_report_delimiter="EOF_$(openssl rand -hex 16)"
-        slack_thread_delimiter="EOF_$(openssl rand -hex 16)"
-        {
-          echo "github_report<<${github_report_delimiter}"
-          cat "${OUTPUT_DIR}/github-report.md"
-          echo "${github_report_delimiter}"
-          echo "slack_thread<<${slack_thread_delimiter}"
-          cat "${OUTPUT_DIR}/slack-thread.json"
-          echo "${slack_thread_delimiter}"
-        } >> "${GITHUB_OUTPUT}"
+        jq --null-input \
+          --slurpfile analysis "${ANALYSIS_FILE}" \
+          --slurpfile run /tmp/ci-logs/run.json \
+          --slurpfile jobs /tmp/ci-logs/jobs.json \
+          '{
+            run: {
+              id: $run[0].id,
+              number: $run[0].run_number,
+              head_sha: $run[0].head_sha
+            },
+            jobs: [
+              $jobs[0][] |
+              {
+                id,
+                name,
+                conclusion,
+                steps: [
+                  (.steps // [])[] |
+                  {number}
+                ]
+              }
+            ],
+            groups: $analysis[0].groups
+          }' > "${OUTPUT_FILE}"
+        test -s "${OUTPUT_FILE}"

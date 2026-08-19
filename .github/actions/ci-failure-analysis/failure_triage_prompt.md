@@ -42,7 +42,8 @@ For each group:
 
 - `title`: succinct, specific failure mechanism; never a generic workflow or job name.
 - `explanation`: one or two sentences describing the failure and developer impact.
-- `evidence`: the decisive log lines, copied verbatim except for ANSI escapes. Each
+- `evidence`: the decisive log lines, copied verbatim except for ANSI escapes. Put the
+  single most decisive failure line first, followed only by essential context. Each
   referenced job must belong to the group. Use the job step's numeric `number`, or `0`
   when unavailable.
 - `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
