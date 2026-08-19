@@ -49,7 +49,7 @@
 namespace cuda::experimental
 {
 template <class _Unit, class _ParentGroup, class _Mapping>
-[[nodiscard]] _CCCL_DEVICE_API auto
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
 __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
@@ -119,7 +119,8 @@ public:
   using __mapping_result_type = _MappingResult;
   using synchronizer_type     = typename _ParentGroup::synchronizer_type;
 
-  template <class _Mapping>
+  _CCCL_TEMPLATE(class _Mapping)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
   _CCCL_DEVICE_API explicit virtual_group(
     const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
       : __hier_{__parent.hierarchy()}
