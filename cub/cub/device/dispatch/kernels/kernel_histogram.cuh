@@ -26,7 +26,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-template <typename LevelT, typename OffsetT, typename SampleT>
+template <typename LevelT, typename OffsetT, typename InputSampleT>
 struct Transforms
 {
   //---------------------------------------------------------------------
@@ -50,8 +50,8 @@ struct Transforms
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
-    template <CacheLoadModifier LoadModifier, typename SampleT2>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT2 sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -104,21 +104,21 @@ struct Transforms
       int bin = -1; // cached bin; < 0 means empty
     };
 
-    BinSelectState mru;
+    BinSelectState most_recent_bin;
 
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
     // Interpolation state shared by all samples processed by a thread.
-    float m_inv_scale; // num_bins / (float)(last - first); valid iff m_have_precompute
-    LevelT m_first; // cached d_levels[0]
-    LevelT m_last; // cached d_levels[num_bins]
-    bool m_have_precompute; // whether the fields above are valid
+    float inv_scale; // num_bins / (float)(last - first); valid iff have_precompute
+    LevelT first; // cached d_levels[0]
+    LevelT last; // cached d_levels[num_bins]
+    bool have_precompute; // whether the fields above are valid
 
     // Piecewise-linear interpolation state split at the midpoint level.
-    LevelT m_mid; // cached d_levels[mid_bin]
-    float m_inv_scale_lo; // mid_bin / (float)(mid - first)
-    float m_inv_scale_hi; // (num_bins - mid_bin) / (float)(last - mid)
-    int m_mid_bin; // split bin index (num_bins / 2)
+    LevelT mid; // cached d_levels[mid_bin]
+    float inv_scale_lo; // mid_bin / (float)(mid - first)
+    float inv_scale_hi; // (num_bins - mid_bin) / (float)(last - mid)
+    int mid_bin; // split bin index (num_bins / 2)
 
     //! @brief Initializer
     //!
@@ -128,15 +128,15 @@ struct Transforms
     {
       this->d_levels          = d_levels_;
       this->num_output_levels = num_output_levels_;
-      this->m_have_precompute = false;
-      this->m_inv_scale       = 0.0f;
-      this->m_first           = LevelT{};
-      this->m_last            = LevelT{};
-      this->m_mid             = LevelT{};
-      this->m_inv_scale_lo    = 0.0f;
-      this->m_inv_scale_hi    = 0.0f;
-      this->m_mid_bin         = 0;
-      this->mru               = BinSelectState{};
+      this->have_precompute   = false;
+      this->inv_scale         = 0.0f;
+      this->first             = LevelT{};
+      this->last              = LevelT{};
+      this->mid               = LevelT{};
+      this->inv_scale_lo      = 0.0f;
+      this->inv_scale_hi      = 0.0f;
+      this->mid_bin           = 0;
+      this->most_recent_bin   = BinSelectState{};
     }
 
     //! @brief Precomputes interpolation slopes from the device level array.
@@ -153,31 +153,31 @@ struct Transforms
       const LevelT last  = wrapped_levels[num_bins];
       if (!(first < last))
       {
-        m_have_precompute = false;
+        have_precompute = false;
         return;
       }
 
-      m_first           = first;
-      m_last            = last;
-      m_inv_scale       = static_cast<float>(num_bins) / static_cast<float>(interpolation_difference(last, first));
-      m_have_precompute = true;
+      this->first     = first;
+      this->last      = last;
+      inv_scale       = static_cast<float>(num_bins) / static_cast<float>(interpolation_difference(last, first));
+      have_precompute = true;
 
       // Use a single secant if the midpoint does not split the level range.
-      m_mid_bin         = 0;
-      m_inv_scale_lo    = m_inv_scale;
-      m_inv_scale_hi    = m_inv_scale;
-      m_mid             = first;
-      const int mid_bin = num_bins >> 1;
-      if (mid_bin > 0 && mid_bin < num_bins)
+      this->mid_bin   = 0;
+      inv_scale_lo    = inv_scale;
+      inv_scale_hi    = inv_scale;
+      mid             = first;
+      const int split = num_bins >> 1;
+      if (split > 0 && split < num_bins)
       {
-        const LevelT mid = wrapped_levels[mid_bin];
-        if ((first < mid) && (mid < last))
+        const LevelT split_level = wrapped_levels[split];
+        if ((first < split_level) && (split_level < last))
         {
-          m_mid          = mid;
-          m_mid_bin      = mid_bin;
-          m_inv_scale_lo = static_cast<float>(mid_bin) / static_cast<float>(interpolation_difference(mid, first));
-          m_inv_scale_hi =
-            static_cast<float>(num_bins - mid_bin) / static_cast<float>(interpolation_difference(last, mid));
+          mid          = split_level;
+          mid_bin      = split;
+          inv_scale_lo = static_cast<float>(split) / static_cast<float>(interpolation_difference(split_level, first));
+          inv_scale_hi =
+            static_cast<float>(num_bins - split) / static_cast<float>(interpolation_difference(last, split_level));
         }
       }
     }
@@ -187,8 +187,8 @@ struct Transforms
     //! A cached-bracket hit returns immediately. Otherwise, this computes and
     //! verifies an interpolated guess, checks one adjacent bracket, and finally
     //! falls back to `UpperBound` for arbitrary level distributions.
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
+    template <CacheLoadModifier LOAD_MODIFIER, typename SampleT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid)
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -203,14 +203,14 @@ struct Transforms
 
       const LevelT s = static_cast<LevelT>(sample);
 
-      if (mru.bin >= 0 && !(s < mru.lo) && (s < mru.hi))
+      if (most_recent_bin.bin >= 0 && !(s < most_recent_bin.lo) && (s < most_recent_bin.hi))
       {
-        bin = mru.bin;
+        bin = most_recent_bin.bin;
         return;
       }
 
-      const LevelT first_level = m_have_precompute ? m_first : wrapped_levels[0];
-      const LevelT last_level  = m_have_precompute ? m_last : wrapped_levels[num_bins];
+      const LevelT first_level = have_precompute ? first : wrapped_levels[0];
+      const LevelT last_level  = have_precompute ? last : wrapped_levels[num_bins];
 
       if (!(first_level < last_level))
       {
@@ -230,23 +230,23 @@ struct Transforms
 
       const auto delta = interpolation_difference(s, first_level);
       int guess;
-      if (m_have_precompute)
+      if (have_precompute)
       {
-        if (m_mid_bin > 0)
+        if (mid_bin > 0)
         {
-          if (s < m_mid)
+          if (s < mid)
           {
-            guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale_lo);
+            guess = static_cast<int>(static_cast<float>(delta) * inv_scale_lo);
           }
           else
           {
-            const auto delta_hi = interpolation_difference(s, m_mid);
-            guess               = m_mid_bin + static_cast<int>(static_cast<float>(delta_hi) * m_inv_scale_hi);
+            const auto delta_hi = interpolation_difference(s, mid);
+            guess               = mid_bin + static_cast<int>(static_cast<float>(delta_hi) * inv_scale_hi);
           }
         }
         else
         {
-          guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);
+          guess = static_cast<int>(static_cast<float>(delta) * inv_scale);
         }
       }
       else
@@ -269,8 +269,8 @@ struct Transforms
 
       if (!(s < lvl_lo) && (s < lvl_hi))
       {
-        bin = guess;
-        mru = BinSelectState{lvl_lo, lvl_hi, guess};
+        bin             = guess;
+        most_recent_bin = BinSelectState{lvl_lo, lvl_hi, guess};
         return;
       }
 
@@ -282,8 +282,8 @@ struct Transforms
           const LevelT lvl2_lo = wrapped_levels[g2];
           if (!(s < lvl2_lo))
           {
-            bin = g2;
-            mru = BinSelectState{lvl2_lo, lvl_lo, g2};
+            bin             = g2;
+            most_recent_bin = BinSelectState{lvl2_lo, lvl_lo, g2};
             return;
           }
         }
@@ -296,8 +296,8 @@ struct Transforms
           const LevelT lvl2_hi = wrapped_levels[g2 + 1];
           if (s < lvl2_hi)
           {
-            bin = g2;
-            mru = BinSelectState{lvl_hi, lvl2_hi, g2};
+            bin             = g2;
+            most_recent_bin = BinSelectState{lvl_hi, lvl2_hi, g2};
             return;
           }
         }
@@ -311,7 +311,7 @@ struct Transforms
       }
       if (bin >= 0)
       {
-        mru = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
+        most_recent_bin = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
       }
     }
   };
@@ -319,12 +319,12 @@ struct Transforms
   // Scales samples to evenly-spaced bins
   struct ScaleTransform
   {
-    using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
+    using CommonT = ::cuda::std::common_type_t<LevelT, InputSampleT>;
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
-                  "The common type of `LevelT` and `SampleT` must be "
+                  "The common type of `LevelT` and `InputSampleT` must be "
                   "convertible to `int`.");
     static_assert(::cuda::is_trivially_copyable_v<CommonT>,
-                  "The common type of `LevelT` and `SampleT` must be "
+                  "The common type of `LevelT` and `InputSampleT` must be "
                   "trivially copyable.");
 
     // An arithmetic type that's used for bin computation of integral types, guaranteed to not
@@ -334,7 +334,7 @@ struct Transforms
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
     using IntArithmeticT = ::cuda::std::_If< //
-      sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
+      sizeof(InputSampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
@@ -511,7 +511,7 @@ struct Transforms
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(InputSampleT sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
@@ -544,8 +544,8 @@ struct Transforms
     _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LOAD_MODIFIER, typename SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
     {
       if (valid)
       {
@@ -601,7 +601,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
         ::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end(), ::cuda::std::uint64_t{0})
         * sizeof(CounterT);
       if (output_histogram_bytes
-          <= static_cast<::cuda::std::uint64_t>(policy.max_output_histogram_bytes_for_init_kernel_pdl_trigger))
+          <= static_cast<::cuda::std::uint64_t>(policy.max_output_histogram_bytes_for_init_kernel_pdl))
       {
         _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
       }
