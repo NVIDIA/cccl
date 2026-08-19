@@ -53,11 +53,6 @@ public:
     return __gctx_;
   }
 
-  //! @brief Compares two logical_devices for equality
-  //!
-  //! @param __lhs The first `logical_device` to compare
-  //! @param __rhs The second `logical_device` to compare
-  //! @return true if `lhs` and `rhs` refer to the same logical device
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator==(const __logical_device_ref& __lhs, const __logical_device_ref& __rhs) noexcept
   {
@@ -65,11 +60,6 @@ public:
   }
 
 #  if _CCCL_STD_VER <= 2017
-  //! @brief Compares two logical_devices for inequality
-  //!
-  //! @param __lhs The first `logical_device` to compare
-  //! @param __rhs The second `logical_device` to compare
-  //! @return true if `lhs` and `rhs` refer to the different logical device
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(const __logical_device_ref& __lhs, const __logical_device_ref& __rhs) noexcept
   {
