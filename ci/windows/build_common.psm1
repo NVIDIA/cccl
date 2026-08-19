@@ -182,7 +182,7 @@ function configure_preset {
 
     $env:SCCACHE_NO_DIST_COMPILE="1"
 
-    $duration = (Measure-Command { Invoke-Expression $configure_command | Out-Default }).Seconds
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $configure_command | Out-Default }).TotalSeconds)
 
     $test_result = $LastExitCode
 
@@ -231,7 +231,7 @@ function build_preset {
 
     Write-Host $build_command
 
-    $duration = (Measure-Command { Invoke-Expression $build_command | Out-Default }).Seconds
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $build_command | Out-Default }).TotalSeconds)
 
     $test_result = $LastExitCode
 
@@ -278,7 +278,7 @@ function test_preset {
 
     Write-Host $build_command
 
-    $duration = (Measure-Command { Invoke-Expression $test_command | Out-Default }).Seconds
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $test_command | Out-Default }).TotalSeconds)
     $test_result = $LastExitCode
 
     & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
