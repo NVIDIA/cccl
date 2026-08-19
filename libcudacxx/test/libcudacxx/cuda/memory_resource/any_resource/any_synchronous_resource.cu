@@ -129,7 +129,7 @@ TEMPLATE_TEST_CASE_METHOD(
 
     AnyResource source{resource};
     AnyResource destination{std::move(source)};
-    CHECK(!source.has_value());
+    CHECK(!source.has_value()); // NOLINT(bugprone-use-after-move)
     CHECK((source == empty1));
     CHECK((source != destination));
     CHECK((destination != source));
