@@ -271,7 +271,7 @@ public:
     // containers that would otherwise be corrupted by concurrent access (double
     // 128 MiB root allocations, unordered_map rehash during traversal, the same
     // block handed to two tasks). Serialize the whole operation.
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     auto it = map.find(memory_node);
     if (it == map.end())
     {
@@ -298,7 +298,7 @@ public:
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     (void) ctx;
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
     auto& m = map.find(memory_node)->second;
@@ -313,7 +313,7 @@ public:
     // deinit runs at context finalize, when submitters are expected to be
     // quiesced; the lock is cheap insurance and keeps the map consistent if a
     // stray allocation is still in flight.
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     event_list result;
     // For every place in the map
     for (auto& [memory_node, pp] : map)

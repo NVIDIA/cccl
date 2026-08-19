@@ -88,14 +88,14 @@ public:
   //! this type movable (it is returned by value from export_resources()).
   void add(::std::shared_ptr<ctx_resource> r)
   {
-    ::std::lock_guard<::std::mutex> guard(*mtx);
+    const ::std::lock_guard<::std::mutex> guard(*mtx);
     resources.push_back(mv(r));
   }
 
   //! Release all resources asynchronously
   void release(cudaStream_t stream)
   {
-    ::std::lock_guard<::std::mutex> guard(*mtx);
+    const ::std::lock_guard<::std::mutex> guard(*mtx);
     _CCCL_ASSERT(!resources_released, "Resources have already been released on this context");
 
     // Release stream-dependent resources and compact them out of `resources` by

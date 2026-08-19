@@ -1135,8 +1135,8 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
-      auto lock    = t.lock_ctx_graph();
-      t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
+      const auto lock = t.lock_ctx_graph();
+      t.get_node()    = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
 
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
@@ -1236,8 +1236,8 @@ public:
       // submitted concurrently from other host threads; cudaGraphAddHostNode is
       // not thread-safe per graph, so serialize on graph_mutex exactly like the
       // device parallel_for path above and cuda_kernel/host_launch.
-      auto lock    = t.lock_ctx_graph();
-      t.get_node() = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
+      const auto lock = t.lock_ctx_graph();
+      t.get_node()    = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
     }
     else
     {

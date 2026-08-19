@@ -281,7 +281,7 @@ public:
     // block_data_pool::get_entry()'s check-then-set of the per-entry `used`
     // flag are otherwise unsynchronized (concurrent rehash -> UB; two threads
     // handed the same block -> silent data corruption). Serialize both.
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     // Get the pool or create it lazily
     block_data_pool* pool = get_pool(ctx, root_allocator, prereqs, memory_node, block_size);
     if (!pool)
@@ -294,7 +294,7 @@ public:
 
   void release_pool_entry(const data_place& memory_node, size_t block_size, const event_list& prereqs, void* ptr)
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     const size_t padded_sz = next_power_of_two(block_size);
     const auto key         = ::std::make_pair(to_index(memory_node), padded_sz);
 
@@ -319,7 +319,7 @@ public:
   {
     // Runs at context finalize (submitters expected quiesced); lock is cheap
     // insurance and keeps the multimap consistent under a stray in-flight op.
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     event_list res;
     for (auto& entry : map)
     {

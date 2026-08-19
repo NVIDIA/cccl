@@ -187,7 +187,7 @@ void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_plac
     // serialized on the context's graph_mutex -- exactly like the device
     // parallel_for path (parallel_for_scope.cuh) and cuda_kernel/host_launch.
     // Without this lock, concurrent ctx.launch() calls corrupt the graph.
-    auto lock = t.lock_ctx_graph();
+    const auto lock = t.lock_ctx_graph();
     cuda_launcher_graph(
       interpreted_policy, reserved::launch_kernel<Fun, args_type>, all_args, t.get_ctx_graph(), t.get_node());
   };
