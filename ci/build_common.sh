@@ -325,14 +325,32 @@ function run_cuda_smoke_test() {
 
     local configure_preset
     configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
-    local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+    local smoke_bin_dir="${BUILD_DIR}/${configure_preset}/bin"
 
-    if [[ -x "${smoke_bin}" ]]; then
-        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
-    elif cccl_smoke_tests_enabled "${configure_preset}"; then
-        echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
-        return 1
+    # Each smoke check is its own executable (cccl.test.cuda_smoke.<check>) so
+    # that a corrupted CUDA context in one check cannot prevent the others
+    # from running and reporting their own pass/fail status. Run them all and
+    # only report failure once every check has had a chance to run.
+    local -a smoke_bins=()
+    if [[ -d "${smoke_bin_dir}" ]]; then
+        while IFS= read -r -d '' bin; do
+            smoke_bins+=("${bin}")
+        done < <(find "${smoke_bin_dir}" -maxdepth 1 -name 'cccl.test.cuda_smoke.*' -print0 | sort -z)
     fi
+
+    if [[ ${#smoke_bins[@]} -eq 0 ]]; then
+        if cccl_smoke_tests_enabled "${configure_preset}"; then
+            echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but no smoke binaries found in ${smoke_bin_dir}" >&2
+            return 1
+        fi
+        return 0
+    fi
+
+    local status=0
+    for smoke_bin in "${smoke_bins[@]}"; do
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME} ($(basename "${smoke_bin}"))" "${smoke_bin}" || status=$?
+    done
+    return "${status}"
 }
 
 function print_test_time_summary()
