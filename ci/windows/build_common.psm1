@@ -226,7 +226,8 @@ function build_preset {
     $sccache_json = "${preset_dir}/sccache_stats.json"
 
     # Echo and execute command to stdout:
-    $build_command = "cmake --build --preset $PRESET -v --parallel $env:PARALLEL_LEVEL"
+    $build_command = "cmake --build --preset $PRESET --parallel $env:PARALLEL_LEVEL"
+    # $build_command = "cmake --build --preset $PRESET -v --parallel $env:PARALLEL_LEVEL"
 
     Write-Host $build_command
 
