@@ -19,7 +19,8 @@ Starting from scratch:
 
     git clone https://github.com/NVIDIA/cccl.git
     cd cccl
-    cmake -S . --preset=benchmark
+    cmake -S . -B build/benchmark --preset=benchmark
+    cd build/benchmark
 
 You clone the repository, and configure the build with CMake. The preset `benchmark` takes
 care of everything.
@@ -32,7 +33,7 @@ You can list the available cmake build targets with, if you intend to only build
 
 .. code-block:: bash
 
-    cmake --build build/benchmark --target help | grep '\.bench\.'
+    cmake --build . --target help | grep '\.bench\.'
     cub.bench.adjacent_difference.subtract_left.base: phony
     cub.bench.copy.memcpy.base: phony
     ...
@@ -43,7 +44,7 @@ We also provide a target to build all benchmarks:
 
 .. code-block:: bash
 
-    cmake --build build/benchmark --target cub.all.benches
+    cmake --build . --target cub.all.benches
 
 
 .. _cub-benchmarking-running:
@@ -55,7 +56,7 @@ After we built a benchmark, we can run it as follows:
 
 .. code-block:: bash
 
-    ./build/benchmark/bin/cub.bench.adjacent_difference.subtract_left.base\
+    ./bin/cub.bench.adjacent_difference.subtract_left.base\
         -d 0\
         --stopping-criterion entropy\
         --json base.json\
@@ -94,7 +95,7 @@ If you are only interested in a subset of workloads, you can restrict benchmarki
 
 .. code-block:: bash
 
-    ./build/benchmark/bin/cub.bench.adjacent_difference.subtract_left.base ...\
+    ./bin/cub.bench.adjacent_difference.subtract_left.base ...\
         -a 'T{ct}=I32'\
         -a 'OffsetT{ct}=I32'\
         -a 'Elements{io}[pow2]=[24,28]'\
@@ -182,13 +183,11 @@ For example, inside a build directory you can run:
 
 .. code-block:: bash
 
-    cmake --build build/benchmark --target cub.all.benches
-    benchmarks=$(ls build/benchmark/bin | grep cub.bench); \
-    n=$(echo $benchmarks | wc -w); \
-    i=1; \
+    cmake --build . --target cub.all.benches
+    benchmarks=$(ls bin | grep cub.bench); n=$(echo $benchmarks | wc -w); i=1; \
     for b in $benchmarks; do \
       echo "=== Running $b ($i/$n) ==="; \
-      build/benchmark/bin/$b -d 0 --stopping-criterion entropy --json $b.json --md $b.md; \
+      ./bin/$b -d 0 --stopping-criterion entropy --json $b.json --md $b.md; \
       ((i++)); \
     done
 
@@ -207,7 +206,7 @@ Furthermore, the tuning scripts require some additional python dependencies, whi
 
 .. code-block:: bash
 
-    cmake --build build/benchmark --target clean
+    cmake --build . --target clean
     pip install --user fpzip pandas scipy
 
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
@@ -219,7 +218,7 @@ We can then run the full benchmark suite from the build directory with:
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -242,7 +241,7 @@ It's also possible to benchmark a subset of algorithms and workloads, by running
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -345,7 +344,7 @@ A typical invocation, if you work on a remote cluster, could look like this:
 
 .. code-block:: bash
 
-    ncu --set full --import-source yes -o base.ncu-rep -f build/benchmark/bin/thrust.bench.transform.basic.base -d 0 --profile
+    ncu --set full --import-source yes -o base.ncu-rep -f ./bin/thrust.bench.transform.basic.base -d 0 --profile
 
 The option `--set full` instructs `ncu` to collect all metrics.
 This requires rerunning some kernels and takes more time.
@@ -361,7 +360,7 @@ before viewing the report using `ncu-ui`:
 
 .. code-block:: bash
 
-    scp <remote hostname>:<cccl repo directory>/build/base.ncu-rep .
+    scp <remote hostname>:<cccl repo directory>/build/benchmark/base.ncu-rep .
     ncu-ui base.ncu-rep
 
 The version of `ncu-ui` needs to be at least as high as the version of `ncu` used to create the report.
