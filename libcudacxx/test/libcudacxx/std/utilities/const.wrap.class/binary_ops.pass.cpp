@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -66,7 +66,6 @@
 #include "helpers.h"
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 TEST_DIAG_SUPPRESS_CLANG("-Wconstant-logical-operand")
 
 struct WithOps
@@ -368,7 +367,7 @@ static_assert(HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std:
 static_assert(HasNoexceptLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 #endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // NoOps
 static_assert(!HasPlus<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
@@ -431,7 +430,7 @@ static_assert(!HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<OpsReturnNonS
 static_assert(!HasNoexceptLogicalOr<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
 // clang-format on
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
 {
@@ -493,7 +492,7 @@ TEST_FUNC constexpr bool test()
     assert(result12 == true);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // WithOps operations
@@ -502,52 +501,52 @@ TEST_FUNC constexpr bool test()
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{9}>> decltype(auto) result =
       cwWithOps6 + cwWithOps3;
-    static_assert(result.value.value == 9);
+    static_assert(result.__get().value == 9);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{3}>> decltype(auto) result2 =
       cwWithOps6 - cwWithOps3;
-    static_assert(result2.value.value == 3);
+    static_assert(result2.__get().value == 3);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{18}>> decltype(auto) result3 =
       cwWithOps6 * cwWithOps3;
-    static_assert(result3.value.value == 18);
+    static_assert(result3.__get().value == 18);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result4 =
       cwWithOps6 / cwWithOps3;
-    static_assert(result4.value.value == 2);
+    static_assert(result4.__get().value == 2);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result5 =
       cwWithOps6 % cwWithOps3;
-    static_assert(result5.value.value == 0);
+    static_assert(result5.__get().value == 0);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result6 =
       cwWithOps6 & cwWithOps3;
-    static_assert(result6.value.value == 2);
+    static_assert(result6.__get().value == 2);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{7}>> decltype(auto) result7 =
       cwWithOps6 | cwWithOps3;
-    static_assert(result7.value.value == 7);
+    static_assert(result7.__get().value == 7);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{5}>> decltype(auto) result8 =
       cwWithOps6 ^ cwWithOps3;
-    static_assert(result8.value.value == 5);
+    static_assert(result8.__get().value == 5);
 
     // Shift operations: 6 << 3 = 48, 6 >> 3 = 0
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{48}>> decltype(auto) result9 =
       cwWithOps6 << cwWithOps3;
-    static_assert(result9.value.value == 48);
+    static_assert(result9.__get().value == 48);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result10 =
       cwWithOps6 >> cwWithOps3;
-    static_assert(result10.value.value == 0);
+    static_assert(result10.__get().value == 0);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result11 =
       cwWithOps6 && cwWithOps3;
-    static_assert(result11.value.value == 1);
+    static_assert(result11.__get().value == 1);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result12 =
       cwWithOps6 || cwWithOps3;
-    static_assert(result12.value.value == 1);
+    static_assert(result12.__get().value == 1);
   }
 
   {
@@ -593,7 +592,7 @@ TEST_FUNC constexpr bool test()
     assert(result12.get() == 1);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // Mix with runtime param: these operators are not used

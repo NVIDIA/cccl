@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
-
 // constant_wrapper
 
 // The class template constant_wrapper aids in metaprogramming by ensuring that the
