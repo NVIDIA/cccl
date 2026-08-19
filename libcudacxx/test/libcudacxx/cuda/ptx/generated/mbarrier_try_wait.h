@@ -20,7 +20,7 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state; // 5a.
+        // mbarrier.try_wait.shared::cta.b64 waitComplete, [addr], state;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<bool (*)(cuda::std::uint64_t*, const cuda::std::uint64_t&)>(cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 780
@@ -29,8 +29,7 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    //
-        // 5b.
+        // mbarrier.try_wait.shared::cta.b64 waitComplete, [addr], state, suspendTimeHint;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<bool (*)(cuda::std::uint64_t*, const cuda::std::uint64_t&, const cuda::std::uint32_t&)>(
             cuda::ptx::mbarrier_try_wait));));
@@ -40,13 +39,12 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // mbarrier.try_wait.acquire.cta.shared::cta.b64         waitComplete, [addr], state;                        //
-        // 6a.
+        // mbarrier.try_wait.acquire.cta.shared::cta.b64 waitComplete, [addr], state;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<bool (*)(
             cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
             cuda::ptx::mbarrier_try_wait));
-          // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state; // 6a.
+          // mbarrier.try_wait.acquire.cluster.shared::cta.b64 waitComplete, [addr], state;
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<bool (*)(
                 cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
@@ -57,16 +55,14 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // mbarrier.try_wait.acquire.cta.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      //
-        // 6b.
+        // mbarrier.try_wait.acquire.cta.shared::cta.b64 waitComplete, [addr], state, suspendTimeHint;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<bool (*)(cuda::ptx::sem_acquire_t,
                                cuda::ptx::scope_cta_t,
                                cuda::std::uint64_t*,
                                const cuda::std::uint64_t&,
                                const cuda::std::uint32_t&)>(cuda::ptx::mbarrier_try_wait));
-          // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;
-          // // 6b.
+          // mbarrier.try_wait.acquire.cluster.shared::cta.b64 waitComplete, [addr], state, suspendTimeHint;
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<bool (*)(cuda::ptx::sem_acquire_t,
                                    cuda::ptx::scope_cluster_t,
@@ -74,6 +70,22 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
                                    const cuda::std::uint64_t&,
                                    const cuda::std::uint32_t&)>(cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.relaxed.cta.shared::cta.b64 waitComplete, [addr], state;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(
+            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
+            cuda::ptx::mbarrier_try_wait));
+          // mbarrier.try_wait.relaxed.cluster.shared::cta.b64 waitComplete, [addr], state;
+            * fn_ptr++ = reinterpret_cast<void*>(
+              static_cast<bool (*)(
+                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
+                cuda::ptx::mbarrier_try_wait));));
+#endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -95,19 +107,107 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
                                    const cuda::std::uint32_t&)>(cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#if __cccl_ptx_isa >= 940
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // mbarrier.try_wait.relaxed.cta.shared::cta.b64 waitComplete, [addr], state;
+        // mbarrier.try_wait.phase_type::primary.acquire.cta.shared::cta.b64 waitComplete|isReportSeen, [addr], state;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<bool (*)(
-            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
-            cuda::ptx::mbarrier_try_wait));
-          // mbarrier.try_wait.relaxed.cluster.shared::cta.b64 waitComplete, [addr], state;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<bool (*)(
-                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::std::uint64_t*, const cuda::std::uint64_t&)>(
-                cuda::ptx::mbarrier_try_wait));));
-#endif // __cccl_ptx_isa >= 860
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_acquire_t,
+                               cuda::ptx::scope_cta_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.acquire.cluster.shared::cta.b64 waitComplete|isReportSeen, [addr],
+        // state;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_acquire_t,
+                               cuda::ptx::scope_cluster_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.relaxed.cta.shared::cta.b64 waitComplete|isReportSeen, [addr], state;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cta_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.relaxed.cluster.shared::cta.b64 waitComplete|isReportSeen, [addr],
+        // state;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cluster_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t)>(cuda::ptx::mbarrier_try_wait));));
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.acquire.cta.shared::cta.b64 waitComplete|isReportSeen, [addr], state,
+        // suspendTimeHint;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_acquire_t,
+                               cuda::ptx::scope_cta_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.acquire.cluster.shared::cta.b64 waitComplete|isReportSeen, [addr],
+        // state, suspendTimeHint;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_acquire_t,
+                               cuda::ptx::scope_cluster_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.relaxed.cta.shared::cta.b64 waitComplete|isReportSeen, [addr], state,
+        // suspendTimeHint;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cta_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_try_wait));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // mbarrier.try_wait.phase_type::primary.relaxed.cluster.shared::cta.b64 waitComplete|isReportSeen, [addr],
+        // state, suspendTimeHint;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::mbarrier_phase_primary_t,
+                               cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cluster_t,
+                               bool& isReportSeen,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_try_wait));));
+#endif // __cccl_ptx_isa >= 940
 }

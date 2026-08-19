@@ -3,6 +3,9 @@
 #ifndef _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_
 #define _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_
 
+// clang-tidy does not distinguish branches by their inline-assembly strings.
+// NOLINTBEGIN(bugprone-branch-clone)
+
 /*
 // cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX
 ISA 80, SM_90
@@ -21,7 +24,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -32,11 +34,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_b32 (due to parameter type constraint)
-// __op == op_and_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_and_op (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.and.b32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -45,10 +46,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -70,7 +67,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -81,11 +77,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_b32 (due to parameter type constraint)
-// __op == op_or_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_or_op (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.or.b32 [%0], [%1], %2, [%3]; // 1."
       :
       : "r"(__as_ptr_remote_dsmem(__dstMem)),
@@ -93,10 +88,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -118,7 +109,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -129,11 +119,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_b32 (due to parameter type constraint)
-// __op == op_xor_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_xor_op (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.xor.b32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -142,10 +131,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -167,7 +152,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -178,11 +162,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -191,10 +174,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -216,7 +195,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -227,11 +205,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -240,10 +217,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -265,7 +238,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -276,11 +248,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -289,10 +260,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -314,7 +281,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -325,11 +291,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_inc (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_inc (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.inc.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -338,10 +303,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -363,7 +324,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -374,11 +334,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_dec (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_dec (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.dec.u32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -387,10 +346,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -412,7 +367,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -423,11 +377,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -436,10 +389,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -461,7 +410,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -472,11 +420,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -485,10 +432,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -510,7 +453,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -521,11 +463,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.s32 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -534,10 +475,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -559,7 +496,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -570,11 +506,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; // "
       "1."
       :
@@ -583,10 +518,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -608,7 +539,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_cluster_t,
@@ -619,11 +549,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::std::uint32_t __size,
   ::cuda::std::uint64_t* __rdsmem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; // "
       "2."
       :
@@ -632,10 +561,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         "r"(__size),
         "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -655,7 +580,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -668,8 +592,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
-// __op == op_and_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __op == op_and_op (due to parameter type constraint)
   if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b32  [%0], [%1], %2; // 3."
@@ -684,10 +607,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -707,7 +626,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -720,8 +638,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
-// __op == op_or_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __op == op_or_op (due to parameter type constraint)
   if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b32  [%0], [%1], %2; // 3."
@@ -736,10 +653,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -759,7 +672,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -772,8 +684,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
-// __op == op_xor_op (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __op == op_xor_op (due to parameter type constraint)
   if constexpr (sizeof(_Type) == 4)
   {
     asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b32  [%0], [%1], %2; // 3."
@@ -788,10 +699,6 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -811,7 +718,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -821,19 +727,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -853,7 +754,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -863,19 +763,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -895,7 +790,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -905,19 +799,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -937,7 +826,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -947,19 +835,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_inc (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_inc (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.inc.u32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -979,7 +862,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -989,19 +871,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_dec (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_dec (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.dec.u32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1021,7 +898,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1031,19 +907,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1063,7 +934,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1073,19 +943,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1105,7 +970,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1115,19 +979,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int32_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.s32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1147,7 +1006,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1157,19 +1015,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u64 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1189,7 +1042,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1199,19 +1051,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u64 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1231,7 +1078,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1241,19 +1087,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::uint64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_u64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1273,7 +1114,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1283,19 +1123,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s64 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s64 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1315,7 +1150,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1325,19 +1159,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s64 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s64 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1357,7 +1186,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1367,19 +1195,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const float* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_f32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_f32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1399,7 +1222,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1409,19 +1231,14 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const double* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_f64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_f64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f64  [%0], [%1], %2; // 4."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -1441,7 +1258,6 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
@@ -1451,20 +1267,17 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   const ::cuda::std::int64_t* __srcMem,
   ::cuda::std::uint32_t __size)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __type == type_s64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __type == type_s64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 6."
       :
       : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
+
+// NOLINTEND(bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_

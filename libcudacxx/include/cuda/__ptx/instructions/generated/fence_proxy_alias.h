@@ -3,23 +3,45 @@
 #ifndef _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
 #define _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
 
+// clang-tidy does not distinguish branches by their inline-assembly strings.
+// NOLINTBEGIN(bugprone-branch-clone)
+
 /*
 // fence.proxy.alias; // 4. PTX ISA 75, SM_70
 template <typename = void>
 __device__ static inline void fence_proxy_alias();
 */
 #if __cccl_ptx_isa >= 750
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
 template <typename = void>
 _CCCL_DEVICE static inline void fence_proxy_alias()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm volatile("fence.proxy.alias; // 4." : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 750
+
+/*
+// fence.proxy.alias.sem.sys; // PTX ISA 94, SM_90
+// .sem       = { .acquire, .release }
+template <cuda::ptx::dot_sem Sem>
+__device__ static inline void fence_proxy_alias(
+  cuda::ptx::sem_t<Sem> sem);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_sem _Sem>
+_CCCL_DEVICE static inline void fence_proxy_alias(::cuda::ptx::sem_t<_Sem> __sem)
+{
+  static_assert(__sem == sem_acquire || __sem == sem_release);
+  if constexpr (__sem == sem_acquire)
+  {
+    asm volatile("fence.proxy.alias.acquire.sys;" : : : "memory");
+  }
+  else if constexpr (__sem == sem_release)
+  {
+    asm volatile("fence.proxy.alias.release.sys;" : : : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+// NOLINTEND(bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
