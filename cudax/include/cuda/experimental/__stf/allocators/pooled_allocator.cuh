@@ -317,11 +317,19 @@ public:
 
   event_list deinit_pools(backend_ctx_untyped& ctx)
   {
-    // Runs at context finalize (submitters expected quiesced); lock is cheap
-    // insurance and keeps the multimap consistent under a stray in-flight op.
-    const ::std::lock_guard<::std::mutex> guard(mtx);
+    // Runs at context finalize (submitters expected quiesced). Swap the map
+    // out under the lock so any stray in-flight op sees an empty set and fails
+    // loudly (release_pool_entry aborts on an unknown pointer) instead of
+    // touching a pool that is being unpopulated, and so unpopulate's
+    // deallocations run outside the lock -- same janitor idiom as
+    // cached_block_allocator::deinit.
+    decltype(map) janitor;
+    {
+      const ::std::lock_guard<::std::mutex> guard(mtx);
+      map.swap(janitor);
+    }
     event_list res;
-    for (auto& entry : map)
+    for (auto& entry : janitor)
     {
       event_list per_place_res;
 
