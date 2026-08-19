@@ -164,11 +164,8 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _BinaryPredicate)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  _CCCL_HOST_API void operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __last,
-    _BinaryPredicate __pred) const
+  _CCCL_HOST_API void _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

@@ -76,17 +76,18 @@ class group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(is_group<_ParentGroup>);
+  static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
+                "unit_type must be same as or below _ParentGroup's unit_type");
 
   // todo(dabayer): Allow groups stacking and remove this.
   static_assert(__is_this_group_v<_ParentGroup>);
 
-  // todo(dabayer): static_assert that _Unit is (under) typename _ParentGroup::unit_type
-
+  using _Hierarchy            = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
   using _SynchronizerInstance = __group_synchronizer_instance_t<_Synchronizer, _Unit, _ParentGroup, _MappingResult>;
   static_assert(__group_mapping_result<_MappingResult>);
 
-  typename _ParentGroup::hierarchy_type __hier_;
+  _Hierarchy __hier_;
   _MappingResult __mapping_result_;
   _Synchronizer __synchronizer_;
   _SynchronizerInstance __synchronizer_instance_;
@@ -142,7 +143,7 @@ class group
 public:
   using unit_type             = _Unit;
   using level_type            = typename _ParentGroup::level_type;
-  using hierarchy_type        = typename _ParentGroup::hierarchy_type;
+  using hierarchy_type        = _Hierarchy;
   using __mapping_result_type = _MappingResult;
   using synchronizer_type     = _Synchronizer;
 
@@ -158,6 +159,22 @@ public:
       , __synchronizer_{__synchronizer}
       , __synchronizer_instance_{__make_synchronizer_instance(__unit, __synchronizer_, __parent, __mapping_result_)}
   {}
+
+  // todo(dabayer): Delete copy constructor.
+  // group(const group&) = delete;
+
+  _CCCL_DEVICE_API ~group()
+  {
+    // Skip the synchronization for threads that are not part of this group.
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result_.is_valid())
+      {
+        return;
+      }
+    }
+    __synchronizer_instance_.deinit(__mapping_result_, __hier_);
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
@@ -175,6 +192,12 @@ public:
     return __synchronizer_;
   }
 
+  // todo(dabayer): Do we want to expose synchronizer instance getter?
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  {
+    return __synchronizer_instance_;
+  }
+
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
@@ -187,7 +210,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
@@ -200,51 +223,56 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
-  _CCCL_TEMPLATE(class _Tp, class _InLevel)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel&) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _ParentGroup&) noexcept
   {
-    _Tp __ret = __mapping_result_.group_count();
-    if constexpr (!::cuda::std::is_same_v<_InLevel, level_type>)
-    {
-      __ret *= __count_query<level_type, _InLevel>::template __call<_Tp>(__hier_);
-    }
-    return __ret;
+    return _MappingResult::static_group_count();
   }
 
-  _CCCL_TEMPLATE(class _InLevel)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
+  template <class _Tp, class _QueryMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
+  __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
-    return count_as<typename _InLevel::__product_type>(__in_level);
+    return static_cast<_Tp>(__mapping_result.group_count());
   }
 
-  _CCCL_TEMPLATE(class _Tp, class _InLevel)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel&) const noexcept
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _ParentGroup& __parent) const noexcept
   {
-    _Tp __ret = __mapping_result_.group_rank();
-    if constexpr (!::cuda::std::is_same_v<_InLevel, level_type>)
-    {
-      __ret += static_cast<_Tp>(
-        __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier_) * __mapping_result_.group_count());
-    }
-    return __ret;
+    return __count_as_impl<_Tp>(__mapping_result_, __hier_, __parent);
   }
 
-  _CCCL_TEMPLATE(class _InLevel)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _ParentGroup& __parent) const noexcept
   {
-    return rank_as<typename _InLevel::__product_type>(__in_level);
+    return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
+  }
+
+  template <class _Tp, class _QueryMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
+  __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
+  {
+    return static_cast<_Tp>(__mapping_result.group_rank());
+  }
+
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _ParentGroup& __parent) const noexcept
+  {
+    return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __parent);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _ParentGroup& __parent) const noexcept
+  {
+    return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 };
 
 _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup>)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
+                 __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
   -> group<_Unit, _ParentGroup, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>, _Synchronizer>;
 } // namespace cuda::experimental

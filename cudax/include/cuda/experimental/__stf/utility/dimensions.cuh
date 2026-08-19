@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -184,7 +186,8 @@ public:
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
   _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
   {
-    return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
+    return dim4(
+      ::cuda::std::min(a.x, b.x), ::cuda::std::min(a.y, b.y), ::cuda::std::min(a.z, b.z), ::cuda::std::min(a.t, b.t));
   }
 
   /// Get the coordinate corresponding to a 1D index within a dim4 class
@@ -273,7 +276,7 @@ public:
     {
       s[ind].first  = 0;
       s[ind].second = sizes[ind];
-      if constexpr (::std::is_signed_v<Int>)
+      if constexpr (::cuda::std::is_signed_v<Int>)
       {
         _CCCL_ASSERT(sizes[ind] >= 0, "Invalid shape.");
       }
@@ -287,7 +290,7 @@ public:
     static_assert(sizeof...(Int) == dimensions, "Number of dimensions must match");
     each_in_pack(
       [&](auto i, const auto& e) {
-        if constexpr (::std::is_arithmetic_v<::std::remove_reference_t<decltype(e)>>)
+        if constexpr (::cuda::std::is_arithmetic_v<::cuda::std::remove_reference_t<decltype(e)>>)
         {
           s[i].first  = 0;
           s[i].second = e;
@@ -538,7 +541,7 @@ UNITTEST("box<3>")
   const size_t expected_cnt = 24;
   size_t cnt                = 0;
   auto shape                = box({0, 3}, {1, 3}, {10, 14});
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
@@ -554,7 +557,7 @@ UNITTEST("box<3> upper")
   const size_t expected_cnt = 24;
   size_t cnt                = 0;
   auto shape                = box(3, 2, 4);
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
@@ -567,7 +570,7 @@ UNITTEST("box<3> upper")
 UNITTEST("empty box<1>")
 {
   auto shape = box({7, 7});
-  static_assert(::std::is_same_v<decltype(shape), box<1>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<1>>);
 
   auto it_end   = shape.end();
   auto it_begin = shape.begin();
@@ -589,7 +592,7 @@ UNITTEST("mix of integrals and pairs")
   const size_t expected_cnt = 12;
   size_t cnt                = 0;
   auto shape                = box(3, ::std::pair(1, 2), 4);
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);

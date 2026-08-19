@@ -21,77 +21,80 @@ _CUDA_STREAM_PER_THREAD_HANDLE = 2
 _CUDA_STREAM_CAPTURE_STATUS_NONE = 0
 _CUDA_STREAM_CAPTURE_STATUS_ACTIVE = 1
 _SUMMARY_UNIQUE_ID_CHILD = "__cccl_summary_unique_id"
-_UINT32_BITS = 32
-_UINT32_MASK = (1 << _UINT32_BITS) - 1
-_CAPTURE_STATUS_VALID = 1 << 0
-_UNIQUE_ID_VALID = 1 << 1
-_DEVICE_VALID = 1 << 2
-_PRIORITY_VALID = 1 << 3
-_FLAGS_VALID = 1 << 4
 InternalDict = dict[str, object]
 
 
-# LLDB cannot materialize a locally declared struct returned by an expression.
-# A Clang vector keeps this to one inferior call and exposes six stable lanes:
-# unique ID, device, priority, capture status, flags, and a validity mask.
-_STREAM_SNAPSHOT_EXPRESSION = """
-(unsigned long long __attribute__((ext_vector_type(6))))(([](cudaStream_t stream) {
-  using Snapshot = unsigned long long __attribute__((ext_vector_type(6)));
-  constexpr unsigned long long capture_status_valid = 1 << 0;
-  constexpr unsigned long long unique_id_valid = 1 << 1;
-  constexpr unsigned long long device_valid = 1 << 2;
-  constexpr unsigned long long priority_valid = 1 << 3;
-  constexpr unsigned long long flags_valid = 1 << 4;
+# Compiled once per process, then called per stream: an inferior round trip costs
+# far more than the queries, so one call collects every field.
+#
+# The queries use the driver API. libcuda is always shared, so its symbols are
+# always present; the cudart equivalents are absent from a statically linked
+# runtime unless the program itself calls them, which silently drops a field.
+#
+# An unresolved identifier fails the whole unit, so the device query is spliced in
+# only when its symbol resolves. The rest predate the oldest supported driver.
+_STREAM_SNAPSHOT_DEFINITION = """
+struct __cccl_stream_snapshot_result
+{
+  unsigned long long unique_id;
+  int device;
+  int priority;
+  int capture_status;
+  unsigned int flags;
+  bool has_unique_id;
+  bool has_device;
+  bool has_priority;
+  bool has_capture_status;
+  bool has_flags;
+};
 
-  void* original_context{};
+extern "C" __cccl_stream_snapshot_result __cccl_stream_snapshot(void* stream)
+{
+  __cccl_stream_snapshot_result result = {};
+  void* original_context = 0;
   const int context_status =
     ((int (*)(void**))cuCtxGetCurrent)(&original_context);
-  int capture_status{};
-  unsigned long long unique_id{};
-  int device{};
-  int priority{};
-  unsigned int flags{};
-  unsigned long long validity{};
 
   if (context_status == 0
-      && ((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)(
-           stream, &capture_status) == 0) {
-    validity |= capture_status_valid;
-    if (capture_status == 0) {
-      if (((int (*)(void*, unsigned long long*))cuStreamGetId)(
-            (void*)stream, &unique_id) == 0) {
-        validity |= unique_id_valid;
-      }
+      && ((int (*)(void*, int*))cuStreamIsCapturing)(
+           stream, &result.capture_status) == 0) {
+    result.has_capture_status = true;
+    if (result.capture_status == 0) {
+      result.has_unique_id =
+        ((int (*)(void*, unsigned long long*))cuStreamGetId)(
+          stream, &result.unique_id) == 0;
 %s
-      if ((int)cudaStreamGetPriority(stream, &priority) == 0) {
-        validity |= priority_valid;
-      }
-      if ((int)cudaStreamGetFlags(stream, &flags) == 0) {
-        validity |= flags_valid;
-      }
+      result.has_priority =
+        ((int (*)(void*, int*))cuStreamGetPriority)(
+          stream, &result.priority) == 0;
+      result.has_flags =
+        ((int (*)(void*, unsigned int*))cuStreamGetFlags)(
+          stream, &result.flags) == 0;
     }
   }
 
-  if (context_status == 0 && original_context == nullptr) {
-    (void)((int (*)(void*))cuCtxSetCurrent)(nullptr);
+  if (context_status == 0 && original_context == 0) {
+    (void)((int (*)(void*))cuCtxSetCurrent)(0);
   }
-
-  return Snapshot{
-    unique_id,
-    (unsigned int)device,
-    (unsigned int)priority,
-    (unsigned int)capture_status,
-    flags,
-    validity,
-  };
-})((cudaStream_t)%#x))
+  return result;
+}
 """
 
+# cuStreamGetDevice arrived in CUDA 12.8. Reporting no device on an older driver
+# is safer than changing the current CUDA context from a formatter.
 _STREAM_DEVICE_QUERY = """
-  if ((int)cudaStreamGetDevice(stream, &device) == 0) {
-    validity |= device_valid;
-  }
+      result.has_device =
+        ((int (*)(void*, int*))cuStreamGetDevice)(
+          stream, &result.device) == 0;
 """
+# Each value member has a has_<name> companion. int members read as signed.
+_SNAPSHOT_FIELDS = {
+    "unique_id": False,
+    "device": True,
+    "priority": True,
+    "capture_status": True,
+    "flags": False,
+}
 
 
 class StreamInfo(NamedTuple):
@@ -139,69 +142,88 @@ def _handle_description(handle: int, byte_size: int) -> str:
     return f"{handle:#x}"
 
 
-def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
+def _snapshot_fields(value: lldb.SBValue, handle: int) -> dict[str, int] | None:
+    """Compile the snapshot if needed, then run it for one handle."""
     frame = value.GetFrame()
-    if not frame.IsValid():
-        return lldb.SBValue()
+    process = value.GetProcess()
+    target = value.GetTarget()
+    if not frame.IsValid() or not process.IsValid() or not target.IsValid():
+        return None
+
+    process_id = process.GetUniqueID()
+    if _snapshot_fields.process_id != process_id:
+        _snapshot_fields.process_id = process_id
+        definition = _STREAM_SNAPSHOT_DEFINITION % (
+            _STREAM_DEVICE_QUERY
+            if target.FindSymbols("cuStreamGetDevice").GetSize()
+            else ""
+        )
+        top_level = lldb.SBExpressionOptions()
+        top_level.SetIgnoreBreakpoints(True)
+        top_level.SetUnwindOnError(True)
+        top_level.SetTopLevel(True)
+        top_level.SetLanguage(lldb.eLanguageTypeC_plus_plus)
+        frame.EvaluateExpression(definition, top_level)
+        # A top-level expression has no result, and it goes to the JIT, so it
+        # appears in no symbol table. A call is the only proof that it compiled.
+        probe = lldb.SBExpressionOptions()
+        probe.SetIgnoreBreakpoints(True)
+        probe.SetUnwindOnError(True)
+        _snapshot_fields.installed = (
+            frame.EvaluateExpression("__cccl_stream_snapshot((void*)0)", probe)
+            .GetError()
+            .Success()
+        )
+    if not _snapshot_fields.installed:
+        return None
+
     options = lldb.SBExpressionOptions()
     options.SetIgnoreBreakpoints(True)
     options.SetUnwindOnError(True)
-    return frame.EvaluateExpression(expression, options)
-
-
-def _snapshot_values(
-    result: lldb.SBValue,
-) -> tuple[int, int, int, int, int, int] | None:
-    if result.GetNumChildren() != 6:
+    result = frame.EvaluateExpression(
+        f"__cccl_stream_snapshot((void*){handle:#x})", options
+    )
+    if result.GetError().Fail():
         return None
 
-    lanes: list[int] = []
-    for index in range(6):
-        lane = result.GetChildAtIndex(index)
-        if not lane.IsValid() or lane.GetError().Fail():
-            return None
-        lanes.append(lane.GetValueAsUnsigned(0))
-    return lanes[0], lanes[1], lanes[2], lanes[3], lanes[4], lanes[5]
+    fields: dict[str, int] = {}
+    for name, signed in _SNAPSHOT_FIELDS.items():
+        for member_name in (name, f"has_{name}"):
+            member = result.GetChildMemberWithName(member_name)
+            if not member.IsValid() or member.GetError().Fail():
+                return None
+            fields[member_name] = (
+                member.GetValueAsSigned(0)
+                if signed and member_name == name
+                else member.GetValueAsUnsigned(0)
+            )
+    return fields
 
 
-def _signed32(value: int) -> int:
-    value &= _UINT32_MASK
-    return value - (1 << _UINT32_BITS) if value & (1 << 31) else value
+_snapshot_fields.process_id = None
+_snapshot_fields.installed = False
 
 
 def _query_stream_snapshot(value: lldb.SBValue, handle: int) -> StreamSnapshot | None:
-    # One vector-valued expression avoids target allocations and
-    # debugger-visible state changes.
-    result = _evaluate(
-        value, _STREAM_SNAPSHOT_EXPRESSION % (_STREAM_DEVICE_QUERY, handle)
-    )
-    if not result.IsValid() or result.GetError().Fail():
-        # cudaStreamGetDevice was added in CUDA 12.8. Older runtimes can still
-        # provide the remaining metadata without changing the current context.
-        result = _evaluate(value, _STREAM_SNAPSHOT_EXPRESSION % ("", handle))
-    if not result.IsValid() or result.GetError().Fail():
-        return None
-
-    snapshot = _snapshot_values(result)
+    snapshot = _snapshot_fields(value, handle)
     if snapshot is None:
         return None
-    unique_id, device, priority, capture_status, flags, validity = snapshot
 
-    if not validity & _CAPTURE_STATUS_VALID:
+    if not snapshot["has_capture_status"]:
         return StreamSnapshot(None, StreamInfo(None, None, None, None))
 
-    capture_status = _signed32(capture_status)
+    capture_status = snapshot["capture_status"]
     is_capturing = capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
     if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
         return StreamSnapshot(None, StreamInfo(None, None, is_capturing, None))
 
     return StreamSnapshot(
-        unique_id if validity & _UNIQUE_ID_VALID else None,
+        snapshot["unique_id"] if snapshot["has_unique_id"] else None,
         StreamInfo(
-            _signed32(device) if validity & _DEVICE_VALID else None,
-            _signed32(priority) if validity & _PRIORITY_VALID else None,
+            snapshot["device"] if snapshot["has_device"] else None,
+            snapshot["priority"] if snapshot["has_priority"] else None,
             is_capturing,
-            flags if validity & _FLAGS_VALID else None,
+            snapshot["flags"] if snapshot["has_flags"] else None,
         ),
     )
 

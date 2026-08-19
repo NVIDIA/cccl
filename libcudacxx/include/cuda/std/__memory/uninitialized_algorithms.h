@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __AlwaysFalse
 {
   template <class... _Args>
-  _CCCL_API constexpr bool operator()(_Args&&...) const noexcept
+  _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Args&&...) noexcept
   {
     return false;
   }

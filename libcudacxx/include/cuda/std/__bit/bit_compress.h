@@ -22,19 +22,22 @@
 #endif // no system header
 
 #include <cuda/__bit/bitmask.h>
+#include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/shl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp bit_compress(_Tp __v, const _Tp __mask) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __bit_compress_impl_generic(_Tp __v, const _Tp __mask) noexcept
 {
   if (__mask == static_cast<_Tp>(~_Tp{0}))
   {
@@ -67,6 +70,125 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
     __v >>= __n;
   }
   return __ret;
+}
+
+#if _CCCL_CUDA_COMPILATION()
+template <class _Tp>
+_CCCL_DEVICE_API _Tp __bit_compress_impl_device_prepend(_Tp __v, uint32_t __prefix, uint32_t __n) noexcept
+{
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return ::__funnelshift_lc(__prefix, __v, __n);
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    const auto __lo = static_cast<uint32_t>(__v);
+    const auto __hi = static_cast<uint32_t>(__v >> 32);
+
+    const auto __ret_lo = ::__funnelshift_lc(__prefix, __lo, __n);
+    const auto __ret_hi = ::__funnelshift_lc(__lo, __hi, __n);
+    return (_Tp{__ret_hi} << 32) | __ret_lo;
+  }
+#  if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    const auto __v0 = static_cast<uint32_t>(__v);
+    const auto __v1 = static_cast<uint32_t>(__v >> 32);
+    const auto __v2 = static_cast<uint32_t>(__v >> 64);
+    const auto __v3 = static_cast<uint32_t>(__v >> 96);
+
+    const auto __ret0 = ::__funnelshift_lc(__prefix, __v0, __n);
+    const auto __ret1 = ::__funnelshift_lc(__v0, __v1, __n);
+    const auto __ret2 = ::__funnelshift_lc(__v1, __v2, __n);
+    const auto __ret3 = ::__funnelshift_lc(__v2, __v3, __n);
+    return (_Tp{__ret3} << 96) | (_Tp{__ret2} << 64) | (_Tp{__ret1} << 32) | __ret0;
+  }
+#  endif // _CCCL_HAS_INT128()
+  else
+  {
+    static_assert(__always_false_v<_Tp>, "Unsupported _Tp");
+  }
+}
+
+template <class _Tp>
+_CCCL_DEVICE_API void __bit_compress_impl_device_process_word(_Tp& __ret, uint32_t __v, uint32_t __mask) noexcept
+{
+  for (auto __skip = ::cuda::ptx::bfind_shiftamt(__mask); __skip != ~0u; __skip = ::cuda::ptx::bfind_shiftamt(__mask))
+  {
+    // Skip leading zeros in the mask.
+    __mask <<= __skip;
+    __v <<= __skip;
+
+    // Find out how many consecutive bits we can write.
+    const auto __n = ::cuda::ptx::bfind_shiftamt(~__mask);
+
+    // Write __n consecutive bits.
+    __ret = ::cuda::std::__bit_compress_impl_device_prepend(__ret, __v, __n);
+
+    // Remove written bits from __v and __mask_rev.
+    __mask = ::cuda::std::shl(__mask, __n);
+    __v    = ::cuda::std::shl(__v, __n);
+  }
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API _Tp __bit_compress_impl_device(const _Tp __v, const _Tp __mask) noexcept
+{
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    uint32_t __ret{0};
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v, __mask);
+    return static_cast<_Tp>(__ret);
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    const auto __v_lo = static_cast<uint32_t>(__v);
+    const auto __v_hi = static_cast<uint32_t>(__v >> 32);
+    const auto __m_lo = static_cast<uint32_t>(__mask);
+    const auto __m_hi = static_cast<uint32_t>(__mask >> 32);
+
+    _Tp __ret{0};
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v_hi, __m_hi);
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v_lo, __m_lo);
+    return __ret;
+  }
+#  if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    const auto __v0 = static_cast<uint32_t>(__v);
+    const auto __v1 = static_cast<uint32_t>(__v >> 32);
+    const auto __v2 = static_cast<uint32_t>(__v >> 64);
+    const auto __v3 = static_cast<uint32_t>(__v >> 96);
+
+    const auto __m0 = static_cast<uint32_t>(__mask);
+    const auto __m1 = static_cast<uint32_t>(__mask >> 32);
+    const auto __m2 = static_cast<uint32_t>(__mask >> 64);
+    const auto __m3 = static_cast<uint32_t>(__mask >> 96);
+
+    _Tp __ret{0};
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v3, __m3);
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v2, __m2);
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v1, __m1);
+    ::cuda::std::__bit_compress_impl_device_process_word(__ret, __v0, __m0);
+    return __ret;
+  }
+#  endif // _CCCL_HAS_INT128()
+  else
+  {
+    return ::cuda::std::__bit_compress_impl_generic(__v, __mask);
+  }
+}
+#endif // _CCCL_CUDA_COMPILATION()
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr _Tp bit_compress(const _Tp __v, const _Tp __mask) noexcept
+{
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__bit_compress_impl_device(__v, __mask); }))
+  }
+  return ::cuda::std::__bit_compress_impl_generic(__v, __mask);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

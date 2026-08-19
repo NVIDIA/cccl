@@ -134,14 +134,15 @@ domain can improve locality. Locality domain places expose this capability:
   (never ``0``: a device without locality-domain support reports a single
   whole-device domain; invalid device ordinals are rejected with an
   exception)
-- ``exec_place::locality_domain(devid, domain)`` -- an execution place whose
-  SMs all belong to the requested domain (a green context built from an
-  SM split by locality domain)
+- ``exec_place::locality_domain(devid, domain[, split])`` -- an execution
+  place backed by an SM partition for the requested domain (a green context
+  built from an SM split by locality domain); the optional ``split``
+  selects the SM split method (see below)
 - ``data_place::locality_domain(devid, domain)`` -- a data place whose
   allocations are localized to the requested domain (stream-ordered memory
   pools and VMM physical handles)
-- ``make_locality_domain_grid(devid)`` -- a grid with one execution place per
-  domain of the device
+- ``make_locality_domain_grid(devid[, split])`` -- a grid with one execution
+  place per domain of the device, all built with the same SM split method
 - ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
   ``green_context_helper``; hands out ``locality_domain_view`` identity
   tokens accepted by both factories
@@ -149,6 +150,59 @@ domain can improve locality. Locality domain places expose this capability:
 ``exec_place::locality_domain(d, i)`` and ``data_place::locality_domain(d, i)``
 share the same domain ordinal and are therefore co-located: the execution
 place's affine data place is the matching locality-domain data place.
+
+SM split methods
+~~~~~~~~~~~~~~~~
+
+Not every SM of a device necessarily participates in a strict per-domain SM
+split: SMs may not be assigned to any domain, and the default co-scheduling
+alignment can leave a domain's incomplete SM groups unassigned. The
+``locality_domain_sm_split`` enumeration therefore lets execution-place
+construction choose how the per-domain SM partitions are carved out of the
+device (with ``cuDevSmResourceSplit``):
+
+- ``locality_domain_sm_split::backfill`` (the default): every domain place
+  is sized to an even share of the device total and backfilled by the
+  driver -- with the target domain's SMs first, then SMs not assigned to any
+  domain, then SMs from other domains -- so the domain places together cover
+  the whole device. The backfilled SMs may sit outside the place's domain
+  (they have no memory affinity with it), and the partition uses the
+  finest co-scheduling granularity, which does not support launching
+  thread-block clusters.
+- ``locality_domain_sm_split::aligned`` -- only SMs of the domain that form
+  complete co-scheduled groups at the device's default alignment. Every SM
+  of the place is affine to the place's domain and thread-block cluster
+  launches remain available, but incomplete groups and SMs outside any
+  domain are left out of the partition.
+- ``locality_domain_sm_split::fine`` -- all of the domain's SMs, grouped at
+  the finest co-scheduling granularity (groups of 2). Every SM of the place
+  is affine to the place's domain, at the cost of thread-block cluster
+  launches.
+
+``backfill`` is the least surprising default: work spread over the domain
+places uses the whole device. The strictly per-domain methods trade that
+coverage for affinity -- when work is partitioned by data affinity, SMs
+backfilled from outside a domain execute against remote memory, which can
+offset the locality benefit the partitioning was meant to capture. Prefer
+``aligned`` or ``fine`` when per-place SM/memory affinity matters more than
+whole-device coverage.
+
+The split method only affects the execution side: data places take no
+method, and places built with different methods for the same
+``(device, domain)`` are distinct places sharing the same (equal) affine
+data place. Backends without native locality-domain support (pre-13.4
+toolkits, the whole-device degrade, the fake-topology override) accept and
+ignore the method.
+
+All three methods rest on the CUDA 13.4 driver surface that locality-domain
+places already require (splitting by locality domain with
+``cuDevSmResourceSplit``); the extra pieces ``backfill`` and ``fine`` use
+predate it, so no method needs a toolkit newer than 13.4.
+
+.. code:: cpp
+
+    // Strictly per-domain partitions for affinity-partitioned work
+    auto grid = make_locality_domain_grid(dev, locality_domain_sm_split::fine);
 
 The following schematic example assumes the usual CUDASTF setup (a
 ``context ctx``, a logical data ``lX`` and a ``kernel``, as in the STF
@@ -581,7 +635,7 @@ the selected extents; later axes shift left and trailing extents become one:
 
 These operations are useful when a partition should consume several axes of
 a processor grid as one logical axis. They are coordinate transformations,
-not :ref:`places-partitioning`: the latter decomposes a place into constituent
+not :ref:`partitioning <places-partitioning>`: the latter decomposes a place into constituent
 resources.
 
 .. _places-partitioning:
@@ -591,14 +645,23 @@ Partitioning grids
 
 The ``place_partition`` class partitions an execution place at a given
 granularity. This is useful for splitting a multi-device grid into its
-constituent devices, or for partitioning a device into green contexts or
-CUDA streams.
+constituent devices, or for partitioning a device into locality domains,
+green contexts or CUDA streams.
 
 The partitioning granularity is specified by ``place_partition_scope``:
 
 - ``place_partition_scope::cuda_device`` -- partition into individual devices
+- ``place_partition_scope::locality_domain`` -- partition into locality
+  domains (devices without locality-domain support contribute a single
+  whole-device domain; an optional ``locality_domain_sm_split`` argument
+  selects the SM split method)
 - ``place_partition_scope::green_context`` -- partition into green contexts (CUDA 12.4+)
 - ``place_partition_scope::cuda_stream`` -- partition into CUDA streams
+
+Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
+the machine-wide form: it yields every locality domain of every device. The
+single-device helper ``make_locality_domain_grid(dev_id)`` is convenience
+sugar over this mechanism.
 
 .. code:: c++
 

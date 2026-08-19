@@ -964,7 +964,7 @@ _CCCL_API constexpr bitset<_Size> operator^(const bitset<_Size>& __x, const bits
 template <size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bitset<_Size>> : public __unary_function<bitset<_Size>, size_t>
 {
-  _CCCL_API inline size_t operator()(const bitset<_Size>& __bs) const noexcept
+  _CCCL_API inline size_t _CCCL_STATIC_CALL_OPERATOR(const bitset<_Size>& __bs) noexcept
   {
     return __bs.__hash_code();
   }

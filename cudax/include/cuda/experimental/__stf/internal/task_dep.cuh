@@ -11,6 +11,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -203,8 +206,8 @@ class task_dep<T, void, false> : public task_dep_untyped
 public:
   using data_t      = T;
   using dep_type    = T;
-  using op_and_init = ::std::pair<::std::monostate, ::std::bool_constant<false>>;
-  using op_type     = ::std::monostate;
+  using op_and_init = ::std::pair<::cuda::std::monostate, ::std::bool_constant<false>>;
+  using op_type     = ::cuda::std::monostate;
   enum : bool
   {
     does_work = false
@@ -224,7 +227,7 @@ public:
 
   template <typename... Pack>
   task_dep(Pack&&... pack)
-      : task_dep_untyped(::std::forward<Pack>(pack)...)
+      : task_dep_untyped(::cuda::std::forward<Pack>(pack)...)
   {
     static_assert(sizeof(task_dep<T>) == sizeof(task_dep_untyped),
                   "Cannot add state here because it would be lost through slicing");
@@ -259,12 +262,12 @@ public:
   using op_type     = reduce_op;
   enum : bool
   {
-    does_work = !::std::is_same_v<reduce_op, ::std::monostate>
+    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
   };
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(::std::forward<Args>(args)...)
+      : base(::cuda::std::forward<Args>(args)...)
   {}
 };
 
@@ -294,7 +297,7 @@ public:
   {
     static_assert(sizeof(task_dep_vector) == sizeof(task_dep_vector_untyped));
     static_assert(sizeof...(Data) == 1);
-    static_assert(::std::is_same_v<T, Data...>);
+    static_assert(::cuda::std::is_same_v<T, Data...>);
   }
 
   /**
@@ -352,7 +355,7 @@ public:
   {
     // Note that make_tuple_indexwise will remove ::std::ignore entries
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
-      if constexpr (::std::is_same_v<type_at<i>, void_interface>)
+      if constexpr (::cuda::std::is_same_v<type_at<i>, void_interface>)
       {
         return ::std::ignore;
       }
