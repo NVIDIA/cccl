@@ -36,6 +36,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 class __logical_device_ref
 {
 public:
+  __logical_device_ref() = delete;
+
   _CCCL_HOST_API constexpr __logical_device_ref(device_ref __dev, ::CUgreenCtx __gctx) noexcept
       : __device_{__dev}
       , __gctx_{__gctx}

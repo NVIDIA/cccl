@@ -50,6 +50,8 @@ public:
   static __logical_device from_native_handle(device_ref, int)                    = delete;
   static __logical_device from_native_handle(device_ref, ::cuda::std::nullptr_t) = delete;
 
+  // Must use from_native_handle() for now
+  __logical_device()                                   = delete;
   __logical_device(const __logical_device&)            = delete;
   __logical_device& operator=(const __logical_device&) = delete;
 
