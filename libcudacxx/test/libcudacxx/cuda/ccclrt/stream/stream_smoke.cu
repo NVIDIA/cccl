@@ -21,21 +21,24 @@
 #if TEST_HAS_EXCEPTIONS()
 namespace
 {
-[[nodiscard]] auto default_stream_invalid_context_message()
-{
-  return Catch::Matchers::MessageMatches(
-    Catch::Matchers::ContainsSubstring("The NULL/default stream requires a current CUDA context.")
-    && Catch::Matchers::ContainsSubstring("Set the current device or make a CUDA context current"));
-}
+#  define CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER()                                            \
+    Catch::Matchers::MessageMatches(                                                                 \
+      Catch::Matchers::ContainsSubstring("The NULL/default stream requires a current CUDA context.") \
+      && Catch::Matchers::ContainsSubstring("Set the current device or make a CUDA context current"))
+
+#  define CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(EXPR) \
+    REQUIRE_THROWS_MATCHES(EXPR, cuda::cuda_error, CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER())
 
 void check_default_stream_invalid_context_message(::CUstream native_stream)
 {
   cuda::stream_ref stream{native_stream};
 
-  REQUIRE_THROWS_MATCHES(stream.sync(), cuda::cuda_error, default_stream_invalid_context_message());
-  REQUIRE_THROWS_MATCHES((void) stream.is_done(), cuda::cuda_error, default_stream_invalid_context_message());
+  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(stream.sync());
+  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT((void) stream.is_done());
 }
 } // namespace
+#  undef CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT
+#  undef CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER
 #endif // TEST_HAS_EXCEPTIONS()
 
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
