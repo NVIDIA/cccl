@@ -39,5 +39,6 @@
 #include <cuda/experimental/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/__group/this_group.cuh>
 #include <cuda/experimental/__group/traits.cuh>
+#include <cuda/experimental/__group/virtual_group.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_GROUP
