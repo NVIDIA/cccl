@@ -406,21 +406,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  int histogram_init_grid_dims =
-    (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
+  const int histogram_init_grid_dims =
+    (max_num_output_bins + active_policy.init_threads_per_block - 1) / active_policy.init_threads_per_block;
 
 // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
           histogram_init_grid_dims,
-          histogram_init_threads_per_block,
+          active_policy.init_threads_per_block,
           (long long) stream);
 #endif // CUB_DEBUG_LOG
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
         launcher_factory(histogram_init_grid_dims,
-                         histogram_init_threads_per_block,
+                         active_policy.init_threads_per_block,
                          0,
                          stream,
                          /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
@@ -912,7 +912,8 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
     kernel_config,
     kernel_config,
     kernel_config,
-    legacy_privatized_static_smem_bins * int{sizeof(CounterT)},
+    256,
+    256 * int{sizeof(CounterT)},
     0,
     0,
     0,
