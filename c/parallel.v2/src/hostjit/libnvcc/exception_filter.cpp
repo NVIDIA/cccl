@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "exception_filter.hpp"
+#include <libnvcc/exception_filter.hpp>
 
 #ifdef _WIN32
 #  include <mutex>

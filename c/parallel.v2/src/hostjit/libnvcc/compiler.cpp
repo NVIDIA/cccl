@@ -7,6 +7,7 @@
 #include <clang/Frontend/FrontendOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/PreprocessorOptions.h>
+#include <libnvcc/exception_filter.hpp>
 #include <libnvcc/libnvcc.h>
 #include <lld/Common/Driver.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
@@ -69,8 +70,6 @@ LLD_HAS_DRIVER(elf)
 
 #include <nvFatbin.h>
 #include <nvJitLink.h>
-
-#include "exception_filter.hpp"
 
 namespace libnvcc
 {
