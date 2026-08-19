@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -48,7 +49,17 @@ int main()
     data.push_back(mv(l));
   }
 
+  ::std::atomic<size_t> n_ready{0};
+
   auto worker = [&](size_t tid) {
+    // Rendezvous: no thread submits until all workers exist, so graph-node
+    // insertions genuinely overlap instead of running serially as threads
+    // spawn.
+    n_ready.fetch_add(1);
+    while (n_ready.load() < nthreads)
+    {
+    }
+
     for (size_t i = 0; i < iters; i++)
     {
       if (i % 2 == 0)
