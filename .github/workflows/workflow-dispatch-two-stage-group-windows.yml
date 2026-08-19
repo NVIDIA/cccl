@@ -11,6 +11,16 @@ on:
         description: "The dispatch.json's windows_two_stage.jobs.<name> array of producer/consumer chains."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        type: string
+        required: false
+        default: ${{ github.repository }}
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ${{ github.sha }}
 
 jobs:
   dispatch-pcs:
@@ -26,3 +36,5 @@ jobs:
     with:
       producers: ${{ toJSON(matrix.producers) }}
       consumers: ${{ toJSON(matrix.consumers) }}
+      repo: ${{ inputs.repo }}
+      commit: ${{ inputs.commit }}
