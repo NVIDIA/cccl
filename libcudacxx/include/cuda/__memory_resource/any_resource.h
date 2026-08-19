@@ -580,8 +580,9 @@ public:
   //! @pre \c _OtherKind is equal to either \c _Kind or
   //! \c _ResourceKind::_Asynchronous.
   //! @pre The set `_Properties...` is equal to the set `_OtherProperties...`.
-  //! @return `true` if both resources hold objects of the same type and those
-  //! objects compare equal, and `false` otherwise.
+  //! @return `true` if neither resource has a value, or if both resources hold
+  //! objects of the same type and those objects compare equal. Otherwise,
+  //! returns `false`.
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_any_resource<_OtherKind, _OtherProperties...>& __rhs) const;
 
@@ -591,8 +592,9 @@ public:
   //! @pre \c _OtherKind is equal to either \c _Kind or
   //! \c _ResourceKind::_Asynchronous.
   //! @pre The set `_Properties...` is equal to the set `_OtherProperties...`.
-  //! @return `true` if \c __rhs refers to an object of the same type as that
-  //! wrapped by `*this` and those objects compare equal; `false` otherwise.
+  //! @return `true` if `*this` has a value, \c __rhs refers to an object of the
+  //! same type as that wrapped by `*this`, and those objects compare equal;
+  //! `false` otherwise.
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_resource_ref<_OtherKind, _OtherProperties...>& __rhs) const;
 
