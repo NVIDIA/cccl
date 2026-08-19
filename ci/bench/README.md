@@ -88,4 +88,4 @@ Python filters are regex patterns matched against relative paths under `python/c
 - per-target robust compare reports (`compare/<target>.md`, `compare/<target>.simple.md`, and `compare/<target>.explain.md`) plus diagnostic legacy reports (`compare/<target>.legacy.md`) when available,
 - grouped build logs (`build.base.log`, `build.test.log`), per-target run logs, and per-target compare logs,
 - Python venv setup logs (`py.venv.base.log`, `py.venv.test.log`),
-- `summary.md` with run metadata and per-target collapsible full compare reports.
+- `summary.md` with run metadata, per-target robust comparison summaries, and collapsible full compare reports.

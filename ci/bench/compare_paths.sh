@@ -937,6 +937,42 @@ write_compare_report_details() {
   return 0
 }
 
+write_robust_summary_excerpt() {
+  local compare_report_file="$1"
+
+  if [[ ! -s "${compare_report_file}" ]]; then
+    return 1
+  fi
+
+  awk '
+    function trim(value) {
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      return value
+    }
+
+    {
+      if (!printing && trim($0) == "# Summary") {
+        print "**Robust comparison summary**"
+        print ""
+        printing = 1
+        skip_leading_blanks = 1
+        emitted = 1
+        next
+      }
+      if (printing) {
+        if (skip_leading_blanks && trim($0) == "") {
+          next
+        }
+        skip_leading_blanks = 0
+        print
+      }
+    }
+
+    END { exit emitted ? 0 : 1 }
+  ' "${compare_report_file}"
+}
+
 write_summary() {
   local summary_file="$1"
   local target=""
@@ -1007,6 +1043,8 @@ write_summary() {
       for target in "${selected_targets[@]}"; do
         echo
         echo "### \`${target}\`"
+        compare_report_file="$(compare_report_path_for_display "${target}" "intervals")"
+        write_robust_summary_excerpt "${compare_report_file}" || true
         for display in "${COMPARE_DISPLAYS[@]}"; do
           compare_report_file="$(compare_report_path_for_display "${target}" "${display}")"
           if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
@@ -1029,6 +1067,8 @@ write_summary() {
         py_target_name="$(python_path_to_target_name "${py_target_path}")"
         echo
         echo "### \`${py_target_name}\` (\`${py_target_path}\`)"
+        compare_report_file="$(compare_report_path_for_display "${py_target_name}" "intervals")"
+        write_robust_summary_excerpt "${compare_report_file}" || true
         for display in "${COMPARE_DISPLAYS[@]}"; do
           compare_report_file="$(compare_report_path_for_display "${py_target_name}" "${display}")"
           if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
