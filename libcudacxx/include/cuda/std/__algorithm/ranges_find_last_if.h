@@ -38,27 +38,32 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__find_last_if)
 struct __fn
 {
-  template <class _Ip, class _Sp, class _Pred, class _Proj>
-  _CCCL_API static constexpr subrange<_Ip> __find_last_if_impl(_Ip __first, _Sp __last, _Pred& __pred, _Proj& __proj)
+  template <class _Iter, class _Sp, class _Pred, class _Proj>
+  [[nodiscard]] _CCCL_API static constexpr subrange<_Iter>
+  __find_last_if_impl(_Iter __first, _Sp __last, _Pred& __pred, _Proj& __proj)
   {
+    if (__first == __last)
+    {
+      return subrange<_Iter>{__first, ::cuda::std::move(__first)};
+    }
+
     // A bidirectional iterator can walk back from the end, so it stops at the first match it sees.
-    if constexpr (bidirectional_iterator<_Ip>)
+    if constexpr (bidirectional_iterator<_Iter>)
     {
       auto __end = ::cuda::std::ranges::next(__first, __last);
       for (auto __it = __end; __it != __first;)
       {
         if (::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, *--__it)))
         {
-          return subrange<_Ip>{__it, __end};
+          return subrange<_Iter>{::cuda::std::move(__it), ::cuda::std::move(__end)};
         }
       }
-      return subrange<_Ip>{__end, __end};
+      return subrange<_Iter>{__end, ::cuda::std::move(__end)};
     }
     else
-    {
-      // Otherwise the whole range has to be traversed, remembering the most recent match.
-      _Ip __result = __first;
-      bool __found = false;
+    { // Otherwise the whole range has to be traversed, remembering the most recent match.
+      _Iter __result = __first;
+      bool __found   = false;
       for (; __first != __last; ++__first)
       {
         if (::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, *__first)))
@@ -71,15 +76,15 @@ struct __fn
       {
         __result = __first;
       }
-      return subrange<_Ip>{__result, __first};
+      return subrange<_Iter>{::cuda::std::move(__result), ::cuda::std::move(__first)};
     }
   }
 
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Pred, class _Proj = identity)
-  _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
-                   indirect_unary_predicate<_Pred, projected<_Ip, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr subrange<_Ip>
-  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, _Pred __pred, _Proj __proj = {})
+  _CCCL_TEMPLATE(class _Iter, class _Sp, class _Pred, class _Proj = identity)
+  _CCCL_REQUIRES(forward_iterator<_Iter> _CCCL_AND sentinel_for<_Sp, _Iter> _CCCL_AND
+                   indirect_unary_predicate<_Pred, projected<_Iter, _Proj>>)
+  [[nodiscard]] _CCCL_API constexpr subrange<_Iter>
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sp __last, _Pred __pred, _Proj __proj = {})
   {
     return __find_last_if_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __pred, __proj);
   }

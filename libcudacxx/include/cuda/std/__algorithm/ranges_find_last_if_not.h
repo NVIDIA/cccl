@@ -37,29 +37,29 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__find_last_if_not)
-template <class _Pred>
-struct __not_pred
-{
-  _CCCL_API constexpr __not_pred(_Pred& __pred) noexcept
-      : __pred_(__pred)
-  {}
-
-  _Pred& __pred_;
-
-  template <class _Tp>
-  _CCCL_API constexpr auto operator()(_Tp&& __e) const
-  {
-    return !::cuda::std::invoke(__pred_, ::cuda::std::forward<_Tp>(__e));
-  }
-};
-
 struct __fn
 {
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Pred, class _Proj = identity)
-  _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
-                   indirect_unary_predicate<_Pred, projected<_Ip, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr subrange<_Ip>
-  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, _Pred __pred, _Proj __proj = {})
+  template <class _Pred>
+  struct __not_pred
+  {
+    _CCCL_API constexpr __not_pred(_Pred& __pred) noexcept
+        : __pred_(__pred)
+    {}
+
+    _Pred& __pred_;
+
+    template <class _Tp>
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __e) const
+    {
+      return !::cuda::std::invoke(__pred_, ::cuda::std::forward<_Tp>(__e));
+    }
+  };
+
+  _CCCL_TEMPLATE(class _Iter, class _Sp, class _Pred, class _Proj = identity)
+  _CCCL_REQUIRES(forward_iterator<_Iter> _CCCL_AND sentinel_for<_Sp, _Iter> _CCCL_AND
+                   indirect_unary_predicate<_Pred, projected<_Iter, _Proj>>)
+  [[nodiscard]] _CCCL_API constexpr subrange<_Iter>
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sp __last, _Pred __pred, _Proj __proj = {})
   {
     __not_pred<_Pred> __negated{__pred};
     return __find_last_if::__fn::__find_last_if_impl(

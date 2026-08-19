@@ -37,29 +37,29 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__find_last)
-template <class _Tp>
-struct __equal_to_value
-{
-  _CCCL_API constexpr __equal_to_value(const _Tp& __value) noexcept
-      : __value_(__value)
-  {}
-
-  const _Tp& __value_;
-
-  template <class _Up>
-  _CCCL_API constexpr auto operator()(_Up&& __e) const
-  {
-    return ::cuda::std::forward<_Up>(__e) == __value_;
-  }
-};
-
 struct __fn
 {
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Tp, class _Proj = identity)
-  _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
-                   indirect_binary_predicate<equal_to, projected<_Ip, _Proj>, const _Tp*>)
-  [[nodiscard]] _CCCL_API constexpr subrange<_Ip>
-  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, const _Tp& __value, _Proj __proj = {})
+  template <class _Tp>
+  struct __equal_to_value
+  {
+    _CCCL_API constexpr __equal_to_value(const _Tp& __value) noexcept
+        : __value_(__value)
+    {}
+
+    const _Tp& __value_;
+
+    template <class _Up>
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Up&& __e) const
+    {
+      return ::cuda::std::forward<_Up>(__e) == __value_;
+    }
+  };
+
+  _CCCL_TEMPLATE(class _Iter, class _Sp, class _Tp, class _Proj = identity)
+  _CCCL_REQUIRES(forward_iterator<_Iter> _CCCL_AND sentinel_for<_Sp, _Iter> _CCCL_AND
+                   indirect_binary_predicate<equal_to, projected<_Iter, _Proj>, const _Tp*>)
+  [[nodiscard]] _CCCL_API constexpr subrange<_Iter>
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sp __last, const _Tp& __value, _Proj __proj = {})
   {
     __equal_to_value<_Tp> __pred{__value};
     return __find_last_if::__fn::__find_last_if_impl(

@@ -145,6 +145,22 @@ TEST_HOST_DEVICE_FUNC constexpr void test_iterators()
     assert(base(ret.end()) == a + 3);
     assert(ret.empty());
   }
+  {
+    // an empty range yields an empty subrange, and the sentinel is honoured rather than the underlying storage
+    int a[]            = {2, 2, 2};
+    decltype(auto) ret = cuda::std::ranges::find_last_if(It(a), Sent(It(a)), IsTwo{});
+    assert(base(ret.begin()) == a);
+    assert(base(ret.end()) == a);
+    assert(ret.empty());
+  }
+  {
+    int a[]            = {2, 2, 2};
+    auto range         = cuda::std::ranges::subrange<It, Sent>(It(a), Sent(It(a)));
+    decltype(auto) ret = cuda::std::ranges::find_last_if(range, IsTwo{});
+    assert(base(ret.begin()) == a);
+    assert(base(ret.end()) == a);
+    assert(ret.empty());
+  }
 }
 
 struct S
