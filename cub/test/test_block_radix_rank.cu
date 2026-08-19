@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-// This test still uses the deprecated caching allocator for device storage.
-#define CCCL_IGNORE_DEPRECATED_API
-
 // Ensure printing of CUDA runtime errors to console
 #include "cub/util_type.cuh"
 #define CUB_STDERR
