@@ -200,7 +200,8 @@ runs:
           $exitCode = 1
         } finally {
           Write-Host '::group::Uploading job result artifacts'
-          & bash 'ci/upload_job_result_artifacts.sh' $env:JOB_ID $exitCode
+          Write-Host "In directory: $(Get-Location)"
+          & bash -c "ci/upload_job_result_artifacts.sh $env:JOB_ID $exitCode"
           Write-Host '::endgroup::'
         }
 
