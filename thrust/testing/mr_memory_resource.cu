@@ -32,7 +32,7 @@ class identity_resource final : public forwarding_resource
 class always_equal_resource final : public forwarding_resource
 {
 public:
-  bool do_is_equal(const thrust::mr::memory_resource<>&) const noexcept override
+  _CCCL_HOST_DEVICE bool do_is_equal(const thrust::mr::memory_resource<>&) const noexcept override
   {
     return true;
   }
