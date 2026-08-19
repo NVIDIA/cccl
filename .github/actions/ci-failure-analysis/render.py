@@ -13,7 +13,10 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 GITHUB_REPORT_LIMIT = 60000
-SLACK_SUMMARY_LIMIT = 3500
+SLACK_PARENT_LIMIT = 39000
+SLACK_REPLY_LIMIT = 3500
+SLACK_REPLY_COUNT_LIMIT = 256
+SLACK_THREAD_LIMIT = 60000
 FAILED_CONCLUSIONS = {
     "action_required",
     "failure",
@@ -376,7 +379,7 @@ def render_github_report(analysis, jobs, repository, run_id, head_sha):
     return report
 
 
-# Slack summary.
+# Slack thread.
 
 
 def sanitize_slack(value, limit=1200):
@@ -386,74 +389,70 @@ def sanitize_slack(value, limit=1200):
     return value.replace("`", "'")
 
 
-def render_slack_summary_group(index, group):
+def render_slack_thread_reply(index, group):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
-    return [
+    lines = [
         (
-            f"*{index}.* {sanitize_slack(group['title'], limit=100)} — "
+            f"*{index}. {sanitize_slack(group['title'], limit=100)}* — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=360)}",
-        f"*Next:* {sanitize_slack(group['next_steps'], limit=360)}",
+        f"*Summary:* {sanitize_slack(group['explanation'], limit=500)}",
+        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=700)}",
+        f"*Next:* {sanitize_slack(group['next_steps'], limit=700)}",
     ]
 
-
-def compose_slack_summary(header, sections, omitted, footer):
-    lines = list(header)
-    for section in sections:
-        lines.extend(["", *section])
-    if omitted:
-        group_label = "group" if omitted == 1 else "groups"
-        lines.extend(
-            ["", f"_{omitted} more {group_label} omitted from this Slack message._"]
+    reply = "\n".join(lines) + "\n"
+    if len(reply) > SLACK_REPLY_LIMIT:
+        raise ValidationError(
+            f"rendered Slack reply exceeds {SLACK_REPLY_LIMIT:,} characters"
         )
-    lines.extend(["", footer])
-    return "\n".join(lines)
+    return reply
 
 
-def render_slack_summary(
+def render_slack_thread(
     analysis,
     repository,
     run_id,
     run_number,
-    limit=SLACK_SUMMARY_LIMIT,
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
+    if group_count > SLACK_REPLY_COUNT_LIMIT:
+        raise ValidationError(
+            f"Slack thread has more than {SLACK_REPLY_COUNT_LIMIT} failure groups"
+        )
     job_label = "job" if failed_job_count == 1 else "jobs"
     group_label = "group" if group_count == 1 else "groups"
-    header = [
+    parent_lines = [
         f":rotating_light: *AI failure analysis — workflow run #{run_number}*",
         (
             f"{group_count} failure {group_label} covering "
             f"{failed_job_count} primary failed {job_label}."
         ),
+        "",
     ]
-    all_sections = [
-        render_slack_summary_group(index, group)
+    for index, group in enumerate(analysis["groups"], start=1):
+        job_ids = group["job_ids"]
+        job_label = "job" if len(job_ids) == 1 else "jobs"
+        parent_lines.append(
+            f"{index}. {sanitize_slack(group['title'], limit=100)} "
+            f"· {len(job_ids)} {job_label}"
+        )
+
+    run_url = f"https://github.com/{repository}/actions/runs/{run_id}"
+    parent_lines.extend(["", f"<{run_url}|GitHub Actions>"])
+    parent = "\n".join(parent_lines) + "\n"
+    if len(parent) > SLACK_PARENT_LIMIT:
+        raise ValidationError(
+            f"rendered Slack parent exceeds {SLACK_PARENT_LIMIT:,} characters"
+        )
+
+    replies = [
+        render_slack_thread_reply(index, group)
         for index, group in enumerate(analysis["groups"], start=1)
     ]
-    run_url = f"https://github.com/{repository}/actions/runs/{run_id}"
-    footer = f"GitHub report: <{run_url}|GitHub Actions>"
-    complete_summary = compose_slack_summary(header, all_sections, 0, footer)
-    if len(complete_summary) + 1 <= limit:
-        return complete_summary + "\n"
-
-    included_sections = []
-    for section in all_sections:
-        candidate_sections = [*included_sections, section]
-        omitted = len(all_sections) - len(candidate_sections)
-        candidate = compose_slack_summary(header, candidate_sections, omitted, footer)
-        if len(candidate) + 1 > limit:
-            break
-        included_sections = candidate_sections
-
-    omitted = len(all_sections) - len(included_sections)
-    summary = compose_slack_summary(header, included_sections, omitted, footer)
-    if len(summary) + 1 > limit:
-        raise ValidationError(f"rendered Slack summary exceeds {limit:,} characters")
-    return summary + "\n"
+    return {"parent": parent, "replies": replies}
 
 
 # Command-line entry point.
@@ -466,7 +465,7 @@ def parse_args():
     parser.add_argument("--analysis-dir", type=Path, required=True)
     parser.add_argument("--repository", required=True)
     parser.add_argument("--github-report-output", type=Path, required=True)
-    parser.add_argument("--slack-summary-output", type=Path)
+    parser.add_argument("--slack-thread-output", type=Path)
     return parser.parse_args()
 
 
@@ -483,18 +482,30 @@ def main():
         run_id,
         run["head_sha"],
     )
-    slack_summary = None
-    if args.slack_summary_output:
-        slack_summary = render_slack_summary(
+    slack_thread_json = None
+    if args.slack_thread_output:
+        slack_thread = render_slack_thread(
             analysis,
             args.repository,
             run_id,
             str(run["run_number"]),
         )
+        slack_thread_json = json.dumps(
+            slack_thread,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        if len(slack_thread_json.encode("utf-8")) > SLACK_THREAD_LIMIT:
+            raise ValidationError(
+                f"rendered Slack thread exceeds {SLACK_THREAD_LIMIT:,} bytes"
+            )
 
     args.github_report_output.write_text(github_report, encoding="utf-8")
-    if args.slack_summary_output:
-        args.slack_summary_output.write_text(slack_summary, encoding="utf-8")
+    if args.slack_thread_output:
+        args.slack_thread_output.write_text(
+            slack_thread_json + "\n",
+            encoding="utf-8",
+        )
 
 
 if __name__ == "__main__":

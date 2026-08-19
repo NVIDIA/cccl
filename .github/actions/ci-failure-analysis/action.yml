@@ -25,9 +25,9 @@ outputs:
   github_report:
     description: "Full failure analysis report for GitHub."
     value: ${{ steps.export-analysis.outputs.github_report }}
-  slack_summary:
-    description: "Abbreviated failure analysis summary for Slack."
-    value: ${{ steps.export-analysis.outputs.slack_summary }}
+  slack_thread:
+    description: "JSON containing the Slack parent message and ordered thread replies."
+    value: ${{ steps.export-analysis.outputs.slack_thread }}
 
 runs:
   using: "composite"
@@ -90,7 +90,7 @@ runs:
           --analysis-dir "${OUTPUT_DIR}" \
           --repository "${GITHUB_REPOSITORY}" \
           --github-report-output "${OUTPUT_DIR}/github-report.md" \
-          --slack-summary-output "${OUTPUT_DIR}/slack-summary.txt"
+          --slack-thread-output "${OUTPUT_DIR}/slack-thread.json"
 
     - name: Export failure analysis outputs
       id: export-analysis
@@ -99,14 +99,14 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         test -s "${OUTPUT_DIR}/github-report.md"
-        test -s "${OUTPUT_DIR}/slack-summary.txt"
+        test -s "${OUTPUT_DIR}/slack-thread.json"
         github_report_delimiter="EOF_$(openssl rand -hex 16)"
-        slack_summary_delimiter="EOF_$(openssl rand -hex 16)"
+        slack_thread_delimiter="EOF_$(openssl rand -hex 16)"
         {
           echo "github_report<<${github_report_delimiter}"
           cat "${OUTPUT_DIR}/github-report.md"
           echo "${github_report_delimiter}"
-          echo "slack_summary<<${slack_summary_delimiter}"
-          cat "${OUTPUT_DIR}/slack-summary.txt"
-          echo "${slack_summary_delimiter}"
+          echo "slack_thread<<${slack_thread_delimiter}"
+          cat "${OUTPUT_DIR}/slack-thread.json"
+          echo "${slack_thread_delimiter}"
         } >> "${GITHUB_OUTPUT}"
