@@ -287,11 +287,6 @@
 #  include <cuda/__stream/stream_ref.h>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-// Include the CUDA runtime for the host-side reset and read
-#  include <cuda_runtime.h>
-#endif // _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>

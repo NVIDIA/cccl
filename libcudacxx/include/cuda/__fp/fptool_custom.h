@@ -45,7 +45,8 @@
 //! double native = a + b;
 //!
 //! // Step 2: ask for a reduced format, here float-like (8 exponent, 23 mantissa bits).
-//! fp64_custom<8, 23> c = 1.5, d = 2.5;
+//! // A format narrower than the source takes a value explicitly, see Conversions below.
+//! fp64_custom<8, 23> c{1.5}, d{2.5};
 //! ```
 //!
 //! ## Template Parameters
@@ -98,6 +99,41 @@
 //!
 //! This models how lower-precision hardware would handle the computation while
 //! maintaining full FP64 representation for intermediate storage.
+//!
+//! ## Conversions
+//!
+//! A conversion into `fp_custom` is implicit where the requested format is at least as wide
+//! as the source, and explicit where it is narrower - the rank rule CCCL applies to its
+//! floating-point types, with integers counting as `double`:
+//!
+//! | Format               | from `double`, integers | from `float` |
+//! |----------------------|-------------------------|--------------|
+//! | `fp64_custom<>`      | implicit                | implicit     |
+//! | `fp64_custom<8, 23>` | explicit                | implicit     |
+//! | `fp64_custom<5, 10>` | explicit                | explicit     |
+//! | dynamic sizes        | explicit                | explicit     |
+//!
+//! So the native format is a `double` in every respect, while a reduced one marks values
+//! entering it: `fp64_custom<8, 23> x{d}`. Mixed arithmetic is unaffected, `x + 2.0` and
+//! `x < 2.0` taking a scalar operand whatever the sizes are.
+//!
+//! What an explicit constructor reports is the format the value is entering, not a loss in
+//! the constructor: the value is stored in the base type unreduced, and the sizes are
+//! applied by the first arithmetic operation. `fp64_custom<8, 23>{1e300}` therefore reads
+//! back as `1e300` and turns into infinity as soon as it is used.
+//!
+//! Adopting the type across a codebase written against `double` means respelling every
+//! initialization the table above makes explicit. Defining `CCCL_FP_CUSTOM_EXPLICIT_CASTS`
+//! to 0 makes that column implicit instead, so those call sites compile unchanged; see the
+//! macro in this header for what the setting gives up.
+//!
+//! Coming out, `operator double()` is always implicit and exact, since that is the type the
+//! value is held in, and `operator float()` is implicit exactly where `float` holds the
+//! requested format. Note what the explicit `operator float()` does and does not do: it
+//! decides which conversion function a `float` target picks, but it cannot stop the target
+//! being reached, because the implicit `operator double()` followed by the standard
+//! `double` to `float` conversion is a valid path from any format. `float f = x;` compiles
+//! for every instantiation, and rounds, as it would from a `double`.
 //!
 //! ## Runtime Precision Control
 //!
@@ -175,12 +211,43 @@
 #  include <cuda/__stream/stream_ref.h>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-// Include the CUDA runtime for the host-side accessors
-#  include <cuda_runtime.h>
-#endif // _CCCL_CUDA_COMPILATION() && _CCCL_HOST_COMPILATION()
-
 #include <nv/target>
+
+// CCCL_FP_CUSTOM_EXPLICIT_CASTS controls whether conversions INTO a reduced fp_custom are
+// explicit. It gates only the constructors, and only where the rank rule makes them
+// explicit to begin with:
+//   - double, integers -> a format narrower than double
+//   - float            -> a format narrower than float
+//   - either           -> dynamic sizes, whose format is not known at compile time
+// A format that holds the source exactly takes it implicitly either way, as does the
+// conversion OUT to double (operator double()), which is exact and never affected here.
+//
+// Default is 1 (narrowing casts explicit), matching CCCL's strict-cast conventions and the
+// CCCL_FPMP_EXPLICIT_CASTS default.
+//
+// Set to 0 when adopting fp_custom across an existing codebase, which is what the type is
+// for: swap a `double` typedef for a reduced format, recompile, and see how the algorithm
+// behaves. Under the default every `T x = 1.0;` and `T x = 0;` in that codebase has to be
+// respelled before it compiles; with 0 they compile unchanged.
+//
+// What this trades away is less than the fpmp2 knob trades, because an fp_custom
+// constructor does not reduce: it stores the value in the base type, and the sizes are
+// applied by the first arithmetic operation. An implicit conversion here therefore drops
+// nothing at the conversion itself. What it drops is the annotation that the value is
+// entering an emulated format, and with it the warning that a value outside the reduced
+// range - 1e300 for fp64_custom<8, 23>, say - turns into infinity as soon as it is used.
+//
+// Note what this does not reach: overload resolution on the way out. A reduced format
+// converts implicitly to both float and double, so a call overloaded on those two is
+// ambiguous for it at either setting, and wants an fp_custom overload of its own.
+#ifndef CCCL_FP_CUSTOM_EXPLICIT_CASTS
+#  define CCCL_FP_CUSTOM_EXPLICIT_CASTS 1
+#endif
+#if CCCL_FP_CUSTOM_EXPLICIT_CASTS == 1
+#  define _CCCL_FP_CUSTOM_EXPLICIT explicit
+#else
+#  define _CCCL_FP_CUSTOM_EXPLICIT
+#endif
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -239,6 +306,27 @@ struct __fp_custom_native_sizes<_Float64> : __fp_custom_native_sizes<double>
 template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
 inline constexpr bool __fp_custom_fits_in_float_v =
   __fp_custom_is_supported_fp_v<_FpType> && _ExpSize <= 8 && _MantSize <= 23;
+
+// The opposite direction: whether the requested format holds every value of a source
+// format, which is what decides whether a conversion into fp_custom is implicit. CCCL
+// ranks a floating-point format by its field sizes and calls a conversion implicit where
+// the target's rank is at least the source's (cuda::std::__fp_is_implicit_conversion_v);
+// read on two independent fields, that is "neither field narrower". A dynamic size answers
+// false, as it has to: the size is not known here, so nothing can be proven about it.
+// _FpType makes the value dependent where the constructors use it as a constraint.
+template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize, uint16_t _SrcExpSize, uint16_t _SrcMantSize>
+inline constexpr bool __fp_custom_holds_v =
+  __fp_custom_is_supported_fp_v<_FpType> && _ExpSize != fp_custom_dynamic_size && _MantSize != fp_custom_dynamic_size
+  && _ExpSize >= _SrcExpSize && _MantSize >= _SrcMantSize;
+
+// The two sources a constructor takes a value from: binary64, which has 11 exponent and 52
+// mantissa bits, and binary32, which has 8 and 23. An integer counts as a binary64 source,
+// the rank CCCL gives it (cuda::std::__fp_conv_rank_order_int_ext_v).
+template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
+inline constexpr bool __fp_custom_holds_double_v = __fp_custom_holds_v<_FpType, _ExpSize, _MantSize, 11, 52>;
+
+template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
+inline constexpr bool __fp_custom_holds_float_v = __fp_custom_holds_v<_FpType, _ExpSize, _MantSize, 8, 23>;
 
 // === runtime sizes ===
 // Sizes used by instantiations that pass fp_custom_dynamic_size, initialised to the
@@ -698,45 +786,137 @@ public:
       : __bits_{__other.__bits_}
   {}
 
-  //! @brief Construct from double (implicit conversion)
+  /*
+  // A conversion is implicit where the requested format is at least as wide as the type on
+  // the other side, and explicit where it is narrower, in both directions: an fp_custom that
+  // asks for the sizes of its base type behaves like a double and takes one implicitly, while
+  // a narrower one marks every crossing of its boundary. The conversions out do the same, see
+  // operator float() below.
+  //
+  // What an explicit constructor here reports is the format the value is entering, not a loss
+  // in the constructor itself: the value is stored in the base type unreduced, and the sizes
+  // are applied by the first arithmetic operation. So fp64_custom<8, 23>(1e300) keeps 1e300
+  // until it is used, and yields infinity once it is - which is the surprise the cast marks.
+  //
+  // A dynamic size is explicit for every source, since which format the value enters is not
+  // known at compile time.
+  //
+  // CCCL_FP_CUSTOM_EXPLICIT_CASTS = 0 drops the specifier from the narrowing side, for
+  // adopting the type across a codebase written against double. The pairs stay as they are;
+  // only the keyword goes, leaving both sides implicit. See the macro for what that gives up.
+  //
+  // Written as constrained pairs because the specifier cannot depend on the class parameters
+  // before C++20, whose explicit(bool) would say this once per source. The condition runs
+  // through _Up to stay dependent, as the conversion operators do.
+  */
+
+  //! @brief Construct from double, implicit where the format holds every double
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
   _CCCL_HOST_DEVICE_API fp_custom(double __d) noexcept
       : __bits_{::cuda::std::bit_cast<uint64_t>(__d)}
   {}
 
-  //! @brief Construct from float (implicit conversion with promotion)
-  _CCCL_HOST_DEVICE_API fp_custom(float __f) noexcept
+  //! @brief Construct from double into a narrower or dynamic format, explicit
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>) )
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(double __d) noexcept
+      : __bits_{::cuda::std::bit_cast<uint64_t>(__d)}
+  {}
+
+  //! @brief Construct from float, implicit where the format holds every float
+  //!
+  //! Takes float as a deduced parameter constrained to it, rather than by name, so that the
+  //! parameter accepts nothing else. A named `float` parameter would take a double through
+  //! the standard conversion, which for a format between the two - binary32's mantissa and a
+  //! wider exponent, say - would let a double in implicitly after all, rounding it twice and
+  //! through the narrower range of the two. Deduction runs before conversions, so a double
+  //! argument deduces double here, fails the constraint and reaches the constructor above.
+  _CCCL_TEMPLATE(class _Tp, typename _Up = _FpType)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp, float> _CCCL_AND __fp_custom_holds_float_v<_Up, _ExpSize, _MantSize>)
+  _CCCL_HOST_DEVICE_API fp_custom(_Tp __f) noexcept
       : __bits_{::cuda::std::bit_cast<uint64_t>(static_cast<double>(__f))}
   {}
 
-  //! @brief Construct from any standard integer type (int / long / long long + unsigned).
-  //!  Routes through double, so every width/signedness is handled uniformly and
-  //! portably (LP64 and LLP64). Excludes bool / character types, which the
-  //! constructor below covers.
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+  //! @brief Construct from float into a narrower or dynamic format, explicit
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_holds_float_v<_Up, _ExpSize, _MantSize>) )
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(float __f) noexcept
+      : __bits_{::cuda::std::bit_cast<uint64_t>(static_cast<double>(__f))}
+  {}
+
+  //! @brief Construct from any standard integer type (int / long / long long + unsigned),
+  //! implicit where the format holds every double
+  //!
+  //! Routes through double, so every width/signedness is handled uniformly and portably
+  //! (LP64 and LLP64), and follows the double constructor's explicitness, integers having
+  //! double's conversion rank. 64-bit values may lose precision on the way, as they do
+  //! reaching a double. Excludes bool / character types, which the constructors below cover.
+  _CCCL_TEMPLATE(class _Tp, typename _Up = _FpType)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
   _CCCL_HOST_DEVICE_API fp_custom(_Tp __i) noexcept
       : __bits_{::cuda::std::bit_cast<uint64_t>(static_cast<double>(__i))}
   {}
 
-  //! @brief Construct from bool or a character type
+  //! @brief Construct from a standard integer type into a narrower or dynamic format, explicit
+  _CCCL_TEMPLATE(class _Tp, typename _Up = _FpType)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND(!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>))
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(_Tp __i) noexcept
+      : __bits_{::cuda::std::bit_cast<uint64_t>(static_cast<double>(__i))}
+  {}
+
+  //! @brief Construct from bool or a character type, implicit where the format holds every double
   //!
   //! Excluded from __cccl_is_integer_v, but `1.0 + true` and `1.0 + 'a'` are valid for
   //! double, so mirror that behavior by widening to int and reusing the path above.
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
+  _CCCL_TEMPLATE(class _Tp, typename _Up = _FpType)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>)
+                   _CCCL_AND __fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
   _CCCL_HOST_DEVICE_API fp_custom(_Tp __i) noexcept
       : fp_custom(static_cast<int32_t>(__i))
   {}
 
+  //! @brief Construct from bool or a character type into a narrower or dynamic format, explicit
+  _CCCL_TEMPLATE(class _Tp, typename _Up = _FpType)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>)
+                   _CCCL_AND(!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>))
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(_Tp __i) noexcept
+      : fp_custom(static_cast<int32_t>(__i))
+  {}
+
+  /*
+  // The types too wide to arrive through a double are deleted rather than left absent, so
+  // that the diagnostic names the rule. Each mirrors the explicitness of the source it would
+  // otherwise travel through, which keeps the copy-initialization candidate set as it was:
+  // were they left implicit while the constructors above are explicit, a narrow format would
+  // report `T x = 1.0` as an ambiguity between the two deleted 128-bit integers instead of
+  // as a conversion that has to be spelled.
+  */
 #if _CCCL_HAS_INT128()
   //! @brief 128-bit integers are deleted: they would silently truncate through double
-  _CCCL_HOST_DEVICE_API fp_custom(__int128_t)  = delete;
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
+  _CCCL_HOST_DEVICE_API fp_custom(__int128_t) = delete;
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
   _CCCL_HOST_DEVICE_API fp_custom(__uint128_t) = delete;
+
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>) )
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(__int128_t) = delete;
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>) )
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(__uint128_t) = delete;
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_FLOAT128()
   //! @brief __float128 is deleted: it would silently lose precision through double,
   //! and makes construction ambiguous with the float / double constructors
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>)
   _CCCL_HOST_DEVICE_API fp_custom(__float128) = delete;
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES((!__fp_custom_holds_double_v<_Up, _ExpSize, _MantSize>) )
+  _CCCL_HOST_DEVICE_API _CCCL_FP_CUSTOM_EXPLICIT fp_custom(__float128) = delete;
 #endif // _CCCL_HAS_FLOAT128()
 
   // === assignment ===
