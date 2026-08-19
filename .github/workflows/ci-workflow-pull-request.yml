@@ -737,9 +737,11 @@ jobs:
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
 
+          # Test emptiness in the expression. `toJSON` pretty-prints multi-line output,
+          # and the embedded newlines break the `[[ ]]` conditional.
           expected_sass_result="skipped"
           if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
-            && [[ "${{ toJSON(fromJSON(needs.build-workflow.outputs.sass_matrix).include) }}" != "[]" ]]; then
+            && [[ "${{ fromJSON(needs.build-workflow.outputs.sass_matrix).include[0] != null }}" == "true" ]]; then
             expected_sass_result="success"
           fi
           check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
