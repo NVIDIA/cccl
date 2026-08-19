@@ -69,6 +69,12 @@ class this_grid;
 template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
 class group;
 
+template <class _Unit, class _ParentGroup, class _MappingResult>
+class virtual_group;
+
+template <class _Unit, class _Group>
+class group_view;
+
 // mappings
 
 template <class _Fn>

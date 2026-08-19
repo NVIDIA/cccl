@@ -175,10 +175,9 @@ template <class _Pointer, class = void>
 inline constexpr bool __has_toaddress = false;
 
 template <class _Pointer>
-inline constexpr bool
-  __has_toaddress<_Pointer,
-                  decltype((void) pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))> =
-    true;
+inline constexpr bool __has_toaddress<
+  _Pointer,
+  decltype((void) ::cuda::std::pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))> = true;
 
 template <class _Pointer, class = void>
 inline constexpr bool __has_const_operator_arrow = false;
@@ -210,14 +209,16 @@ struct __to_address_helper
 };
 
 template <class _Pointer>
-struct __to_address_helper<_Pointer,
-                           decltype((void) pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))>
+struct __to_address_helper<
+  _Pointer,
+  decltype((void) ::cuda::std::pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr static decltype(pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))
+  _CCCL_API constexpr static decltype(::cuda::std::pointer_traits<_Pointer>::to_address(
+    ::cuda::std::declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {
-    return pointer_traits<_Pointer>::to_address(__p);
+    return ::cuda::std::pointer_traits<_Pointer>::to_address(__p);
   }
 };
 
