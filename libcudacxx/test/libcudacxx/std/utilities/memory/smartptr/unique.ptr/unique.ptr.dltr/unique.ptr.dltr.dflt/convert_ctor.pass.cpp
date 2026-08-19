@@ -29,8 +29,8 @@
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<B> d2;
-  cuda::std::default_delete<A> d1 = d2;
-  A* p                            = new B;
+  [[maybe_unused]] cuda::std::default_delete<A> d1 = d2;
+  A* p                                             = new B;
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);

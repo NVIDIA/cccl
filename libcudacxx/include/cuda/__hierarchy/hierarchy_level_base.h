@@ -46,6 +46,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Used to either pass-through the hierarchy argument or unpack it from launch configuration
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Type)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Type>)
 [[nodiscard]] _CCCL_API constexpr auto& __unpack_hierarchy_if_needed(const _Type& __instance) noexcept

@@ -123,11 +123,11 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
-    iter_difference_t<_InputIterator> __num_shifted) const
+    iter_difference_t<_InputIterator> __num_shifted)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

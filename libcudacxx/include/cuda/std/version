@@ -29,7 +29,7 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // _CCCL_HOSTED()
 
-#define __cccl_lib_bitops                       201907L
+#define __cccl_lib_bitops                       202607L
 #define __cccl_lib_bool_constant                201505L
 #define __cccl_lib_bounded_array_traits         201902L
 #define __cccl_lib_byte                         201603L
@@ -144,7 +144,8 @@
 // # define __cccl_lib_to_chars                             201611L
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
-#define __cccl_lib_variant 201606L
+#define __cccl_lib_variant        201606L
+#define __cccl_lib_ranges_indices 202506L
 
 #define __cccl_lib_saturation_arithmetic 202603L
 
@@ -208,7 +209,7 @@
 #  define __cccl_lib_unwrap_ref 201811L
 
 // todo(dabayer): Uncomment this once constant_wrapper is exposed.
-// #  define __cccl_lib_constant_wrapper 202603L
+// #  define __cccl_lib_constant_wrapper 202606L
 #endif // _CCCL_STD_VER >= 2020
 
 #if _CCCL_STD_VER >= 2023

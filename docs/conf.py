@@ -8,10 +8,12 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL package to path for autodoc
-python_package_path = os.path.abspath("../python/cuda_cccl")
-if os.path.exists(python_package_path):
-    sys.path.insert(0, python_package_path)
+# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
+# separate distributions that both contribute to the shared ``cuda`` namespace.
+for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+    python_package_path = os.path.abspath(_pkg)
+    if os.path.exists(python_package_path):
+        sys.path.insert(0, python_package_path)
 
 # Note: numpy is installed as a real dependency (see requirements.txt)
 # This avoids issues with type annotations using union syntax (ndarray | type)
@@ -71,6 +73,11 @@ breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
 cpp_index_common_prefix = ["cub::"]
+# The NVIDIA theme changes toc_object_entries_show_parents from "domain" to
+# "hide" and maximum_signature_line_length from None to 70 before the environment
+# is pickled. Set the final values explicitly to avoid invalidating the cache.
+toc_object_entries_show_parents = "hide"
+maximum_signature_line_length = 70
 
 # Preprocessor definitions for Breathe to handle CCCL macros
 cpp_id_attributes = [
@@ -238,6 +245,11 @@ autodoc_mock_imports = [
     "cupy",
     "cuda.compute._bindings",
     "cuda.compute._bindings_impl",
+    # STF's public API lives in a compiled Cython extension that is not built
+    # at docs time; mock it so the pure-Python helper layers in stf_api.rst
+    # (task_graph, interop.numba, interop.pytorch) can still be imported by autodoc.
+    "cuda.stf._experimental._stf_bindings",
+    "cuda.stf._experimental._stf_bindings_impl",
 ]
 
 # External links configuration

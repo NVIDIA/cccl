@@ -135,6 +135,12 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X','13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: ['t4', 'rtxa6000', 'rtxpro6000'], cxx: 'gcc13'}
+    # cuda.stf._experimental -- pinned to gcc13, Linux only. The cuda_cccl and
+    # cuda_stf wheels both come from the auto-derived combined producer
+    # (build_py_stf_wheel), so no companion `test` lane is needed here.
+    - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100_2gpu', cxx: 'gcc13'}
+    # Free-threaded Python currently supports only the minimal cuda.compute extra on Linux.
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test_py_compute_minimal'], project: 'python_tsan', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
@@ -210,6 +216,7 @@ workflows:
     - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',               gpu: 't4', sm: 'gpu'}
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
+    - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['test'], args: '-min-cmake', gpu: 't4', sm: 'gpu'}
@@ -238,6 +245,10 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022', 'msvc2026']}
+    # CTK '13.X' full matrix build with tile support: default projects
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['gcc15'], args: '--enable-tile'}
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['clang21'], args: '--enable-tile'}
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['msvc2026'], args: '--enable-tile'}
     # CTK 12.0 full matrix build: cudax
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['clang14']}
@@ -254,6 +265,10 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
+    # CTK '13.X' full matrix build with tile support: cudax
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['gcc15'], args: '--enable-tile'}
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['clang21'], args: '--enable-tile'}
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['msvc2026'], args: '--enable-tile'}
     # CTK 12.X testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 't4'}
     - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtxa6000'}
@@ -266,8 +281,13 @@ workflows:
     - {jobs: ['test'], project: 'thrust',     ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 't4'}
     - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'max', gpu: 'h100' }
+    # CTK '13.X' testing with tile support:
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000', args: '--enable-tile'}
+    - {jobs: ['test'], project: 'cub',        ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'h100', args: '--enable-tile'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxpro6000', args: '--enable-tile'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'l4', args: '--enable-tile'}
       # RTX PRO 6000 coverage (limited due to small number of runners):
-    - {jobs: ['test_nolid', 'test_lid0'], project: ['cub', 'thrust'], std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
@@ -290,6 +310,9 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: ['t4', 'rtxa6000'], cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13'}
+    # cuda.stf._experimental -- pinned to gcc13, Linux only
+    - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.14'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     # Python free-threaded (3.14t) minimal lanes -- mirrors the pull_request rows
     # so FT regressions (e.g. from dependency bumps) surface between PRs.
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
@@ -397,6 +420,9 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.14'], gpu: 't4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'rtxa6000', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13'}
+    # cuda.stf._experimental -- pinned to gcc13, Linux only
+    - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.14'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     # cuda.cccl.headers (CPU-only): all CTK x source x OS, py endpoints 3.10 + 3.14
@@ -429,10 +455,19 @@ workflows:
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
 
   python-wheels:
+    # NOTE: release-wheels.yml harvests every 'wheel-*' artifact of a run of
+    # this workflow and publishes it to PyPI. cuda.stf._experimental jobs are
+    # deliberately absent (like the TSan lanes below): the experimental
+    # cuda-stf wheel must not be published, and the combined STF producer's
+    # cuda_cccl wheel would collide with the release one in dist/. STF
+    # coverage lives in the pull_request/nightly/weekly workflows.
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13'}
-
+    # Free-threaded (3.14t): minimal (numba-free) tests gate the cp314t wheel;
+    # the full test extras cannot resolve on free-threaded Python (numba-cuda
+    # has no cp314t wheels).
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
 
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
@@ -460,6 +495,8 @@ workflows:
   exclude:
     # GPU runners are not available on Windows.
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
+    # cuda.stf._experimental is Linux-only.
+    - {jobs: ['test_py_stf'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
     # cudax doesn't support C++17 on msvc:
     - {project: 'cudax', std: 17, cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
 
@@ -594,14 +631,14 @@ jobs:
   build_lid1:  { name: 'BuildDeviceLaunch', gpu: false, invoke: { prefix: 'build', args: '-lid1'} }
   build_lid2:  { name: 'BuildGraphCapture', gpu: false, invoke: { prefix: 'build', args: '-lid2'} }
   # NoLid -> The string `lid_X` doesn't appear in the test name. Mostly warp/block tests, old device tests, and examples.
-  test_nolid: { name: 'TestNoLaunch',      gpu: true, needs: 'build_nolid', invoke: { prefix: 'test', args: '-no-lid'} }
+  test_nolid: { name: 'TestNoLaunch',      gpu: true, needs: 'build_nolid', invoke: { prefix: 'test', args: '-no-lid --test-par 8'} }
   # CUB uses `lid` to indicate launch strategies: whether CUB algorithms are:
   # - launched from the host (lid0):
-  test_lid0:  { name: 'HostLaunch',   gpu: true, needs: 'build_lid0', invoke: { prefix: 'test', args: '-lid0'} }
+  test_lid0:  { name: 'HostLaunch',   gpu: true, needs: 'build_lid0', invoke: { prefix: 'test', args: '-lid0 --test-par 8'} }
   # - launched from the device (lid1):
-  test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build_lid1', invoke: { prefix: 'test', args: '-lid1'} }
+  test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build_lid1', invoke: { prefix: 'test', args: '-lid1 --test-par 8'} }
   # - captured in a CUDA graph for deferred launch (lid2):
-  test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build_lid2', invoke: { prefix: 'test', args: '-lid2'} }
+  test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build_lid2', invoke: { prefix: 'test', args: '-lid2 --test-par 8'} }
   # Limited build reduces the number of runtime test cases, available device memory, etc, and may be used
   # to reduce test runtime in limited environments.
   limited:    { name: "SmallGMem",   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-limited'} }
@@ -621,10 +658,12 @@ jobs:
 
   # Python:
   build_py_wheel:   { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
+  build_py_stf_wheel: { name: "Build cuda.stf",            gpu: false, invoke: { prefix: 'build_cuda_stf_combined'} }
   test_headers:     { name: "Test cuda.cccl.headers",      gpu: false, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_headers'} }
   test_py_par:      { name: "Test cuda.compute",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
+  test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }

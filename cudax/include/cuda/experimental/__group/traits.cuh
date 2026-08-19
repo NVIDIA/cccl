@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/hierarchy>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
@@ -48,6 +49,13 @@ using _SpanElementType = typename _Span::element_type;
 
 template <class _Span>
 using _SpanValueType = typename _Span::value_type;
+
+template <class _Unit, class _Level>
+inline constexpr bool __unit_same_as_or_below_v = __is_natively_reachable_hierarchy_level_v<_Unit, _Level>;
+template <class _Level>
+inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
+template <>
+inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

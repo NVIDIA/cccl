@@ -17,6 +17,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/__bit/has_single_bit.h>
@@ -78,7 +79,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
   [[maybe_unused]] constexpr int bucket_size = c2h::get<2, TestType>::value;
   [[maybe_unused]] constexpr int probing     = c2h::get<3, TestType>::value;
 
-  using hasher = cudax::cuco::hash<key_type>;
+  using hasher = cuda::hash<key_type>;
   using probing_type =
     ::cuda::std::conditional_t<probing == 0,
                                cudax::cuco::linear_probing<cg_size, hasher>,
@@ -134,7 +135,7 @@ using __map_of = cudax::cuco::fixed_capacity_map<
   ::cuda::std::dynamic_extent,
   ::cuda::thread_scope_device,
   ::cuda::std::equal_to<_Key>,
-  cudax::cuco::linear_probing<1, cudax::cuco::hash<_Key>>,
+  cudax::cuco::linear_probing<1, cuda::hash<_Key>>,
   1>;
 
 C2H_TEST("fixed_capacity_map key and slot size constraint", "[container]")

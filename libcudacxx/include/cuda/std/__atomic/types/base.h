@@ -24,6 +24,7 @@
 #include <cuda/std/__atomic/functions.h>
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,9 +36,12 @@ struct __atomic_storage
   using __underlying_t                = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
-#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
+#if _CCCL_COMPILER(GCC, <, 10) // older gcc fails to handle volatile in is_trivially_copyable
+  static_assert(is_trivially_copyable_v<remove_cvref_t<_Tp>>,
+                "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+#else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 10) vvv
   static_assert(is_trivially_copyable_v<_Tp>, "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
-#endif
+#endif // !_CCCL_COMPILER(GCC, <, 10)
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 

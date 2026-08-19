@@ -1,0 +1,108 @@
+=============== stream.without_context begin ===============
+cuda::stream handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.without_context end ===============
+=============== stream.owning begin ===============
+cuda::stream handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.owning end ===============
+=============== stream.ref begin ===============
+cuda::stream_ref handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.ref end ===============
+=============== stream.alias begin ===============
+cuda::stream_ref handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.alias end ===============
+=============== stream.default begin ===============
+cuda::stream_ref handle=default, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 0
+}
+=============== stream.default end ===============
+=============== stream.legacy begin ===============
+cuda::stream_ref handle=legacy, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 0
+}
+=============== stream.legacy end ===============
+=============== stream.per_thread begin ===============
+cuda::stream_ref handle=per-thread, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 0
+}
+=============== stream.per_thread end ===============
+=============== stream.invalid begin ===============
+cuda::stream_ref handle=invalid, unique_id=unavailable
+=============== stream.invalid end ===============
+=============== stream.moved_from begin ===============
+cuda::stream handle=invalid, unique_id=unavailable
+=============== stream.moved_from end ===============
+=============== stream.summary begin ===============
+cuda::std::array<cuda::stream_ref, 3> = {
+  [0] = cuda::stream_ref handle=<address>, unique_id=<id> = {
+    device = 0,
+    priority = 0,
+    is_capturing = false,
+    flags = 1
+  },
+  [1] = cuda::stream_ref handle=default, unique_id=<id> = {
+    device = 0,
+    priority = 0,
+    is_capturing = false,
+    flags = 0
+  },
+  [2] = cuda::stream_ref handle=invalid, unique_id=unavailable
+}
+=============== stream.summary end ===============
+=============== stream.update.before begin ===============
+cuda::stream_ref handle=default, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 0
+}
+=============== stream.update.before end ===============
+=============== stream.update.after begin ===============
+cuda::stream_ref handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.update.after end ===============
+=============== stream.capturing begin ===============
+cuda::stream handle=<address>, unique_id=unavailable = {
+  is_capturing = true
+}
+=============== stream.capturing end ===============
+=============== stream.after_capture begin ===============
+cuda::stream handle=<address>, unique_id=<id> = {
+  device = 0,
+  priority = 0,
+  is_capturing = false,
+  flags = 1
+}
+=============== stream.after_capture end ===============

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import cccl_common
+
 import lldb
 
 _INPLACE_VECTOR_PATTERN = re.compile(r"^cuda::std::inplace_vector<.+,\s*(\d+)>$")
@@ -17,9 +19,7 @@ InternalDict = dict[str, object]
 def is_cuda_inplace_vector(
     value_type: lldb.SBType, _internal_dict: InternalDict
 ) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _INPLACE_VECTOR_PATTERN.fullmatch(type_name) is not None
 
 
@@ -27,11 +27,9 @@ def inplace_vector_summary(
     value: lldb.SBValue, _internal_dict: InternalDict
 ) -> str | None:
     """Summarize size and capacity like LLDB's std::vector formatter."""
+    value = cccl_common.strip_reference_value(value)
     value = value.GetNonSyntheticValue()
-    type_name = (
-        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
-        or ""
-    )
+    type_name = cccl_common.canonical_type_name(value.GetType())
     match = _INPLACE_VECTOR_PATTERN.fullmatch(type_name)
     if match is None:
         return None
@@ -49,6 +47,7 @@ class InplaceVectorSyntheticProvider:
     """Expose constructed cuda::std::inplace_vector elements as LLDB children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.update()
 

@@ -18,6 +18,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -202,7 +205,7 @@ protected:
       cache_policy = mv(fn);
     }
 
-    ::std::optional<::std::function<bool()>> get_graph_cache_policy() const
+    ::cuda::std::optional<::std::function<bool()>> get_graph_cache_policy() const
     {
       return cache_policy;
     }
@@ -607,7 +610,7 @@ protected:
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
-    ::std::optional<::std::function<bool()>> cache_policy;
+    ::cuda::std::optional<::std::function<bool()>> cache_policy;
 
     // To automatically synchronize with pending get() operartion for
     // frozen_logical_data, we keep track of the events. The freeze operation
@@ -1148,10 +1151,10 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    if constexpr (::std::is_integral_v<S>)
+    if constexpr (::cuda::std::is_integral_v<S>)
     {
       return parallel_for(mv(e_place), box(shape), mv(deps)...);
     }
@@ -1166,10 +1169,10 @@ public:
             typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    if constexpr (::std::is_integral_v<S>)
+    if constexpr (::cuda::std::is_integral_v<S>)
     {
       return parallel_for(mv(p), mv(e_place), box(shape), mv(deps)...);
     }
@@ -1189,14 +1192,14 @@ public:
 private:
   Engine& self()
   {
-    static_assert(::std::is_base_of_v<backend_ctx<Engine>, Engine>);
+    static_assert(::cuda::std::is_base_of_v<backend_ctx<Engine>, Engine>);
     return static_cast<Engine&>(*this);
   }
 
   template <typename T, typename... P>
   auto make_data_interface(P&&... p)
   {
-    return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
+    return ::std::make_shared<typename Engine::template data_interface<T>>(::cuda::std::forward<P>(p)...);
   }
 };
 } // end namespace cuda::experimental::stf
