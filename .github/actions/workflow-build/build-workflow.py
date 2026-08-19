@@ -751,13 +751,15 @@ def generate_dispatch_group_jobs(matrix_job):
                     matrix_job,
                     job_type,
                     # Use the build cluster for:
-                    # 100% of Windows standalone jobs
                     # 100% of Linux arm64 standalone jobs
+                    # 50% of Windows standalone jobs
                     # 10% of Linux amd64 standalone jobs
                     (
-                        is_windows(matrix_job)
-                        or matrix_job["cpu"] == "arm64"
-                        or random.randint(0, 9) == 0
+                        True
+                        if matrix_job["cpu"] == "arm64"
+                        else random.randint(0, 1) == 0
+                        if is_windows(matrix_job)
+                        else random.randint(0, 9) == 0
                     ),
                 ),
                 job_type,
