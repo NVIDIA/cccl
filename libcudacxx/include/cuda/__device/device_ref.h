@@ -33,8 +33,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-class __logical_device_ref;
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them

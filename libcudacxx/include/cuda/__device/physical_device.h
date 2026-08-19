@@ -27,6 +27,7 @@
 #  include <cuda/__device/logical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/std/__concepts/constructible.h>
 #  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/construct_at.h>
@@ -92,6 +93,11 @@ class __physical_device
   [[nodiscard]] _CCCL_HOST_API static __raw_storage_array<_Tp> __make_raw_storage_array(::cuda::std::size_t __count)
   {
     auto __bytes = ::cuda::std::make_unique<::cuda::std::byte[]>(sizeof(_Tp) * __count);
+
+    static_assert(!::cuda::std::constructible_from<_Tp>,
+                  "Do not use this helper if your type is already default constructible. Just use a regular "
+                  "unique_ptr<T> in that case.");
+    static_assert(alignof(_Tp) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
     return __raw_storage_array<_Tp>{reinterpret_cast<_Tp*>(__bytes.release()), {}};
   }
 

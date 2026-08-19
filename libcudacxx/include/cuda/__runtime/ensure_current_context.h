@@ -35,7 +35,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 class stream_ref;
-class __logical_device;
 
 //! @brief RAII helper which on construction sets the current context to the specified one.
 //! It sets the state back on destruction.
