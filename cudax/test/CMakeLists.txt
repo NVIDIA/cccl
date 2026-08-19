@@ -168,6 +168,9 @@ cudax_add_catch2_test(test_target group.cooperative_algorithm
 cudax_add_catch2_test(test_target group.group
     group/group.cu
 )
+cudax_add_catch2_test(test_target group.group_view
+    group/group_view.cu
+)
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
 )
