@@ -2701,9 +2701,12 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(served == 9);
   }
   {
-    int last   = 0;
-    int source = 11;
-    int& fresh = on_throw(remember(last)) << [&]() -> int& {
+    int last = 0;
+    // static: nvcc 12.0's cudafe flags returning a by-ref-captured local as
+    // "returning reference to local variable" (#836, promoted); the capture
+    // is valid, the old analysis just cannot see through it.
+    static int source = 11;
+    int& fresh        = on_throw(remember(last)) << [&]() -> int& {
       return source;
     };
     int& stale = on_throw(remember(last)) << []() -> int& {
