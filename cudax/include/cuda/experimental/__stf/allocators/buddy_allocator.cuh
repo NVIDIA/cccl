@@ -349,12 +349,6 @@ private:
 
 #ifdef UNITTESTED_FILE
 
-// Note: buddy_allocator holds a std::mutex (added to make concurrent task
-// submission safe) so it is no longer movable, exactly like
-// cached_block_allocator. Concrete allocators are always held through a
-// shared_ptr (see block_allocator / make_shared) and are never moved at
-// runtime, so movability is not required.
-
 UNITTEST("buddy allocator meta data")
 {
   event_list prereqs; // starts empty
