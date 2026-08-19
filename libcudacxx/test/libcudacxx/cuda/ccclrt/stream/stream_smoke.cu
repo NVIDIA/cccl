@@ -247,6 +247,7 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
 C2H_CCCLRT_TEST("Default stream diagnostics mention the missing current context", "[stream]")
 {
 #if TEST_HAS_EXCEPTIONS()
+  test::empty_driver_stack();
   CCCLRT_REQUIRE(::cuda::__driver::__ctxGetCurrent() == nullptr);
 
   check_default_stream_invalid_context_message(nullptr);
