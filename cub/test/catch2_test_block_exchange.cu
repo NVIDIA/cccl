@@ -30,7 +30,6 @@ __global__ void block_exchange_kernel(T* data)
 
   __shared__ temp_storage_t temp_storage;
 
-  constexpr int tile_size = BlockThreads * ItemsPerThread;
   const int tid           = static_cast<int>(threadIdx.x);
   const int thread_offset = tid * ItemsPerThread;
 
@@ -60,6 +59,8 @@ __global__ void block_exchange_kernel(T* data)
   }
   else
   {
+    constexpr int tile_size = BlockThreads * ItemsPerThread;
+
     int ranks[ItemsPerThread];
     for (int item = 0; item < ItemsPerThread; ++item)
     {
@@ -232,11 +233,16 @@ void require_valid_scatter_outputs(
   }
 }
 
-// %PARAM% TEST_ITEMS_PER_THREAD ipt 1:4:8
+// %PARAM% TEST_TYPES types 0:1
 
-using types            = c2h::type_list<std::int32_t, std::int64_t>;
+#if TEST_TYPES == 0
+using types = c2h::type_list<std::int32_t>;
+#elif TEST_TYPES == 1
+using types = c2h::type_list<std::int64_t>;
+#endif
+
 using block_threads    = c2h::enum_type_list<int, 32, 128>;
-using items_per_thread = c2h::enum_type_list<int, TEST_ITEMS_PER_THREAD>;
+using items_per_thread = c2h::enum_type_list<int, 1, 4, 7>;
 
 template <typename TestType>
 struct params_t
