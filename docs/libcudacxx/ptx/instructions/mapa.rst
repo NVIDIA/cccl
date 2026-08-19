@@ -9,7 +9,7 @@ mapa
 This instruction can `currently not be
 implemented <https://github.com/NVIDIA/cccl/issues/1414>`__ by libcu++.
 The instruction can be accessed through the cooperative groups
-`cluster_group <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group>`__
+`cluster_group <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/device-callable-apis.html#class-cluster-group>`__
 API:
 
 Usage:
