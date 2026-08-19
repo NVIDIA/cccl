@@ -48,12 +48,14 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <ostream>
 #include <stdexcept>
 #include <string_view>
+#include <thread>
 #include <tuple>
 #include <typeinfo>
 #include <utility>
@@ -501,6 +503,239 @@ inline constexpr expecting_t<_E> expecting{};
 
 //! @brief Baseline instance of `expecting<std::exception_ptr>`; see @ref expecting_t.
 inline constexpr expecting_t<::std::exception_ptr> as_expected{};
+
+/**
+ * @brief Predicate guard for an exception-path sequence.
+ *
+ * There is no runtime "nop" answer on the exception path: a hook either accepts or declines.
+ * A true predicate contributes a void effect answer so `&` continues; false declines by
+ * throwing. As a `|` arm this means "not applicable, try the next arm"; inside `&`, false
+ * declines the whole sequence. `catch_only` remains separate because its typed claims support
+ * the starved-arm theorem, while arbitrary predicates do not.
+ */
+template <class _Pred>
+struct guard_t
+{
+  using __exception_sink_tag = void;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _Pred __pred_;
+
+  template <class _Fn>
+  void operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
+  {
+    if constexpr (::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>)
+    {
+      if (__pred_(__exception))
+      {
+        return;
+      }
+    }
+    else
+    {
+      if (__pred_())
+      {
+        return;
+      }
+    }
+    throw; // decline: the guard does not apply
+  }
+};
+
+//! @brief Creates a predicate guard; see @ref guard_t.
+template <class _Pred>
+auto guard(_Pred&& __pred)
+{
+  return guard_t<_Pred>{::cuda::std::forward<_Pred>(__pred)};
+}
+
+/**
+ * @brief Translates the active exception by throwing the result of `fn(exception)`.
+ *
+ * A translation always declines, but with a different exception; a following `|` arm sees
+ * the translated exception.
+ */
+template <class _Fn>
+struct translate_t
+{
+  using __exception_sink_tag = void;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _Fn __fn_;
+
+  template <class _Callable>
+  [[noreturn]] nothing operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Callable&)
+  {
+    throw __fn_(__exception);
+  }
+};
+
+//! @brief Creates an exception translator; see @ref translate_t.
+template <class _Fn>
+auto translate(_Fn&& __fn)
+{
+  return translate_t<_Fn>{::cuda::std::forward<_Fn>(__fn)};
+}
+
+/**
+ * @brief Throws a stored exception with the active exception nested as its cause.
+ */
+template <class _E>
+struct nest_t
+{
+  using __exception_sink_tag = void;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _E __exception_;
+
+  static_assert(::cuda::std::is_copy_constructible_v<_E>, "nest(e) requires a copyable exception object");
+
+  template <class _Fn>
+  [[noreturn]] nothing operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
+  {
+    _CCCL_TRY
+    {
+      throw;
+    }
+    _CCCL_CATCH_ALL
+    {
+      ::std::throw_with_nested(__exception_);
+    }
+    _CCCL_UNREACHABLE();
+  }
+};
+
+//! @brief Stores an exception by value and nests the active exception beneath it.
+template <class _E>
+auto nest(_E&& __exception)
+{
+  using _Stored = ::cuda::std::decay_t<_E>;
+  return nest_t<_Stored>{::cuda::std::forward<_E>(__exception)};
+}
+
+/**
+ * @brief Effect policy that sleeps before the next element of an `&` sequence.
+ *
+ * `(delay(100ms) & retry) * 3` pauses before each re-attempt.
+ */
+template <class _Duration>
+struct delay_t
+{
+  using __exception_sink_tag = void;
+  _CCCL_STF_NO_UNIQUE_ADDRESS _Duration __duration_;
+
+  template <class _Fn>
+  void operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
+  {
+    ::std::this_thread::sleep_for(__duration_);
+  }
+};
+
+//! @brief Creates a sleeping effect policy; see @ref delay_t.
+template <class _Duration>
+auto delay(_Duration&& __duration)
+{
+  return delay_t<_Duration>{::cuda::std::forward<_Duration>(__duration)};
+}
+
+/**
+ * @brief Re-attempts with decorrelated-jitter delays.
+ *
+ * Uses the AWS "Exponential Backoff and Jitter" decorrelated algorithm: plain exponential
+ * backoff synchronizes clients into retry storms. Randomness is hook-local xorshift state;
+ * there is no global state and no `<random>` dependency.
+ */
+struct backoff_t
+{
+  using __exception_sink_tag = void;
+  int __n_;
+  ::std::chrono::milliseconds __initial_;
+
+  template <class _Fn>
+  decltype(auto) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
+  {
+    if (__n_ == 0)
+    {
+      throw;
+    }
+
+    const auto __base = __initial_.count();
+    const auto __cap  = __base * 64;
+    auto __sleep      = __base;
+    auto __state      = static_cast<unsigned long long>(::std::chrono::steady_clock::now().time_since_epoch().count());
+    if (__state == 0)
+    {
+      __state = 1;
+    }
+
+    for (int __attempt = 0; __attempt < __n_; ++__attempt)
+    {
+      ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
+      _CCCL_TRY
+      {
+        if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
+        {
+          __fn();
+          return (::std::ignore);
+        }
+        else
+        {
+          return __fn();
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        if (__attempt + 1 == __n_)
+        {
+          throw;
+        }
+        __state ^= __state << 13;
+        __state ^= __state >> 7;
+        __state ^= __state << 17;
+        const auto __tripled = __sleep * 3;
+        const auto __upper   = __tripled < __cap ? __tripled : __cap;
+        const auto __span    = __upper - __base + 1;
+        __sleep = __base + static_cast<decltype(__base)>(__state % static_cast<unsigned long long>(__span));
+      }
+    }
+    _CCCL_UNREACHABLE();
+  }
+};
+
+//! @brief Creates a decorrelated-jitter retry policy.
+inline backoff_t backoff(int __n, ::std::chrono::milliseconds __initial)
+{
+  _CCCL_ASSERT(__n >= 0, "backoff requires a non-negative retry count");
+  return backoff_t{__n, __initial};
+}
+
+/**
+ * @brief Serves the last successful value when a later call throws.
+ *
+ * The variable is held by reference and must be an lvalue. Success updates it and passes the
+ * result through; failure substitutes the stored value.
+ */
+template <class _T>
+struct remember_t
+{
+  using __exception_sink_tag = void;
+  _T& __var_;
+
+  template <class _R>
+  ::cuda::std::conditional_t<::cuda::std::is_lvalue_reference_v<_R&&>, _R&&, ::cuda::std::remove_cvref_t<_R>>
+  on_success(_R&& __result)
+  {
+    __var_ = __result;
+    return ::cuda::std::forward<_R>(__result);
+  }
+
+  template <class _Fn>
+  _T& operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
+  {
+    return __var_;
+  }
+};
+
+//! @brief Creates a last-known-good policy from an lvalue.
+template <class _T>
+auto remember(_T& __var)
+{
+  return remember_t<_T>{__var};
+}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
@@ -1299,6 +1534,19 @@ auto operator*(int __n, _P&& __p)
 {
   return ::cuda::std::forward<_P>(__p) * __n;
 }
+
+/**
+ * @brief Restricts a policy with a runtime predicate.
+ *
+ * Returns `guard(pred) & p`: as a `|` arm, false means the next alternative gets the
+ * exception; inside a larger `&`, false declines the whole sequence.
+ */
+template <class _Pred, class _P>
+auto when(_Pred&& __pred, _P&& __p)
+{
+  return ::cuda::experimental::stf::exception_policies::guard(::cuda::std::forward<_Pred>(__pred))
+       & detail::__normalize(::cuda::std::forward<_P>(__p));
+}
 } // namespace exception_policies
 
 // Tripwire: the abort policy moved to exception_policies. An
@@ -1318,12 +1566,16 @@ void abort(_Ts&&...) = delete;
  * introspection: the exception hook
  * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
  * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
- * a success hook `on_success(...)` that observes or replaces the result. The named policies are
- * @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer", @ref rethrow_t "rethrow",
- * @ref retry_t "retry", @ref expecting_t "expecting" / @ref as_expected, @ref noop_t "noop", and
- * @ref catch_only. Policies compose with `&` (sequence; the last element answers; non-final
- * answers are discarded) and `|` (alternation; the left may decline by throwing), and with
- * `*` (n-fold `|`).
+ * a success hook `on_success(...)` that observes or replaces the result. The named policies
+ * include @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer",
+ * @ref rethrow_t "rethrow", @ref retry_t "retry", @ref expecting_t "expecting" /
+ * @ref as_expected, @ref noop_t "noop", @ref catch_only, @ref guard_t "guard" / @ref when,
+ * @ref translate_t "translate" / @ref nest, @ref delay_t "delay", @ref backoff, and
+ * @ref remember_t "remember". Guards decline what they do not claim; translators decline with
+ * a different exception; delay/backoff/retry re-run; remember serves the last success.
+ * Policies compose with `&` (sequence; the last element answers; non-final answers are
+ * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
+ * `|`).
  *
  * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
  * resumes with a default-constructed result; and anything else is taken as a substitution
@@ -2153,6 +2405,14 @@ struct __ut_poly_base
 };
 struct __ut_poly_derived : __ut_poly_base
 {};
+struct __ut_low_error : ::std::runtime_error
+{
+  using ::std::runtime_error::runtime_error;
+};
+struct __ut_high_error : ::std::runtime_error
+{
+  using ::std::runtime_error::runtime_error;
+};
 
 UNITTEST("expecting")
 {
@@ -2274,6 +2534,193 @@ UNITTEST("expecting")
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(expecting<::std::exception_ptr> | subst(0)) << ...;
   //      -> "the left policy never declines; ..." (the total form can't head a ladder)
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("guard translate delay backoff remember")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  // A true guard contributes an effect-only answer; a false guard declines its whole sequence.
+  {
+    const auto is_low = [](const ::std::exception* __exception) {
+      return __exception && dynamic_cast<const __ut_low_error*>(__exception);
+    };
+    const int claimed = on_throw(when(is_low, subst(1)) | subst(2)) << []() -> int {
+      throw __ut_low_error("low");
+    };
+    const int declined = on_throw(when(is_low, subst(1)) | subst(2)) << []() -> int {
+      throw __ut_high_error("high");
+    };
+    EXPECT(claimed == 1);
+    EXPECT(declined == 2);
+  }
+  {
+    const int claimed =
+      on_throw(when(
+                 [](const ::std::exception* __exception) {
+                   return !__exception;
+                 },
+                 subst(5))
+               | subst(6))
+      << []() -> int {
+      throw 42;
+    };
+    EXPECT(claimed == 5);
+  }
+  {
+    const int accepted =
+      on_throw(guard([] {
+                 return true;
+               })
+               & subst(3))
+      << []() -> int {
+      throw __ut_low_error("low");
+    };
+    const int declined =
+      on_throw((guard([] {
+                  return false;
+                })
+                & subst(3))
+               | subst(4))
+      << []() -> int {
+      throw __ut_low_error("low");
+    };
+    EXPECT(accepted == 3);
+    EXPECT(declined == 4);
+  }
+
+  // A translator's thrown exception is re-observed by the next typed arm.
+  {
+    const int v = on_throw(catch_only<__ut_low_error>(translate([](const ::std::exception*) {
+                             return __ut_high_error{"context"};
+                           }))
+                           | catch_only<__ut_high_error>(subst(1)))
+               << []() -> int {
+      throw __ut_low_error("cause");
+    };
+    EXPECT(v == 1);
+  }
+
+  // Nest preserves the original exception as the translated exception's cause.
+  {
+    bool saw_high = false;
+    bool saw_low  = false;
+    try
+    {
+      on_throw(nest(__ut_high_error{"context"})) << [] {
+        throw __ut_low_error("cause");
+      };
+    }
+    catch (const __ut_high_error& __exception)
+    {
+      saw_high = true;
+      try
+      {
+        ::std::rethrow_if_nested(__exception);
+      }
+      catch (const __ut_low_error&)
+      {
+        saw_low = true;
+      }
+    }
+    EXPECT(saw_high);
+    EXPECT(saw_low);
+  }
+
+  // Delay composes before each retry; test attempts rather than elapsed wall time.
+  {
+    int calls   = 0;
+    const int v = on_throw((delay(::std::chrono::milliseconds{1}) & retry) * 2 | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw __ut_low_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3);
+  }
+
+  // Backoff owns its retry loop: exhaustion declines, while an early success answers.
+  {
+    int calls   = 0;
+    const int v = on_throw(backoff(2, ::std::chrono::milliseconds{1}) | subst(-1)) << [&]() -> int {
+      ++calls;
+      throw __ut_low_error("always");
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3);
+  }
+  {
+    int calls   = 0;
+    const int v = on_throw(backoff(2, ::std::chrono::milliseconds{1})) << [&]() -> int {
+      if (++calls == 1)
+      {
+        throw __ut_low_error("once");
+      }
+      return 8;
+    };
+    EXPECT(v == 8);
+    EXPECT(calls == 2);
+  }
+  {
+    int calls = 0;
+    on_throw(backoff(2, ::std::chrono::milliseconds{1})) << [&] {
+      if (++calls == 1)
+      {
+        throw __ut_low_error("once");
+      }
+    };
+    EXPECT(calls == 2);
+  }
+
+  // Remember observes successes and substitutes the latest one after a failure.
+  {
+    int last      = 1;
+    const int got = on_throw(remember(last)) << [] {
+      return 7;
+    };
+    EXPECT(got == 7);
+    EXPECT(last == 7);
+
+    const int stale = on_throw(remember(last)) << []() -> int {
+      throw __ut_low_error("offline");
+    };
+    EXPECT(stale == 7);
+
+    const int fresh = ON_THROW(remember(last))
+    {
+      return 9;
+    };
+    const int served = ON_THROW(remember(last))->int
+    {
+      throw __ut_low_error("offline");
+    };
+    EXPECT(fresh == 9);
+    EXPECT(last == 9);
+    EXPECT(served == 9);
+  }
+  {
+    int last   = 0;
+    int source = 11;
+    int& fresh = on_throw(remember(last)) << [&]() -> int& {
+      return source;
+    };
+    int& stale = on_throw(remember(last)) << []() -> int& {
+      throw __ut_low_error("offline");
+    };
+    EXPECT(&fresh == &source);
+    EXPECT(last == 11);
+    EXPECT(&stale == &last);
+  }
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(remember(value) | subst(0)) << ...;
+  //      -> "the left policy never declines; alternatives after it are unreachable"
+  //  - on_throw(translate(fn) & subst(0)) << ...;
+  //      -> "policies after a never-returning policy are unreachable"
+  //  - remember(42);
+  //      -> remember requires an lvalue to hold by reference
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
