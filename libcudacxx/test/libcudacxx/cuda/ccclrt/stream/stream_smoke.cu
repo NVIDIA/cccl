@@ -18,39 +18,9 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
-#include <vector>
-
 #if TEST_HAS_EXCEPTIONS()
 namespace
 {
-class restore_driver_context_stack
-{
-public:
-  restore_driver_context_stack()
-  {
-    while (::cuda::__driver::__ctxGetCurrent() != nullptr)
-    {
-      contexts_.push_back(::cuda::__driver::__ctxPop());
-    }
-  }
-
-  restore_driver_context_stack(restore_driver_context_stack&&)                 = delete;
-  restore_driver_context_stack(const restore_driver_context_stack&)            = delete;
-  restore_driver_context_stack& operator=(restore_driver_context_stack&&)      = delete;
-  restore_driver_context_stack& operator=(const restore_driver_context_stack&) = delete;
-
-  ~restore_driver_context_stack() noexcept(false)
-  {
-    for (auto iter = contexts_.rbegin(); iter != contexts_.rend(); ++iter)
-    {
-      ::cuda::__driver::__ctxPush(*iter);
-    }
-  }
-
-private:
-  std::vector<::CUcontext> contexts_;
-};
-
 [[nodiscard]] auto default_stream_invalid_context_message()
 {
   return Catch::Matchers::MessageMatches(
@@ -277,7 +247,6 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
 C2H_CCCLRT_TEST("Default stream diagnostics mention the missing current context", "[stream]")
 {
 #if TEST_HAS_EXCEPTIONS()
-  const restore_driver_context_stack context_stack;
   CCCLRT_REQUIRE(::cuda::__driver::__ctxGetCurrent() == nullptr);
 
   check_default_stream_invalid_context_message(nullptr);
