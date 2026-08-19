@@ -41,6 +41,7 @@ CUB_NAMESPACE_BEGIN
  * CachingDeviceAllocator (host use)
  ******************************************************************************/
 
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * @brief A simple caching allocator for device memory allocations.
  *
