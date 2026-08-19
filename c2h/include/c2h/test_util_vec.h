@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <thrust/detail/config/device_system.h>
+#include <cuda/std/detail/__config>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -44,7 +44,7 @@ inline int CoutCast(signed char val)
  * Comparison and ostream operators for CUDA vector types
  ******************************************************************************/
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#if _CCCL_HAS_CTK()
 
 /**
  * Vector1 overloads
@@ -413,4 +413,4 @@ inline constexpr bool is_vector2_fp_type_v<__nv_bfloat162> = true;
 
 #  endif // TEST_BF_T()
 
-#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#endif // _CCCL_HAS_CTK()

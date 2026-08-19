@@ -3,20 +3,27 @@
 
 #include <cub/device/device_copy.cuh>
 
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+#include <thrust/version.h>
 
 #include <cuda/iterator>
 #include <cuda/std/optional>
+#include <cuda/std/span>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
 

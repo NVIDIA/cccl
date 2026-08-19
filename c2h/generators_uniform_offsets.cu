@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <c2h/generators.h>
-// #include <c2h/detail/generators.cuh>
-
 #include <thrust/device_ptr.h>
 #include <thrust/find.h>
 #include <thrust/scan.h>
@@ -11,6 +8,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
+#include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 
 namespace c2h::detail

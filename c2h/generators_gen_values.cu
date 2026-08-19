@@ -8,7 +8,6 @@
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/half.cuh>
 
 namespace c2h::detail

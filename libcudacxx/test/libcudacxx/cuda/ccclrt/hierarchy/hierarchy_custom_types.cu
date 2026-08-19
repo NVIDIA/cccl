@@ -37,8 +37,8 @@ struct custom_level_test
 #if !_CCCL_CUDA_COMPILER(CLANG)
     CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 84 * 1024);
     CCCLRT_REQUIRE(custom_level{}.count(cuda::grid, dims) == 42);
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(42 * 512, 2, 2));
-    CCCLRT_REQUIRE(custom_level{}.dims(cuda::grid, dims) == dim3(42, 1, 1));
+    CCCLRT_REQUIRE(dim3{cuda::gpu_thread.dims(cuda::grid, dims)} == dim3(42 * 512, 2, 2));
+    CCCLRT_REQUIRE(dim3{custom_level{}.dims(cuda::grid, dims)} == dim3(42, 1, 1));
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 

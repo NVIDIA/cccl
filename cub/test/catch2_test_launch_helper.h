@@ -3,9 +3,20 @@
 
 #pragma once
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cuda/__algorithm/copy.h>
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/std/span>
+#include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include <cstddef>
+#include <cstdint>
+
+#include <cuda_runtime_api.h>
+
+#include <c2h/catch2_test_macros.h>
+#include <c2h/checked_memory_resource.cuh>
+#include <catch2/generators/catch_generators_all.hpp>
 
 //! @file
 //! This file contains utilities for device-scope API tests
@@ -53,16 +64,16 @@
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 
-#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)                  \
-  TMPL_HEAD_OPT                                                                                 \
-  struct WRAPPED_API_NAME##_invocable_t                                                         \
-  {                                                                                             \
-    template <class... Ts>                                                                      \
-    CUB_RUNTIME_FUNCTION cudaError_t                                                            \
-    operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) const \
-    {                                                                                           \
-      return API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...);                    \
-    }                                                                                           \
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)                        \
+  TMPL_HEAD_OPT                                                                                       \
+  struct WRAPPED_API_NAME##_invocable_t                                                               \
+  {                                                                                                   \
+    template <class... Ts>                                                                            \
+    CUB_RUNTIME_FUNCTION cudaError_t                                                                  \
+    operator()(cuda::std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) const \
+    {                                                                                                 \
+      return API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...);                          \
+    }                                                                                                 \
   }
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)           \
@@ -77,6 +88,27 @@
   } WRAPPED_API_NAME
 
 #define ESCAPE_LIST(...) __VA_ARGS__
+
+namespace launch_helper_detail
+{
+inline cuda::device_ref current_device()
+{
+  int device{0};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+  return cuda::device_ref{device};
+}
+
+template <typename T>
+T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
+{
+  REQUIRE(buffer.size() == 1);
+
+  T result{};
+  cuda::copy_bytes(stream, buffer, cuda::std::span<T>{&result, 1});
+  stream.sync();
+  return result;
+}
+} // namespace launch_helper_detail
 
 // TODO(bgruber): make the following macro also produce a global instance of a functor, but to pass the template
 // arguments, we need variable templates from C++14.
@@ -101,22 +133,27 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  const auto device = launch_helper_detail::current_device();
+  {
+    // Keep temp_storage scoped so cuda::device_buffer deallocates on stream before the raw stream is destroyed.
+    auto temp_storage =
+      c2h::make_device_buffer<cuda::std::uint8_t>(cuda::stream_ref{stream}, device, temp_storage_bytes, cuda::no_init);
 
-  cudaGraph_t graph{};
-  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
-  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args..., stream);
-  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
-  REQUIRE(cudaSuccess == error);
+    cudaGraph_t graph{};
+    REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+    error = action(temp_storage.data(), temp_storage_bytes, args..., stream);
+    REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
+    REQUIRE(cudaSuccess == error);
 
-  cudaGraphExec_t exec{};
-  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+    cudaGraphExec_t exec{};
+    REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
 
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+    REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
+    REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
 
-  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+    REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
+    REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+  }
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
 }
 
@@ -124,7 +161,11 @@ void launch(ActionT action, Args... args)
 
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
-  std::uint8_t* d_temp_storage, std::size_t* temp_storage_bytes, cudaError_t* d_error, ActionT action, Args... args)
+  cuda::std::uint8_t* d_temp_storage,
+  std::size_t* temp_storage_bytes,
+  cudaError_t* d_error,
+  ActionT action,
+  Args... args)
 {
   // The clang-tidy job uses clang-20 but clang does not support CUDA dynamic parallelism until
   // clang-22. Since we are inside clang-tidy we don't actually care whether the kernel is
@@ -150,29 +191,26 @@ __global__ void device_side_api_launch_kernel(
 template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
-  c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  c2h::device_vector<std::size_t> d_temp_storage_bytes(1, thrust::no_init);
-  device_side_api_launch_kernel<<<1, 1>>>(
-    nullptr,
-    thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
-    thrust::raw_pointer_cast(d_error.data()),
-    action,
-    args...);
+  const auto device         = launch_helper_detail::current_device();
+  auto stream               = cuda::stream{device};
+  auto d_error              = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
+  auto d_temp_storage_bytes = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, cuda::no_init);
+
+  auto* const d_error_ptr              = d_error.data();
+  auto* const d_temp_storage_bytes_ptr = d_temp_storage_bytes.data();
+
+  device_side_api_launch_kernel<<<1, 1>>>(nullptr, d_temp_storage_bytes_ptr, d_error_ptr, action, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == d_error[0]);
+  REQUIRE(cudaSuccess == launch_helper_detail::read_single(stream, d_error));
 
-  c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0], thrust::no_init);
+  const auto temp_storage_bytes = launch_helper_detail::read_single(stream, d_temp_storage_bytes);
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
 
-  device_side_api_launch_kernel<<<1, 1>>>(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
-    thrust::raw_pointer_cast(d_error.data()),
-    action,
-    args...);
+  device_side_api_launch_kernel<<<1, 1>>>(temp_storage.data(), d_temp_storage_bytes_ptr, d_error_ptr, action, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == d_error[0]);
+  REQUIRE(cudaSuccess == launch_helper_detail::read_single(stream, d_error));
 }
 
 #else // TEST_LAUNCH == 0
@@ -180,7 +218,7 @@ void launch(ActionT action, Args... args)
 template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
-  std::size_t temp_storage_bytes{};
+  cuda::std::size_t temp_storage_bytes{};
   cudaError_t error = action(nullptr, temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -189,10 +227,13 @@ void launch(ActionT action, Args... args)
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
   // randomly offset the temporary storage address by one byte
-  const int offset = GENERATE(take(1, random(0, 1)));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes + offset, thrust::no_init);
+  const int offset  = GENERATE(take(1, random(0, 1)));
+  const auto device = launch_helper_detail::current_device();
+  auto stream       = cuda::stream{device};
+  auto temp_storage =
+    c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes + offset, cuda::no_init);
 
-  error = action(thrust::raw_pointer_cast(temp_storage.data()) + offset, temp_storage_bytes, args...);
+  error = action(temp_storage.data() + offset, temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
