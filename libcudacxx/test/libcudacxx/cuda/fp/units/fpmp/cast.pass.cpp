@@ -19,12 +19,12 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 // double -> fp32mp2 -> double must be idempotent after the first round trip.
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   const double tv[10] = {
     1234.567890123456777,

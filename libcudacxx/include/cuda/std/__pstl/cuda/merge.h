@@ -99,14 +99,14 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator1 __first1,
     _InputIterator1 __last1,
     _InputIterator2 __first2,
     _InputIterator2 __last2,
     _OutputIterator __result,
-    _Compare __comp) const
+    _Compare __comp)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator1>
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>

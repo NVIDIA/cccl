@@ -311,10 +311,10 @@ void launch(ActionT action, Args... args)
   size_t bytes_allocated{};
   size_t bytes_deallocated{};
 
-  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
+  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
   auto mr         = device_memory_resource{stream, &bytes_allocated, &bytes_deallocated};
-  auto mr_env     = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+  auto mr_env     = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
 
@@ -408,13 +408,13 @@ void launch(ActionT action, Args... args)
   // Host-side stream is unusable in device code, force it to be 0
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{cudaStream_t{}}};
 
-  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
+  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
   auto mr = device_side_memory_resource{
     thrust::raw_pointer_cast(d_temp_storage.data()),
     thrust::raw_pointer_cast(d_allocated.data()),
     thrust::raw_pointer_cast(d_deallocated.data())};
-  auto mr_env    = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+  auto mr_env    = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
   auto fixed_env = cuda::std::execution::env{mr_env, stream_env, env};
 
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
@@ -463,12 +463,12 @@ void launch(ActionT action, Args... args)
   size_t bytes_allocated{};
   size_t bytes_deallocated{};
 
-  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
+  static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
 
   {
     auto mr         = throwing_memory_resource{};
-    auto mr_env     = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+    auto mr_env     = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
     auto fixed_env  = cuda::std::execution::env{mr_env, env};
     auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
@@ -480,7 +480,7 @@ void launch(ActionT action, Args... args)
   }
 
   auto mr         = device_memory_resource{stream, &bytes_allocated, &bytes_deallocated};
-  auto mr_env     = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+  auto mr_env     = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
 

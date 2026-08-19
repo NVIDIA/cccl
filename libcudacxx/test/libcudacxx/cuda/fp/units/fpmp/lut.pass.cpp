@@ -22,9 +22,9 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-using ffloat = fp32mp2;
+using ffloat = cudax::fp32mp2;
 
 // Same list builds both an fp32mp2 array (F = LUT_FF) and a double reference
 // array (F = LUT_ID).
@@ -62,7 +62,7 @@ static_assert(ffloat{1.5}.hi() == 1.5f && ffloat{1.5}.lo() == 0.0f,
 
 // Multiply pairs of LUT entries and verify against the double reference; also
 // check the round-trip precision of every stored entry.
-_CCCL_HOST_DEVICE void run_test()
+TEST_HOST_DEVICE_FUNC void run_test()
 {
   constexpr ffloat lut[] = {LUT_LIST(LUT_FF)};
   constexpr double ref[] = {LUT_LIST(LUT_ID)};

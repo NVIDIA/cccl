@@ -17,6 +17,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,6 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/type_traits>
@@ -146,7 +150,8 @@ template <typename OwnerFn>
 {
   if (elemsize == 0 || block_size_bytes < elemsize)
   {
-    throw ::std::invalid_argument("placement blocks must hold at least one element (elemsize in [1, block size])");
+    _CCCL_THROW(::std::invalid_argument,
+                "placement blocks must hold at least one element (elemsize in [1, block size])");
   }
   const size_t block_elems = block_size_bytes / elemsize;
 
@@ -154,7 +159,7 @@ template <typename OwnerFn>
   ::std::mt19937 gen(0x5EED);
   ::std::uniform_int_distribution<size_t> dis(0, block_elems - 1);
 
-  probes = ::std::max<size_t>(1, ::std::min(probes, block_elems));
+  probes = ::cuda::std::max<size_t>(1, ::cuda::std::min(probes, block_elems));
 
   ::std::vector<pos4> owners;
   owners.reserve(nblocks);
@@ -168,7 +173,7 @@ template <typename OwnerFn>
     for (size_t sample = 0; sample < probes; sample++)
     {
       // Clip: the last block may extend past the payload
-      const size_t index  = ::std::min(block_start + dis(gen), total_elems - 1);
+      const size_t index  = ::cuda::std::min(block_start + dis(gen), total_elems - 1);
       sampled_pos[sample] = owner_of(index);
     }
 
@@ -352,11 +357,11 @@ public:
     {
       size_t offset = item.offset;
       size_t sz     = item.size;
-      cuda_try(cuMemUnmap(base_ptr + offset, sz));
-      cuda_try(cuMemRelease(item.alloc_handle));
+      cuda_safe_call(cuMemUnmap(base_ptr + offset, sz));
+      cuda_safe_call(cuMemRelease(item.alloc_handle));
     }
 
-    cuda_try(cuMemAddressFree(base_ptr, vm_total_size_bytes));
+    cuda_safe_call(cuMemAddressFree(base_ptr, vm_total_size_bytes));
   }
 
   void* get_base_ptr() const
@@ -409,7 +414,7 @@ private:
   {
     if (elemsize == 0)
     {
-      throw ::std::invalid_argument("localized_array requires an element size of at least 1 byte");
+      _CCCL_THROW(::std::invalid_argument, "localized_array requires an element size of at least 1 byte");
     }
 
     cuda_try(cudaFree(nullptr));
@@ -457,13 +462,13 @@ private:
     {
       if (r.num_blocks == 0 || r.first_block != cursor)
       {
-        throw ::std::invalid_argument("placement runs must be non-empty, ordered, and tile the blocks exactly");
+        _CCCL_THROW(::std::invalid_argument, "placement runs must be non-empty, ordered, and tile the blocks exactly");
       }
       cursor += r.num_blocks;
     }
     if (cursor != nblocks)
     {
-      throw ::std::invalid_argument("placement runs must cover every placement block");
+      _CCCL_THROW(::std::invalid_argument, "placement runs must cover every placement block");
     }
 
     // Reserve the virtual range only once the placement plan is validated:
@@ -538,7 +543,7 @@ private:
         cuMemRelease(meta[mapped].alloc_handle);
       }
       cuMemAddressFree(base_ptr, vm_total_size_bytes);
-      throw;
+      _CCCL_RETHROW;
     }
   }
 
@@ -734,7 +739,7 @@ inline void* allocate_composite_data_place(const data_place_composite& p, dim4 d
   };
   auto arr  = ::std::make_unique<localized_array>(grid, mapper, delinearize, data_dims.size(), elemsize, data_dims);
   void* ptr = arr->get_base_ptr();
-  get_composite_alloc_registry()[ptr] = ::std::move(arr);
+  get_composite_alloc_registry()[ptr] = ::cuda::std::move(arr);
   return ptr;
 }
 

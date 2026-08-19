@@ -21,25 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__utility/pair.h>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
-#include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/types.cuh>
+#  include <cuda/__functional/hash.h>
+#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/extents.h>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/capacity.cuh>
+#  include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
+#  include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
+#  include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
+#  include <cuda/experimental/__cuco/probing_scheme.cuh>
+#  include <cuda/experimental/__cuco/types.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -71,7 +72,7 @@ template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
           class _KeyEqual               = ::cuda::std::equal_to<_Key>,
-          class _ProbingScheme          = linear_probing<4, hash<_Key>>,
+          class _ProbingScheme          = linear_probing<4, ::cuda::hash<_Key>>,
           int _BucketSize               = 1,
           class _MemoryResource         = ::cuda::device_memory_pool_ref>
 class fixed_capacity_map
@@ -319,6 +320,55 @@ public:
     __impl->insert_async(__stream, __first, __last, ref());
   }
 
+  //! @brief Inserts keys in `[__first, __last)` whose stencil satisfies `__pred`.
+  //!
+  //! The key-value pair `__first[i]` is inserted when `__pred(__stencil[i])` is true.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `insert_if_async`.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator whose value type is
+  //! convertible to the map's `value_type`
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //!
+  //! @param __stream CUDA stream used for insert
+  //! @param __first Beginning of the sequence of key-value pairs
+  //! @param __last End of the sequence of key-value pairs
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which elements to insert
+  //!
+  //! @return Number of successful insertions
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API size_type
+  insert_if(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    return __impl->insert_if(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
+  //! @brief Asynchronously inserts keys in `[__first, __last)` whose stencil satisfies `__pred`.
+  //!
+  //! The key-value pair `__first[i]` is inserted when `__pred(__stencil[i])` is true.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator whose value type is
+  //! convertible to the map's `value_type`
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //!
+  //! @param __stream CUDA stream used for insert
+  //! @param __first Beginning of the sequence of key-value pairs
+  //! @param __last End of the sequence of key-value pairs
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which elements to insert
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API void insert_if_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    __impl->insert_if_async(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
   // ===== Contains =====
 
   //! @brief Indicates whether each key in `[__first, __last)` is contained in the map.
@@ -562,8 +612,8 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH

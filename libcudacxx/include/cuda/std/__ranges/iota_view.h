@@ -236,23 +236,23 @@ inline constexpr bool enable_borrowed_range<iota_view<_Start, _BoundSentinel>> =
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__iota)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__iota)
 struct __fn
 {
   template <class _Start>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start) const
-    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start))))
-      -> iota_view<remove_cvref_t<_Start>>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Start&& __start) noexcept(noexcept(
+    ::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start)))) -> iota_view<remove_cvref_t<_Start>>
   {
     return ::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start));
   }
 
   template <class _Start, class _BoundSentinel>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start, _BoundSentinel&& __bound_sentinel) const
-    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start),
-                                                     ::cuda::std::forward<_BoundSentinel>(__bound_sentinel))))
-      -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Start&& __start, _BoundSentinel&& __bound_sentinel) noexcept(
+    noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start),
+                                            ::cuda::std::forward<_BoundSentinel>(__bound_sentinel))))
+    -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
   {
     return ::cuda::std::ranges::iota_view(
       ::cuda::std::forward<_Start>(__start), ::cuda::std::forward<_BoundSentinel>(__bound_sentinel));

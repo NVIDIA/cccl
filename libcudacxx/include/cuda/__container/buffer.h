@@ -340,7 +340,7 @@ public:
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(::cuda::std::ranges::__size_cpo{}(__range)),
+               static_cast<size_type>(::cuda::std::ranges::size(__range)),
                __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
@@ -348,7 +348,7 @@ public:
                   "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      ::cuda::std::ranges::__begin_cpo{}(__range),
+      ::cuda::std::ranges::begin(__range),
       ::cuda::std::ranges::__unwrap_end(__range),
       __unwrapped_begin(),
       __buf_.size());
@@ -363,8 +363,8 @@ public:
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(::cuda::std::ranges::__distance_cpo{}(
-                 ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))),
+               static_cast<size_type>(
+                 ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
                __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
@@ -372,7 +372,7 @@ public:
                   "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      ::cuda::std::ranges::__begin_cpo{}(__range),
+      ::cuda::std::ranges::begin(__range),
       ::cuda::std::ranges::__unwrap_end(__range),
       __unwrapped_begin(),
       __buf_.size());
@@ -1019,7 +1019,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 {
   auto __res =
     buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, mr::__memory_accessibility_from_properties<_FirstProperty, _RestProperties...>::value>(
+  __fill_n<_Tp, mr::__memory_accessibility_from_properties_v<_FirstProperty, _RestProperties...>>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
