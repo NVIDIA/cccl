@@ -1374,6 +1374,23 @@ auto on_throw(_Reaction&& __reaction,
     exception_policies::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
 }
 
+#ifdef ON_THROW
+#  error "CUDASTF's scope_guard.cuh defines ON_THROW; rename the prior definition"
+#endif
+//! @brief Statement-shaped on_throw: ON_THROW(policy-expression) { body };
+//! The policy expression is evaluated with `exception_policies` visible, so
+//! ON_THROW(notify & retry * 3 | subst(-1)) { return flaky(); }; needs no
+//! qualification. Expands to on_throw(...) << a reference-capturing lambda;
+//! the call-site location is captured exactly as with plain on_throw. The
+//! macro ends at `[&]()`: supply the body type by composition when needed,
+//! as in ON_THROW(retry | subst(-1)) -> int { throw failure(); };.
+#define ON_THROW(...)                                              \
+  ::cuda::experimental::stf::on_throw([&] {                        \
+    using namespace ::cuda::experimental::stf::exception_policies; \
+    return (__VA_ARGS__);                                          \
+  }())                                                             \
+    << [&]()
+
 #ifdef UNITTESTED_FILE
 UNITTEST("nothing")
 {
@@ -2411,6 +2428,44 @@ UNITTEST("repetition")
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(subst(1) * 3) << ...;
   //      -> "the repeated policy never declines; repetitions after the first are unreachable"
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("ON_THROW macro")
+{
+  using namespace cuda::experimental::stf; // deliberately NOT exception_policies:
+                                           // the macro must supply the vocabulary
+#  if _CCCL_HAS_EXCEPTIONS()
+  {
+    int calls   = 0;
+    const int v = ON_THROW(retry * 2 | subst(-1))->int
+    {
+      ++calls;
+      throw ::std::runtime_error("always"); // every path throws: the arrow supplies the type
+    };
+    EXPECT(v == -1);
+    EXPECT(calls == 3);
+  }
+  {
+    const int v = ON_THROW(subst(7))
+    {
+      return 1;
+    };
+    EXPECT(v == 1);
+  }
+  // Reference result via the composed arrow.
+  {
+    static int obj = 3;
+    int& r         = ON_THROW(subst(obj))->int& // lvalue substitution can serve a reference
+    {
+      if (obj == 3)
+      {
+        throw ::std::runtime_error("x");
+      }
+      return obj;
+    };
+    EXPECT(&r == &obj);
+  }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
