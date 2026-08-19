@@ -76,7 +76,7 @@ file(
   MAKE_DIRECTORY "${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
 )
 
-add_library(libnvcc SHARED compiler.cpp)
+add_library(libnvcc SHARED compiler.cpp exception_filter.cpp)
 
 target_include_directories(
   libnvcc

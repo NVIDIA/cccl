@@ -70,6 +70,8 @@ LLD_HAS_DRIVER(elf)
 #include <nvFatbin.h>
 #include <nvJitLink.h>
 
+#include "exception_filter.hpp"
+
 namespace libnvcc
 {
 static std::once_flag llvm_init_flag;
@@ -2379,6 +2381,7 @@ extern "C" libnvccResult libnvccDestroyProgram(libnvccProgram* prog)
 extern "C" libnvccResult libnvccCompileProgramToDeviceBitcode(
   libnvccProgram prog, const char* outputBitcodePath, int numOptions, const char* const* options)
 {
+  const libnvcc::UnhandledExceptionFilterGuard exception_filter_guard;
   if (!prog)
   {
     return LIBNVCC_ERROR_INVALID_PROGRAM;
@@ -2407,6 +2410,7 @@ extern "C" libnvccResult libnvccCompileProgramToObject(
   int numOptions,
   const char* const* options)
 {
+  const libnvcc::UnhandledExceptionFilterGuard exception_filter_guard;
   if (!prog)
   {
     return LIBNVCC_ERROR_INVALID_PROGRAM;
@@ -2437,6 +2441,7 @@ extern "C" libnvccResult libnvccLinkToSharedLibrary(
   int numOptions,
   const char* const* options)
 {
+  const libnvcc::UnhandledExceptionFilterGuard exception_filter_guard;
   if (!prog)
   {
     return LIBNVCC_ERROR_INVALID_PROGRAM;
@@ -2479,6 +2484,7 @@ extern "C" libnvccResult libnvccCreatePCH(
   int numOptions,
   const char* const* options)
 {
+  const libnvcc::UnhandledExceptionFilterGuard exception_filter_guard;
   if (!prog)
   {
     return LIBNVCC_ERROR_INVALID_PROGRAM;
