@@ -3,9 +3,24 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <thrust/tabulate.h>
+#include <cuda/algorithm>
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/functional>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/span>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/stream>
+
+#include <cstddef>
+#include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include "cub_test_macros.h"
+#include <c2h/checked_allocator.cuh>
 #include <catch2_test_device_scan.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -44,9 +59,9 @@ struct bicyclic_monoid_op
 
   pair_t __host__ __device__ operator()(pair_t v1, pair_t v2)
   {
-    auto [m, n] = v1;
-    auto [r, s] = v2;
-    auto min_nr = min_t{}(n, r);
+    auto [m, n]       = v1;
+    auto [r, s]       = v2;
+    const auto min_nr = min_t{}(n, r);
     return {m + r - min_nr, s + n - min_nr};
   }
 };
@@ -73,25 +88,65 @@ struct populate_input
 };
 }; // namespace impl
 
+namespace
+{
+[[nodiscard]] cuda::device_ref current_device()
+{
+  int device = 0;
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+  return cuda::device_ref{device};
+}
+
+template <typename T>
+void copy_to_device(cuda::stream_ref stream, cuda::std::span<const T> host_items, cuda::device_buffer<T>& device_items)
+{
+  REQUIRE(host_items.size() == device_items.size());
+  cuda::copy_bytes(stream, host_items, device_items);
+}
+
+template <typename T>
+void copy_to_host(cuda::stream_ref stream, const cuda::device_buffer<T>& device_items, std::vector<T>& host_items)
+{
+  REQUIRE(device_items.size() == host_items.size());
+  cuda::copy_bytes(stream, device_items, cuda::std::span<T>{host_items.data(), host_items.size()});
+  stream.sync();
+}
+} // namespace
+
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
   using pair_t = typename op_t::pair_t;
 
-  unsigned num_items = 1'234'567;
-  c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const unsigned num_items = 1'234'567;
+  const std::vector<unsigned> h_offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  const std::size_t num_segments = h_offsets.size() - 1;
+  const auto item_count          = static_cast<std::size_t>(num_items);
 
-  c2h::device_vector<pair_t> input(num_items);
-  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
-  c2h::device_vector<pair_t> output(input.size());
+  std::vector<pair_t> h_input(item_count);
+  const auto populate = impl::populate_input<unsigned>{};
+  for (std::size_t i = 0; i < h_input.size(); ++i)
+  {
+    h_input[i] = populate(i);
+  }
 
-  pair_t* d_input     = thrust::raw_pointer_cast(input.data());
-  pair_t* d_output    = thrust::raw_pointer_cast(output.data());
-  unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const auto device = current_device();
+  auto stream       = cuda::stream{device};
 
-  size_t tmp_size{};
-  cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+  auto offsets = c2h::make_device_buffer<unsigned>(stream, device, h_offsets.size(), cuda::no_init);
+  copy_to_device(stream, cuda::std::span<const unsigned>{h_offsets.data(), h_offsets.size()}, offsets);
+
+  auto input = c2h::make_device_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
+  copy_to_device(stream, cuda::std::span<const pair_t>{h_input.data(), h_input.size()}, input);
+
+  auto output = c2h::make_device_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
+
+  auto* const d_input   = input.data();
+  auto* const d_output  = output.data();
+  auto* const d_offsets = offsets.data();
+
+  std::size_t tmp_size{};
+  const cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr,
     tmp_size,
     d_input,
@@ -99,18 +154,19 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
     d_offsets,
     d_offsets + 1,
     static_cast<::cuda::std::int64_t>(num_segments),
-    op_t{});
+    op_t{},
+    stream.get());
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
 
   using cuda::std::byte;
 
-  c2h::device_vector<byte> tmp(tmp_size, thrust::no_init);
-  byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
+  auto tmp          = c2h::make_device_buffer<byte>(stream, device, tmp_size, cuda::no_init);
+  void* const d_tmp = tmp.data();
 
   REQUIRE(d_tmp != nullptr);
 
-  cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+  const cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_tmp,
     tmp_size,
     d_input,
@@ -118,16 +174,16 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
     d_offsets,
     d_offsets + 1,
     static_cast<::cuda::std::int64_t>(num_segments),
-    op_t{});
+    op_t{},
+    stream.get());
   REQUIRE(cudaSuccess == status2);
 
-  // transfer to host_vector is synchronizing
-  c2h::host_vector<pair_t> h_output(output);
-  c2h::host_vector<pair_t> h_input(input);
-  c2h::host_vector<pair_t> h_expected(input.size());
-  c2h::host_vector<unsigned> h_offsets(offsets);
+  std::vector<pair_t> h_output(h_input.size());
+  copy_to_host(stream, output, h_output);
 
-  for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+  std::vector<pair_t> h_expected(h_input.size());
+
+  for (std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],

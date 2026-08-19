@@ -4,10 +4,18 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_resource>
+#include <cuda/stream>
+
 #include <algorithm>
 #include <new> // std::bad_alloc
 
+#include <cuda_runtime_api.h>
+
 #include "cub_test_macros.h"
+#include <c2h/checked_allocator.cuh>
 
 std::size_t get_alloc_bytes()
 {
@@ -47,4 +55,19 @@ CUB_TEST("c2h::device_policy throws when requested allocations exceed free devic
     std::bad_alloc);
 
   thrust::detail::return_temporary_buffer(policy, buffer.first, buffer.second);
+}
+
+CUB_TEST("c2h::checked_device_memory_resource throws when requested allocations exceed free device memory",
+         "[c2h][checked_cuda_allocator][device_buffer]",
+         CUB_SMALL)
+{
+  STATIC_REQUIRE(cuda::mr::synchronous_resource_with<c2h::checked_device_memory_resource, cuda::mr::device_accessible>);
+
+  int current_device = 0;
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  const auto stream      = cuda::stream_ref{cudaStream_t{}};
+  const auto alloc_bytes = get_alloc_bytes();
+  REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, alloc_bytes, cuda::no_init),
+                    std::bad_alloc);
 }

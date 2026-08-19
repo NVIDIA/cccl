@@ -3,12 +3,24 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
+
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
 #include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/buffer>
+#  include <cuda/devices>
+#  include <cuda/memory_resource>
+#  include <cuda/std/initializer_list>
+#  include <cuda/std/utility>
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -141,10 +153,170 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 
   return cudaMalloc(ptr, bytes);
 }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+class scoped_current_device
+{
+public:
+  explicit scoped_current_device(int device)
+  {
+    const cudaError_t get_status = cudaGetDevice(&m_previous_device);
+    if (get_status != cudaSuccess)
+    {
+      throw std::bad_alloc{};
+    }
+
+    if (m_previous_device != device)
+    {
+      const cudaError_t set_status = cudaSetDevice(device);
+      if (set_status != cudaSuccess)
+      {
+        throw std::bad_alloc{};
+      }
+      m_restore = true;
+    }
+  }
+
+  scoped_current_device(const scoped_current_device&)            = delete;
+  scoped_current_device& operator=(const scoped_current_device&) = delete;
+
+  ~scoped_current_device() noexcept
+  {
+    if (m_restore)
+    {
+      (void) cudaSetDevice(m_previous_device);
+    }
+  }
+
+private:
+  int m_previous_device = 0;
+  bool m_restore        = false;
+};
+
+[[nodiscard]] inline bool is_valid_cuda_malloc_alignment(std::size_t alignment) noexcept
+{
+  return alignment != 0 && alignment <= ::cuda::mr::default_cuda_malloc_alignment
+      && (::cuda::mr::default_cuda_malloc_alignment % alignment == 0);
+}
+
+[[nodiscard]] inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
+{
+  if (!is_valid_cuda_malloc_alignment(alignment))
+  {
+    throw std::bad_alloc{};
+  }
+
+  if (bytes == 0)
+  {
+    return nullptr;
+  }
+
+  scoped_current_device guard{device};
+
+  void* ptr                = nullptr;
+  const cudaError_t status = checked_cuda_malloc(&ptr, bytes);
+  if (status != cudaSuccess)
+  {
+    (void) cudaGetLastError();
+    throw std::bad_alloc{};
+  }
+
+  return ptr;
+}
+
+inline void checked_device_deallocate(int device, void* ptr) noexcept
+{
+  if (ptr == nullptr)
+  {
+    return;
+  }
+
+  int previous_device       = 0;
+  bool restore              = false;
+  const auto get_status     = cudaGetDevice(&previous_device);
+  const bool switch_current = (get_status == cudaSuccess) && (previous_device != device);
+  if (switch_current)
+  {
+    restore = (cudaSetDevice(device) == cudaSuccess);
+  }
+
+  (void) cudaFree(ptr);
+
+  if (restore)
+  {
+    (void) cudaSetDevice(previous_device);
+  }
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 } // namespace detail
 
 using checked_cuda_memory_resource = THRUST_NS_QUALIFIER::system::cuda::detail::
   cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, THRUST_NS_QUALIFIER::cuda::pointer<void>>;
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+class checked_device_memory_resource : public ::cuda::mr::memory_resource_base<checked_device_memory_resource>
+{
+public:
+  _CCCL_HOST_API constexpr explicit checked_device_memory_resource(int device = 0) noexcept
+      : m_device(device)
+  {}
+
+  _CCCL_HOST_API constexpr explicit checked_device_memory_resource(::cuda::device_ref device) noexcept
+      : m_device(device.get())
+  {}
+
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  {
+    return ::c2h::detail::checked_device_allocate(m_device, bytes, alignment);
+  }
+
+  _CCCL_HOST_API void deallocate_sync(
+    void* ptr,
+    [[maybe_unused]] std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+  {
+    ::c2h::detail::checked_device_deallocate(m_device, ptr);
+  }
+
+  _CCCL_HOST_API friend constexpr void
+  get_property(checked_device_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
+
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  operator==(checked_device_memory_resource lhs, checked_device_memory_resource rhs) noexcept
+  {
+    return lhs.m_device == rhs.m_device;
+  }
+
+#  if _CCCL_STD_VER <= 2017
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  operator!=(checked_device_memory_resource lhs, checked_device_memory_resource rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
+
+private:
+  int m_device = 0;
+};
+
+template <typename T, typename... Args>
+[[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
+make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&... args)
+{
+  return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
+}
+
+template <typename T>
+[[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
+make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::std::initializer_list<T> values)
+{
+  return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, values);
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 template <typename T>
 class checked_cuda_allocator
