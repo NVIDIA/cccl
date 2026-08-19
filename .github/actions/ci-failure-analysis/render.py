@@ -389,12 +389,16 @@ def sanitize_slack(value, limit=1200):
     return value.replace("`", "'")
 
 
+def sanitize_slack_title(value):
+    return sanitize_slack(value, limit=100).replace("*", "∗")
+
+
 def render_slack_thread_reply(index, group):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
     lines = [
         (
-            f"*{index}. {sanitize_slack(group['title'], limit=100)}* — "
+            f"*{index}. {sanitize_slack_title(group['title'])}* — "
             f"{len(job_ids)} {job_label}"
         ),
         f"*Summary:* {sanitize_slack(group['explanation'], limit=500)}",
@@ -436,7 +440,7 @@ def render_slack_thread(
         job_ids = group["job_ids"]
         job_label = "job" if len(job_ids) == 1 else "jobs"
         parent_lines.append(
-            f"{index}. {sanitize_slack(group['title'], limit=100)} "
+            f"{index}. {sanitize_slack_title(group['title'])} "
             f"· {len(job_ids)} {job_label}"
         )
 
