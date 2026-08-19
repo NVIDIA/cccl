@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cuda_smoke_common.cuh"
+#include <cuda_smoke_common.cuh>
 
 // smoke test for async memory allocations from the default memory pool
 
@@ -17,7 +17,10 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
 
   int pools_supported = 0;
   CUDART_REQUIRE(cudaDeviceGetAttribute(&pools_supported, cudaDevAttrMemoryPoolsSupported, 0));
-  REQUIRE(pools_supported);
+  if (!pools_supported)
+  {
+    SKIP("Device does not support memory pools (cudaDevAttrMemoryPoolsSupported == 0).");
+  }
 
   cudaMemPool_t pool{};
   CUDART_REQUIRE(cudaDeviceGetDefaultMemPool(&pool, 0));

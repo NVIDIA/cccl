@@ -27,5 +27,6 @@ set(
 foreach (check IN LISTS cuda_smoke_checks)
   set(target cccl.test.cuda_smoke.${check})
   cccl_add_executable(${target} SOURCES ${check}.cu)
+  target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
   target_link_libraries(${target} PRIVATE Catch2::Catch2WithMain)
 endforeach()

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cuda_smoke_common.cuh"
+#include <cuda_smoke_common.cuh>
 
 TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
 {
