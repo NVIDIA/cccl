@@ -107,7 +107,7 @@ public:
   {
     // Calibration is diagnostic only; allocation failures must not interfere
     // with task teardown.
-    on_throw(notify, loc) << [&] {
+    on_throw(exception_policies::notify, loc) << [&] {
       auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
       auto it = statistics.find(key);

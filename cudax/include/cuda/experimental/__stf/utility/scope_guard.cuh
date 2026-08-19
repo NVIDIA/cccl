@@ -115,6 +115,17 @@ struct nothing final
 };
 
 /**
+ * @brief Policy vocabulary for @ref on_throw.
+ *
+ * Nested and deliberately non-inline: the names are short English words, and
+ * `using namespace cuda::experimental::stf;` is routine in user code -- it must not
+ * acquire them. This is the `std::literals` design with the inline decision inverted:
+ * whoever opens all of std wants its literals, while whoever opens stf is exactly who
+ * this namespace protects from the policy vocabulary.
+ */
+namespace exception_policies
+{
+/**
  * @brief A suppressing handler policy that reports an exception and resumes (`std::ignore`).
  *
  * `on_throw(notify) << callable` reports on `stderr`. A configured copy reports elsewhere:
@@ -189,10 +200,11 @@ inline const notify_t notify{};
  * `on_throw(abort) << callable`, in ternaries (`ready ? front() : abort()`), and as a bare
  * call `abort()`.
  *
- * Inside this namespace, plain `abort` finds this object before the C library's function. Code
- * that sees both through using-directives gets an ambiguity error rather than a silent pick,
- * and disambiguates with a using-declaration: `using cuda::experimental::stf::abort;`. A
- * block-scope using-declaration still hides `::abort`.
+ * Inside `exception_policies`, plain `abort` finds this object before the C library's function.
+ * Code that sees both through using-directives gets an ambiguity error rather than a silent
+ * pick, and disambiguates with a using-declaration:
+ * `using cuda::experimental::stf::exception_policies::abort;`. A block-scope using-declaration
+ * still hides `::abort`.
  *
  * `notify & abort` reports twice (documented). `abort | p` is a dead-| error (hook is
  * noexcept); `abort & p` is a dead-& error (answers `nothing`).
@@ -1179,59 +1191,6 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
- * @brief Creates a policy saying how to react if a callable throws.
- *
- * Apply the policy with `on_throw(policy) << callable`, which evaluates to the callable's
- * result when nothing goes wrong -- or to a type owned by a success hook, such as the
- * `std::exception_ptr` of `defer` or the `cuda::std::expected` of `as_expected`.
- *
- * A policy is an object exposing any of two optional capabilities, discovered by compile-time
- * introspection: the exception hook
- * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
- * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
- * a success hook `on_success(...)` that observes or replaces the result. The named policies are
- * @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer", @ref rethrow_t "rethrow",
- * @ref retry_t "retry", @ref expecting_t "expecting" / @ref as_expected, @ref noop_t "noop", and
- * @ref catch_only. Policies compose with `&` (sequence; the last element answers; non-final
- * answers are discarded) and `|` (alternation; the left may decline by throwing), and with
- * `*` (n-fold `|`).
- *
- * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
- * resumes with a default-constructed result; and anything else is taken as a substitution
- * value, exactly as `subst(value)` (including a user's nullary `nothing`-returning ending,
- * which dies silently -- pair with `notify &` to opt the report back in). A substitution
- * passed as an lvalue can serve a reference result, which the policy refers to rather than
- * copies:
- *
- * @code
- * int fallback = 42;
- * int& x = on_throw(fallback) << [] { return returns_a_reference(); }; // x is fallback on a throw
- * @endcode
- *
- * The callable itself must not be `noexcept`: an exception raised inside one ends the program
- * where it stands, leaving the policy unreachable, so such a pairing is rejected instead of
- * standing there looking like protection. Call such a callable directly.
- *
- * The location defaults to the call site; pass one explicitly to report a different site.
- *
- * @note When querying `noexcept(on_throw(policy) << f)` in a constant expression, pass a
- * location explicitly: nvcc's front-end with a gcc host reports the defaulted
- * `source_location::current()` argument as potentially throwing, tainting the query (the
- * call itself is `noexcept` either way).
- *
- * @param[in] __reaction The policy (or a reaction normalized into one), owned if passed an
- *            rvalue and referred to if passed an lvalue.
- * @param[in] __loc The location passed to exception hooks.
- * @return A policy object consumed by `operator<<`.
- */
-template <class _Reaction>
-auto on_throw(_Reaction&& __reaction,
-              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  return detail::__on_throw_policy{detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
-}
-
-/**
  * @brief Restricts a policy to exceptions matching any of `E1, E2, ...`: `catch_only<E...>(p)`
  * runs `p`'s exception path when the active exception matches any listed type by catch-clause
  * rules (same or publicly derived), and otherwise declines by rethrowing. The listed types may
@@ -1340,11 +1299,86 @@ auto operator*(int __n, _P&& __p)
 {
   return ::cuda::std::forward<_P>(__p) * __n;
 }
+} // namespace exception_policies
+
+// Tripwire: the abort policy moved to exception_policies. An
+// unqualified `abort` here would silently find ::abort (die with no
+// report). Any such use must fail to compile instead.
+template <class... _Ts>
+void abort(_Ts&&...) = delete;
+
+/**
+ * @brief Creates a policy saying how to react if a callable throws.
+ *
+ * Apply the policy with `on_throw(policy) << callable`, which evaluates to the callable's
+ * result when nothing goes wrong -- or to a type owned by a success hook, such as the
+ * `std::exception_ptr` of `defer` or the `cuda::std::expected` of `as_expected`.
+ *
+ * A policy is an object exposing any of two optional capabilities, discovered by compile-time
+ * introspection: the exception hook
+ * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
+ * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
+ * a success hook `on_success(...)` that observes or replaces the result. The named policies are
+ * @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer", @ref rethrow_t "rethrow",
+ * @ref retry_t "retry", @ref expecting_t "expecting" / @ref as_expected, @ref noop_t "noop", and
+ * @ref catch_only. Policies compose with `&` (sequence; the last element answers; non-final
+ * answers are discarded) and `|` (alternation; the left may decline by throwing), and with
+ * `*` (n-fold `|`).
+ *
+ * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
+ * resumes with a default-constructed result; and anything else is taken as a substitution
+ * value, exactly as `subst(value)` (including a user's nullary `nothing`-returning ending,
+ * which dies silently -- pair with `notify &` to opt the report back in). A substitution
+ * passed as an lvalue can serve a reference result, which the policy refers to rather than
+ * copies:
+ *
+ * @code
+ * int fallback = 42;
+ * int& x = on_throw(fallback) << [] { return returns_a_reference(); }; // x is fallback on a throw
+ * @endcode
+ *
+ * The callable itself must not be `noexcept`: an exception raised inside one ends the program
+ * where it stands, leaving the policy unreachable, so such a pairing is rejected instead of
+ * standing there looking like protection. Call such a callable directly.
+ *
+ * The location defaults to the call site; pass one explicitly to report a different site.
+ *
+ * Vocabulary visibility: the named policies live in the non-inline namespace
+ * `exception_policies`. Blessed patterns are a block-scope
+ * `using namespace cuda::experimental::stf::exception_policies;` at the function that
+ * configures sinks, or a namespace alias (`namespace pol = ...::exception_policies;`):
+ *
+ * @code
+ * using namespace cuda::experimental::stf::exception_policies;
+ * on_throw(notify & retry * 3 | subst(-1)) << flaky;
+ *
+ * namespace pol = cuda::experimental::stf::exception_policies;
+ * on_throw(pol::subst(0)) << flaky;
+ * @endcode
+ *
+ * @note When querying `noexcept(on_throw(policy) << f)` in a constant expression, pass a
+ * location explicitly: nvcc's front-end with a gcc host reports the defaulted
+ * `source_location::current()` argument as potentially throwing, tainting the query (the
+ * call itself is `noexcept` either way).
+ *
+ * @param[in] __reaction The policy (or a reaction normalized into one), owned if passed an
+ *            rvalue and referred to if passed an lvalue.
+ * @param[in] __loc The location passed to exception hooks.
+ * @return A policy object consumed by `operator<<`.
+ */
+template <class _Reaction>
+auto on_throw(_Reaction&& __reaction,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
+{
+  return exception_policies::detail::__on_throw_policy{
+    exception_policies::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
+}
 
 #ifdef UNITTESTED_FILE
 UNITTEST("nothing")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
   // No values: not constructible in any way.
   static_assert(!::std::is_default_constructible_v<nothing>);
   static_assert(!::std::is_copy_constructible_v<nothing>);
@@ -1357,16 +1391,17 @@ UNITTEST("nothing")
   // A never-returning call may be returned from a function of any result type, references
   // included; the conversion typechecks and never runs.
   [[maybe_unused]] const auto propagates = []() -> int& {
-    return cuda::experimental::stf::abort();
+    return cuda::experimental::stf::exception_policies::abort();
   };
   // A `nothing` expression also supplies one arm of a ternary, the other arm setting the type.
   const auto pick = [](bool ok) -> int {
-    return ok ? 42 : cuda::experimental::stf::abort();
+    return ok ? 42 : cuda::experimental::stf::exception_policies::abort();
   };
   EXPECT(pick(true) == 42);
 };
 
 // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+//  - abort();                                      // deleted tripwire: qualify exception_policies::abort
 //  - on_throw(abort & notify) << [] {};            // "policies after a never-returning policy are unreachable"
 //  - on_throw(defer) << [] { return 1; };          // result has no channel (on_success() only)
 //  - on_throw(notify) << []() noexcept {};         // existing rule, unchanged message
@@ -1380,10 +1415,11 @@ UNITTEST("nothing")
 UNITTEST("on_throw")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
   //! [on_throw]
   // The C library also declares ::abort, so under a using-directive the typed one is picked
   // by name; qualifying every use works as well.
-  using cuda::experimental::stf::abort;
+  using cuda::experimental::stf::exception_policies::abort;
   int value = 0;
   on_throw(abort) << [&] {
     value = 42; // would report and abort the application if this code threw
@@ -1562,6 +1598,7 @@ UNITTEST("on_throw")
 UNITTEST("policy algebra")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
 #  if _CCCL_HAS_EXCEPTIONS()
   // Vocabulary for observing effect order.
   ::std::string trace;
@@ -1756,10 +1793,10 @@ UNITTEST("policy algebra")
                 "rethrow is eliminated on the right");
 
   // noop & abort eliminates to abort itself -- no adapter in the type.
-  static_assert(::cuda::std::is_same_v<decltype(noop & abort), abort_t>,
+  static_assert(::cuda::std::is_same_v<decltype(noop & exception_policies::abort), abort_t>,
                 "abort is a policy; elimination returns it bare");
   {
-    using cuda::experimental::stf::abort; // block-scope: hides ::abort
+    using cuda::experimental::stf::exception_policies::abort; // block-scope: hides ::abort
     const int kept = on_throw(noop & abort) << [] {
       return 11;
     };
@@ -1803,6 +1840,7 @@ UNITTEST("policy algebra")
 UNITTEST("policy inventory")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
 #  if _CCCL_HAS_EXCEPTIONS()
   // subst: eager value, lazy callable, and exception-aware callable.
   int lazy_calls = 0;
@@ -1880,6 +1918,7 @@ UNITTEST("policy inventory")
 UNITTEST("re-running policies")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
 
 #  if _CCCL_HAS_EXCEPTIONS()
   // retry | retry: attempts add up (1 initial + 1 + 1).
@@ -2101,6 +2140,7 @@ struct __ut_poly_derived : __ut_poly_base
 UNITTEST("expecting")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
 
 #  if _CCCL_HAS_EXCEPTIONS()
   // Exact match: the exception object lands by value.
@@ -2223,6 +2263,7 @@ UNITTEST("expecting")
 UNITTEST("repetition")
 {
   using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
   static_assert(::cuda::std::is_empty_v<retry_t>, "retry is the stateless unit re-attempt");
 
 #  if _CCCL_HAS_EXCEPTIONS()
@@ -2421,7 +2462,7 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
   static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
-  on_throw(abort, loc) << f;
+  on_throw(exception_policies::abort, loc) << f;
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
   (void) loc;
   f();
