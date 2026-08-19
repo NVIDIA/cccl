@@ -1690,7 +1690,7 @@ struct histogram_tuning
   {
     constexpr auto sweep =
       cub::HistogramPrivatizationPolicy{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, sweep, sweep, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0};
+    return {sweep, sweep, sweep, 256, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0};
   }
 };
 
@@ -1712,6 +1712,7 @@ struct mixed_counter_histogram_tuning
       sweep,
       sweep,
       sweep,
+      256,
       512 * sizeof(unsigned int),
       228352,
       0,
@@ -1882,6 +1883,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
     {96, 3, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
     {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    256,
     2052,
     12345,
     2,
@@ -1894,35 +1896,36 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::HistogramPolicy{
-    .gmem                                                   = {.threads_per_block = 128,
-                                                               .items_per_thread  = 7,
-                                                               .vec_size          = 4,
-                                                               .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                                                               .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                                                               .rle_compress      = false,
-                                                               .work_stealing     = false},
-    .static_smem                                            = {.threads_per_block = 96,
-                                                               .items_per_thread  = 3,
-                                                               .vec_size          = 4,
-                                                               .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                                                               .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                                                               .rle_compress      = false,
-                                                               .work_stealing     = false},
-    .dynamic_smem                                           = {.threads_per_block = 128,
-                                                               .items_per_thread  = 7,
-                                                               .vec_size          = 4,
-                                                               .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-                                                               .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
-                                                               .rle_compress      = false,
-                                                               .work_stealing     = false},
-    .max_privatized_static_smem_single_channel_bytes        = 2052,
-    .max_privatized_dynamic_smem_single_channel_bytes       = 12345,
-    .static_smem_min_blocks_per_sm                          = 2,
-    .max_privatized_dynamic_smem_multi_channel_range_bytes  = 1024,
-    .max_privatized_dynamic_smem_2_channel_even_bytes       = 4096,
-    .max_privatized_dynamic_smem_3_channel_even_bytes       = 8192,
-    .max_privatized_dynamic_smem_4_channel_even_bytes       = 16384,
-    .max_output_histogram_bytes_for_init_kernel_pdl_trigger = 2048};
+    .gmem                                                  = {.threads_per_block = 128,
+                                                              .items_per_thread  = 7,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .static_smem                                           = {.threads_per_block = 96,
+                                                              .items_per_thread  = 3,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .dynamic_smem                                          = {.threads_per_block = 128,
+                                                              .items_per_thread  = 7,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .init_threads_per_block                                = 256,
+    .max_privatized_static_smem_single_channel_bytes       = 2052,
+    .max_privatized_dynamic_smem_single_channel_bytes      = 12345,
+    .static_smem_min_blocks_per_sm                         = 2,
+    .max_privatized_dynamic_smem_multi_channel_range_bytes = 1024,
+    .max_privatized_dynamic_smem_2_channel_even_bytes      = 4096,
+    .max_privatized_dynamic_smem_3_channel_even_bytes      = 8192,
+    .max_privatized_dynamic_smem_4_channel_even_bytes      = 16384,
+    .max_output_histogram_bytes_for_init_kernel_pdl        = 2048};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
