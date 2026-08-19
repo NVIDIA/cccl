@@ -29,7 +29,7 @@
 template <class T>
 TEST_HOST_DEVICE_FUNC bool equal(T lhs, T rhs)
 {
-  return ::__heq(lhs, rhs);
+  return cuda::std::__fp_cast<float>(lhs) == cuda::std::__fp_cast<float>(rhs);
 }
 
 template <class T>
