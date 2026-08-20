@@ -62,6 +62,7 @@ _CCCL_HOST_API void __call_once(__once_flag& __flag, _Fn&& __fn, _Args&&... __ar
     __flag.__state_ = 1;
   }
 }
+
 #endif // ^^^ _CCCL_FREESTANDING() ^^^
 
 _CCCL_END_NAMESPACE_CUDA
