@@ -267,10 +267,9 @@ inline constexpr uint16_t fp_custom_dynamic_size = static_cast<uint16_t>(-1);
 template <typename _Tp>
 inline constexpr bool __fp_custom_is_supported_fp_v =
   ::cuda::std::is_same_v<_Tp, double>
-// nvcc currently doesn't support _Float64 in device code.
-#if __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_HAS_FLOAT64()
   || ::cuda::std::is_same_v<_Tp, _Float64>
-#endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT64()
   ;
 
 //! @brief Unreduced field sizes of a base type
@@ -291,11 +290,11 @@ struct __fp_custom_native_sizes<double>
   static constexpr uint16_t __mant_size = 52;
 };
 
-#if __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_HAS_FLOAT64()
 template <>
 struct __fp_custom_native_sizes<_Float64> : __fp_custom_native_sizes<double>
 {};
-#endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT64()
 
 // Whether float holds every value the requested format can take. binary32 has 8 exponent
 // and 23 mantissa bits, and the reduction clamps whatever leaves the reduced exponent
@@ -550,13 +549,11 @@ template <typename _FpType, uint16_t _MantSize>
 {
   if constexpr (_MantSize == fp_custom_dynamic_size)
   {
-#if _CCCL_CUDA_COMPILATION()
+    // A host-only compilation drops the device branch in the preprocessor, before the
+    // device global it names has to exist.
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return __fp_custom_device_mantissa_size<_FpType>;),
                       (return __fp_custom_host_mantissa_size<_FpType>;))
-#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-    return __fp_custom_host_mantissa_size<_FpType>;
-#endif // !_CCCL_CUDA_COMPILATION()
   }
   else
   {
@@ -570,13 +567,9 @@ template <typename _FpType, uint16_t _ExpSize>
 {
   if constexpr (_ExpSize == fp_custom_dynamic_size)
   {
-#if _CCCL_CUDA_COMPILATION()
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return __fp_custom_device_exponent_size<_FpType>;),
                       (return __fp_custom_host_exponent_size<_FpType>;))
-#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-    return __fp_custom_host_exponent_size<_FpType>;
-#endif // !_CCCL_CUDA_COMPILATION()
   }
   else
   {
@@ -627,8 +620,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
     const int64_t __new_bias          = (1LL << (__exp_size - 1)) - 1;
     const int64_t __max_encoded       = (1LL << __exp_size) - 2;
 
-    uint64_t __bits     = __v;
-    uint64_t __exp_bits = (__bits & __exp_mask) >> 52;
+    const uint64_t __bits     = __v;
+    const uint64_t __exp_bits = (__bits & __exp_mask) >> 52;
 
     /* Infinity and NaN carry an all-ones exponent, which must not be mistaken
      * for a large finite exponent and clamped: that would turn NaN into INF.
@@ -638,8 +631,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
       return;
     }
 
-    int64_t __unbiased_exp = static_cast<int64_t>(__exp_bits) - __original_bias;
-    int64_t __new_exp_bits = __unbiased_exp + __new_bias;
+    const int64_t __unbiased_exp = static_cast<int64_t>(__exp_bits) - __original_bias;
+    const int64_t __new_exp_bits = __unbiased_exp + __new_bias;
 
     /* Check for overflow/underflow in reduced exponent range */
     if (__new_exp_bits > __max_encoded)
@@ -682,14 +675,14 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
      * - If discarded bits < 0.5: round down (truncate)
      * - If discarded bits == 0.5: round to nearest even
      */
-    uint64_t __exponent = (__v >> 52) & 0x7FF;
+    const uint64_t __exponent = (__v >> 52) & 0x7FF;
     if (__dropped_mant_size > 0 && __exponent != 0x7FF)
     { /* Skip NaN and Infinity */
       /* __half_mask: bit at position (bits_to_remove - 1), represents 0.5 */
-      uint64_t __half_mask = 1ULL << (__dropped_mant_size - 1);
+      const uint64_t __half_mask = 1ULL << (__dropped_mant_size - 1);
       /* __upper_mask: the two MSBs of the bits being removed */
-      uint64_t __upper_mask = __half_mask * 3;
-      uint64_t __two_bits   = __v & __upper_mask;
+      const uint64_t __upper_mask = __half_mask * 3;
+      const uint64_t __two_bits   = __v & __upper_mask;
 
       if (__two_bits & __half_mask)
       {
