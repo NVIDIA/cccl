@@ -91,7 +91,6 @@ public:
   using level_type            = typename _Group::level_type;
   using hierarchy_type        = typename _Group::hierarchy_type;
   using __mapping_result_type = _MappingResult;
-  using synchronizer_type     = typename _Group::synchronizer_type;
 
   group_view() = delete;
 

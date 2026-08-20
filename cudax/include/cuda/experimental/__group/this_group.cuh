@@ -120,12 +120,10 @@ public:
   using level_type            = _Level;
   using __mapping_result_type = __this_mapping_result<_Level>;
   using hierarchy_type        = _Hierarchy;
-  using synchronizer_type     = level_synchronizer;
 
 private:
   _Hierarchy __hier_;
   __mapping_result_type __mapping_result_{};
-  level_synchronizer __synchronizer_{};
   _SynchronizerInstance __synchronizer_instance_{};
 
 public:
@@ -148,11 +146,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const __mapping_result_type& __mapping_result() const noexcept
   {
     return __mapping_result_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API const synchronizer_type& synchronizer() const noexcept
-  {
-    return __synchronizer_;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
