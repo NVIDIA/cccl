@@ -15,7 +15,10 @@ Param(
     [switch]$GPU_ONLY = $false,
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,12 +49,12 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
     Write-Host "Running: $cmd"
     Invoke-Expression $cmd
 }
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 foreach ($preset in $presets) {
     test_preset "Thrust ($preset)" $preset

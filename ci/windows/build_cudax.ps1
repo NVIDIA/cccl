@@ -9,7 +9,10 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $CURRENT_PATH = Split-Path $pwd -leaf
@@ -19,7 +22,7 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cudax"
 $LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"

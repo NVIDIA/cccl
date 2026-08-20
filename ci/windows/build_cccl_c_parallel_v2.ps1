@@ -4,7 +4,10 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"

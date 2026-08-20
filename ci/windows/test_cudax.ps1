@@ -9,7 +9,10 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,11 +24,11 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 # Build first
-$buildCmd = "$PSScriptRoot/build_cudax.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+$buildCmd = "$PSScriptRoot/build_cudax.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
 Write-Host "Running: $buildCmd"
 Invoke-Expression $buildCmd
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cudax"
 test_preset "CUDA Experimental" "$PRESET"

@@ -9,7 +9,10 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,6 +37,9 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
+if ($ENABLE_TILE) {
+    $script:GLOBAL_CMAKE_OPTIONS += ' "-DCCCL_ENABLE_TILE=ON"'
+}
 if ($CUDA_ARCH) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
 }
