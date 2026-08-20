@@ -48,10 +48,12 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <any>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
@@ -1699,6 +1701,235 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
                   ::cuda::std::forward<_Cs>(__cs)...);
   }
 }
+/**
+ * @brief A type-erased exception policy: any policy behind one concrete type.
+ *
+ * Seen from the outside this is a run-of-the-mill exception policy that
+ * happens to answer `std::any` and to give nothing away statically. It
+ * carries the uniform three-argument hook, and -- like
+ * @ref cuda::experimental::stf::exception_policies::expecting_t "expecting" --
+ * it defines `on_success`, so it owns the expression type of any `on_throw`
+ * over it: the result is always `std::any`. Success delivers the callable's
+ * boxed result (or what the wrapped policy's success channel made of it); a
+ * handling policy delivers whatever it produced, boxed as its own type; a
+ * resuming or effect-only policy delivers an empty `std::any`; a policy that
+ * does not handle the exception rethrows, unchanged. Untangling the
+ * `std::any` is the user's job -- the visible price of opting into dynamism.
+ *
+ * Erasure is universal: @ref cuda::experimental::stf::exception_policies::type_erase
+ * wraps ANY policy by instantiating its templated hook once, at a callable
+ * proxy returning `std::any`. Retrying policies keep their internal loops,
+ * state, and rethrow-on-exhaustion; composites erase whole; a sink composes
+ * with `&`, `|`, `*`, `when`, `always` and re-erases, because it satisfies
+ * the same protocol every policy satisfies. As a non-owning arm under an
+ * expression type that does not accept `std::any` (e.g. `subst(3) | sink`
+ * with an `int` callable) the ordinary conversion static_assert fires; put
+ * the sink leftmost or nest, the same rule `expecting` lives by.
+ *
+ * Custom runtime policies derive from the public @ref sink_base: implement
+ * `hook` (and `clone`); `on_success` defaults to identity. Everything here
+ * is host-only and lives on the exception path; the success path pays one
+ * `std::any` box through `on_success`.
+ */
+class exception_sink
+{
+public:
+  //! @brief What the wrapped policy's answer was, statically, at erasure time.
+  enum class sink_kind
+  {
+    dies, //!< the hook never returns (answered `nothing`)
+    resumes, //!< resume: an empty `std::any` comes back (answered `std::ignore`)
+    effects, //!< side effect only: an empty `std::any` comes back (answered `void`)
+    produces //!< the `std::any` holds a value
+  };
+
+  //! @brief The erasure surface. Public: custom runtime policies derive from
+  //! it and implement `hook` (rethrow by throwing; hand back `std::any`,
+  //! empty meaning "no value") and `clone`; `on_success` defaults to identity.
+  struct sink_base
+  {
+    //! Set once at construction; introspection and composition-time checks.
+    const sink_kind kind;
+    //! Whether the exception path may rethrow (`false`: alternatives after
+    //! this sink are unreachable). Conservative for hand-written models.
+    const bool may_rethrow;
+
+    sink_base(sink_kind __kind, bool __may_rethrow)
+        : kind(__kind)
+        , may_rethrow(__may_rethrow)
+    {}
+    virtual ~sink_base()             = default;
+    virtual sink_base* clone() const = 0;
+    virtual ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) = 0;
+    virtual ::std::any on_success(::std::any __boxed)
+    {
+      return __boxed;
+    }
+    virtual ::std::any on_success()
+    {
+      return {};
+    }
+  };
+
+private:
+  //! The one universal erasure path: instantiate the wrapped policy's
+  //! templated hook at the boxing proxy; derive all metadata statically.
+  template <class _P>
+  struct __model final : sink_base
+  {
+    _P __p_;
+
+    using __ans_t = detail::__hook_answer_t<_P, ::std::function<::std::any()>>;
+    static constexpr sink_kind __skind =
+      ::cuda::std::is_void_v<__ans_t>  ? sink_kind::effects
+      : detail::__is_ignore_v<__ans_t> ? sink_kind::resumes
+      : ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__ans_t>, nothing>
+        ? sink_kind::dies
+        : sink_kind::produces;
+
+    explicit __model(_P __p)
+        : sink_base(__skind, !detail::__exception_path_nothrow_v<_P, ::std::function<::std::any()>>)
+        , __p_(::cuda::std::move(__p))
+    {}
+
+    sink_base* clone() const override
+    {
+      return new __model(*this); // a fresh policy copy: re-armed state
+    }
+
+    ::std::any
+    hook(const ::std::exception* __e, ::cuda::std::source_location __loc, ::std::function<::std::any()>& __fn) override
+    {
+      if constexpr (__skind == sink_kind::effects || __skind == sink_kind::resumes)
+      {
+        static_cast<void>(__p_(__e, __loc, __fn));
+        return {};
+      }
+      else if constexpr (__skind == sink_kind::dies)
+      {
+        static_cast<void>(__p_(__e, __loc, __fn));
+        _CCCL_UNREACHABLE();
+      }
+      else if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__ans_t>, ::std::any>)
+      {
+        return __p_(__e, __loc, __fn); // the value flowed through the callable; no re-box
+      }
+      else
+      {
+        return ::std::any(__p_(__e, __loc, __fn)); // a stored value, boxed as its own type
+      }
+    }
+
+    ::std::any on_success(::std::any __boxed) override
+    {
+      if constexpr (detail::__has_on_success_with<_P, ::std::any>)
+      {
+        return ::std::any(__p_.on_success(::std::move(__boxed)));
+      }
+      else
+      {
+        // Identity. NOTE: a wrapped success channel that cannot accept
+        // `std::any` (it needs the real type, like remember's store) lands
+        // here too -- its success feature does not survive erasure.
+        return __boxed;
+      }
+    }
+    ::std::any on_success() override
+    {
+      if constexpr (detail::__has_on_success_void<_P>)
+      {
+        return ::std::any(__p_.on_success());
+      }
+      else
+      {
+        return {};
+      }
+    }
+  };
+
+  ::std::unique_ptr<sink_base> __p_;
+
+public:
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  //! @brief Erase a policy. Prefer the @ref type_erase factory, which also
+  //! normalizes the historical reactions.
+  template <class _P,
+            ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_P>
+                                       && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, exception_sink>,
+                                     int> = 0>
+  explicit exception_sink(_P __p)
+      : __p_(new __model<_P>(::cuda::std::move(__p)))
+  {}
+
+  //! @brief Adopt a custom model derived from @ref sink_base.
+  explicit exception_sink(::std::unique_ptr<sink_base> __custom)
+      : __p_(::cuda::std::move(__custom))
+  {
+    _CCCL_ASSERT(__p_, "exception_sink requires a non-null model");
+  }
+
+  exception_sink(const exception_sink& __other)
+      : __p_(__other.__p_->clone())
+  {}
+  exception_sink(exception_sink&&) noexcept            = default;
+  exception_sink& operator=(exception_sink&&) noexcept = default;
+  exception_sink& operator=(const exception_sink& __other)
+  {
+    __p_.reset(__other.__p_->clone());
+    return *this;
+  }
+
+  sink_kind kind() const noexcept
+  {
+    return __p_->kind;
+  }
+  bool may_rethrow() const noexcept
+  {
+    return __p_->may_rethrow;
+  }
+
+  //! @brief The uniform hook: always answers `std::any`. A void callable
+  //! boxes as an empty `std::any`, which also admits the machinery's
+  //! callable-independent presence probe.
+  template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
+  ::std::any operator()(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    ::std::function<::std::any()> __proxy = [&__fn]() -> ::std::any {
+      if constexpr (::cuda::std::is_void_v<_Raw>)
+      {
+        __fn();
+        return {};
+      }
+      else
+      {
+        return ::std::any(__fn());
+      }
+    };
+    return __p_->hook(__e, __loc, __proxy); // rethrow = throws out, the unchanged protocol
+  }
+
+  //! @brief Expression ownership: like `expecting`, the sink owns the
+  //! `on_throw` result type, which is therefore `std::any` -- uniformly.
+  template <class _R>
+  ::std::any on_success(_R&& __r)
+  {
+    return __p_->on_success(::std::any(::cuda::std::forward<_R>(__r)));
+  }
+  ::std::any on_success()
+  {
+    return __p_->on_success();
+  }
+};
+
+//! @brief Erase any policy (or historical reaction) into an @ref exception_sink.
+template <class _P>
+exception_sink type_erase(_P&& __p)
+{
+  return exception_sink{detail::__normalize(::cuda::std::forward<_P>(__p))};
+}
 } // namespace exception_policies
 
 // Tripwire: the abort policy moved to exception_policies. An
@@ -3143,6 +3374,141 @@ UNITTEST("ON_THROW macro")
       return obj;
     };
     EXPECT(&r == &obj);
+  }
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("type erasure")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+#  if _CCCL_HAS_EXCEPTIONS()
+  // Universality: retry * 3 erased generically -- internal loop, state,
+  // and rethrow-on-exhaustion preserved. The sink owns the expression
+  // type, so on_throw yields std::any; the user untangles.
+  {
+    int calls          = 0;
+    const ::std::any x = on_throw(type_erase(retry * 3)) << [&]() -> int {
+      if (++calls < 3)
+      {
+        throw ::std::runtime_error("flaky");
+      }
+      return 42;
+    };
+    EXPECT(::std::any_cast<int>(x) == 42);
+    EXPECT(calls == 3);
+  }
+  // Exhaustion rethrows into the next arm; the sink (leftmost) owns the
+  // expression type, so the concrete arm's value arrives boxed.
+  {
+    int calls          = 0;
+    const ::std::any x = on_throw(type_erase(retry * 3) | subst(-7)) << [&]() -> int {
+      ++calls;
+      throw ::std::runtime_error("always");
+    };
+    EXPECT(::std::any_cast<int>(x) == -7);
+    EXPECT(calls == 4); // one initial attempt + three retries
+  }
+  // One sink object serves callables of different result types.
+  {
+    exception_sink r = type_erase(retry * 2);
+    {
+      int calls          = 0;
+      const ::std::any x = on_throw(r) << [&]() -> int {
+        if (++calls < 2)
+        {
+          throw ::std::runtime_error("flaky");
+        }
+        return 5;
+      };
+      EXPECT(::std::any_cast<int>(x) == 5);
+    }
+    {
+      int calls          = 0;
+      const ::std::any x = on_throw(r) << [&]() -> ::std::string {
+        if (++calls < 2)
+        {
+          throw ::std::runtime_error("flaky");
+        }
+        return "ok";
+      };
+      EXPECT(::std::any_cast<::std::string>(x) == "ok");
+    }
+  }
+  // A stored value arrives as its own type; untangling is the user's job.
+  {
+    const ::std::any x = on_throw(type_erase(subst(9))) << []() -> long {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(::std::any_cast<int>(x) == 9); // the stored int, not long
+    EXPECT(::std::any_cast<long>(&x) == nullptr);
+  }
+  // Resume over a void callable: empty std::any on both paths.
+  {
+    int hits           = 0;
+    const ::std::any x = on_throw(type_erase(::std::ignore)) << [&]() -> void {
+      ++hits;
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(hits == 1);
+    EXPECT(!x.has_value());
+  }
+  // Metadata: const fields, derived at erasure time.
+  EXPECT(type_erase(retry * 3).kind() == exception_sink::sink_kind::produces);
+  EXPECT(type_erase(subst(9)).kind() == exception_sink::sink_kind::produces);
+  EXPECT(type_erase(::std::ignore).kind() == exception_sink::sink_kind::resumes);
+  EXPECT((type_erase(translate<::std::runtime_error, ::std::logic_error>).kind() == exception_sink::sink_kind::dies));
+  EXPECT(type_erase(retry * 3).may_rethrow());
+  EXPECT(!type_erase(::std::ignore).may_rethrow());
+  // Re-erasure: a single box; on_success chains through the boundaries.
+  {
+    const ::std::any x = on_throw(type_erase(type_erase(subst(5)))) << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(::std::any_cast<int>(x) == 5);
+  }
+  // Dynamic and static policies side by side in one expression.
+  {
+    const ::std::any x =
+      on_throw(when(
+        [] {
+          return true;
+        },
+        type_erase(subst(11))))
+      << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(::std::any_cast<int>(x) == 11);
+  }
+  // The success path delivers the callable's boxed result.
+  {
+    const ::std::any x = on_throw(type_erase(subst(1))) << []() -> int {
+      return 30; // no throw
+    };
+    EXPECT(::std::any_cast<int>(x) == 30);
+  }
+  // A custom model derived from the public sink_base.
+  {
+    struct halving_sink final : exception_sink::sink_base
+    {
+      halving_sink()
+          : sink_base(exception_sink::sink_kind::produces, false)
+      {}
+      sink_base* clone() const override
+      {
+        return new halving_sink();
+      }
+      ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) override
+      {
+        return ::std::any(21);
+      }
+    };
+    exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
+    const ::std::any x = on_throw(custom) << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(::std::any_cast<int>(x) == 21);
+    EXPECT(!custom.may_rethrow());
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
