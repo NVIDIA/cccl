@@ -147,6 +147,33 @@ groups for the next run. They also block merge while present, forcing a clean fi
 The recognized tags and their semantics are catalogued in :ref:`infra-ci-skip-tags`.
 ``[bench-only]`` is shorthand for the common benchmark-request combination.
 
+Jobs that opt out of the devcontainer
+-------------------------------------
+
+Most jobs run inside the CCCL devcontainer selected by their ``ctk`` and ``cxx`` tags.
+A matrix job may instead set ``devcontainer: false``, which runs its command directly on
+the CI runner and makes the command responsible for providing its own environment.
+
+The Python test lanes use this. ``cuda.compute`` is meant to work with nothing installed
+beyond its declared pip dependencies -- no host compiler and no system CUDA toolkit --
+but the devcontainer supplies both, so a test running there cannot distinguish "we depend
+only on our wheels" from "we happened to find ``gcc`` and ``/usr/local/cuda`` lying
+around". These lanes therefore fetch the wheel artifact on the runner (which needs
+``gh``) and then hand the test payload to a minimal container via
+``ci/util/python/run_in_minimal_container.sh``, where an undeclared dependency fails
+loudly. The same applies to both the v1 (NVRTC) and v2 (HostJIT) backends.
+
+Three Python lanes deliberately keep the devcontainer, because they genuinely need what
+it provides:
+
+* ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
+  toolkit.
+* ``test_headers`` -- compiles C++, so it needs a host compiler.
+* ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
+
+``devcontainer: false`` is Linux-only; ``build-workflow.py`` raises if it is combined with
+an MSVC host compiler, since ``workflow-run-job-windows`` does not honor the flag.
+
 Reproducing a failure locally
 -----------------------------
 

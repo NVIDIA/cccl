@@ -14,6 +14,13 @@ inputs:
   image:
     description: "The Docker image to use."
     required: true
+  devcontainer:
+    description: >-
+      "true" (default) to run the command inside the CCCL devcontainer.
+      "false" to run it directly on the CI runner; the command is then
+      responsible for providing its own environment.
+    required: false
+    default: "true"
   runner:
     description: "The GHA runs-on value."
     required: true
@@ -45,6 +52,7 @@ runs:
         echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
         echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
+        echo "JOB_DEVCONTAINER=${{inputs.devcontainer}}" | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
         echo "JOB_ENVIRONMENT=${ENVIRONMENT}"      | tee -a $GITHUB_ENV
@@ -140,8 +148,14 @@ runs:
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
           echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
           echo ""
-          echo "2. Run the failed command inside the same Docker container used by this CI job:"
-          echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
+          if [[ "${JOB_DEVCONTAINER}" == "false" ]]; then
+            echo "2. Run the failed command directly (this job does not use the devcontainer;"
+            echo "   the command provisions its own container):"
+            echo "   ${COMMAND}"
+          else
+            echo "2. Run the failed command inside the same Docker container used by this CI job:"
+            echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
+          fi
           echo ""
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
@@ -201,6 +215,27 @@ runs:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
+        if [[ "${JOB_DEVCONTAINER}" == "false" ]]; then
+          # This job opted out of the devcontainer: run the command directly on
+          # the runner. The command is responsible for providing its own
+          # execution environment (the Python test lanes hand the actual test
+          # payload to a minimal container of their own). Everything the CI
+          # harness itself needs -- gh, jq, tar, git, docker -- is already
+          # present on the runner and is used by this action's other steps.
+          #
+          # launch.sh normally injects these; do it by hand for this path.
+          export HOST_WORKSPACE="${{github.workspace}}"
+          if [[ -n "${JOB_ENVIRONMENT}" && "${JOB_ENVIRONMENT}" != "null" && "${JOB_ENVIRONMENT}" != "[]" ]]; then
+            while IFS= read -r env_kv; do
+              export "${env_kv?}"
+            done < <(echo "${JOB_ENVIRONMENT}" | jq -r '.[]')
+          fi
+
+          ( # Subshell to contain the set -x log
+            set -x
+            ./ci.sh
+          )
+        else
         # Launch this container using the host's docker daemon
         ( # Subshell to contain the set -x log
           set -x
@@ -229,6 +264,7 @@ runs:
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
         )
+        fi
 
         # Dump artifact matrix for upload step:
         printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"

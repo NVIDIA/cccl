@@ -79,6 +79,8 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['test_py_par'], project: 'python',    ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test_py_par'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -139,29 +141,33 @@ workflows:
     # Python against c.parallel v2 (HostJIT-based). Single point of coverage
     # for the v2 Python path; the main `python` matrix continues to test
     # against v1 until v2 replaces it.
-    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: ['12.X', '13.X'], cxx: 'gcc13', gpu: 't4'}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['l4', 'h100']}
     # Python -- pinned to gcc13 / msvc2022 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X','13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: ['t4', 'rtxa6000', 'rtxpro6000'], cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X','13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X','13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', py_version: '3.14', gpu: 'h100', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: ['t4', 'rtxa6000', 'rtxpro6000'], cxx: 'gcc13', devcontainer: false}
     # cuda.stf._experimental -- pinned to gcc13, Linux only. The cuda_cccl and
     # cuda_stf wheels both come from the auto-derived combined producer
     # (build_py_stf_wheel), so no companion `test` lane is needed here.
     - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100_2gpu', cxx: 'gcc13'}
     # Free-threaded Python currently supports only the minimal cuda.compute extra on Linux.
-    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022'}
     - {jobs: ['test_py_compute_minimal'], project: 'python_tsan', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
     # Deliberately unpinned: py_ctk_mode 'latest' skips the CTK pin so pip
     # resolves the latest minor -- catching breakage a plain `pip install
     # cuda-cccl[cu12]/[cu13]` would hit before the container CTK bumps.
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'latest'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13', py_ctk_mode: 'latest', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'msvc2022', py_ctk_mode: 'latest'}
     # sysctk: install the sysctk extras (system-provided CTK, no pip cuda-toolkit)
     # rather than cu*.
     # Full test on 3.14, minimal (numba-free) on 3.14t; all CTKs, Linux+Windows.
@@ -320,17 +326,19 @@ workflows:
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['t4', 'l4', 'h100']}
     # Python -- pinned to gcc13 / msvc2022 on Linux for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: ['t4', 'rtxa6000'], cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: ['t4', 'rtxa6000'], cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13', devcontainer: false}
     # cuda.stf._experimental -- pinned to gcc13, Linux only
     - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.14'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     # Python free-threaded (3.14t) minimal lanes -- mirrors the pull_request rows
     # so FT regressions (e.g. from dependency bumps) surface between PRs.
-    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
     - {jobs: ['test_py_compute_minimal'], project: 'python_tsan', ctk: '13.X', py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
@@ -429,11 +437,13 @@ workflows:
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['t4', 'l4', 'h100']}
     # Python -- pinned to gcc13 / msvc2022 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.14'], gpu: 't4', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'rtxa6000', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.14'], gpu: 't4', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'rtxa6000', cxx: 'gcc13', devcontainer: false}
+    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'rtxpro6000', cxx: 'gcc13', devcontainer: false}
     # cuda.stf._experimental -- pinned to gcc13, Linux only
     - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.14'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
@@ -842,6 +852,13 @@ tags:
   # If set, passed to the script with `-ctk-mode <mode>`. Exploded if an array,
   # e.g. `['pinned','sysctk']`.
   py_ctk_mode: { required: false }
+  # Set to `false` to run the job's command directly on the CI runner instead of
+  # inside the CCCL devcontainer. Lanes that opt out are responsible for
+  # providing their own execution environment -- the Python test lanes use this
+  # to run pytest in a minimal container (no host compiler, no system CTK) so
+  # that any reliance on undeclared system dependencies fails loudly.
+  # Consumer-only: producer (wheel build) jobs always use the devcontainer.
+  devcontainer: { required: false }
   # C++ standard
   # If set to 'all', all stds supported by the ctk/compilers/project are used.
   # If set to 'min', 'max', or 'minmax', the minimum, maximum, or both stds are used.

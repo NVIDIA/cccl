@@ -498,7 +498,17 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
     return host_compiler["container_tag"] + host_compiler["version"]
 
 
+def job_uses_devcontainer(matrix_job):
+    "True unless the matrix job explicitly opted out via `devcontainer: false`."
+    return matrix_job.get("devcontainer", True)
+
+
 def generate_dispatch_job_image(matrix_job, job_type):
+    # Jobs that opt out of the devcontainer run directly on the CI runner and
+    # provide their own environment, so there is no image to select.
+    if not job_uses_devcontainer(matrix_job):
+        return "host"
+
     devcontainer_version = matrix_yaml["devcontainer_version"]
     ctk = matrix_job["ctk"]
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
@@ -605,12 +615,23 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
 
 def generate_dispatch_job_json(matrix_job, job_type):
+    # Only workflow-run-job-linux honors `devcontainer`. Fail loudly rather than
+    # let a Windows job silently keep using the devcontainer while the matrix
+    # claims otherwise. Checked here because `cxx` is fully exploded by now.
+    if not job_uses_devcontainer(matrix_job) and is_windows(matrix_job):
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job, "'devcontainer: false' is only supported on Linux jobs."
+            )
+        )
+
     return {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),
         "host": generate_dispatch_job_host_compiler(matrix_job, job_type),
         "name": generate_dispatch_job_name(matrix_job, job_type),
         "runner": generate_dispatch_job_runner(matrix_job, job_type),
         "image": generate_dispatch_job_image(matrix_job, job_type),
+        "devcontainer": job_uses_devcontainer(matrix_job),
         "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
@@ -662,6 +683,15 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
         if producer_matrix_job is matrix_job:
             producer_matrix_job = copy.deepcopy(matrix_job)
         del producer_matrix_job["py_ctk_mode"]
+
+    # `devcontainer` is likewise consumer-only. The wheel build needs the
+    # devcontainer's docker-outside-of-docker setup, and a test lane opting into
+    # a minimal runtime environment says nothing about how its wheel is built.
+    # Dropping it also lets minimal and non-minimal test lanes share one producer.
+    if "devcontainer" in producer_matrix_job:
+        if producer_matrix_job is matrix_job:
+            producer_matrix_job = copy.deepcopy(matrix_job)
+        del producer_matrix_job["devcontainer"]
 
     producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 

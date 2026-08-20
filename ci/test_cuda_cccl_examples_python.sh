@@ -8,20 +8,33 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
+
+# See test_cuda_compute_python.sh: wheel provisioning needs gh/docker, which the
+# minimal test container does not have, so it happens before the handoff.
+if [[ -z "${CCCL_INSIDE_MINIMAL_CONTAINER:-}" ]]; then
+  # Fetch or build the cuda_cccl wheel:
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
+    "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
+  else
+    "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
+  fi
+
+  # Hand the rest of this script to a container that has nothing in it but
+  # Python, so that any reliance on a host compiler or a system CUDA toolkit
+  # fails here instead of silently passing. Lanes opt in with `devcontainer:
+  # false` in ci/matrix.yaml; JOB_DEVCONTAINER is set by the CI action.
+  if [[ "${JOB_DEVCONTAINER:-true}" == "false" ]]; then
+    exec "$ci_dir/util/python/run_in_minimal_container.sh" "$0" "$@"
+  fi
+fi
+
 # Pin cuda-toolkit to the container's CTK minor and set cuda_version /
 # cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
 pin_cuda_toolkit "${ctk_mode}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
-
-# Fetch or build the cuda_cccl wheel:
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
-else
-  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
-fi
 
 # Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
 # pytest-benchmark for the host-overhead benchmark smoke test below. (cuda-bench,
