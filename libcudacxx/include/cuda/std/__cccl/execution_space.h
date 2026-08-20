@@ -34,7 +34,7 @@
 #  define _CCCL_HOST_DEVICE
 #endif // !_CCCL_CUDA_COMPILATION
 
-#if _CCCL_TILE_COMPILATION()
+#if _CCCL_TILE_COMPILATION() && _CCCL_CUDA_COMPILER(NVCC, >, 13, 4)
 #  define _CCCL_TILE __tile__
 #else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
 #  define _CCCL_TILE
