@@ -52,7 +52,7 @@ namespace
 CRITICAL_SECTION g_report_lock;
 LONG g_reported = 0;
 
-[[nodiscard]] bool is_fatal(DWORD code)
+[[nodiscard]] bool is_fatal(DWORD code) noexcept
 {
   switch (code)
   {
@@ -73,7 +73,7 @@ LONG g_reported = 0;
 
 //! Module name plus offset, resolved without dbghelp so it still works when no
 //! symbols are available.
-void print_module_offset(void* addr)
+void print_module_offset(void* addr) noexcept
 {
   HMODULE module = nullptr;
   if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -96,7 +96,7 @@ void print_module_offset(void* addr)
   std::fprintf(stderr, "<unknown module>");
 }
 
-void print_stack(CONTEXT* context)
+void print_stack(CONTEXT* context) noexcept
 {
   const HANDLE process = GetCurrentProcess();
   const HANDLE thread  = GetCurrentThread();
@@ -169,7 +169,7 @@ void print_stack(CONTEXT* context)
   std::fflush(stderr);
 }
 
-LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info)
+LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info) noexcept
 {
   const EXCEPTION_RECORD* const record = info ? info->ExceptionRecord : nullptr;
   if (record == nullptr || !is_fatal(record->ExceptionCode))
