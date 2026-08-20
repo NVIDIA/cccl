@@ -419,7 +419,7 @@ def render_slack_evidence(group):
             rendered_line = sanitize_slack(line, limit=700)
             if not rendered_line:
                 continue
-            return f"*Evidence:* {rendered_line}"
+            return f"*Evidence:*\n```\n{rendered_line}\n```"
     return None
 
 
