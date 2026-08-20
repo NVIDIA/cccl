@@ -148,7 +148,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
     PolicySelector));
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
-void run_dispatch_scan(
+_CCCL_HOST_API void run_dispatch_scan(
   DispatchT dispatch_fn,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
@@ -162,7 +162,7 @@ void run_dispatch_scan(
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
   const auto d_input       = input.data();
-  auto d_output            = output.data();
+  const auto d_output      = output.data();
   const auto d_offsets     = offsets.data();
   const auto d_out_offsets = out_offsets.data();
 
@@ -185,7 +185,7 @@ void run_dispatch_scan(
 }
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
-void run_dispatch_scan(
+_CCCL_HOST_API void run_dispatch_scan(
   DispatchT dispatch_fn,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
@@ -846,7 +846,7 @@ template <typename DispatchT,
           typename OutputIterT,
           typename ScanOpT,
           typename InitValueT>
-void run_dispatch_scan_iterator(
+_CCCL_HOST_API void run_dispatch_scan_iterator(
   DispatchT dispatch_fn,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
@@ -859,7 +859,7 @@ void run_dispatch_scan_iterator(
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
   const auto d_input   = input_it;
-  auto d_output        = output_it;
+  const auto d_output  = output_it;
   const auto d_offsets = offsets.data();
 
   dispatch_fn(
