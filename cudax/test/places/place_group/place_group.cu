@@ -23,7 +23,6 @@
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 
-#include <cstdio>
 
 using namespace cuda::experimental::places;
 
@@ -40,7 +39,6 @@ __global__ void touch_kernel(int* ptr, int n)
 
 void test_construction_and_factories()
 {
-  printf("== construction and factories ==\n");
 
   // From an explicit vector of places
   place_group g1(places_from_devices({0}));
@@ -77,7 +75,6 @@ void test_construction_and_factories()
 
 void test_streams()
 {
-  printf("== per-place streams ==\n");
 
   auto group = place_group::by_locality_domains();
 
@@ -127,7 +124,6 @@ void test_streams()
 
 void test_memory_resources()
 {
-  printf("== per-place memory resources ==\n");
 
   auto group = place_group::by_devices({0});
 
@@ -156,7 +152,6 @@ void test_memory_resources()
 
 void test_borrowing_from_stf()
 {
-  printf("== borrowing from an STF async_resources_handle ==\n");
 
   using ::cuda::experimental::stf::async_resources_handle;
 
@@ -193,7 +188,6 @@ void test_borrowing_from_stf()
 
 void test_move_semantics()
 {
-  printf("== move semantics ==\n");
 
   place_group g(places_from_devices({0}));
   cudaStream_t s = g.get_stream(0);
@@ -208,7 +202,6 @@ void test_move_semantics()
 
 int main()
 {
-  printf("=== place_group tests ===\n\n");
 
   cuda_safe_call(cudaSetDevice(0));
 
@@ -218,6 +211,5 @@ int main()
   test_borrowing_from_stf();
   test_move_semantics();
 
-  printf("\n=== All place_group tests PASSED ===\n");
   return 0;
 }
