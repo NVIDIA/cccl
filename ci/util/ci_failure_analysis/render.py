@@ -408,6 +408,11 @@ def sanitize_slack_link_label(value, limit):
     return sanitize_slack(value, limit).replace("|", "¦")
 
 
+def render_slack_job_link(job_id, jobs, repository, run_id):
+    label = sanitize_slack_link_label(jobs[job_id], limit=300)
+    return f"<{job_url(repository, run_id, job_id)}|{label}>"
+
+
 def render_slack_evidence(group):
     for evidence in group["evidence"]:
         for line in evidence["lines"]:
@@ -439,7 +444,9 @@ def render_slack_sources(group, repository, head_sha):
 def render_slack_thread_reply(
     index,
     group,
+    jobs,
     repository,
+    run_id,
     head_sha,
 ):
     job_ids = group["job_ids"]
@@ -458,6 +465,11 @@ def render_slack_thread_reply(
     if sources:
         lines.append(sources)
     lines.append(f"*Next:* {sanitize_slack(group['next_steps'], limit=700)}")
+    lines.append("*Jobs:*")
+    lines.extend(
+        f"• {render_slack_job_link(job_id, jobs, repository, run_id)}"
+        for job_id in job_ids
+    )
 
     reply = "\n".join(lines) + "\n"
     if len(reply) > SLACK_REPLY_LIMIT:
@@ -469,6 +481,7 @@ def render_slack_thread_reply(
 
 def render_slack_thread(
     analysis,
+    jobs,
     repository,
     run_id,
     run_number,
@@ -510,7 +523,9 @@ def render_slack_thread(
         render_slack_thread_reply(
             index,
             group,
+            jobs,
             repository,
+            run_id,
             head_sha,
         )
         for index, group in enumerate(analysis["groups"], start=1)
@@ -549,6 +564,7 @@ def main():
     else:
         slack_thread = render_slack_thread(
             analysis,
+            jobs,
             args.repository,
             run_id,
             str(run["number"]),
