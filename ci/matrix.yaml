@@ -65,6 +65,9 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # Reproduce the failing job only:
+    # libcu++ nvcc Clang / RA / [CTK13.3 Clang21 C++20] Test(amd64, T4)
+    - {jobs: ['test'], project: 'libcudacxx', std: 20, ctk: '13.3', cxx: 'clang21', gpu: 't4'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
