@@ -35,7 +35,6 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
-  static_assert(cuda::std::is_same_v<cudax::level_synchronizer, typename Group::synchronizer_type>);
 
   // Test that the group can be queried for it's hierarchy.
   {
@@ -272,33 +271,18 @@ __device__ void test_cg_interop(const Hierarchy& hierarchy)
 template <template <class> class GroupTempl, class Level, class Config>
 __device__ void test_this_group(const Level& level, const Config& config)
 {
-  const auto implicit_hierarchy = cudax::__implicit_hierarchy();
-
-  // Test implicit construction.
-  {
-    GroupTempl group;
-    static_assert(cuda::std::is_same_v<GroupTempl<cudax::__implicit_hierarchy_t>, decltype(group)>);
-    static_assert(cuda::std::is_nothrow_default_constructible_v<decltype(group)>);
-
-    test_common_properties<Level>(implicit_hierarchy, group);
-    test_this_queries(group);
-  }
-
-  // Test construction from kernel_config.
-  {
-    GroupTempl group{config};
-    // nvcc 12.0 doesn't evaluate these static asserts correctly
+  GroupTempl group{config};
+  // nvcc 12.0 doesn't evaluate these static asserts correctly
 #if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
-    static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
-    static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
+  static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
+  static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
 
-    test_common_properties<Level>(config.hierarchy(), group);
-    test_this_queries(group);
-  }
+  test_common_properties<Level>(config.hierarchy(), group);
+  test_this_queries(group);
 
   // Test construction from CG equivalents.
-  test_cg_interop<Level>(implicit_hierarchy);
+  test_cg_interop<Level>(cudax::implicit_hierarchy());
 }
 
 struct TestKernel
