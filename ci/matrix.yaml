@@ -65,6 +65,11 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000', args: '-enable-tile'}
+    - {jobs: ['test'], project: 'cub',        ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'h100', args: '-enable-tile'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxpro6000', args: '-enable-tile'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'l4', args: '-enable-tile'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
