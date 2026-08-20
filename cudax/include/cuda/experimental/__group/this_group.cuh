@@ -155,6 +155,11 @@ public:
     return __synchronizer_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  {
+    return __synchronizer_instance_;
+  }
+
   _CCCL_DEVICE_API void sync() const noexcept
   {
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
@@ -165,9 +170,23 @@ public:
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
-  _CCCL_TEMPLATE(class _Tp, class _InLevel)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
+    {
+      return 1;
+    }
+    else
+    {
+      return _Level::static_count(__in_level, _Hierarchy{});
+    }
+  }
+
+  template <class _Tp, class _MappingResult, class _InLevel>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
+  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
     {
@@ -175,21 +194,27 @@ public:
     }
     else
     {
-      return _Level{}.template count_as<_Tp>(__in_level, __hier_);
+      return _Level::template count_as<_Tp>(__in_level, __hier);
     }
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
+  {
+    return __count_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
-    return count_as<typename _InLevel::__product_type>(__in_level);
+    return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
 
-#  if _CCCL_CUDA_COMPILATION()
-  _CCCL_TEMPLATE(class _Tp, class _InLevel)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
+  template <class _Tp, class _MappingResult, class _InLevel>
+  [[nodiscard]] _CCCL_DEVICE_API static _Tp
+  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
     {
@@ -197,17 +222,23 @@ public:
     }
     else
     {
-      return _Level{}.template rank_as<_Tp>(__in_level, __hier_);
+      return _Level::template rank_as<_Tp>(__in_level, __hier);
     }
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
+  {
+    return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    return rank_as<typename _InLevel::__product_type>(__in_level);
+    return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
-#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 template <class _Hierarchy>
