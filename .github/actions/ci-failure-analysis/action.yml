@@ -64,6 +64,8 @@ runs:
         permission-profile: ci_triage
         safety-strategy: drop-sudo
         allow-bot-users: "copy-pr-bot[bot]"
+        # Scheduled workflows have no meaningful triggering user, so skip the actor check.
+        allow-users: ${{ github.event_name == 'schedule' && '*' || '' }}
         model: openai/openai/gpt-5.6-sol
         effort: medium
         codex-args: --strict-config --ignore-rules --ephemeral

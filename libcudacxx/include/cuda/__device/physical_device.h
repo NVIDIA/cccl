@@ -24,11 +24,15 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/logical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/std/__concepts/constructible.h>
+#  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__memory/unique_ptr.h>
-#  include <cuda/std/cassert>
+#  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
@@ -58,6 +62,20 @@ struct __physical_devices_view
 
 [[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices();
 
+// Frees storage that came from `new _OrigTp[]` (probably either std::byte or char), after
+// destroying the `__count_` elements built in it.
+template <class _Tp, class _OrigTp>
+struct __raw_storage_array_deleter
+{
+  ::cuda::std::size_t __count_{};
+
+  _CCCL_HOST_API void operator()(_Tp* __ptr) const noexcept
+  {
+    ::cuda::std::__reverse_destroy(__ptr, __ptr + __count_);
+    delete[] reinterpret_cast<_OrigTp*>(__ptr);
+  }
+};
+
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
 //
@@ -66,6 +84,22 @@ class __physical_device
 {
   friend _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
   __make_physical_devices(::cuda::std::size_t __device_count);
+
+  template <class _Tp>
+  using __raw_storage_array = ::cuda::std::unique_ptr<_Tp[], __raw_storage_array_deleter<_Tp, ::cuda::std::byte>>;
+
+  // Returns storage for `__count` elements, reporting zero of them constructed.
+  template <class _Tp>
+  [[nodiscard]] _CCCL_HOST_API static __raw_storage_array<_Tp> __make_raw_storage_array(::cuda::std::size_t __count)
+  {
+    auto __bytes = ::cuda::std::make_unique<::cuda::std::byte[]>(sizeof(_Tp) * __count);
+
+    static_assert(!::cuda::std::constructible_from<_Tp>,
+                  "Do not use this helper if your type is already default constructible. Just use a regular "
+                  "unique_ptr<T> in that case.");
+    static_assert(alignof(_Tp) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+    return __raw_storage_array<_Tp>{reinterpret_cast<_Tp*>(__bytes.release()), {}};
+  }
 
   ::CUdevice __device_{};
 
@@ -86,6 +120,13 @@ class __physical_device
 #  endif // _CCCL_HOSTED()
   ::cuda::std::unique_ptr<device_ref[]> __peers_{};
   ::cuda::std::size_t __num_peers_{};
+
+#  if _CCCL_HOSTED()
+  ::std::once_flag __locality_domains_once_flag_{};
+#  endif // _CCCL_HOSTED()
+  __raw_storage_array<__logical_device> __locality_domains_{};
+  __raw_storage_array<__logical_device_ref> __locality_domain_refs_{};
+  ::cuda::std::size_t __num_domains_{static_cast<::cuda::std::size_t>(-1)};
 
   _CCCL_HOST_API void __set_name()
   {
@@ -126,6 +167,88 @@ class __physical_device
       }
     }
     __num_peers_ = __num_peers;
+  }
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  _CCCL_HOST_API void __set_locality_domains_impl()
+  {
+    const auto __domain_count = static_cast<::cuda::std::size_t>(
+      ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, __device_));
+    const auto __full_resource = ::cuda::__driver::__deviceGetDevResource(__device_, ::CU_DEV_RESOURCE_TYPE_SM);
+    const auto __params        = ::cuda::std::make_unique<::CU_DEV_SM_RESOURCE_GROUP_PARAMS[]>(__domain_count);
+
+    for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
+    {
+      __params[__i].flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
+      __params[__i].localityDomainId = static_cast<unsigned int>(__i);
+    }
+
+    const auto __groups = ::cuda::std::make_unique<::CUdevResource[]>(__domain_count);
+
+    // We don't care about the returned remainder so ignore it
+    static_cast<void>(
+      ::cuda::__driver::__devSmResourceSplit(__groups.get(), __domain_count, __full_resource, __params.get()));
+
+    // Neither `__logical_device` nor `__logical_device_ref` is default constructible, so both
+    // arrays must be constructed element by element in raw storage.
+    auto __domains = __make_raw_storage_array<__logical_device>(__domain_count);
+
+    for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
+    {
+      const auto __desc = ::cuda::__driver::__devResourceGenerateDesc(__groups.get() + __i, /*__num_resources=*/1);
+
+      ::cuda::std::__construct_at(
+        __domains.get() + __i,
+        __logical_device::from_native_handle(__device_, ::cuda::__driver::__greenCtxCreate(__device_, __desc)));
+      __domains.get_deleter().__count_ = __i + 1;
+    }
+
+    auto __refs = __make_raw_storage_array<__logical_device_ref>(__domain_count);
+
+    for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
+    {
+      ::cuda::std::__construct_at(__refs.get() + __i, __domains[__i]);
+      __refs.get_deleter().__count_ = __i + 1;
+    }
+
+    // Commit only once every step succeeds, so a throw leaves this object as it was.
+    __locality_domains_     = ::cuda::std::move(__domains);
+    __locality_domain_refs_ = ::cuda::std::move(__refs);
+    __num_domains_          = __domain_count;
+  }
+#  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ 13.4+ ^^^ / vvv 12.5+ vvv
+  _CCCL_HOST_API void __set_locality_domains_impl()
+  {
+    auto __domains = __make_raw_storage_array<__logical_device>(/*__count=*/1);
+
+    ::cuda::std::__construct_at(__domains.get(),
+                                __logical_device::from_native_handle(
+                                  __device_, ::cuda::__driver::__greenCtxCreate(__device_, /*__descriptor=*/nullptr)));
+    __domains.get_deleter().__count_ = 1;
+
+    auto __refs = __make_raw_storage_array<__logical_device_ref>(/*__count=*/1);
+
+    ::cuda::std::__construct_at(__refs.get(), __domains[0]);
+    __refs.get_deleter().__count_ = 1;
+
+    // Commit only once every step succeeds, so a throw leaves this object as it was.
+    __locality_domains_     = ::cuda::std::move(__domains);
+    __locality_domain_refs_ = ::cuda::std::move(__refs);
+    __num_domains_          = 1;
+  }
+#  else // ^^^ 12.5+ ^^^ / vvv no green contexts at all vvv
+  _CCCL_HOST_API constexpr void __set_locality_domains_impl() const noexcept {}
+#  endif // ^^^ no green context at all ^^^
+
+  _CCCL_HOST_API void __set_locality_domains()
+  {
+    // Clear refs before the owning variable just in case refs ends up doing something
+    // interesting in a destructor
+    __locality_domain_refs_.reset();
+    __locality_domains_.reset();
+    __num_domains_ = static_cast<::cuda::std::size_t>(-1);
+
+    __set_locality_domains_impl();
   }
 
 public:
@@ -186,6 +309,22 @@ public:
 #  endif //  _CCCL_FREESTANDING()
     return ::cuda::std::span<const device_ref>{__peers_.get(), __num_peers_};
   }
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains()
+  {
+#  if _CCCL_HOSTED()
+    ::std::call_once(__locality_domains_once_flag_, [this]() {
+      this->__set_locality_domains();
+    });
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    // `__num_domains_` holds `-1` until the domains are computed, so this runs exactly once.
+    if (__num_domains_ == static_cast<::cuda::std::size_t>(-1))
+    {
+      this->__set_locality_domains();
+    }
+#  endif //  _CCCL_FREESTANDING()
+    return ::cuda::std::span<const __logical_device_ref>{__locality_domain_refs_.get(), __num_domains_};
+  }
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __physical_device&
@@ -238,6 +377,11 @@ _CCCL_HOST_API inline void device_ref::init() const
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> device_ref::peers() const
 {
   return ::cuda::__physical_devices()[__id_].__peers();
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const __logical_device_ref> device_ref::__locality_domains() const
+{
+  return ::cuda::__physical_devices()[__id_].__locality_domains();
 }
 
 _CCCL_END_NAMESPACE_CUDA
