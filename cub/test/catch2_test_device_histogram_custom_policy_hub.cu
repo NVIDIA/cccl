@@ -56,6 +56,7 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   REQUIRE(
     custom_wide_counter_policy.max_privatized_static_smem_single_channel_bytes == 256 * sizeof(unsigned long long));
   REQUIRE(custom_sm90_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
+  REQUIRE(custom_sm90_policy.min_cached_search_gmem_range_bins == 0);
   REQUIRE(custom_sm75_policy.max_output_histogram_bytes_for_init_kernel_pdl == 0);
   REQUIRE(custom_sm90_policy.max_output_histogram_bytes_for_init_kernel_pdl == 8192);
   REQUIRE(custom_wide_counter_policy.max_output_histogram_bytes_for_init_kernel_pdl == 0);

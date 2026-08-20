@@ -73,12 +73,12 @@ struct Transforms
 
   //! @brief Finds a RANGE bin with piecewise-linear interpolation and a per-thread bracket cache.
   //!
-  //! This transform is used by the runtime-sized shared-memory kernel. It
-  //! precomputes interpolation parameters once per thread, verifies each
-  //! interpolated guess against the level array, and falls back to binary
-  //! search for irregular levels. `BinSelectState` remembers the most recently
-  //! resolved bracket so consecutive samples in that bracket require no level
-  //! loads.
+  //! This transform is used by the runtime-sized shared-memory kernel and by
+  //! selected global-memory kernels. It precomputes interpolation parameters
+  //! once per thread, verifies each interpolated guess against the level array,
+  //! and falls back to binary search for irregular levels. `BinSelectState`
+  //! remembers the most recently resolved bracket so consecutive samples in
+  //! that bracket require no level loads.
   template <typename LevelIteratorT>
   struct CachedSearchTransform
   {
