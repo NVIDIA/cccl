@@ -148,8 +148,9 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
     PolicySelector));
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
-_CCCL_HOST_API void run_dispatch_scan(
+void run_dispatch_scan(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
   const cuda::device_buffer<OffsetT>& out_offsets,
@@ -177,16 +178,20 @@ _CCCL_HOST_API void run_dispatch_scan(
     init_value,
     segments_per_worker,
     worker_choice
-#if TEST_LAUNCH != 2
+#if TEST_LAUNCH == 0
     ,
-    nullptr
-#endif // TEST_LAUNCH != 2
+    stream.get()
+#elif TEST_LAUNCH == 1
+    ,
+    nullptr // Host stream handles are invalid for device-side launches.
+#endif // TEST_LAUNCH == 0 / TEST_LAUNCH == 1
   );
 }
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
-_CCCL_HOST_API void run_dispatch_scan(
+void run_dispatch_scan(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
   const cuda::device_buffer<InputT>& input,
@@ -196,7 +201,7 @@ _CCCL_HOST_API void run_dispatch_scan(
   int segments_per_worker)
 {
   run_dispatch_scan(
-    dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
+    dispatch_fn, stream, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
 }
 
 template <typename ValueT>
@@ -294,6 +299,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -314,6 +320,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -407,6 +414,7 @@ CUB_TEST(
   {
     run_dispatch_scan(
       exclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -489,6 +497,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -584,6 +593,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
   {
     run_dispatch_scan(
       inclusive_init_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -716,6 +726,7 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       out_offsets,
@@ -825,6 +836,7 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
 
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       out_offsets,
@@ -846,8 +858,9 @@ template <typename DispatchT,
           typename OutputIterT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_HOST_API void run_dispatch_scan_iterator(
+void run_dispatch_scan_iterator(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
   const cuda::device_buffer<OffsetT>& offsets,
   InputIterT input_it,
@@ -873,10 +886,13 @@ _CCCL_HOST_API void run_dispatch_scan_iterator(
     init_value,
     segments_per_worker,
     worker_choice
-#if TEST_LAUNCH != 2
+#if TEST_LAUNCH == 0
     ,
-    nullptr
-#endif // TEST_LAUNCH != 2
+    stream.get()
+#elif TEST_LAUNCH == 1
+    ,
+    nullptr // Host stream handles are invalid for device-side launches.
+#endif // TEST_LAUNCH == 0 / TEST_LAUNCH == 1
   );
 }
 
@@ -966,6 +982,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   {
     run_dispatch_scan_iterator(
       inclusive_init_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input_it,
