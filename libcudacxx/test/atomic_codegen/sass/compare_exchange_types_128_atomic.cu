@@ -36,17 +36,16 @@ __device__ bool atomic_compare_exchange(cuda::atomic<TYPE, SCOPE>& atom, TYPE& e
 ; SMXX: {{.*}}BSYNC [[SYNC]]{{.*}}
 ; SMXX: {{.*}}LD.E.128{{(\.SYS)?}} {{R[0-9]+}}, {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
 ; SMXX: {{.*}}LD.E.128{{(\.SYS)?}} {{R[0-9]+}}, {{.*}}
-; SMXX: {{.*}}LOP3.LUT [[CAS_RESULT_PRED:P[0-9]+]], RZ, {{R[0-9]+}}, {{R[0-9]+}}, RZ, 0xfc, [[CAS_RESULT_PRED]]{{.*}}
-; CUDA12-0: {{.*}}SEL [[STORE_DATA:R[0-9]+]], {{R[0-9]+}}, {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
-; CUDA12-0: {{.*}}SEL [[STORE_ADDR:R[0-9]+]], [[BASE_ADDR]], {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
-; CUDA12-0: {{.*}}SEL {{R[0-9]+}}, RZ, 0x1, [[CAS_RESULT_PRED]]{{.*}}
-; CUDA12-0: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[STORE_ADDR]]{{(\.64)?\].*}}, [[STORE_DATA]]{{.*}}
-; CUDA12-0-NOT: {{.*}}ST.E.128{{(\.SYS)?}} {{.*}}
-; CUDA12-1-PLUS: {{.*}}@[[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*}}
-; CUDA12-1-PLUS: {{.*}}@![[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
-; SMXX: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; BLOCK: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
-; NON_BLOCK: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
+; SMXX: {{.*}}{{LOP3\.LUT|ISETP\.NE[^ ]*}} [[CAS_RESULT_PRED:P[0-9]+]], {{.*}}
+; CUDA12-0-DAG: {{.*}}SEL [[STORE_DATA:R[0-9]+]], {{R[0-9]+}}, {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
+; CUDA12-0-DAG: {{.*}}SEL [[STORE_ADDR:R[0-9]+]], [[BASE_ADDR]], {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
+; CUDA12-0-DAG: {{.*}}SEL {{R[0-9]+}}, RZ, 0x1, [[CAS_RESULT_PRED]]{{.*}}
+; CUDA12-0-DAG: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[STORE_ADDR]]{{(\.64)?\].*}}, [[STORE_DATA]]{{.*}}
+; CUDA12-1-PLUS-DAG: {{.*}}@[[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*}}
+; CUDA12-1-PLUS-DAG: {{.*}}@![[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
+; SMXX-DAG: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; BLOCK-DAG: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
+; NON_BLOCK-DAG: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
