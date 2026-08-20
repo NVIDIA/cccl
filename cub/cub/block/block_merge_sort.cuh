@@ -314,12 +314,10 @@ public:
    * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
    *   are equivalent: neither one is less than the other. It is not guaranteed
    *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries; on output, elements beyond the `valid_items`
-   *   boundary are equal to `oob_default`. It is required that `oob_default`
-   *   is ordered after any value in the `valid_items` boundaries and that all
-   *   threads provide the same `oob_default` and `valid_items`. The algorithm
-   *   always sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -343,7 +341,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -399,12 +398,10 @@ public:
    * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
    *   are equivalent: neither one is less than the other. It is not guaranteed
    *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries; on output, elements beyond the `valid_items`
-   *   boundary are equal to `oob_default`. It is required that `oob_default`
-   *   is ordered after any value in the `valid_items` boundaries and that all
-   *   threads provide the same `oob_default` and `valid_items`. The algorithm
-   *   always sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -434,7 +431,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -448,26 +446,22 @@ public:
   {
     if constexpr (IS_LAST_TILE)
     {
-      // Pad all out-of-range keys with oob_default. Since oob_default is ordered after every valid
-      // key, sorting the padded full tile places the valid keys, sorted, in the first valid_items
-      // positions, followed by copies of oob_default. Padding up front means the merge rounds need
-      // no valid_items boundary handling at all.
-      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
-      for (int item = 0; item < ItemsPerThread; ++item)
-      {
-        if (!(ItemsPerThread * linear_tid + item < valid_items))
-        {
-          keys[item] = oob_default;
-        }
-      }
+      // Clamping the merge runs to valid_items, rather than padding the tile with oob_default and
+      // sorting the full tile, means oob_default only ever bounds a thread's own padding. Its
+      // ordering relative to the valid keys therefore cannot affect the sorted prefix, so callers
+      // that violate the documented ordering requirement still get their valid items sorted. Keys
+      // beyond the boundary are left unspecified.
+      SortPartialTile<true>(keys, items, compare_op, valid_items, oob_default);
     }
+    else
+    {
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
 
-    detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
-
-    // each thread has sorted keys
-    // merge sort keys in shared memory
-    //
-    MergeRounds<false>(keys, items, compare_op);
+      // each thread has sorted keys
+      // merge sort keys in shared memory
+      //
+      MergeRounds<false>(keys, items, compare_op);
+    }
   } // func block_merge_sort
 
   /**
@@ -513,33 +507,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op, int valid_items)
   {
-    // Threads holding at least one valid key pad their out-of-range registers with the running
-    // max of their own valid keys (seeded from keys[0], which is valid for such threads) so that
-    // the thread-local sort keeps the thread's valid keys in front of its padding. Threads lying
-    // entirely beyond valid_items are left untouched: their keys may hold indeterminate values,
-    // which are copied around but never compared and never placed within the valid prefix,
-    // because the merge rounds clamp every run to valid_items. No global sentinel is required.
-    if (ItemsPerThread * linear_tid < valid_items)
-    {
-      KeyT max_key = keys[0];
-
-      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
-      for (int item = 1; item < ItemsPerThread; ++item)
-      {
-        if (ItemsPerThread * linear_tid + item < valid_items)
-        {
-          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
-        }
-        else
-        {
-          keys[item] = max_key;
-        }
-      }
-
-      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
-    }
-
-    MergeRounds<true>(keys, items, compare_op, valid_items);
+    // keys[0] only binds a reference here; without a sentinel it is never read.
+    SortPartialTile<false>(keys, items, compare_op, valid_items, keys[0]);
   }
 
   /**
@@ -666,12 +635,10 @@ public:
    *   elements. That is, if `x` and `y` are elements such that `x` precedes
    *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
    *   then a postcondition of StableSort is that `x` still precedes `y`.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries; on output, elements beyond the `valid_items`
-   *   boundary are equal to `oob_default`. It is required that `oob_default`
-   *   is ordered after any value in the `valid_items` boundaries and that all
-   *   threads provide the same `oob_default` and `valid_items`. The algorithm
-   *   always sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`.
    *   If there is a value that is ordered after `oob_default`, it won't be
    *   placed within `valid_items` boundaries.
@@ -696,7 +663,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -716,12 +684,10 @@ public:
    *   elements. That is, if `x` and `y` are elements such that `x` precedes
    *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
    *   then a postcondition of StableSort is that `x` still precedes `y`.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries; on output, elements beyond the `valid_items`
-   *   boundary are equal to `oob_default`. It is required that `oob_default`
-   *   is ordered after any value in the `valid_items` boundaries and that all
-   *   threads provide the same `oob_default` and `valid_items`. The algorithm
-   *   always sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -751,7 +717,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -895,6 +862,54 @@ private:
     {
       items[item] = temp_storage.items_shared[indices[item]];
     }
+  }
+
+  //! Sorts the first \p valid_items elements of the tile, clamping every merge run to that
+  //! boundary.
+  //!
+  //! Threads holding at least one valid key pad their out-of-range registers with an upper bound of
+  //! their own valid keys, seeded from keys[0], which is valid for such threads. The thread-local
+  //! sort therefore keeps the thread's valid keys in front of its padding. When \p HasOobDefault is
+  //! true, \p oob_default joins that upper bound, so the padding equals \p oob_default whenever
+  //! \p oob_default is ordered after the thread's keys, while a sentinel that is not cannot displace
+  //! a valid key past the boundary.
+  //!
+  //! Threads lying entirely beyond \p valid_items are left untouched: their keys may hold
+  //! indeterminate values, which are copied around but never compared and never placed within the
+  //! valid prefix, because the merge rounds clamp every run to \p valid_items.
+  template <bool HasOobDefault, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SortPartialTile(
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&items)[ItemsPerThread],
+    CompareOp compare_op,
+    int valid_items,
+    const KeyT& oob_default)
+  {
+    if (ItemsPerThread * linear_tid < valid_items)
+    {
+      KeyT max_key = keys[0];
+      if constexpr (HasOobDefault)
+      {
+        max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
+      }
+
+      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
+      for (int item = 1; item < ItemsPerThread; ++item)
+      {
+        if (ItemsPerThread * linear_tid + item < valid_items)
+        {
+          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
+        }
+        else
+        {
+          keys[item] = max_key;
+        }
+      }
+
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+    }
+
+    MergeRounds<true>(keys, items, compare_op, valid_items);
   }
 
   //! Runs the log2(NumThreads) merge rounds.
