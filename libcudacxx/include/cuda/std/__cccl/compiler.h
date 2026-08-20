@@ -151,7 +151,8 @@
 #  define _CCCL_DEVICE_COMPILATION() 0
 #endif // ^^^ not compiling device code ^^^
 
-#if defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
+// Disable tile support for now
+#if 0 // defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
 #  define _CCCL_TILE_COMPILATION() 1
 #else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv
 #  define _CCCL_TILE_COMPILATION() 0
