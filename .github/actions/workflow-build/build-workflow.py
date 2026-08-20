@@ -500,7 +500,17 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
 
 def job_uses_devcontainer(matrix_job):
     "True unless the matrix job explicitly opted out via `devcontainer: false`."
-    return matrix_job.get("devcontainer", True)
+    value = matrix_job.get("devcontainer", True)
+    # A quoted `devcontainer: 'false'` is a truthy string, which would silently
+    # keep the permissive devcontainer -- the exact thing these lanes exist to
+    # avoid. Reject anything that is not a real boolean.
+    if not isinstance(value, bool):
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job, f"'devcontainer' must be a boolean, got '{value}'."
+            )
+        )
+    return value
 
 
 def generate_dispatch_job_image(matrix_job, job_type):
