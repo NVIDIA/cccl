@@ -920,6 +920,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
     0,
     0,
     0,
+    0,
     convert_pdl_trigger_bytes<ActivePolicy, CounterT>(0)};
 }
 
@@ -1101,13 +1102,16 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
       }
     }
     int max_num_output_bins = max_levels - 1;
+    const auto privatization =
+      select_privatization_mode<false, LocalCounterT, NUM_ACTIVE_CHANNELS>(active_policy, max_num_output_bins);
 
     constexpr bool supports_cached_search =
       ::cuda::std::is_integral_v<LevelT> || ::cuda::std::is_floating_point_v<LevelT>;
     if constexpr (supports_cached_search)
     {
-      if (select_privatization_mode<false, LocalCounterT, NUM_ACTIVE_CHANNELS>(active_policy, max_num_output_bins)
-          == privatization_mode::dynamic_smem)
+      if (privatization == privatization_mode::dynamic_smem
+          || (privatization == privatization_mode::gmem
+              && use_cached_search_for_gmem_range(active_policy, max_num_output_bins)))
       {
         using PrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
         ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
@@ -1116,28 +1120,35 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
         }
 
-        return CubDebug((detail::histogram::dispatch<NUM_CHANNELS,
-                                                     NUM_ACTIVE_CHANNELS,
-                                                     HistogramPrivatizedDynamicSmem,
-                                                     /* IsDeviceInit = */ false,
-                                                     /* IsEven = */ false,
-                                                     /* IsByteSample = */ false>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_output_histograms,
-          num_output_levels,
-          num_output_levels,
-          output_decode_op,
-          privatized_decode_op,
-          max_num_output_bins,
-          num_row_pixels,
-          num_rows,
-          row_stride_samples,
-          stream,
-          policy_selector,
-          kernel_source,
-          launcher_factory)));
+        const auto dispatch_with = [&](auto mode) {
+          using privatization_mode_t = decltype(mode);
+          return detail::histogram::dispatch<NUM_CHANNELS,
+                                             NUM_ACTIVE_CHANNELS,
+                                             privatization_mode_t,
+                                             /* IsDeviceInit = */ false,
+                                             /* IsEven = */ false,
+                                             /* IsByteSample = */ false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            output_decode_op,
+            privatized_decode_op,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory);
+        };
+
+        return CubDebug(privatization == privatization_mode::dynamic_smem
+                          ? dispatch_with(HistogramPrivatizedDynamicSmem{})
+                          : dispatch_with(HistogramPrivatizedGmem{}));
       }
     }
 
@@ -1149,8 +1160,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
 
     // Dispatch
-    if (select_privatization_mode<false, LocalCounterT, NUM_ACTIVE_CHANNELS>(active_policy, max_num_output_bins)
-        != privatization_mode::static_smem)
+    if (privatization != privatization_mode::static_smem)
     {
       // Too many bins to keep in shared memory.
       if (const auto error = CubDebug(
