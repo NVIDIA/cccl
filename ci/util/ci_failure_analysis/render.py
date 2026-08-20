@@ -408,6 +408,15 @@ def sanitize_slack_link_label(value, limit):
     return sanitize_slack(value, limit).replace("|", "¦")
 
 
+def render_slack_job_link(job_id, jobs, repository, run_id, step_number=0):
+    label = sanitize_slack_link_label(jobs[job_id], limit=300)
+    url = job_url(repository, run_id, job_id)
+    if step_number > 0:
+        label += f", step {step_number}"
+        url += f"#step:{step_number}:1"
+    return f"<{url}|{label}>"
+
+
 def render_slack_evidence(group, jobs, repository, run_id):
     for evidence in group["evidence"]:
         for line in evidence["lines"]:
@@ -417,12 +426,14 @@ def render_slack_evidence(group, jobs, repository, run_id):
 
             job_id = evidence["job_id"]
             step_number = evidence["step_number"]
-            label = sanitize_slack_link_label(jobs[job_id], limit=300)
-            url = job_url(repository, run_id, job_id)
-            if step_number > 0:
-                label += f", step {step_number}"
-                url += f"#step:{step_number}:1"
-            return f"*Evidence:* {rendered_line} — <{url}|{label}>"
+            link = render_slack_job_link(
+                job_id,
+                jobs,
+                repository,
+                run_id,
+                step_number,
+            )
+            return f"*Evidence:* {rendered_line} — {link}"
     return None
 
 
@@ -464,6 +475,16 @@ def render_slack_thread_reply(
     evidence = render_slack_evidence(group, jobs, repository, run_id)
     if evidence:
         lines.append(evidence)
+    else:
+        lines.append(
+            "*Job:* "
+            + render_slack_job_link(
+                job_ids[0],
+                jobs,
+                repository,
+                run_id,
+            )
+        )
     sources = render_slack_sources(group, repository, head_sha)
     if sources:
         lines.append(sources)

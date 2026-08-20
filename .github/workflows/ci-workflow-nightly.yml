@@ -224,19 +224,19 @@ jobs:
           analysis_file: ${{ runner.temp }}/failure-analysis.json
           format: github
 
-      - name: Render Slack failure analysis
-        id: render-slack
-        uses: ./.github/actions/ci-failure-analysis-render
-        with:
-          analysis_file: ${{ runner.temp }}/failure-analysis.json
-          format: slack
-
       - name: Add failure analysis to workflow summary
         env:
           GITHUB_REPORT: ${{ steps.render-github.outputs.content }}
         run: |
           test -n "${GITHUB_REPORT}"
           printf '%s\n' "${GITHUB_REPORT}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Render Slack failure analysis
+        id: render-slack
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ runner.temp }}/failure-analysis.json
+          format: slack
 
   publish-failure-analysis:
     name: Post AI failure analysis to Slack
