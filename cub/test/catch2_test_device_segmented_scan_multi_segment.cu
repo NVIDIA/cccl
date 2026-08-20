@@ -101,7 +101,7 @@ template <typename T, typename GeneratorT>
   std::vector<T> result(num_items);
   for (std::size_t i = 0; i < result.size(); ++i)
   {
-    result[i] = generator(i);
+    result[i] = static_cast<T>(generator(i));
   }
   return result;
 }
