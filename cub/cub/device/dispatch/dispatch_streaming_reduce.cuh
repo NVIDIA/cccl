@@ -151,7 +151,7 @@ struct local_to_global_minmax_op
   }
 
   template <typename T, typename PerPartitionOffsetT>
-  _CCCL_HOST_DEVICE detail::argminmax_accum_t<T, GlobalOffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE detail::argminmax_accum_t<T, GlobalOffsetT>
   operator()(const detail::argminmax_accum_t<T, PerPartitionOffsetT>& p) const
   {
     return {p.min_value,
