@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
-          run_id: 31561126707
+          run_id: 32327889834
           output_file: ${{ runner.temp }}/failure-analysis.json
 
       - name: Render GitHub failure analysis
