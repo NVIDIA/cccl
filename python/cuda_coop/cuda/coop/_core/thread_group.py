@@ -66,18 +66,22 @@ class ThreadHierarchy:
 class ThreadGroup:
     """Descriptor for the current CUDA thread block.
 
-    The descriptor is compiler-free. A backend resolves its exact dimensions
-    from verified launch facts while tracing a cooperative operation.
+    Creating this descriptor does not require an active compiler backend. When
+    a cooperative primitive is compiled, the backend resolves the descriptor
+    against the kernel's exact launch dimensions.
 
     Raises:
         TypeError: If user code attempts to construct the opaque descriptor
             directly instead of calling ``this_block``.
 
     Example:
-        >>> from cuda import coop
-        >>> block = coop.this_block()
-        >>> block.kind
-        'block'
+        This tested CUTLASS kernel uses the current CUDA thread block:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     kind: Literal["block"] = "block"
@@ -128,21 +132,24 @@ class ThreadGroup:
 def this_block() -> ThreadGroup:
     """Return a descriptor for the current CUDA thread block.
 
-    The returned group has no user-supplied dimensions. The active compiler
-    backend supplies exact launch facts when it lowers Load or Store.
+    The returned group has no user-supplied dimensions. The active backend
+    supplies exact launch dimensions when it lowers a cooperative primitive.
 
     Returns:
-        A compiler-free block descriptor accepted by cooperative primitives.
+        An opaque block descriptor accepted by cooperative primitives.
 
     Raises:
         RuntimeError: If a compiler backend later cannot resolve exact block
             dimensions for an operation using this descriptor.
 
     Example:
-        >>> from cuda import coop
-        >>> block = coop.this_block()
-        >>> block.kind
-        'block'
+        This tested CUTLASS kernel uses the current CUDA thread block:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     return ThreadGroup._create()

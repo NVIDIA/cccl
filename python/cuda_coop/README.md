@@ -15,9 +15,16 @@ loaded = coop.load(block, source, items)
 coop.store(block, destination, loaded)
 ```
 
-These functions are compile-time kernel constructs. Importing `cuda.coop`
-succeeds without a compiler backend; backend-dependent operations report a
-structured compiler-context error until a compatible backend is active.
+These functions are compile-time kernel constructs. The common root activates a
+compatible installed CUTLASS DSL through concrete capability checks. Importing
+`cuda.coop` still succeeds when CUTLASS is absent. Applications can also select
+the backend explicitly with `import cuda.coop.cutlass as coop`.
+
+Install the CUDA 13 CUTLASS backend dependencies with:
+
+```console
+python -m pip install "cuda-coop[cutlass]"
+```
 
 See the [CCCL documentation](https://nvidia.github.io/cccl/python.html) for the
 supported signatures and examples.

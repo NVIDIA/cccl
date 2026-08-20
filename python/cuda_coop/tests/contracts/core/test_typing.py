@@ -8,12 +8,17 @@ from pathlib import Path
 
 import pytest
 
-_TYPING_FIXTURE = Path(__file__).parents[2] / "typing" / "root_api.py"
+_TYPING_FIXTURES = Path(__file__).parents[2] / "typing"
 _PACKAGE_ROOT = Path(__file__).parents[3]
 
 
-def test_public_root_stub_accepts_partial_tile_copy(tmp_path: Path) -> None:
+@pytest.mark.parametrize("fixture_name", ("root_api.py", "cutlass_api.py"))
+def test_public_stubs_accept_partial_tile_copy(
+    fixture_name: str,
+    tmp_path: Path,
+) -> None:
     mypy_api = pytest.importorskip("mypy.api")
+    fixture = _TYPING_FIXTURES / fixture_name
     stdout, stderr, exit_status = mypy_api.run(
         [
             "--strict",
@@ -22,7 +27,7 @@ def test_public_root_stub_accepts_partial_tile_copy(tmp_path: Path) -> None:
             "--no-error-summary",
             "--cache-dir",
             str(tmp_path / "mypy-cache"),
-            str(_TYPING_FIXTURE),
+            str(fixture),
         ]
     )
 

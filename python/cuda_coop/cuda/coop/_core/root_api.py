@@ -79,8 +79,7 @@ class CoopCompilerContextRequiredError(RuntimeError):
         }
         message = (
             f"cuda.coop.{feature} requires an active compiler backend; "
-            "install a compatible backend or import cuda.coop.cutlass before "
-            "tracing a kernel"
+            "install or import a compatible backend before compiling a kernel"
         )
         if activation_failure is not None:
             message += (
@@ -114,7 +113,7 @@ def _validate_backend_module(backend_module: str) -> str:
 
 @contextmanager
 def _compiler_scope(backend_module: str) -> Iterator[None]:
-    """Activate one backend for the current compiler trace."""
+    """Activate one backend while the compiler processes a kernel function."""
 
     token = _ACTIVE_BACKEND_MODULE.set(_validate_backend_module(backend_module))
     try:
@@ -203,21 +202,24 @@ def _validate_block_group(group: ThreadGroup, *, operation: str) -> None:
 def this_block() -> ThreadGroup:
     """Return a descriptor for the current CUDA thread block.
 
-    The returned group has no user-supplied dimensions. The active compiler
-    backend supplies exact launch facts when it lowers Load or Store.
+    The returned group has no user-supplied dimensions. The active backend
+    supplies exact launch dimensions when it lowers a cooperative primitive.
 
     Returns:
-        A compiler-free block descriptor accepted by cooperative primitives.
+        An opaque block descriptor accepted by cooperative primitives.
 
     Raises:
         RuntimeError: If a compiler backend later cannot resolve exact block
             dimensions for an operation using this descriptor.
 
     Example:
-        >>> from cuda import coop
-        >>> block = coop.this_block()
-        >>> block.kind
-        'block'
+        This tested CUTLASS kernel uses the current CUDA thread block:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     return _core_this_block()
@@ -226,12 +228,14 @@ def this_block() -> ThreadGroup:
 def ThreadData(items_per_thread: int, dtype: Any = None) -> _ThreadDataLike[Any]:
     """Create an uninitialized per-thread register payload.
 
-    The active compiler backend owns the concrete payload type. A later Load
-    may infer the dtype when ``dtype`` is omitted.
+    The active backend owns the concrete payload type. When ``dtype`` is
+    omitted, a primitive may infer it from its inputs for use by later
+    primitives.
 
     Args:
         items_per_thread: Number of consecutive values owned by each thread.
-        dtype: Optional portable numeric dtype. A Load may infer it from source.
+        dtype: Optional portable numeric dtype. A primitive may infer it from
+            its inputs.
 
     Returns:
         The active compiler backend's fixed-size payload object.
@@ -241,9 +245,13 @@ def ThreadData(items_per_thread: int, dtype: Any = None) -> _ThreadDataLike[Any]
         CoopCompilerContextRequiredError: If no compatible backend is active.
 
     Example:
-        >>> import numpy as np
-        >>> from cuda import coop
-        >>> items = coop.ThreadData(2, dtype=np.int32)  # inside a traced kernel
+        This tested CUTLASS kernel creates and uses a per-thread payload:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     if (
@@ -290,7 +298,13 @@ def load(
         CoopCompilerContextRequiredError: If no compatible backend is active.
 
     Example:
-        >>> loaded = coop.load(block, source, items)  # inside a traced kernel
+        This tested CUTLASS kernel loads a partial block tile:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     _validate_block_group(group, operation="load")
@@ -338,7 +352,13 @@ def store(
         CoopCompilerContextRequiredError: If no compatible backend is active.
 
     Example:
-        >>> coop.store(block, destination, items)  # inside a traced kernel
+        This tested CUTLASS kernel stores a partial block tile:
+
+        .. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+           :language: python
+           :start-after: example-begin block-load-store
+           :end-before: example-end block-load-store
+           :dedent: 4
     """
 
     _validate_block_group(group, operation="store")

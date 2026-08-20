@@ -51,6 +51,9 @@ with zipfile.ZipFile(wheel) as archive:
 
 required = {
     "cuda/coop/__init__.pyi",
+    "cuda/coop/cutlass/__init__.pyi",
+    "cuda/coop/cutlass/_load_store.pyi",
+    "cuda/coop/cutlass/_thread_data.pyi",
     "cuda/coop/py.typed",
     "cuda/coop/_headers/cccl-bundle-provenance.json",
     "cuda/coop/_headers/include/cub/block/block_load.cuh",

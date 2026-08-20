@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compiler-free cooperative API contracts."""
+"""Backend-neutral cooperative API contracts."""
 
 from ._bindings import ArgumentBinding, BindingKind
 from .group_dispatch import (

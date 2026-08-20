@@ -2,7 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Capability-based activation of an installed CUTLASS DSL backend."""
+"""Automatically connect ``cuda.coop`` to compatible Python kernel DSLs.
+
+The portable ``from cuda import coop`` API does not select a compiler backend.
+At import time, this module probes installed DSL integrations, verifies the
+capabilities needed by ``cuda.coop``, and lets each compatible integration
+register its compiler hooks. CUTLASS is the first integration; other DSLs can
+provide their own registration paths without changing the portable API.
+
+Set ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` to a truthy value to skip these
+probes when backend activation must be controlled explicitly.
+"""
 
 from __future__ import annotations
 
@@ -10,16 +20,17 @@ import importlib
 import os
 import warnings
 
+# A truthy value disables all automatic DSL probes and registrations.
 _DISABLE_ENV = "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"
 _FALSE_ENV_VALUES = frozenset({"", "0", "false", "no", "off"})
 
 
 class CudaCoopAutoRegistrationWarning(UserWarning):
-    """An installed CUTLASS runtime could not activate the common root."""
+    """An installed DSL runtime could not activate the portable API."""
 
 
 class _BackendUnavailable(ImportError):
-    """The optional CUTLASS runtime is absent."""
+    """An optional backend runtime is absent."""
 
 
 def _auto_registration_disabled() -> bool:

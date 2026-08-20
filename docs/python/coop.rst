@@ -23,9 +23,11 @@ The root API is backend-independent:
    coop.store(block, destination, loaded)
 
 The compiler integration supplies launch facts such as the block dimensions;
-they are not repeated in the operation calls. Importing :mod:`cuda.coop`
-remains compiler-free; a compatible compiler context activates its backend
-when a collective is traced.
+they are not repeated in the operation calls. A capable compiler context
+activates its backend automatically. Importing :mod:`cuda.coop.cutlass`
+provides the equivalent qualified API when code should name CUTLASS
+explicitly. See :doc:`coop_cutlass` for installation and a complete runnable
+example.
 
 CUDA thread block load and store
 --------------------------------
@@ -42,13 +44,14 @@ accepted. Load and Store traverse their raw pointers in linear storage order;
 they do not apply logical multidimensional indexing or layout order.
 
 The optional ``valid_items`` count identifies the valid prefix of a partially
-filled block tile. ``load`` fills tail positions with the ``oob_default``
-sentinel. ``store`` can use the same count to leave the destination tail
-untouched. Both operations accept an element ``offset`` into the source or
-destination; it is not a byte offset. These controls are independent and
+filled block tile. When supplied, ``oob_default`` fills the remaining Load
+positions. Without it, those positions are unspecified and must not be
+consumed or stored. ``store`` can use the same count to leave the destination
+tail untouched. Both operations accept an element ``offset`` into the source
+or destination; it is not a byte offset. These controls are independent and
 keyword-only.
 
 API reference
 -------------
 
-See :doc:`coop_api` for the portable root API.
+See :doc:`coop_api` for the portable root API and the qualified CUTLASS API.

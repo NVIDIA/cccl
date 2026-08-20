@@ -21,6 +21,10 @@ from cuda.coop._core import _auto_registration, root_api
 
 _SOURCE_ROOT = Path(__file__).parents[3]
 _STUB = _SOURCE_ROOT / "cuda" / "coop" / "__init__.pyi"
+_CUTLASS_STUBS = (
+    _SOURCE_ROOT / "cuda" / "coop" / "cutlass" / "_thread_data.pyi",
+    _SOURCE_ROOT / "cuda" / "coop" / "cutlass" / "_load_store.pyi",
+)
 _FIRST_SENTENCES = {
     "ThreadData": "Create an uninitialized per-thread register payload.",
     "ThreadGroup": "Descriptor for the current CUDA thread block.",
@@ -34,14 +38,15 @@ def _first_sentence(docstring: str) -> str:
     return inspect.cleandoc(docstring).splitlines()[0]
 
 
-def _stub_docstrings() -> dict[str, str]:
-    tree = ast.parse(_STUB.read_text(encoding="utf-8"))
+def _stub_docstrings(*paths: Path) -> dict[str, str]:
     result = {}
-    for statement in tree.body:
-        if isinstance(statement, (ast.ClassDef, ast.FunctionDef)):
-            docstring = ast.get_docstring(statement, clean=False)
-            if docstring is not None:
-                result[statement.name] = docstring
+    for path in paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for statement in tree.body:
+            if isinstance(statement, (ast.ClassDef, ast.FunctionDef)):
+                docstring = ast.get_docstring(statement, clean=False)
+                if docstring is not None:
+                    result[statement.name] = docstring
     return result
 
 
@@ -87,16 +92,27 @@ def test_root_signatures_use_one_items_vocabulary() -> None:
 
 
 def test_runtime_and_stub_docstrings_share_locked_summaries() -> None:
-    stub_docstrings = _stub_docstrings()
+    stub_docstrings = _stub_docstrings(_STUB)
     for name, expected in _FIRST_SENTENCES.items():
         runtime_docstring = inspect.getdoc(getattr(coop, name))
         stub_docstring = stub_docstrings[name]
         assert runtime_docstring is not None
         assert _first_sentence(runtime_docstring) == expected
         assert _first_sentence(stub_docstring) == expected
+        assert runtime_docstring == inspect.cleandoc(stub_docstring)
         for section in ("Raises:", "Example:"):
             assert section in runtime_docstring
             assert section in stub_docstring
+
+
+def test_qualified_stubs_share_portable_docstrings() -> None:
+    root_docstrings = _stub_docstrings(_STUB)
+    qualified_docstrings = _stub_docstrings(*_CUTLASS_STUBS)
+
+    for name in ("ThreadData", "load", "store"):
+        assert inspect.cleandoc(qualified_docstrings[name]) == inspect.cleandoc(
+            root_docstrings[name]
+        )
 
 
 def test_root_import_succeeds_when_cutlass_is_absent() -> None:
@@ -147,7 +163,7 @@ def test_missing_backend_reports_structured_context_error(
         root_api.CoopCompilerContextRequiredError,
         match=(
             r"cuda\.coop\.ThreadData requires an active compiler backend; "
-            r"install a compatible backend or import cuda\.coop\.cutlass"
+            r"install or import a compatible backend before compiling a kernel"
         ),
     ) as raised:
         root_api.ThreadData(2)
@@ -200,7 +216,7 @@ def test_compiler_context_error_retains_incompatible_backend_context(
 
 @pytest.mark.parametrize(
     "reason_code",
-    ("backend-runtime-missing", "backend-runtime-too-old"),
+    ("backend-runtime-missing", "backend-runtime-import-failed"),
 )
 def test_compiler_context_error_preserves_activation_reason(
     reason_code: str,
@@ -223,9 +239,9 @@ def test_auto_registration_preserves_structured_runtime_reason(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class StructuredRuntimeError(ImportError):
-        reason_code = "backend-runtime-too-old"
+        reason_code = "backend-runtime-import-failed"
 
-    cause = StructuredRuntimeError("detected CUTLASS 4.7")
+    cause = StructuredRuntimeError("CUTLASS compiler import failed")
 
     def fail_activation() -> None:
         raise cause
@@ -243,7 +259,7 @@ def test_auto_registration_preserves_structured_runtime_reason(
     with pytest.raises(root_api.CoopCompilerContextRequiredError) as raised:
         root_api.ThreadData(1)
 
-    assert raised.value.reason_code == "backend-runtime-too-old"
+    assert raised.value.reason_code == "backend-runtime-import-failed"
     assert raised.value.__cause__ is cause
 
 
