@@ -9,7 +9,7 @@ barrier.cluster
 Similar functionality is provided through the builtins
 ``__cluster_barrier_arrive(), __cluster_barrier_arrive_relaxed(), __cluster_barrier_wait()``,
 as well as the ``cooperative_groups::cluster_group``
-`API <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group>`__.
+`API <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/device-callable-apis.html#class-cluster-group>`__.
 
 The ``.aligned`` variants of the instructions are not exposed.
 
