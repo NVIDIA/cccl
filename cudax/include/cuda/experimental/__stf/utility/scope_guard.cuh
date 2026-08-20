@@ -52,6 +52,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string_view>
@@ -64,15 +65,6 @@
 #  include <sstream>
 #  include <string>
 #endif // UNITTESTED_FILE
-
-// nvcc 12.0 hits an internal compiler error ("error while padding end of structure!") when a
-// [[no_unique_address]] member's type is one of this header's empty policies; newer toolkits
-// are fine. WAR: the attribute is applied only where the compiler survives it.
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
-#  define _CCCL_STF_NO_UNIQUE_ADDRESS
-#else // ^^^ nvcc < 12.1 ^^^ / vvv other compilers vvv
-#  define _CCCL_STF_NO_UNIQUE_ADDRESS _CCCL_NO_UNIQUE_ADDRESS
-#endif // nvcc < 12.1
 
 namespace cuda::experimental::stf
 {
@@ -344,7 +336,7 @@ struct subst_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  _CCCL_STF_NO_UNIQUE_ADDRESS _V __v_;
+  _V __v_;
 
   template <class _Fn>
   decltype(auto) operator()([[maybe_unused]] const ::std::exception* __exception,
@@ -389,14 +381,14 @@ struct retry_t
   //! @endcond
 
   // decltype(auto), not auto: a reference-returning callable must re-run to the same object,
-  // not to a copy (the ignore branch deduces a reference to the global, which never dangles).
+  // not to a copy (the ignore branch deduces the object type and returns a copy of the tag).
   template <class _Fn>
   decltype(auto) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
   {
     if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
     {
       __fn(); // a throw here IS the decline
-      return (::std::ignore); // resume: the void expression is complete
+      return ::std::ignore; // resume: the void expression is complete
     }
     else
     {
@@ -514,10 +506,10 @@ inline constexpr expecting_t<::std::exception_ptr> as_expected{};
  * the starved-arm theorem, while arbitrary predicates do not.
  */
 template <class _Pred>
-struct guard_t
+struct when_t
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _Pred __pred_;
+  _Pred __pred_;
 
   template <class _Fn>
   void operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
@@ -540,38 +532,71 @@ struct guard_t
   }
 };
 
-//! @brief Creates a predicate guard; see @ref guard_t.
-template <class _Pred>
-auto guard(_Pred&& __pred)
-{
-  return guard_t<_Pred>{::cuda::std::forward<_Pred>(__pred)};
-}
-
 /**
- * @brief Translates the active exception by throwing the result of `fn(exception)`.
- *
- * A translation always declines, but with a different exception; a following `|` arm sees
- * the translated exception.
+ * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
+ * derived) and throws a `_To` -- constructed from the caught `_From` when such a constructor
+ * exists, default-constructed otherwise. Anything that is not a `_From` declines untouched,
+ * so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
  */
-template <class _Fn>
+template <class _From, class _To>
 struct translate_t
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _Fn __fn_;
 
-  template <class _Callable>
-  [[noreturn]] nothing operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Callable&)
+  template <class _Fn>
+  [[noreturn]] nothing operator()(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    throw __fn_(__exception);
+    if (__e)
+    {
+      // The funnel pointer decides for std-derived exceptions, no rethrow needed.
+      if (const auto* __from = dynamic_cast<const _From*>(__e))
+      {
+        __throw_translated(*__from);
+      }
+      throw; // decline: a std exception that is not a _From
+    }
+    // A non-std exception: re-observe at _From.
+    _CCCL_TRY
+    {
+      throw;
+    }
+    _CCCL_CATCH (const _From& __from)
+    {
+      __throw_translated(__from);
+    }
+    _CCCL_CATCH_FALLTHROUGH // decline: not a _From either
+    _CCCL_UNREACHABLE();
+  }
+
+private:
+  [[noreturn]] static void __throw_translated(const _From& __from)
+  {
+    if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
+    {
+      throw _To(__from);
+    }
+    else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
+                       && ::cuda::std::is_constructible_v<_To, const char*>)
+    {
+      throw _To(__from.what()); // carry the message across the translation
+    }
+    else if constexpr (::cuda::std::is_default_constructible_v<_To>)
+    {
+      throw _To{};
+    }
+    else
+    {
+      static_assert(!::cuda::std::is_same_v<_From, _From>,
+                    "translate<From, To>: To must be constructible from const From&, from "
+                    "From::what(), or default-constructible");
+    }
   }
 };
 
-//! @brief Creates an exception translator; see @ref translate_t.
-template <class _Fn>
-auto translate(_Fn&& __fn)
-{
-  return translate_t<_Fn>{::cuda::std::forward<_Fn>(__fn)};
-}
+//! @brief Translates: catches a `_From` (catch-clause rules), throws a `_To` -- constructed from
+//! the caught `_From` when possible, default-constructed otherwise. Anything else declines.
+template <class _From, class _To>
+inline constexpr translate_t<_From, _To> translate{};
 
 /**
  * @brief Throws a stored exception with the active exception nested as its cause.
@@ -580,7 +605,7 @@ template <class _E>
 struct nest_t
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _E __exception_;
+  _E __exception_;
 
   static_assert(::cuda::std::is_copy_constructible_v<_E>, "nest(e) requires a copyable exception object");
 
@@ -616,7 +641,7 @@ template <class _Duration>
 struct delay_t
 {
   using __exception_sink_tag = void;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _Duration __duration_;
+  _Duration __duration_;
 
   template <class _Fn>
   void operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
@@ -664,7 +689,7 @@ struct backoff_t
       __state = 1;
     }
 
-    for (int __attempt = 0; __attempt < __n_; ++__attempt)
+    for (int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
       _CCCL_TRY
@@ -672,7 +697,7 @@ struct backoff_t
         if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
         {
           __fn();
-          return (::std::ignore);
+          return ::std::ignore;
         }
         else
         {
@@ -681,7 +706,7 @@ struct backoff_t
       }
       _CCCL_CATCH_ALL
       {
-        if (__attempt + 1 == __n_)
+        if (--__left == 0)
         {
           throw;
         }
@@ -708,35 +733,46 @@ inline backoff_t backoff(int __n, ::std::chrono::milliseconds __initial)
 /**
  * @brief Serves the last successful value when a later call throws.
  *
- * The variable is held by reference and must be an lvalue. Success updates it and passes the
- * result through; failure substitutes the stored value.
+ * The cell is designated by pointer -- a raw `T*` for a caller-owned variable, or a
+ * `shared_ptr<T>` when the policy should share ownership; the two are distinguished
+ * statically by overload. Success updates the cell and passes the result through; failure
+ * substitutes the stored value (an lvalue: it can serve reference results).
  */
-template <class _T>
+template <class _Ptr>
 struct remember_t
 {
   using __exception_sink_tag = void;
-  _T& __var_;
+  _Ptr __cell_; // a raw pointer or a shared_ptr; *__cell_ is the last-known-good value
 
   template <class _R>
   ::cuda::std::conditional_t<::cuda::std::is_lvalue_reference_v<_R&&>, _R&&, ::cuda::std::remove_cvref_t<_R>>
   on_success(_R&& __result)
   {
-    __var_ = __result;
+    *__cell_ = __result;
     return ::cuda::std::forward<_R>(__result);
   }
 
   template <class _Fn>
-  _T& operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
+  decltype(auto) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
   {
-    return __var_;
+    return *__cell_;
   }
 };
 
-//! @brief Creates a last-known-good policy from an lvalue.
+//! @brief Creates a last-known-good policy over a caller-owned cell.
 template <class _T>
-auto remember(_T& __var)
+auto remember(_T* __cell)
 {
-  return remember_t<_T>{__var};
+  _CCCL_ASSERT(__cell, "remember requires a non-null cell");
+  return remember_t<_T*>{__cell};
+}
+
+//! @brief Creates a last-known-good policy that shares ownership of its cell.
+template <class _T>
+auto remember(::std::shared_ptr<_T> __cell)
+{
+  _CCCL_ASSERT(__cell, "remember requires a non-null cell");
+  return remember_t<::std::shared_ptr<_T>>{::cuda::std::move(__cell)};
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -845,7 +881,7 @@ struct __ignore_policy
 template <class _P>
 struct __forwards_success
 {
-  _CCCL_STF_NO_UNIQUE_ADDRESS _P __p_;
+  _P __p_;
 
   template <class _R, ::cuda::std::enable_if_t<__has_on_success_with<_P, _R>, int> = 0>
   decltype(auto) on_success(_R&& __r)
@@ -891,22 +927,43 @@ struct __catch_only_t : __forwards_success<_P>
   // Does the active exception match any listed type? A recursive ladder of re-observations;
   // the binding must be named for the no-exceptions expansion of _CCCL_CATCH.
   template <class _E0, class... _Rest>
-  static bool __matches_active()
+  static bool __matches_active(const ::std::exception* __e)
   {
+    // Fast path: for a class target and a std-derived active exception, the funnel pointer
+    // decides via dynamic_cast -- no rethrow. (dynamic_cast agrees with catch matching:
+    // ambiguous or non-public bases yield null, and a catch clause would not match either.)
+    if constexpr (::cuda::std::is_class_v<_E0>)
+    {
+      if (__e)
+      {
+        if (dynamic_cast<const _E0*>(__e))
+        {
+          return true;
+        }
+        if constexpr (sizeof...(_Rest) > 0)
+        {
+          return __matches_active<_Rest...>(__e);
+        }
+        else
+        {
+          return false;
+        }
+      }
+    }
+    // Slow path: a non-class target, or a non-std active exception -- re-observe.
     _CCCL_TRY
     {
       throw;
     }
-    _CCCL_CATCH (const _E0& __match)
+    _CCCL_CATCH ([[maybe_unused]] const _E0& __match)
     {
-      static_cast<void>(__match);
       return true;
     }
     _CCCL_CATCH_ALL
     {
       if constexpr (sizeof...(_Rest) > 0)
       {
-        return __matches_active<_Rest...>();
+        return __matches_active<_Rest...>(__e);
       }
       else
       {
@@ -918,7 +975,7 @@ struct __catch_only_t : __forwards_success<_P>
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if (__matches_active<_Es...>())
+    if (__matches_active<_Es...>(__exception))
     {
       // A matching non-std exception still reaches `_P` as a null pointer, per the funnel.
       return this->__p_(__exception, __loc, __fn);
@@ -983,8 +1040,8 @@ inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<_
 template <class _L, class _R>
 struct __composite_hooks
 {
-  _CCCL_STF_NO_UNIQUE_ADDRESS _L __l_;
-  _CCCL_STF_NO_UNIQUE_ADDRESS _R __r_;
+  _L __l_;
+  _R __r_;
 
   template <class _Rr,
             ::cuda::std::enable_if_t<__has_on_success_with<_R, _Rr> || __has_on_success_with<_L, _Rr>, int> = 0>
@@ -1037,13 +1094,9 @@ struct __policy_and : __composite_hooks<_L, _R>
   {
     if constexpr (__has_exception_hook<_L>)
     {
-      static_cast<void>(this->__l_(__exception, __loc, __fn));
-      if constexpr (__has_exception_hook<_R>)
-      {
-        return this->__r_(__exception, __loc, __fn);
-      }
+      static_cast<void>(this->__l_(__exception, __loc, __fn)); // non-final answers are discarded
     }
-    else
+    if constexpr (__has_exception_hook<_R>)
     {
       return this->__r_(__exception, __loc, __fn);
     }
@@ -1156,7 +1209,7 @@ struct __policy_or : __composite_hooks<_L, _R>
         if constexpr (::cuda::std::is_void_v<_Raw>)
         {
           __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-          return (::std::ignore);
+          return ::std::ignore;
         }
         else
         {
@@ -1168,7 +1221,7 @@ struct __policy_or : __composite_hooks<_L, _R>
         if constexpr (::cuda::std::is_void_v<_Raw>)
         {
           __reobserve_right();
-          return (::std::ignore);
+          return ::std::ignore;
         }
         else
         {
@@ -1244,7 +1297,7 @@ struct __policy_pow : __forwards_success<_P>
     if constexpr (::cuda::std::is_void_v<_Expr>)
     {
       __go(__go, __exception, __n_);
-      return (::std::ignore);
+      return ::std::ignore;
     }
     else
     {
@@ -1325,7 +1378,7 @@ _Expr __on_exception(_P& __policy,
 template <class _Reaction>
 struct __on_throw_policy
 {
-  _CCCL_STF_NO_UNIQUE_ADDRESS _Reaction __reaction_;
+  _Reaction __reaction_;
   const ::cuda::std::source_location __loc_;
 };
 
@@ -1540,14 +1593,107 @@ auto operator*(int __n, _P&& __p)
 /**
  * @brief Restricts a policy with a runtime predicate.
  *
- * Returns `guard(pred) & p`: as a `|` arm, false means the next alternative gets the
+ * Returns `when_t{pred} & p`: as a `|` arm, false means the next alternative gets the
  * exception; inside a larger `&`, false declines the whole sequence.
  */
 template <class _Pred, class _P>
 auto when(_Pred&& __pred, _P&& __p)
 {
-  return ::cuda::experimental::stf::exception_policies::guard(::cuda::std::forward<_Pred>(__pred))
-       & detail::__normalize(::cuda::std::forward<_P>(__p));
+  return when_t<_Pred>{::cuda::std::forward<_Pred>(__pred)} & detail::__normalize(::cuda::std::forward<_P>(__p));
+}
+
+/**
+ * @brief Runs the head, then every finalizer, on the exception path -- the finalizers run
+ * whether the head accepts or declines. The composite's answer is the HEAD's; finalizers'
+ * answers are discarded. If the head declines, the finalizers observe the in-flight
+ * exception and the head's exception then continues onward (a finalizer's own throw
+ * replaces it, as anywhere in C++). Later arguments are increasingly unconditional.
+ * A named function, not an operator: it has no left identity.
+ */
+template <class _A, class _B>
+struct always_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+  _A __head_;
+  _B __fin_;
+
+  template <class _Fn>
+  decltype(auto) operator()(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    _CCCL_TRY
+    {
+      using _Ans = detail::__hook_answer_t<_A, _Fn>;
+      if constexpr (::cuda::std::is_void_v<_Ans>)
+      {
+        __head_(__e, __loc, __fn);
+        __fin_(__e, __loc, __fn);
+        return;
+      }
+      else if constexpr (detail::__answers_nothing<_A, _Fn>)
+      {
+        // Never actually returns (the decline path below runs the finalizer); returning the
+        // call keeps the composite's answer type `nothing` via guaranteed elision.
+        return __head_(__e, __loc, __fn);
+      }
+      else
+      {
+        decltype(auto) __r = __head_(__e, __loc, __fn);
+        static_cast<void>(__fin_(__e, __loc, __fn)); // a finalizer's answer is discarded
+        return static_cast<_Ans>(__r);
+      }
+    }
+    _CCCL_CATCH_ALL
+    {
+      // The head declined (or a finalizer threw after an accept): run the finalizer with the
+      // CURRENT exception, then let that exception continue onward.
+      _CCCL_TRY
+      {
+        throw;
+      }
+      _CCCL_CATCH (const ::std::exception& __cur)
+      {
+        static_cast<void>(__fin_(&__cur, __loc, __fn));
+      }
+      _CCCL_CATCH_ALL
+      {
+        static_cast<void>(__fin_(nullptr, __loc, __fn));
+      }
+      throw;
+    }
+  }
+
+  // The head owns the expression type; forward its success hooks.
+  template <class _R, ::cuda::std::enable_if_t<detail::__has_on_success_with<_A, _R>, int> = 0>
+  decltype(auto) on_success(_R&& __r)
+  {
+    return __head_.on_success(::cuda::std::forward<_R>(__r));
+  }
+
+  template <class _Self = _A, ::cuda::std::enable_if_t<detail::__has_on_success_void<_Self>, int> = 0>
+  decltype(auto) on_success()
+  {
+    return __head_.on_success();
+  }
+};
+
+//! @brief See @ref always_t. Variadic: `always(a, b, c)` folds left, so both `b` and `c` run
+//! regardless of `a`, and `c` runs regardless of `b`.
+template <class _A, class _B, class... _Cs>
+auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
+{
+  if constexpr (sizeof...(_Cs) == 0)
+  {
+    auto __ha = detail::__normalize(::cuda::std::forward<_A>(__a));
+    auto __hb = detail::__normalize(::cuda::std::forward<_B>(__b));
+    return always_t<decltype(__ha), decltype(__hb)>{::cuda::std::move(__ha), ::cuda::std::move(__hb)};
+  }
+  else
+  {
+    return always(always(::cuda::std::forward<_A>(__a), ::cuda::std::forward<_B>(__b)),
+                  ::cuda::std::forward<_Cs>(__cs)...);
+  }
 }
 } // namespace exception_policies
 
@@ -1574,11 +1720,11 @@ void abort(_Ts&&...) = delete;
  * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
  * exception_policies::expecting_t "expecting" /
  * @ref exception_policies::as_expected, @ref exception_policies::noop_t "noop", @ref exception_policies::catch_only,
- * @ref exception_policies::guard_t "guard" / @ref exception_policies::when,
+ * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
- * @ref exception_policies::remember_t "remember". Guards decline what they do not claim; translators decline with
- * a different exception; delay/backoff/retry re-run; remember serves the last success.
+ * @ref exception_policies::remember_t "remember", and @ref exception_policies::always. Guards decline what they do not
+ * claim; translators decline with a different exception; delay/backoff/retry re-run; remember serves the last success.
  * Policies compose with `&` (sequence; the last element answers; non-final answers are
  * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
  * `|`).
@@ -2578,18 +2724,20 @@ UNITTEST("guard translate delay backoff remember")
   }
   {
     const int accepted =
-      on_throw(guard([] {
-                 return true;
-               })
-               & subst(3))
+      on_throw(when(
+        [] {
+          return true;
+        },
+        subst(3)))
       << []() -> int {
       throw __ut_low_error("low");
     };
     const int declined =
-      on_throw((guard([] {
-                  return false;
-                })
-                & subst(3))
+      on_throw(when(
+                 [] {
+                   return false;
+                 },
+                 subst(3))
                | subst(4))
       << []() -> int {
       throw __ut_low_error("low");
@@ -2598,16 +2746,17 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(declined == 4);
   }
 
-  // A translator's thrown exception is re-observed by the next typed arm.
+  // translate<From, To>: a From becomes a To for the next typed arm; non-From declines.
   {
-    const int v = on_throw(catch_only<__ut_low_error>(translate([](const ::std::exception*) {
-                             return __ut_high_error{"context"};
-                           }))
-                           | catch_only<__ut_high_error>(subst(1)))
+    const int v = on_throw(translate<__ut_low_error, __ut_high_error> | catch_only<__ut_high_error>(subst(1)))
                << []() -> int {
       throw __ut_low_error("cause");
     };
     EXPECT(v == 1);
+    const int passed = on_throw(translate<__ut_low_error, __ut_high_error> | subst(2)) << []() -> int {
+      throw ::std::runtime_error("neither");
+    };
+    EXPECT(passed == 2);
   }
 
   // Nest preserves the original exception as the translated exception's cause.
@@ -2683,22 +2832,22 @@ UNITTEST("guard translate delay backoff remember")
   // Remember observes successes and substitutes the latest one after a failure.
   {
     int last      = 1;
-    const int got = on_throw(remember(last)) << [] {
+    const int got = on_throw(remember(&last)) << [] {
       return 7;
     };
     EXPECT(got == 7);
     EXPECT(last == 7);
 
-    const int stale = on_throw(remember(last)) << []() -> int {
+    const int stale = on_throw(remember(&last)) << []() -> int {
       throw __ut_low_error("offline");
     };
     EXPECT(stale == 7);
 
-    const int fresh = ON_THROW(remember(last))
+    const int fresh = ON_THROW(remember(&last))
     {
       return 9;
     };
-    const int served = ON_THROW(remember(last))->int
+    const int served = ON_THROW(remember(&last))->int
     {
       throw __ut_low_error("offline");
     };
@@ -2712,15 +2861,84 @@ UNITTEST("guard translate delay backoff remember")
     // "returning reference to local variable" (#836, promoted); the capture
     // is valid, the old analysis just cannot see through it.
     static int source = 11;
-    int& fresh        = on_throw(remember(last)) << [&]() -> int& {
+    int& fresh        = on_throw(remember(&last)) << [&]() -> int& {
       return source;
     };
-    int& stale = on_throw(remember(last)) << []() -> int& {
+    int& stale = on_throw(remember(&last)) << []() -> int& {
       throw __ut_low_error("offline");
     };
     EXPECT(&fresh == &source);
     EXPECT(last == 11);
     EXPECT(&stale == &last);
+  }
+
+  // remember over a shared cell: the policy co-owns it.
+  {
+    auto cell     = ::std::make_shared<int>(0);
+    const int got = on_throw(remember(cell)) << [] {
+      return 21;
+    };
+    EXPECT(got == 21);
+    EXPECT(*cell == 21);
+    const int stale = on_throw(remember(cell)) << []() -> int {
+      throw ::std::runtime_error("offline");
+    };
+    EXPECT(stale == 21);
+  }
+
+  // always: every element runs on both paths; the original exception survives.
+  {
+    int notes = 0;
+    auto note = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+      ++notes;
+    };
+    const int ok = on_throw(always(subst(1), note) | subst(2)) << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(ok == 1); // subst accepted; note also ran
+    EXPECT(notes == 1);
+  }
+  {
+    int notes = 0;
+    auto note = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+      ++notes;
+    };
+    bool escaped = false;
+    try
+    {
+      on_throw(always(rethrow, note)) << []() -> int {
+        throw ::std::runtime_error("orig");
+      };
+    }
+    catch (const ::std::runtime_error& e)
+    {
+      escaped = ::std::string_view{e.what()} == "orig";
+    }
+    EXPECT(escaped); // the head declined; note still ran; the ORIGINAL propagated
+    EXPECT(notes == 1);
+  }
+  {
+    int first = 0, second = 0;
+    auto f = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+      ++first;
+    };
+    auto g = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+      ++second;
+    };
+    bool escaped = false;
+    try
+    {
+      on_throw(always(rethrow, f, g)) << []() -> int {
+        throw ::std::runtime_error("x");
+      };
+    }
+    catch (...)
+    {
+      escaped = true;
+    }
+    EXPECT(escaped); // variadic: both finalizers ran despite the head declining
+    EXPECT(first == 1);
+    EXPECT(second == 1);
   }
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
