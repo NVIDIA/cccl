@@ -456,7 +456,7 @@ def render_slack_thread_reply(
             f"*{index}. {sanitize_slack_title(group['title'])}* — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"*Diagnosis:* {sanitize_slack(group['root_cause'], limit=700)}",
+        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=700)}",
     ]
     evidence = render_slack_evidence(group)
     if evidence:
@@ -464,7 +464,9 @@ def render_slack_thread_reply(
     sources = render_slack_sources(group, repository, head_sha)
     if sources:
         lines.append(sources)
-    lines.append(f"*Next:* {sanitize_slack(group['next_steps'], limit=700)}")
+    lines.append(
+        f"*Suggested next steps:* {sanitize_slack(group['next_steps'], limit=700)}"
+    )
     lines.append("*Jobs:*")
     lines.extend(
         f"• {render_slack_job_link(job_id, jobs, repository, run_id)}"
