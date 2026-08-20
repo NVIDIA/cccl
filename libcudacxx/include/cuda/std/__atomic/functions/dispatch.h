@@ -66,9 +66,9 @@ template <class _Backend, class _Type, class _Fn, class _Sco>
 {
   using __operand = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, sizeof(_Type) * 8>;
   _Type __dst{};
-  __cuda_atomic_bind_fetch_fallback<_Backend, _Type, _Fn, __operand, _Sco> __bound{
+  __cuda_atomic_bind_fetch_fallback<_Backend, _Type, _Fn, __operand, _Sco> __bound_fetch_fallback{
     __backend, __ptr, &__dst, &__op, __fn};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_fallback, __order, __scope);
   return __dst;
 }
 
@@ -95,9 +95,9 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
       return __dst;
     }
   }
-  __cuda_atomic_bind_fetch_sub<_Backend, __proxy_type, __proxy_operand, _Sco> __bound{
+  __cuda_atomic_bind_fetch_sub<_Backend, __proxy_type, __proxy_operand, _Sco> __bound_fetch_sub{
     __backend, __ptr_proxy, __dst_proxy, __op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_sub, __order, __scope);
   return __dst;
 }
 
@@ -121,8 +121,16 @@ template <class _Backend,
 __cuda_atomic_fetch_add_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
   constexpr auto __skip = __atomic_ptr_skip_t<_Type>::__skip;
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val * __skip), __order, __scope, __cuda_atomic_fetch_add_op{});
+  const _Type __op      = static_cast<_Type>(__val * __skip);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_add_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_add_op{});
 }
 
 template <class _Backend,
@@ -145,8 +153,16 @@ template <class _Backend,
 __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
   constexpr auto __skip = __atomic_ptr_skip_t<_Type>::__skip;
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val * __skip), __order, __scope, __cuda_atomic_fetch_sub_op{});
+  const _Type __op      = static_cast<_Type>(__val * __skip);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_sub_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_sub_op{});
 }
 
 template <class _Backend,
@@ -168,8 +184,16 @@ template <class _Backend,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type
 __cuda_atomic_fetch_and_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val), __order, __scope, __cuda_atomic_fetch_and_op{});
+  const _Type __op = static_cast<_Type>(__val);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_and_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_and_op{});
 }
 
 template <class _Backend,
@@ -191,8 +215,16 @@ template <class _Backend,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type
 __cuda_atomic_fetch_or_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val), __order, __scope, __cuda_atomic_fetch_or_op{});
+  const _Type __op = static_cast<_Type>(__val);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_or_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_or_op{});
 }
 
 template <class _Backend,
@@ -214,8 +246,16 @@ template <class _Backend,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type
 __cuda_atomic_fetch_xor_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val), __order, __scope, __cuda_atomic_fetch_xor_op{});
+  const _Type __op = static_cast<_Type>(__val);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_xor_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_xor_op{});
 }
 
 template <class _Backend,
@@ -237,8 +277,16 @@ template <class _Backend,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type
 __cuda_atomic_fetch_min_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val), __order, __scope, __cuda_atomic_fetch_min_op{});
+  const _Type __op = static_cast<_Type>(__val);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_min_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_min_op{});
 }
 
 template <class _Backend,
@@ -260,8 +308,16 @@ template <class _Backend,
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type
 __cuda_atomic_fetch_max_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
 {
-  return __cuda_atomic_fetch_fallback_dispatch(
-    __backend, __ptr, static_cast<_Type>(__val), __order, __scope, __cuda_atomic_fetch_max_op{});
+  const _Type __op = static_cast<_Type>(__val);
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    _Type __dst{};
+    if (__cuda_atomic_fetch_max_weak_if_local(__ptr, __op, &__dst))
+    {
+      return __dst;
+    }
+  }
+  return __cuda_atomic_fetch_fallback_dispatch(__backend, __ptr, __op, __order, __scope, __cuda_atomic_fetch_max_op{});
 }
 
 template <class _Backend,

@@ -75,7 +75,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_system_tag, _
 template <typename _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(
   __cuda_atomic_ptx_backend, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
