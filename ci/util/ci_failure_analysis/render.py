@@ -408,32 +408,13 @@ def sanitize_slack_link_label(value, limit):
     return sanitize_slack(value, limit).replace("|", "¦")
 
 
-def render_slack_job_link(job_id, jobs, repository, run_id, step_number=0):
-    label = sanitize_slack_link_label(jobs[job_id], limit=300)
-    url = job_url(repository, run_id, job_id)
-    if step_number > 0:
-        label += f", step {step_number}"
-        url += f"#step:{step_number}:1"
-    return f"<{url}|{label}>"
-
-
-def render_slack_evidence(group, jobs, repository, run_id):
+def render_slack_evidence(group):
     for evidence in group["evidence"]:
         for line in evidence["lines"]:
             rendered_line = sanitize_slack(line, limit=700)
             if not rendered_line:
                 continue
-
-            job_id = evidence["job_id"]
-            step_number = evidence["step_number"]
-            link = render_slack_job_link(
-                job_id,
-                jobs,
-                repository,
-                run_id,
-                step_number,
-            )
-            return f"*Evidence:* {rendered_line} — {link}"
+            return f"*Evidence:* {rendered_line}"
     return None
 
 
@@ -458,9 +439,7 @@ def render_slack_sources(group, repository, head_sha):
 def render_slack_thread_reply(
     index,
     group,
-    jobs,
     repository,
-    run_id,
     head_sha,
 ):
     job_ids = group["job_ids"]
@@ -472,19 +451,9 @@ def render_slack_thread_reply(
         ),
         f"*Diagnosis:* {sanitize_slack(group['root_cause'], limit=700)}",
     ]
-    evidence = render_slack_evidence(group, jobs, repository, run_id)
+    evidence = render_slack_evidence(group)
     if evidence:
         lines.append(evidence)
-    else:
-        lines.append(
-            "*Job:* "
-            + render_slack_job_link(
-                job_ids[0],
-                jobs,
-                repository,
-                run_id,
-            )
-        )
     sources = render_slack_sources(group, repository, head_sha)
     if sources:
         lines.append(sources)
@@ -500,7 +469,6 @@ def render_slack_thread_reply(
 
 def render_slack_thread(
     analysis,
-    jobs,
     repository,
     run_id,
     run_number,
@@ -542,9 +510,7 @@ def render_slack_thread(
         render_slack_thread_reply(
             index,
             group,
-            jobs,
             repository,
-            run_id,
             head_sha,
         )
         for index, group in enumerate(analysis["groups"], start=1)
@@ -583,7 +549,6 @@ def main():
     else:
         slack_thread = render_slack_thread(
             analysis,
-            jobs,
             args.repository,
             run_id,
             str(run["number"]),
