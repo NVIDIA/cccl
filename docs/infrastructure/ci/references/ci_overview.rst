@@ -187,7 +187,15 @@ CI jobs run the build and test scripts in ``ci/`` inside the devcontainers descr
 ``.devcontainer/README.md``. A failing job's log names the exact container and script
 invocation. Pull the same container and run the same ``ci/build_<project>.sh`` or
 ``ci/test_<project>.sh`` line to reproduce the CI environment, as walked through at
-:ref:`infra-ci-reproducing-locally`. For targeted single-test iteration,
+:ref:`infra-ci-reproducing-locally`.
+
+Jobs that set ``devcontainer: false`` are the exception: they run the script directly on
+the runner, and the script provisions its own container. Their failure logs print the bare
+``ci/test_<project>.sh`` invocation rather than a ``.devcontainer/launch.sh`` one -- run
+that from a checkout on a machine with Docker and a GPU, and the script recreates the same
+minimal container CI used.
+
+For targeted single-test iteration,
 ``ci/util/build_and_test_targets.sh`` builds and runs a named subset, covered at
 :ref:`infra-ci-targeted-builds`; for a regression hunt, see
 :doc:`/cccl/development/build_and_bisect_tools`.

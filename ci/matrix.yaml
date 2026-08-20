@@ -79,8 +79,6 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    - {jobs: ['test_py_par'], project: 'python',    ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
-    - {jobs: ['test_py_par'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
