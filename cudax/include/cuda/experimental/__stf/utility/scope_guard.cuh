@@ -654,9 +654,11 @@ struct backoff_t
     }
 
     const auto __base = __initial_.count();
-    const auto __cap  = __base * 64;
-    auto __sleep      = __base;
-    auto __state      = static_cast<unsigned long long>(::std::chrono::steady_clock::now().time_since_epoch().count());
+    // maybe_unused: referenced only inside _CCCL_CATCH_ALL, which the device pass
+    // expands to a discarded branch; CTK <= 12.9's cudafe then reports #177.
+    [[maybe_unused]] const auto __cap = __base * 64;
+    auto __sleep                      = __base;
+    auto __state = static_cast<unsigned long long>(::std::chrono::steady_clock::now().time_since_epoch().count());
     if (__state == 0)
     {
       __state = 1;
@@ -1567,11 +1569,15 @@ void abort(_Ts&&...) = delete;
  * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
  * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
  * a success hook `on_success(...)` that observes or replaces the result. The named policies
- * include @ref notify_t "notify", @ref subst_t "subst", @ref defer_t "defer",
- * @ref rethrow_t "rethrow", @ref retry_t "retry", @ref expecting_t "expecting" /
- * @ref as_expected, @ref noop_t "noop", @ref catch_only, @ref guard_t "guard" / @ref when,
- * @ref translate_t "translate" / @ref nest, @ref delay_t "delay", @ref backoff, and
- * @ref remember_t "remember". Guards decline what they do not claim; translators decline with
+ * include @ref exception_policies::notify_t "notify", @ref exception_policies::subst_t "subst", @ref
+ * exception_policies::defer_t "defer",
+ * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
+ * exception_policies::expecting_t "expecting" /
+ * @ref exception_policies::as_expected, @ref exception_policies::noop_t "noop", @ref exception_policies::catch_only,
+ * @ref exception_policies::guard_t "guard" / @ref exception_policies::when,
+ * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
+ * "delay", @ref exception_policies::backoff, and
+ * @ref exception_policies::remember_t "remember". Guards decline what they do not claim; translators decline with
  * a different exception; delay/backoff/retry re-run; remember serves the last success.
  * Policies compose with `&` (sequence; the last element answers; non-final answers are
  * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
