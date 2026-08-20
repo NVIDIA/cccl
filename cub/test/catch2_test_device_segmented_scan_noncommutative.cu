@@ -3,13 +3,11 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -19,6 +17,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_allocator.cuh>
 #include <catch2_test_device_scan.cuh>
@@ -88,30 +87,10 @@ struct populate_input
 };
 }; // namespace impl
 
-namespace
-{
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
-template <typename T>
-void copy_to_device(cuda::stream_ref stream, cuda::std::span<const T> host_items, cuda::device_buffer<T>& device_items)
-{
-  REQUIRE(host_items.size() == device_items.size());
-  cuda::copy_bytes(stream, host_items, device_items);
-}
-
-template <typename T>
-void copy_to_host(cuda::stream_ref stream, const cuda::device_buffer<T>& device_items, std::vector<T>& host_items)
-{
-  REQUIRE(device_items.size() == host_items.size());
-  cuda::copy_bytes(stream, device_items, cuda::std::span<T>{host_items.data(), host_items.size()});
-  stream.sync();
-}
-} // namespace
+using segmented_scan_test::copy_to_host;
+using segmented_scan_test::current_device;
+using segmented_scan_test::make_device_buffer_from_host;
+using segmented_scan_test::make_tabulated_vector;
 
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
@@ -123,21 +102,13 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   const std::size_t num_segments = h_offsets.size() - 1;
   const auto item_count          = static_cast<std::size_t>(num_items);
 
-  std::vector<pair_t> h_input(item_count);
-  const auto populate = impl::populate_input<unsigned>{};
-  for (std::size_t i = 0; i < h_input.size(); ++i)
-  {
-    h_input[i] = populate(i);
-  }
+  const auto h_input = make_tabulated_vector<pair_t>(item_count, impl::populate_input<unsigned>{});
 
   const auto device = current_device();
   auto stream       = cuda::stream{device};
 
-  auto offsets = c2h::make_device_buffer<unsigned>(stream, device, h_offsets.size(), cuda::no_init);
-  copy_to_device(stream, cuda::std::span<const unsigned>{h_offsets.data(), h_offsets.size()}, offsets);
-
-  auto input = c2h::make_device_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
-  copy_to_device(stream, cuda::std::span<const pair_t>{h_input.data(), h_input.size()}, input);
+  auto offsets = make_device_buffer_from_host(stream, device, h_offsets);
+  auto input   = make_device_buffer_from_host(stream, device, h_input);
 
   auto output = c2h::make_device_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
 

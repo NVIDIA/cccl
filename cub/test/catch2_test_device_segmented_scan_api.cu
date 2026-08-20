@@ -22,32 +22,12 @@
 #include <vector>
 
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
+#include <c2h/checked_allocator.cuh>
 
-namespace
-{
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
-template <typename T, typename Expected>
-void require_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& actual, const Expected& expected)
-{
-  REQUIRE(actual.size() == expected.size());
-
-  std::vector<T> h_actual(actual.size());
-  cuda::copy_bytes(stream, actual, cuda::std::span<T>{h_actual.data(), h_actual.size()});
-  stream.sync();
-
-  for (std::size_t i = 0; i < expected.size(); ++i)
-  {
-    REQUIRE(h_actual[i] == expected[i]);
-  }
-}
-} // namespace
+using segmented_scan_test::current_device;
+using segmented_scan_test::require_equal;
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
@@ -128,11 +108,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   auto input = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 
   // offsets to starts of each of 4 rows
-  size_t row_size       = 4;
-  auto in_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
-  auto num_segments     = in_begin_offsets.size();
+  constexpr size_t row_size = 4;
+  auto in_begin_offsets     = cuda::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
+  auto num_segments         = in_begin_offsets.size();
   // Perform row-wise sum for 3-by-3 principal sub-matrix
-  size_t segment_size = 3;
+  constexpr size_t segment_size = 3;
 
   auto in_end_offsets = cuda::make_device_buffer<size_t>(
     stream, device, {0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size});
@@ -256,14 +236,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   auto input = cuda::make_device_buffer<int>(stream, device, {1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2});
 
   // begin offsets for each of 4 rows
-  size_t m          = 4;
-  auto row_offsets  = cuda::make_device_buffer<size_t>(stream, device, {0, m, 2 * m, 3 * m, 4 * m});
-  auto num_segments = row_offsets.size() - 1;
+  constexpr size_t m = 4;
+  auto row_offsets   = cuda::make_device_buffer<size_t>(stream, device, {0, m, 2 * m, 3 * m, 4 * m});
+  auto num_segments  = row_offsets.size() - 1;
 
   // Allocate m rows of m + 1 filled with zero-initialized values
   auto output = cuda::make_device_buffer<int>(stream, device, (m + 1) * m, 0);
   // begin offsets to second element of each row
-  size_t lda             = m + 1;
+  constexpr size_t lda   = m + 1;
   auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {1, lda + 1, 2 * lda + 1, 3 * lda + 1});
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
@@ -330,12 +310,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  unsigned prime = 7;
+  constexpr unsigned prime = 7;
   auto input = cuda::make_device_buffer<unsigned>(stream, device, {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
                                                                    4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6});
 
-  auto row_size    = static_cast<size_t>(prime);
-  auto row_offsets = cuda::make_device_buffer<size_t>(
+  constexpr size_t row_size = static_cast<size_t>(prime);
+  auto row_offsets          = cuda::make_device_buffer<size_t>(
     stream, device, {0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size});
   size_t num_segments = row_offsets.size() - 1;
 
@@ -526,11 +506,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   auto stream = cuda::stream{device};
 
   // example-begin inclusive-segmented-scan-three-offsets
-  size_t n   = 8;
+  constexpr size_t n = 8;
   auto input = cuda::make_device_buffer<float>(stream, device, {0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f});
 
   constexpr unsigned _zero{0};
-  auto _n               = static_cast<unsigned>(n);
+  constexpr auto _n     = static_cast<unsigned>(n);
   auto counting_it      = cuda::counting_iterator(_zero);
   auto in_begin_offsets = counting_it;
   auto in_end_offsets   = cuda::constant_iterator(_n);
@@ -605,9 +585,9 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto offsets = cuda::make_device_buffer<int>(stream, device, {0, 1});
+  auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
@@ -621,10 +601,10 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto in_offsets  = cuda::make_device_buffer<int>(stream, device, {0, 1});
-  auto out_offsets = cuda::make_device_buffer<int>(stream, device, {0});
+  auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
@@ -646,9 +626,9 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto offsets = cuda::make_device_buffer<int>(stream, device, {0, 1});
+  auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
@@ -671,10 +651,10 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto in_offsets  = cuda::make_device_buffer<int>(stream, device, {0, 1});
-  auto out_offsets = cuda::make_device_buffer<int>(stream, device, {0});
+  auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
@@ -698,9 +678,9 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto offsets = cuda::make_device_buffer<int>(stream, device, {0, 1});
+  auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedSum(
@@ -714,10 +694,10 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto in_offsets  = cuda::make_device_buffer<int>(stream, device, {0, 1});
-  auto out_offsets = cuda::make_device_buffer<int>(stream, device, {0});
+  auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedSum(
@@ -739,9 +719,9 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto offsets = cuda::make_device_buffer<int>(stream, device, {0, 1});
+  auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScan(
@@ -763,10 +743,10 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto in_offsets  = cuda::make_device_buffer<int>(stream, device, {0, 1});
-  auto out_offsets = cuda::make_device_buffer<int>(stream, device, {0});
+  auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScan(
@@ -789,9 +769,9 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto offsets = cuda::make_device_buffer<int>(stream, device, {0, 1});
+  auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
@@ -814,10 +794,10 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
   auto device = current_device();
   auto stream = cuda::stream{device};
 
-  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
-  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
-  auto in_offsets  = cuda::make_device_buffer<int>(stream, device, {0, 1});
-  auto out_offsets = cuda::make_device_buffer<int>(stream, device, {0});
+  auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(

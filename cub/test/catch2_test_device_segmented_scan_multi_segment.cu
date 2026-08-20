@@ -5,14 +5,13 @@
 
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
-#include <cuda/algorithm>
 #include <cuda/buffer>
+#include <cuda/cmath>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
-#include <cuda/std/span>
 #include <cuda/std/type_traits> // std::integral_constant
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -26,6 +25,7 @@
 #include <cuda_runtime_api.h>
 
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/checked_allocator.cuh>
@@ -80,12 +80,11 @@ struct populate_bicyclic_monoid_input
 
 namespace
 {
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
+using segmented_scan_test::copy_to_device;
+using segmented_scan_test::copy_to_host;
+using segmented_scan_test::current_device;
+using segmented_scan_test::make_device_buffer_from_host;
+using segmented_scan_test::make_tabulated_vector;
 
 template <typename T>
 constexpr unsigned int get_max_elems()
@@ -93,41 +92,6 @@ constexpr unsigned int get_max_elems()
   constexpr unsigned int max_input_bytes = (static_cast<unsigned int>(1) << 19);
   constexpr auto elem_bytes              = static_cast<unsigned int>(sizeof(T));
   return cuda::ceil_div(max_input_bytes, elem_bytes);
-}
-
-template <typename T, typename GeneratorT>
-[[nodiscard]] std::vector<T> make_tabulated_vector(std::size_t num_items, GeneratorT generator)
-{
-  std::vector<T> result(num_items);
-  for (std::size_t i = 0; i < result.size(); ++i)
-  {
-    result[i] = static_cast<T>(generator(i));
-  }
-  return result;
-}
-
-template <typename T>
-void copy_to_device(cuda::stream_ref stream, const std::vector<T>& host_items, cuda::device_buffer<T>& device_items)
-{
-  REQUIRE(host_items.size() == device_items.size());
-  cuda::copy_bytes(stream, cuda::std::span<const T>{host_items.data(), host_items.size()}, device_items);
-}
-
-template <typename T>
-[[nodiscard]] cuda::device_buffer<T>
-make_device_buffer_from_host(cuda::stream_ref stream, cuda::device_ref device, const std::vector<T>& host_items)
-{
-  auto device_items = c2h::make_device_buffer<T>(stream, device, host_items.size(), cuda::no_init);
-  copy_to_device(stream, host_items, device_items);
-  return device_items;
-}
-
-template <typename T>
-void copy_to_host(cuda::stream_ref stream, const cuda::device_buffer<T>& device_items, std::vector<T>& host_items)
-{
-  REQUIRE(device_items.size() == host_items.size());
-  cuda::copy_bytes(stream, device_items, cuda::std::span<T>{host_items.data(), host_items.size()});
-  stream.sync();
 }
 
 using integral_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;

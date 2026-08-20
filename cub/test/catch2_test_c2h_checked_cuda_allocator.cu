@@ -70,4 +70,19 @@ CUB_TEST("c2h::checked_device_memory_resource throws when requested allocations 
   const auto alloc_bytes = get_alloc_bytes();
   REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, alloc_bytes, cuda::no_init),
                     std::bad_alloc);
+
+  const auto small_size = std::size_t{1024};
+  const auto small = c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, small_size, cuda::no_init);
+  REQUIRE(small.size() == small_size);
+  REQUIRE(small.data() != nullptr);
+
+  const auto empty =
+    c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, std::size_t{0}, cuda::no_init);
+  REQUIRE(empty.size() == 0);
+  REQUIRE(empty.data() == nullptr);
+
+  auto resource                      = c2h::checked_device_memory_resource{cuda::device_ref{current_device}};
+  constexpr auto invalid_alignment   = ::cuda::mr::default_cuda_malloc_alignment - 1;
+  constexpr auto invalid_alloc_bytes = std::size_t{1};
+  REQUIRE_THROWS_AS(resource.allocate_sync(invalid_alloc_bytes, invalid_alignment), std::bad_alloc);
 }

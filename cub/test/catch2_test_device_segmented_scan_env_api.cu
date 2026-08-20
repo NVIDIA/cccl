@@ -6,45 +6,22 @@
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <cuda/__execution/tune.h>
-#include <cuda/algorithm> // cuda::copy_bytes
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/functional>
-#include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/span>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include <cstddef>
 #include <iostream>
 #include <vector>
 
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 
-namespace
-{
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
-template <typename T, typename Expected>
-void require_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& actual, const Expected& expected)
-{
-  REQUIRE(actual.size() == expected.size());
-
-  std::vector<T> h_actual(actual.size());
-  cuda::copy_bytes(stream, actual, cuda::std::span<T>{h_actual.data(), h_actual.size()});
-  stream.sync();
-
-  for (std::size_t i = 0; i < expected.size(); ++i)
-  {
-    REQUIRE(h_actual[i] == expected[i]);
-  }
-}
-} // namespace
+using segmented_scan_test::current_device;
+using segmented_scan_test::require_equal;
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {

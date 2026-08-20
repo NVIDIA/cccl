@@ -25,16 +25,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, dev
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
-#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
-#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <cstddef>
 
 #include <cuda_runtime_api.h>
 
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_allocator.cuh>
 
@@ -44,45 +43,9 @@ namespace stdexec = cuda::std::execution;
 // Input data: {1,2,3,4,5,6,7,8}  - 3 segments of sizes 3, 2, 3 at input offsets {0,3,5,8}
 // Output layout: 10 slots with padding at positions 3 and 6; output begin offsets {0,4,7}
 
-namespace
-{
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
-template <typename T, typename Expected>
-void require_equal(
-  [[maybe_unused]] cuda::stream_ref stream, const cuda::device_buffer<T>& actual, const Expected& expected)
-{
-  REQUIRE(actual.size() == expected.size());
-
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  auto copy_stream = cuda::stream{current_device()};
-  std::vector<T> h_actual(actual.size());
-  cuda::copy_bytes(copy_stream, actual, cuda::std::span<T>{h_actual.data(), h_actual.size()});
-  copy_stream.sync();
-
-  for (std::size_t i = 0; i < expected.size(); ++i)
-  {
-    REQUIRE(h_actual[i] == expected[i]);
-  }
-}
-
-template <typename T>
-[[nodiscard]] T read_single([[maybe_unused]] cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
-{
-  REQUIRE(buffer.size() == 1);
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  auto copy_stream = cuda::stream{current_device()};
-  T value{};
-  cuda::copy_bytes(copy_stream, buffer, cuda::std::span<T>{&value, 1});
-  copy_stream.sync();
-  return value;
-}
-} // namespace
+using segmented_scan_test::current_device;
+using segmented_scan_test::read_single;
+using segmented_scan_test::require_equal;
 
 #if TEST_LAUNCH == 0
 
@@ -296,7 +259,7 @@ CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works 
   require_equal(stream, d_out, expected);
 }
 
-#endif
+#endif // TEST_LAUNCH == 0
 
 CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {

@@ -116,7 +116,7 @@ inline void sync_before_default_stream(cuda::stream_ref stream)
 }
 
 template <typename T>
-cuda::host_buffer<T> device_buffer_to_host_buffer(
+[[nodiscard]] cuda::host_buffer<T> device_buffer_to_host_buffer(
   cuda::stream_ref stream, cuda::device_ref device, const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
   auto h_items =
@@ -192,7 +192,7 @@ struct sized_device_buffer
  * @brief Generates random data with the existing c2h device generator and returns it in device memory.
  */
 template <typename T>
-cuda::device_buffer<T> gen_device_buffer(
+[[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,
@@ -211,7 +211,7 @@ cuda::device_buffer<T> gen_device_buffer(
  * @brief Generates random data with the existing c2h device generator and returns device and host buffers.
  */
 template <typename T>
-device_host_buffers<T> gen_buffers(
+[[nodiscard]] device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,
@@ -229,7 +229,7 @@ device_host_buffers<T> gen_buffers(
  * @brief Generates random data with the existing c2h device generator and returns it in pinned host memory.
  */
 template <typename T>
-cuda::host_buffer<T> gen_host_buffer(
+[[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,
@@ -268,7 +268,7 @@ device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segmen
  * @brief Generates uniform segment offsets with the existing c2h device generator and returns them in device memory.
  */
 template <typename T>
-sized_device_buffer<T> gen_uniform_offsets_device_buffer(
+[[nodiscard]] sized_device_buffer<T> gen_uniform_offsets_device_buffer(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,
@@ -289,7 +289,7 @@ sized_device_buffer<T> gen_uniform_offsets_device_buffer(
  * @brief Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
  */
 template <typename T>
-device_host_buffers<T> gen_uniform_offsets_buffers(
+[[nodiscard]] device_host_buffers<T> gen_uniform_offsets_buffers(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,
@@ -310,7 +310,7 @@ device_host_buffers<T> gen_uniform_offsets_buffers(
  * memory.
  */
 template <typename T>
-cuda::host_buffer<T> gen_uniform_offsets_host_buffer(
+[[nodiscard]] cuda::host_buffer<T> gen_uniform_offsets_host_buffer(
   cuda::stream_ref stream,
   cuda::device_ref device,
   seed_t seed,

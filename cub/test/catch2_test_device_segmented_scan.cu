@@ -27,6 +27,7 @@
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/checked_allocator.cuh>
@@ -78,23 +79,8 @@ type_pair<custom_t>
 // clang-format on
 #endif
 
-namespace
-{
-[[nodiscard]] cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
-template <typename T, typename DeviceItems>
-void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, std::vector<T>& host_items)
-{
-  REQUIRE(device_items.size() == host_items.size());
-  cuda::copy_bytes(stream, device_items, cuda::std::span<T>{host_items.data(), host_items.size()});
-  stream.sync();
-}
-} // namespace
+using segmented_scan_test::copy_to_host;
+using segmented_scan_test::current_device;
 
 template <typename ValueT, typename OffsetT>
 bool check_segment(
