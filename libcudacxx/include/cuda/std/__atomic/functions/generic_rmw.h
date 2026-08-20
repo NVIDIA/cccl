@@ -311,7 +311,7 @@ __cuda_atomic_fetch_update(_Backend __backend, _Type* __ptr, const _Fn& __op, _O
            __ptr,
            __cuda_atomic_rmw_op<_Type, _Fn>{__op},
            __order,
-           __cuda_atomic_initial_load_order<_Order>::__make(),
+           __cuda_atomic_initial_load_order<_Order>(),
            __bitwise_operand{},
            __rmw_operand{},
            __scope)

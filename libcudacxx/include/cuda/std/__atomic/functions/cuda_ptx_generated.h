@@ -1844,7 +1844,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_store_dispatch(
 #if _CCCL_CUDA_COMPILATION()
 
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange_order_dispatch(
+[[nodiscard]] static _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_cas, memory_order __success, memory_order __failure, _Sco) {
   const int __success_memorder = __atomic_order_to_int(__success);
   const int __failure_memorder = __atomic_failure_order_to_int(__failure);
@@ -2427,13 +2427,13 @@ struct __cuda_atomic_bind_compare_exchange {
   _Type* __des;
 
   template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
     return __cuda_atomic_compare_exchange(
       __backend, __ptr, *__exp, *__exp, *__des, _Cas{}, __order, _Tag{}, _Sco{});
   }
 };
 template <class _Backend, class _Type, class _Cas, class _Sco>
-_CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type* __ptr,
   _Type* __exp,
@@ -2443,8 +2443,8 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   memory_order __failure,
   _Sco __scope)
 {
-  using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<_Type>;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
   __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
@@ -2459,7 +2459,7 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope);
 }
 template <class _Backend, class _Type, class _Cas, class _Sco>
-_CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   _Backend __backend,
   _Type volatile* __ptr,
   _Type* __exp,
@@ -2469,8 +2469,8 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
   memory_order __failure,
   _Sco __scope)
 {
-  using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<_Type>;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
   __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
