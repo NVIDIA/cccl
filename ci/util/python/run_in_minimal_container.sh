@@ -38,6 +38,11 @@ readonly host_workspace
 script="$1"
 shift
 if [[ "${script}" == /* ]]; then
+  if [[ "${script}" != "${host_workspace}"/* ]]; then
+    echo "ERROR: '${script}' is outside the workspace '${host_workspace}'; it would not be" >&2
+    echo "       visible inside the container." >&2
+    exit 1
+  fi
   script="${container_workspace}/${script#"${host_workspace}"/}"
 fi
 readonly script
@@ -47,6 +52,12 @@ readonly script
 declare -a gpu_request=()
 if [[ -n "${NVIDIA_VISIBLE_DEVICES:-}" ]]; then
   gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+elif [[ "${JOB_RUNNER:-}" == *"-gpu-"* ]]; then
+  # workflow-run-job-linux decides GPU exposure from the runner label, so an
+  # unset NVIDIA_VISIBLE_DEVICES here means we would silently start a
+  # GPU-less container and only find out deep inside pytest.
+  echo "ERROR: runner '${JOB_RUNNER}' is a GPU runner but NVIDIA_VISIBLE_DEVICES is unset" >&2
+  exit 1
 fi
 
 # Forward only what the payload legitimately needs. In particular CCCL_CUDA_VERSION
@@ -65,6 +76,14 @@ declare -a env_args=(
   # requested. The nvidia/cuda images set this for you; a plain image does not.
   --env "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
 )
+
+# The action exports the matrix `environment:` entries on the runner; forward
+# them across the handoff too, or they would be silently dropped half way.
+if [[ -n "${JOB_ENVIRONMENT:-}" && "${JOB_ENVIRONMENT}" != "null" && "${JOB_ENVIRONMENT}" != "[]" ]]; then
+  while IFS= read -r env_kv; do
+    env_args+=(--env "${env_kv}")
+  done < <(echo "${JOB_ENVIRONMENT}" | jq -r '.[]')
+fi
 
 echo "::group::🐍 Running in minimal container: ${image}"
 (

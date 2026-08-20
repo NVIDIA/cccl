@@ -148,7 +148,11 @@ runs:
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
           echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
           echo ""
-          if [[ "${JOB_DEVCONTAINER}" == "false" ]]; then
+          # Defaulted: this block runs inside ci.sh, which on the devcontainer
+          # path executes in a container that is not passed JOB_DEVCONTAINER.
+          # Without the default, `set -u` aborts here on every failing job and
+          # ci/upload_job_result_artifacts.sh below never runs.
+          if [[ "${JOB_DEVCONTAINER:-true}" == "false" ]]; then
             echo "2. Run the failed command directly (this job does not use the devcontainer;"
             echo "   the command provisions its own container):"
             echo "   ${COMMAND}"

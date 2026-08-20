@@ -163,13 +163,19 @@ around". These lanes therefore fetch the wheel artifact on the runner (which nee
 ``ci/util/python/run_in_minimal_container.sh``, where an undeclared dependency fails
 loudly. The same applies to both the v1 (NVRTC) and v2 (HostJIT) backends.
 
-Three Python lanes deliberately keep the devcontainer, because they genuinely need what
+These Python lanes deliberately keep the devcontainer, because they genuinely need what
 it provides:
 
 * ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
   toolkit.
 * ``test_headers`` -- compiles C++, so it needs a host compiler.
 * ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
+* ``test_py_stf`` -- ``ci/test_cuda_stf_python.sh`` has not been converted; ``cuda-stf`` is
+  a separate wheel with its own producer, so it is left for a follow-up.
+
+Every other Linux Python test lane sets the flag, in ``pull_request``,
+``pull_request_lite``, ``nightly`` and ``weekly`` alike. The ``python-wheels`` publish
+workflow is intentionally untouched for now.
 
 ``devcontainer: false`` is Linux-only; ``build-workflow.py`` raises if it is combined with
 an MSVC host compiler, since ``workflow-run-job-windows`` does not honor the flag.

@@ -234,7 +234,8 @@ workflows:
     - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: 'rtxpro6000', sm: 'gpu'}
     - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',               gpu: 't4', sm: 'gpu'}
-    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
+    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022'}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # Packaging / install
@@ -246,7 +247,7 @@ workflows:
     # c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
     # Python against c.parallel v2 (HostJIT-based)
-    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13', devcontainer: false}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
