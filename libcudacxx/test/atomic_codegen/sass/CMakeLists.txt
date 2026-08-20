@@ -42,7 +42,7 @@ endif()
 
 set(libcudacxx_atomic_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+  file(GLOB libcudacxx_atomic_codegen_tests CONFIGURE_DEPENDS "*.cu")
 endif()
 
 if (NOT libcudacxx_atomic_codegen_tests)
@@ -80,11 +80,9 @@ else()
   # with CUDA 12.4 and newer.
   if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.4)
     list(
-      REMOVE_ITEM libcudacxx_atomic_codegen_tests
-      "${CMAKE_CURRENT_SOURCE_DIR}/compare_exchange_types_128_atomic_ref.cu"
-      "${CMAKE_CURRENT_SOURCE_DIR}/exchange_types_128_atomic_ref.cu"
-      "${CMAKE_CURRENT_SOURCE_DIR}/load_types_128_atomic_ref.cu"
-      "${CMAKE_CURRENT_SOURCE_DIR}/store_types_128_atomic_ref.cu"
+      FILTER libcudacxx_atomic_codegen_tests
+      EXCLUDE
+      REGEX "_types_128_atomic_ref[.]cu$"
     )
   endif()
 endif()

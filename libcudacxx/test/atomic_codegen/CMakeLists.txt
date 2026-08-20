@@ -2,7 +2,7 @@ add_custom_target(libcudacxx.test.atomics.ptx)
 
 set(libcudacxx_atomic_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+  file(GLOB libcudacxx_atomic_codegen_tests CONFIGURE_DEPENDS "*.cu")
 endif()
 
 if (NOT libcudacxx_atomic_codegen_tests)
