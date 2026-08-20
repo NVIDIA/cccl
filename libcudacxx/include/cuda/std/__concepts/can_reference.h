@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,11 +33,25 @@ template <class _Tp>
 _CCCL_CONCEPT __can_reference = _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp);
 #else // ^^^ have __is_referenceable ^^^ / vvv no builtin vvv
 
-template <class _Tp>
-using __with_reference = _Tp&;
+struct __false_tag
+{};
+
+struct __cccl_is_referenceable_impl
+{
+  template <class _Tp>
+  _CCCL_HOST_DEVICE static _Tp& __test(int);
+  template <class _Tp>
+  _CCCL_HOST_DEVICE static __false_tag __test(...);
+};
 
 template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __ref)(typename(__with_reference<_Tp>), (__ref));
+_CCCL_CONCEPT __can_reference = !is_same_v<decltype(__cccl_is_referenceable_impl::__test<_Tp>(0)), __false_tag>;
+
+// template <class _Tp>
+// using __with_reference = _Tp&;
+
+// template <class _Tp>
+// _CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __ref)(typename(__with_reference<_Tp>), (__ref));
 #endif // ^^^ no builtin ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
