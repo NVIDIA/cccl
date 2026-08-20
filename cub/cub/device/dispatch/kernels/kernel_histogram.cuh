@@ -20,10 +20,31 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cooperative_groups.h>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
+template <typename CounterT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void histogram_atomic_add(CounterT* address, CounterT value)
+{
+  if constexpr (::cuda::std::is_integral_v<CounterT> && sizeof(CounterT) == sizeof(::cuda::std::uint64_t))
+  {
+    // CUDA's 64-bit integer atomic overload is spelled in terms of unsigned long long.
+    // Keep the width decision explicit and use that spelling only at the API boundary.
+    atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(value));
+  }
+  else
+  {
+    atomicAdd(address, value);
+  }
+}
+
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
@@ -702,6 +723,397 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   // Store output to global (if necessary)
   agent.StoreOutput();
+}
+
+template <typename CounterT>
+_CCCL_DEVICE _CCCL_FORCEINLINE bool histogram_cache_probe(
+  ::cuda::std::uint32_t* keys,
+  CounterT* counts,
+  int count_replicas,
+  int bin,
+  CounterT contribution,
+  int cache_mask,
+  int cache_log2,
+  HistogramCacheAlgorithm cache_algorithm,
+  bool use_second_probe)
+{
+  if (cache_algorithm == HistogramCacheAlgorithm::none)
+  {
+    return false;
+  }
+
+  constexpr ::cuda::std::uint32_t empty_key = UINT32_MAX;
+  const auto bin_key                        = static_cast<::cuda::std::uint32_t>(bin);
+  const auto try_slot                       = [&](int slot) {
+    ::cuda::std::uint32_t key = keys[slot];
+    if (key == empty_key)
+    {
+      key = atomicCAS_block(&keys[slot], empty_key, bin_key);
+    }
+    if (key == empty_key || key == bin_key)
+    {
+      const int replica = static_cast<int>((threadIdx.x >> 5) % count_replicas);
+      atomicAdd_block(&counts[replica * (cache_mask + 1) + slot], contribution);
+      return true;
+    }
+    return false;
+  };
+
+  const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
+  const int primary       = static_cast<int>((hash >> (32 - cache_log2)) & static_cast<unsigned int>(cache_mask));
+  if (try_slot(primary))
+  {
+    return true;
+  }
+
+  if (use_second_probe)
+  {
+    const unsigned int hash2 = (static_cast<unsigned int>(bin) ^ 0x9e3779b9u) * 2246822519u;
+    const int secondary      = static_cast<int>((hash2 >> (32 - cache_log2)) & static_cast<unsigned int>(cache_mask));
+    return try_slot(secondary);
+  }
+  return false;
+}
+
+//! Agent for the policy-configurable cooperative high-bin histogram kernel.
+template <typename PolicySelector,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+struct AgentHistogramCooperative
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void Consume(
+    const SampleIteratorT d_samples,
+    const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> decode_op_wrapper,
+    const OffsetT num_row_pixels,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int cache_slots_per_channel)
+  {
+    static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
+    static constexpr int count_replicas     = policy.high_bin_cache_count_replicas;
+    static_assert(policy.high_bin_pixels_per_thread > 0, "Histogram cooperative unroll must be positive");
+    static_assert(
+      policy.high_bin_cache == HistogramCacheAlgorithm::none
+        || (policy.high_bin_cache_entries_per_channel > 0
+            && (policy.high_bin_cache_entries_per_channel & (policy.high_bin_cache_entries_per_channel - 1)) == 0),
+      "Histogram cache entries per channel must be a power of two");
+    namespace cg        = ::cooperative_groups;
+    cg::grid_group grid = cg::this_grid();
+
+    const unsigned int tid_global    = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int total_threads = gridDim.x * blockDim.x;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(num_output_bins_wrapper[ch]);
+           bin += total_threads)
+      {
+        d_output_histograms_wrapper[ch][bin] = CounterT{0};
+      }
+    }
+    grid.sync();
+
+    static_assert(count_replicas > 0, "Histogram cache replication must be positive");
+
+    extern __shared__ unsigned char dynamic_smem[];
+    auto* cache_keys = reinterpret_cast<::cuda::std::uint32_t*>(dynamic_smem);
+    CounterT* cache_counts =
+      reinterpret_cast<CounterT*>(cache_keys + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel);
+    const int cache_mask = cache_slots_per_channel > 0 ? cache_slots_per_channel - 1 : 0;
+    const int cache_log2 =
+      cache_slots_per_channel > 0 ? 31 - __clz(static_cast<unsigned int>(cache_slots_per_channel)) : 0;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      auto* channel_keys       = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
+      CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
+      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      {
+        channel_keys[slot] = ~::cuda::std::uint32_t{0};
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int replica = 0; replica < count_replicas; ++replica)
+        {
+          channel_counts[static_cast<size_t>(replica) * cache_slots_per_channel + slot] = CounterT{0};
+        }
+      }
+
+      if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+      {
+        CounterT* block_histogram =
+          d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
+        for (int bin = threadIdx.x; bin < num_output_bins_wrapper[ch]; bin += blockDim.x)
+        {
+          block_histogram[bin] = CounterT{0};
+        }
+      }
+    }
+    __syncthreads();
+
+    constexpr int unroll        = policy.high_bin_pixels_per_thread;
+    const OffsetT total_pixels  = num_rows * num_row_pixels;
+    const OffsetT step          = static_cast<OffsetT>(total_threads);
+    const OffsetT chunk         = static_cast<OffsetT>(unroll) * step;
+    const OffsetT chunk_count   = ::cuda::ceil_div(total_pixels, chunk);
+    const unsigned int lane_id  = threadIdx.x & 0x1f;
+    const bool contiguous_input = num_rows == 1;
+    int pending_bin[NumActiveChannels];
+    CounterT pending_count[NumActiveChannels];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      pending_bin[ch]   = -1;
+      pending_count[ch] = CounterT{0};
+    }
+
+    for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+    {
+      const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int item = 0; item < unroll; ++item)
+      {
+        const OffsetT pixel  = first_pixel + static_cast<OffsetT>(item) * step;
+        const bool valid     = pixel < total_pixels;
+        OffsetT pixel_offset = 0;
+        if (valid)
+        {
+          if (contiguous_input)
+          {
+            pixel_offset = pixel * NumChannels;
+          }
+          else
+          {
+            const OffsetT row = pixel / num_row_pixels;
+            pixel_offset      = row * row_stride_samples + (pixel - row * num_row_pixels) * NumChannels;
+          }
+        }
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          int bin = -1;
+          if (valid)
+          {
+            const auto sample = d_samples[pixel_offset + ch];
+            decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            if (bin < 0 || bin >= num_output_bins_wrapper[ch])
+            {
+              bin = -1;
+            }
+          }
+
+          const auto update_bin = [&](int selected_bin, CounterT contribution) {
+            auto* channel_keys = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
+            CounterT* channel_counts =
+              cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
+            const bool use_second_probe = policy.high_bin_cache == HistogramCacheAlgorithm::cuckoo
+                                       && num_output_bins_wrapper[ch] < policy.high_bin_cache_cuckoo_max_bins;
+            if (!histogram_cache_probe(
+                  channel_keys,
+                  channel_counts,
+                  count_replicas,
+                  selected_bin,
+                  contribution,
+                  cache_mask,
+                  cache_log2,
+                  policy.high_bin_cache,
+                  use_second_probe))
+            {
+              if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+              {
+                CounterT* block_histogram =
+                  d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
+                atomicAdd_block(&block_histogram[selected_bin], contribution);
+              }
+              else
+              {
+                histogram_atomic_add(&d_output_histograms_wrapper[ch][selected_bin], contribution);
+              }
+            }
+          };
+
+          if constexpr (policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
+          {
+            NV_IF_ELSE_TARGET(
+              NV_PROVIDES_SM_70,
+              (const unsigned int active = __activemask();
+               const unsigned int peers  = __match_any_sync(active, static_cast<unsigned int>(bin));
+               const int leader          = __ffs(static_cast<int>(peers)) - 1;
+               if (bin >= 0 && static_cast<int>(lane_id) == leader) {
+                 update_bin(bin, static_cast<CounterT>(__popc(peers)));
+               }),
+              (if (bin >= 0) { update_bin(bin, CounterT{1}); }));
+          }
+          else if constexpr (policy.high_bin_aggregation == HistogramAggregationAlgorithm::rle)
+          {
+            if (bin >= 0)
+            {
+              if (pending_bin[ch] == bin)
+              {
+                ++pending_count[ch];
+              }
+              else
+              {
+                if (pending_bin[ch] >= 0)
+                {
+                  update_bin(pending_bin[ch], pending_count[ch]);
+                }
+                pending_bin[ch]   = bin;
+                pending_count[ch] = CounterT{1};
+              }
+            }
+          }
+          else if (bin >= 0)
+          {
+            update_bin(bin, CounterT{1});
+          }
+        }
+      }
+    }
+
+    if constexpr (policy.high_bin_aggregation == HistogramAggregationAlgorithm::rle)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        if (pending_bin[ch] >= 0)
+        {
+          auto* channel_keys       = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
+          CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
+          const bool use_second_probe = policy.high_bin_cache == HistogramCacheAlgorithm::cuckoo
+                                     && num_output_bins_wrapper[ch] < policy.high_bin_cache_cuckoo_max_bins;
+          if (!histogram_cache_probe(
+                channel_keys,
+                channel_counts,
+                count_replicas,
+                pending_bin[ch],
+                pending_count[ch],
+                cache_mask,
+                cache_log2,
+                policy.high_bin_cache,
+                use_second_probe))
+          {
+            if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+            {
+              CounterT* block_histogram =
+                d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
+              atomicAdd_block(&block_histogram[pending_bin[ch]], pending_count[ch]);
+            }
+            else
+            {
+              histogram_atomic_add(&d_output_histograms_wrapper[ch][pending_bin[ch]], pending_count[ch]);
+            }
+          }
+        }
+      }
+    }
+
+    __syncthreads();
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      auto* channel_keys       = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
+      CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
+      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      {
+        const auto key = channel_keys[slot];
+        if (key != ~::cuda::std::uint32_t{0})
+        {
+          CounterT count = CounterT{0};
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int replica = 0; replica < count_replicas; ++replica)
+          {
+            count += channel_counts[static_cast<size_t>(replica) * cache_slots_per_channel + slot];
+          }
+          if (count > CounterT{0})
+          {
+            if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+            {
+              CounterT* block_histogram =
+                d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
+              block_histogram[key] += count;
+            }
+            else
+            {
+              histogram_atomic_add(&d_output_histograms_wrapper[ch][key], count);
+            }
+          }
+        }
+      }
+    }
+
+    if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+    {
+      grid.sync();
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const unsigned int num_bins = static_cast<unsigned int>(num_output_bins_wrapper[ch]);
+        for (unsigned int bin = tid_global; bin < num_bins; bin += total_threads)
+        {
+          CounterT total = CounterT{0};
+          for (unsigned int block = 0; block < gridDim.x; ++block)
+          {
+            total += d_privatized_histograms_wrapper[ch][static_cast<size_t>(block) * num_bins + bin];
+          }
+          d_output_histograms_wrapper[ch][bin] = total;
+        }
+      }
+    }
+  }
+};
+
+//! Policy-configurable cooperative high-bin histogram kernel.
+template <typename PolicySelector,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCooperativeKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int cache_slots_per_channel)
+{
+  AgentHistogramCooperative<
+    PolicySelector,
+    NumChannels,
+    NumActiveChannels,
+    SampleIteratorT,
+    CounterT,
+    PrivatizedDecodeOpT,
+    OffsetT>::Consume(d_samples,
+                      num_output_bins_wrapper,
+                      d_output_histograms_wrapper,
+                      d_privatized_histograms_wrapper,
+                      decode_op_wrapper,
+                      num_row_pixels,
+                      num_rows,
+                      row_stride_samples,
+                      cache_slots_per_channel);
 }
 } // namespace detail::histogram
 CUB_NAMESPACE_END
