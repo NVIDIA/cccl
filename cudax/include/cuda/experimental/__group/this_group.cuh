@@ -129,10 +129,6 @@ private:
   _SynchronizerInstance __synchronizer_instance_{};
 
 public:
-  _CCCL_DEVICE_API explicit __this_group_base() noexcept
-      : __hier_{::cuda::experimental::__implicit_hierarchy()}
-  {}
-
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like) noexcept
@@ -252,6 +248,7 @@ public:
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
   template <class _Parent>
   _CCCL_DEVICE_API this_thread(const ::cooperative_groups::thread_block_tile<1, _Parent>&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
   {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
@@ -278,6 +275,7 @@ public:
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
   template <class _Parent>
   _CCCL_DEVICE_API this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
   {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
@@ -303,7 +301,9 @@ public:
   using __base_type::__base_type;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept {}
+  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 
@@ -327,7 +327,9 @@ public:
   using __base_type::__base_type;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept {}
+  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 };
 
@@ -351,7 +353,9 @@ public:
   using __base_type::__base_type;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept {}
+  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 

@@ -46,6 +46,12 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
 
+using __implicit_hierarchy_1d_t =
+  hierarchy<thread_level,
+            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
+
 // groups
 
 template <class _Level, class _Hierarchy>
