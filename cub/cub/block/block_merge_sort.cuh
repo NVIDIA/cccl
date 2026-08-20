@@ -966,9 +966,9 @@ private:
         // group's two runs: a group lying entirely beyond valid_items would otherwise request a
         // diagonal larger than its (empty) runs, violating the MergePath precondition and
         // producing negative slice counts downstream.
-        diag = (::cuda::std::min) (
-          keys2_end - keys1_beg,
-          (::cuda::std::min) (valid_items, ItemsPerThread * thread_idx_in_thread_group_being_merged));
+        diag = (::cuda::std::min) (keys2_end - keys1_beg,
+                                   (::cuda::std::min) (valid_items,
+                                                       ItemsPerThread * thread_idx_in_thread_group_being_merged));
       }
       else
       {

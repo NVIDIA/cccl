@@ -112,8 +112,7 @@ struct stable_sort_keys_partial_tile_t
 struct stable_sort_keys_partial_tile_no_sentinel_t
 {
   template <class BlockMergeSortT, class KeyT, class DefaultT>
-  __device__ void
-  operator()(BlockMergeSortT& sort, KeyT& thread_data, int valid_items, DefaultT /* oob_default */) const
+  __device__ void operator()(BlockMergeSortT& sort, KeyT& thread_data, int valid_items, DefaultT /* oob_default */) const
   {
     sort.StableSort(thread_data, CustomLess{}, valid_items);
   }
