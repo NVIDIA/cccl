@@ -1,0 +1,169 @@
+name: Test Slack failure analysis thread
+
+on:
+  push:
+    branches:
+      - codex/nightly-ai-slack-links
+    paths:
+      - .github/workflows/slack-thread-test.yml
+
+permissions: {}
+
+jobs:
+  render:
+    name: Render test Slack thread
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7'
+      }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      slack_thread: ${{ steps.render.outputs.content }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Write normalized failure analysis fixture
+        env:
+          ANALYSIS_FILE: ${{ runner.temp }}/failure-analysis.json
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          cat > "${ANALYSIS_FILE}" <<'JSON'
+          {
+            "run": {
+              "id": 31561126707,
+              "number": 772,
+              "head_sha": "a0c21d1ec5e8602dc85f9ab289006bf1a72e2f96"
+            },
+            "jobs": [
+              {
+                "id": 94003495063,
+                "name": "CUB segmented-sort GCC 8",
+                "conclusion": "failure",
+                "steps": [
+                  {"number": 4}
+                ]
+              },
+              {
+                "id": 94003495164,
+                "name": "CUB segmented-sort GCC 9",
+                "conclusion": "failure",
+                "steps": [
+                  {"number": 4}
+                ]
+              },
+              {
+                "id": 94003491548,
+                "name": "libcudacxx atomic_ref GCC 9",
+                "conclusion": "failure",
+                "steps": [
+                  {"number": 4}
+                ]
+              },
+              {
+                "id": 94003491952,
+                "name": "Thrust iterator validation",
+                "conclusion": "failure",
+                "steps": [
+                  {"number": 4}
+                ]
+              }
+            ],
+            "groups": [
+              {
+                "title": "CUB segmented-sort selector fails aggregate return on GCC 8/9",
+                "explanation": "GCC 8 and 9 reject the selector's aggregate return.",
+                "evidence": [
+                  {
+                    "job_id": 94003495063,
+                    "step_number": 4,
+                    "lines": ["error: could not convert braced initializer to SegmentedSortPolicy"]
+                  }
+                ],
+                "root_cause": "The selector returns an untyped braced initializer that these toolchains cannot convert.",
+                "source_locations": [
+                  {"path": "ci/matrix.yaml", "line": 277}
+                ],
+                "next_steps": "Return an explicitly typed policy and rebuild only the affected tests.",
+                "agent_prompt": "Fix the segmented-sort selector and run the focused GCC 8/9 tests.",
+                "job_ids": [94003495063, 94003495164]
+              },
+              {
+                "title": "atomic_ref rejects volatile scalar types",
+                "explanation": "An older toolchain rejects the volatile atomic_ref test.",
+                "evidence": [
+                  {
+                    "job_id": 94003491548,
+                    "step_number": 4,
+                    "lines": ["static assertion failed: type must be trivially copyable"]
+                  }
+                ],
+                "root_cause": "The trait is evaluated before removing cv-qualifiers from the underlying type.",
+                "source_locations": [],
+                "next_steps": "Evaluate the trait on the cv-unqualified type and compile the focused test.",
+                "agent_prompt": "Fix atomic_ref's volatile type check and compile the focused test.",
+                "job_ids": [94003491548]
+              },
+              {
+                "title": "operator* overload fails iterator validation",
+                "explanation": "The iterator fixture selects the wrong operator overload.",
+                "evidence": [
+                  {
+                    "job_id": 94003491952,
+                    "step_number": 4,
+                    "lines": ["error: no matching operator* for iterator proxy"]
+                  }
+                ],
+                "root_cause": "The proxy overload does not satisfy the iterator's cv-qualified access path.",
+                "source_locations": [],
+                "next_steps": "Add the missing qualified overload and run the focused iterator test.",
+                "agent_prompt": "Fix the iterator proxy operator overload and run the focused test.",
+                "job_ids": [94003491952]
+              }
+            ]
+          }
+          JSON
+
+      - name: Render Slack failure analysis
+        id: render
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ runner.temp }}/failure-analysis.json
+          format: slack
+
+  publish:
+    name: Post test Slack thread
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
+        needs.render.result == 'success'
+      }}
+    needs: render
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_thread.py
+          sparse-checkout-cone-mode: false
+
+      - name: Post test failure analysis thread
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          SLACK_THREAD: ${{ needs.render.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_thread.py
