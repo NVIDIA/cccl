@@ -120,7 +120,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_{1}<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_{1}<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_{0}_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {{
@@ -145,7 +145,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_{1}<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_{1}<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_{0}_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {{

@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/functions/backend.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/cstddef>
@@ -34,23 +33,22 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __cuda_atomic_ptx_backend
 {
   template <class _Type>
-  using __enable_if_direct_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;
+  static constexpr bool __use_direct_bitwise = sizeof(_Type) < 16;
 
   template <class _Type>
-  using __enable_if_direct_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) < 16), bool>;
+  static constexpr bool __use_direct_arithmetic = is_scalar_v<_Type> && (sizeof(_Type) < 16);
 
   template <class _Type>
-  using __enable_if_direct_minmax = enable_if_t<is_integral_v<_Type> && (sizeof(_Type) < 16), bool>;
+  static constexpr bool __use_direct_minmax = is_integral_v<_Type> && (sizeof(_Type) < 16);
 
   template <class _Type>
-  using __enable_if_fallback_bitwise = enable_if_t<(sizeof(_Type) == 16), bool>;
+  static constexpr bool __use_fallback_bitwise = sizeof(_Type) == 16;
 
   template <class _Type>
-  using __enable_if_fallback_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) == 16), bool>;
+  static constexpr bool __use_fallback_arithmetic = is_scalar_v<_Type> && (sizeof(_Type) == 16);
 
   template <class _Type>
-  using __enable_if_fallback_minmax =
-    enable_if_t<!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16), bool>;
+  static constexpr bool __use_fallback_minmax = !is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16);
 
   static constexpr bool __needs_constant_order             = true;
   static constexpr bool __requires_local_memory_workaround = true;

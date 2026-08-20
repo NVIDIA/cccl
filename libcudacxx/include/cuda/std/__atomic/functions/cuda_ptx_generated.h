@@ -3577,7 +3577,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_arithmetic<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_arithmetic<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_add_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -3602,7 +3602,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_arithmetic<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_arithmetic<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_add_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -3806,7 +3806,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_and_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -3831,7 +3831,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_and_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4195,7 +4195,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_minmax<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_minmax<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_max_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4220,7 +4220,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_minmax<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_minmax<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_max_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4584,7 +4584,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_minmax<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_minmax<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_min_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4609,7 +4609,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_minmax<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_minmax<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_min_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4813,7 +4813,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_or_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -4838,7 +4838,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_or_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -5042,7 +5042,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_xor_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
@@ -5067,7 +5067,7 @@ template <class _Backend,
           class _Type,
           class _Up,
           class _Sco,
-          typename _Backend::template __enable_if_direct_bitwise<_Type> = 0>
+          enable_if_t<_Backend::template __use_direct_bitwise<_Type>, bool> = false>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_xor_dispatch(
   _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
