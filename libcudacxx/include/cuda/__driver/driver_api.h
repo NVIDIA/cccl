@@ -1096,6 +1096,29 @@ __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-e
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to convert a green context", &__result, __green_ctx);
   return __result;
 }
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUstream
+__greenCtxStreamCreate(::CUgreenCtx __green_ctx, unsigned int __flags, int __priority)
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxStreamCreate, cuGreenCtxStreamCreate, 12, 5);
+  ::CUstream __result{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to create a stream from a green context",
+    &__result,
+    __green_ctx,
+    // From the driver docs (as of 13.3.1):
+    //
+    // > The supported values for flags are:
+    // >
+    // > - CU_STREAM_NON_BLOCKING: This must be specified
+    __flags | ::CU_STREAM_NON_BLOCKING,
+    __priority);
+  return __result;
+}
+
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
