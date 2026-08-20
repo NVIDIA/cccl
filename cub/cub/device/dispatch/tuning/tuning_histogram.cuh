@@ -72,6 +72,7 @@ struct HistogramPolicy
   int max_privatized_dynamic_smem_2_channel_even_bytes; //!< Two-channel HistogramEven SMEM limit
   int max_privatized_dynamic_smem_3_channel_even_bytes; //!< Three-channel HistogramEven SMEM limit
   int max_privatized_dynamic_smem_4_channel_even_bytes; //!< Four-channel HistogramEven SMEM limit
+  int min_cached_search_gmem_range_bins; //!< Minimum RANGE bin count for cached search with GMEM privatization
   int max_output_histogram_bytes_for_init_kernel_pdl; //!< Largest output allocation for init-kernel PDL
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -87,6 +88,7 @@ struct HistogramPolicy
         && lhs.max_privatized_dynamic_smem_2_channel_even_bytes == rhs.max_privatized_dynamic_smem_2_channel_even_bytes
         && lhs.max_privatized_dynamic_smem_3_channel_even_bytes == rhs.max_privatized_dynamic_smem_3_channel_even_bytes
         && lhs.max_privatized_dynamic_smem_4_channel_even_bytes == rhs.max_privatized_dynamic_smem_4_channel_even_bytes
+        && lhs.min_cached_search_gmem_range_bins == rhs.min_cached_search_gmem_range_bins
         && lhs.max_output_histogram_bytes_for_init_kernel_pdl == rhs.max_output_histogram_bytes_for_init_kernel_pdl;
   }
 
@@ -112,8 +114,10 @@ struct HistogramPolicy
         << ", .max_privatized_dynamic_smem_3_channel_even_bytes = "
         << p.max_privatized_dynamic_smem_3_channel_even_bytes
         << ", .max_privatized_dynamic_smem_4_channel_even_bytes = "
-        << p.max_privatized_dynamic_smem_4_channel_even_bytes << ", .max_output_histogram_bytes_for_init_kernel_pdl = "
-        << p.max_output_histogram_bytes_for_init_kernel_pdl << " }";
+        << p.max_privatized_dynamic_smem_4_channel_even_bytes
+        << ", .min_cached_search_gmem_range_bins = " << p.min_cached_search_gmem_range_bins
+        << ", .max_output_histogram_bytes_for_init_kernel_pdl = " << p.max_output_histogram_bytes_for_init_kernel_pdl
+        << " }";
   }
 #endif
 };
@@ -183,6 +187,12 @@ select_privatization_mode(const HistogramPolicy& policy, int num_bins) -> privat
     return privatization_mode::dynamic_smem;
   }
   return privatization_mode::gmem;
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
+use_cached_search_for_gmem_range(const HistogramPolicy& policy, int num_bins)
+{
+  return policy.min_cached_search_gmem_range_bins > 0 && num_bins >= policy.min_cached_search_gmem_range_bins;
 }
 
 // The C Parallel API erases CounterT before host dispatch, so its bridge must select from the
@@ -300,6 +310,8 @@ public:
       constexpr int max_privatized_dynamic_smem_single_channel_bytes    = 228352;
       constexpr int max_privatized_dynamic_smem_range_bytes_per_channel = 8192;
       constexpr int max_privatized_dynamic_smem_even_bytes_per_channel  = 32768;
+      constexpr int min_cached_search_gmem_single_channel_range_bins    = 1;
+      constexpr int min_cached_search_gmem_multi_channel_range_bins     = 16384;
       constexpr int init_threads_per_block                              = 256;
       constexpr int max_output_histogram_bytes_for_init_kernel_pdl      = 8192;
 
@@ -324,6 +336,12 @@ public:
             && (sample_size_bytes == 1 || sample_size_bytes == 2 || sample_size_bytes == 4 || sample_size_bytes == 8)
           ? max_output_histogram_bytes_for_init_kernel_pdl
           : 0;
+      const int min_cached_search_gmem_range_bins =
+        !is_even && sample_is_primitive && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)}
+            && (sample_size_bytes == 4 || sample_size_bytes == 8)
+          ? (single_channel ? min_cached_search_gmem_single_channel_range_bins
+                            : min_cached_search_gmem_multi_channel_range_bins)
+          : 0;
 
       return HistogramPolicy{
         gmem,
@@ -343,6 +361,7 @@ public:
         has_multi_channel_dynamic_smem && is_even && num_active_channels == 4
           ? dynamic_smem_multi_channel_even_bytes
           : 0,
+        min_cached_search_gmem_range_bins,
         init_kernel_pdl_trigger_bytes};
     }
 
@@ -385,12 +404,13 @@ public:
         0,
         0,
         0,
+        0,
         init_kernel_pdl_trigger_bytes};
     }
 
     // Architectures before SM90 use the longstanding generic histogram tuning.
     const auto sweep = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
-    return HistogramPolicy{sweep, sweep, sweep, 256, 1024, 0, 0, 0, 0, 0, 0, 0};
+    return HistogramPolicy{sweep, sweep, sweep, 256, 1024, 0, 0, 0, 0, 0, 0, 0, 0};
   }
 };
 

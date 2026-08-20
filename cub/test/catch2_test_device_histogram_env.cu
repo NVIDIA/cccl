@@ -1690,7 +1690,7 @@ struct histogram_tuning
   {
     constexpr auto sweep =
       cub::HistogramPrivatizationPolicy{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
-    return {sweep, sweep, sweep, 256, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0};
+    return {sweep, sweep, sweep, 256, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0, 0};
   }
 };
 
@@ -1720,6 +1720,7 @@ struct mixed_counter_histogram_tuning
       28544 * sizeof(unsigned int) * 2,
       19029 * sizeof(unsigned int) * 3,
       8192 * sizeof(unsigned int) * 4,
+      0,
       0};
   }
 };
@@ -1891,6 +1892,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     4096,
     8192,
     16384,
+    32768,
     2048};
 
 #  if _CCCL_STD_VER >= 2020
@@ -1925,6 +1927,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     .max_privatized_dynamic_smem_2_channel_even_bytes      = 4096,
     .max_privatized_dynamic_smem_3_channel_even_bytes      = 8192,
     .max_privatized_dynamic_smem_4_channel_even_bytes      = 16384,
+    .min_cached_search_gmem_range_bins                     = 32768,
     .max_output_histogram_bytes_for_init_kernel_pdl        = 2048};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
@@ -1948,6 +1951,18 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
 
   constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
   constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
+  constexpr auto sm90_range_u32_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{9, 0});
+  constexpr auto sm100_range_u32_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_range_f64_policy =
+    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_range_wide_counter_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
   constexpr auto sm100_wide_counter_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
       cuda::compute_capability{10, 0});
@@ -1981,12 +1996,21 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE(sm100_range_u64_policy.static_smem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_range_u64_policy.static_smem.items_per_thread == 8);
   STATIC_REQUIRE(sm100_range_u64_policy.static_smem_min_blocks_per_sm == 3);
+  STATIC_REQUIRE(sm90_range_u32_policy.min_cached_search_gmem_range_bins == 0);
+  STATIC_REQUIRE(sm100_range_u32_policy.min_cached_search_gmem_range_bins == 1);
+  STATIC_REQUIRE(sm100_range_f64_policy.min_cached_search_gmem_range_bins == 1);
+  STATIC_REQUIRE(sm100_range_wide_counter_policy.min_cached_search_gmem_range_bins == 0);
+  STATIC_REQUIRE(sm100_range_u64_policy.min_cached_search_gmem_range_bins == 1);
+  STATIC_REQUIRE(cub::detail::histogram::use_cached_search_for_gmem_range(sm100_range_u32_policy, 1));
   STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
                    sm100_range_u64_policy.max_privatized_static_smem_single_channel_bytes)
                  == 256);
 
   constexpr auto sm100_multi_range_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_multi_range_f64_policy =
+    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 4, 3, false>{}(
       cuda::compute_capability{10, 0});
   constexpr auto sm100_even_2ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 2, 2, true>{}(
@@ -1997,6 +2021,11 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_even_4ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
       cuda::compute_capability{10, 0});
+  STATIC_REQUIRE(sm100_multi_range_policy.min_cached_search_gmem_range_bins == 16384);
+  STATIC_REQUIRE(sm100_multi_range_f64_policy.min_cached_search_gmem_range_bins == 16384);
+  STATIC_REQUIRE_FALSE(cub::detail::histogram::use_cached_search_for_gmem_range(sm100_multi_range_policy, 16383));
+  STATIC_REQUIRE(cub::detail::histogram::use_cached_search_for_gmem_range(sm100_multi_range_policy, 16384));
+  STATIC_REQUIRE(sm100_even_4ch_policy.min_cached_search_gmem_range_bins == 0);
   constexpr int expected_even_2ch_policy_bytes = 65536;
   constexpr int expected_even_3ch_policy_bytes = 98304;
   constexpr int expected_even_4ch_policy_bytes = 131072;
