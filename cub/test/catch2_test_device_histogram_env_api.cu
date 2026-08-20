@@ -432,6 +432,7 @@ struct HistogramPolicySelector
       .max_privatized_dynamic_smem_2_channel_even_bytes      = 0,
       .max_privatized_dynamic_smem_3_channel_even_bytes      = 0,
       .max_privatized_dynamic_smem_4_channel_even_bytes      = 0,
+      .min_cached_search_gmem_range_bins                     = 0,
       .max_output_histogram_bytes_for_init_kernel_pdl        = 8192};
   }
 };
