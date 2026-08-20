@@ -80,36 +80,40 @@ struct __cuda_atomic_cas_weak : __cuda_atomic_cas_strong
 }
 
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_load_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+_CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
 {
   __fn(__order);
 }
 
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_store_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+_CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
 {
   __fn(__order);
 }
 
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_exchange_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+_CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_order_dispatch(
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
 {
   __fn(__order);
 }
 
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_fetch_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+_CCCL_HOST_DEVICE_API void __cuda_atomic_fetch_order_dispatch(
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
 {
   __fn(__order);
 }
 
 template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
 _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_order_dispatch(
-  _Backend __backend, _Fn& __fn, memory_order __success, memory_order __failure, _Sco __scope)
+  [[maybe_unused]] _Backend __backend,
+  _Fn& __fn,
+  memory_order __success,
+  memory_order __failure,
+  [[maybe_unused]] _Sco __scope)
 {
   return __fn(__cuda_atomic_runtime_cas_order{__success, __failure});
 }
