@@ -26,7 +26,11 @@
 //! Catch2 and ctest report exactly as they do today. The output is purely
 //! additive.
 
-#ifdef _WIN32
+// _WIN32 is also defined for Windows on ARM64, where CONTEXT exposes Pc/Sp/Fp
+// instead of Rip/Rsp/Rbp and StackWalk64 needs IMAGE_FILE_MACHINE_ARM64. The
+// supported Windows configuration is x64, so restrict this to x64 rather than
+// carry an untested second stack walker.
+#if defined(_WIN32) && (defined(_M_X64) || defined(_M_AMD64))
 
 #  include <cstdio>
 #  include <cstring>
@@ -48,7 +52,7 @@ namespace
 CRITICAL_SECTION g_report_lock;
 LONG g_reported = 0;
 
-bool is_fatal(DWORD code)
+[[nodiscard]] bool is_fatal(DWORD code)
 {
   switch (code)
   {
@@ -80,7 +84,7 @@ void print_module_offset(void* addr)
     char path[MAX_PATH] = {};
     if (GetModuleFileNameA(module, path, MAX_PATH) != 0)
     {
-      const char* base = std::strrchr(path, '\\');
+      const char* const base = std::strrchr(path, '\\');
       std::fprintf(
         stderr,
         "%s+0x%llx",
@@ -102,7 +106,13 @@ void print_stack(CONTEXT* context)
   SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS);
   if (!SymInitialize(process, nullptr, TRUE))
   {
-    std::fprintf(stderr, "[cccl-crash]   (SymInitialize failed: %lu; frames show module+offset only)\n", GetLastError());
+    // Another component in this process -- LLVM inside libnvcc also uses
+    // DbgHelp -- may already own the session. Reuse it, but pick up anything
+    // loaded since it was created.
+    if (!SymRefreshModuleList(process))
+    {
+      std::fprintf(stderr, "[cccl-crash]   (no DbgHelp session: %lu; frames show module+offset only)\n", GetLastError());
+    }
   }
 
   // StackWalk64 mutates the context it is given.
@@ -116,7 +126,7 @@ void print_stack(CONTEXT* context)
   frame.AddrStack.Mode   = AddrModeFlat;
 
   alignas(SYMBOL_INFO) unsigned char symbol_storage[sizeof(SYMBOL_INFO) + 1024] = {};
-  auto* symbol         = reinterpret_cast<SYMBOL_INFO*>(symbol_storage);
+  auto* const symbol   = reinterpret_cast<SYMBOL_INFO*>(symbol_storage);
   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
   symbol->MaxNameLen   = 1024;
 
@@ -137,7 +147,7 @@ void print_stack(CONTEXT* context)
       break;
     }
 
-    auto* pc = reinterpret_cast<void*>(frame.AddrPC.Offset);
+    auto* const pc = reinterpret_cast<void*>(frame.AddrPC.Offset);
     std::fprintf(stderr, "[cccl-crash]   %2d  ", i);
     print_module_offset(pc);
 
@@ -161,13 +171,29 @@ void print_stack(CONTEXT* context)
 
 LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info)
 {
-  const EXCEPTION_RECORD* record = info ? info->ExceptionRecord : nullptr;
+  const EXCEPTION_RECORD* const record = info ? info->ExceptionRecord : nullptr;
   if (record == nullptr || !is_fatal(record->ExceptionCode))
   {
     return EXCEPTION_CONTINUE_SEARCH;
   }
   if (InterlockedCompareExchange(&g_reported, 1, 0) != 0)
   {
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+
+  if (record->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
+  {
+    // Almost no stack remains here, and the faulting thread may be an LLVM
+    // worker with no stack guarantee reserved. Emit one fixed-size message with
+    // a direct WriteFile: no DbgHelp, no CRT buffering, no lock.
+    char message[160];
+    const int length = wsprintfA(
+      message,
+      "\n[cccl-crash] stack overflow at 0x%p on thread %lu (stack walk skipped)\n",
+      record->ExceptionAddress,
+      GetCurrentThreadId());
+    DWORD written = 0;
+    WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, static_cast<DWORD>(length), &written, nullptr);
     return EXCEPTION_CONTINUE_SEARCH;
   }
 
@@ -196,12 +222,7 @@ LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info)
       static_cast<unsigned long long>(record->ExceptionInformation[1]));
   }
 
-  if (record->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
-  {
-    // Walking the stack needs stack we do not have here.
-    std::fprintf(stderr, "[cccl-crash] stack overflow: skipping stack walk\n");
-  }
-  else if (info->ContextRecord != nullptr)
+  if (info->ContextRecord != nullptr)
   {
     std::fprintf(stderr, "[cccl-crash] stack:\n");
     print_stack(info->ContextRecord);
@@ -230,4 +251,4 @@ struct crash_handler_installer
 const crash_handler_installer g_installer{};
 } // namespace
 
-#endif // _WIN32
+#endif // defined(_WIN32) && (defined(_M_X64) || defined(_M_AMD64))
