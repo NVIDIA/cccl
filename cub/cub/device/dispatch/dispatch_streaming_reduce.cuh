@@ -17,8 +17,6 @@
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
-#include <thrust/iterator/iterator_adaptor.h>
-
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
