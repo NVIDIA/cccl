@@ -19,7 +19,7 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @(20, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @(20, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cccl-c-parallel-v2"
 $LOCAL_CMAKE_OPTIONS = ""
