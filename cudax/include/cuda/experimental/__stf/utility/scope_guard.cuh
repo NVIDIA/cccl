@@ -512,7 +512,9 @@ struct when_t
   _Pred __pred_;
 
   template <class _Fn>
-  void operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
+  // maybe_unused: when the predicate is nullary, only the discarded constexpr
+  // branch reads __exception; gcc 9 reports it as set-but-unused.
+  void operator()([[maybe_unused]] const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
   {
     if constexpr (::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>)
     {
@@ -689,7 +691,9 @@ struct backoff_t
       __state = 1;
     }
 
-    for (int __left = __n_;;)
+    // maybe_unused: like __cap above, __left is referenced only inside
+    // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
+    for ([[maybe_unused]] int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
       _CCCL_TRY
