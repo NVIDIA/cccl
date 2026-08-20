@@ -82,8 +82,8 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
 {
   constexpr auto __skip = __atomic_ptr_skip_t<_Type>::__skip;
   __op                  = __op * __skip;
-  using __proxy_type    = typename __cuda_atomic_deduce_arithmetic<_Type>::__type;
-  using __proxy_operand = typename __cuda_atomic_deduce_arithmetic<_Type>::__tag;
+  using __proxy_type    = __cuda_atomic_deduce_arithmetic_t<_Type>;
+  using __proxy_operand = __cuda_atomic_deduce_arithmetic_tag_t<_Type>;
   _Type __dst{};
   auto* __ptr_proxy = reinterpret_cast<__proxy_type*>(__ptr);
   auto* __dst_proxy = reinterpret_cast<__proxy_type*>(&__dst);

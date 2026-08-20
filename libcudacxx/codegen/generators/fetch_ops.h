@@ -126,8 +126,8 @@ template <class _Backend,
 {{
   {2}
   __op = __op * __skip_v;
-  using __proxy_t        = typename __cuda_atomic_deduce_{1}<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_{1}<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_{1}_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_{1}_tag_t<_Type>;
   _Type __dst{{}};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -151,8 +151,8 @@ template <class _Backend,
 {{
   {2}
   __op = __op * __skip_v;
-  using __proxy_t        = typename __cuda_atomic_deduce_{1}<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_{1}<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_{1}_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_{1}_tag_t<_Type>;
   _Type __dst{{}};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);

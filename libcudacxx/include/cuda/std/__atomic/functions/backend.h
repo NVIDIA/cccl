@@ -237,14 +237,13 @@ template <class _Type>
   }
 }
 
+// TODO: Once CUDA 12.0 is no longer supported, factor the repeated decltype below into a common deduction alias.
+// CUDA 12.0 cudafe can substitute an unrelated alias for an intermediate alias template in large translation units.
 template <class _Type>
-using __cuda_atomic_deduce_bitwise = decltype(__cuda_atomic_deduce_bitwise_impl<_Type>());
+using __cuda_atomic_deduce_bitwise_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__type;
 
 template <class _Type>
-using __cuda_atomic_deduce_bitwise_t = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
-
-template <class _Type>
-using __cuda_atomic_deduce_bitwise_tag_t = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
+using __cuda_atomic_deduce_bitwise_tag_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__tag;
 
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_arithmetic_impl() noexcept
@@ -302,7 +301,10 @@ template <class _Type>
 }
 
 template <class _Type>
-using __cuda_atomic_deduce_arithmetic = decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>());
+using __cuda_atomic_deduce_arithmetic_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__type;
+
+template <class _Type>
+using __cuda_atomic_deduce_arithmetic_tag_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__tag;
 
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_minmax_impl() noexcept
@@ -359,7 +361,10 @@ template <class _Type>
 }
 
 template <class _Type>
-using __cuda_atomic_deduce_minmax = decltype(__cuda_atomic_deduce_minmax_impl<_Type>());
+using __cuda_atomic_deduce_minmax_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__type;
+
+template <class _Type>
+using __cuda_atomic_deduce_minmax_tag_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__tag;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
