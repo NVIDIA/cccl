@@ -40,7 +40,7 @@ inline constexpr T start_c = 0;
 inline constexpr T scalar  = 3;
 
 inline constexpr int min_elements_pow2 = 26;
-inline constexpr int max_elements_pow2 = 30;
+inline constexpr int max_elements_pow2 = 32;
 inline constexpr int elements_stride   = 1;
 
 [[nodiscard]] cuda::device_ref state_device(nvbench::state& state)
