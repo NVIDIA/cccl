@@ -9,12 +9,19 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import atomic
 import buffer
 import complex
 import event
+import hierarchy
 import inplace_vector
+import mdspan
+import memory_pool
 import memory_resource
+import optional
+import span
 import std_array
+import stream
 import tuple
 
 import lldb
@@ -22,12 +29,19 @@ import lldb
 _CATEGORY = "cccl"
 _FORMATTERS = (
     memory_resource,
+    atomic,
     buffer,
     std_array,
     complex,
+    stream,
     tuple,
     inplace_vector,
     event,
+    hierarchy,
+    mdspan,
+    memory_pool,
+    span,
+    optional,
 )
 InternalDict = dict[str, object]
 

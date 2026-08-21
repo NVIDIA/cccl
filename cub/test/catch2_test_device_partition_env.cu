@@ -287,7 +287,7 @@ struct less_than_5_t
 template <unsigned int BlockThreads>
 struct partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
     return {cub::PartitionAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
@@ -302,7 +302,7 @@ struct partition_policy_selector
 template <unsigned int BlockThreads>
 struct three_way_partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
   {
     return {cub::ThreeWayPartitionAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
@@ -412,13 +412,13 @@ CUB_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]", CUB_S
   constexpr auto p2 = cub::ThreeWayPartitionPolicy{
     .algorithm = cub::ThreeWayPartitionAlgorithm::lookback,
     .lookback  = cub::ThreeWayPartitionLookbackPolicy{
-       .threads_per_block = 256,
-       .items_per_thread  = 9,
-       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+      .threads_per_block = 256,
+      .items_per_thread  = 9,
+      .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+      .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay    = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -461,13 +461,13 @@ CUB_TEST("Test PartitionPolicy properties", "[partition][device]", CUB_SMALL)
   constexpr auto p2 = cub::PartitionPolicy{
     .algorithm = cub::PartitionAlgorithm::lookback,
     .lookback  = cub::PartitionLookbackPolicy{
-       .threads_per_block = 128,
-       .items_per_thread  = 10,
-       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+      .threads_per_block = 128,
+      .items_per_thread  = 10,
+      .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+      .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay    = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

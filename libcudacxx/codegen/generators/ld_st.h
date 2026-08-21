@@ -97,8 +97,18 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{ asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
+  constexpr auto asm_intrinsic_format_8   = R"XXX(
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_load(
+  const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
+{{
+  uint16_t __tmp;
+  asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__tmp) : "l"(__ptr) : "memory");
+  __dst = static_cast<_Type>(__tmp);
+}})XXX";
 
   constexpr size_t supported_sizes[] = {
+    8,
     16,
     32,
     64,
@@ -140,7 +150,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
         {
           for (auto mm : mmio_states)
           {
-            if (size == 16 && type == Operand::Floating)
+            if (size <= 16 && type == Operand::Floating)
             {
               continue;
             }
@@ -157,6 +167,20 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
             {
               out << std::format(
                 asm_intrinsic_format_128,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
+            else if (size == 8)
+            {
+              out << std::format(
+                asm_intrinsic_format_8,
                 /* 0 */ operand(type),
                 /* 1 */ size,
                 /* 2 */ constraints(type, size),
@@ -281,8 +305,17 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{ asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
+  constexpr auto asm_intrinsic_format_8   = R"XXX(
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_store(
+  _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
+{{
+  const uint16_t __tmp = static_cast<uint16_t>(__val);
+  asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__tmp) : "memory");
+}})XXX";
 
   constexpr size_t supported_sizes[] = {
+    8,
     16,
     32,
     64,
@@ -338,6 +371,20 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
             {
               out << std::format(
                 asm_intrinsic_format_128,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
+            else if (size == 8)
+            {
+              out << std::format(
+                asm_intrinsic_format_8,
                 /* 0 */ operand(type),
                 /* 1 */ size,
                 /* 2 */ constraints(type, size),

@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -29,7 +30,7 @@ struct lognormal_cdf
 {
   using P = typename cuda::std::lognormal_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; m, s) = 0.5 * (1 + erf((ln(x) - m) / (s * sqrt(2))))
     if (x <= 0.0)
@@ -43,7 +44,7 @@ struct lognormal_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Cannot be constexpr due to log/exp functions
   [[maybe_unused]] const bool test_constexpr = false;

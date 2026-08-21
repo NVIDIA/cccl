@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/hierarchy>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__mdspan/extents.h>
 
 #include <cuda/experimental/__group/fwd.cuh>
 
@@ -31,13 +33,31 @@
 
 namespace cuda::experimental
 {
-[[nodiscard]] _CCCL_DEVICE_API inline __implicit_hierarchy_t __implicit_hierarchy() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline __implicit_hierarchy_t implicit_hierarchy() noexcept
 {
   return __implicit_hierarchy_t{
     gpu_thread,
     hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>{cluster.extents(grid)},
     hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>{block.extents(cluster)},
     hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>{gpu_thread.extents(block)}};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline __implicit_hierarchy_1d_t implicit_hierarchy_1d() noexcept
+{
+  const auto __grid_dims    = cluster.dims(grid);
+  const auto __cluster_dims = block.dims(cluster);
+  const auto __block_dims   = gpu_thread.dims(block);
+
+  _CCCL_ASSERT(__grid_dims.y == 1 && __grid_dims.z == 1, "The launched hierarchy is multidimensional");
+  _CCCL_ASSERT(__cluster_dims.y == 1 && __cluster_dims.z == 1, "The launched hierarchy is multidimensional");
+  _CCCL_ASSERT(__block_dims.y == 1 && __block_dims.z == 1, "The launched hierarchy is multidimensional");
+
+  using _Exts1D = ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>;
+  return __implicit_hierarchy_1d_t{
+    gpu_thread,
+    hierarchy_level_desc<grid_level, _Exts1D>{_Exts1D{__grid_dims.x, 1, 1}},
+    hierarchy_level_desc<cluster_level, _Exts1D>{_Exts1D{__cluster_dims.x, 1, 1}},
+    hierarchy_level_desc<block_level, _Exts1D>{_Exts1D{__block_dims.x, 1, 1}}};
 }
 } // namespace cuda::experimental
 

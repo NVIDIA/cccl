@@ -540,6 +540,118 @@ public:
 
   // ------------------------------------------------------------------------------------------
 
+private:
+  // Try as hard as possible to hint to compilers that they can outline this function instead
+  // of generating a copy of it for every type instation. We can probably go further here by
+  // marking this as _CCCL_NOINLINE, but then we miss out on some nice optimizations for
+  // size-count constant folding.
+  _CCCL_HOST_API void __all_gather_v_impl(
+    group_guard_type& __guard,
+    const char* __sendbuf_bytes,
+    ::cuda::std::size_t __send_count,
+    char* __recvbuf_bytes,
+    const ::cuda::std::size_t* __h_recv_counts,
+    const ::cuda::std::size_t* __h_displs,
+    ::cuda::stream_ref __stream,
+    ::cuda::std::size_t __type_size) const
+  {
+    const auto __rank             = rank();
+    const auto __size             = size();
+    const auto __send_count_bytes = __type_size * __send_count;
+
+    for (::cuda::std::int32_t __peer = 0; __peer < __size; ++__peer)
+    {
+      const auto __recv_count_bytes = __type_size * __h_recv_counts[__peer];
+      const auto __displs_bytes     = __type_size * __h_displs[__peer];
+
+      if (__peer == __rank)
+      {
+        if (__send_count_bytes != __recv_count_bytes)
+        {
+          _CCCL_THROW(::cuda::experimental::__nccl::nccl_error,
+                      ::cuda::experimental::__nccl::__ncclInvalidArgument,
+                      "Mismatched self-copy count in AllGatherv");
+        }
+
+        if (__send_count_bytes == 0)
+        {
+          continue;
+        }
+
+        auto* const __recv_ptr_bytes = __recvbuf_bytes + __displs_bytes;
+
+        // Unclear whether CUDA driver also makes this optimization
+        if (__sendbuf_bytes != __recv_ptr_bytes)
+        {
+          // Work around for nvbug 6299919
+          const auto _ = ::cuda::__ensure_current_context{__stream};
+
+          ::cuda::__driver::__memcpyAsync(__recv_ptr_bytes, __sendbuf_bytes, __send_count_bytes, __stream.get());
+        }
+        continue;
+      }
+
+      if (__recv_count_bytes)
+      {
+        recv(__guard, __recvbuf_bytes + __displs_bytes, __recv_count_bytes, __peer, __stream);
+      }
+
+      // Every peer receives this rank's whole contribution, so the send is the same block for
+      // each of them.
+      if (__send_count_bytes)
+      {
+        send(__guard, __sendbuf_bytes, __send_count_bytes, __peer, __stream);
+      }
+    }
+  }
+
+public:
+  //! @brief Gather variable-sized buffers from all ranks and distribute the result to every rank.
+  //!
+  //! Like `all_gather()`, but each rank may contribute a different number of elements and each
+  //! contribution is placed at a caller-specified offset. Equivalent to `gather_v()` followed by
+  //! a broadcast of the result, but without the round trip through a root. This is built from
+  //! point-to-point `send()` / `recv()` calls; the calling rank's own contribution is copied
+  //! directly on `__stream` rather than sent. `__h_recv_counts` and `__h_displs` are read on
+  //! every rank and must point to host memory with `size()` entries each; every rank must pass
+  //! the same values, and `__h_recv_counts[rank()]` must equal `__send_count`.
+  //!
+  //! @tparam _Tp The element type of the buffers. `_Tp` must satisfy `nccl_transportable`.
+  //!
+  //! @param[in] __guard An active group guard obtained from `group_guard()`.
+  //! @param[in] __sendbuf The buffer contributed by this rank, holding `__send_count` elements.
+  //! @param[in] __send_count The number of elements this rank contributes.
+  //! @param[out] __recvbuf The gathered output, written on every rank.
+  //! @param[in] __h_recv_counts Host array of per-rank element counts.
+  //! @param[in] __h_displs Host array of per-rank element offsets into `__recvbuf`.
+  //! @param[in] __stream The stream to enqueue the operations on.
+  //!
+  //! @throws nccl_error if a count mismatch is detected for the rank's self-copy, or if an
+  //!         underlying NCCL call fails.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(nccl_transportable<_Tp>)
+  _CCCL_HOST_API void all_gather_v(
+    group_guard_type& __guard,
+    const _Tp* __sendbuf,
+    ::cuda::std::size_t __send_count,
+    _Tp* __recvbuf,
+    const ::cuda::std::size_t* __h_recv_counts,
+    const ::cuda::std::size_t* __h_displs,
+    ::cuda::stream_ref __stream) const
+  {
+    __all_gather_v_impl(
+      __guard,
+      reinterpret_cast<const char*>(__sendbuf),
+      __send_count,
+      reinterpret_cast<char*>(__recvbuf),
+      __h_recv_counts,
+      __h_displs,
+      __stream,
+      __as_bytes_count<_Tp>(/*__count=*/1));
+  }
+
+  // ------------------------------------------------------------------------------------------
+
   //! @brief Broadcast a buffer from a single root rank to every rank.
   //!
   //! Copies `__count` elements from `__sendbuf` on `__root` into `__recvbuf` on every

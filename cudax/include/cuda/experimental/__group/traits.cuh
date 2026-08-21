@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/hierarchy>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
@@ -31,17 +32,6 @@
 
 namespace cuda::experimental
 {
-template <class _Mapping, class _Unit, class _ParentGroup>
-using __group_mapping_result_t = decltype(::cuda::std::declval<_Mapping>().map(
-  ::cuda::std::declval<_Unit>(), ::cuda::std::declval<const _ParentGroup&>()));
-
-template <class _Synchronizer, class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
-using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer>().make_instance(
-  ::cuda::std::declval<const _Unit&>(),
-  ::cuda::std::declval<const _ParentGroup&>(),
-  ::cuda::std::declval<const _Mapping&>(),
-  ::cuda::std::declval<const _MappingResult&>()));
-
 template <class _Tp, class = void>
 inline constexpr bool __is_spannable = false;
 template <class _Tp>
@@ -53,6 +43,13 @@ using _SpanElementType = typename _Span::element_type;
 
 template <class _Span>
 using _SpanValueType = typename _Span::value_type;
+
+template <class _Unit, class _Level>
+inline constexpr bool __unit_same_as_or_below_v = __is_natively_reachable_hierarchy_level_v<_Unit, _Level>;
+template <class _Level>
+inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
+template <>
+inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

@@ -10,12 +10,14 @@
 
 /**
  * @file
- * @brief SCOPE guards and throw sinks (`throw_proof`, `throw_defer`)
+ * @brief SCOPE guards and exception handling (`on_throw`)
  */
 
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,8 +28,13 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
@@ -37,86 +44,357 @@
 #include <exception>
 #include <stdexcept>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 namespace cuda::experimental::stf
 {
 /**
- * @brief Invokes a callable and aborts if it throws.
+ * @brief A suppressing handler that reports an exception on `stderr` and flushes it.
  *
- * Use around code that must not let an exception escape into backend state
- * that cannot recover (e.g. after a CUDA stream capture has begun).
+ * Use it as in `on_throw(notify) << callable` to report an exception and carry on.
+ * Reporting to a destination other than `stderr` is a matter of writing another
+ * handler, which this function doubles as the model for.
  *
- * Usage: `throw_proof->*[&] { ... };`
- *
- * `throw_proof` converts to `with_location`, which captures the call-site
- * `source_location` (overloaded operators cannot take default arguments). An
- * explicit `with_location{throw_proof, loc}` can forward a previously captured
- * location (CTAD, C++17).
+ * @param[in] __exception The caught exception, or `nullptr` if it does not derive from
+ *            `std::exception`, in which case the report carries no message.
+ * @param[in] __loc The location to report.
+ * @return `std::ignore`, which marks this handler as suppressing.
  */
-struct throw_proof_t
+inline decltype(::std::ignore)
+notify(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
 {
-} inline constexpr throw_proof{};
+  if (__exception != nullptr)
+  {
+    ::fprintf(stderr,
+              "%s(%u) on_throw violation in %s: %s\n",
+              __loc.file_name(),
+              __loc.line(),
+              __loc.function_name(),
+              __exception->what());
+  }
+  else
+  {
+    ::fprintf(stderr,
+              "%s(%u) on_throw violation in %s: nonstandard exception\n",
+              __loc.file_name(),
+              __loc.line(),
+              __loc.function_name());
+  }
+  ::fflush(stderr);
+  return ::std::ignore;
+}
 
-template <class F>
-decltype(auto) operator->*(with_location<throw_proof_t> s, F&& f) noexcept
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
 {
+// One policy for all four reactions: the alternative is constraining the `on_throw` overloads
+// against one another, which is fragile, because clang keeps `[[noreturn]]` in the type of
+// `std::abort` and thereby makes a `void (*)() noexcept` parameter an inexact match that a
+// catch-all template would win. `operator<<` lives here too, since argument-dependent lookup
+// only searches the innermost namespace enclosing the policy type.
+template <class _Reaction>
+struct __on_throw_policy
+{
+  _Reaction __reaction_;
+  const ::cuda::std::source_location __loc_;
+
+  // Runs with the exception in flight and produces what `operator<<` returns in its stead. The
+  // reactions that say nothing never read the exception, which gcc 9 flags without the attribute.
+  template <class _Result>
+  _Result __handle([[maybe_unused]] const ::std::exception* __exception) noexcept
+  {
+    // A handler is anything callable with the caught exception and a location; the other three
+    // reactions are recognized in the branches below.
+    constexpr bool __handles =
+      ::cuda::std::is_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>;
+    constexpr bool __drops =
+      ::cuda::std::is_same_v<const ::cuda::std::remove_reference_t<_Reaction>, const decltype(::std::ignore)>;
+    // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
+    // what it is and a handler decides by returning it. Asking the same of `void` would be
+    // useless, every result type being convertible to `void`, but nothing except `::std::ignore`
+    // itself converts to its type.
+    constexpr bool __resumes =
+      __handles
+        ? ::cuda::std::
+            is_invocable_r_v<decltype(::std::ignore), _Reaction&, const ::std::exception*, ::cuda::std::source_location>
+        : __drops;
+
+    if constexpr (__handles)
+    {
+      static_assert(
+        ::cuda::std::is_nothrow_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>,
+        "an on_throw handler runs while an exception is in flight and must be noexcept");
+      __reaction_(__exception, __loc_);
+      if constexpr (!__resumes)
+      {
+        static_assert(
+          ::cuda::std::is_void_v<
+            ::cuda::std::invoke_result_t<_Reaction&, const ::std::exception*, ::cuda::std::source_location>>,
+          "an on_throw handler must return void, to end the program, or ::std::ignore, to go on");
+        ::std::abort(); // the handler was supposed to see to that itself
+        _CCCL_UNREACHABLE();
+      }
+    }
+    else if constexpr (::cuda::std::is_convertible_v<_Reaction, void (*)()>)
+    {
+      // A terminating action, `::std::abort` and `::std::terminate` being the ones worth naming.
+      // A `noexcept` pointer is not asked for, even though the action runs during unwinding,
+      // because Microsoft's `abort` is not declared `noexcept` and would miss this branch.
+      notify(__exception, __loc_);
+      __reaction_();
+      ::std::abort(); // in case it returns after all
+      _CCCL_UNREACHABLE();
+    }
+    else if constexpr (!__drops)
+    {
+      // A reference result may only name the reaction itself: a value the policy owns dies with
+      // this call, and so does any temporary a conversion would materialize. Pointers convert
+      // exactly when the reference binds directly, which is the question being asked.
+      static_assert(
+        !::cuda::std::is_reference_v<_Result>
+          || (::cuda::std::is_lvalue_reference_v<_Reaction> && ::cuda::std::is_lvalue_reference_v<_Result>
+              && ::cuda::std::is_convertible_v<::cuda::std::remove_reference_t<_Reaction>*,
+                                               ::cuda::std::remove_reference_t<_Result>*>),
+        "a reference result needs an on_throw reaction passed as an lvalue of the same "
+        "type, anything else dying with the call");
+      static_assert(::cuda::std::is_convertible_v<_Reaction, _Result>,
+                    "an on_throw reaction is a handler, something convertible to void (*)(), "
+                    "::std::ignore, or a value convertible to the result of the callable");
+      return ::cuda::std::forward<_Reaction>(__reaction_);
+    }
+
+    // Left over are the two reactions that resume, both of which owe the caller a result.
+    if constexpr (__resumes && !::cuda::std::is_void_v<_Result>)
+    {
+      static_assert(!::cuda::std::is_reference_v<_Result>,
+                    "an on_throw reaction that resumes has nothing to refer to for a reference result");
+      static_assert(::cuda::std::is_default_constructible_v<_Result>,
+                    "an on_throw reaction that resumes requires a default-constructible result");
+      return _Result{};
+    }
+  }
+};
+
+template <class _Reaction, class _Fn>
+decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept
+{
+  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  // A `noexcept` callable puts the reaction out of reach: an exception raised inside it ends the
+  // program where it stands, so the catch below could never run and the policy would be a promise
+  // nobody keeps.
+  static_assert(!noexcept(::cuda::std::forward<_Fn>(__fn)()),
+                "on_throw has nothing to do for a noexcept callable, which terminates rather than "
+                "throws; call such a callable directly");
   _CCCL_TRY
   {
-    return ::cuda::std::forward<F>(f)();
+    return ::cuda::std::forward<_Fn>(__fn)();
   }
-  _CCCL_CATCH (const ::std::exception& e)
+  _CCCL_CATCH (const ::std::exception& __exception)
   {
-    ::fprintf(
-      stderr, "%s(%u) throw_proof in %s: %s\n", s.loc.file_name(), s.loc.line(), s.loc.function_name(), e.what());
+    return __policy.template __handle<_Result>(&__exception);
   }
   _CCCL_CATCH_ALL
   {
-    ::fprintf(
-      stderr, "%s(%u) throw_proof in %s: unknown exception\n", s.loc.file_name(), s.loc.line(), s.loc.function_name());
+    return __policy.template __handle<_Result>(nullptr);
   }
-  ::std::abort();
 }
+} // namespace detail
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
- * @brief Invokes a callable and returns any thrown exception as an `exception_ptr`.
+ * @brief Creates a policy saying how to react if a callable throws.
  *
- * Use around best-effort code where a failure should not escape (e.g. optional DOT
- * timing annotations) but the caller may still want to inspect or rethrow later.
- * The callable's return value must be `void` (enforced at compile time); the
- * result is empty if nothing was thrown.
+ * Apply the policy with `on_throw(reaction) << callable`, which evaluates to the result of the
+ * callable when nothing goes wrong. The reaction is one of four things, recognized by type:
  *
- * Usage: `auto e = throw_defer->*[&] { ... };`
+ * - A handler: any `noexcept` callable accepting a `const std::exception*` and a
+ *   `cuda::std::source_location`, be it a function, a function pointer, or a function object,
+ *   capturing or not. It is invoked with the caught exception, or with `nullptr` for an
+ *   exception that does not derive from `std::exception`, along with `__loc`. Its return type
+ *   says what happens next: returning `decltype(::std::ignore)` resumes execution with a
+ *   default-constructed result, and returning `void` claims the handler ends the program, with
+ *   `std::abort` running right after it in case it does not. `notify` is such a handler.
+ * - A terminating action: anything convertible to `void (*)()`, `std::abort` and
+ *   `std::terminate` being the obvious ones. The exception is reported through `notify`, the
+ *   action runs, and `std::abort` follows in case it returns.
+ * - `std::ignore`, which suppresses the exception silently and resumes execution with a
+ *   default-constructed result.
+ * - Anything else, taken as a replacement value for the result. It must be convertible to the
+ *   callable's result type, and is moved into the result if the policy owns it.
  *
- * The result is `[[nodiscard]]` so the caller must acknowledge it (store it, test it,
- * or deliberately discard it, e.g. by assigning to std::ignore).
+ * The two resuming reactions leave a `void` result alone and require a default-constructible
+ * type of a non-void one, having nothing to refer to for a reference.
+ *
+ * The callable itself must not be `noexcept`: an exception raised inside one ends the program
+ * where it stands, leaving the reaction unreachable, so such a pairing is rejected instead of
+ * standing there looking like protection. Call such a callable directly.
+ *
+ * A callable returning a reference therefore goes with a terminating action, which never has to
+ * produce a result, or with a replacement passed as an lvalue of the same type, which the policy
+ * refers to rather than copies and which the caller keeps alive:
+ *
+ * @code
+ * int fallback = 42;
+ * int& x = on_throw(fallback) << [] { return returns_a_reference(); }; // x is fallback on a throw
+ * @endcode
+ *
+ * @param[in] __reaction The reaction, which the policy owns if passed an rvalue and refers to if
+ *            passed an lvalue.
+ * @param[in] __loc The location passed to the handler; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
  */
-struct throw_defer_t
+template <class _Reaction>
+auto on_throw(_Reaction&& __reaction,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-} inline constexpr throw_defer{};
-
-template <class F>
-[[nodiscard]] ::std::exception_ptr operator->*(throw_defer_t, F&& f) noexcept
-{
-  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
-                "throw_defer requires a void-returning callable");
-  _CCCL_TRY
-  {
-    ::cuda::std::forward<F>(f)();
-    return {};
-  }
-  _CCCL_CATCH_ALL
-  {
-    return ::std::current_exception();
-  }
+  return detail::__on_throw_policy<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __loc};
 }
+
+#ifdef UNITTESTED_FILE
+UNITTEST("on_throw")
+{
+  using namespace cuda::experimental::stf;
+  //! [on_throw]
+  int value = 0;
+  on_throw(::std::abort) << [&] {
+    value = 42; // would abort the application if this code threw
+  };
+  on_throw(::std::terminate) << [] {};
+  on_throw(notify) << [] {}; // would report the exception on stderr and carry on
+  const int answer = on_throw(-1) << [] {
+    return 42; // would yield -1 instead if this code threw
+  };
+  EXPECT(value == 42);
+  EXPECT(answer == 42);
+  //! [on_throw]
+
+  // A terminating handler, recognized by its void return, stays out of the way as long as
+  // nothing throws.
+  const auto die = [](const ::std::exception*, ::cuda::std::source_location) noexcept {
+    ::std::abort();
+  };
+  const int untouched = on_throw(die) << [] {
+    return 7;
+  };
+  EXPECT(untouched == 7);
+
+  // A terminating action need not be `noexcept`, which is how Microsoft declares `abort`.
+  void (*const bail)() = [] {
+    ::std::abort();
+  };
+  const int spared = on_throw(bail) << [] {
+    return 9;
+  };
+  EXPECT(spared == 9);
+
+  // A terminating action is also the one reaction that goes with a reference result, since it
+  // never has to produce one. The referent is static because nvcc reads a return of a
+  // by-reference capture as a return of a local.
+  static int target = 5;
+  int& alias        = on_throw(::std::abort) << []() -> int& {
+    return target;
+  };
+  EXPECT(&alias == &target);
+
+  // A replacement passed as an lvalue outlives the call, so it can stand in for a reference
+  // result as well.
+  int fallback = 42;
+  int& picked  = on_throw(fallback) << []() -> int& {
+    return target;
+  };
+  EXPECT(&picked == &target);
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  int& supplanted = on_throw(fallback) << []() -> int& {
+    throw ::std::runtime_error("no reference to give");
+  };
+  EXPECT(&supplanted == &fallback);
+
+  const int ignored = on_throw(::std::ignore) << []() -> int {
+    throw ::std::runtime_error("ignored");
+  };
+  EXPECT(ignored == 0);
+  on_throw(::std::ignore) << [] {
+    throw 42;
+  };
+
+  // Reporting somewhere other than stderr is what defining a handler is for; `notify` is the
+  // same code writing to stderr, which a test cannot capture portably. A handler may capture,
+  // so the destination needs no static storage.
+  ::FILE* const log = ::tmpfile();
+  EXPECT(log != nullptr);
+  const auto to_log = [log](const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept {
+    ::fprintf(log,
+              "%s(%u) in %s: %s\n",
+              __where.file_name(),
+              __where.line(),
+              __where.function_name(),
+              __exception != nullptr ? __exception->what() : "nonstandard exception");
+    return ::std::ignore;
+  };
+
+  const auto site  = ::cuda::std::source_location::current();
+  const int logged = on_throw(to_log, site) << []() -> int {
+    throw ::std::runtime_error("boom");
+  };
+  EXPECT(logged == 0);
+
+  // An exception that does not derive from std::exception reaches the handler as nullptr.
+  on_throw(to_log, site) << [] {
+    throw 42;
+  };
+
+  ::rewind(log);
+  char message[1024]{};
+  char expected[1024]{};
+  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  ::snprintf(expected, sizeof(expected), "%s(%u) in %s: boom\n", site.file_name(), site.line(), site.function_name());
+  EXPECT(::std::string_view{message} == expected);
+  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  ::snprintf(expected,
+             sizeof(expected),
+             "%s(%u) in %s: nonstandard exception\n",
+             site.file_name(),
+             site.line(),
+             site.function_name());
+  EXPECT(::std::string_view{message} == expected);
+  ::fclose(log);
+
+  // A replacement value stands in for the result, converted to the callable's result type.
+  const int replaced = on_throw(42) << []() -> int {
+    throw ::std::runtime_error("replaced");
+  };
+  EXPECT(replaced == 42);
+  const double widened = on_throw(42) << []() -> double {
+    throw 42;
+  };
+  EXPECT(widened == 42.0);
+
+  // The value is moved into the result, so a move-only replacement works.
+  struct movable
+  {
+    int v;
+    explicit movable(int value_)
+        : v(value_)
+    {}
+    movable(const movable&) = delete;
+    movable(movable&&)      = default;
+  };
+  const movable moved = on_throw(movable{7}) << []() -> movable {
+    throw 42;
+  };
+  EXPECT(moved.v == 7);
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+#endif // UNITTESTED_FILE
 
 /**
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
  * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
- * defined) those lambdas are invoked via `throw_proof` using the `SCOPE` call-site location; in release
+ * defined) those lambdas are invoked via `on_throw(::std::abort)`; in release
  * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
  * controlled code must return `void` (enforced at compile time).
  *
@@ -156,10 +434,9 @@ enum class success
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
-  static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
+  static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
-  // Forward the SCOPE call-site location into throw_proof.
-  with_location{throw_proof, loc}->*f;
+  on_throw(::std::abort, loc) << f;
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
   (void) loc;
   f();
@@ -177,14 +454,14 @@ auto operator->*(with_location<exit> where, F&& f)
     int exceptions = 0;
 
     result(F&& f, ::cuda::std::source_location loc)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , loc(loc)
     {}
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     ~result() noexcept
@@ -196,7 +473,7 @@ auto operator->*(with_location<exit> where, F&& f)
     }
   };
 
-  return result{::std::forward<F>(f), where.loc};
+  return result{::cuda::std::forward<F>(f), where.loc};
 }
 
 template <typename F>
@@ -210,7 +487,7 @@ auto operator->*(with_location<fail> where, F&& f)
     int exceptions;
 
     result(F&& f, ::cuda::std::source_location loc, int exceptions)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , loc(loc)
         , exceptions(exceptions)
     {}
@@ -218,7 +495,7 @@ auto operator->*(with_location<fail> where, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     ~result() noexcept
@@ -231,14 +508,15 @@ auto operator->*(with_location<fail> where, F&& f)
   };
 
   // Run only if an exception is in flight: uncaught count is one above creation-time count.
-  return result{::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
+  return result{::cuda::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
 }
 
 template <typename F>
 auto operator->*(success, F&& f)
 {
   // success may throw, so it does not go through invoke_nothrow; keep the same void check.
-  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
+  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
+                "SCOPE requires a void-returning callable");
 
   struct result
   {
@@ -247,13 +525,13 @@ auto operator->*(success, F&& f)
     int exceptions;
 
     result(F&& f, int exceptions)
-        : f(::std::forward<F>(f))
+        : f(::cuda::std::forward<F>(f))
         , exceptions(exceptions)
     {}
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
-        , exceptions(::std::exchange(rhs.exceptions, -1))
+        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
     // May throw — unlike exit/fail.
@@ -266,71 +544,13 @@ auto operator->*(success, F&& f)
     }
   };
 
-  return result{::std::forward<F>(f), ::std::uncaught_exceptions()};
+  return result{::cuda::std::forward<F>(f), ::std::uncaught_exceptions()};
 }
 } // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
-UNITTEST("throw_proof")
-{
-  using namespace cuda::experimental::stf;
-  //! [throw_proof]
-  int value = 0;
-  throw_proof->*[&] {
-    value = 42; // would abort the application if this code threw
-  };
-  EXPECT(value == 42);
-  //! [throw_proof]
-  EXPECT((throw_proof->*
-          [] {
-            return 7;
-          })
-         == 7);
-
-  // Empty tag lvalues must remain convertible — that is how `throw_proof->*f`
-  // captures source_location via with_location.
-  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t&>);
-  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, const throw_proof_t&>);
-  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t>);
-
-  const auto loc = ::cuda::std::source_location::current();
-  auto wl        = with_location{throw_proof, loc};
-  static_assert(::std::is_same_v<decltype(wl), with_location<throw_proof_t>>);
-  EXPECT(wl.loc.line() == loc.line());
-};
-
-UNITTEST("throw_defer")
-{
-  using namespace cuda::experimental::stf;
-  //! [throw_defer]
-  int value = 0;
-  auto e    = throw_defer->*[&] {
-    value = 42; // if this threw, e would hold the exception_ptr
-  };
-  EXPECT(!e);
-  EXPECT(value == 42);
-  //! [throw_defer]
-
-#  if _CCCL_HAS_EXCEPTIONS()
-  e = throw_defer->*[] {
-    throw ::std::runtime_error("boom");
-  };
-  EXPECT(static_cast<bool>(e));
-  try
-  {
-    ::std::rethrow_exception(e);
-  }
-  catch (const ::std::runtime_error& ex)
-  {
-    EXPECT(::std::string_view(ex.what()) == "boom");
-    return;
-  }
-  EXPECT(false, "rethrow should have transferred control");
-#  endif // _CCCL_HAS_EXCEPTIONS()
-};
-
 UNITTEST("SCOPE(exit)")
 {
   //! [SCOPE(exit)]

@@ -40,6 +40,9 @@ enum class arch_id : int;
 
 inline constexpr int __arch_specific_id_multiplier = 100000;
 
+class __logical_device;
+class __logical_device_ref;
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

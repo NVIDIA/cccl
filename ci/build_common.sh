@@ -20,6 +20,7 @@ GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
+CTEST_PARALLEL_LEVEL=1
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -34,6 +35,8 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  --enable-tile: Enable tile support"
+    echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
@@ -78,6 +81,8 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    --enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
+    --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
@@ -161,6 +166,7 @@ readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+export CCCL_BUILD_INFIX
 
 mkdir -p ../build
 # Absolute path to cccl/build
@@ -188,7 +194,8 @@ BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
-export CTEST_PARALLEL_LEVEL="1"
+
+export CTEST_PARALLEL_LEVEL
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"

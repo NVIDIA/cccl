@@ -7,18 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
-
-// REQUIRES: !c++17
 
 // constant_wrapper
 
@@ -63,13 +54,15 @@ struct NoOps
 template <class L, class R, class = void>
 inline constexpr bool HasComma = false;
 template <class L, class R>
-inline constexpr bool HasComma<L, R, cuda::std::void_t<decltype(cuda::std::declval<L>(), cuda::std::declval<R>())>> =
+inline constexpr bool HasComma<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>(), cuda::std::declval<R&>())>> =
   true;
 
 // Comma operator is deleted for constant_wrapper operands
 static_assert(!HasComma<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#if TEST_STD_VER >= 2020
 static_assert(!HasComma<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
 static_assert(!HasComma<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+#endif // TEST_STD_VER >= 2020
 
 // Mixed operands - one constant_wrapper, one runtime type (uses built-in operator)
 static_assert(HasComma<cuda::std::__constant_wrapper<42>, int>);
@@ -79,9 +72,10 @@ TEST_FUNC constexpr bool test()
 {
   {
     // only mixed with runtime parameters
-    cuda::std::__constant_wrapper<42> cw42;
-    int i                                           = 0;
-    cuda::std::same_as<int&> decltype(auto) result1 = (cw42, i);
+    [[maybe_unused]] cuda::std::__constant_wrapper<42> cw42{};
+    int i                  = 0;
+    decltype(auto) result1 = (cw42, i);
+    static_assert(cuda::std::same_as<int&, decltype(result1)>);
     assert(result1 == 0);
   }
 

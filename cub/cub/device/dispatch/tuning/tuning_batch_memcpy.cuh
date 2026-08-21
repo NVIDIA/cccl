@@ -158,13 +158,13 @@ struct BatchedCopyPolicy
   BatchedCopyLookbackPolicy lookback; //!< The policy for the batched-copy algorithm based on decoupled-lookback. Only
                                       //!< used when @p algorithm is @p lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

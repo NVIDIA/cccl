@@ -46,6 +46,12 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
 
+using __implicit_hierarchy_1d_t =
+  hierarchy<thread_level,
+            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
+
 // groups
 
 template <class _Level, class _Hierarchy>
@@ -66,8 +72,14 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
 class group;
+
+template <class _Unit, class _ParentGroup, class _MappingResult>
+class virtual_group;
+
+template <class _Unit, class _Group>
+class group_view;
 
 // mappings
 
@@ -87,10 +99,12 @@ class take;
 
 // synchronizers
 
-class lane_synchronizer;
-
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
+
+class lane_synchronizer;
+
+class level_synchronizer;
 
 // traits
 

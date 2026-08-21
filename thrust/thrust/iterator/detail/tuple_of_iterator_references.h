@@ -174,6 +174,12 @@ public:
     return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
 
+  template <class... Us>
+  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references& x, tuple_of_iterator_references<Us...>& y)
+  {
+    x.swap(y);
+  }
+
   // this overload of swap() permits swapping tuple_of_iterator_references returned as temporaries from
   // iterator dereferences
   template <class... Us>

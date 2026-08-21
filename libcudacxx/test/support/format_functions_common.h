@@ -73,7 +73,8 @@ struct cuda::std::formatter<status, CharT>
   // the state.
   int type = -1;
 
-  TEST_FUNC constexpr auto parse(basic_format_parse_context<CharT>& parse_ctx) -> decltype(parse_ctx.begin())
+  TEST_HOST_DEVICE_FUNC constexpr auto parse(basic_format_parse_context<CharT>& parse_ctx)
+    -> decltype(parse_ctx.begin())
   {
     auto it = parse_ctx.begin();
     type    = 0;
@@ -108,7 +109,7 @@ struct cuda::std::formatter<status, CharT>
   }
 
   template <class Out>
-  TEST_FUNC auto format(status s, basic_format_context<Out, CharT>& ctx) const -> decltype(ctx.out())
+  TEST_HOST_DEVICE_FUNC auto format(status s, basic_format_context<Out, CharT>& ctx) const -> decltype(ctx.out())
   {
     const char* names[] = {"foo", "bar", "foobar"};
     char buffer[7];
@@ -170,7 +171,8 @@ struct parse_call_validator
   struct parse_function_not_called
   {};
 
-  TEST_FUNC friend constexpr auto operator==(const parse_call_validator& lhs, const parse_call_validator& rhs)
+  TEST_HOST_DEVICE_FUNC friend constexpr auto
+  operator==(const parse_call_validator& lhs, const parse_call_validator& rhs)
   {
     return &lhs == &rhs;
   }
@@ -190,7 +192,8 @@ struct cuda::std::formatter<parse_call_validator, CharT>
 {
   bool parse_called{false};
 
-  TEST_FUNC constexpr auto parse(basic_format_parse_context<CharT>& parse_ctx) -> decltype(parse_ctx.begin())
+  TEST_HOST_DEVICE_FUNC constexpr auto parse(basic_format_parse_context<CharT>& parse_ctx)
+    -> decltype(parse_ctx.begin())
   {
     assert(parse_ctx.begin() == parse_ctx.end());
     parse_called = true;
@@ -198,7 +201,7 @@ struct cuda::std::formatter<parse_call_validator, CharT>
   }
 
   template <class Ctx>
-  TEST_FUNC auto format(parse_call_validator, Ctx& ctx) const -> decltype(ctx.out())
+  TEST_HOST_DEVICE_FUNC auto format(parse_call_validator, Ctx& ctx) const -> decltype(ctx.out())
   {
     if (!parse_called)
     {
@@ -219,12 +222,12 @@ struct cuda::std::formatter<parse_call_validator, CharT>
 namespace detail
 {
 template <class CharT, cuda::std::size_t N>
-TEST_FUNC auto get_colons()
+TEST_HOST_DEVICE_FUNC auto get_colons()
 {
   return cuda::std::inplace_vector<CharT, N>(N, CharT(':'));
 }
 
-TEST_FUNC constexpr cuda::std::string_view get_format_types()
+TEST_HOST_DEVICE_FUNC constexpr cuda::std::string_view get_format_types()
 {
   return "aAbBcdeEfFgGopPsxX"
 #if TEST_STD_VER > 20

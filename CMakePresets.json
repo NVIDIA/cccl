@@ -461,6 +461,7 @@
       "name": "cub-benchmark",
       "displayName": "CUB benchmarking",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CUDA_ARCHITECTURES": "native",
@@ -636,6 +637,10 @@
     {
       "name": "cub-lid2-cpp20",
       "configurePreset": "cub-lid2-cpp20"
+    },
+    {
+      "name": "cub-benchmark",
+      "configurePreset": "cub-benchmark"
     },
     {
       "name": "thrust",

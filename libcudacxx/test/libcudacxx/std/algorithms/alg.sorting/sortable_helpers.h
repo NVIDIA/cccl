@@ -22,6 +22,15 @@
 #  include "test_iterators.h"
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+template <class Sortable>
+struct SortableLessComparator
+{
+  [[nodiscard]] TEST_FUNC constexpr bool operator()(const Sortable& a, const Sortable& b) const noexcept
+  {
+    return Sortable::less(a, b);
+  }
+};
+
 struct TrivialSortable
 {
   int value;

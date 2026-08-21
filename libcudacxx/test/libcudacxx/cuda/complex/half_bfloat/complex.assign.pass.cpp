@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// complex<__nv_bfloat16> is not available in tile mode
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
