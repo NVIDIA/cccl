@@ -89,6 +89,24 @@ def test_device_reduce(dtype, num_items, op):
     )  # obtained relative error value from c2h/include/c2h/check_results.cuh
 
 
+@pytest.mark.parametrize("out_dtype", [np.float32, np.float16, np.int32, np.float64])
+def test_device_reduce_output_dtype_differs_from_init(out_dtype):
+    """The reduction is computed in h_init's dtype and value-converted (not
+    bit-reinterpreted) to d_out's dtype on the final store."""
+    num_items = 3000
+    h_init = np.array([0.5], dtype=np.float32)
+    d_input = DeviceArray.from_numpy(np.ones(num_items, dtype=np.float32))
+    d_output = DeviceArray.empty(1, out_dtype)
+
+    cuda.compute.reduce_into(
+        d_in=d_input, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
+    )
+
+    expected = np.dtype(out_dtype).type(np.float32(num_items) + np.float32(0.5))
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == expected
+
+
 def test_device_reduce_with_lambda():
     """Test that lambda functions can be used as reducers."""
     dtype = np.int32

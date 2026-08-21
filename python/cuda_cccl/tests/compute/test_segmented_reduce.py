@@ -102,6 +102,42 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
         np.testing.assert_array_equal(result, expected)
 
 
+@pytest.mark.parametrize("out_dtype", [np.float16, np.int32, np.float64])
+def test_segmented_reduce_output_dtype_differs_from_init(out_dtype, monkeypatch):
+    """Each segment's reduction is computed in h_init's dtype and value-converted
+    (not bit-reinterpreted) to d_out's dtype on the final store."""
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
+    n_segments = 16
+    segment_size = 512
+
+    offsets = np.arange(n_segments + 1, dtype="int64") * segment_size
+    d_in = DeviceArray.from_numpy(np.ones(n_segments * segment_size, dtype=np.float32))
+    d_out = DeviceArray.empty(n_segments, out_dtype)
+    start_offsets = DeviceArray.from_numpy(offsets[:-1])
+    end_offsets = DeviceArray.from_numpy(offsets[1:])
+    h_init = np.array(0.5, dtype=np.float32)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=n_segments,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected_val = np.dtype(out_dtype).type(np.float32(segment_size) + np.float32(0.5))
+    expected = np.full(n_segments, expected_val, dtype=out_dtype)
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)
+
+
 def test_segmented_reduce_struct_type(monkeypatch):
     # Disable SASS verification for this test (LDL instruction in SASS).
     monkeypatch.setattr(

@@ -196,8 +196,10 @@ def make_reduce_into(
 
     # Validate d_in and d_out if they are device arrays (iterators may not expose
     # dtype reliably here). Additionally, only require equality of dtypes for
-    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
-    # is acceptable
+    # struct objects; mixed scalar dtypes are acceptable: input elements are
+    # loaded in their own dtype and each is converted to the accumulator dtype
+    # (h_init's dtype) before accumulation; the accumulated result is converted
+    # to d_out's dtype on the final store.
     if isinstance(h_init, _Struct):
         for arr, name in ((d_in, "input"), (d_out, "output")):
             if isinstance(arr, IteratorBase):
