@@ -1253,6 +1253,70 @@ struct __policy_pow : __forwards_success<_P>
   }
 };
 
+// --- The conversion law (SPEC-ADDENDUM-7 commit 4) -----------------------------------------
+//
+// One law at three horizons: value-preserving conversions only. Enforced here at compile time
+// for concrete policies; the erased sink enforces the same law by type range at first use and
+// by the actual value at first throw. Integrals convert when the destination's range contains
+// the source's; anything arithmetic converts to floating (precision loss is tolerated where
+// range loss is not); floating never converts to integral; non-arithmetic pairs follow the
+// ordinary implicit-conversion rules. When narrowing is intended, write the conversion in the
+// policy -- subst(0xffffffffu), not subst(-1) -- so the intent is visible at the callsite.
+
+template <class _T, bool = ::cuda::std::is_enum_v<_T>>
+struct __integral_base
+{
+  using type = _T;
+};
+template <class _T>
+struct __integral_base<_T, true>
+{
+  using type = ::cuda::std::underlying_type_t<_T>;
+};
+
+template <class _From, class _To>
+constexpr bool __value_preserving_impl()
+{
+  using _F = typename __integral_base<::cuda::std::remove_cvref_t<_From>>::type;
+  using _T = ::cuda::std::remove_cvref_t<_To>;
+  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>)
+  {
+    return true; // non-arithmetic pairs: the is_convertible baseline is the whole law
+  }
+  else if constexpr (::cuda::std::is_floating_point_v<_T>)
+  {
+    return true; // precision loss is tolerated where range loss is not
+  }
+  else if constexpr (::cuda::std::is_floating_point_v<_F>)
+  {
+    return false; // floating never converts to integral
+  }
+  else
+  {
+    // Integral range containment, sign-aware. A signed source holds negatives an unsigned
+    // destination cannot; equal signedness compares widths; unsigned-to-signed needs strictly
+    // more width to cover the source's maximum.
+    constexpr bool __f_signed = ::cuda::std::is_signed_v<_F>;
+    constexpr bool __t_signed = ::cuda::std::is_signed_v<_T>;
+    if constexpr (__f_signed && !__t_signed)
+    {
+      return false;
+    }
+    else if constexpr (__f_signed == __t_signed)
+    {
+      return sizeof(_F) <= sizeof(_T);
+    }
+    else
+    {
+      return sizeof(_F) < sizeof(_T);
+    }
+  }
+}
+
+template <class _From, class _To>
+inline constexpr bool __value_preserving_v =
+  ::cuda::std::is_convertible_v<_From, _To> && __value_preserving_impl<_From, _To>();
+
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P, class _Fn>
 _Expr __interpret_answer(
@@ -1297,6 +1361,10 @@ _Expr __interpret_answer(
                   "an on_throw reaction is a policy, a never-returning callable (one returning "
                   "nullval, like abort and terminate), ::std::ignore, or a value convertible to "
                   "the result of the callable");
+    static_assert(__value_preserving_v<_Answer, _Expr>,
+                  "the policy's answer does not preserve the callable's value range (for example "
+                  "an int answer under an unsigned result); write the conversion in the policy -- "
+                  "subst(0xffffffffu), not subst(-1) -- if the narrowing is intended");
     return static_cast<_Expr>(__policy(__exception, __loc, __fn));
   }
 }
@@ -1629,8 +1697,10 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  *
  * Custom runtime policies derive from the public @ref sink_base: implement
  * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
- * default to `passthrough` and are unchecked. Erased composites are likewise
- * `passthrough`; a loud unbox on first throw is their backstop. A wrapped
+ * default to `passthrough` and are unchecked. Erased |-composites are
+ * `passthrough` (a loud, value-checked unbox on first throw is their
+ * backstop); a pure-& composite keeps its final policy's precise kind and
+ * is checked at first use. A wrapped
  * success channel that cannot accept `std::any` (for example `remember`) does
  * not survive erasure.
  *
@@ -1993,17 +2063,55 @@ private:
     else if constexpr (::cuda::std::is_arithmetic_v<_T> || ::cuda::std::is_enum_v<_T>)
     {
       _T __out{};
-      bool __hit          = false;
+      bool __hit         = false;
+      bool __found_lossy = false;
+      // The same conversion law, per VALUE: the box is opaque to the first-use type check
+      // (passthrough composites), so representability is decided on the number itself.
+      const auto __fits = [](auto __v) -> bool {
+        using _B = typename detail::__integral_base<_T>::type;
+        if constexpr (::cuda::std::is_signed_v<decltype(__v)>)
+        {
+          if (__v < 0)
+          {
+            if constexpr (::cuda::std::is_signed_v<_B>)
+            {
+              return static_cast<long long>(__v) >= static_cast<long long>(::std::numeric_limits<_B>::min());
+            }
+            else
+            {
+              return false;
+            }
+          }
+        }
+        return static_cast<unsigned long long>(__v)
+            <= static_cast<unsigned long long>(::std::numeric_limits<_B>::max());
+      };
       const auto __accept = [&](auto __tag) {
         using _Stored = typename decltype(__tag)::type;
-        if (__hit)
+        if (__hit || __found_lossy)
         {
           return;
         }
         if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
         {
-          __out = static_cast<_T>(*__p);
-          __hit = true;
+          if constexpr (::cuda::std::is_floating_point_v<typename detail::__integral_base<_T>::type>)
+          {
+            __out = static_cast<_T>(*__p); // anything -> floating: by fiat
+            __hit = true;
+          }
+          else if constexpr (::cuda::std::is_floating_point_v<_Stored>)
+          {
+            __found_lossy = true; // floating never converts to integral
+          }
+          else if (__fits(*__p))
+          {
+            __out = static_cast<_T>(*__p);
+            __hit = true;
+          }
+          else
+          {
+            __found_lossy = true; // right category, unrepresentable value
+          }
         }
       };
       __accept(::cuda::std::type_identity<bool>{});
@@ -3762,6 +3870,69 @@ UNITTEST("type erasure")
     EXPECT(custom.kind() == exception_sink::answer_kind::passthrough);
   }
 
+  // The passthrough backstop applies the conversion law per VALUE at first throw. Only
+  // |-composites erase as passthrough (they interpret internally at std::any); a pure-&
+  // composite keeps its final policy's precise kind and is checked at first use instead.
+  {
+    // A stored int that FITS the unsigned body converts.
+    const unsigned x =
+      on_throw(type_erase(
+        when(
+          [] {
+            return true;
+          },
+          subst(7))
+        | subst(0u)))
+      << []() -> unsigned {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(x == 7u);
+  }
+  {
+    // A stored -1 under an unsigned body is rejected loudly, not wrapped.
+    bool failed = false;
+    try
+    {
+      on_throw(type_erase(
+        when(
+          [] {
+            return true;
+          },
+          subst(-1))
+        | subst(0)))
+        << []() -> unsigned {
+        throw ::std::runtime_error("x");
+      };
+    }
+    catch (const ::std::logic_error& __err)
+    {
+      failed = ::std::string_view{__err.what()}.find(type_name<unsigned>) != ::std::string_view::npos;
+    }
+    EXPECT(failed);
+  }
+  {
+    // A stored floating value never lands in an integral body, even through the backstop.
+    bool failed = false;
+    try
+    {
+      on_throw(type_erase(
+        when(
+          [] {
+            return true;
+          },
+          subst(1.5))
+        | subst(0)))
+        << []() -> int {
+        throw ::std::runtime_error("x");
+      };
+    }
+    catch (const ::std::logic_error& __err)
+    {
+      failed = ::std::string_view{__err.what()}.find(type_name<int>) != ::std::string_view::npos;
+    }
+    EXPECT(failed);
+  }
+
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  1. on_throw(as_expected) << []() -> int { return 1; };
   //       -> "as_expected requires the callable to return a cuda::std::expected instantiation"
@@ -3770,6 +3941,9 @@ UNITTEST("type erasure")
   //  3. on_throw(type_erase(subst(1))) << []() -> int& { static int x = 0; return x; };
   //       -> "exception_sink cannot serve a reference-returning callable: std::any cannot carry references; use a
   //       concrete policy, or return a pointer"
+  //  4. on_throw(subst(-1)) << []() -> unsigned { throw 0; };
+  //       -> "the policy's answer does not preserve the callable's value range ...; write the conversion in the
+  //       policy -- subst(0xffffffffu), not subst(-1) -- if the narrowing is intended"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
