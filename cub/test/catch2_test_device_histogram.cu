@@ -551,7 +551,11 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMA
   using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
   // Max for int8/uint8 is 2^8, for half_t is 2^10, for bfloat16_t is 2^7 (only integers up to 2^8 are exactly
   // representable). Beyond, we would need a different level generation
-  constexpr int max          = sizeof(sample_t) == 1 || cuda::std::is_same_v<sample_t, bfloat16_t> ? 126 : 1024;
+#if TEST_BF_T()
+  constexpr int max = sizeof(sample_t) == 1 || cuda::std::is_same_v<sample_t, bfloat16_t> ? 126 : 1024;
+#else // ^^^ TEST_BF_T() ^^^ / vvv !TEST_BF_T() vvv
+  constexpr int max = sizeof(sample_t) == 1 ? 126 : 1024;
+#endif // !TEST_BF_T()
   const auto max_level       = level_t{max};
   const auto max_level_count = max + 1;
   test_even_and_range<sample_t, 4, 3, int>(max_level, max_level_count, 1920, 1080);
@@ -561,7 +565,11 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMA
 // bfloat16_t is excluded because the reference computes bins with bfloat16_t arithmetic (rounding after every
 // operation), which does not match the float arithmetic of the device implementation when the bin scale is not
 // exactly representable, as is the case for the huge level ranges of this test
+#if TEST_BF_T()
 using large_level_types = c2h::remove<c2h::remove<types, float>, bfloat16_t>;
+#else // ^^^ TEST_BF_T() ^^^ / vvv !TEST_BF_T() vvv
+using large_level_types = c2h::remove<types, float>;
+#endif // !TEST_BF_T()
 
 // This test covers int32 and int64 arithmetic for bin computation
 CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", CUB_SMALL, large_level_types)
