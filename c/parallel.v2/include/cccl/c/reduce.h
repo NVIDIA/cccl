@@ -32,6 +32,7 @@ typedef struct cccl_device_reduce_build_result_t
   void* reduce_fn; // with an init value: int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
                    // with CCCL_NO_INIT the init pointer is dropped:
                    // int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*)
+                   // — in both, the trailing void* is the CUstream
   uint64_t accumulator_size;
   cccl_determinism_t determinism;
   cccl_init_kind_t init_kind;
