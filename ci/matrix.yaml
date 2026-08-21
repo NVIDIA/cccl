@@ -79,6 +79,10 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # TEMPORARY (do not merge): run only the MSVC C Parallel v2 lane, which is
+    # the one that intermittently segfaults in NVIDIA/cccl#10802. Used to hunt
+    # the crash in CI, since it has not been reproducible locally.
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['msvc'], gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
