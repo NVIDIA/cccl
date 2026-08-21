@@ -133,12 +133,15 @@ def raise_on_numba_import(monkeypatch):
 # because some are data-dependent and may pass; an xpass simply flags that the
 # issue is resolved.  Remove a rule once its upstream issue is fixed.
 #
-# As of numba-cuda-mlir 0.4.2 only one issue remains.  #119 (duplicate
-# error_code on multi-op link) and #123 (`**` operator) are fixed; #124
-# (device array-from-pointer) is fixed too and cuda.compute now uses the new
-# `cuda.carray` for captured-array state; #120 (complex through a CPointer) is
-# still open upstream but our tests pass on it.  Those rules have been dropped.
-_UNSIGNED_DTYPES = ("uint8", "uint16", "uint32", "uint64")
+# History: #119 (duplicate error_code on multi-op link), #123 (`**` operator)
+# and #124 (device array-from-pointer, now handled with `cuda.carray`) are all
+# fixed; #120 (complex through a CPointer) is still open upstream but our tests
+# pass on it; #121 (unsigned/signed comparison) is fixed as of 0.5.0.  Those
+# rules have been dropped.  0.5.0 introduced one new regression -- see below.
+
+# numba-cuda-mlir issue for the 0.5.0 `uint64 * <int literal>` regression:
+# https://github.com/NVIDIA/numba-cuda-mlir/issues/277
+_UINT64_LITERAL_MULF_ISSUE = 277
 
 
 def _upstream_xfail_reason(name: str, nodeid: str):
@@ -152,16 +155,19 @@ def _upstream_xfail_reason(name: str, nodeid: str):
     def issue(num, text):
         return (num, f"numba-cuda-mlir#{num}: {text}")
 
-    # #121 (reopened case): an unsigned value compared against a *signed integer
-    # literal* is still compiled as a signed comparison.  `positive_op` here is
-    # `x > 0`, and the wrapping `random_array(...) - 50` produces unsigned values
-    # with the top bit set, which then wrongly test <= 0 -- so the selected count
-    # is wrong.  (Same-signedness compares were fixed in 0.4.x; signed and float
-    # dtypes are unaffected.)
-    if name == "test_select_reuse_object" and any(
-        f"[{d}]" in nodeid for d in _UNSIGNED_DTYPES
-    ):
-        return issue(121, "unsigned value compared against a signed literal is signed")
+    # 0.5.0 regression: `uint64 * <integer literal>` lowers to `arith.mulf`
+    # (float multiply) on the raw i64 operands, so the op fails MLIR
+    # verification.  numba unifies uint64 with a signed int literal to float64,
+    # but the lowering emits mulf on the integer operands instead of converting.
+    # Narrow: only uint64 * a literal (uint32, int64, uint64*var, uint64+literal
+    # all compile); it worked on 0.4.2.  `test_device_sum_map_mul2_count_it`'s
+    # uint64 pair (value_type_name_pair5) maps `x * 2`; the large-segments test
+    # multiplies segment offsets by a literal.
+    mulf = _UINT64_LITERAL_MULF_ISSUE
+    if name == "test_device_sum_map_mul2_count_it" and "pair5" in nodeid:
+        return issue(mulf, "uint64 * integer-literal lowers to arith.mulf")
+    if name == "test_large_num_segments_uniform_segment_sizes_nonuniform_input":
+        return issue(mulf, "uint64 * integer-literal lowers to arith.mulf")
 
     return None
 

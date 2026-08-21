@@ -72,7 +72,7 @@ cu12 = [
   "numba-cuda[cu12]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
   # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
   # gpu_struct types (the MLIR-based successor to numba-cuda).
-  "numba-cuda-mlir[cu12]>=0.4.2",
+  "numba-cuda-mlir[cu12]>=0.5.0",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
@@ -82,7 +82,7 @@ cu13 = [
   "numba-cuda[cu13]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
   # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
   # gpu_struct types (the MLIR-based successor to numba-cuda).
-  "numba-cuda-mlir[cu13]>=0.4.2",
+  "numba-cuda-mlir[cu13]>=0.5.0",
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
@@ -92,7 +92,7 @@ sysctk12 = [
   # system-provided CUDA toolkit instead of pulling the toolkit from pip --
   # the whole point of the sysctk extra.
   "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
-  "numba-cuda-mlir>=0.4.2",
+  "numba-cuda-mlir>=0.5.0",
   # nvjitlink is the one exception to "use the system toolkit": numba-cuda-mlir
   # calls nvJitLinkVersion, which only exists from CUDA 12.3, so a system CTK
   # 12.0 (which this lane tests) is too old and every JIT dies with
@@ -109,7 +109,7 @@ sysctk13 = [
   # system-provided CUDA toolkit instead of pulling the toolkit from pip --
   # the whole point of the sysctk extra.
   "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
-  "numba-cuda-mlir>=0.4.2",
+  "numba-cuda-mlir>=0.5.0",
 ]
 # The test extras do not include CuPy. The cuda.compute examples (run via
 # tests/test_examples.py) require it; install it separately (e.g.
