@@ -43,7 +43,7 @@ For each group:
 - `title`: succinct, specific failure mechanism; never a generic workflow or job name.
 - `evidence`: up to three decisive log lines, copied verbatim except for ANSI escapes.
   Put the single most decisive failure line first, followed only by essential context.
-- `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
+- `explanation`: one or two sentences explaining the mechanism; if uncertain, say what
   evidence is missing.
 - `agent_prompt`: a self-contained prompt with concrete fix guidance and, when useful, a
   complete proposed fix. Ask the coding agent to verify, reproduce narrowly, implement

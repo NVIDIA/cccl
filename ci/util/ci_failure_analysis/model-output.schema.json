@@ -18,7 +18,7 @@
               "type": "string"
             }
           },
-          "root_cause": {
+          "explanation": {
             "type": "string"
           },
           "agent_prompt": {
@@ -34,7 +34,7 @@
         "required": [
           "title",
           "evidence",
-          "root_cause",
+          "explanation",
           "agent_prompt",
           "job_ids"
         ]

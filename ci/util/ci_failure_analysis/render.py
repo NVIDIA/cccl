@@ -227,7 +227,7 @@ def render_github_group(index, group, jobs, repository, run_id):
             "</summary>"
         ),
         "",
-        f"**Root cause:** {sanitize_inline(group['root_cause'])}",
+        f"**Explanation:** {sanitize_inline(group['explanation'])}",
     ]
 
     evidence = render_github_evidence(group)
@@ -345,7 +345,7 @@ def render_slack_thread_reply(
             f"*{index}. {sanitize_slack_title(group['title'])}* — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"*Root cause:* {sanitize_slack(group['root_cause'])}",
+        f"*Explanation:* {sanitize_slack(group['explanation'])}",
     ]
     evidence = render_slack_evidence(group)
     if evidence:
