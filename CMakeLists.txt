@@ -122,9 +122,10 @@ endif()
 
 option(
   CCCL_ENABLE_CUDA_SMOKE_TESTS
-  "Build the CUDA runtime smoke tests (cccl.test.cuda_smoke.*)."
+  "Build the CUDA runtime smoke test (cccl.test.cuda_runtime_smoke)."
   OFF
 )
+set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
 
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
