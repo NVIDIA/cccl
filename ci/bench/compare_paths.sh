@@ -16,7 +16,8 @@ Usage: $0 <base-path> <test-path> \
   [--python-filter "<regex>"] \
   [--arch "<arch>"] \
   [--nvbench-args "<args>"] \
-  [--nvbench-compare-args "<args>"]
+  [--nvbench-compare-args "<args>"] \
+  [--nvbench-compare-legacy-args "<args>"]
 
 Compare benchmark performance between two checked-out CCCL trees.
 
@@ -34,7 +35,9 @@ Options:
   --python-filter <regex>   Python benchmark regex filter (repeatable).
   --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
   --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
-  --nvbench-compare-args <args>  Extra args passed to nvbench_compare.
+  --nvbench-compare-args <args>  Extra args passed to nvbench-compare-robust.
+  --nvbench-compare-legacy-args <args>
+                             Extra args passed to nvbench-compare-legacy.
 
 Environment:
   CCCL_BENCH_ARTIFACT_ROOT   Root directory for outputs.
@@ -46,6 +49,15 @@ Environment:
   CCCL_BENCH_TEST_BUILD_DIR  Optional preconfigured build tree for test path.
                              If either is set, both must be set.
   CCCL_BENCH_GPU_NAME        Optional GPU name included in artifact directory names.
+  CCCL_BENCH_NVBENCH_SHA     NVBench SHA/tag used for generated CUB build trees.
+                             Default: "main"
+  CCCL_BENCH_COMPARE_PYTHON  Optional Python executable used for CUB benchmark
+                             comparisons.
+  CCCL_BENCH_COMPARE_BIN     Optional nvbench-compare-robust executable used for
+                             Python benchmark comparisons.
+  CCCL_BENCH_LEGACY_COMPARE_BIN
+                             Optional nvbench-compare-legacy executable used for
+                             Python benchmark comparisons.
   CCCL_BENCH_BUILD_ROOT      Root directory for generated build trees.
                              Default: "/tmp/cccl-bench-builds"
 EOF
@@ -129,7 +141,13 @@ configure_build_tree() {
   local log_path="$4"
   local target_arch="$5"
   local -a cmake_cmd
-  cmake_cmd=(cmake --preset "cub-benchmark" -S "${src_path}" -B "${build_path}")
+  cmake_cmd=(
+    cmake
+    --preset "cub-benchmark"
+    -S "${src_path}"
+    -B "${build_path}"
+    "-DCCCL_NVBENCH_SHA=${nvbench_sha}"
+  )
   if [[ -n "${target_arch}" ]]; then
     cmake_cmd+=("-DCMAKE_CUDA_ARCHITECTURES=${target_arch}")
   fi
@@ -172,7 +190,23 @@ resolve_compare_script() {
   local build_path="$1"
   local nvbench_src="${build_path}/_deps/nvbench-src"
   local candidate=""
-  # Diff versions have the script at diff locations:
+  # Different versions have the script at different locations:
+  for candidate in \
+    "${nvbench_src}/python/scripts/nvbench_compare_robust.py" \
+    "${nvbench_src}/scripts/nvbench_compare_robust.py"; do
+    if [[ -f "${candidate}" ]]; then
+      printf "%s" "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+resolve_legacy_compare_script() {
+  local build_path="$1"
+  local nvbench_src="${build_path}/_deps/nvbench-src"
+  local candidate=""
+  # Different versions have the script at different locations:
   for candidate in \
     "${nvbench_src}/python/scripts/nvbench_compare.py" \
     "${nvbench_src}/scripts/nvbench_compare.py"; do
@@ -203,7 +237,7 @@ run_target_for_side() {
     "${binary_path}"
     -d 0
     "${NVBENCH_RUN_ARGS[@]}"
-    --json "${json_path}"
+    --jsonbin "${json_path}"
     --md "${md_path}"
   )
 
@@ -357,8 +391,7 @@ setup_python_venv() {
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
       '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      # nvbench-compare runtime deps (until cuda-bench declares them):
-      '${venv_path}/bin/pip' install colorama jsondiff tabulate
+      '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
     "
   )
 
@@ -387,7 +420,7 @@ run_python_target_for_side() {
     "${script_path}"
     -d 0
     "${NVBENCH_RUN_ARGS[@]}"
-    --json "${json_path}"
+    --jsonbin "${json_path}"
     --md "${md_path}"
   )
 
@@ -397,40 +430,95 @@ run_python_target_for_side() {
     "${bench_cmd[@]}"
 }
 
+resolve_legacy_compare_bin() {
+  local venv_path="$1"
+  local compare_bin="$2"
+  local candidate=""
+
+  if [[ -n "${CCCL_BENCH_LEGACY_COMPARE_BIN:-}" ]]; then
+    if [[ -x "${CCCL_BENCH_LEGACY_COMPARE_BIN}" ]]; then
+      printf "%s" "${CCCL_BENCH_LEGACY_COMPARE_BIN}"
+      return 0
+    fi
+    echo "CCCL_BENCH_LEGACY_COMPARE_BIN is set but not executable: ${CCCL_BENCH_LEGACY_COMPARE_BIN}" >&2
+    return 1
+  fi
+
+  if [[ "${compare_bin}" == */* ]]; then
+    candidate="$(dirname "${compare_bin}")/nvbench-compare-legacy"
+    if [[ -x "${candidate}" ]]; then
+      printf "%s" "${candidate}"
+      return 0
+    fi
+  fi
+
+  candidate="${venv_path}/bin/nvbench-compare-legacy"
+  if [[ -x "${candidate}" ]]; then
+    printf "%s" "${candidate}"
+    return 0
+  fi
+
+  command -v nvbench-compare-legacy 2>/dev/null || return 1
+}
+
 run_python_compare_target() {
   local target_name="$1"
   local venv_path="$2"
   local base_json="$3"
   local test_json="$4"
-  local compare_out="$5"
-  local compare_log="$6"
 
-  local label="[py-compare] ${target_name}"
-  local started_at=0
-  local elapsed_s=0
-  local rc=0
+  local compare_bin="${CCCL_BENCH_COMPARE_BIN:-${venv_path}/bin/nvbench-compare-robust}"
+  local legacy_compare_bin=""
+  local display=""
+  local compare_out=""
+  local compare_log=""
+  local robust_rc=0
   local -a compare_cmd
-  compare_cmd=("${venv_path}/bin/nvbench-compare" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
-  : > "${compare_log}"
-  echo "::group::${label}"
-  print_shell_command "${compare_cmd[@]}"
-  started_at="${SECONDS}"
-  if "${compare_cmd[@]}" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
-    rc=0
-  else
-    rc=$?
+  for display in "${COMPARE_DISPLAYS[@]}"; do
+    compare_out="$(compare_report_path_for_display "${target_name}" "${display}")"
+    compare_log="$(compare_log_path_for_display "${target_name}" "${display}")"
+    compare_cmd=(
+      "${compare_bin}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      --display
+      "${display}"
+      "${base_json}"
+      "${test_json}"
+    )
+
+    if ! run_compare_command \
+      "[py-compare:${display}] ${target_name}" \
+      "${compare_out}" \
+      "${compare_log}" \
+      "${compare_cmd[@]}"; then
+      robust_rc=1
+    fi
+    if [[ "${display}" == "explain" ]] && ! normalize_explain_markdown_report "${compare_out}"; then
+      robust_rc=1
+    fi
+  done
+
+  legacy_compare_bin="$(resolve_legacy_compare_bin "${venv_path}" "${compare_bin}" || true)"
+  if [[ -n "${legacy_compare_bin}" ]]; then
+    compare_cmd=(
+      "${legacy_compare_bin}"
+      --no-color
+      "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
+      "${base_json}"
+      "${test_json}"
+    )
+    if ! run_compare_command \
+      "[py-compare:legacy] ${target_name}" \
+      "${artifact_dir}/compare/${target_name}.legacy.md" \
+      "${artifact_dir}/logs/compare.${target_name}.legacy.log" \
+      "${compare_cmd[@]}"; then
+      echo "Legacy compare output is diagnostic; continuing after legacy compare failure." >&2
+    fi
   fi
-  elapsed_s=$((SECONDS - started_at))
-  echo "::endgroup::"
-  if [[ "${rc}" -eq 0 ]]; then
-    echo "${label} completed in ${elapsed_s}s"
-  else
-    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
-  fi
-  return "${rc}"
+
+  return "${robust_rc}"
 }
 
 # ============================================================================
@@ -468,36 +556,228 @@ run_grouped_logged_command() {
   return "${rc}"
 }
 
-run_compare_target() {
-  local target="$1"
-  local compare_script="$2"
-  local compare_script_dir="$3"
-  local base_json="$4"
-  local test_json="$5"
-  local compare_out="$6"
-  local compare_log="$7"
+compare_report_path_for_display() {
+  local target_name="$1"
+  local display="$2"
 
-  local label="[compare] ${target}"
+  if [[ "${display}" == "intervals" ]]; then
+    printf "%s" "${artifact_dir}/compare/${target_name}.md"
+  else
+    printf "%s" "${artifact_dir}/compare/${target_name}.${display}.md"
+  fi
+}
+
+compare_log_path_for_display() {
+  local target_name="$1"
+  local display="$2"
+
+  if [[ "${display}" == "intervals" ]]; then
+    printf "%s" "${artifact_dir}/logs/compare.${target_name}.log"
+  else
+    printf "%s" "${artifact_dir}/logs/compare.${target_name}.${display}.log"
+  fi
+}
+
+normalize_explain_markdown_report() {
+  local report_path="$1"
+  local tmp_path=""
+
+  [[ -s "${report_path}" ]] || return 0
+
+  tmp_path="$(mktemp "${report_path}.XXXXXX")"
+  if ! awk '
+    function clear_array(values, key) {
+      for (key in values) {
+        delete values[key]
+      }
+    }
+
+    function trim(value) {
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      return value
+    }
+
+    function split_markdown_row(line, cells,    i, c, depth, cell, count) {
+      clear_array(cells)
+      if (substr(line, 1, 1) != "|") {
+        return 0
+      }
+
+      depth = 0
+      cell = ""
+      count = 0
+      for (i = 2; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        if (c == "[") {
+          depth++
+        } else if (c == "]") {
+          if (depth > 0) {
+            depth--
+          }
+        }
+
+        if (c == "|" && depth == 0) {
+          count++
+          cells[count] = cell
+          cell = ""
+        } else {
+          cell = cell c
+        }
+      }
+
+      if (cell != "") {
+        count++
+        cells[count] = cell
+      }
+      return count
+    }
+
+    function replace_interval_pipes(value,    i, c, depth, out) {
+      depth = 0
+      out = ""
+      for (i = 1; i <= length(value); i++) {
+        c = substr(value, i, 1)
+        if (c == "[") {
+          depth++
+          out = out c
+        } else if (c == "]") {
+          if (depth > 0) {
+            depth--
+          }
+          out = out c
+        } else if (c == "|" && depth > 0) {
+          out = out "/"
+        } else {
+          out = out c
+        }
+      }
+      return out
+    }
+
+    function print_markdown_row(cells, count,    i, out) {
+      out = "|"
+      for (i = 1; i <= count; i++) {
+        out = out cells[i] "|"
+      }
+      print out
+    }
+
+    {
+      if (substr($0, 1, 1) != "|") {
+        clear_array(interval_columns)
+        interval_column_count = 0
+        print
+        next
+      }
+
+      cell_count = split_markdown_row($0, cells)
+      if (cell_count == 0) {
+        print
+        next
+      }
+
+      ref_interval_column = cell_count - 6
+      cmp_interval_column = cell_count - 5
+      found_interval_columns = \
+        ref_interval_column > 0 && \
+        trim(cells[ref_interval_column]) == "Ref [Lo | Ce | Hi]" && \
+        trim(cells[cmp_interval_column]) == "Cmp [Lo | Ce | Hi]" && \
+        trim(cells[cell_count - 4]) == "Ref Noise" && \
+        trim(cells[cell_count - 3]) == "Cmp Noise" && \
+        trim(cells[cell_count - 2]) == "Reason" && \
+        trim(cells[cell_count - 1]) == "Change" && \
+        trim(cells[cell_count]) == "Status"
+
+      if (found_interval_columns) {
+        clear_array(interval_columns)
+        interval_columns[ref_interval_column] = 1
+        interval_columns[cmp_interval_column] = 1
+        interval_column_count = 2
+        cells[ref_interval_column] = replace_interval_pipes(cells[ref_interval_column])
+        cells[cmp_interval_column] = replace_interval_pipes(cells[cmp_interval_column])
+        print_markdown_row(cells, cell_count)
+        next
+      }
+
+      if (interval_column_count > 0) {
+        for (i in interval_columns) {
+          if (i <= cell_count) {
+            cells[i] = replace_interval_pipes(cells[i])
+          }
+        }
+        print_markdown_row(cells, cell_count)
+        next
+      }
+
+      print
+    }
+  ' "${report_path}" > "${tmp_path}"; then
+    rm -f "${tmp_path}"
+    return 1
+  fi
+
+  mv "${tmp_path}" "${report_path}"
+}
+
+run_compare_command_impl() {
+  local label="$1"
+  local compare_out="$2"
+  local compare_log="$3"
+  shift 3
+
+  local -a env_prefixes=()
+  while [[ "$#" -gt 0 && "$1" == --env ]]; do
+    shift
+    env_prefixes+=("$1")
+    shift
+  done
+
   local started_at=0
   local elapsed_s=0
   local rc=0
-  local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
-  local -a compare_cmd
-  compare_cmd=(python3 "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  local stderr_tmp=""
+  stderr_tmp="$(mktemp "${compare_log}.stderr.XXXXXX")"
 
+  : > "${compare_out}"
   : > "${compare_log}"
   echo "::group::${label}"
-  print_shell_command --env "PYTHONPATH=${compare_pythonpath}" "${compare_cmd[@]}"
+
+  local -a print_env_args=()
+  local env_prefix=""
+  for env_prefix in "${env_prefixes[@]}"; do
+    print_env_args+=(--env "${env_prefix}")
+  done
+  print_shell_command "${print_env_args[@]}" "$@"
+
   started_at="${SECONDS}"
-  if PYTHONPATH="${compare_pythonpath}" \
-    "${compare_cmd[@]}" \
-    > >(tee "${compare_out}" | tee -a "${compare_log}") \
-    2> >(tee -a "${compare_log}" >&2); then
+  if [[ "${#env_prefixes[@]}" -gt 0 ]]; then
+    if env "${env_prefixes[@]}" "$@" > "${compare_out}" 2> "${stderr_tmp}"; then
+      rc=0
+    else
+      rc=$?
+    fi
+  elif "$@" > "${compare_out}" 2> "${stderr_tmp}"; then
     rc=0
   else
     rc=$?
   fi
   elapsed_s=$((SECONDS - started_at))
+  if [[ -s "${compare_out}" ]]; then
+    cat "${compare_out}"
+    cat "${compare_out}" >> "${compare_log}"
+  fi
+  if [[ -s "${stderr_tmp}" ]]; then
+    cat "${stderr_tmp}" >&2
+    cat "${stderr_tmp}" >> "${compare_log}"
+  fi
+  rm -f "${stderr_tmp}"
+  if [[ "${rc}" -ne 0 && ! -s "${compare_out}" ]]; then
+    printf "_Compare command failed with rc=%s; see \`%s\` for stderr/log output._\n" \
+      "${rc}" \
+      "${compare_log#"${artifact_dir}"/}" \
+      > "${compare_out}"
+  fi
   echo "::endgroup::"
   if [[ "${rc}" -eq 0 ]]; then
     echo "${label} completed in ${elapsed_s}s"
@@ -505,6 +785,92 @@ run_compare_target() {
     echo "${label} failed in ${elapsed_s}s (rc=${rc})"
   fi
   return "${rc}"
+}
+
+run_compare_command() {
+  run_compare_command_impl "$@"
+}
+
+run_compare_command_with_pythonpath() {
+  local label="$1"
+  local compare_pythonpath="$2"
+  local compare_out="$3"
+  local compare_log="$4"
+  shift 4
+
+  run_compare_command_impl \
+    "${label}" \
+    "${compare_out}" \
+    "${compare_log}" \
+    --env "PYTHONPATH=${compare_pythonpath}" \
+    "$@"
+}
+
+run_compare_target() {
+  local target="$1"
+  local compare_script="$2"
+  local compare_script_dir="$3"
+  local base_json="$4"
+  local test_json="$5"
+  local legacy_compare_script="$6"
+  local legacy_compare_script_dir="$7"
+
+  local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
+  local compare_python="${CCCL_BENCH_COMPARE_PYTHON:-python3}"
+  local display=""
+  local compare_out=""
+  local compare_log=""
+  local robust_rc=0
+  local -a compare_cmd
+
+  for display in "${COMPARE_DISPLAYS[@]}"; do
+    compare_out="$(compare_report_path_for_display "${target}" "${display}")"
+    compare_log="$(compare_log_path_for_display "${target}" "${display}")"
+    compare_cmd=(
+      "${compare_python}"
+      "${compare_script}"
+      --no-color
+      "${NVBENCH_COMPARE_ARGS[@]}"
+      --display
+      "${display}"
+      "${base_json}"
+      "${test_json}"
+    )
+
+    if ! run_compare_command_with_pythonpath \
+      "[compare:${display}] ${target}" \
+      "${compare_pythonpath}" \
+      "${compare_out}" \
+      "${compare_log}" \
+      "${compare_cmd[@]}"; then
+      robust_rc=1
+    fi
+    if [[ "${display}" == "explain" ]] && ! normalize_explain_markdown_report "${compare_out}"; then
+      robust_rc=1
+    fi
+  done
+
+  if [[ -n "${legacy_compare_script}" ]]; then
+    compare_pythonpath="${legacy_compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
+    compare_cmd=(
+      "${compare_python}"
+      "${legacy_compare_script}"
+      --no-color
+      "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
+      "${base_json}"
+      "${test_json}"
+    )
+    if ! run_compare_command_with_pythonpath \
+      "[compare:legacy] ${target}" \
+      "${compare_pythonpath}" \
+      "${artifact_dir}/compare/${target}.legacy.md" \
+      "${artifact_dir}/logs/compare.${target}.legacy.log" \
+      "${compare_cmd[@]}"; then
+      echo "Legacy compare output is diagnostic; continuing after legacy compare failure." >&2
+    fi
+  fi
+
+  return "${robust_rc}"
 }
 
 parse_quoted_args_to_nul_file() {
@@ -554,10 +920,64 @@ parse_quoted_args_to_array() {
 # Summary
 # ============================================================================
 
+write_compare_report_details() {
+  local summary="$1"
+  local compare_report_file="$2"
+
+  if [[ ! -s "${compare_report_file}" ]]; then
+    return 1
+  fi
+
+  echo
+  echo "<details><summary>${summary}</summary>"
+  echo
+  cat "${compare_report_file}"
+  echo
+  echo "</details>"
+  return 0
+}
+
+write_robust_summary_excerpt() {
+  local compare_report_file="$1"
+
+  if [[ ! -s "${compare_report_file}" ]]; then
+    return 1
+  fi
+
+  awk '
+    function trim(value) {
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      return value
+    }
+
+    {
+      if (!printing && trim($0) == "# Summary") {
+        print "**Robust comparison summary**"
+        print ""
+        printing = 1
+        skip_leading_blanks = 1
+        emitted = 1
+        next
+      }
+      if (printing) {
+        if (skip_leading_blanks && trim($0) == "") {
+          next
+        }
+        skip_leading_blanks = 0
+        print
+      }
+    }
+
+    END { exit emitted ? 0 : 1 }
+  ' "${compare_report_file}"
+}
+
 write_summary() {
   local summary_file="$1"
   local target=""
   local compare_report_file=""
+  local display=""
   local reports_emitted=0
 
   {
@@ -572,6 +992,7 @@ write_summary() {
     if [[ "${#FILTERS[@]}" -gt 0 ]]; then
       echo "- Base build dir: \`${base_build_dir}\`"
       echo "- Test build dir: \`${test_build_dir}\`"
+      echo "- NVBench SHA/tag: \`${nvbench_sha}\`"
     fi
     echo "- CUB targets selected: ${#selected_targets[@]}"
     echo "- CUB comparisons attempted: ${compares_attempted}"
@@ -591,6 +1012,24 @@ write_summary() {
       echo
     fi
 
+    echo "## Benchmark Arguments"
+    if [[ -n "${NVBENCH_ARGS_STRING}" ]]; then
+      echo "- NVBench args: \`${NVBENCH_ARGS_STRING}\`"
+    else
+      echo "- NVBench args: not specified"
+    fi
+    if [[ -n "${NVBENCH_COMPARE_ARGS_STRING}" ]]; then
+      echo "- NVBench robust compare args: \`${NVBENCH_COMPARE_ARGS_STRING}\`"
+    else
+      echo "- NVBench robust compare args: not specified"
+    fi
+    if [[ -n "${NVBENCH_COMPARE_LEGACY_ARGS_STRING}" ]]; then
+      echo "- NVBench legacy compare args: \`${NVBENCH_COMPARE_LEGACY_ARGS_STRING}\`"
+    else
+      echo "- NVBench legacy compare args: not specified"
+    fi
+    echo
+
     if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
       echo "## Python Filters"
       for filter in "${PYTHON_FILTERS[@]}"; do
@@ -602,19 +1041,20 @@ write_summary() {
     if [[ "${#selected_targets[@]}" -gt 0 ]]; then
       echo "## CUB Compare Reports"
       for target in "${selected_targets[@]}"; do
-        compare_report_file="${artifact_dir}/compare/${target}.md"
-        if [[ ! -f "${compare_report_file}" ]]; then
-          continue
-        fi
-        reports_emitted=$((reports_emitted + 1))
         echo
         echo "### \`${target}\`"
-        echo
-        echo "<details><summary>Expand full compare output for \`${target}\`</summary>"
-        echo
-        cat "${compare_report_file}"
-        echo
-        echo "</details>"
+        compare_report_file="$(compare_report_path_for_display "${target}" "intervals")"
+        write_robust_summary_excerpt "${compare_report_file}" || true
+        for display in "${COMPARE_DISPLAYS[@]}"; do
+          compare_report_file="$(compare_report_path_for_display "${target}" "${display}")"
+          if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
+            reports_emitted=$((reports_emitted + 1))
+          fi
+        done
+        compare_report_file="${artifact_dir}/compare/${target}.legacy.md"
+        if write_compare_report_details "Legacy output" "${compare_report_file}"; then
+          reports_emitted=$((reports_emitted + 1))
+        fi
       done
     fi
 
@@ -625,19 +1065,20 @@ write_summary() {
       local py_target_name=""
       for py_target_path in "${selected_py_targets[@]}"; do
         py_target_name="$(python_path_to_target_name "${py_target_path}")"
-        compare_report_file="${artifact_dir}/compare/${py_target_name}.md"
-        if [[ ! -f "${compare_report_file}" ]]; then
-          continue
-        fi
-        reports_emitted=$((reports_emitted + 1))
         echo
         echo "### \`${py_target_name}\` (\`${py_target_path}\`)"
-        echo
-        echo "<details><summary>Expand full compare output for \`${py_target_name}\`</summary>"
-        echo
-        cat "${compare_report_file}"
-        echo
-        echo "</details>"
+        compare_report_file="$(compare_report_path_for_display "${py_target_name}" "intervals")"
+        write_robust_summary_excerpt "${compare_report_file}" || true
+        for display in "${COMPARE_DISPLAYS[@]}"; do
+          compare_report_file="$(compare_report_path_for_display "${py_target_name}" "${display}")"
+          if write_compare_report_details "Robust ${display} output" "${compare_report_file}"; then
+            reports_emitted=$((reports_emitted + 1))
+          fi
+        done
+        compare_report_file="${artifact_dir}/compare/${py_target_name}.legacy.md"
+        if write_compare_report_details "Legacy output" "${compare_report_file}"; then
+          reports_emitted=$((reports_emitted + 1))
+        fi
       done
     fi
 
@@ -668,6 +1109,7 @@ parse_cli_args() {
 
   NVBENCH_ARGS_STRING=""
   NVBENCH_COMPARE_ARGS_STRING=""
+  NVBENCH_COMPARE_LEGACY_ARGS_STRING=""
   TARGET_ARCH=""
   FILTERS=()
   PYTHON_FILTERS=()
@@ -692,6 +1134,13 @@ parse_cli_args() {
           die "Missing value for --nvbench-compare-args"
         fi
         NVBENCH_COMPARE_ARGS_STRING="$2"
+        shift 2
+        ;;
+      --nvbench-compare-legacy-args)
+        if [[ "$#" -lt 2 ]]; then
+          die "Missing value for --nvbench-compare-legacy-args"
+        fi
+        NVBENCH_COMPARE_LEGACY_ARGS_STRING="$2"
         shift 2
         ;;
       --cub-filter)
@@ -723,10 +1172,17 @@ parse_cli_args "$@"
 
 declare -a NVBENCH_RUN_ARGS
 declare -a NVBENCH_COMPARE_ARGS
+declare -a NVBENCH_COMPARE_LEGACY_ARGS
+readonly -a COMPARE_DISPLAYS=(intervals simple explain)
 parse_quoted_args_to_array NVBENCH_RUN_ARGS "${NVBENCH_ARGS_STRING}" "--nvbench-args" \
   || die "Failed to parse --nvbench-args."
 parse_quoted_args_to_array NVBENCH_COMPARE_ARGS "${NVBENCH_COMPARE_ARGS_STRING}" "--nvbench-compare-args" \
   || die "Failed to parse --nvbench-compare-args."
+parse_quoted_args_to_array \
+  NVBENCH_COMPARE_LEGACY_ARGS \
+  "${NVBENCH_COMPARE_LEGACY_ARGS_STRING}" \
+  "--nvbench-compare-legacy-args" \
+  || die "Failed to parse --nvbench-compare-legacy-args."
 
 validate_repo_path "${BASE_PATH}"
 validate_repo_path "${TEST_PATH}"
@@ -750,6 +1206,7 @@ artifact_tag="$(sanitize_label "${artifact_tag}")"
 artifact_dir="${artifact_root}/${artifact_tag}"
 
 build_root="${CCCL_BENCH_BUILD_ROOT:-/tmp/cccl-bench-builds}"
+nvbench_sha="${CCCL_BENCH_NVBENCH_SHA:-main}"
 build_token="$(sanitize_label "${test_label}-${timestamp}-${base_label}")"
 base_build_dir="${build_root}/base-${build_token}"
 test_build_dir="${build_root}/test-${build_token}"
@@ -766,6 +1223,7 @@ fi
 echo "Base source: ${BASE_PATH}"
 echo "Test source: ${TEST_PATH}"
 if [[ "${#FILTERS[@]}" -gt 0 ]]; then
+  echo "NVBench SHA/tag: ${nvbench_sha}"
   echo "CUB filters:"
   for filter in "${FILTERS[@]}"; do
     echo "  - ${filter}"
@@ -791,8 +1249,14 @@ if [[ "${#NVBENCH_RUN_ARGS[@]}" -gt 0 ]]; then
   done
 fi
 if [[ "${#NVBENCH_COMPARE_ARGS[@]}" -gt 0 ]]; then
-  echo "Extra compare args:"
+  echo "Extra robust compare args:"
   for arg in "${NVBENCH_COMPARE_ARGS[@]}"; do
+    echo "  - ${arg}"
+  done
+fi
+if [[ "${#NVBENCH_COMPARE_LEGACY_ARGS[@]}" -gt 0 ]]; then
+  echo "Extra legacy compare args:"
+  for arg in "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"; do
     echo "  - ${arg}"
   done
 fi
@@ -846,9 +1310,18 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
   fi
   if [[ -z "${compare_script}" ]]; then
-    die "Unable to locate nvbench_compare.py in build dependencies." 1
+    die "Unable to locate nvbench_compare_robust.py in build dependencies." 1
   fi
   compare_script_dir="$(dirname "${compare_script}")"
+
+  legacy_compare_script="$(resolve_legacy_compare_script "${test_build_dir}" || true)"
+  if [[ -z "${legacy_compare_script}" ]]; then
+    legacy_compare_script="$(resolve_legacy_compare_script "${base_build_dir}" || true)"
+  fi
+  legacy_compare_script_dir=""
+  if [[ -n "${legacy_compare_script}" ]]; then
+    legacy_compare_script_dir="$(dirname "${legacy_compare_script}")"
+  fi
 
   base_build_all_rc=0
   test_build_all_rc=0
@@ -878,8 +1351,6 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     test_target_run_rc=125
     base_run_log="${artifact_dir}/logs/run.base.${target}.log"
     test_run_log="${artifact_dir}/logs/run.test.${target}.log"
-    compare_report_md="${artifact_dir}/compare/${target}.md"
-    compare_report_log="${artifact_dir}/logs/compare.${target}.log"
 
     base_json="${artifact_dir}/base/${target}.json"
     base_md="${artifact_dir}/base/${target}.md"
@@ -924,8 +1395,8 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
         "${compare_script_dir}" \
         "${base_json}" \
         "${test_json}" \
-        "${compare_report_md}" \
-        "${compare_report_log}"; then
+        "${legacy_compare_script}" \
+        "${legacy_compare_script_dir}"; then
         compares_succeeded=$((compares_succeeded + 1))
       else
         any_failures=1
@@ -981,8 +1452,6 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
     test_py_md="${artifact_dir}/test/${py_target_name}.md"
     base_py_run_log="${artifact_dir}/logs/run.base.${py_target_name}.log"
     test_py_run_log="${artifact_dir}/logs/run.test.${py_target_name}.log"
-    compare_py_report_md="${artifact_dir}/compare/${py_target_name}.md"
-    compare_py_report_log="${artifact_dir}/logs/compare.${py_target_name}.log"
 
     if run_python_target_for_side \
       "base" \
@@ -1016,9 +1485,7 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
         "${py_target_name}" \
         "${test_py_venv}" \
         "${base_py_json}" \
-        "${test_py_json}" \
-        "${compare_py_report_md}" \
-        "${compare_py_report_log}"; then
+        "${test_py_json}"; then
         py_compares_succeeded=$((py_compares_succeeded + 1))
       else
         any_failures=1
