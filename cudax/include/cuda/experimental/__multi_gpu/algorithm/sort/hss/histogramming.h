@@ -31,12 +31,12 @@
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__algorithm/sample.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tie.h>
@@ -74,14 +74,13 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in] __prob The per-key sampling probability.
 //! @param[in] __begin Pointer to the first local key; advanced internally across intervals.
 //! @param[in] __end Pointer one past the last local key.
-//! @param[in] __brackets The span of per-splitter `[L, U]` brackets to sample between.
+//! @param[in] __I_j The span of per-splitter `[L, U]` brackets to sample between.
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[out] __samples The span the drawn sample keys are written into.
 //! @param[out] __samples_size Receives the number of keys actually drawn.
 //
-// TODO(jfaibussowit):
-//
-// Parallelize with multiple threads (but not too many!). __brackets is O(p-1), so in
+// A single thread suffices here: each interval costs one random draw plus one write per sample,
+// so the total work is O(total samples drawn) rather than O(local keys). __I_j is O(p-1), so in
 // practice at the absolute max a few thousand if you are running on the worlds
 // largest supercomputers.
 template <class _Config, class _Tp, class _BinaryOp>
@@ -116,14 +115,39 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     const auto __first = __lo.has_value() ? ::cuda::std::lower_bound(__begin, __last, *__lo, __cmp) : __begin;
 
     _CCCL_ASSERT(__first <= __last, "Inputs are not sorted for binary search");
+    // Update this for the next iteration here (instead of the bottom of for loop) to simplify
+    // the code below
+    __begin = __last;
 
-    const auto __num_samples       = ::cuda::std::ceil(static_cast<double>(__last - __first) * __prob);
-    const auto __remaining_samples = __samples.end() - __samples_it;
-    const auto __n                 = ::cuda::std::min(
-      static_cast<::cuda::std::uint64_t>(__num_samples), static_cast<::cuda::std::uint64_t>(__remaining_samples));
+    const auto __len = static_cast<::cuda::std::uint64_t>(__last - __first);
 
-    __samples_it = ::cuda::std::sample(__first, __last, __samples_it, __n, __gen);
-    __begin      = __last;
+    if (__len == 0)
+    {
+      continue;
+    }
+
+    // __num_samples is always <= __len. The only scenario in which that would not be is if
+    // __len = 0 (so __num_samples would be 1). But we early exit to avoid this. The
+    // alternative is a 3-way min().
+    const auto __num_samples = ::cuda::std::max(
+      static_cast<::cuda::std::uint64_t>(static_cast<double>(__len) * __prob), ::cuda::std::uint64_t{1});
+    const auto __remaining_samples = static_cast<::cuda::std::uint64_t>(__samples.end() - __samples_it);
+
+    if (const auto __n = ::cuda::std::min(__num_samples, __remaining_samples))
+    {
+      const auto __stride = __len / __n;
+      // Random phase to keep the sampling unbiased.
+      auto __dist = ::cuda::std::uniform_int_distribution<::cuda::std::uint64_t>{/*__a=*/0, /*__b=*/__stride - 1};
+      const auto __start = __dist(__gen);
+      // Note, __stop is NOT __len. Consider __len = 10, __n = 3, then __stride = 3. If __start
+      // = 0 then bounding by __len would end up with 4 writes not 3.
+      const auto __stop = __start + (__n * __stride);
+
+      for (auto __i = __start; __i < __stop; __i += __stride)
+      {
+        *__samples_it++ = __first[__i];
+      }
+    }
   }
 
   *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
