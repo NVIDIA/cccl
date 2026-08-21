@@ -9,7 +9,6 @@
 #include <cuda/__memory_pool/locality_domain_memory_pool.h>
 #include <cuda/buffer>
 #include <cuda/devices>
-#include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
@@ -246,6 +245,12 @@ void add(nvbench::state& state)
   state.add_global_memory_reads<T>(2 * total);
   state.add_global_memory_writes<T>(total);
 
+  // `transform` takes one input iterator, so each rank's two inputs are zipped into one range.
+  // The zipped range iterates as a tuple of both elements.
+  auto ab = cuda::std::views::zip(a, b) | cuda::std::views::transform([](auto&& in) {
+              return cuda::std::views::zip(cuda::std::get<0>(in), cuda::std::get<1>(in));
+            });
+
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, c, fork, join, [&] {
       cudax::transform(
@@ -254,10 +259,8 @@ void add(nvbench::state& state)
         c | cuda::std::views::transform([](auto& buf) {
           return cuda::std::execution::env{buf.stream(), buf.memory_resource()};
         }),
-        cuda::std::views::zip(a, b) | cuda::std::views::transform([](auto&& pair) {
-          return cuda::make_zip_iterator(cuda::std::get<0>(pair).begin(), cuda::std::get<1>(pair).begin());
-        }),
-        a | cuda::std::views::transform(cuda::std::ranges::size),
+        ab | cuda::std::views::transform(cuda::std::ranges::begin),
+        ab | cuda::std::views::transform(cuda::std::ranges::size),
         c | cuda::std::views::transform(cuda::std::ranges::begin),
         [] __device__(const auto& in) {
           return cuda::std::get<0>(in) + cuda::std::get<1>(in);
@@ -295,6 +298,12 @@ void triad(nvbench::state& state)
   state.add_global_memory_reads<T>(2 * total);
   state.add_global_memory_writes<T>(total);
 
+  // `transform` takes one input iterator, so each rank's two inputs are zipped into one range.
+  // The zipped range iterates as a tuple of both elements.
+  auto bc = cuda::std::views::zip(b, c) | cuda::std::views::transform([](auto&& in) {
+              return cuda::std::views::zip(cuda::std::get<0>(in), cuda::std::get<1>(in));
+            });
+
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, a, fork, join, [&] {
       cudax::transform(
@@ -303,10 +312,8 @@ void triad(nvbench::state& state)
         a | cuda::std::views::transform([](auto& buf) {
           return cuda::std::execution::env{buf.stream(), buf.memory_resource()};
         }),
-        cuda::std::views::zip(b, c) | cuda::std::views::transform([](auto&& pair) {
-          return cuda::make_zip_iterator(cuda::std::get<0>(pair).begin(), cuda::std::get<1>(pair).begin());
-        }),
-        b | cuda::std::views::transform(cuda::std::ranges::size),
+        bc | cuda::std::views::transform(cuda::std::ranges::begin),
+        bc | cuda::std::views::transform(cuda::std::ranges::size),
         a | cuda::std::views::transform(cuda::std::ranges::begin),
         [] __device__(const auto& in) {
           return cuda::std::get<0>(in) + (scalar * cuda::std::get<1>(in));
