@@ -188,6 +188,13 @@ function(libcudacxx_add_pretty_printer_test)
       "${libcudacxx_SOURCE_DIR}/share/libcudacxx/${debugger}/__init__.py"
     )
     set(test_name "${target_name}.${debugger}")
+    # The runner owns the timeout so that it can retry a timed-out attempt, which CTest
+    # cannot do. The per-attempt limit is aggressive because pretty printers must not be
+    # slow. If they are, then it's a problem with the printer and/or it is doing too much.
+    # A timeout is still possible on a loaded machine, so the runner retries it.
+    set(attempt_timeout 10)
+    # read: retry 2 more times after failure
+    set(retries 2)
     add_test(
       NAME ${test_name}
       COMMAND
@@ -199,12 +206,18 @@ function(libcudacxx_add_pretty_printer_test)
         --formatter-init "${formatter}"
         --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
         --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
+        --timeout "${attempt_timeout}"
+        --retries "${retries}"
         ${pretty_printer_CASES}
       # gersemi: on
     )
-    # Set an aggressive timeout because pretty printers should not be slow. If they are,
-    # then it's a problem with the printer and/or it is doing too much
-    set_tests_properties(${test_name} PROPERTIES TIMEOUT 10 SKIP_RETURN_CODE 77)
+    # Backstop only. It must exceed the total runner budget so that the runner, and not
+    # CTest, reports a timeout. It catches a hung runner instead of a hung debugger.
+    math(EXPR ctest_timeout "${attempt_timeout} * (${retries} + 1) + 30")
+    set_tests_properties(
+      ${test_name}
+      PROPERTIES TIMEOUT ${ctest_timeout} SKIP_RETURN_CODE 77
+    )
   endforeach()
 endfunction()
 

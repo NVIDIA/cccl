@@ -177,6 +177,9 @@ cudax_add_catch2_test(test_target group.group_view
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
 )
+cudax_add_catch2_test(test_target group.implicit_hierarchy
+    group/implicit_hierarchy.cu
+)
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )

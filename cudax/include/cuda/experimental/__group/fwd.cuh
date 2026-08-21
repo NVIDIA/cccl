@@ -33,6 +33,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -45,6 +46,12 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
+
+using __implicit_hierarchy_1d_t =
+  hierarchy<thread_level,
+            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
 
 // groups
 
@@ -66,7 +73,7 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
 class group;
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
@@ -126,7 +133,7 @@ inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = tru
 
 struct non_exhaustive_t;
 
-inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
+inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

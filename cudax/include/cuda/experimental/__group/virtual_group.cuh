@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__group/concepts.cuh>
@@ -61,8 +62,8 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Map
   const _InitMappingResult __init_mapping_result{
     /*initial group count*/ 1,
     /*initial group rank*/ 0,
-    ::cuda::experimental::__count_query_group<unsigned, _Unit>(__parent),
-    ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent),
+    ::cuda::experimental::__count_query_group<::cuda::std::uint32_t, _Unit>(__parent),
+    ::cuda::experimental::__rank_query_group<::cuda::std::uint32_t, _Unit>(__parent),
     __parent.__mapping_result().lane_mask()};
 
   const auto __mapping_result = __mapping.map(__unit, __parent, __init_mapping_result);
@@ -117,7 +118,6 @@ public:
   using level_type            = typename _ParentGroup::level_type;
   using hierarchy_type        = _Hierarchy;
   using __mapping_result_type = _MappingResult;
-  using synchronizer_type     = typename _ParentGroup::synchronizer_type;
 
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
@@ -202,11 +202,14 @@ public:
   }
 };
 
-_CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _Mapping)
+_CCCL_TEMPLATE(class _Unit,
+               class _ParentGroup,
+               class _Mapping,
+               class _MappingResult = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, const _Mapping&)
-  -> virtual_group<_Unit, _ParentGroup, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>;
+  -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED
