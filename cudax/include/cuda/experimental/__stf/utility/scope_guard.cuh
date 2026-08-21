@@ -33,19 +33,27 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <any>
@@ -54,9 +62,11 @@
 #include <cstdlib>
 #include <exception>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <thread>
 #include <tuple>
@@ -424,33 +434,44 @@ struct as_expected_t
   template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
   auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) const -> _Raw
   {
-    using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
-    static_assert(detail::__is_expected<_Expected>,
-                  "as_expected requires the callable to return a cuda::std::expected instantiation");
-
-    if constexpr (detail::__is_expected<_Expected>)
+    // nvcc instantiates this body when forming the callable-independent presence probe
+    // (`void (&)()`). Keep that archetype admissible; the assert still fires at a real
+    // composition site (a user void-lambda is a distinct type, not `void()`).
+    if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Fn>, void()>)
     {
-      using _E = typename detail::__expected_error<_Expected>::type;
-      if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
-      {
-        return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
-      }
-      else if constexpr (::cuda::std::is_constructible_v<_E, const ::std::exception&>)
-      {
-        if (__exception)
-        {
-          return _Raw{::cuda::std::unexpect, _E(*__exception)};
-        }
-        throw; // nonstandard exception, no lossless construction rung: decline
-      }
-      else
-      {
-        static_assert(::cuda::std::is_constructible_v<_E, ::std::exception_ptr>
-                        || ::cuda::std::is_constructible_v<_E, const ::std::exception&>,
-                      "as_expected requires the error type constructible from exception_ptr or const std::exception&");
-      }
+      _CCCL_UNREACHABLE();
     }
-    _CCCL_UNREACHABLE();
+    else
+    {
+      using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
+      static_assert(detail::__is_expected<_Expected>,
+                    "as_expected requires the callable to return a cuda::std::expected instantiation");
+
+      if constexpr (detail::__is_expected<_Expected>)
+      {
+        using _E = typename detail::__expected_error<_Expected>::type;
+        if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
+        {
+          return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
+        }
+        else if constexpr (::cuda::std::is_constructible_v<_E, const ::std::exception&>)
+        {
+          if (__exception)
+          {
+            return _Raw{::cuda::std::unexpect, _E(*__exception)};
+          }
+          throw; // nonstandard exception, no lossless construction rung: decline
+        }
+        else
+        {
+          static_assert(
+            ::cuda::std::is_constructible_v<_E, ::std::exception_ptr>
+              || ::cuda::std::is_constructible_v<_E, const ::std::exception&>,
+            "as_expected requires the error type constructible from exception_ptr or const std::exception&");
+        }
+      }
+      _CCCL_UNREACHABLE();
+    }
   }
 };
 inline constexpr as_expected_t as_expected{};
@@ -1566,7 +1587,7 @@ struct always_t
     }
   }
 
-  // The head owns the expression type; forward its success hooks.
+  // The head's success hook is a type-preserving side-effect; forward it.
   template <class _R, ::cuda::std::enable_if_t<detail::__has_on_success_with<_A, _R>, int> = 0>
   decltype(auto) on_success(_R&& __r)
   {
@@ -1600,43 +1621,35 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
 /**
  * @brief A type-erased exception policy: any policy behind one concrete type.
  *
- * Seen from the outside this is a run-of-the-mill exception policy that
- * happens to answer `std::any` and to give nothing away statically. It
- * carries the uniform three-argument hook, and -- like
- * @ref cuda::experimental::stf::exception_policies::expecting_t "expecting" --
- * it defines `on_success`, so it owns the expression type of any `on_throw`
- * over it: the result is always `std::any`. Success delivers the callable's
- * boxed result (or what the wrapped policy's success channel made of it); a
- * handling policy delivers whatever it produced, boxed as its own type; a
- * resuming or effect-only policy delivers an empty `std::any`; a policy that
- * does not handle the exception rethrows, unchanged. Untangling the
- * `std::any` is the user's job -- the visible price of opting into dynamism.
- *
- * Erasure is universal: @ref cuda::experimental::stf::exception_policies::type_erase
- * wraps ANY policy by instantiating its templated hook once, at a callable
- * proxy returning `std::any`. Retrying policies keep their internal loops,
- * state, and rethrow-on-exhaustion; composites erase whole; a sink composes
- * with `&`, `|`, `*`, `when`, `always` and re-erases, because it satisfies
- * the same protocol every policy satisfies. As a non-owning arm under an
- * expression type that does not accept `std::any` (e.g. `subst(3) | sink`
- * with an `int` callable) the ordinary conversion static_assert fires; put
- * the sink leftmost or nest, the same rule `expecting` lives by.
+ * The shell interprets at `decltype(fn())`. Erasure boxes answers as `std::any`
+ * internally; that box reaches the user only when the callable itself returns
+ * `std::any`. Retrying policies keep their internal loops, state, and
+ * rethrow-on-exhaustion; composites erase whole; a sink composes with `&`, `|`,
+ * `*`, `when`, `always` and re-erases.
  *
  * Custom runtime policies derive from the public @ref sink_base: implement
- * `hook` (and `clone`); `on_success` defaults to identity. Everything here
- * is host-only and lives on the exception path; the success path pays one
- * `std::any` box through `on_success`.
+ * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
+ * default to `passthrough` and are unchecked. Erased composites are likewise
+ * `passthrough`; a loud unbox on first throw is their backstop. A wrapped
+ * success channel that cannot accept `std::any` (for example `remember`) does
+ * not survive erasure.
+ *
+ * LIMIT: `std::any` cannot carry references. A reference-returning callable is
+ * rejected at the composition site; use a concrete policy, or return a pointer.
  */
 class exception_sink
 {
 public:
   //! @brief What the wrapped policy's answer was, statically, at erasure time.
-  enum class sink_kind
+  enum class answer_kind
   {
     dies, //!< the hook never returns (answered `nullval`)
-    resumes, //!< resume: an empty `std::any` comes back (answered `std::ignore`)
-    effects, //!< side effect only: an empty `std::any` comes back (answered `void`)
-    produces //!< the `std::any` holds a value
+    resumes, //!< resume (answered `std::ignore`)
+    effects, //!< side effect only (answered `void`)
+    integral, //!< a stored integral or enumeration, with a value range
+    floating, //!< a stored floating value (precision loss under a floating body is tolerated)
+    udt, //!< a stored class, pointer, or other exact-match type
+    passthrough //!< the boxed value is the callable's own result (`std::any`)
   };
 
   //! @brief The erasure surface. Public: custom runtime policies derive from
@@ -1644,15 +1657,29 @@ public:
   //! empty meaning "no value") and `clone`; `on_success` defaults to identity.
   struct sink_base
   {
-    //! Set once at construction; introspection and composition-time checks.
-    const sink_kind kind;
+    const answer_kind kind;
     //! Whether the exception path may rethrow (`false`: alternatives after
     //! this sink are unreachable). Conservative for hand-written models.
     const bool may_rethrow;
+    //! Inclusive range of a stored integral answer; unused for other kinds.
+    const long long min_value;
+    const unsigned long long max_value;
+    //! Exact stored type for `udt` checks; `nullptr` encodes `passthrough`.
+    const ::std::type_info* answer_type;
+    const ::std::string_view answer_name;
 
-    sink_base(sink_kind __kind, bool __may_rethrow)
+    sink_base(answer_kind __kind                    = answer_kind::passthrough,
+              bool __may_rethrow                    = true,
+              long long __min_value                 = 0,
+              unsigned long long __max_value        = 0,
+              const ::std::type_info* __answer_type = nullptr,
+              ::std::string_view __answer_name      = {})
         : kind(__kind)
         , may_rethrow(__may_rethrow)
+        , min_value(__min_value)
+        , max_value(__max_value)
+        , answer_type(__answer_type)
+        , answer_name(__answer_name)
     {}
     virtual ~sink_base()             = default;
     virtual sink_base* clone() const = 0;
@@ -1668,6 +1695,101 @@ public:
   };
 
 private:
+  template <class _Ans>
+  static constexpr answer_kind __kind_of()
+  {
+    using _T = ::cuda::std::remove_cvref_t<_Ans>;
+    if constexpr (::cuda::std::is_void_v<_T>)
+    {
+      return answer_kind::effects;
+    }
+    else if constexpr (detail::__is_ignore_v<_T>)
+    {
+      return answer_kind::resumes;
+    }
+    else if constexpr (::cuda::std::is_same_v<_T, nullval>)
+    {
+      return answer_kind::dies;
+    }
+    else if constexpr (::cuda::std::is_same_v<_T, ::std::any>)
+    {
+      return answer_kind::passthrough;
+    }
+    else if constexpr (::cuda::std::is_enum_v<_T> || ::cuda::std::is_integral_v<_T>)
+    {
+      return answer_kind::integral;
+    }
+    else if constexpr (::cuda::std::is_floating_point_v<_T>)
+    {
+      return answer_kind::floating;
+    }
+    else
+    {
+      return answer_kind::udt;
+    }
+  }
+
+  template <class _Int>
+  static constexpr long long __limits_min()
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Int>)
+    {
+      return 0;
+    }
+    else
+    {
+      return static_cast<long long>(::std::numeric_limits<_Int>::min());
+    }
+  }
+
+  template <class _Int>
+  static constexpr unsigned long long __limits_max()
+  {
+    return static_cast<unsigned long long>(::std::numeric_limits<_Int>::max());
+  }
+
+  template <class _Ans>
+  static constexpr long long __stored_min()
+  {
+    using _T = ::cuda::std::remove_cvref_t<_Ans>;
+    if constexpr (__kind_of<_T>() == answer_kind::integral)
+    {
+      if constexpr (::cuda::std::is_enum_v<_T>)
+      {
+        return __limits_min<::cuda::std::underlying_type_t<_T>>();
+      }
+      else
+      {
+        return __limits_min<_T>();
+      }
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  template <class _Ans>
+  static constexpr unsigned long long __stored_max()
+  {
+    using _T = ::cuda::std::remove_cvref_t<_Ans>;
+    if constexpr (__kind_of<_T>() == answer_kind::integral)
+    {
+      if constexpr (::cuda::std::is_enum_v<_T>)
+      {
+        return __limits_max<::cuda::std::underlying_type_t<_T>>();
+      }
+      else
+      {
+        return __limits_max<_T>();
+      }
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
   //! The one universal erasure path: instantiate the wrapped policy's
   //! templated hook at the boxing proxy; derive all metadata statically.
   template <class _P>
@@ -1675,16 +1797,20 @@ private:
   {
     _P __p_;
 
-    using __ans_t = detail::__hook_answer_t<_P, ::std::function<::std::any()>>;
-    static constexpr sink_kind __skind =
-      ::cuda::std::is_void_v<__ans_t>  ? sink_kind::effects
-      : detail::__is_ignore_v<__ans_t> ? sink_kind::resumes
-      : ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__ans_t>, nullval>
-        ? sink_kind::dies
-        : sink_kind::produces;
+    using __ans_t                        = detail::__hook_answer_t<_P, ::std::function<::std::any()>>;
+    static constexpr answer_kind __skind = __kind_of<__ans_t>();
 
     explicit __model(_P __p)
-        : sink_base(__skind, !detail::__exception_path_nothrow_v<_P, ::std::function<::std::any()>>)
+        : sink_base(
+            __skind,
+            !detail::__exception_path_nothrow_v<_P, ::std::function<::std::any()>>,
+            __stored_min<__ans_t>(),
+            __stored_max<__ans_t>(),
+            (__skind == answer_kind::passthrough || __skind == answer_kind::dies || __skind == answer_kind::resumes
+             || __skind == answer_kind::effects)
+              ? nullptr
+              : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
+            type_name<::cuda::std::remove_cvref_t<__ans_t>>)
         , __p_(::cuda::std::move(__p))
     {}
 
@@ -1696,12 +1822,12 @@ private:
     ::std::any
     hook(const ::std::exception* __e, ::cuda::std::source_location __loc, ::std::function<::std::any()>& __fn) override
     {
-      if constexpr (__skind == sink_kind::effects || __skind == sink_kind::resumes)
+      if constexpr (__skind == answer_kind::effects || __skind == answer_kind::resumes)
       {
         static_cast<void>(__p_(__e, __loc, __fn));
         return {};
       }
-      else if constexpr (__skind == sink_kind::dies)
+      else if constexpr (__skind == answer_kind::dies)
       {
         static_cast<void>(__p_(__e, __loc, __fn));
         _CCCL_UNREACHABLE();
@@ -1720,7 +1846,7 @@ private:
     {
       if constexpr (detail::__has_on_success_with<_P, ::std::any>)
       {
-        return ::std::any(__p_.on_success(::std::move(__boxed)));
+        return ::std::any(__p_.on_success(::cuda::std::move(__boxed)));
       }
       else
       {
@@ -1745,6 +1871,168 @@ private:
 
   ::std::unique_ptr<sink_base> __p_;
 
+  [[noreturn]] void __throw_mismatch(::std::string_view __stored, ::std::string_view __wanted) const
+  {
+    ::std::string __msg{"exception_sink cannot convert "};
+    __msg.append(__stored.data(), __stored.size());
+    __msg.append(" answer to ");
+    __msg.append(__wanted.data(), __wanted.size());
+    throw ::std::logic_error(__msg);
+  }
+
+  template <class _Int>
+  [[nodiscard]] bool __range_contains_int() const
+  {
+    const auto __raw_max = ::std::numeric_limits<_Int>::max();
+    if constexpr (::cuda::std::is_unsigned_v<_Int>)
+    {
+      if (__p_->min_value < 0)
+      {
+        return false;
+      }
+      return __p_->max_value <= static_cast<unsigned long long>(__raw_max);
+    }
+    else
+    {
+      const auto __raw_min = ::std::numeric_limits<_Int>::min();
+      if (__p_->min_value < static_cast<long long>(__raw_min))
+      {
+        return false;
+      }
+      return __p_->max_value <= static_cast<unsigned long long>(__raw_max);
+    }
+  }
+
+  template <class _Raw>
+  [[nodiscard]] bool __range_contains() const
+  {
+    using _T = ::cuda::std::remove_cvref_t<_Raw>;
+    if constexpr (::cuda::std::is_enum_v<_T>)
+    {
+      return __range_contains_int<::cuda::std::underlying_type_t<_T>>();
+    }
+    else
+    {
+      return __range_contains_int<_T>();
+    }
+  }
+
+  template <class _Raw>
+  void __check_compatible() const
+  {
+    using _T                             = ::cuda::std::remove_cvref_t<_Raw>;
+    const answer_kind __kind             = __p_->kind;
+    [[maybe_unused]] const auto __wanted = type_name<_T>;
+    [[maybe_unused]] const auto __stored =
+      __p_->answer_name.empty() ? ::std::string_view{"<erased>"} : __p_->answer_name;
+    if (__kind == answer_kind::dies || __kind == answer_kind::resumes || __kind == answer_kind::effects
+        || __kind == answer_kind::passthrough)
+    {
+      return;
+    }
+    if constexpr (::cuda::std::is_void_v<_Raw>)
+    {
+      __throw_mismatch(__stored, __wanted);
+    }
+    else if (__kind == answer_kind::integral)
+    {
+      if constexpr (::cuda::std::is_floating_point_v<_T>)
+      {
+        return;
+      }
+      else if constexpr (::cuda::std::is_integral_v<_T> || ::cuda::std::is_enum_v<_T>)
+      {
+        if (__range_contains<_Raw>())
+        {
+          return;
+        }
+      }
+      __throw_mismatch(__stored, __wanted);
+    }
+    else if (__kind == answer_kind::floating)
+    {
+      if constexpr (::cuda::std::is_floating_point_v<_T>)
+      {
+        return;
+      }
+      __throw_mismatch(__stored, __wanted);
+    }
+    else if (__kind == answer_kind::udt)
+    {
+      if (__p_->answer_type && *__p_->answer_type == typeid(_T))
+      {
+        return;
+      }
+      __throw_mismatch(__stored, __wanted);
+    }
+  }
+
+  template <class _Raw>
+  [[nodiscard]] _Raw __unbox(const ::std::any& __box) const
+  {
+    using _T = ::cuda::std::remove_cvref_t<_Raw>;
+    if constexpr (::cuda::std::is_same_v<_T, ::std::any>)
+    {
+      return __box;
+    }
+    else if (!__box.has_value())
+    {
+      if constexpr (::cuda::std::is_default_constructible_v<_T>)
+      {
+        return _T{};
+      }
+      else
+      {
+        __throw_mismatch("<empty>", type_name<_T>);
+      }
+    }
+    else if (const _T* __exact = ::std::any_cast<_T>(&__box))
+    {
+      return *__exact;
+    }
+    else if constexpr (::cuda::std::is_arithmetic_v<_T> || ::cuda::std::is_enum_v<_T>)
+    {
+      _T __out{};
+      bool __hit          = false;
+      const auto __accept = [&](auto __tag) {
+        using _Stored = typename decltype(__tag)::type;
+        if (__hit)
+        {
+          return;
+        }
+        if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
+        {
+          __out = static_cast<_T>(*__p);
+          __hit = true;
+        }
+      };
+      __accept(::cuda::std::type_identity<bool>{});
+      __accept(::cuda::std::type_identity<char>{});
+      __accept(::cuda::std::type_identity<signed char>{});
+      __accept(::cuda::std::type_identity<unsigned char>{});
+      __accept(::cuda::std::type_identity<short>{});
+      __accept(::cuda::std::type_identity<unsigned short>{});
+      __accept(::cuda::std::type_identity<int>{});
+      __accept(::cuda::std::type_identity<unsigned>{});
+      __accept(::cuda::std::type_identity<long>{});
+      __accept(::cuda::std::type_identity<unsigned long>{});
+      __accept(::cuda::std::type_identity<long long>{});
+      __accept(::cuda::std::type_identity<unsigned long long>{});
+      __accept(::cuda::std::type_identity<float>{});
+      __accept(::cuda::std::type_identity<double>{});
+      __accept(::cuda::std::type_identity<long double>{});
+      if (!__hit)
+      {
+        __throw_mismatch(__box.type().name(), type_name<_T>);
+      }
+      return __out;
+    }
+    else
+    {
+      __throw_mismatch(__box.type().name(), type_name<_T>);
+    }
+  }
+
 public:
   //! @cond
   using __exception_sink_tag = void;
@@ -1762,7 +2050,7 @@ public:
 
   //! @brief Adopt a custom model derived from @ref sink_base.
   explicit exception_sink(::std::unique_ptr<sink_base> __custom)
-      : __p_(::cuda::std::move(__custom))
+      : __p_(::std::move(__custom))
   {
     _CCCL_ASSERT(__p_, "exception_sink requires a non-null model");
   }
@@ -1778,45 +2066,80 @@ public:
     return *this;
   }
 
-  sink_kind kind() const noexcept
+  [[nodiscard]] answer_kind kind() const noexcept
   {
     return __p_->kind;
   }
-  bool may_rethrow() const noexcept
+  [[nodiscard]] bool may_rethrow() const noexcept
   {
     return __p_->may_rethrow;
   }
 
-  //! @brief The uniform hook: always answers `std::any`. A void callable
-  //! boxes as an empty `std::any`, which also admits the machinery's
-  //! callable-independent presence probe.
+  //! @brief The uniform hook: answers `decltype(fn())`. A void callable answers
+  //! `decltype(::std::ignore)` so the presence-probe archetype stays admissible.
   template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
-  ::std::any operator()(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
+  auto operator()(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
+    -> ::cuda::std::conditional_t<::cuda::std::is_void_v<_Raw>, decltype(::std::ignore), _Raw>
   {
-    ::std::function<::std::any()> __proxy = [&__fn]() -> ::std::any {
+    static_assert(!::cuda::std::is_reference_v<_Raw>,
+                  "exception_sink cannot serve a reference-returning callable: std::any cannot "
+                  "carry references; use a concrete policy, or return a pointer");
+    if constexpr (::cuda::std::is_reference_v<_Raw>)
+    {
+      _CCCL_UNREACHABLE();
+    }
+    else
+    {
+      ::std::function<::std::any()> __proxy = [&__fn]() -> ::std::any {
+        if constexpr (::cuda::std::is_void_v<_Raw>)
+        {
+          __fn();
+          return {};
+        }
+        else
+        {
+          return ::std::any(__fn());
+        }
+      };
+
       if constexpr (::cuda::std::is_void_v<_Raw>)
       {
-        __fn();
-        return {};
+        __check_compatible<_Raw>();
+        static_cast<void>(__p_->hook(__e, __loc, __proxy));
+        return ::std::ignore;
+      }
+      else if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Raw>, ::std::any>)
+      {
+        return __p_->hook(__e, __loc, __proxy);
       }
       else
       {
-        return ::std::any(__fn());
+        __check_compatible<_Raw>();
+        return __unbox<_Raw>(__p_->hook(__e, __loc, __proxy));
       }
-    };
-    return __p_->hook(__e, __loc, __proxy); // rethrow = throws out, the unchanged protocol
+    }
   }
 
-  //! @brief Expression ownership: like `expecting`, the sink owns the
-  //! `on_throw` result type, which is therefore `std::any` -- uniformly.
+  //! @brief Type-preserving success passthrough: box, delegate, unbox to the same type.
   template <class _R>
-  ::std::any on_success(_R&& __r)
+  _R on_success(_R&& __r)
   {
-    return __p_->on_success(::std::any(::cuda::std::forward<_R>(__r)));
+    static_assert(!::cuda::std::is_reference_v<_R>,
+                  "exception_sink cannot serve a reference-returning callable: std::any cannot "
+                  "carry references; use a concrete policy, or return a pointer");
+    if constexpr (::cuda::std::is_reference_v<_R>)
+    {
+      _CCCL_UNREACHABLE();
+    }
+    else
+    {
+      __check_compatible<_R>();
+      return __unbox<_R>(__p_->on_success(::std::any(::cuda::std::forward<_R>(__r))));
+    }
   }
-  ::std::any on_success()
+  void on_success()
   {
-    return __p_->on_success();
+    static_cast<void>(__p_->on_success());
   }
 };
 
@@ -1958,6 +2281,11 @@ UNITTEST("nullval")
 //  - on_throw(notify & subst(42)) << []() -> int& {...}; // reference result vs owned substitution (existing rule)
 //  - on_throw(as_expected) << []() -> int { return 1; };
 //      // "as_expected requires the callable to return a cuda::std::expected instantiation"
+//  - a policy whose on_success returns a different type than decltype(fn());
+//      // "a policy's on_success must preserve the expression type; policies no longer own it (SPEC-ADDENDUM-7)"
+//  - on_throw(type_erase(subst(1))) << []() -> int& { static int x = 0; return x; };
+//      // "exception_sink cannot serve a reference-returning callable: std::any cannot carry references; use a concrete
+//      policy, or return a pointer"
 //  - on_throw(subst(8) | subst(9)) << ...;         // "the left policy never declines; alternatives after it are
 //  unreachable"
 
@@ -3237,93 +3565,161 @@ UNITTEST("type erasure")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
 #  if _CCCL_HAS_EXCEPTIONS()
+  const auto __names_both = [](const ::std::logic_error& __err, ::std::string_view __a, ::std::string_view __b) {
+    const ::std::string __msg{__err.what()};
+    return __msg.find(::std::string{__a}) != ::std::string::npos
+        && __msg.find(::std::string{__b}) != ::std::string::npos;
+  };
+
   // Universality: retry * 3 erased generically -- internal loop, state,
-  // and rethrow-on-exhaustion preserved. The sink owns the expression
-  // type, so on_throw yields std::any; the user untangles.
+  // and rethrow-on-exhaustion preserved. Retry-through is passthrough/unchecked.
   {
-    int calls          = 0;
-    const ::std::any x = on_throw(type_erase(retry * 3)) << [&]() -> int {
+    int calls   = 0;
+    const int x = on_throw(type_erase(retry * 3)) << [&]() -> int {
       if (++calls < 3)
       {
         throw ::std::runtime_error("flaky");
       }
       return 42;
     };
-    EXPECT(::std::any_cast<int>(x) == 42);
+    EXPECT(x == 42);
     EXPECT(calls == 3);
   }
-  // Exhaustion rethrows into the next arm; the sink (leftmost) owns the
-  // expression type, so the concrete arm's value arrives boxed.
+  // Exhaustion rethrows into the next arm; the callable owns the result type.
   {
-    int calls          = 0;
-    const ::std::any x = on_throw(type_erase(retry * 3) | subst(-7)) << [&]() -> int {
+    int calls   = 0;
+    const int x = on_throw(type_erase(retry * 3) | subst(-7)) << [&]() -> int {
       ++calls;
       throw ::std::runtime_error("always");
     };
-    EXPECT(::std::any_cast<int>(x) == -7);
+    EXPECT(x == -7);
     EXPECT(calls == 4); // one initial attempt + three retries
   }
-  // One sink object serves callables of different result types.
+  // One sink object serves callables of different result types (passthrough).
   {
     exception_sink r = type_erase(retry * 2);
     {
-      int calls          = 0;
-      const ::std::any x = on_throw(r) << [&]() -> int {
+      int calls   = 0;
+      const int x = on_throw(r) << [&]() -> int {
         if (++calls < 2)
         {
           throw ::std::runtime_error("flaky");
         }
         return 5;
       };
-      EXPECT(::std::any_cast<int>(x) == 5);
+      EXPECT(x == 5);
     }
     {
-      int calls          = 0;
-      const ::std::any x = on_throw(r) << [&]() -> ::std::string {
+      int calls             = 0;
+      const ::std::string x = on_throw(r) << [&]() -> ::std::string {
         if (++calls < 2)
         {
           throw ::std::runtime_error("flaky");
         }
         return "ok";
       };
-      EXPECT(::std::any_cast<::std::string>(x) == "ok");
+      EXPECT(x == "ok");
     }
   }
-  // A stored value arrives as its own type; untangling is the user's job.
+  // int stored under long body: the body's range contains the answer.
   {
-    const ::std::any x = on_throw(type_erase(subst(9))) << []() -> long {
+    const long x = on_throw(type_erase(subst(9))) << []() -> long {
       throw ::std::runtime_error("x");
     };
-    EXPECT(::std::any_cast<int>(x) == 9); // the stored int, not long
-    EXPECT(::std::any_cast<long>(&x) == nullptr);
+    EXPECT(x == 9L);
   }
-  // Resume over a void callable: empty std::any on both paths.
+  // long long stored under int body: fail eagerly (portable stand-in for a strictly wider integral).
   {
-    int hits           = 0;
-    const ::std::any x = on_throw(type_erase(::std::ignore)) << [&]() -> void {
+    bool failed = false;
+    try
+    {
+      on_throw(type_erase(subst(9LL))) << []() -> int {
+        throw ::std::runtime_error("x");
+      };
+    }
+    catch (const ::std::logic_error& __err)
+    {
+      failed = __names_both(__err, type_name<long long>, type_name<int>);
+    }
+    EXPECT(failed);
+  }
+  // int under double: integral answers pass under a floating body.
+  {
+    const double x = on_throw(type_erase(subst(9))) << []() -> double {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(x == 9.0);
+  }
+  // double under float: precision loss is tolerated.
+  {
+    const float x = on_throw(type_erase(subst(1.5))) << []() -> float {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(x == static_cast<float>(1.5));
+  }
+  // double under int: floating never converts to integral; fail eagerly.
+  {
+    bool failed = false;
+    try
+    {
+      on_throw(type_erase(subst(1.5))) << []() -> int {
+        throw ::std::runtime_error("x");
+      };
+    }
+    catch (const ::std::logic_error& __err)
+    {
+      failed = __names_both(__err, type_name<double>, type_name<int>);
+    }
+    EXPECT(failed);
+  }
+  // defer under int: fail on first use, naming both types.
+  {
+    bool failed = false;
+    try
+    {
+      on_throw(type_erase(defer)) << []() -> int {
+        return 1;
+      };
+    }
+    catch (const ::std::logic_error& __err)
+    {
+      failed = __names_both(__err, type_name<::std::exception_ptr>, type_name<int>);
+    }
+    EXPECT(failed);
+  }
+  // Resume / effects: exempt from the type check. Resume over void is legal.
+  {
+    int hits = 0;
+    on_throw(type_erase(::std::ignore)) << [&]() -> void {
       ++hits;
       throw ::std::runtime_error("x");
     };
     EXPECT(hits == 1);
-    EXPECT(!x.has_value());
   }
-  // Metadata: const fields, derived at erasure time.
-  EXPECT(type_erase(retry * 3).kind() == exception_sink::sink_kind::produces);
-  EXPECT(type_erase(subst(9)).kind() == exception_sink::sink_kind::produces);
-  EXPECT(type_erase(::std::ignore).kind() == exception_sink::sink_kind::resumes);
-  EXPECT((type_erase(translate<::std::runtime_error, ::std::logic_error>).kind() == exception_sink::sink_kind::dies));
-  EXPECT(type_erase(retry * 3).may_rethrow());
-  EXPECT(!type_erase(::std::ignore).may_rethrow());
-  // Re-erasure: a single box; on_success chains through the boundaries.
   {
-    const ::std::any x = on_throw(type_erase(type_erase(subst(5)))) << []() -> int {
+    const int x = on_throw(type_erase(::std::ignore)) << []() -> int {
       throw ::std::runtime_error("x");
     };
-    EXPECT(::std::any_cast<int>(x) == 5);
+    EXPECT(x == 0);
+  }
+  // Metadata: const fields, derived at erasure time.
+  EXPECT(type_erase(retry * 3).kind() == exception_sink::answer_kind::passthrough);
+  EXPECT(type_erase(subst(9)).kind() == exception_sink::answer_kind::integral);
+  EXPECT(type_erase(subst(1.5)).kind() == exception_sink::answer_kind::floating);
+  EXPECT(type_erase(::std::ignore).kind() == exception_sink::answer_kind::resumes);
+  EXPECT((type_erase(translate<::std::runtime_error, ::std::logic_error>).kind() == exception_sink::answer_kind::dies));
+  EXPECT(type_erase(retry * 3).may_rethrow());
+  EXPECT(!type_erase(::std::ignore).may_rethrow());
+  // Re-erasure: passthrough composite; first-throw unbox is the backstop.
+  {
+    const int x = on_throw(type_erase(type_erase(subst(5)))) << []() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(x == 5);
   }
   // Dynamic and static policies side by side in one expression.
   {
-    const ::std::any x =
+    const int x =
       on_throw(when(
         [] {
           return true;
@@ -3332,21 +3728,21 @@ UNITTEST("type erasure")
       << []() -> int {
       throw ::std::runtime_error("x");
     };
-    EXPECT(::std::any_cast<int>(x) == 11);
+    EXPECT(x == 11);
   }
-  // The success path delivers the callable's boxed result.
+  // The success path delivers the callable's result, unboxed to the same type.
   {
-    const ::std::any x = on_throw(type_erase(subst(1))) << []() -> int {
+    const int x = on_throw(type_erase(subst(1))) << []() -> int {
       return 30; // no throw
     };
-    EXPECT(::std::any_cast<int>(x) == 30);
+    EXPECT(x == 30);
   }
-  // A custom model derived from the public sink_base.
+  // A custom model derived from the public sink_base defaults to passthrough/unchecked.
   {
     struct halving_sink final : exception_sink::sink_base
     {
       halving_sink()
-          : sink_base(exception_sink::sink_kind::produces, false)
+          : sink_base(exception_sink::answer_kind::passthrough, false)
       {}
       sink_base* clone() const override
       {
@@ -3358,12 +3754,22 @@ UNITTEST("type erasure")
       }
     };
     exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
-    const ::std::any x = on_throw(custom) << []() -> int {
+    const int x = on_throw(custom) << []() -> int {
       throw ::std::runtime_error("x");
     };
-    EXPECT(::std::any_cast<int>(x) == 21);
+    EXPECT(x == 21);
     EXPECT(!custom.may_rethrow());
+    EXPECT(custom.kind() == exception_sink::answer_kind::passthrough);
   }
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  1. on_throw(as_expected) << []() -> int { return 1; };
+  //       -> "as_expected requires the callable to return a cuda::std::expected instantiation"
+  //  2. a policy whose on_success returns a different type than decltype(fn());
+  //       -> "a policy's on_success must preserve the expression type; policies no longer own it (SPEC-ADDENDUM-7)"
+  //  3. on_throw(type_erase(subst(1))) << []() -> int& { static int x = 0; return x; };
+  //       -> "exception_sink cannot serve a reference-returning callable: std::any cannot carry references; use a
+  //       concrete policy, or return a pointer"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
