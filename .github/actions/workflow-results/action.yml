@@ -19,15 +19,9 @@ inputs:
     required: false
 
 outputs:
-  success:
-    description: "Whether any jobs failed."
-    value: ${{ steps.check-success.outputs.success }}
-  slack_alert_ts:
-    description: "Timestamp of the Slack failure alert, if one was posted."
-    value: ${{ steps.slack-alert.outputs.ts }}
-  slack_alert_text:
-    description: "Text of the Slack failure alert, if one was prepared."
-    value: ${{ steps.slack-alert-message.outputs.text }}
+  failure_message:
+    description: "Prepared workflow failure notification text."
+    value: ${{ steps.failure-message.outputs.text }}
 
 runs:
   using: "composite"
@@ -206,11 +200,12 @@ runs:
 
     - name: Send Slack log notification
       if: ${{ always() && inputs.slack_token != '' && inputs.slack_log != '' }}
-      uses: slackapi/slack-github-action@v1.26.0
+      continue-on-error: true
+      uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
         WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
-        STATUS: ${{ steps.check-success.outcome }}
+        STATUS: ${{ steps.check-workflow.outcome }}
         EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
         SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
       with:
@@ -222,9 +217,9 @@ runs:
 
           Details: ${{ env.SUMMARY_URL }}
 
-    - name: Prepare Slack alert notification
-      id: slack-alert-message
-      if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
+    - name: Prepare failure notification
+      id: failure-message
+      if: ${{ failure() }}
       env:
         WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
         EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
@@ -240,11 +235,10 @@ runs:
         } >> "${GITHUB_OUTPUT}"
 
     - name: Send Slack alert notification
-      id: slack-alert
       if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
-      uses: slackapi/slack-github-action@v1.26.0
+      uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
       with:
         channel-id: ${{ inputs.slack_alert }}
-        slack-message: ${{ steps.slack-alert-message.outputs.text }}
+        slack-message: ${{ steps.failure-message.outputs.text }}

@@ -827,18 +827,18 @@ jobs:
           fi
 
       - name: Analyze failures
+        id: analyze
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
-          output_file: ${{ runner.temp }}/failure-analysis.json
           pr_number: ${{ steps.pull-request.outputs.pr_number }}
 
       - name: Render GitHub failure analysis
         id: render-github
         uses: ./.github/actions/ci-failure-analysis-render
         with:
-          analysis_file: ${{ runner.temp }}/failure-analysis.json
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: github
 
   publish-failure-analysis:

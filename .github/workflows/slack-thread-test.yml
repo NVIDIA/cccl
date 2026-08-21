@@ -10,7 +10,7 @@ on:
       - .github/workflows/ci-workflow-nightly.yml
       - .github/workflows/slack-thread-test.yml
       - ci/util/ci_failure_analysis/**
-      - ci/util/publish_slack_thread.py
+      - ci/util/publish_slack_notification.py
 
 permissions: {}
 
@@ -36,17 +36,17 @@ jobs:
           persist-credentials: false
 
       - name: Analyze failures
+        id: analyze
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: 32327889834
-          output_file: ${{ runner.temp }}/failure-analysis.json
 
       - name: Render GitHub failure analysis
         id: render-github
         uses: ./.github/actions/ci-failure-analysis-render
         with:
-          analysis_file: ${{ runner.temp }}/failure-analysis.json
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: github
 
       - name: Add failure analysis to workflow summary
@@ -60,60 +60,20 @@ jobs:
         id: render-slack
         uses: ./.github/actions/ci-failure-analysis-render
         with:
-          analysis_file: ${{ runner.temp }}/failure-analysis.json
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: slack
 
-  post-failure-notification:
-    name: Post test workflow failure notification
-    if: >-
-      ${{
-        github.repository == 'NVIDIA/cccl' &&
-        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
-        needs.analyze-failures.result == 'success'
-      }}
-    needs: analyze-failures
-    runs-on: ubuntu-latest
-    outputs:
-      slack_alert_ts: ${{ steps.slack-alert.outputs.ts }}
-      slack_alert_text: ${{ steps.slack-alert-message.outputs.text }}
-    steps:
-      - name: Prepare test notification
-        id: slack-alert-message
-        shell: bash --noprofile --norc -euo pipefail {0}
-        run: |
-          delimiter="EOF_$(openssl rand -hex 16)"
-          {
-            echo "text<<${delimiter}"
-            printf ":test_tube: TEST — Workflow 'nightly' has failed:\n\n"
-            printf ":large_red_square: Finished in 4h 51m: "
-            printf "Pass: 81%%/1164 | Total: 48d 19h | Max: 4h 05m | Hits: 23%%/5305298\n\n"
-            printf "Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834\n"
-            echo "${delimiter}"
-          } >> "${GITHUB_OUTPUT}"
-
-      - name: Post test notification
-        id: slack-alert
-        uses: slackapi/slack-github-action@v1.26.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-        with:
-          channel-id: ${{ vars.SLACK_CHANNEL_CI_TEST }}
-          slack-message: ${{ steps.slack-alert-message.outputs.text }}
-
-  publish-failure-analysis:
-    name: Post AI failure analysis to Slack
+  publish-failure-notification:
+    name: Post test failure notification to Slack
     if: >-
       ${{
         always() &&
         !cancelled() &&
         github.repository == 'NVIDIA/cccl' &&
         vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
-        needs.analyze-failures.result == 'success' &&
-        needs.post-failure-notification.result == 'success'
+        needs.analyze-failures.result == 'success'
       }}
-    needs:
-      - analyze-failures
-      - post-failure-notification
+    needs: analyze-failures
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -123,19 +83,22 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: ci/util/publish_slack_thread.py
+          sparse-checkout: ci/util/publish_slack_notification.py
           sparse-checkout-cone-mode: false
 
-      - name: Post failure analysis thread
+      - name: Post test failure notification
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_CI_TEST }}
-          SLACK_THREAD_TS: ${{ needs.post-failure-notification.outputs.slack_alert_ts }}
-          SLACK_PARENT_TEXT: ${{ needs.post-failure-notification.outputs.slack_alert_text }}
+          SLACK_PARENT_TEXT: |-
+            :test_tube: TEST — Workflow 'nightly' has failed:
+
+            :large_red_square: Finished in 4h 51m: Pass: 81%/1164 | Total: 48d 19h | Max: 4h 05m | Hits: 23%/5305298
+
+            Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834
           SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
         shell: bash --noprofile --norc -euo pipefail {0}
         run: |
-          test -n "${SLACK_THREAD_TS}"
           test -n "${SLACK_PARENT_TEXT}"
           printf '%s' "${SLACK_THREAD}" | \
-            python3 ci/util/publish_slack_thread.py
+            python3 ci/util/publish_slack_notification.py

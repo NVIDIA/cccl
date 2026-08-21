@@ -5,7 +5,6 @@
 
 import json
 import os
-import re
 import sys
 import time
 from http import client
@@ -16,8 +15,7 @@ class PublishError(RuntimeError):
     pass
 
 
-SLACK_TIMESTAMP = re.compile(r"[0-9]+\.[0-9]+")
-SLACK_UPDATE_LIMIT = 40000
+SLACK_MESSAGE_LIMIT = 40000
 
 
 class NoRedirectHandler(request.HTTPRedirectHandler):
@@ -33,7 +31,10 @@ class NoRedirectHandler(request.HTTPRedirectHandler):
 
 def load_thread(stream):
     try:
-        thread = json.load(stream)
+        raw_thread = stream.read()
+        if not raw_thread.strip():
+            return None
+        thread = json.loads(raw_thread)
     except (UnicodeError, json.JSONDecodeError) as exception:
         raise PublishError("thread input is not valid JSON") from exception
 
@@ -41,15 +42,15 @@ def load_thread(stream):
         raise PublishError("thread input must be an object")
     overview = thread.get("overview")
     replies = thread.get("replies")
-    if not isinstance(overview, str) or not overview:
+    if not isinstance(overview, str) or not overview.strip():
         raise PublishError("thread overview must be a non-empty string")
     if (
         not isinstance(replies, list)
         or not replies
-        or any(not isinstance(reply, str) or not reply for reply in replies)
+        or any(not isinstance(reply, str) or not reply.strip() for reply in replies)
     ):
         raise PublishError("thread replies must be a non-empty array of strings")
-    return overview, replies
+    return overview.strip(), [reply.strip() for reply in replies]
 
 
 def call_slack_api(token, method, payload):
@@ -102,6 +103,13 @@ def require_message_ts(result):
     return message_ts
 
 
+def validate_message(text, label):
+    if not text.strip():
+        raise PublishError(f"{label} must not be blank")
+    if len(text) > SLACK_MESSAGE_LIMIT:
+        raise PublishError(f"{label} exceeds Slack's 40,000-character limit")
+
+
 def post_message(token, channel_id, text, thread_ts=None):
     payload = {
         "channel": channel_id,
@@ -115,48 +123,33 @@ def post_message(token, channel_id, text, thread_ts=None):
     return require_message_ts(call_slack_api(token, "chat.postMessage", payload))
 
 
-def update_message(token, channel_id, message_ts, text):
-    payload = {"channel": channel_id, "ts": message_ts, "text": text}
-    updated_ts = require_message_ts(call_slack_api(token, "chat.update", payload))
-    if updated_ts != message_ts:
-        raise PublishError("Slack updated an unexpected message timestamp")
-
-
 def main():
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel_id = os.environ.get("SLACK_CHANNEL_ID")
-    thread_ts = os.environ.get("SLACK_THREAD_TS")
-    parent_text = os.environ.get("SLACK_PARENT_TEXT")
+    parent_text = os.environ.get("SLACK_PARENT_TEXT", "").strip()
     if not token:
         raise PublishError("SLACK_BOT_TOKEN is required")
     if not channel_id:
         raise PublishError("SLACK_CHANNEL_ID is required")
-    if thread_ts and SLACK_TIMESTAMP.fullmatch(thread_ts) is None:
-        raise PublishError("SLACK_THREAD_TS is not a valid Slack timestamp")
-    if bool(thread_ts) != bool(parent_text):
-        raise PublishError(
-            "SLACK_THREAD_TS and SLACK_PARENT_TEXT must be provided together"
-        )
+    thread = load_thread(sys.stdin)
+    if not parent_text and thread is None:
+        raise PublishError("a parent message or analysis thread is required")
 
-    overview, replies = load_thread(sys.stdin)
-    if thread_ts:
-        parent_ts = thread_ts
-        updated_parent = f"{parent_text.rstrip(chr(10))}\n\n{overview}"
-        if len(updated_parent) > SLACK_UPDATE_LIMIT:
-            raise PublishError(
-                "updated parent message exceeds Slack's 40,000-character limit"
-            )
-        try:
-            update_message(token, channel_id, parent_ts, updated_parent)
-        except PublishError as exception:
-            raise PublishError(
-                f"parent message update failed: {exception}"
-            ) from exception
+    if thread is None:
+        parent = parent_text
+        replies = []
     else:
-        try:
-            parent_ts = post_message(token, channel_id, overview)
-        except PublishError as exception:
-            raise PublishError(f"parent message failed: {exception}") from exception
+        overview, replies = thread
+        parent = f"{parent_text}\n\n{overview}" if parent_text else overview
+
+    validate_message(parent, "parent message")
+    for index, reply in enumerate(replies, start=1):
+        validate_message(reply, f"reply {index}")
+
+    try:
+        parent_ts = post_message(token, channel_id, parent)
+    except PublishError as exception:
+        raise PublishError(f"parent message failed: {exception}") from exception
 
     reply_count = len(replies)
     for index, reply in enumerate(replies, start=1):

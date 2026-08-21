@@ -11,7 +11,7 @@ inputs:
 
 outputs:
   content:
-    description: "Rendered failure analysis."
+    description: "GitHub Markdown or serialized Slack thread JSON, selected by format."
     value: ${{ steps.render.outputs.content }}
 
 runs:
