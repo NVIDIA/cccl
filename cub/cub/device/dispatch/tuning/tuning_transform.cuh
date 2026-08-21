@@ -308,6 +308,10 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
+  if (cc >= ::cuda::compute_capability{10, 7})
+  {
+    return 128 * 1024; // Rubin
+  }
   if (cc >= ::cuda::compute_capability{10, 0})
   {
     return 64 * 1024; // B200
