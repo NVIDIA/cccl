@@ -80,8 +80,7 @@ runs:
           '{
             run: {
               id: $run[0].id,
-              number: $run[0].run_number,
-              head_sha: $run[0].head_sha
+              number: $run[0].run_number
             },
             jobs: [
               $jobs[0][] |

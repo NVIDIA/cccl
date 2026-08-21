@@ -9,8 +9,7 @@ import json
 import re
 import sys
 import unicodedata
-from pathlib import Path, PurePosixPath
-from urllib.parse import quote
+from pathlib import Path
 
 GITHUB_REPORT_LIMIT = 60000
 SLACK_PARENT_LIMIT = 39000
@@ -167,12 +166,6 @@ def validate_run(run):
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             raise ValidationError(f"workflow run {label} must be a positive integer")
 
-    head_sha = run.get("head_sha")
-    if not isinstance(head_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", head_sha):
-        raise ValidationError(
-            "workflow run head SHA must be 40 lowercase hexadecimal characters"
-        )
-
 
 def load_analysis_context(analysis_file):
     context = load_json(analysis_file)
@@ -244,17 +237,6 @@ def job_url(repository, run_id, job_id):
     return f"https://github.com/{repository}/actions/runs/{run_id}/job/{job_id}"
 
 
-def source_url(repository, head_sha, path, line):
-    path = clean_text(path)
-    if not path:
-        return None
-    path = PurePosixPath(path)
-    if path.is_absolute() or ".." in path.parts or line <= 0:
-        return None
-    encoded_path = quote(path.as_posix(), safe="/")
-    return f"https://github.com/{repository}/blob/{head_sha}/{encoded_path}#L{line}"
-
-
 def job_link(job_id, jobs, repository, run_id, step_number=0):
     label = sanitize_inline(jobs[job_id], limit=300)
     url = job_url(repository, run_id, job_id)
@@ -291,7 +273,7 @@ def render_github_evidence(group, jobs, repository, run_id):
     return rendered
 
 
-def render_github_group(index, group, jobs, repository, run_id, head_sha):
+def render_github_group(index, group, jobs, repository, run_id):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
     lines = [
@@ -311,20 +293,10 @@ def render_github_group(index, group, jobs, repository, run_id, head_sha):
     if evidence:
         lines.extend(["", "**Evidence:**", "", *evidence])
 
-    root_cause = f"**Root cause:** {sanitize_inline(group['root_cause'])}"
-    source_links = []
-    for source in group["source_locations"][:5]:
-        url = source_url(repository, head_sha, source["path"], source["line"])
-        if url:
-            label = sanitize_inline(f"{source['path']}:{source['line']}", limit=500)
-            source_links.append(f"[{label}]({url})")
-    if source_links:
-        root_cause += f" Sources: {', '.join(source_links)}."
-
     lines.extend(
         [
             "",
-            root_cause,
+            f"**Root cause:** {sanitize_inline(group['root_cause'])}",
             "",
             f"**Suggested next steps:** {sanitize_inline(group['next_steps'])}",
         ]
@@ -367,7 +339,7 @@ def render_github_group(index, group, jobs, repository, run_id, head_sha):
     return lines
 
 
-def render_github_report(analysis, jobs, repository, run_id, head_sha):
+def render_github_report(analysis, jobs, repository, run_id):
     lines = ["### AI failure analysis", ""]
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(
@@ -377,7 +349,6 @@ def render_github_report(analysis, jobs, repository, run_id, head_sha):
                 jobs,
                 repository,
                 run_id,
-                head_sha,
             )
         )
         lines.append("")
@@ -423,31 +394,12 @@ def render_slack_evidence(group):
     return None
 
 
-def render_slack_sources(group, repository, head_sha):
-    links = []
-    for source in group["source_locations"]:
-        url = source_url(repository, head_sha, source["path"], source["line"])
-        if not url:
-            continue
-        label = sanitize_slack_link_label(
-            f"{source['path']}:{source['line']}",
-            limit=500,
-        )
-        links.append(f"<{url}|{label}>")
-        if len(links) == 2:
-            break
-    if not links:
-        return None
-    return f"*Sources:* {', '.join(links)}"
-
-
 def render_slack_thread_reply(
     index,
     group,
     jobs,
     repository,
     run_id,
-    head_sha,
 ):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
@@ -461,9 +413,6 @@ def render_slack_thread_reply(
     evidence = render_slack_evidence(group)
     if evidence:
         lines.append(evidence)
-    sources = render_slack_sources(group, repository, head_sha)
-    if sources:
-        lines.append(sources)
     lines.append(
         f"*Suggested next steps:* {sanitize_slack(group['next_steps'], limit=700)}"
     )
@@ -487,7 +436,6 @@ def render_slack_thread(
     repository,
     run_id,
     run_number,
-    head_sha,
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
@@ -528,7 +476,6 @@ def render_slack_thread(
             jobs,
             repository,
             run_id,
-            head_sha,
         )
         for index, group in enumerate(analysis["groups"], start=1)
     ]
@@ -561,7 +508,6 @@ def main():
             jobs,
             args.repository,
             run_id,
-            run["head_sha"],
         )
     else:
         slack_thread = render_slack_thread(
@@ -570,7 +516,6 @@ def main():
             args.repository,
             run_id,
             str(run["number"]),
-            run["head_sha"],
         )
         rendered = (
             json.dumps(

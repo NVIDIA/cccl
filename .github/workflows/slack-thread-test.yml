@@ -5,7 +5,12 @@ on:
     branches:
       - codex/nightly-ai-slack-links
     paths:
+      - .github/actions/ci-failure-analysis/**
+      - .github/actions/ci-failure-analysis-render/**
+      - .github/workflows/ci-workflow-nightly.yml
       - .github/workflows/slack-thread-test.yml
+      - ci/util/ci_failure_analysis/**
+      - ci/util/publish_slack_thread.py
 
 permissions: {}
 

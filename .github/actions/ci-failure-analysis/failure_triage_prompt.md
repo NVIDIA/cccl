@@ -48,8 +48,6 @@ For each group:
   when unavailable.
 - `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
   evidence is missing.
-- `source_locations`: supporting repository-relative paths with exact one-based line
-  numbers, or an empty array. Do not provide URLs.
 - `next_steps`: one or two sentences leading with one concrete code change or diagnostic
   that directly addresses the failure mechanism. Do not merely recommend rebuilding or
   rerunning failed jobs, broadly validating the project, or enumerating matrix variants.
@@ -63,4 +61,4 @@ For each group:
   renderer adds them.
 - `job_ids`: every primary job in the group.
 
-Do not invent log lines, IDs, step numbers, or source locations.
+Do not invent log lines, IDs, or step numbers.

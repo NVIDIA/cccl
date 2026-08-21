@@ -44,25 +44,6 @@
           "root_cause": {
             "type": "string"
           },
-          "source_locations": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "path": {
-                  "type": "string"
-                },
-                "line": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "path",
-                "line"
-              ]
-            }
-          },
           "next_steps": {
             "type": "string"
           },
@@ -81,7 +62,6 @@
           "explanation",
           "evidence",
           "root_cause",
-          "source_locations",
           "next_steps",
           "agent_prompt",
           "job_ids"
