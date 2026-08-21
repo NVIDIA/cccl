@@ -6,7 +6,20 @@
 #include <thrust/detail/config/device_system.h>
 
 #include <cuda/std/limits>
+#include <cuda/std/span>
+#include <cuda/std/utility>
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cuda/__algorithm/copy.h> // cuda::copy_bytes
+#  include <cuda/buffer>
+#  include <cuda/devices>
+#  include <cuda/memory_resource>
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
+#include <cstddef>
+
+#include <c2h/checked_allocator.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
@@ -87,6 +100,47 @@ void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data);
 template <typename T>
 std::size_t gen_uniform_offsets(
   seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size);
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+[[nodiscard]] inline bool is_default_stream(cuda::stream_ref stream) noexcept
+{
+  return stream.get() == ::cudaStream_t{};
+}
+
+inline void sync_before_default_stream(cuda::stream_ref stream)
+{
+  if (!is_default_stream(stream))
+  {
+    stream.sync();
+  }
+}
+
+template <typename T>
+[[nodiscard]] cuda::host_buffer<T> device_buffer_to_host_buffer(
+  cuda::stream_ref stream, cuda::device_ref device, const cuda::device_buffer<T>& d_items, std::size_t num_items)
+{
+  auto h_items =
+    cuda::host_buffer<T>{stream, cuda::mr::legacy_pinned_memory_resource{device}, num_items, cuda::no_init};
+  cuda::copy_bytes(stream, d_items.first(num_items), h_items);
+  stream.sync();
+
+  return h_items;
+}
+
+template <typename T>
+void gen_into_device_buffer(seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
+{
+  gen_values_between(seed, d_items.first(d_items.size()), min, max);
+}
+
+template <template <typename> class... Ps>
+void gen_into_device_buffer(
+  seed_t seed, cuda::device_buffer<custom_type_t<Ps...>>& d_items, custom_type_t<Ps...> min, custom_type_t<Ps...> max)
+{
+  gen_custom_type_state(
+    seed, reinterpret_cast<char*>(d_items.data()), min, max, d_items.size(), sizeof(custom_type_t<Ps...>));
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace detail
 
 template <template <typename> class... Ps>
@@ -119,6 +173,75 @@ void gen(modulo_t mod, device_vector<T>& data)
   detail::gen_values_cyclic(mod, ::cuda::std::span<T>{THRUST_NS_QUALIFIER::raw_pointer_cast(data.data()), data.size()});
 }
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T>
+struct device_host_buffers
+{
+  cuda::device_buffer<T> d_items;
+  cuda::host_buffer<T> h_items;
+};
+
+template <typename T>
+struct sized_device_buffer
+{
+  cuda::device_buffer<T> d_items;
+  std::size_t size;
+};
+
+/**
+ * @brief Generates random data with the existing c2h device generator and returns it in device memory.
+ */
+template <typename T>
+[[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  std::size_t num_items,
+  T min = ::cuda::std::numeric_limits<T>::lowest(),
+  T max = ::cuda::std::numeric_limits<T>::max())
+{
+  auto d_items = c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
+  detail::sync_before_default_stream(stream);
+  detail::gen_into_device_buffer(seed, d_items, min, max);
+
+  return d_items;
+}
+
+/**
+ * @brief Generates random data with the existing c2h device generator and returns device and host buffers.
+ */
+template <typename T>
+[[nodiscard]] device_host_buffers<T> gen_buffers(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  std::size_t num_items,
+  T min = ::cuda::std::numeric_limits<T>::lowest(),
+  T max = ::cuda::std::numeric_limits<T>::max())
+{
+  auto d_items = gen_device_buffer<T>(stream, device, seed, num_items, min, max);
+  auto h_items = detail::device_buffer_to_host_buffer(stream, device, d_items, d_items.size());
+
+  return {::cuda::std::move(d_items), ::cuda::std::move(h_items)};
+}
+
+/**
+ * @brief Generates random data with the existing c2h device generator and returns it in pinned host memory.
+ */
+template <typename T>
+[[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  std::size_t num_items,
+  T min = ::cuda::std::numeric_limits<T>::lowest(),
+  T max = ::cuda::std::numeric_limits<T>::max())
+{
+  auto buffers = gen_buffers<T>(stream, device, seed, num_items, min, max);
+  return ::cuda::std::move(buffers.h_items);
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 /**
  * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
  * between [min_segment_size, max_segment_size]. The last offset in the array corresponds to
@@ -139,6 +262,67 @@ device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segmen
   segment_offsets.resize(new_size);
   return segment_offsets;
 }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+/**
+ * @brief Generates uniform segment offsets with the existing c2h device generator and returns them in device memory.
+ */
+template <typename T>
+[[nodiscard]] sized_device_buffer<T> gen_uniform_offsets_device_buffer(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size)
+{
+  auto d_segment_offsets =
+    c2h::make_device_buffer<T>(stream, device, static_cast<std::size_t>(total_elements) + 2, cuda::no_init);
+  detail::sync_before_default_stream(stream);
+  const auto num_offsets = detail::gen_uniform_offsets(
+    seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
+
+  return {::cuda::std::move(d_segment_offsets), num_offsets};
+}
+
+/**
+ * @brief Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
+ */
+template <typename T>
+[[nodiscard]] device_host_buffers<T> gen_uniform_offsets_buffers(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size)
+{
+  auto d_segment_offsets =
+    gen_uniform_offsets_device_buffer<T>(stream, device, seed, total_elements, min_segment_size, max_segment_size);
+  auto h_segment_offsets =
+    detail::device_buffer_to_host_buffer(stream, device, d_segment_offsets.d_items, d_segment_offsets.size);
+
+  return {::cuda::std::move(d_segment_offsets.d_items), ::cuda::std::move(h_segment_offsets)};
+}
+
+/**
+ * @brief Generates uniform segment offsets with the existing c2h device generator and returns them in pinned host
+ * memory.
+ */
+template <typename T>
+[[nodiscard]] cuda::host_buffer<T> gen_uniform_offsets_host_buffer(
+  cuda::stream_ref stream,
+  cuda::device_ref device,
+  seed_t seed,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size)
+{
+  auto buffers =
+    gen_uniform_offsets_buffers<T>(stream, device, seed, total_elements, min_segment_size, max_segment_size);
+  return ::cuda::std::move(buffers.h_items);
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 /**
  * @brief Generates key-segment ranges from an offsets-array like the one given by

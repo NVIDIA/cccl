@@ -5,14 +5,32 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <cuda/algorithm>
+#include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/functional>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
+#include <cuda/std/span>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
+
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <tuple>
 #include <utility>
+#include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/checked_allocator.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -61,11 +79,12 @@ type_pair<custom_t>
 // clang-format on
 #endif
 
+using segmented_scan_test::copy_to_host;
+using segmented_scan_test::current_device;
+
 template <typename ValueT, typename OffsetT>
-bool check_segment(const c2h::host_vector<ValueT>& h_output,
-                   const c2h::host_vector<ValueT>& h_ref,
-                   OffsetT begin_offset,
-                   OffsetT end_offset)
+bool check_segment(
+  const std::vector<ValueT>& h_output, const std::vector<ValueT>& h_ref, OffsetT begin_offset, OffsetT end_offset)
 {
   bool correct = true;
   for (OffsetT pos = begin_offset; pos < end_offset; ++pos)
@@ -139,33 +158,41 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
   REQUIRE(small_size > 0);
 
-  // Range of segment sizes to generate
-  // Note that the segment range [0, 1] may also include one last segment with more than 1 items
+  // Range of segment sizes to generate. Ranges starting at 0 exercise empty segments.
   const std::tuple<offset_t, offset_t> seg_size_range =
     GENERATE_COPY(table<offset_t, offset_t>({{0, small_size}, {medium_size, large_size}, {large_size, num_items}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << ")");
 
+  auto device      = current_device();
+  auto stream      = cuda::stream_ref{cudaStream_t{}};
+  auto copy_stream = cuda::stream{device};
+
   // Generate input segments
-  c2h::device_vector<offset_t> d_segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  const offset_t num_segments = static_cast<offset_t>(d_segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
+  auto segment_offsets = c2h::gen_uniform_offsets_device_buffer<offset_t>(
+    stream, device, C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+  std::vector<offset_t> h_segment_offsets(segment_offsets.size);
+  copy_to_host(copy_stream, segment_offsets.d_items.first(segment_offsets.size), h_segment_offsets);
+  const offset_t num_segments = static_cast<offset_t>(h_segment_offsets.size() - 1);
+  auto d_offsets_it           = segment_offsets.d_items.data();
 
   INFO("Num segments: " << num_segments);
   CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>);
 
   // Generate input data
-  c2h::device_vector<input_t> in_items(num_items);
-  c2h::gen(C2H_SEED(2), in_items);
-  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+  const auto item_count = static_cast<std::size_t>(num_items);
+  auto in_items         = c2h::gen_device_buffer<input_t>(stream, device, C2H_SEED(2), item_count);
+  std::vector<input_t> h_input(item_count);
+  copy_to_host(copy_stream, in_items, h_input);
+  auto d_in_it = in_items.data();
 
-  c2h::device_vector<output_t> output_vec(num_items);
-  auto d_out_it = thrust::raw_pointer_cast(output_vec.data());
+  auto output_vec = c2h::make_device_buffer<output_t>(stream, device, item_count, cuda::no_init);
+  auto d_out_it   = output_vec.data();
+#if TEST_LAUNCH == 2
+  stream.sync();
+#endif // TEST_LAUNCH == 2
 
-  c2h::host_vector<offset_t> h_segment_offsets = d_segment_offsets;
-  c2h::host_vector<input_t> h_input            = in_items;
-  c2h::host_vector<output_t> h_output(num_items);
-  c2h::host_vector<output_t> h_ref(num_items);
+  std::vector<output_t> h_output(item_count);
+  std::vector<output_t> h_ref(item_count);
 
   SECTION("exclusive segmented scan")
   {
@@ -175,14 +202,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     device_exclusive_segmented_scan(
       d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, op_t{}, output_t{});
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_exclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.data() + h_segment_offsets[i],
         output_t{},
         op_t{});
 
@@ -194,7 +221,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     // check 2 offset iterators API
     device_exclusive_segmented_scan(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, op_t{}, output_t{});
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
@@ -216,14 +243,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     device_inclusive_segmented_scan(
       unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, scan_op);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.data() + h_segment_offsets[i],
         scan_op,
         h_accum_t{});
 
@@ -234,13 +261,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     if constexpr (::cuda::std::is_same_v<input_t, output_t>)
     {
-      output_vec = in_items;
+      cuda::copy_bytes(copy_stream, in_items, output_vec);
+      copy_stream.sync();
 
       // check 2 iterators API for in-place scan
       device_inclusive_segmented_scan(
         unwrap_it(d_out_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op);
 
-      h_output = output_vec;
+      copy_to_host(copy_stream, output_vec, h_output);
 
       for (offset_t i = 0; i < num_segments; ++i)
       {
@@ -278,14 +306,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
       scan_op,
       init_value);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.data() + h_segment_offsets[i],
         scan_op,
         h_accum_t{init_value});
       // Verify result
@@ -298,7 +326,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     device_inclusive_segmented_scan_with_init(
       unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, init_value);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
@@ -317,14 +345,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     // check 3 offset iterators API
     device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_exclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.data() + h_segment_offsets[i],
         output_t{},
         cuda::std::plus<>{});
 
@@ -336,7 +364,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     // check 2 offset iterators API
     device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
@@ -353,14 +381,14 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     // check 3 offset iterators API
     device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i],
+        h_input.data() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.data() + h_segment_offsets[i],
         cuda::std::plus<>{},
         output_t{});
 
@@ -372,7 +400,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     // check 2 offset iterators API
     device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
 
-    h_output = output_vec;
+    copy_to_host(copy_stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
