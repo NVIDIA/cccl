@@ -110,13 +110,15 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     const auto& __hi = __U_i.__key;
 
     // Sample from the union of splitter intervals. Splitter intervals are disjoint or
-    // identical; lo_it skips an identical interval already covered by an earlier splitter.
+    // identical
     const auto __last  = __hi.has_value() ? ::cuda::std::lower_bound(__begin, __end, *__hi, __cmp) : __end;
     const auto __first = __lo.has_value() ? ::cuda::std::lower_bound(__begin, __last, *__lo, __cmp) : __begin;
 
     _CCCL_ASSERT(__first <= __last, "Inputs are not sorted for binary search");
     // Update this for the next iteration here (instead of the bottom of for loop) to simplify
-    // the code below
+    // the code below.
+    //
+    // This isn't just an optimization. The sampled intervals need to be distinct.
     __begin = __last;
 
     const auto __len = static_cast<::cuda::std::uint64_t>(__last - __first);
@@ -127,12 +129,15 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     }
 
     // __num_samples is always <= __len. The only scenario in which that would not be is if
-    // __len = 0 (so __num_samples would be 1). But we early exit to avoid this. The
-    // alternative is a 3-way min().
+    // __len = 0 (so __num_samples would be 1). The alternative would be a 3-way min().
     const auto __num_samples = ::cuda::std::max(
       static_cast<::cuda::std::uint64_t>(static_cast<double>(__len) * __prob), ::cuda::std::uint64_t{1});
     const auto __remaining_samples = static_cast<::cuda::std::uint64_t>(__samples.end() - __samples_it);
 
+    // Note: this sampling method (systematic sampling) is not perfect. The upper __len % __n
+    // items can never be sampled by this method. HOWEVER, __n << __len for HSS and __len % __n
+    // is comparatively small. This doesn't affect correctness, but it does mean if the perfect
+    // splitters are in that regime we will never see them.
     if (const auto __n = ::cuda::std::min(__num_samples, __remaining_samples))
     {
       const auto __stride = __len / __n;
