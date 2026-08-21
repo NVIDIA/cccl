@@ -753,10 +753,9 @@ atomic rename, so concurrent generators can never produce a torn entry. On top
 of that, generation is guarded by a lock (a directory, since ``create_directory``
 is an atomic test-and-set on both POSIX and Windows) so that N processes
 starting against a cold cache do not each spend seconds producing the same
-file. The lock is
-non-blocking by design: a process that cannot take it builds without a PCH
-rather than stalling behind the holder, which costs exactly what the build would
-have cost with PCH disabled. A lock left behind by a killed process is treated
+file. The lock is non-blocking by design: a process that cannot take it builds
+without a PCH rather than stalling behind the holder, which costs exactly what
+the build would have cost with PCH disabled. A lock left behind by a killed process is treated
 as abandoned after ten minutes, and swept along with any orphaned temp files
 when the cache directory is next resolved.
 
@@ -790,7 +789,7 @@ Environment variables:
 
 ``CCCL_PCH_CACHE_DIR``
   Cache location, used verbatim. When unset, the default differs by platform.
-  On Linux and macOS: ``$XDG_CACHE_HOME/cccl/hostjit_pch``, then
+  On Linux: ``$XDG_CACHE_HOME/cccl/hostjit_pch``, then
   ``~/.cache/cccl/hostjit_pch``, then a uid-scoped directory under the system
   temp directory. On Windows: ``%LOCALAPPDATA%\cccl\hostjit_pch``, then a
   directory under the system temp directory — ``XDG_CACHE_HOME`` and ``HOME``

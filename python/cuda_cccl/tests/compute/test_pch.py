@@ -346,3 +346,73 @@ def test_concurrent_cold_builds_generate_once(cache):
     names = pch_files(cache)
     assert len(names) == 2, f"expected one device and one host PCH, got {names}"
     assert list(cache.glob("*.lock")) == [], "a generation lock outlived its holder"
+
+
+# Distinct dtypes so each build is a distinct in-process key and actually reaches
+# the compiler rather than hitting the build-result cache.
+_STRESS_DTYPES = [np.int8, np.int16, np.int32, np.int64, np.uint32, np.float32]
+
+
+def _run_reduce(dtype):
+    d_in = DeviceArray.from_numpy(np.arange(4, dtype=dtype))
+    d_out = DeviceArray.empty(1, dtype)
+    h_init = np.zeros(1, dtype=dtype)
+    cc.make_reduce_into(d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init)
+
+
+def _stress(cache, churn):
+    """Run builds on many threads while `churn` runs on another. No error escapes."""
+    clear_all_caches()
+    errors: list[BaseException] = []
+    stop = threading.Event()
+
+    def churner():
+        while not stop.is_set():
+            try:
+                churn()
+            except BaseException as exc:  # noqa: BLE001 - surfaced to main thread
+                errors.append(exc)
+                return
+
+    def build(dtype):
+        try:
+            _run_reduce(dtype)
+        except BaseException as exc:  # noqa: BLE001 - surfaced to main thread
+            errors.append(exc)
+
+    churn_thread = threading.Thread(target=churner)
+    churn_thread.start()
+    builders = [threading.Thread(target=build, args=(dt,)) for dt in _STRESS_DTYPES]
+    for t in builders:
+        t.start()
+    for t in builders:
+        t.join(timeout=900)
+    stop.set()
+    churn_thread.join(timeout=60)
+
+    assert not errors, errors
+    assert not any(t.is_alive() for t in builders), "a build thread did not finish"
+
+
+def test_builds_race_reconfigure(cache):
+    """Builds must survive reconfigure() churn on another thread.
+
+    reconfigure() rebinds the shared build config's cache-dir bytes while build
+    threads read that pointer under nogil -- stresses that shared state for tears
+    or a use-after-free.
+    """
+    _stress(cache, lambda: _pch.reconfigure(str(cache)))
+
+
+def test_builds_race_clear_and_evict(cache):
+    """clear_pch_cache()/evict() on another thread must not corrupt live builds.
+
+    Deleting an entry while a build reads it must never leave a .pch without its
+    preamble (a poisoned entry); the worst outcome is a rebuild.
+    """
+
+    def churn():
+        _pch.clear_cache()
+        _pch.evict()
+
+    _stress(cache, churn)

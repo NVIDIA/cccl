@@ -261,7 +261,7 @@ def _max_bytes() -> int:
     return max(0, value) * multiplier
 
 
-def evict(exempt: set[Path] | None = None) -> int:
+def evict() -> int:
     """Trim the cache to its size cap, least-recently-used first.
 
     The bound is on total size rather than entry age: a dozen configurations all
@@ -273,8 +273,7 @@ def evict(exempt: set[Path] | None = None) -> int:
     delete what that build just produced and force the next one to regenerate.
     Such entries are identified by recency: a build refreshes the timestamp of
     every entry it uses, so anything touched within the last `_ACTIVE_SECONDS`
-    belongs to a build that is running or has just finished. `exempt` names
-    additional paths to protect when a caller knows them.
+    belongs to a build that is running or has just finished.
 
     A precompiled header and its preamble are evicted together, since the header
     records the preamble as an input. Returns the number of bytes reclaimed.
@@ -283,7 +282,6 @@ def evict(exempt: set[Path] | None = None) -> int:
     if directory is None or not directory.is_dir():
         return 0
 
-    exempt = exempt or set()
     reclaimed = _sweep_debris(directory)
 
     # Debris is reclaimed unconditionally; a disabled size cap means "keep every
@@ -305,7 +303,7 @@ def evict(exempt: set[Path] | None = None) -> int:
         # Protected entries still count toward the cap -- they occupy the disk
         # either way -- they are simply not candidates for removal.
         total += size
-        if pch in exempt or stat.st_mtime >= active_after:
+        if stat.st_mtime >= active_after:
             continue
         entries.append((stat.st_mtime, size, pch, preamble))
 
@@ -315,17 +313,23 @@ def evict(exempt: set[Path] | None = None) -> int:
     for _mtime, _size, pch, preamble in sorted(entries):
         if total <= cap:
             break
-        # Count only what actually went away. A file that refuses to delete is
-        # still occupying the cache, so charging it against the total would
-        # leave the cache over its cap while reporting otherwise.
-        freed = 0
-        for path in (pch, preamble):
-            try:
-                size = path.stat().st_size
-                path.unlink()
-                freed += size
-            except OSError:
-                continue
+        # Delete the .pch first; only remove its preamble if that succeeded. A
+        # surviving .pch whose preamble is gone is a poisoned entry -- clang
+        # validates the preamble on load -- and on Windows the .pch may be held
+        # open by another process and refuse to delete while the preamble does
+        # not. Count only what actually went away, so a file that refuses to
+        # delete still counts against the cap.
+        try:
+            freed = pch.stat().st_size
+            pch.unlink()
+        except OSError:
+            continue
+        try:
+            psize = preamble.stat().st_size
+            preamble.unlink()
+            freed += psize
+        except OSError:
+            pass
         total -= freed
         reclaimed += freed
     return reclaimed
@@ -367,15 +371,43 @@ def clear_cache() -> int:
     # Only HostJIT artifacts: CCCL_PCH_CACHE_DIR is taken verbatim, so it may
     # hold unrelated files that this must not touch.
     removed = 0
-    for pattern in ("*.pch", "*_preamble.cu", "*.tmp"):
-        for entry in directory.glob(pattern):
-            try:
-                entry.unlink()
-                removed += 1
-            except OSError:
-                # In use (Windows), or removed by someone else between listing
-                # and unlinking. Neither is worth failing over.
-                continue
+    for pch in directory.glob("*.pch"):
+        preamble = pch.with_name(pch.name[: -len(".pch")] + "_preamble.cu")
+        try:
+            pch.unlink()
+            removed += 1
+        except OSError:
+            # .pch in use (Windows); keep its preamble so the entry stays valid
+            # rather than leaving a .pch that fails to validate on load.
+            continue
+        try:
+            preamble.unlink()
+            removed += 1
+        except OSError:
+            pass
+    # Orphan preambles (their .pch is gone) and abandoned temps.
+    for preamble in directory.glob("*_preamble.cu"):
+        pch = preamble.with_name(preamble.name[: -len("_preamble.cu")] + ".pch")
+        if pch.exists():
+            continue  # its .pch survived (in use); leave the pair intact
+        try:
+            preamble.unlink()
+            removed += 1
+        except OSError:
+            continue
+    for tmp in directory.glob("*.tmp"):
+        try:
+            tmp.unlink()
+            removed += 1
+        except OSError:
+            continue
+    # Age-gate lock removal: a live-but-slow generation still holds its lock, and
+    # deleting it would let a second writer collide on the same entry.
+    lock_cutoff = time.time() - _LOCK_STALE_SECONDS
     for lock in directory.glob("*.lock"):  # generation locks are directories
-        shutil.rmtree(lock, ignore_errors=True)
+        try:
+            if lock.stat().st_mtime < lock_cutoff:
+                shutil.rmtree(lock, ignore_errors=True)
+        except OSError:
+            continue
     return removed
