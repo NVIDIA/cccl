@@ -124,6 +124,8 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    outputs:
+      slack_alert_ts: ${{ steps.check-workflow.outputs.slack_alert_ts }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -240,8 +242,21 @@ jobs:
 
   publish-failure-analysis:
     name: Post AI failure analysis to Slack
-    if: ${{ !cancelled() && needs.analyze-failures.result == 'success' }}
-    needs: analyze-failures
+    # Core failures reply to the nightly alert. If its timestamp is lost, skip instead
+    # of creating a duplicate. Third-party-only failures retain the standalone report.
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        needs.analyze-failures.result == 'success' &&
+        (
+          needs.verify-workflow.result != 'failure' ||
+          needs.verify-workflow.outputs.slack_alert_ts != ''
+        )
+      }}
+    needs:
+      - analyze-failures
+      - verify-workflow
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -258,6 +273,7 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          SLACK_THREAD_TS: ${{ needs.verify-workflow.outputs.slack_alert_ts }}
           SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
         shell: bash --noprofile --norc -euo pipefail {0}
         run: |

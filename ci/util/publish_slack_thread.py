@@ -5,6 +5,7 @@
 
 import json
 import os
+import re
 import sys
 import time
 from http import client
@@ -13,6 +14,9 @@ from urllib import error, request
 
 class PublishError(RuntimeError):
     pass
+
+
+SLACK_TIMESTAMP = re.compile(r"[0-9]+\.[0-9]+")
 
 
 class NoRedirectHandler(request.HTTPRedirectHandler):
@@ -34,17 +38,17 @@ def load_thread(stream):
 
     if not isinstance(thread, dict):
         raise PublishError("thread input must be an object")
-    parent = thread.get("parent")
+    overview = thread.get("overview")
     replies = thread.get("replies")
-    if not isinstance(parent, str) or not parent:
-        raise PublishError("thread parent must be a non-empty string")
+    if not isinstance(overview, str) or not overview:
+        raise PublishError("thread overview must be a non-empty string")
     if (
         not isinstance(replies, list)
         or not replies
         or any(not isinstance(reply, str) or not reply for reply in replies)
     ):
         raise PublishError("thread replies must be a non-empty array of strings")
-    return parent, replies
+    return overview, replies
 
 
 def post_message(token, channel_id, text, thread_ts=None):
@@ -106,16 +110,23 @@ def post_message(token, channel_id, text, thread_ts=None):
 def main():
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel_id = os.environ.get("SLACK_CHANNEL_ID")
+    thread_ts = os.environ.get("SLACK_THREAD_TS")
     if not token:
         raise PublishError("SLACK_BOT_TOKEN is required")
     if not channel_id:
         raise PublishError("SLACK_CHANNEL_ID is required")
+    if thread_ts and SLACK_TIMESTAMP.fullmatch(thread_ts) is None:
+        raise PublishError("SLACK_THREAD_TS is not a valid Slack timestamp")
 
-    parent, replies = load_thread(sys.stdin)
-    try:
-        parent_ts = post_message(token, channel_id, parent)
-    except PublishError as exception:
-        raise PublishError(f"parent message failed: {exception}") from exception
+    overview, replies = load_thread(sys.stdin)
+    if thread_ts:
+        parent_ts = thread_ts
+        replies.insert(0, overview)
+    else:
+        try:
+            parent_ts = post_message(token, channel_id, overview)
+        except PublishError as exception:
+            raise PublishError(f"parent message failed: {exception}") from exception
 
     reply_count = len(replies)
     for index, reply in enumerate(replies, start=1):

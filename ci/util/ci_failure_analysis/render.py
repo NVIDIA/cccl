@@ -375,7 +375,7 @@ def render_slack_thread(
     group_count = len(analysis["groups"])
     job_label = "job" if failed_job_count == 1 else "jobs"
     group_label = "group" if group_count == 1 else "groups"
-    parent_lines = [
+    overview_lines = [
         f":rotating_light: *AI failure analysis — workflow run #{run_number}*",
         (
             f"{group_count} failure {group_label} covering "
@@ -386,17 +386,17 @@ def render_slack_thread(
     for index, group in enumerate(analysis["groups"], start=1):
         job_ids = group["job_ids"]
         job_label = "job" if len(job_ids) == 1 else "jobs"
-        parent_lines.append(
+        overview_lines.append(
             f"{index}. {sanitize_slack_title(group['title'])} "
             f"· {len(job_ids)} {job_label}"
         )
 
     run_url = f"https://github.com/{repository}/actions/runs/{run_id}"
-    parent_lines.extend(["", f"<{run_url}|GitHub Actions>"])
-    parent = "\n".join(parent_lines) + "\n"
-    if len(parent) > SLACK_MESSAGE_LIMIT:
+    overview_lines.extend(["", f"<{run_url}|GitHub Actions>"])
+    overview = "\n".join(overview_lines) + "\n"
+    if len(overview) > SLACK_MESSAGE_LIMIT:
         raise ValidationError(
-            f"rendered Slack parent exceeds {SLACK_MESSAGE_LIMIT:,} characters"
+            f"rendered Slack overview exceeds {SLACK_MESSAGE_LIMIT:,} characters"
         )
 
     replies = [
@@ -409,7 +409,7 @@ def render_slack_thread(
         )
         for index, group in enumerate(analysis["groups"], start=1)
     ]
-    return {"parent": parent, "replies": replies}
+    return {"overview": overview, "replies": replies}
 
 
 # Command-line entry point.

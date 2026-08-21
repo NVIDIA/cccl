@@ -63,16 +63,45 @@ jobs:
           analysis_file: ${{ runner.temp }}/failure-analysis.json
           format: slack
 
-  publish-failure-analysis:
-    name: Post AI failure analysis to Slack
+  post-failure-notification:
+    name: Post test workflow failure notification
     if: >-
       ${{
-        !cancelled() &&
         github.repository == 'NVIDIA/cccl' &&
         vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
         needs.analyze-failures.result == 'success'
       }}
     needs: analyze-failures
+    runs-on: ubuntu-latest
+    outputs:
+      slack_alert_ts: ${{ steps.slack-alert.outputs.ts }}
+    steps:
+      - name: Post test notification
+        id: slack-alert
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          slack-message: |
+            :test_tube: TEST — Workflow 'nightly' has failed:
+
+            Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834
+
+  publish-failure-analysis:
+    name: Post AI failure analysis to Slack
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
+        needs.analyze-failures.result == 'success' &&
+        needs.post-failure-notification.result == 'success'
+      }}
+    needs:
+      - analyze-failures
+      - post-failure-notification
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -89,8 +118,10 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          SLACK_THREAD_TS: ${{ needs.post-failure-notification.outputs.slack_alert_ts }}
           SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
         shell: bash --noprofile --norc -euo pipefail {0}
         run: |
+          test -n "${SLACK_THREAD_TS}"
           printf '%s' "${SLACK_THREAD}" | \
             python3 ci/util/publish_slack_thread.py

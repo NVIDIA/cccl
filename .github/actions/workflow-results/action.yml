@@ -22,6 +22,9 @@ outputs:
   success:
     description: "Whether any jobs failed."
     value: ${{ steps.check-success.outputs.success }}
+  slack_alert_ts:
+    description: "Timestamp of the Slack failure alert, if one was posted."
+    value: ${{ steps.slack-alert.outputs.ts }}
 
 runs:
   using: "composite"
@@ -217,6 +220,7 @@ runs:
           Details: ${{ env.SUMMARY_URL }}
 
     - name: Send Slack alert notification
+      id: slack-alert
       if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
       uses: slackapi/slack-github-action@v1.26.0
       env:
