@@ -79,6 +79,10 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build'], std: 'max', project: ['libcudacxx', 'thrust', 'cub'],    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'] }
+    - {jobs: ['build'], std: 'max', project: ['libcudacxx', 'thrust', 'cub'],    cxx: ['gcc12', 'gcc13', 'gcc14'] }
+    - {jobs: ['build'], std: 'max', project: ['libcudacxx', 'thrust', 'cub'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;80;90;100;120'}
+
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -526,7 +530,7 @@ cuda99_gcc_version: 15
 cuda99_clang_version: 21
 
 # All supported C++ standards:
-all_stds: [17, 20]
+all_stds: [17, 20, 23]
 
 # Aliases:
 # - 12.X: Newest CTK 12.X version.
@@ -540,7 +544,7 @@ ctk_versions:
   13.0: { stds: [17, 20] }
   13.1: { stds: [17, 20], alias: ['nvhpc-prev']}
   13.2: { stds: [17, 20], alias: ['nvhpc']}
-  13.3: { stds: [17, 20], alias: ['13.X'] }
+  13.3: { stds: [17, 20, 23], alias: ['13.X'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -563,8 +567,8 @@ host_compilers:
       11: { stds: [17, 20] }
       12: { stds: [17, 20] }
       13: { stds: [17, 20] }
-      14: { stds: [17, 20] }
-      15: { stds: [17, 20] }
+      14: { stds: [17, 20, 23] }
+      15: { stds: [17, 20, 23] }
   clang:
     name: 'Clang'
     container_tag: 'llvm'
@@ -574,16 +578,16 @@ host_compilers:
       15: { stds: [17, 20] }
       16: { stds: [17, 20] }
       17: { stds: [17, 20] }
-      18: { stds: [17, 20] }
-      19: { stds: [17, 20] }
-      20: { stds: [17, 20] }
-      21: { stds: [17, 20], alias: 'cuda' }
+      18: { stds: [17, 20, 23] }
+      19: { stds: [17, 20, 23] }
+      20: { stds: [17, 20, 23] }
+      21: { stds: [17, 20, 23], alias: 'cuda' }
   clang_preview:
     name: 'Clang'
     container_tag: 'llvm'
     exe: 'clang++'
     versions:
-      22: { stds: [17, 20], alias: 'cuda' }
+      22: { stds: [17, 20, 23], alias: 'cuda' }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
@@ -600,8 +604,8 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      26.3: { stds: [17, 20], alias: 'prev' }
-      26.5: { stds: [17, 20] }
+      26.3: { stds: [17, 20, 23], alias: 'prev' }
+      26.5: { stds: [17, 20, 23] }
 
 # Jobs support the following properties:
 #
@@ -700,16 +704,16 @@ jobs:
 projects:
   packaging:
     name: 'CCCL Packaging'
-    stds: [17, 20]
+    stds: [17, 20, 23]
     job_map:
       build: []
       test: ['test_nobuild']
   libcudacxx:
     name: 'libcu++'
-    stds: [17, 20]
+    stds: [17, 20, 23]
   cub:
     name: 'CUB'
-    stds: [17, 20]
+    stds: [17, 20, 23]
     job_map:
       build: ['build_nolid', 'build_lid0', 'build_lid1', 'build_lid2']
       test:  ['test_nolid',  'test_lid0',  'test_lid1',  'test_lid2']
@@ -724,13 +728,13 @@ projects:
         - compute_sync_lid0
   thrust:
     name: 'Thrust'
-    stds: [17, 20]
+    stds: [17, 20, 23]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
-    stds: [17, 20]
+    stds: [17, 20, 23]
   stdpar:
     name: 'NVHPC stdpar'
-    stds: [17, 20]
+    stds: [17, 20, 23]
   python:
     name: "Python"
     job_map:
@@ -785,10 +789,10 @@ projects:
   #         args: '--preset cub-cpp20 --build-targets "cub.cpp20.test.iterator" --ctest-targets "cub.cpp20.test.iterator"' }
   target:
     name: 'Target'
-    stds: [17, 20]
+    stds: [17, 20, 23]
   bisect:
     name: 'Bisect'
-    stds: [17, 20]
+    stds: [17, 20, 23]
   tidy:
     name: 'clang-tidy'
     stds: [17]
