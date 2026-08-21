@@ -149,6 +149,13 @@ def _build_struct_dtype(
 ) -> np.dtype:
     dtype_list = []
     for field_name, field_type in fields.items():
+        if field_type.dtype is None:
+            # Without this check, np.dtype would silently interpret None as
+            # float64, giving the field the wrong size and layout.
+            raise TypeError(
+                f"struct field '{field_name}' has no NumPy representation "
+                "(bfloat16 fields require the ml_dtypes package to be installed)"
+            )
         dtype_list.append((field_name, field_type.dtype))
     return np.dtype(dtype_list, align=True)
 

@@ -694,6 +694,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
 {
   std::string less_op_src = std::format(
     "#include <cuda_fp16.h>\n"
+    "#include <cuda_bf16.h>\n"
     "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
     "  bool* out = reinterpret_cast<bool*>(out_void); "
@@ -703,6 +704,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
     compare_to);
   std::string greater_or_equal_op_src = std::format(
     "#include <cuda_fp16.h>\n"
+    "#include <cuda_bf16.h>\n"
     "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
     "  bool* out = reinterpret_cast<bool*>(out_void); "

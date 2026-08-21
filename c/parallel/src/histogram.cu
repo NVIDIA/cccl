@@ -299,6 +299,8 @@ try
 #include <cub/block/block_load.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
 
 struct __align__({1}) storage_t {{
   char data[{0}];
