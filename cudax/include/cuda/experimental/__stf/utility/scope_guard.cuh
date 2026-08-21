@@ -73,29 +73,29 @@ namespace cuda::experimental::stf
 /**
  * @brief The bottom type: a type with no values, convertible to every type.
  *
- * A callable that declares `nothing` as its return type promises in the type system that it
+ * A callable that declares `nullval` as its return type promises in the type system that it
  * never returns normally: keeping the promise any other way would require materializing a value
  * of a type that has none. `[[noreturn]]` makes the same promise to the optimizer, but not
- * reliably to overload resolution; a `nothing` result states it as a fact of the type, visible
+ * reliably to overload resolution; a `nullval` result states it as a fact of the type, visible
  * to metaprogramming and impossible to fake.
  *
- * The conversion operator lets a `nothing` expression appear wherever a value of any type is
+ * The conversion operator lets a `nullval` expression appear wherever a value of any type is
  * expected, references included: a never-returning call may be `return`ed from a function of
  * any result type, or supply one arm of a ternary whose other arm produces the legitimate
  * value, as in `ready ? front() : abort()`. The operator can never run -- running it would
  * require an object that cannot exist -- so its body exists to satisfy the compiler, not to
  * execute.
  */
-struct nothing final
+struct nullval final
 {
-  nothing()                          = delete;
-  nothing(const nothing&)            = delete;
-  nothing& operator=(const nothing&) = delete;
+  nullval()                          = delete;
+  nullval(const nullval&)            = delete;
+  nullval& operator=(const nullval&) = delete;
 
   // Two operators, because deduction for conversion functions strips the reference off the
   // target before matching: the rvalue one serves values and rvalue references, the lvalue one
   // serves lvalue references. A value target sees both and prefers the rvalue binding, so the
-  // pair is not ambiguous. The bodies are unreachable rather than aborting: every `nothing`
+  // pair is not ambiguous. The bodies are unreachable rather than aborting: every `nullval`
   // prvalue is the result of a call that never returns, so control provably cannot arrive here
   // short of undefined behavior already committed elsewhere.
   template <class _Tp>
@@ -203,7 +203,7 @@ inline const notify_t notify{};
  * still hides `::abort`.
  *
  * `notify & abort` reports twice (documented). `abort | p` is a dead-| error (hook is
- * noexcept); `abort & p` is a dead-& error (answers `nothing`).
+ * noexcept); `abort & p` is a dead-& error (answers `nullval`).
  */
 struct abort_t
 {
@@ -212,14 +212,14 @@ struct abort_t
   //! @endcond
 
   //! @brief The bare call: usable in ternaries -- `ready ? front() : abort()`.
-  [[noreturn]] nothing operator()() const noexcept
+  [[noreturn]] nullval operator()() const noexcept
   {
     ::std::abort();
   }
 
   //! @brief The exception hook: report, then die.
   template <class _Fn>
-  [[noreturn]] nothing
+  [[noreturn]] nullval
   operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
   {
     notify(__exception, __loc, __fn);
@@ -235,13 +235,13 @@ struct terminate_t
   using __exception_sink_tag = void;
   //! @endcond
 
-  [[noreturn]] nothing operator()() const noexcept
+  [[noreturn]] nullval operator()() const noexcept
   {
     ::std::terminate();
   }
 
   template <class _Fn>
-  [[noreturn]] nothing
+  [[noreturn]] nullval
   operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
   {
     notify(__exception, __loc, __fn);
@@ -300,7 +300,7 @@ inline constexpr defer_t defer{};
 
 /**
  * @brief The identity element of `|` and the decline primitive: re-throws the in-flight
- * exception from inside the catch. Its answer type is `nothing`, so it never has to produce a
+ * exception from inside the catch. Its answer type is `nullval`, so it never has to produce a
  * value; being non-`noexcept` is how it declines, handing the exception to the next `|` arm or
  * letting it propagate.
  */
@@ -311,7 +311,7 @@ struct rethrow_t
   //! @endcond
 
   template <class _Fn>
-  [[noreturn]] nothing operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
+  [[noreturn]] nullval operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
   {
     throw;
   }
@@ -548,7 +548,7 @@ struct translate_t
   using __exception_sink_tag = void;
 
   template <class _Fn>
-  [[noreturn]] nothing operator()(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
+  [[noreturn]] nullval operator()(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
     if (__e)
     {
@@ -614,7 +614,7 @@ struct nest_t
   static_assert(::cuda::std::is_copy_constructible_v<_E>, "nest(e) requires a copyable exception object");
 
   template <class _Fn>
-  [[noreturn]] nothing operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
+  [[noreturn]] nullval operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
   {
     _CCCL_TRY
     {
@@ -839,7 +839,7 @@ inline constexpr bool __is_ignore_v =
   ::cuda::std::is_same_v<const ::cuda::std::remove_cvref_t<_P>,
                          const ::cuda::std::remove_reference_t<decltype(::std::ignore)>>;
 
-// Whether a policy's answer type is `nothing` -- it never returns from the exception path. The
+// Whether a policy's answer type is `nullval` -- it never returns from the exception path. The
 // two-step form keeps `__hook_answer_t` from being named for a hookless policy: `&&` does not
 // short-circuit template instantiation, so the answer is probed only in the `true` partial.
 template <bool _HasHook, class _P, class _Fn>
@@ -847,7 +847,7 @@ inline constexpr bool __answers_nothing_impl = false;
 
 template <class _P, class _Fn>
 inline constexpr bool __answers_nothing_impl<true, _P, _Fn> =
-  ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__hook_answer_t<_P, _Fn>>, nothing>;
+  ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__hook_answer_t<_P, _Fn>>, nullval>;
 
 template <class _P, class _Fn = void (&)()>
 inline constexpr bool __answers_nothing = __answers_nothing_impl<__has_exception_hook<_P, _Fn>, _P, _Fn>;
@@ -1320,10 +1320,10 @@ _Expr __interpret_answer(
 {
   using _Answer = __hook_answer_t<_P, _Fn>;
   static_assert(!::cuda::std::is_void_v<_Answer>,
-                "the final policy must answer the exception path: nothing to die, ::std::ignore "
+                "the final policy must answer the exception path: nullval to die, ::std::ignore "
                 "to resume, or a value to substitute");
 
-  if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Answer>, nothing>)
+  if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Answer>, nullval>)
   {
     // Never returns: no backstop beyond the unreachable marker.
     __policy(__exception, __loc, __fn);
@@ -1355,7 +1355,7 @@ _Expr __interpret_answer(
       "type, anything else dying with the call");
     static_assert(::cuda::std::is_convertible_v<_Answer, _Expr>,
                   "an on_throw reaction is a policy, a never-returning callable (one returning "
-                  "nothing, like abort and terminate), ::std::ignore, or a value convertible to "
+                  "nullval, like abort and terminate), ::std::ignore, or a value convertible to "
                   "the result of the callable");
     return static_cast<_Expr>(__policy(__exception, __loc, __fn));
   }
@@ -1640,7 +1640,7 @@ struct always_t
       else if constexpr (detail::__answers_nothing<_A, _Fn>)
       {
         // Never actually returns (the decline path below runs the finalizer); returning the
-        // call keeps the composite's answer type `nothing` via guaranteed elision.
+        // call keeps the composite's answer type `nullval` via guaranteed elision.
         return __head_(__e, __loc, __fn);
       }
       else
@@ -1726,8 +1726,8 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * with an `int` callable) the ordinary conversion static_assert fires; put
  * the sink leftmost or nest, the same rule `expecting` lives by.
  *
- * Custom runtime policies derive from the public @ref sink_base by
- * implementing `hook` (and `clone`); `on_success` defaults to identity. Everything here
+ * Custom runtime policies derive from the public @ref sink_base: implement
+ * `hook` (and `clone`); `on_success` defaults to identity. Everything here
  * is host-only and lives on the exception path; the success path pays one
  * `std::any` box through `on_success`.
  */
@@ -1737,7 +1737,7 @@ public:
   //! @brief What the wrapped policy's answer was, statically, at erasure time.
   enum class sink_kind
   {
-    dies, //!< the hook never returns (answered `nothing`)
+    dies, //!< the hook never returns (answered `nullval`)
     resumes, //!< resume: an empty `std::any` comes back (answered `std::ignore`)
     effects, //!< side effect only: an empty `std::any` comes back (answered `void`)
     produces //!< the `std::any` holds a value
@@ -1783,7 +1783,7 @@ private:
     static constexpr sink_kind __skind =
       ::cuda::std::is_void_v<__ans_t>  ? sink_kind::effects
       : detail::__is_ignore_v<__ans_t> ? sink_kind::resumes
-      : ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__ans_t>, nothing>
+      : ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__ans_t>, nullval>
         ? sink_kind::dies
         : sink_kind::produces;
 
@@ -1966,7 +1966,7 @@ void abort(_Ts&&...) = delete;
  *
  * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
  * resumes with a default-constructed result; and anything else is taken as a substitution
- * value, exactly as `subst(value)` (including a user's nullary `nothing`-returning ending,
+ * value, exactly as `subst(value)` (including a user's nullary `nullval`-returning ending,
  * which dies silently -- pair with `notify &` to opt the report back in). A substitution
  * passed as an lvalue can serve a reference result, which the policy refers to rather than
  * copies:
@@ -1985,7 +1985,7 @@ void abort(_Ts&&...) = delete;
  * Vocabulary visibility: the named policies live in the non-inline namespace
  * `exception_policies`. Blessed patterns are a block-scope
  * `using namespace cuda::experimental::stf::exception_policies;` at the function that
- * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::exception_policies;`):
+ * configures sinks, or a namespace alias (`namespace pol = ...::exception_policies;`):
  *
  * @code
  * using namespace cuda::experimental::stf::exception_policies;
@@ -2031,25 +2031,25 @@ auto on_throw(_Reaction&& __reaction,
     << [&]()
 
 #ifdef UNITTESTED_FILE
-UNITTEST("nothing")
+UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
   // No values: not constructible in any way.
-  static_assert(!::std::is_default_constructible_v<nothing>);
-  static_assert(!::std::is_copy_constructible_v<nothing>);
-  static_assert(!::std::is_move_constructible_v<nothing>);
-  // One-way conversions: `nothing` converts to every type, no type converts to `nothing`.
-  static_assert(::std::is_convertible_v<nothing, int>);
-  static_assert(::std::is_convertible_v<nothing, int&>);
-  static_assert(::std::is_convertible_v<nothing, void (*)()>);
-  static_assert(!::std::is_convertible_v<int, nothing>);
+  static_assert(!::std::is_default_constructible_v<nullval>);
+  static_assert(!::std::is_copy_constructible_v<nullval>);
+  static_assert(!::std::is_move_constructible_v<nullval>);
+  // One-way conversions: `nullval` converts to every type, no type converts to `nullval`.
+  static_assert(::std::is_convertible_v<nullval, int>);
+  static_assert(::std::is_convertible_v<nullval, int&>);
+  static_assert(::std::is_convertible_v<nullval, void (*)()>);
+  static_assert(!::std::is_convertible_v<int, nullval>);
   // A never-returning call may be returned from a function of any result type, references
   // included; the conversion typechecks and never runs.
   [[maybe_unused]] const auto propagates = []() -> int& {
     return cuda::experimental::stf::exception_policies::abort();
   };
-  // A `nothing` expression also supplies one arm of a ternary, the other arm setting the type.
+  // A `nullval` expression also supplies one arm of a ternary, the other arm setting the type.
   const auto pick = [](bool ok) -> int {
     return ok ? 42 : cuda::experimental::stf::exception_policies::abort();
   };
@@ -2089,9 +2089,9 @@ UNITTEST("on_throw")
   EXPECT(answer == 42);
   //! [on_throw]
 
-  // A terminating handler declares `nothing` and dies on its own terms; it stays out of the
+  // A terminating handler declares `nullval` and dies on its own terms; it stays out of the
   // way as long as nothing throws. Raw lambdas of the right shape are policies, no wrapping.
-  const auto die = [](const ::std::exception*, ::cuda::std::source_location, auto&) noexcept -> nothing {
+  const auto die = [](const ::std::exception*, ::cuda::std::source_location, auto&) noexcept -> nullval {
     ::std::abort();
   };
   const int untouched = on_throw(die) << [] {
@@ -2099,8 +2099,8 @@ UNITTEST("on_throw")
   };
   EXPECT(untouched == 7);
 
-  // Any nullary callable whose declared result is `nothing` works as a terminating action.
-  const auto bail = []() noexcept -> nothing {
+  // Any nullary callable whose declared result is `nullval` works as a terminating action.
+  const auto bail = []() noexcept -> nullval {
     ::std::abort();
   };
   const int spared = on_throw(bail) << [] {
