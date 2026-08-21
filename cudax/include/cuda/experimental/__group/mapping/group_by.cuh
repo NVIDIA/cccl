@@ -25,6 +25,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__utility/cmp.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/mapping_result.cuh>
@@ -55,7 +56,7 @@ template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
 class group_by
 {
   static_assert(_UnitCount != 0, "_UnitCount must not be zero");
-  static_assert(::cuda::std::in_range<unsigned>(_UnitCount), "_UnitCount must be within uint32_t range");
+  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCount), "_UnitCount must be within uint32_t range");
 
 public:
   _CCCL_HIDE_FROM_ABI explicit group_by() = default;
@@ -74,9 +75,9 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
-    return static_cast<unsigned>(_UnitCount);
+    return static_cast<::cuda::std::uint32_t>(_UnitCount);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
@@ -146,10 +147,10 @@ public:
 template <bool _IsExhaustive>
 class group_by<::cuda::std::dynamic_extent, _IsExhaustive>
 {
-  unsigned __count_;
+  ::cuda::std::uint32_t __count_;
 
 public:
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __count) noexcept
+  _CCCL_DEVICE_API explicit constexpr group_by(::cuda::std::uint32_t __count) noexcept
       : __count_{__count}
   {
     _CCCL_ASSERT(__count > 0, "__count cannot be 0");
@@ -157,7 +158,7 @@ public:
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __count, const non_exhaustive_t&) noexcept
+  _CCCL_DEVICE_API explicit constexpr group_by(::cuda::std::uint32_t __count, const non_exhaustive_t&) noexcept
       : __count_{__count}
   {
     _CCCL_ASSERT(__count > 0, "__count cannot be 0");
@@ -173,7 +174,7 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
     return __count_;
   }
@@ -224,9 +225,9 @@ public:
   }
 };
 
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(unsigned) -> group_by<::cuda::std::dynamic_extent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(::cuda::std::uint32_t) -> group_by<::cuda::std::dynamic_extent>;
 
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(unsigned, const non_exhaustive_t&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(::cuda::std::uint32_t, const non_exhaustive_t&)
   -> group_by<::cuda::std::dynamic_extent, false>;
 } // namespace cuda::experimental
 

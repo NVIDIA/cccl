@@ -46,6 +46,8 @@ jobs:
       bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
       compile_time_enabled: ${{ steps.build-compile-time-matrix.outputs.compile_time_enabled }}
       compile_time_matrix: ${{ steps.build-compile-time-matrix.outputs.compile_time_matrix }}
+      sass_enabled: ${{ steps.build-sass-matrix.outputs.sass_enabled }}
+      sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
@@ -119,6 +121,59 @@ jobs:
           {
             echo "compile_time_enabled=${compile_time_enabled}"
             echo "compile_time_matrix=${compile_time_matrix_json}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Build SASS diff dispatch matrix
+        id: build-sass-matrix
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: |
+          set -u
+
+          if [[ "${{ contains(github.event.head_commit.message, '[skip-sass-diff]') }}" == "true" ]]; then
+            echo "Commit message contains [skip-sass-diff]; skipping SASS diff dispatch."
+            {
+              echo "sass_enabled=false"
+              echo 'sass_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # Only compare SASS when CUB, or something CUB is built from, changed.
+          #
+          # Redirect GITHUB_OUTPUT to our file so that the outputs do not land in this
+          # step's outputs, where they would collide with the ones `build-workflow` writes
+          # later.
+          echo "::group::Inspect changes for CUB"
+
+          dirty_report="${RUNNER_TEMP}/sass-inspect-changes.txt"
+
+          GITHUB_OUTPUT="${dirty_report}" ./ci/inspect_changes.py \
+            --refs "${BASE_SHA}" "${GITHUB_SHA}"
+
+          echo "::endgroup::"
+
+          echo "SASS job changes"
+          cat "${dirty_report}"
+
+          if ! grep -Eq '^(FULL|LITE)_BUILD=.*\bcub\b' "${dirty_report}"; then
+            echo "CUB is not affected by this change; skipping SASS diff dispatch."
+            {
+              echo "sass_enabled=false"
+              echo 'sass_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          sass_matrix_json="$(./ci/sass/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          sass_enabled="$(
+            jq -r 'if (.include // []) == [] then "false" else "true" end' \
+              <<< "${sass_matrix_json}"
+          )"
+
+          echo "SASS enabled: ${sass_enabled}"
+          {
+            echo "sass_enabled=${sass_enabled}"
+            echo "sass_matrix=${sass_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
@@ -444,6 +499,7 @@ jobs:
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
+      nvbench_compare_legacy_args: ${{ matrix.nvbench_compare_legacy_args }}
 
   dispatch-compile-time-bench:
     name: Compile-time Bench (${{ matrix.id }})
@@ -480,6 +536,32 @@ jobs:
       comment_header: ${{ matrix.comment_header }}
       artifact_retention_days: ${{ matrix.artifact_retention_days }}
       pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+
+  dispatch-sass-diff:
+    name: SASS Diff (${{ matrix.id }})
+    # A SASS difference does not fail this job. Only an infrastructure or script failure
+    # does, and that failure blocks the merge through the aggregate `ci` job.
+    if: >-
+      ${{
+        needs.build-workflow.outputs.sass_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.sass_matrix).include) != '[]'
+      }}
+    needs: build-workflow
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.sass_matrix) }}
+    uses: ./.github/workflows/sass-diff.yml
+    with:
+      id: ${{ matrix.id }}
+      launch_args: ${{ matrix.launch_args }}
+      preset: ${{ matrix.preset }}
+      archs: ${{ matrix.archs }}
+      target_filters_json: ${{ matrix.target_filters_json }}
+      base_ref: ${{ needs.build-workflow.outputs.base_sha }}
 
   bench-results:
     name: Post benchmark results
@@ -520,6 +602,94 @@ jobs:
           hide_and_recreate: true
           hide_classify: "OUTDATED"
 
+  sass-results:
+    name: Post SASS comparison results
+    if: >-
+      ${{
+        needs.build-workflow.outputs.sass_enabled == 'true' &&
+        needs.build-workflow.outputs.pr_number != ''
+      }}
+    needs: [build-workflow, dispatch-sass-diff]
+    permissions:
+      actions: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the SASS comment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sass-*-comment
+          path: sass-comment
+
+      - name: Determine the outcome
+        id: compose
+        run: |
+          # The sass-diff job is a matrix job (presumably to organize it into a drop-down
+          # in the UI). download-artifact will put each sub-job into a separate directory
+          # under sass-comment, keyed by the job ID:
+          #
+          # sass-comment/
+          #   1/
+          #     summary.md
+          #   2/
+          #     summary.md
+          #   ...
+          #
+          # But there is currently only ever 1 job for it that runs, so we could remove
+          # the matrix handling code for it. Then this just becomes a bunch of
+          # straight-line code without the for-loop or the find call below.
+          mapfile -t entries < <(find sass-comment -mindepth 1 -maxdepth 1 -type d | sort)
+
+          if [[ "${#entries[@]}" -eq 0 ]]; then
+            # The artifacts are not in the format we expect them to be.
+            echo "::error::The SASS comment artifacts are empty."
+            exit 1
+          fi
+
+          comment_path="${RUNNER_TEMP}/sass-results-comment.md"
+
+          outcome=NO_CHANGE
+          for entry in "${entries[@]}"; do
+            if [[ ! -s "${entry}/summary.md" ]]; then
+              echo "::error::${entry} has no summary."
+              exit 1
+            fi
+
+            if jq -e '[.targets[].changed] | any' "${entry}/report.json" > /dev/null; then
+              outcome=CHANGE
+            fi
+
+            cat "${entry}/summary.md" >> "${comment_path}"
+          done
+
+          cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "SASS outcome: ${outcome}."
+          {
+            echo "outcome=${outcome}"
+            echo "path=${comment_path}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Comment on PR
+        if: ${{ steps.compose.outputs.outcome == 'CHANGE' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: sass-results
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          path: ${{ steps.compose.outputs.path }}
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
+
+      - name: Hide a previous PR comment when the SASS is unchanged
+        if: ${{ steps.compose.outputs.outcome == 'NO_CHANGE' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: sass-results
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          hide: true
+          hide_classify: "OUTDATED"
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -535,6 +705,8 @@ jobs:
       - docs-build
       - test-cpu-import
       - dispatch-bench
+      - dispatch-sass-diff
+      - sass-results
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -565,6 +737,26 @@ jobs:
             expected_bench_result="success"
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
+
+          # Test emptiness in the expression. `toJSON` pretty-prints multi-line output,
+          # and the embedded newlines break the `[[ ]]` conditional.
+          expected_sass_result="skipped"
+          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
+            && [[ "${{ fromJSON(needs.build-workflow.outputs.sass_matrix).include[0] != null }}" == "true" ]]; then
+            expected_sass_result="success"
+          fi
+          check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
+
+          # sass-results skips when dispatch-sass-diff fails. dispatch-sass-diff reports
+          # that failure, so only check sass-results when the dispatch job succeeded.
+          if [[ "${{ needs.dispatch-sass-diff.result }}" == "${expected_sass_result}" ]]; then
+            expected_sass_results_result="skipped"
+            if [[ "${expected_sass_result}" == "success" ]] \
+              && [[ "${{ needs.build-workflow.outputs.pr_number }}" != "" ]]; then
+              expected_sass_results_result="success"
+            fi
+            check_result "sass-results" "${expected_sass_results_result}" "${{needs.sass-results.result}}"
+          fi
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
           if [[ "${bench_enabled}" == "true" ]]; then
