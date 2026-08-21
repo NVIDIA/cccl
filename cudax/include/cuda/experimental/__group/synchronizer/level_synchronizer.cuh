@@ -23,6 +23,7 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 
@@ -154,8 +155,8 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   {
     struct __grid_workspace
     {
-      unsigned __size_;
-      unsigned __barrier_;
+      ::cuda::std::uint32_t __size_;
+      ::cuda::std::uint32_t __barrier_;
     };
 
     __grid_workspace* __grid_workspace_ptr;
@@ -172,16 +173,16 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
     const auto __thread_idx = gpu_thread.index(block, __hier);
     if ((__thread_idx.x | __thread_idx.y | __thread_idx.z) == 0)
     {
-      const auto __expected = block.count_as<unsigned>(grid, __hier);
-      unsigned __nblocks    = 1;
+      const auto __expected           = block.count_as<::cuda::std::uint32_t>(grid, __hier);
+      ::cuda::std::uint32_t __nblocks = 1;
 
       const auto __block_idx = block.index(grid, __hier);
       if ((__block_idx.x | __block_idx.y | __block_idx.z) == 0)
       {
-        __nblocks = unsigned{::cuda::std::numeric_limits<int>::min()} - (__expected - 1);
+        __nblocks = ::cuda::std::uint32_t{::cuda::std::numeric_limits<int>::min()} - (__expected - 1);
       }
 
-      unsigned __old_barrier_value;
+      ::cuda::std::uint32_t __old_barrier_value;
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
       __old_barrier_value =
         __nv_atomic_fetch_add(__barrier_ptr, __nblocks, __NV_ATOMIC_RELEASE, __NV_THREAD_SCOPE_DEVICE);
@@ -191,7 +192,7 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
                    : "l"(__barrier_ptr), "r"(__nblocks)
                    : "memory");
 #  endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
-      unsigned __curr_barrier_value;
+      ::cuda::std::uint32_t __curr_barrier_value;
       do
       {
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
