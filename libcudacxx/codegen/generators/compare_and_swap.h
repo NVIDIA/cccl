@@ -22,8 +22,8 @@ inline void FormatCompareAndSwap(std::ostream& out)
 template <class _Fn, class _Sco>
 [[nodiscard]] static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_cas, memory_order __success, memory_order __failure, _Sco) {
-  const int __success_memorder = __atomic_order_to_int(__success);
-  const int __failure_memorder = __atomic_failure_order_to_int(__failure);
+  [[maybe_unused]] const int __success_memorder = __atomic_order_to_int(__success);
+  [[maybe_unused]] const int __failure_memorder = __atomic_failure_order_to_int(__failure);
   bool __res = false;
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (

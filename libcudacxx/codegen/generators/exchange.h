@@ -22,7 +22,7 @@ inline void FormatExchange(std::ostream& out)
 template <class _Fn, class _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_exch, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {

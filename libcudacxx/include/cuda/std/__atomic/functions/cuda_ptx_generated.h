@@ -105,7 +105,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(
 template <class _Fn, class _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_load_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_load, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -1303,7 +1303,7 @@ __cuda_atomic_load_dispatch(_Backend __backend, const volatile _Type* __ptr, mem
 template <class _Fn, class _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_store_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_store, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -1846,8 +1846,8 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_store_dispatch(
 template <class _Fn, class _Sco>
 [[nodiscard]] static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_cas, memory_order __success, memory_order __failure, _Sco) {
-  const int __success_memorder = __atomic_order_to_int(__success);
-  const int __failure_memorder = __atomic_failure_order_to_int(__failure);
+  [[maybe_unused]] const int __success_memorder = __atomic_order_to_int(__success);
+  [[maybe_unused]] const int __failure_memorder = __atomic_failure_order_to_int(__failure);
   bool __res = false;
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
@@ -2490,7 +2490,7 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
 template <class _Fn, class _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_exch, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -3131,7 +3131,7 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 template <class _Fn, class _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_order_dispatch(
   __cuda_atomic_ptx_backend, _Fn& __cuda_fetch, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
