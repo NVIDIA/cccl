@@ -807,7 +807,7 @@ jobs:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
       github_report: ${{ steps.render-github.outputs.content }}
       pr_number: ${{ steps.pull-request.outputs.pr_number }}

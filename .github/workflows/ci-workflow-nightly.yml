@@ -201,7 +201,7 @@ jobs:
       actions: read
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       slack_thread: ${{ steps.render-slack.outputs.content }}
     steps:
