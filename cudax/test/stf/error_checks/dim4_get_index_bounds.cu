@@ -16,25 +16,16 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 #include <csignal>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
+volatile ::std::sig_atomic_t should_abort = 0;
 
 void cleanupRoutine(int /*unused*/)
 {
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
+  ::std::_Exit(should_abort ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 int main()
@@ -55,9 +46,9 @@ int main()
 
   const dim4 dims(4, 5, 6, 7);
 
-  should_abort = true;
+  should_abort = 1;
   (void) dims.get_index(pos4(4, 0, 0, 0));
-  should_abort = false;
+  should_abort = 0;
 
   return EXIT_FAILURE;
 }
