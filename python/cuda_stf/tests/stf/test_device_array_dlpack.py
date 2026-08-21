@@ -39,7 +39,7 @@ def _filled(shape, dtype, dplace):
         if np.dtype(dtype).kind != "b"
         else (np.arange(np.prod(shape)).reshape(shape) % 2).astype(bool)
     )
-    arr = stf.DeviceArray(int(np.prod(shape)), dtype, dplace)
+    arr = stf.DeviceArray(shape, dtype, dplace)
     arr.copy_to_device(host)
     return arr, host
 
@@ -49,14 +49,14 @@ def _filled(shape, dtype, dplace):
 
 @requires_cuda
 def test_dlpack_device(dplace):
-    arr = stf.DeviceArray(32, np.float32, dplace)
+    arr = stf.DeviceArray((4, 8), np.float32, dplace)
     assert arr.__dlpack_device__() == (2, 0)  # (kDLCUDA, ordinal)
 
 
 @requires_cuda
 def test_capsule_is_consumable_dltensor(dplace):
     """An explicit capsule is a valid "dltensor" and can be consumed once."""
-    arr, host = _filled((15,), np.float32, dplace)
+    arr, host = _filled((3, 5), np.float32, dplace)
     cap = arr.__dlpack__()
     assert "dltensor" in repr(cap)
     t = torch.from_dlpack(cap)  # torch accepts a raw capsule
@@ -80,9 +80,9 @@ def test_max_version_and_kwargs_accepted(dplace):
     "np_dtype", [np.float32, np.float64, np.int32, np.int64, np.uint8, np.bool_]
 )
 def test_from_dlpack_roundtrip_dtypes(dplace, np_dtype):
-    arr, host = _filled((42,), np_dtype, dplace)
+    arr, host = _filled((6, 7), np_dtype, dplace)
     t = torch.from_dlpack(arr)
-    assert tuple(t.shape) == (42,)
+    assert tuple(t.shape) == (6, 7)
     assert t.device.type == "cuda"
     assert np.array_equal(t.cpu().numpy(), host)
 
@@ -91,7 +91,7 @@ def test_from_dlpack_roundtrip_dtypes(dplace, np_dtype):
 def test_writes_visible_both_ways(dplace):
     """DLPack import is zero-copy: writes through the tensor are visible via
     the DeviceArray (and its CAI view), and vice versa."""
-    arr, host = _filled((64,), np.float32, dplace)
+    arr, host = _filled((8, 8), np.float32, dplace)
     t = torch.from_dlpack(arr)
     t += 1.0
     torch.cuda.synchronize()
@@ -102,7 +102,7 @@ def test_writes_visible_both_ways(dplace):
 
 @requires_cuda
 def test_zero_size_export(dplace):
-    arr = stf.DeviceArray(0, np.float32, dplace)
+    arr = stf.DeviceArray((0,), np.float32, dplace)
     t = torch.from_dlpack(arr)
     assert t.numel() == 0 and t.dtype == torch.float32
 
@@ -114,7 +114,7 @@ def test_zero_size_export(dplace):
 def test_tensor_carries_the_allocation(dplace):
     """The imported tensor's storage owns the buffer: dropping every direct
     reference keeps the memory alive; dropping the tensor frees it."""
-    arr, host = _filled((256,), np.float32, dplace)
+    arr, host = _filled((16, 16), np.float32, dplace)
     ref = weakref.ref(arr)
     fin = arr._finalizer_ref
     t = torch.from_dlpack(arr)
@@ -131,7 +131,7 @@ def test_tensor_carries_the_allocation(dplace):
 def test_multiple_exports_share_one_owner(dplace):
     """Each export holds its own owner reference; the buffer dies only after
     the LAST consumer does."""
-    arr, host = _filled((16,), np.float32, dplace)
+    arr, host = _filled((4, 4), np.float32, dplace)
     ref = weakref.ref(arr)
     t1 = torch.from_dlpack(arr)
     t2 = torch.from_dlpack(arr)
@@ -149,7 +149,7 @@ def test_multiple_exports_share_one_owner(dplace):
 def test_unconsumed_capsule_does_not_leak(dplace):
     """A capsule nobody imports runs the deleter from the capsule destructor
     (the "dltensor"/"used_dltensor" rename contract)."""
-    arr = stf.DeviceArray(4, np.float32, dplace)
+    arr = stf.DeviceArray((4,), np.float32, dplace)
     ref = weakref.ref(arr)
     cap = arr.__dlpack__()
     del arr
@@ -166,11 +166,11 @@ def test_view_export_keeps_root_alive(dplace):
     allocation; view geometry is what the consumer sees."""
     arr, host = _filled((32,), np.float32, dplace)
     root_ref = weakref.ref(arr)
-    t = torch.from_dlpack(arr[8:24])
+    t = torch.from_dlpack(arr[8:24].reshape(4, 4))
     del arr
     gc.collect()
     assert root_ref() is not None
-    assert np.array_equal(t.cpu().numpy(), host[8:24])
+    assert np.array_equal(t.cpu().numpy(), host[8:24].reshape(4, 4))
     del t
     gc.collect()
     assert root_ref() is None
@@ -183,7 +183,7 @@ def test_view_export_keeps_root_alive(dplace):
 def test_cai_and_dlpack_describe_the_same_memory(dplace):
     """Both protocols on one array: same pointer, same geometry. CAI stays a
     borrowed description; DLPack carries ownership."""
-    arr, host = _filled((32,), np.float32, dplace)
+    arr, host = _filled((4, 8), np.float32, dplace)
     cai = arr.__cuda_array_interface__
     t = torch.from_dlpack(arr)
     assert cai["data"][0] == t.data_ptr()
@@ -204,8 +204,6 @@ def test_composite_cute_place_roundtrip():
     """A composite VMM allocation (cute partition over a place grid) exports
     through DLPack like any other array — the owning-tensor lifetime story
     for localized weights."""
-    if not hasattr(stf, "cute_partition"):
-        pytest.skip("this build predates cute partitions / composite places")
     stf.machine_init()
     grid = stf.exec_place_grid.create([stf.exec_place.device(0)] * 2)
     shape = (8, 64, 16384)  # page-aligned rows (2 MiB at 4 B)
@@ -247,7 +245,7 @@ def test_stream_ordering_after_producer_stream():
     stf.machine_init()
     dplace = stf.data_place.device(0)
     s_prod = torch.cuda.Stream()
-    arr = stf.DeviceArray(1 << 20, np.float32, dplace, stream=s_prod.cuda_stream)
+    arr = stf.DeviceArray((1 << 20,), np.float32, dplace, stream=s_prod.cuda_stream)
     with torch.cuda.stream(s_prod):
         tmp = torch.full((1 << 20,), 7.0, device="cuda")
     s_cons = torch.cuda.Stream()
@@ -264,7 +262,7 @@ def test_stream_ordering_after_producer_stream():
 
 @requires_cuda
 def test_invalid_stream_rejected(dplace):
-    arr = stf.DeviceArray(4, np.float32, dplace)
+    arr = stf.DeviceArray((4,), np.float32, dplace)
     with pytest.raises(ValueError):
         arr.__dlpack__(stream=-7)
     with pytest.raises(TypeError):
@@ -285,7 +283,7 @@ def test_structured_dtype_rejected(dplace):
 
 @requires_cuda
 def test_copy_and_foreign_device_rejected(dplace):
-    arr = stf.DeviceArray(4, np.float32, dplace)
+    arr = stf.DeviceArray((4,), np.float32, dplace)
     with pytest.raises(BufferError, match="copy"):
         arr.__dlpack__(copy=True)
     with pytest.raises(BufferError, match="device"):
