@@ -8,6 +8,10 @@
 #
 #===----------------------------------------------------------------------===##
 
+cudax_add_catch2_test(test_target cuco.utility.atomic ${cudax_target}
+  test_atomic.cu
+)
+
 cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
   test_capacity.cu
 )
