@@ -168,7 +168,14 @@ function(
     has_arch_prefix
     "${test_contents}"
   )
-  if (has_arch_prefix)
+  string(TOUPPER "${test_contents}" uppercase_test_contents)
+  string(
+    REGEX MATCH
+    "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+${arch_prefix}[ ]*,"
+    has_arch_combined_prefix
+    "${uppercase_test_contents}"
+  )
+  if (has_arch_prefix OR has_arch_combined_prefix)
     list(APPEND check_prefixes "${arch_prefix}")
   endif()
 
@@ -280,7 +287,7 @@ function(
     if (prefix IN_LIST combination_components)
       string(
         REGEX MATCH
-        "; ${prefix}(:|-[A-Z]+:)"
+        "; ${prefix}(:|-LABEL:|-NOT:|-NEXT:|-SAME:|-DAG:|-COUNT(-[0-9]+)?:|-EMPTY:)"
         has_standalone_directive
         "${test_contents}"
       )
