@@ -127,7 +127,7 @@ public:
   _CCCL_HOST_API __resizable_buffer& operator=(__resizable_buffer&& __other) noexcept
   {
     if (this != ::cuda::std::addressof(__other))
-    {
+    { // This cannot throw because in other we already checked that capacity is sufficient
       __base_t::__set_size_unsynchronized(__capacity_);
       __base_t::operator=(::cuda::std::move(__other));
       __capacity_ = ::cuda::std::exchange(__other.__capacity_, 0);

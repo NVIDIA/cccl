@@ -778,7 +778,7 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size) noexcept
+  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size)
   {
     __buf_.__set_size(__size);
   }
