@@ -1726,8 +1726,8 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * with an `int` callable) the ordinary conversion static_assert fires; put
  * the sink leftmost or nest, the same rule `expecting` lives by.
  *
- * Custom runtime policies derive from the public @ref sink_base: implement
- * `hook` (and `clone`); `on_success` defaults to identity. Everything here
+ * Custom runtime policies derive from the public @ref sink_base by
+ * implementing `hook` (and `clone`); `on_success` defaults to identity. Everything here
  * is host-only and lives on the exception path; the success path pays one
  * `std::any` box through `on_success`.
  */
@@ -1985,7 +1985,7 @@ void abort(_Ts&&...) = delete;
  * Vocabulary visibility: the named policies live in the non-inline namespace
  * `exception_policies`. Blessed patterns are a block-scope
  * `using namespace cuda::experimental::stf::exception_policies;` at the function that
- * configures sinks, or a namespace alias (`namespace pol = ...::exception_policies;`):
+ * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::exception_policies;`):
  *
  * @code
  * using namespace cuda::experimental::stf::exception_policies;
