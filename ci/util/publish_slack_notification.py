@@ -16,6 +16,7 @@ class PublishError(RuntimeError):
 
 
 SLACK_MESSAGE_LIMIT = 40000
+SLACK_THREAD_REPLY_LIMIT = 100
 
 
 class NoRedirectHandler(request.HTTPRedirectHandler):
@@ -50,6 +51,10 @@ def load_thread(stream):
         or any(not isinstance(reply, str) or not reply.strip() for reply in replies)
     ):
         raise PublishError("thread replies must be a non-empty array of strings")
+    if len(replies) > SLACK_THREAD_REPLY_LIMIT:
+        raise PublishError(
+            f"thread input exceeds the {SLACK_THREAD_REPLY_LIMIT}-reply limit"
+        )
     return overview.strip(), [reply.strip() for reply in replies]
 
 
