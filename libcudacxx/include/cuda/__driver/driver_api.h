@@ -1089,6 +1089,18 @@ __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-e
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12, 5);
   return static_cast<::cudaError_t>(__driver_fn(__green_ctx));
 }
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __ctxGetDevResource(::CUcontext __ctx, ::CUdevResourceType __type)
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuCtxGetDevResource, cuCtxGetDevResource, 12, 5);
+  ::CUdevResource __result{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to query a device resource of a context", __ctx, &__result, __type);
+  return __result;
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __ctxFromGreenCtx(::CUgreenCtx __green_ctx)
 {
   ::CUcontext __result;
