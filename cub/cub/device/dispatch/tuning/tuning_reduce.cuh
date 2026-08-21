@@ -404,6 +404,31 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_two_phase_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && operation_t == op_kind_t::plus)
+    {
+      // tunings from cub/benchmarks/bench/reduce/sum.cu measured on R200. The benchmark applies scale_mem_bound to
+      // its variants, so the values below are the exact configurations that were measured and must be returned
+      // without further scaling. Untuned shapes fall through to the sm100 tunings below.
+      if (accum_t == type_t::float64 && offset_size == 4)
+      {
+        // ipt_23.tpb_224.ipv_2 ()  1.193060  1.128927  1.211678  1.396497
+        const ReducePassPolicy rp{224, 11, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
+        return {rp, rp};
+      }
+      if (accum_t == type_t::float64 && offset_size == 8)
+      {
+        // ipt_24.tpb_224.ipv_2 ()  1.055651  1.024683  1.060603  1.102190
+        const ReducePassPolicy rp{224, 12, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
+        return {rp, rp};
+      }
+      if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 4)
+      {
+        // ipt_17.tpb_512.ipv_2 ()  1.250345  1.033777  1.244126  1.679012
+        const ReducePassPolicy rp{512, 8, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
+        return {rp, rp};
+      }
+    }
+
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
     if (cc >= ::cuda::compute_capability{10, 0} && sm100_tuning)
