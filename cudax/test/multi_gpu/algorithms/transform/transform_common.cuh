@@ -52,7 +52,7 @@ T make_value(int i)
 }
 
 template <>
-custom_value make_value<>(int i)
+inline custom_value make_value<>(int i)
 {
   custom_value ret{};
 
