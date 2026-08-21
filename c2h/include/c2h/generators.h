@@ -10,7 +10,7 @@
 #include <cuda/std/utility>
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <cuda/algorithm> // cuda::copy_bytes
+#  include <cuda/__algorithm/copy.h> // cuda::copy_bytes
 #  include <cuda/buffer>
 #  include <cuda/devices>
 #  include <cuda/memory_resource>
