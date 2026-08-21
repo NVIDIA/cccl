@@ -279,7 +279,7 @@ public:
   //! returns zero.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  void clear_async(::cuda::stream_ref __stream) noexcept
+  void clear_async(::cuda::stream_ref __stream)
   {
     __impl->clear_async(__stream);
   }
@@ -315,7 +315,7 @@ public:
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
   template <class _InputIt>
-  void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last) noexcept
+  void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
     __impl->insert_async(__stream, __first, __last, ref());
   }
@@ -400,8 +400,7 @@ public:
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of booleans
   template <class _InputIt, class _OutputIt>
-  void contains_async(
-    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
+  void contains_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
     __impl->contains_async(__stream, __first, __last, __output_begin, ref());
   }
@@ -438,8 +437,7 @@ public:
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of payloads
   template <class _InputIt, class _OutputIt>
-  void
-  find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
+  void find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
     __impl->find_async(__stream, __first, __last, __output_begin, ref());
   }
@@ -494,7 +492,7 @@ public:
     _InputIt __last,
     _StencilIt __stencil,
     _Predicate __pred,
-    _OutputIt __output_begin) const noexcept
+    _OutputIt __output_begin) const
   {
     __impl->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
   }

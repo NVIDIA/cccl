@@ -27,6 +27,7 @@
 #  include <cuda/__device/logical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/__utility/call_once.h>
 #  include <cuda/std/__concepts/constructible.h>
 #  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -35,10 +36,6 @@
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
-
-#  if _CCCL_HOSTED()
-#    include <mutex>
-#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -103,30 +100,22 @@ class __physical_device
 
   ::CUdevice __device_{};
 
-#  if _CCCL_HOSTED()
-  ::std::once_flag __primary_ctx_once_flag_{};
-#  endif // _CCCL_HOSTED()
+  __once_flag __primary_ctx_once_flag_{};
   ::CUcontext __primary_ctx_{};
 
   static constexpr ::cuda::std::size_t __max_name_length{256};
-#  if _CCCL_HOSTED()
-  ::std::once_flag __name_once_flag_{};
-#  endif // _CCCL_HOSTED()
+  __once_flag __name_once_flag_{};
   char __name_[__max_name_length]{};
   ::cuda::std::size_t __name_length_{};
 
-#  if _CCCL_HOSTED()
-  ::std::once_flag __peers_once_flag_{};
-#  endif // _CCCL_HOSTED()
+  __once_flag __peers_once_flag_{};
   ::cuda::std::unique_ptr<device_ref[]> __peers_{};
   ::cuda::std::size_t __num_peers_{};
 
-#  if _CCCL_HOSTED()
-  ::std::once_flag __locality_domains_once_flag_{};
-#  endif // _CCCL_HOSTED()
+  __once_flag __locality_domains_once_flag_{};
   __raw_storage_array<__logical_device> __locality_domains_{};
   __raw_storage_array<__logical_device_ref> __locality_domain_refs_{};
-  ::cuda::std::size_t __num_domains_{static_cast<::cuda::std::size_t>(-1)};
+  ::cuda::std::size_t __num_domains_{};
 
   _CCCL_HOST_API void __set_name()
   {
@@ -246,7 +235,7 @@ class __physical_device
     // interesting in a destructor
     __locality_domain_refs_.reset();
     __locality_domains_.reset();
-    __num_domains_ = static_cast<::cuda::std::size_t>(-1);
+    __num_domains_ = 0;
 
     __set_locality_domains_impl();
   }
@@ -267,62 +256,37 @@ public:
   //! @return A reference to the primary context for this device.
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context()
   {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__primary_ctx_once_flag_, [this]() {
+    ::cuda::__call_once(__primary_ctx_once_flag_, [this]() {
       __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    if (!__primary_ctx_)
-    {
-      __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
-    }
-#  endif // _CCCL_FREESTANDING()
+
     return __primary_ctx_;
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
   {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__name_once_flag_, [this]() {
+    ::cuda::__call_once(__name_once_flag_, [this]() {
       this->__set_name();
     });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    if (__name_length_ != 0)
-    {
-      this->__set_name();
-    }
-#  endif // _CCCL_FREESTANDING()
+
     return ::cuda::std::string_view{__name_, __name_length_};
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> __peers()
   {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__peers_once_flag_, [this]() {
+    ::cuda::__call_once(__peers_once_flag_, [this]() {
       this->__set_peers();
     });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    if (!__peers_)
-    {
-      this->__set_peers();
-    }
-#  endif //  _CCCL_FREESTANDING()
+
     return ::cuda::std::span<const device_ref>{__peers_.get(), __num_peers_};
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains()
   {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__locality_domains_once_flag_, [this]() {
+    ::cuda::__call_once(__locality_domains_once_flag_, [this]() {
       this->__set_locality_domains();
     });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    // `__num_domains_` holds `-1` until the domains are computed, so this runs exactly once.
-    if (__num_domains_ == static_cast<::cuda::std::size_t>(-1))
-    {
-      this->__set_locality_domains();
-    }
-#  endif //  _CCCL_FREESTANDING()
+
     return ::cuda::std::span<const __logical_device_ref>{__locality_domain_refs_.get(), __num_domains_};
   }
 };
