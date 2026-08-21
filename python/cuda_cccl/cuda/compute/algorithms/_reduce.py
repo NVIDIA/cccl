@@ -162,6 +162,11 @@ def make_reduce_into(
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    the accumulated result is converted to the dtype of ``d_out`` on the final
+    store.
+
     Example:
         Below, ``make_reduce_into`` is used to create a reduction object that can be reused.
 
@@ -239,6 +244,11 @@ def reduce_into(
     Performs device-wide reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    the accumulated result is converted to the dtype of ``d_out`` on the final
+    store.
 
     Example:
         Below, ``reduce_into`` is used to compute the sum of a sequence of integers.
