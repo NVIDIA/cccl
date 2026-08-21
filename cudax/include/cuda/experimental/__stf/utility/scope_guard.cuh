@@ -266,16 +266,12 @@ struct noop_t
 inline constexpr noop_t noop{};
 
 /**
- * @brief Capturing policy: `on_throw(defer) << callable` evaluates to a `std::exception_ptr`
- * that is empty when the callable returns normally and holds the thrown exception otherwise,
- * ready for storage and a later `std::rethrow_exception`. This is the policy for boundaries
- * that must not unwind but cannot decide either -- the exception's fate is somebody else's,
- * later.
+ * @brief Capturing policy: on a throw, answers with the active `std::exception_ptr`, ready for
+ * storage and a later `std::rethrow_exception`. This is the policy for boundaries that must
+ * not unwind but cannot decide either -- the exception's fate is somebody else's, later.
  *
- * The callable must return `void`: the expression's value is the `exception_ptr`, leaving the
- * callable's result no channel. That requirement is expressed by providing only `on_success()`
- * and no `on_success(R&&)`: a non-void callable then finds no success hook that accepts its
- * result, which is the error surfaced.
+ * The callable owns the expression type, so it must return `std::exception_ptr` on success:
+ * `return std::exception_ptr();`. A throw-only callable spells that return type explicitly.
  */
 struct defer_t
 {
@@ -288,12 +284,6 @@ struct defer_t
   ::std::exception_ptr operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
   {
     return ::std::current_exception();
-  }
-
-  //! @brief On success there is no exception, so the captured pointer is empty.
-  ::std::exception_ptr on_success() const noexcept
-  {
-    return ::std::exception_ptr{};
   }
 };
 inline constexpr defer_t defer{};
@@ -400,103 +390,70 @@ struct retry_t
 };
 inline constexpr retry_t retry{};
 
-/**
- * @brief Typed expected-owner: `on_throw(expecting<E>) << f` yields
- * `cuda::std::expected<R, E>`. `E` may be ANY catchable type -- a std::exception derivative,
- * a user struct that never heard of std::exception, even `int` -- the hook re-observes the
- * active exception at type `E` rather than relying on the std::exception funnel. A polymorphic
- * `E` is matched by exact dynamic type (a derivative declines rather than slice); a
- * non-polymorphic `E` matches by ordinary catch-clause rules, exactly as a handwritten
- * `catch (const E&)` would. Anything that does not match declines by rethrowing. Pair with
- * `| subst` for a total policy. Owners cannot be `|` arms (an `unexpected` does not convert to
- * the callable's raw result); nest `on_throw` for that spelling.
- *
- * `expecting<std::exception_ptr>` is the total catch-everything form (also spelled
- * `as_expected`); the one corner it costs is that a literally-thrown `exception_ptr` object
- * cannot be type-matched.
- */
-template <class _E>
-struct expecting_t
+namespace detail
 {
-  //! @cond
+template <class>
+inline constexpr bool __is_expected = false;
+
+template <class _T, class _E>
+inline constexpr bool __is_expected<::cuda::std::expected<_T, _E>> = true;
+
+template <class>
+struct __expected_error;
+
+template <class _T, class _E>
+struct __expected_error<::cuda::std::expected<_T, _E>>
+{
+  using type = _E;
+};
+} // namespace detail
+
+/**
+ * @brief Converts an exception into the error channel of the callable's `cuda::std::expected`
+ * result.
+ *
+ * The callable must return a `cuda::std::expected<T, E>` specialization. `E` is deduced from
+ * that return type and constructed first from `std::exception_ptr`, when possible, otherwise
+ * from the funneled `const std::exception&`. A nonstandard exception declines when only the
+ * latter construction is available.
+ */
+struct as_expected_t
+{
   using __exception_sink_tag = void;
-  //! @endcond
 
-  template <class _R>
-  ::cuda::std::expected<::cuda::std::decay_t<_R>, _E> on_success(_R&& __r) const
+  template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
+  auto operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) const -> _Raw
   {
-    return ::cuda::std::expected<::cuda::std::decay_t<_R>, _E>{::cuda::std::in_place, ::cuda::std::forward<_R>(__r)};
-  }
+    using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
+    static_assert(detail::__is_expected<_Expected>,
+                  "as_expected requires the callable to return a cuda::std::expected instantiation");
 
-  template <class _Void = void>
-  ::cuda::std::expected<_Void, _E> on_success() const
-  {
-    return ::cuda::std::expected<_Void, _E>{};
-  }
-
-  template <class _Fn>
-  ::cuda::std::unexpected<_E> operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
-  {
-    _CCCL_TRY
+    if constexpr (detail::__is_expected<_Expected>)
     {
-      throw; // re-observe the active exception at type _E
-    }
-    _CCCL_CATCH (const _E& __caught)
-    {
-      if constexpr (::cuda::std::is_polymorphic_v<_E>)
+      using _E = typename detail::__expected_error<_Expected>::type;
+      if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
       {
-        if (typeid(__caught) != typeid(_E))
-        {
-          throw; // a derivative: decline rather than slice
-        }
+        return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
       }
-      return ::cuda::std::unexpected<_E>{__caught}; // by value, no allocation
+      else if constexpr (::cuda::std::is_constructible_v<_E, const ::std::exception&>)
+      {
+        if (__exception)
+        {
+          return _Raw{::cuda::std::unexpect, _E(*__exception)};
+        }
+        throw; // nonstandard exception, no lossless construction rung: decline
+      }
+      else
+      {
+        static_assert(::cuda::std::is_constructible_v<_E, ::std::exception_ptr>
+                        || ::cuda::std::is_constructible_v<_E, const ::std::exception&>,
+                      "as_expected requires the error type constructible from exception_ptr or const std::exception&");
+      }
     }
-    _CCCL_CATCH_FALLTHROUGH // no catch-all: an unmatched rethrow propagates, which IS the decline
     _CCCL_UNREACHABLE();
   }
 };
-
-/**
- * @brief Total form: captures any exception as `std::exception_ptr` (the old `as_expected`).
- * Hook is noexcept; the dead-| theorem correctly bans it as a non-last `|` arm.
- */
-template <>
-struct expecting_t<::std::exception_ptr>
-{
-  //! @cond
-  using __exception_sink_tag = void;
-  //! @endcond
-
-  template <class _R>
-  ::cuda::std::expected<::cuda::std::decay_t<_R>, ::std::exception_ptr> on_success(_R&& __r) const
-  {
-    return ::cuda::std::expected<::cuda::std::decay_t<_R>, ::std::exception_ptr>{
-      ::cuda::std::in_place, ::cuda::std::forward<_R>(__r)};
-  }
-
-  // Templates in name only: laziness keeps expected<void, exception_ptr> (and, through it,
-  // bad_expected_access) from being instantiated in every including TU -- gcc 14/15 at -O3
-  // report a spurious maybe-uninitialized inside the latter's inlined destructor.
-  template <class _Void = void>
-  ::cuda::std::expected<_Void, ::std::exception_ptr> on_success() const
-  {
-    return ::cuda::std::expected<_Void, ::std::exception_ptr>{};
-  }
-
-  template <class _Fn, class _Eptr = ::std::exception_ptr>
-  ::cuda::std::unexpected<_Eptr>
-  operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
-  {
-    return ::cuda::std::unexpected<_Eptr>{::std::current_exception()};
-  }
-};
-
-template <class _E>
-inline constexpr expecting_t<_E> expecting{};
-
-//! @brief Baseline instance of `expecting<std::exception_ptr>`; see @ref expecting_t.
-inline constexpr expecting_t<::std::exception_ptr> as_expected{};
+inline constexpr as_expected_t as_expected{};
 
 /**
  * @brief Predicate guard for an exception-path sequence.
@@ -1117,21 +1074,17 @@ template <class _Expr, class _P, class _Fn>
 _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
 
-// The left arm of `|` provably starves the right when: both are catch_only wrappers (or the
-// right is a typed expecting), the left's guard list claims every type the right lists, and
-// the left's inner policy never declines a claimed exception. Sound and incomplete, like
-// every dead-code theorem here: nested composites and raw guards escape the pattern; an
-// inner policy that can decline (nothrow test fails) keeps the right arm live.
+// The left arm of `|` provably starves the right when both are catch_only wrappers, the left's
+// guard list claims every type the right lists, and the left's inner policy never declines a
+// claimed exception. Sound and incomplete, like every dead-code theorem here: nested
+// composites and raw guards escape the pattern; an inner policy that can decline (nothrow
+// test fails) keeps the right arm live.
 template <class _L, class _R>
 inline constexpr bool __right_arm_starved = false;
 
 template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_only_t<_P2, _Bs...>> =
   __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
-
-template <class _P1, class... _As, class _E>
-inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, expecting_t<_E>> =
-  __exception_path_nothrow_v<_P1> && __claimed_by_any<_E, _As...>;
 
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
@@ -1895,8 +1848,8 @@ void abort(_Ts&&...) = delete;
  * include @ref exception_policies::notify_t "notify", @ref exception_policies::subst_t "subst", @ref
  * exception_policies::defer_t "defer",
  * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
- * exception_policies::expecting_t "expecting" /
- * @ref exception_policies::as_expected, @ref exception_policies::noop_t "noop", @ref exception_policies::catch_only,
+ * exception_policies::as_expected_t "as_expected", @ref exception_policies::noop_t "noop", @ref
+ * exception_policies::catch_only,
  * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
@@ -2001,12 +1954,10 @@ UNITTEST("nullval")
 // Negative-compile expectations (do not compile; kept as comments near the code they guard):
 //  - abort();                                      // deleted tripwire: qualify exception_policies::abort
 //  - on_throw(abort & notify) << [] {};            // "policies after a never-returning policy are unreachable"
-//  - on_throw(defer) << [] { return 1; };          // result has no channel (on_success() only)
 //  - on_throw(notify) << []() noexcept {};         // existing rule, unchanged message
 //  - on_throw(notify & subst(42)) << []() -> int& {...}; // reference result vs owned substitution (existing rule)
-//  - on_throw(retry | as_expected) << []() -> int { ... };
-//      // conversion failure: an owner's unexpected answer does not convert to the
-//      // callable's result; owners belong at the top (or left of &), not in | arms
+//  - on_throw(as_expected) << []() -> int { return 1; };
+//      // "as_expected requires the callable to return a cuda::std::expected instantiation"
 //  - on_throw(subst(8) | subst(9)) << ...;         // "the left policy never declines; alternatives after it are
 //  unreachable"
 
@@ -2142,11 +2093,13 @@ UNITTEST("on_throw")
     EXPECT(stream_log.str() == streamed_expected);
   }
 
-  // `defer` captures instead of reacting: empty on success, the exception otherwise, ready
-  // for a later rethrow — non-std exceptions included.
-  const ::std::exception_ptr clean = on_throw(defer) << [] {};
+  // `defer` captures instead of reacting: the callable supplies an empty pointer on success;
+  // a throw yields the active exception, ready for a later rethrow — non-std included.
+  const ::std::exception_ptr clean = on_throw(defer) << [] {
+    return ::std::exception_ptr{};
+  };
   EXPECT(!clean);
-  const ::std::exception_ptr held = on_throw(defer) << [] {
+  const ::std::exception_ptr held = on_throw(defer) << []() -> ::std::exception_ptr {
     throw ::std::runtime_error("deferred");
   };
   EXPECT(!!held);
@@ -2160,7 +2113,7 @@ UNITTEST("on_throw")
     rethrown = ::std::string_view{e.what()} == "deferred";
   }
   EXPECT(rethrown);
-  const ::std::exception_ptr odd = on_throw(defer) << [] {
+  const ::std::exception_ptr odd = on_throw(defer) << []() -> ::std::exception_ptr {
     throw 42;
   };
   EXPECT(!!odd);
@@ -2428,8 +2381,6 @@ UNITTEST("policy algebra")
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(catch_only<::std::exception>(subst(1)) | catch_only<::std::runtime_error>(subst(2))) << ...;
   //      -> "the left catch_only already claims every exception type the right arm lists; ..."
-  //  - on_throw(catch_only<::std::exception>(subst(1)) | expecting<::std::runtime_error>) << ...;
-  //      -> same (a typed expecting arm is starved the same way)
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
@@ -2471,25 +2422,26 @@ UNITTEST("policy inventory")
 
   // defer composes now: report, then capture.
   ::std::ostringstream noted;
-  const ::std::exception_ptr np = on_throw(notify(noted) & defer) << [] {
+  const ::std::exception_ptr np = on_throw(notify(noted) & defer) << []() -> ::std::exception_ptr {
     throw ::std::runtime_error("noted+deferred");
   };
   EXPECT(!!np);
   EXPECT(noted.str().find("noted+deferred") != ::std::string::npos);
 
-  // as_expected: success wraps the value; failure wraps the exception; void works.
-  const auto good = on_throw(as_expected) << []() -> int {
-    return 5;
+  // as_expected adapts to the callable's declared expected type on both paths.
+  using _Result   = ::cuda::std::expected<int, ::std::exception_ptr>;
+  const auto good = on_throw(as_expected) << []() -> _Result {
+    return 5; // expected's converting constructor keeps the happy path natural
   };
-  static_assert(::cuda::std::is_same_v<decltype(good), const ::cuda::std::expected<int, ::std::exception_ptr>>,
-                "as_expected owns the expression type");
+  static_assert(::cuda::std::is_same_v<decltype(good), const _Result>,
+                "the callable owns the as_expected expression type");
   EXPECT(good.has_value());
   // Dereference rather than .value(): value() would instantiate bad_expected_access, whose
   // inlined exception_ptr destructor trips a spurious gcc 14/15 -O3 maybe-uninitialized in
   // every TU that compiles these tests.
   EXPECT(*good == 5);
 
-  const auto bad = on_throw(as_expected) << []() -> int {
+  const auto bad = on_throw(as_expected) << []() -> _Result {
     throw ::std::runtime_error("wrapped");
   };
   EXPECT(!bad.has_value());
@@ -2503,13 +2455,6 @@ UNITTEST("policy inventory")
     wrapped = ::std::string_view{e.what()} == "wrapped";
   }
   EXPECT(wrapped);
-
-  const auto vgood = on_throw(as_expected) << [] {};
-  EXPECT(vgood.has_value());
-
-  // Rightmost success hook wins: defer to the right of as_expected owns the expression.
-  const ::std::exception_ptr rm = on_throw(as_expected & defer) << [] {};
-  EXPECT(!rm);
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
@@ -2630,10 +2575,11 @@ UNITTEST("re-running policies")
     EXPECT(calls == 3); // re-run twice, exhausted, then the fallback
   }
 
-  // RULING: the chain's on_success fires on re-attempt success.
+  // Re-attempt success preserves the callable's declared boundary type.
   {
-    int calls    = 0;
-    const auto r = on_throw(as_expected & retry) << [&] {
+    using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
+    int calls     = 0;
+    const auto r  = on_throw(as_expected & retry) << [&]() -> _Result {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -2646,13 +2592,14 @@ UNITTEST("re-running policies")
   }
   {
     int calls     = 0;
-    const auto ep = on_throw(defer & retry) << [&] {
+    const auto ep = on_throw(defer & retry) << [&]() -> ::std::exception_ptr {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
       }
+      return {};
     };
-    EXPECT(!ep); // empty: the re-attempt succeeded, so on_success() supplied the value
+    EXPECT(!ep); // empty: the re-attempt succeeded and the callable supplied the value
     EXPECT(calls == 2);
   }
 
@@ -2711,29 +2658,22 @@ UNITTEST("re-running policies")
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(subst(1) | retry) << ...;
   //      -> "the left policy never declines; ..." (existing theorem, unchanged)
-  //  - on_throw(retry | as_expected) << []() -> int { ... };
-  //      -> conversion failure: an owner's unexpected answer does not convert to the
-  //         callable's result; owners belong at the top (or left of &), not in | arms
+  //  - on_throw(as_expected) << []() -> int { ... };
+  //      -> "as_expected requires the callable to return a cuda::std::expected instantiation"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
 // Helper exception types for the tests below, at namespace scope on purpose: nvcc <= 12.9 in
 // C++20 mode infers __host__ __device__ for a local class's special members inside an extended
 // lambda, and the inherited std::runtime_error constructor is host-only (error #20011).
-struct __ut_derived_error : ::std::runtime_error
+struct __ut_error_from_exception
 {
-  using ::std::runtime_error::runtime_error;
+  int marker;
+
+  explicit __ut_error_from_exception(const ::std::exception& __exception)
+      : marker(__exception.what()[0])
+  {}
 };
-struct __ut_my_error
-{
-  int code;
-};
-struct __ut_poly_base
-{
-  virtual ~__ut_poly_base() = default;
-};
-struct __ut_poly_derived : __ut_poly_base
-{};
 struct __ut_low_error : ::std::runtime_error
 {
   using ::std::runtime_error::runtime_error;
@@ -2743,61 +2683,62 @@ struct __ut_high_error : ::std::runtime_error
   using ::std::runtime_error::runtime_error;
 };
 
-UNITTEST("expecting")
+UNITTEST("as_expected and defer")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
 
 #  if _CCCL_HAS_EXCEPTIONS()
-  // Exact match: the exception object lands by value.
+  using _PtrResult = ::cuda::std::expected<int, ::std::exception_ptr>;
+  using _RefResult = ::cuda::std::expected<int, __ut_error_from_exception>;
+  static_assert(detail::__is_expected<_PtrResult>);
+  static_assert(detail::__is_expected<_RefResult>);
+  static_assert(!detail::__is_expected<int>);
+
+  // The callable declares the boundary type; expected's converting constructor keeps a bare
+  // success return natural.
   {
-    const auto r = on_throw(expecting<::std::runtime_error>) << []() -> int {
-      throw ::std::runtime_error("boom");
-    };
-    static_assert(::cuda::std::is_same_v<decltype(r), const ::cuda::std::expected<int, ::std::runtime_error>>,
-                  "the error slot is the exception type itself, by value");
-    EXPECT(!r.has_value());
-    EXPECT(::std::string{r.error().what()} == "boom");
-  }
-  {
-    const auto r = on_throw(expecting<::std::runtime_error>) << [] {
+    const auto r = on_throw(as_expected) << []() -> _PtrResult {
       return 42;
     };
+    static_assert(::cuda::std::is_same_v<decltype(r), const _PtrResult>);
     EXPECT(r.has_value());
     EXPECT(*r == 42);
   }
 
-  // A DERIVATIVE declines (no slicing): the full dynamic type survives.
+  // First ladder rung: the error type accepts the active exception_ptr.
   {
-    bool escaped = false;
-    try
-    {
-      on_throw(expecting<::std::runtime_error>) << [&]() -> int {
-        throw __ut_derived_error{"sliced?"};
-      };
-    }
-    catch (const __ut_derived_error&)
-    {
-      escaped = true;
-    }
-    EXPECT(escaped);
-  }
-
-  // Unrelated exception: declines to the next | arm; the arm's value converts in engaged.
-  {
-    const auto r = on_throw(expecting<::std::logic_error> | subst(-1)) << []() -> int {
-      throw ::std::runtime_error("not a logic_error");
+    const auto r = on_throw(as_expected) << []() -> _PtrResult {
+      throw ::std::runtime_error("captured");
     };
-    EXPECT(r.has_value());
-    EXPECT(*r == -1);
+    EXPECT(!r.has_value());
+    bool rethrown = false;
+    try
+    {
+      ::std::rethrow_exception(r.error());
+    }
+    catch (const ::std::runtime_error& __exception)
+    {
+      rethrown = ::std::string_view{__exception.what()} == "captured";
+    }
+    EXPECT(rethrown);
   }
 
-  // A non-std exception (null hook pointer) declines.
+  // Second ladder rung: construct the error from the funneled std::exception.
+  {
+    const auto r = on_throw(as_expected) << []() -> _RefResult {
+      throw ::std::runtime_error("reference");
+    };
+    EXPECT(!r.has_value());
+    EXPECT(r.error().marker == 'r');
+  }
+
+  // A nonstandard exception cannot use the std::exception rung, so it declines unchanged.
   {
     bool escaped = false;
     try
     {
-      on_throw(expecting<::std::runtime_error>) << [&]() -> int {
+      on_throw(as_expected) << []() -> _RefResult {
         throw 42;
       };
     }
@@ -2808,61 +2749,31 @@ UNITTEST("expecting")
     EXPECT(escaped);
   }
 
-  // The exception_ptr specialization is the old as_expected; the alias holds.
-  static_assert(::cuda::std::is_same_v<decltype(as_expected), const expecting_t<::std::exception_ptr>>,
-                "as_expected is the baseline instance of expecting");
+  // defer uses the same callable-owned type: empty on success, active pointer on failure.
   {
-    const auto r = on_throw(expecting<::std::exception_ptr>) << []() -> int {
-      throw 42; // even a non-std exception is captured, not declined
+    const ::std::exception_ptr clean = on_throw(defer) << [] {
+      return ::std::exception_ptr{};
     };
-    EXPECT(!r.has_value());
-    EXPECT(!!r.error());
-  }
-
-  // Void callable through the typed form.
-  {
-    int calls    = 0;
-    const auto r = on_throw(expecting<::std::runtime_error>) << [&] {
-      ++calls;
+    EXPECT(!clean);
+    const ::std::exception_ptr held = on_throw(defer) << []() -> ::std::exception_ptr {
+      throw ::std::logic_error("deferred");
     };
-    EXPECT(r.has_value());
-    EXPECT(calls == 1);
-  }
-
-  // Any catchable type works as the error slot -- the former negative-compile case is a feature.
-  {
-    const auto r = on_throw(expecting<int>) << []() -> double {
-      throw 42;
-    };
-    EXPECT(!r.has_value());
-    EXPECT(r.error() == 42);
-  }
-  {
-    const auto r = on_throw(expecting<__ut_my_error>) << []() -> int {
-      throw __ut_my_error{7};
-    };
-    EXPECT(!r.has_value());
-    EXPECT(r.error().code == 7);
-  }
-  // A nonstandard polymorphic hierarchy still gets exact matching (derivative declines).
-  {
-    bool escaped = false;
+    EXPECT(!!held);
+    bool rethrown = false;
     try
     {
-      on_throw(expecting<__ut_poly_base>) << []() -> int {
-        throw __ut_poly_derived{};
-      };
+      ::std::rethrow_exception(held);
     }
-    catch (const __ut_poly_derived&)
+    catch (const ::std::logic_error& __exception)
     {
-      escaped = true;
+      rethrown = ::std::string_view{__exception.what()} == "deferred";
     }
-    EXPECT(escaped);
+    EXPECT(rethrown);
   }
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-  //  - on_throw(expecting<::std::exception_ptr> | subst(0)) << ...;
-  //      -> "the left policy never declines; ..." (the total form can't head a ladder)
+  //  - on_throw(as_expected) << []() -> int { return 1; };
+  //      -> "as_expected requires the callable to return a cuda::std::expected instantiation"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
@@ -3205,10 +3116,11 @@ UNITTEST("repetition")
     EXPECT(notes == 1);
   }
 
-  // Success mid-repetition returns the callable's result (and the success channel).
+  // Success mid-repetition returns the callable's declared boundary type.
   {
-    int calls    = 0;
-    const auto r = on_throw((as_expected & retry) * 3) << [&] {
+    using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
+    int calls     = 0;
+    const auto r  = on_throw((as_expected & retry) * 3) << [&]() -> _Result {
       if (++calls < 3)
       {
         throw ::std::runtime_error("transient");
