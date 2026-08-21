@@ -95,7 +95,7 @@ __attribute__((optimize("no-tree-vectorize")))
 #  endif
 auto unwrap(array<half_t, N> a)
 {
-  __half* p = unwrap(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
+  const __half* const p = unwrap(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
   array<__half, N> r;
   for (size_t i = 0; i < N; i++)
   {
@@ -113,7 +113,7 @@ __attribute__((optimize("no-tree-vectorize")))
 auto unwrap(array<bfloat16_t, N> a)
 {
   // cast to avoid ambiguous conversion from bfloat16_t -> __nv_bfloat16
-  __nv_bfloat16* p = unwrap(a.data());
+  const __nv_bfloat16* const p = unwrap(a.data());
   array<__nv_bfloat16, N> r;
   for (size_t i = 0; i < N; i++)
   {
