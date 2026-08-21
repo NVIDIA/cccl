@@ -267,8 +267,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
     const auto __stream  = ::cuda::get_stream(*__env_it);
     const auto __n_split = __comm_size - 1;
 
-    auto&& __resource =
-      ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device().underlying_device());
+    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device());
     auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it);
 
     __local_scratch.emplace_back(__per_comm_sampling_scratch_type{
