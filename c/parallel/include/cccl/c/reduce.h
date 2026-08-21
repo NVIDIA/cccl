@@ -43,6 +43,8 @@ typedef struct cccl_device_reduce_build_result_t
   char* reduction_kernel_lowered_name;
 } cccl_device_reduce_build_result_t;
 
+// `init` describes the accumulator type and must be a valid type even with
+// CCCL_NO_INIT (pass the input value type). CCCL_FUTURE_VALUE_INIT is not supported.
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
