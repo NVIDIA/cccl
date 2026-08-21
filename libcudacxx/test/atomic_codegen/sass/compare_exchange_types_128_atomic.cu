@@ -32,20 +32,23 @@ extern "C" __device__ bool atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, 
 ; NON_BLOCK: {{.*}}ATOM.E.EXCH.STRONG.[[SASS_SCOPE]] PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}
 ; SMXX-DAG: {{.*}}ISETP.NE{{(\.U32)?}}.AND [[LOCK_ACQUIRED:P[0-9]+]], PT, [[LOCK_STATE]], 0x1, PT{{.*}}
 ; NON_BLOCK-DAG: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}{{@!?}}[[LOCK_ACQUIRED]] BRA{{(\.U)?}} {{.*}}
+; SM75: {{.*}}@[[LOCK_ACQUIRED]] BRA{{(\.U)?}} {{.*}}
+; SM75: {{.*}}LOP3.LUT [[RETRY_PRED:P[0-9]+]], {{.*}}
+; SM75: {{.*}}@![[RETRY_PRED]] BRA{{(\.U)?}} {{.*}}
+; SM80-PLUS: {{.*}}@![[LOCK_ACQUIRED]] BRA{{(\.U)?}} {{.*}}
 ; SMXX: {{.*}}BSYNC [[SYNC]]{{.*}}
 ; SMXX: {{.*}}LD.E.128{{(\.SYS)?}} {{R[0-9]+}}, {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
 ; SMXX: {{.*}}LD.E.128{{(\.SYS)?}} {{R[0-9]+}}, {{.*}}
 ; SMXX: {{.*}}{{LOP3\.LUT|ISETP\.NE[^ ]*}} [[CAS_RESULT_PRED:P[0-9]+]], {{.*}}
 ; CUDA12-0-DAG: {{.*}}SEL [[STORE_DATA:R[0-9]+]], {{R[0-9]+}}, {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
 ; CUDA12-0-DAG: {{.*}}SEL [[STORE_ADDR:R[0-9]+]], [[BASE_ADDR]], {{R[0-9]+}}, ![[CAS_RESULT_PRED]]{{.*}}
-; CUDA12-0-DAG: {{.*}}SEL {{R[0-9]+}}, RZ, 0x1, [[CAS_RESULT_PRED]]{{.*}}
 ; CUDA12-0-DAG: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[STORE_ADDR]]{{(\.64)?\].*}}, [[STORE_DATA]]{{.*}}
 ; CUDA12-1-PLUS-DAG: {{.*}}@[[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*}}
 ; CUDA12-1-PLUS-DAG: {{.*}}@![[CAS_RESULT_PRED]] ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
-; SMXX-DAG: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; BLOCK-DAG: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
-; NON_BLOCK-DAG: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
+; SMXX: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; BLOCK: {{.*}}ST.E.STRONG.{{CTA|SM}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
+; NON_BLOCK: {{.*}}ST.E.STRONG.[[SASS_SCOPE]] {{.*\[}}[[BASE_ADDR]]{{(\.64)?\+0x10\].*}}, RZ{{.*}}
+; CUDA12-0: {{.*}}SEL {{R[0-9]+}}, RZ, 0x1, [[CAS_RESULT_PRED]]{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */

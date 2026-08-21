@@ -29,9 +29,12 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic<TYPE, SCOPE>& atom, 
 ; SMXX: {{.*}}BSSY [[SYNC:B[0-9]+]], {{.*}}
 ; BLOCK: {{.*}}ATOM.E.EXCH.STRONG.{{CTA|SM}} PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.EXCH.STRONG.[[SASS_SCOPE]] PT, [[LOCK_STATE:R[0-9]+]], {{.*\[}}[[BASE_ADDR:R[0-9]+]]{{(\.64)?\+0x10\].*}}, {{R[0-9]+}}{{.*}}
-; SMXX-DAG: {{.*}}ISETP.NE{{(\.U32)?}}.AND [[LOCK_FREE:P[0-9]+]], PT, [[LOCK_STATE]], 0x1, PT{{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{(\.U32)?}}.AND [[LOCK_ACQUIRED:P[0-9]+]], PT, [[LOCK_STATE]], 0x1, PT{{.*}}
 ; NON_BLOCK-DAG: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}{{@!?}}[[LOCK_FREE]] BRA{{(\.U)?}} {{.*}}
+; SM75: {{.*}}@[[LOCK_ACQUIRED]] BRA{{(\.U)?}} {{.*}}
+; SM75: {{.*}}LOP3.LUT [[RETRY_PRED:P[0-9]+]], {{.*}}
+; SM75: {{.*}}@![[RETRY_PRED]] BRA{{(\.U)?}} {{.*}}
+; SM80-PLUS: {{.*}}@![[LOCK_ACQUIRED]] BRA{{(\.U)?}} {{.*}}
 ; SMXX: {{.*}}BSYNC [[SYNC]]{{.*}}
 ; SMXX: {{.*}}LD.E.128{{(\.SYS)?}} R4, {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}
 ; SMXX: {{.*}}ST.E.128{{(\.SYS)?}} {{.*\[}}[[BASE_ADDR]]{{(\.64)?\].*}}, R8{{.*}}
