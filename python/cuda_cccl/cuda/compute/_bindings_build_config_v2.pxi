@@ -7,11 +7,10 @@
 # pair serves every algorithm. Leaving them on is safe: an unusable cache or a
 # stale entry falls back to building without one.
 #
-# The directory is pushed in by `_bindings.py` once this extension has finished
-# importing, rather than resolved here. Resolving it during module
-# initialization would mean importing `cuda.compute._pch` while `cuda.compute`
-# is still initializing, and the surrounding package is not yet importable at
-# that point.
+# The directory is resolved lazily, not here: on the first build,
+# `cuda.compute._pch.ensure_configured()` (invoked from `_cccl_interop`'s
+# `call_build` / `call_compile`) resolves it and calls `set_pch_cache_dir()`.
+# Importing this extension has no filesystem side effects.
 
 cdef extern from "cccl/c/types.h":
     cdef struct cccl_build_config:

@@ -993,10 +993,11 @@ cdef class CommonData:
 def pch_cache_dir():
     """The on-disk precompiled-header cache directory, or None.
 
-    Resolved by the C layer from CCCL_PCH_CACHE_DIR, then XDG_CACHE_HOME, then
-    the user's home cache, then a uid-scoped temp directory. Returns None on the
-    v1 (NVRTC) backend, which has no PCH cache, and when no writable location
-    could be found — in both cases there is nothing cached to inspect.
+    Reports the path last supplied via ``set_pch_cache_dir()``. The resolution
+    chain (CCCL_PCH_CACHE_DIR, XDG_CACHE_HOME, the home cache, a uid-scoped temp
+    directory) lives in ``cuda.compute._pch.resolve_cache_dir()``, not here.
+    Returns None on the v1 (NVRTC) backend, which has no PCH cache, and until a
+    build has configured one.
     """
     return _pch_cache_dir_impl()
 
