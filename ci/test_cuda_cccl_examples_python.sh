@@ -46,7 +46,20 @@ setup_python_env "${py_version}"
 # not always ship a wheel for the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
+
+# CuPy resolves its CUDA libraries (curand, cublas, cufft, ...) through
+# cuda-pathfinder at first use, and nothing else in this environment installs
+# them -- cuda-cccl only pulls the handful cuda.compute itself needs. On the
+# pip-toolkit lanes that leaves e.g. libcurand missing, which the examples that
+# call cp.random then fail on; request CuPy's own `ctk` extra so it brings the
+# set it needs. The sysctk lanes deliberately use the system toolkit, so they
+# stay bare -- pulling the pip wheels there would defeat the lane.
+cupy_req="cupy-cuda${cuda_major_version}x"
+if [[ "${ctk_flavor}" == "cu" ]]; then
+  cupy_req="${cupy_req}[ctk]"
+fi
+
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "${cupy_req}" pytest-benchmark
 
 # Run tests for parallel module
 cd "${repo_root}/python/cuda_cccl/tests/"
