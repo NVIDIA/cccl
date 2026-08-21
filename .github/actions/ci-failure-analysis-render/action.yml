@@ -33,7 +33,7 @@ runs:
         esac
 
         output_file="${RUNNER_TEMP}/ci-failure-analysis-${FORMAT}.out"
-        python3 "${GITHUB_WORKSPACE}/ci/util/ci_failure_analysis/render.py" \
+        python3 "${GITHUB_ACTION_PATH}/../../../ci/util/ci_failure_analysis/render.py" \
           --analysis-file "${ANALYSIS_FILE}" \
           --format "${FORMAT}" \
           --repository "${GITHUB_REPOSITORY}" \

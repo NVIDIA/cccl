@@ -12,33 +12,10 @@
           "title": {
             "type": "string"
           },
-          "explanation": {
-            "type": "string"
-          },
           "evidence": {
             "type": "array",
             "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "job_id": {
-                  "type": "integer"
-                },
-                "step_number": {
-                  "type": "integer"
-                },
-                "lines": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              },
-              "required": [
-                "job_id",
-                "step_number",
-                "lines"
-              ]
+              "type": "string"
             }
           },
           "root_cause": {
@@ -56,7 +33,6 @@
         },
         "required": [
           "title",
-          "explanation",
           "evidence",
           "root_cause",
           "agent_prompt",

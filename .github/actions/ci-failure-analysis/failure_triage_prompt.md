@@ -14,7 +14,7 @@ failure logs in `CI_LOG_DIR`:
 - `pr.diff`, when present, contains the pull request diff.
 
 Read every available failure log before grouping. Use `jobs.json` for exact job IDs,
-names, conclusions, and step numbers, including jobs for which GitHub provided no log.
+names, and conclusions, including jobs for which GitHub provided no log.
 Ignore the analysis and publishing jobs.
 
 ## Diagnose and group
@@ -41,11 +41,8 @@ Return only one JSON object matching the supplied schema, with no Markdown or co
 For each group:
 
 - `title`: succinct, specific failure mechanism; never a generic workflow or job name.
-- `explanation`: one or two sentences describing the failure and developer impact.
-- `evidence`: the decisive log lines, copied verbatim except for ANSI escapes. Put the
-  single most decisive failure line first, followed only by essential context. Each
-  referenced job must belong to the group. Use the job step's numeric `number`, or `0`
-  when unavailable.
+- `evidence`: up to three decisive log lines, copied verbatim except for ANSI escapes.
+  Put the single most decisive failure line first, followed only by essential context.
 - `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
   evidence is missing.
 - `agent_prompt`: a self-contained prompt with concrete fix guidance and, when useful, a
@@ -54,4 +51,4 @@ For each group:
   renderer adds them.
 - `job_ids`: every primary job in the group.
 
-Do not invent log lines, IDs, or step numbers.
+Do not invent log lines or IDs.

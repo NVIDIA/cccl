@@ -38,12 +38,14 @@ runs:
 
     - name: Prepare analysis environment
       env:
-        ANALYSIS_DIR: ${{ runner.temp }}/ci-failure-analysis
         OUTPUT_FILE: ${{ inputs.output_file }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         output_parent="$(dirname -- "${OUTPUT_FILE}")"
-        mkdir -p "${RUNNER_TEMP}/codex-home" "${ANALYSIS_DIR}" "${output_parent}"
+        mkdir -p \
+          "${RUNNER_TEMP}/codex-home" \
+          "${RUNNER_TEMP}/ci-failure-analysis" \
+          "${output_parent}"
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
 
     - name: Investigate the workflow run
@@ -64,7 +66,7 @@ runs:
         effort: medium
         codex-args: --strict-config --ignore-rules --ephemeral
         output-file: ${{ runner.temp }}/ci-failure-analysis/analysis.json
-        output-schema-file: ${{ github.workspace }}/ci/util/ci_failure_analysis/output.schema.json
+        output-schema-file: ${{ github.action_path }}/../../../ci/util/ci_failure_analysis/model-output.schema.json
         prompt-file: ${{ github.action_path }}/failure_triage_prompt.md
 
     - name: Assemble normalized analysis
@@ -84,15 +86,7 @@ runs:
             },
             jobs: [
               $jobs[0][] |
-              {
-                id,
-                name,
-                conclusion,
-                steps: [
-                  (.steps // [])[] |
-                  {number}
-                ]
-              }
+              {id, name}
             ],
             groups: $analysis[0].groups
           }' > "${OUTPUT_FILE}"

@@ -12,16 +12,9 @@ import unicodedata
 from pathlib import Path
 
 GITHUB_REPORT_LIMIT = 60000
-SLACK_PARENT_LIMIT = 39000
-SLACK_REPLY_LIMIT = 3500
-SLACK_REPLY_COUNT_LIMIT = 256
-SLACK_THREAD_LIMIT = 60000
-FAILED_CONCLUSIONS = {
-    "action_required",
-    "failure",
-    "startup_failure",
-    "timed_out",
-}
+SLACK_MESSAGE_LIMIT = 39000
+# The encoded thread crosses a GitHub job-output and environment-variable boundary.
+SLACK_THREAD_TRANSPORT_LIMIT = 60000
 CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 INLINE_MARKDOWN = re.compile(r"([\\`*_\[\]])")
 URL_SCHEME = re.compile(r"(?i)\b(https?):/{2}")
@@ -83,46 +76,28 @@ def validate_job_manifest(job_items):
         raise ValidationError("job manifest must be an array")
 
     jobs = {}
-    step_numbers = {}
-    failed_job_ids = set()
     for index, job in enumerate(job_items):
         location = f"job manifest[{index}]"
         if not isinstance(job, dict):
             raise ValidationError(f"{location} must be an object")
+        extra = sorted(set(job) - {"id", "name"})
+        if extra:
+            raise ValidationError(f"{location} has unexpected fields {extra}")
         job_id = job.get("id")
         name = job.get("name")
-        conclusion = job.get("conclusion")
-        steps = job.get("steps", [])
         if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id <= 0:
             raise ValidationError(f"{location}.id must be a positive integer")
         if job_id in jobs:
             raise ValidationError(f"{location}.id duplicates job {job_id}")
         if not isinstance(name, str) or not name:
             raise ValidationError(f"{location}.name must be a non-empty string")
-        if conclusion is not None and not isinstance(conclusion, str):
-            raise ValidationError(f"{location}.conclusion must be a string or null")
-        if conclusion not in FAILED_CONCLUSIONS:
-            raise ValidationError(f"{location}.conclusion is not a failed conclusion")
-        if not isinstance(steps, list):
-            raise ValidationError(f"{location}.steps must be an array")
-
-        numbers = set()
-        for step_index, step in enumerate(steps):
-            number = step.get("number") if isinstance(step, dict) else None
-            if not isinstance(number, int) or isinstance(number, bool) or number <= 0:
-                raise ValidationError(
-                    f"{location}.steps[{step_index}].number must be positive"
-                )
-            numbers.add(number)
 
         jobs[job_id] = name
-        step_numbers[job_id] = numbers
-        failed_job_ids.add(job_id)
 
-    return jobs, step_numbers, failed_job_ids
+    return jobs
 
 
-def validate_job_references(analysis, step_numbers, failed_job_ids):
+def validate_group_job_references(analysis, jobs):
     grouped_job_ids = set()
     for group_index, group in enumerate(analysis["groups"]):
         location = f"$.groups[{group_index}]"
@@ -132,29 +107,15 @@ def validate_job_references(analysis, step_numbers, failed_job_ids):
         if len(job_ids) != len(set(job_ids)):
             raise ValidationError(f"{location}.job_ids contains duplicates")
         for job_id in job_ids:
-            if job_id not in failed_job_ids:
+            if job_id not in jobs:
                 raise ValidationError(
-                    f"{location}.job_ids references non-failed job {job_id}"
+                    f"{location}.job_ids references unknown job {job_id}"
                 )
             if job_id in grouped_job_ids:
                 raise ValidationError(
                     f"job {job_id} appears in more than one failure group"
                 )
             grouped_job_ids.add(job_id)
-
-        group_job_ids = set(job_ids)
-        for evidence_index, evidence in enumerate(group["evidence"]):
-            evidence_location = f"{location}.evidence[{evidence_index}]"
-            job_id = evidence["job_id"]
-            step_number = evidence["step_number"]
-            if job_id not in group_job_ids:
-                raise ValidationError(
-                    f"{evidence_location}.job_id is not in the failure group"
-                )
-            if step_number != 0 and step_number not in step_numbers[job_id]:
-                raise ValidationError(
-                    f"{evidence_location}.step_number does not exist for job {job_id}"
-                )
 
 
 def validate_run(run):
@@ -180,12 +141,12 @@ def load_analysis_context(analysis_file):
     if extra:
         raise ValidationError(f"analysis context has unexpected fields {extra}")
 
-    schema = load_json(Path(__file__).with_name("output.schema.json"))
+    schema = load_json(Path(__file__).with_name("model-output.schema.json"))
     analysis = {"groups": context["groups"]}
     validate_schema(analysis, schema)
 
-    jobs, step_numbers, failed_job_ids = validate_job_manifest(context["jobs"])
-    validate_job_references(analysis, step_numbers, failed_job_ids)
+    jobs = validate_job_manifest(context["jobs"])
+    validate_group_job_references(analysis, jobs)
 
     run = context["run"]
     validate_run(run)
@@ -208,6 +169,10 @@ def clean_text(value, limit=None):
     )
 
 
+def select_evidence_lines(group, limit=3):
+    return [line for line in group["evidence"] if line.strip()][:limit]
+
+
 # GitHub report.
 
 
@@ -227,7 +192,7 @@ def sanitize_inline(value, limit=1200):
 
 
 def code_block(value, limit=None):
-    value = clean_text(value, limit).strip()
+    value = clean_text(value, limit).strip("\n")
     longest_run = max((len(run) for run in re.findall(r"`+", value)), default=0)
     fence = "`" * max(3, longest_run + 1)
     return f"{fence}text\n{value}\n{fence}"
@@ -237,40 +202,16 @@ def job_url(repository, run_id, job_id):
     return f"https://github.com/{repository}/actions/runs/{run_id}/job/{job_id}"
 
 
-def job_link(job_id, jobs, repository, run_id, step_number=0):
+def job_link(job_id, jobs, repository, run_id):
     label = sanitize_inline(jobs[job_id], limit=300)
-    url = job_url(repository, run_id, job_id)
-    if step_number > 0:
-        label += f", step {step_number}"
-        url += f"#step:{step_number}:1"
-    return f"[{label}]({url})"
+    return f"[{label}]({job_url(repository, run_id, job_id)})"
 
 
-def render_github_evidence(group, jobs, repository, run_id):
-    rendered = []
-    remaining_lines = 3
-    for evidence in group["evidence"][:3]:
-        selected_lines = evidence["lines"][:remaining_lines]
-        if not selected_lines:
-            continue
-        rendered.extend(
-            [
-                job_link(
-                    evidence["job_id"],
-                    jobs,
-                    repository,
-                    run_id,
-                    evidence["step_number"],
-                ),
-                "",
-                code_block("\n".join(selected_lines), limit=1800),
-            ]
-        )
-        remaining_lines -= len(selected_lines)
-        if remaining_lines == 0:
-            break
-        rendered.append("")
-    return rendered
+def render_github_evidence(group):
+    lines = select_evidence_lines(group)
+    if not lines:
+        return None
+    return code_block("\n".join(lines), limit=1800)
 
 
 def render_github_group(index, group, jobs, repository, run_id):
@@ -286,19 +227,12 @@ def render_github_group(index, group, jobs, repository, run_id):
             "</summary>"
         ),
         "",
-        f"**Explanation:** {sanitize_inline(group['explanation'])}",
+        f"**Root cause:** {sanitize_inline(group['root_cause'])}",
     ]
 
-    evidence = render_github_evidence(group, jobs, repository, run_id)
+    evidence = render_github_evidence(group)
     if evidence:
-        lines.extend(["", "**Evidence:**", "", *evidence])
-
-    lines.extend(
-        [
-            "",
-            f"**Root cause:** {sanitize_inline(group['root_cause'])}",
-        ]
-    )
+        lines.extend(["", "**Evidence:**", "", evidence])
 
     prompt_lines = [
         f"Repository: https://github.com/{repository}",
@@ -382,14 +316,19 @@ def render_slack_job_link(job_id, jobs, repository, run_id):
     return f"<{job_url(repository, run_id, job_id)}|{label}>"
 
 
+def sanitize_slack_code(value, limit=1800):
+    value = clean_text(value, limit)
+    value = value.replace("&", "&amp;")
+    value = value.replace("<", "&lt;").replace(">", "&gt;")
+    return value.replace("```", "``\N{ZERO WIDTH SPACE}`")
+
+
 def render_slack_evidence(group):
-    for evidence in group["evidence"]:
-        for line in evidence["lines"]:
-            rendered_line = sanitize_slack(line, limit=700)
-            if not rendered_line:
-                continue
-            return f"*Evidence:*\n```\n{rendered_line}\n```"
-    return None
+    lines = select_evidence_lines(group)
+    if not lines:
+        return None
+    rendered = sanitize_slack_code("\n".join(lines))
+    return f"*Evidence:*\n```\n{rendered}\n```"
 
 
 def render_slack_thread_reply(
@@ -406,7 +345,7 @@ def render_slack_thread_reply(
             f"*{index}. {sanitize_slack_title(group['title'])}* — "
             f"{len(job_ids)} {job_label}"
         ),
-        f"*Root cause:* {sanitize_slack(group['root_cause'], limit=700)}",
+        f"*Root cause:* {sanitize_slack(group['root_cause'])}",
     ]
     evidence = render_slack_evidence(group)
     if evidence:
@@ -418,9 +357,9 @@ def render_slack_thread_reply(
     )
 
     reply = "\n".join(lines) + "\n"
-    if len(reply) > SLACK_REPLY_LIMIT:
+    if len(reply) > SLACK_MESSAGE_LIMIT:
         raise ValidationError(
-            f"rendered Slack reply exceeds {SLACK_REPLY_LIMIT:,} characters"
+            f"rendered Slack reply exceeds {SLACK_MESSAGE_LIMIT:,} characters"
         )
     return reply
 
@@ -434,10 +373,6 @@ def render_slack_thread(
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
-    if group_count > SLACK_REPLY_COUNT_LIMIT:
-        raise ValidationError(
-            f"Slack thread has more than {SLACK_REPLY_COUNT_LIMIT} failure groups"
-        )
     job_label = "job" if failed_job_count == 1 else "jobs"
     group_label = "group" if group_count == 1 else "groups"
     parent_lines = [
@@ -459,9 +394,9 @@ def render_slack_thread(
     run_url = f"https://github.com/{repository}/actions/runs/{run_id}"
     parent_lines.extend(["", f"<{run_url}|GitHub Actions>"])
     parent = "\n".join(parent_lines) + "\n"
-    if len(parent) > SLACK_PARENT_LIMIT:
+    if len(parent) > SLACK_MESSAGE_LIMIT:
         raise ValidationError(
-            f"rendered Slack parent exceeds {SLACK_PARENT_LIMIT:,} characters"
+            f"rendered Slack parent exceeds {SLACK_MESSAGE_LIMIT:,} characters"
         )
 
     replies = [
@@ -520,9 +455,9 @@ def main():
             )
             + "\n"
         )
-        if len(rendered.encode("utf-8")) > SLACK_THREAD_LIMIT:
+        if len(rendered.encode("utf-8")) > SLACK_THREAD_TRANSPORT_LIMIT:
             raise ValidationError(
-                f"rendered Slack thread exceeds {SLACK_THREAD_LIMIT:,} bytes"
+                f"rendered Slack thread exceeds {SLACK_THREAD_TRANSPORT_LIMIT:,} bytes"
             )
 
     args.output.write_text(rendered, encoding="utf-8")
