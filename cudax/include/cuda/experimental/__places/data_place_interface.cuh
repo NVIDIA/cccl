@@ -242,11 +242,25 @@ public:
   }
 
   //! Number of data instances a dependency at this place resolves to: 1 for
-  //! ordinary and composite places, one per grid member for a replicated
-  //! place (see data_place::member for the r-th instance's place)
+  //! ordinary and composite places, one per replicated grid coordinate for a
+  //! replicated place (see data_place::member for the r-th instance's place)
   virtual size_t instance_count() const
   {
     return 1;
+  }
+
+  //! Instance index a (linear) grid place resolves to; 0 when the place
+  //! resolves to a single instance (see data_place::instance_of)
+  virtual size_t instance_of(size_t /*place_index*/) const
+  {
+    return 0;
+  }
+
+  //! Implementation of the r-th instance's place (see data_place::member);
+  //! nullptr means the place resolves to itself (single instance)
+  virtual ::std::shared_ptr<data_place_interface> member_impl(size_t /*r*/) const
+  {
+    return nullptr;
   }
 
   /**

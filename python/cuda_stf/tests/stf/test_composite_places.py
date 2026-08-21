@@ -16,12 +16,12 @@ import cuda.stf._experimental as stf  # noqa: E402
 
 
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):
-    """Blocked partition along first dimension: maps data index to grid position."""
+    """Blocked partition along the outermost dimension (C-order contract:
+    rank-1 tuples in, the owning place's grid coordinate out)."""
     n = data_dims[0]
     nplaces = grid_dims[0]
     part_size = max((n + nplaces - 1) // nplaces, 1)
-    place_x = min(data_coords[0] // part_size, nplaces - 1)
-    return (place_x, 0, 0, 0)
+    return min(data_coords[0] // part_size, nplaces - 1)
 
 
 class TestExecPlaceGrid:
@@ -122,7 +122,10 @@ class TestCompositeDataPlace:
     def test_composite_basic(self):
         """data_place.composite creates a composite data place."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        # data_rank is required for Python callables only: the shape-free C
+        # callback cannot infer the tensor rank. Native partitioners
+        # (partition_fn_blocked() / partition_fn_cyclic()) never take it.
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         assert dplace is not None
 
     def test_composite_non_callable_raises(self):
@@ -141,7 +144,7 @@ class TestCompositeTask:
     def test_task_with_composite_dep(self):
         """Task uses a composite data place for its dependency."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
 
         N = 1024
         ctx = stf.context()
@@ -160,7 +163,7 @@ class TestCompositeTask:
     def test_task_with_composite_dep_graph(self):
         """Same test in graph mode."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
 
         N = 1024
         ctx = stf.context(use_graph=True)
@@ -179,7 +182,7 @@ class TestCompositeTask:
     def test_affine_with_grid(self):
         """Grid with affine data place set; deps use the default (affine) placement."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         N = 512
@@ -195,7 +198,7 @@ class TestCompositeTask:
     def test_grid_create_with_mapper(self):
         """exec_place_grid.create with mapper= sets affine automatically."""
         places = [stf.exec_place.device(0), stf.exec_place.device(0)]
-        grid = stf.exec_place_grid.create(places, mapper=blocked_mapper_1d)
+        grid = stf.exec_place_grid.create(places, mapper=blocked_mapper_1d, data_rank=1)
 
         N = 256
         ctx = stf.context()
@@ -210,7 +213,7 @@ class TestCompositeTask:
     def test_host_launch_with_composite(self):
         """host_launch can read data placed via a composite data place."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         N = 64
@@ -228,7 +231,7 @@ class TestCompositeTask:
     def test_task_on_exec_place_grid(self):
         """Task runs on an exec_place_grid; query grid dims and streams by index."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -249,7 +252,7 @@ class TestCompositeTask:
     def test_task_on_grid_get_stream_ptrs(self):
         """get_stream_ptrs() returns one stream per grid place."""
         grid = stf.exec_place_grid.from_devices([0, 0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -273,7 +276,7 @@ class TestCompositeTask:
         for a grid just as it is for a scalar task.
         """
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -321,7 +324,7 @@ class TestCompositeTask:
             raise RuntimeError("mapper boom")
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, broken_mapper)
+        dplace = stf.data_place.composite(grid, broken_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -333,14 +336,80 @@ class TestCompositeTask:
                 pass
         ctx.finalize()
 
+    def test_composite_mapper_rank2_c_order(self):
+        """A rank-2 mapper sees C-order (rows, cols) element tuples on the
+        shaped-allocation path. The non-square shape makes an order mix-up
+        in the binding's native conversion visible: reversed dims would put
+        coordinates out of range."""
+        stf.machine_init()
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        rows, cols = 4, 65536
+        seen_dims = set()
+        seen_coords = []
+
+        def blocked_rows(data_coords, data_dims, grid_dims):
+            seen_dims.add(data_dims)
+            seen_coords.append(data_coords)
+            chunk = max((data_dims[0] + grid_dims[0] - 1) // grid_dims[0], 1)
+            return min(data_coords[0] // chunk, grid_dims[0] - 1)
+
+        dplace = stf.data_place.composite(grid, blocked_rows, data_rank=2)
+        ptr = dplace.allocate((rows, cols), elemsize=4)
+        assert ptr != 0
+        dplace.deallocate(ptr, rows * cols * 4)
+
+        assert seen_coords, "the partition mapper was never invoked"
+        assert seen_dims == {(rows, cols)}
+        for r, c in seen_coords:
+            assert 0 <= r < rows
+            assert 0 <= c < cols
+
+    def test_composite_mapper_rank_mismatch_detected(self):
+        """Declaring data_rank smaller than the data's real rank is provably
+        wrong (the mapper would never see a real dimension) and must raise
+        rather than silently partition along the wrong axes."""
+        stf.machine_init()
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
+
+        with pytest.raises(ValueError, match="data_rank"):
+            dplace.allocate((4, 65536), elemsize=4)
+
+    def test_composite_mapper_task_path_is_flat_bytes(self):
+        """Documents the current task-path contract: a logical data created
+        from a host array reaches the native layer as an untyped byte buffer
+        (stf_logical_data(addr, nbytes)), so a composite mapper on that path
+        is invoked over the flat byte space -- data_dims is (nbytes,) --
+        regardless of the array's Python-side shape. True element
+        coordinates flow through the shaped-allocation path only (see
+        test_composite_mapper_rank2_c_order)."""
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        seen_dims = set()
+
+        def spy(data_coords, data_dims, grid_dims):
+            seen_dims.add(data_dims)
+            return 0
+
+        dplace = stf.data_place.composite(grid, spy, data_rank=1)
+
+        n = 1024
+        ctx = stf.context()
+        X = np.zeros(n, dtype=np.float32)
+        lX = ctx.logical_data(X, name="X_flat_bytes")
+        with ctx.task(stf.exec_place.device(0), lX.rw(dplace)):
+            pass
+        ctx.finalize()
+
+        assert seen_dims == {(n * 4,)}
+
     def test_composite_mapper_out_of_range_propagates(self):
         """A mapper returning coordinates outside the grid surfaces an error."""
 
         def out_of_range_mapper(data_coords, data_dims, grid_dims):
-            return (grid_dims[0] + 5, 0, 0, 0)
+            return grid_dims[0] + 5
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, out_of_range_mapper)
+        dplace = stf.data_place.composite(grid, out_of_range_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -361,7 +430,7 @@ class TestCompositeTask:
             return blocked_mapper_1d(data_coords, data_dims, grid_dims)
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, counting_mapper)
+        dplace = stf.data_place.composite(grid, counting_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -377,7 +446,7 @@ class TestCompositeTask:
     def test_task_on_grid_with_composite_dep(self):
         """Task on exec_place_grid; affine set so deps use lX.rw() without explicit dplace."""
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()

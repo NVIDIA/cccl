@@ -222,7 +222,38 @@ int main()
     }
     EXPECT(thrown_merged);
 
+    // ---- mutation cycle: "mutate the data at another place; the next
+    // replicated read re-broadcasts" -- the coherence claim itself. Read at
+    // the replicated place, mutate at the affine place, read replicated
+    // again: the second generation must see the update through every
+    // replica. In the graph backend the whole cycle (including the
+    // re-broadcast copies) lands inside one captured graph.
+    auto lgen = ctx.logical_data(shape_of<slice<double>>(n));
+    auto lo1  = ctx.logical_data(shape_of<slice<double>>(n));
+    auto lo2  = ctx.logical_data(shape_of<slice<double>>(n));
+    ctx.parallel_for(lgen.shape(), lgen.write())->*[] __device__(size_t i, auto x) {
+      x(i) = 1.0;
+    };
+    ctx.parallel_for(blocked_partition(), grid, lgen.shape(), lgen.read(rep), lo1.write())
+        ->*[] __device__(size_t i, auto in, auto out) {
+              out(i) = in(i);
+            };
+    ctx.parallel_for(lgen.shape(), lgen.rw())->*[] __device__(size_t i, auto x) {
+      x(i) += 41.0;
+    };
+    ctx.parallel_for(blocked_partition(), grid, lgen.shape(), lgen.read(rep), lo2.write())
+        ->*[] __device__(size_t i, auto in, auto out) {
+              out(i) = in(i);
+            };
+    ctx.host_launch(lo1.read(), lo2.read())->*[&](auto o1, auto o2) {
+      for (size_t i = 0; i < n; i++)
+      {
+        EXPECT(o1(i) == 1.0);
+        EXPECT(o2(i) == 42.0);
+      }
+    };
     ctx.finalize();
+
     printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
   }
 
