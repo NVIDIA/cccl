@@ -44,9 +44,6 @@
           "root_cause": {
             "type": "string"
           },
-          "next_steps": {
-            "type": "string"
-          },
           "agent_prompt": {
             "type": "string"
           },
@@ -62,7 +59,6 @@
           "explanation",
           "evidence",
           "root_cause",
-          "next_steps",
           "agent_prompt",
           "job_ids"
         ]

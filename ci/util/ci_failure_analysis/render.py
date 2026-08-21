@@ -297,8 +297,6 @@ def render_github_group(index, group, jobs, repository, run_id):
         [
             "",
             f"**Root cause:** {sanitize_inline(group['root_cause'])}",
-            "",
-            f"**Suggested next steps:** {sanitize_inline(group['next_steps'])}",
         ]
     )
 
@@ -413,9 +411,6 @@ def render_slack_thread_reply(
     evidence = render_slack_evidence(group)
     if evidence:
         lines.append(evidence)
-    lines.append(
-        f"*Suggested next steps:* {sanitize_slack(group['next_steps'], limit=700)}"
-    )
     lines.append("*Jobs:*")
     lines.extend(
         f"• {render_slack_job_link(job_id, jobs, repository, run_id)}"

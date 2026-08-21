@@ -48,13 +48,6 @@ For each group:
   when unavailable.
 - `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
   evidence is missing.
-- `next_steps`: one or two sentences leading with one concrete code change or diagnostic
-  that directly addresses the failure mechanism. Do not merely recommend rebuilding or
-  rerunning failed jobs, broadly validating the project, or enumerating matrix variants.
-  Include at most one command, only when its exact invocation (including any target)
-  appears verbatim in the collected logs or repository scripts and would provide new
-  information beyond the failed run. Never invent Ninja/CTest targets or matrix
-  invocations.
 - `agent_prompt`: a self-contained prompt with concrete fix guidance and, when useful, a
   complete proposed fix. Ask the coding agent to verify, reproduce narrowly, implement
   the fix, and run focused validation. Omit repository, run, and job URLs because the
