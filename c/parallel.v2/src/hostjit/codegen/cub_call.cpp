@@ -118,6 +118,7 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
 {
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
+#include <cuda_bf16.h>
 #include <cuda/std/iterator>
 #include <cuda/std/functional>
 #include <cuda/functional>
@@ -200,6 +201,7 @@ std::string CubCall::body() const
       case CCCL_INT16:
       case CCCL_UINT16:
       case CCCL_FLOAT16:
+      case CCCL_BFLOAT16:
         return 2;
       case CCCL_INT32:
       case CCCL_UINT32:

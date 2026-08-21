@@ -202,7 +202,7 @@ bool check_histogram_overflow(
   const cccl_value_t& upper_level)
 {
   auto is_fp = [](cccl_type_enum t) {
-    return t == CCCL_FLOAT16 || t == CCCL_FLOAT32 || t == CCCL_FLOAT64;
+    return t == CCCL_FLOAT16 || t == CCCL_BFLOAT16 || t == CCCL_FLOAT32 || t == CCCL_FLOAT64;
   };
 
   if (is_fp(build.level_type.type) || is_fp(build.sample_type.type))

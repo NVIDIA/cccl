@@ -210,6 +210,12 @@ cccl_type_info get_type_info()
     info.type = cccl_type_enum::CCCL_FLOAT16;
   }
 #endif
+#if _CCCL_HAS_NVBF16()
+  else if constexpr (std::is_same_v<T, __nv_bfloat16>)
+  {
+    info.type = cccl_type_enum::CCCL_BFLOAT16;
+  }
+#endif
   else if constexpr (std::is_same_v<T, float>)
   {
     info.type = cccl_type_enum::CCCL_FLOAT32;
@@ -253,6 +259,10 @@ std::string type_enum_to_name(cccl_type_enum type)
 #if _CCCL_HAS_NVFP16()
     case cccl_type_enum::CCCL_FLOAT16:
       return "__half";
+#endif
+#if _CCCL_HAS_NVBF16()
+    case cccl_type_enum::CCCL_BFLOAT16:
+      return "__nv_bfloat16";
 #endif
     case cccl_type_enum::CCCL_FLOAT32:
       return "float";
@@ -327,6 +337,14 @@ inline std::string get_reduce_op(cccl_type_enum t)
              "  __half* a = reinterpret_cast<__half*>(a_void); "
              "  __half* b = reinterpret_cast<__half*>(b_void); "
              "  __half* out = reinterpret_cast<__half*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
+    case cccl_type_enum::CCCL_BFLOAT16:
+      return "#include <cuda_bf16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  __nv_bfloat16* a = reinterpret_cast<__nv_bfloat16*>(a_void); "
+             "  __nv_bfloat16* b = reinterpret_cast<__nv_bfloat16*>(b_void); "
+             "  __nv_bfloat16* out = reinterpret_cast<__nv_bfloat16*>(out_void); "
              "  *out = *a + *b; "
              "}";
     default:

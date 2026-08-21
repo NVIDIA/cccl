@@ -40,10 +40,12 @@ typedef enum cccl_type_enum
   CCCL_UINT64  = 7,
   CCCL_FLOAT16 = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
                     // that here
-  CCCL_FLOAT32 = 9,
-  CCCL_FLOAT64 = 10,
-  CCCL_STORAGE = 11,
-  CCCL_BOOLEAN = 12,
+  CCCL_FLOAT32  = 9,
+  CCCL_FLOAT64  = 10,
+  CCCL_STORAGE  = 11,
+  CCCL_BOOLEAN  = 12,
+  CCCL_BFLOAT16 = 13, // This may be unsupported if _CCCL_HAS_NVBF16() is false but we can't include the header to
+                      // check that here
 } cccl_type_enum;
 
 typedef struct cccl_type_info
