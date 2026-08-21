@@ -24,41 +24,49 @@ cdef extern from "cccl/c/types.h":
         const char* pch_cache_dir
 
 
-# One config shared by every build. Its contents are copied during the call and
-# no pointer into it is retained, so a single module-level instance suffices and
-# there is nothing to keep alive per build.
-cdef cccl_build_config _shared_build_config
-
-# Keeps the encoded cache path alive for as long as the config points at it.
+# The current cache directory as UTF-8 bytes (b"" = PCH off), rebound by
+# set_pch_cache_dir(). It is read only through _get_build_config(), which
+# snapshots the reference into a fresh per-build object -- so a build never
+# shares mutable C state with a concurrent reconfigure().
 cdef bytes _pch_cache_dir_bytes = b""
-
-_shared_build_config.extra_compile_flags = NULL
-_shared_build_config.num_extra_compile_flags = 0
-_shared_build_config.extra_include_dirs = NULL
-_shared_build_config.num_extra_include_dirs = 0
-_shared_build_config.pch_cache_dir = NULL
-_shared_build_config.enable_pch = 0
-_shared_build_config.verbose = 0
 
 
 def set_pch_cache_dir(path):
-    """Build against the precompiled-header cache at `path`.
+    """Point new builds at the precompiled-header cache at `path`.
 
     Passing None or an empty path disables precompiled headers, which is also
     the state before this is called.
     """
     global _pch_cache_dir_bytes
     _pch_cache_dir_bytes = b"" if not path else str(path).encode("utf-8")
-    if _pch_cache_dir_bytes:
-        _shared_build_config.pch_cache_dir = <const char*>_pch_cache_dir_bytes
-        _shared_build_config.enable_pch = 1
+
+
+cdef class _BuildConfig:
+    # A fresh, self-contained config per build. It owns the bytes buffer that
+    # config.pch_cache_dir points into, so a concurrent set_pch_cache_dir() can
+    # neither free nor tear anything this build is still reading under nogil.
+    cdef cccl_build_config config
+    cdef bytes _path
+
+    cdef cccl_build_config* ptr(self) noexcept nogil:
+        return &self.config
+
+
+cdef _BuildConfig _get_build_config():
+    cdef _BuildConfig bc = _BuildConfig.__new__(_BuildConfig)
+    bc._path = _pch_cache_dir_bytes
+    bc.config.extra_compile_flags = NULL
+    bc.config.num_extra_compile_flags = 0
+    bc.config.extra_include_dirs = NULL
+    bc.config.num_extra_include_dirs = 0
+    bc.config.verbose = 0
+    if bc._path:
+        bc.config.pch_cache_dir = <const char*>bc._path
+        bc.config.enable_pch = 1
     else:
-        _shared_build_config.pch_cache_dir = NULL
-        _shared_build_config.enable_pch = 0
-
-
-cdef inline cccl_build_config* _get_build_config() noexcept nogil:
-    return &_shared_build_config
+        bc.config.pch_cache_dir = NULL
+        bc.config.enable_pch = 0
+    return bc
 
 
 cdef inline str _pch_cache_dir_impl():

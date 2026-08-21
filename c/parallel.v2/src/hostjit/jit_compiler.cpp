@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -7,7 +6,6 @@
 #include <functional>
 #include <iostream>
 #include <random>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -136,8 +134,7 @@ bool create_pch_if_needed(
   libnvccPCHKind kind,
   const std::string& kind_name,
   std::string& diagnostics,
-  std::string& pch_path,
-  bool& generated)
+  std::string& pch_path)
 {
   pch_path.clear();
 
@@ -172,6 +169,13 @@ bool create_pch_if_needed(
   config.device_bitcode_files.clear();
   config.device_ltoir_files.clear();
   config.entry_point_name.clear();
+
+  // Diagnostic-only flags (--verbose, --trace-includes, --keep-artifacts) don't
+  // change the PCH's contents either, so drop them from the key -- otherwise the
+  // same headers built with and without them would fragment into two entries.
+  config.verbose        = false;
+  config.trace_includes = false;
+  config.keep_artifacts = false;
 
   std::vector<std::string> options;
   config.appendCommandLineArguments(options);
@@ -229,13 +233,20 @@ bool create_pch_if_needed(
     return false;
   }
 
-  // Generate to a temp path and rename into place. libnvccCreatePCH does not
-  // publish atomically, so writing pch_path directly lets a concurrent build
-  // that finds it present read a half-written file. Stale temps (from a killed
-  // generation) are reclaimed by the cache sweep.
-  const std::string tmp_path = pch_path + ".tmp";
+  // Generate to a temp path and rename into place: libnvccCreatePCH does not
+  // publish atomically, so a concurrent build could read a half-written
+  // pch_path. The temp is unique per writer (pid + random) because the
+  // generation lock is only best-effort, so two writers can still race here;
+  // the cache sweep reclaims temps orphaned by a killed writer.
+#ifdef _WIN32
+  const long long pch_tmp_pid = _getpid();
+#else
+  const long long pch_tmp_pid = ::getpid();
+#endif
+  static thread_local std::mt19937_64 pch_tmp_rng{std::random_device{}()};
+  const std::string tmp_path =
+    pch_path + "." + std::to_string(pch_tmp_pid) + "." + std::to_string(pch_tmp_rng()) + ".tmp";
   std::error_code tmp_ec;
-  std::filesystem::remove(tmp_path, tmp_ec);
 
   auto pch_result = libnvccCreatePCH(
     program.program,
@@ -263,7 +274,6 @@ bool create_pch_if_needed(
     return false;
   }
 
-  generated = true;
   return true;
 }
 
@@ -291,16 +301,14 @@ hostjit::CompilerConfig prepare_pch_config(const hostjit::CompilerConfig& config
     return prepared;
   }
 
-  bool generated = false;
-
   std::string device_pch_path;
-  if (create_pch_if_needed(prepared, LIBNVCC_PCH_DEVICE, "device", diagnostics, device_pch_path, generated))
+  if (create_pch_if_needed(prepared, LIBNVCC_PCH_DEVICE, "device", diagnostics, device_pch_path))
   {
     prepared.device_pch_path = std::move(device_pch_path);
   }
 
   std::string host_pch_path;
-  if (create_pch_if_needed(prepared, LIBNVCC_PCH_HOST, "host", diagnostics, host_pch_path, generated))
+  if (create_pch_if_needed(prepared, LIBNVCC_PCH_HOST, "host", diagnostics, host_pch_path))
   {
     prepared.host_pch_path = std::move(host_pch_path);
   }
