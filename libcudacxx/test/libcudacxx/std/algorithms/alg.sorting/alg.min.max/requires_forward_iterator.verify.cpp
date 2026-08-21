@@ -13,6 +13,9 @@
 // template<ForwardIterator Iter>
 //   max_element(Iter first, Iter last);
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 

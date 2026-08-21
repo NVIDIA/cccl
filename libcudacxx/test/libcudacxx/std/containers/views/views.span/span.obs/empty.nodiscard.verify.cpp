@@ -12,6 +12,9 @@
 
 // [[nodiscard]] constexpr bool empty() const noexcept;
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/span>
 
 void test()

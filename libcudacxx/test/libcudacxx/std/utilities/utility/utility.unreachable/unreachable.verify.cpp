@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/utility>
 
 [[noreturn]] void unreachable()

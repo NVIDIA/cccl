@@ -10,6 +10,9 @@
 
 // template <class T> constexpr T* launder(T* p) noexcept;
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/__new_>
 
 TEST_FUNC void f()

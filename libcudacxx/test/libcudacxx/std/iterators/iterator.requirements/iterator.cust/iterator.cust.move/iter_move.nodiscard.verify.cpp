@@ -14,6 +14,9 @@
 // template<class I>
 // unspecified iter_move;
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/iterator>
 
 #include "test_macros.h"

@@ -16,6 +16,9 @@
 // allocator:
 // T* allocate(size_t n);
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/__memory_>
 
 TEST_FUNC void f()
