@@ -424,6 +424,42 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   REQUIRE(host_output == host_actual);
 }
 
+struct SegmentedReduce_OutputTypeConversion_Fixture_Tag;
+C2H_TEST("SegmentedReduce converts the accumulator to the output type on store", "[segmented_reduce]")
+{
+  using SizeT                    = cuda::std::size_t;
+  const std::size_t n_segments   = 16;
+  const std::size_t segment_size = 512;
+
+  std::vector<SizeT> segments(n_segments + 1);
+  for (std::size_t i = 0; i <= n_segments; ++i)
+  {
+    segments[i] = i * segment_size;
+  }
+
+  // Accumulate in float (the init type); the output pointer has a different type.
+  // Each segment's result must be value-converted on the final store, not bit-reinterpreted.
+  const std::vector<float> host_input(n_segments * segment_size, 1.0f);
+  pointer_t<float> input_ptr(host_input);
+  pointer_t<int> output_ptr(n_segments);
+  pointer_t<SizeT> offset_ptr(segments);
+
+  auto start_offset_it = static_cast<cccl_iterator_t>(offset_ptr);
+  auto end_offset_it   = start_offset_it;
+  end_offset_it.state  = offset_ptr.ptr + 1;
+
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<float>().type));
+  value_t<float> init{0.25f};
+
+  auto& build_cache    = get_cache<SegmentedReduce_OutputTypeConversion_Fixture_Tag>();
+  const auto& test_key = make_key<float, int>();
+
+  segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init, build_cache, test_key);
+
+  const int expected = static_cast<int>(static_cast<float>(segment_size) + init.value);
+  REQUIRE(std::vector<int>(output_ptr) == std::vector<int>(n_segments, expected));
+}
+
 struct SegmentedReduce_CustomTypes_WellKnown_Fixture_Tag;
 C2H_TEST("SegmentedReduce works with custom types with well-known operations", "[segmented_reduce][well_known]")
 {

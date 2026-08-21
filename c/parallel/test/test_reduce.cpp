@@ -386,6 +386,45 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
   REQUIRE(output == expected);
 }
 
+struct Reduce_OutputTypeConversion_Fixture_Tag;
+C2H_TEST("Reduce converts the accumulator to the output type on store", "[reduce]")
+{
+  const std::size_t num_items = 1 << 14;
+
+  // Accumulate in float (the init type); the output pointer has a different type.
+  // The result must be value-converted on the final store, not bit-reinterpreted.
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<float>().type));
+  const std::vector<float> input(num_items, 1.0f);
+  pointer_t<float> input_ptr(input);
+  value_t<float> init{0.5f};
+
+  auto& build_cache = get_cache<Reduce_OutputTypeConversion_Fixture_Tag>();
+
+  // Output type narrower than the accumulator.
+  {
+    pointer_t<int> output_ptr(1);
+    const auto& test_key = make_key<float, int>();
+
+    reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+    const int output   = output_ptr[0];
+    const int expected = static_cast<int>(static_cast<float>(num_items) + init.value);
+    REQUIRE(output == expected);
+  }
+
+  // Output type wider than the accumulator.
+  {
+    pointer_t<double> output_ptr(1);
+    const auto& test_key = make_key<float, double>();
+
+    reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+    const double output   = output_ptr[0];
+    const double expected = static_cast<double>(static_cast<float>(num_items) + init.value);
+    REQUIRE(output == expected);
+  }
+}
+
 C2H_TEST("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
