@@ -11,7 +11,6 @@
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_RLE_COMPRESS rle 0:1:1
 // %RANGE% TUNE_WORK_STEALING ws 0:1:1
-// %RANGE% TUNE_MEM_PREFERENCE mem 0:2:1
 // %RANGE% TUNE_LOAD ld 0:2:1
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
@@ -65,7 +64,8 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
+      cuda::execution::tune(
+        histogram_tuning_policy_selector<SampleT, CounterT, num_channels, num_active_channels, false>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(

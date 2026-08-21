@@ -45,15 +45,6 @@ struct FormatTester
 template <class Tester>
 void do_test(const Tester& tester)
 {
-  // BlockHistogramMemoryPreference
-  {
-    tester(cub::BlockHistogramMemoryPreference::GMEM, "GMEM");
-    tester(cub::BlockHistogramMemoryPreference::SMEM, "SMEM");
-    tester(cub::BlockHistogramMemoryPreference::BLEND, "BLEND");
-
-    tester(cub::BlockHistogramMemoryPreference(100), "<unknown BlockHistogramMemoryPreference>");
-  }
-
   // RadixSortStoreAlgorithm
   {
     tester(cub::RadixSortStoreAlgorithm::RADIX_SORT_STORE_DIRECT, "RADIX_SORT_STORE_DIRECT");
