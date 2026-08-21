@@ -32,12 +32,16 @@ namespace cudax = cuda::experimental;
 
 namespace
 {
-using T = float;
+using element_types = nvbench::type_list<float, double>;
 
-inline constexpr T start_a = 1;
-inline constexpr T start_b = 2;
-inline constexpr T start_c = 0;
-inline constexpr T scalar  = 3;
+template <class T>
+inline constexpr T start_a = T{1};
+template <class T>
+inline constexpr T start_b = T{2};
+template <class T>
+inline constexpr T start_c = T{0};
+template <class T>
+inline constexpr T scalar = T{3};
 
 inline constexpr int min_elements_pow2 = 26;
 inline constexpr int max_elements_pow2 = 32;
@@ -76,6 +80,7 @@ make_communicators(cuda::device_ref device, cuda::std::span<const cuda::__logica
   return {domains.begin(), domains.end()};
 }
 
+template <class T>
 [[nodiscard]] std::vector<cuda::buffer<T, cuda::mr::device_accessible>> make_buffers(
   cuda::std::span<const cuda::__logical_device_ref> domains,
   const std::vector<cuda::stream>& streams,
@@ -130,22 +135,17 @@ void run_forked_iteration(
   }
 }
 
-void copy(nvbench::state& state)
+template <class T>
+void copy(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<cuda::std::size_t>(state.get_int64("Elements"));
   const auto device   = state_device(state);
   const auto domains  = device.__locality_domains();
 
-  if (domains.size() < 2)
-  {
-    state.skip("the GPU does not expose multiple locality domains");
-    return;
-  }
-
   auto comms   = make_communicators(device, domains);
   auto streams = make_streams(domains);
-  auto a       = make_buffers(domains, streams, elements, start_a);
-  auto c       = make_buffers(domains, streams, elements, start_c);
+  auto a       = make_buffers<T>(domains, streams, elements, start_a<T>);
+  auto c       = make_buffers<T>(domains, streams, elements, start_c<T>);
 
   cuda::event fork{device};
   auto join = make_events(device, domains.size());
@@ -171,25 +171,22 @@ void copy(nvbench::state& state)
   });
 }
 
-NVBENCH_BENCH(copy).set_name("copy").add_int64_power_of_two_axis(
-  "Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
+NVBENCH_BENCH_TYPES(copy, NVBENCH_TYPE_AXES(element_types))
+  .set_name("copy")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
 
-void mul(nvbench::state& state)
+template <class T>
+void mul(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<cuda::std::size_t>(state.get_int64("Elements"));
   const auto device   = state_device(state);
   const auto domains  = device.__locality_domains();
 
-  if (domains.size() < 2)
-  {
-    state.skip("the GPU does not expose multiple locality domains");
-    return;
-  }
-
   auto comms   = make_communicators(device, domains);
   auto streams = make_streams(domains);
-  auto b       = make_buffers(domains, streams, elements, start_b);
-  auto c       = make_buffers(domains, streams, elements, start_c);
+  auto b       = make_buffers<T>(domains, streams, elements, start_b<T>);
+  auto c       = make_buffers<T>(domains, streams, elements, start_c<T>);
 
   cuda::event fork{device};
   auto join = make_events(device, domains.size());
@@ -210,32 +207,29 @@ void mul(nvbench::state& state)
         c | cuda::std::views::transform(cuda::std::ranges::begin),
         c | cuda::std::views::transform(cuda::std::ranges::size),
         b | cuda::std::views::transform(cuda::std::ranges::begin),
-        [] __device__(const T& ci) {
-          return scalar * ci;
+        [] __device__(const T& ci) -> T {
+          return scalar<T> * ci;
         });
     });
   });
 }
-NVBENCH_BENCH(mul).set_name("mul").add_int64_power_of_two_axis(
-  "Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
+NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
+  .set_name("mul")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
 
-void add(nvbench::state& state)
+template <class T>
+void add(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<cuda::std::size_t>(state.get_int64("Elements"));
   const auto device   = state_device(state);
   const auto domains  = device.__locality_domains();
 
-  if (domains.size() < 2)
-  {
-    state.skip("the GPU does not expose multiple locality domains");
-    return;
-  }
-
   auto comms   = make_communicators(device, domains);
   auto streams = make_streams(domains);
-  auto a       = make_buffers(domains, streams, elements, start_a);
-  auto b       = make_buffers(domains, streams, elements, start_b);
-  auto c       = make_buffers(domains, streams, elements, start_c);
+  auto a       = make_buffers<T>(domains, streams, elements, start_a<T>);
+  auto b       = make_buffers<T>(domains, streams, elements, start_b<T>);
+  auto c       = make_buffers<T>(domains, streams, elements, start_c<T>);
 
   cuda::event fork{device};
   auto join = make_events(device, domains.size());
@@ -262,32 +256,29 @@ void add(nvbench::state& state)
         ab | cuda::std::views::transform(cuda::std::ranges::begin),
         ab | cuda::std::views::transform(cuda::std::ranges::size),
         c | cuda::std::views::transform(cuda::std::ranges::begin),
-        [] __device__(const auto& in) {
+        [] __device__(const auto& in) -> T {
           return cuda::std::get<0>(in) + cuda::std::get<1>(in);
         });
     });
   });
 }
-NVBENCH_BENCH(add).set_name("add").add_int64_power_of_two_axis(
-  "Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
+NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
+  .set_name("add")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
 
-void triad(nvbench::state& state)
+template <class T>
+void triad(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<cuda::std::size_t>(state.get_int64("Elements"));
   const auto device   = state_device(state);
   const auto domains  = device.__locality_domains();
 
-  if (domains.size() < 2)
-  {
-    state.skip("the GPU does not expose multiple locality domains");
-    return;
-  }
-
   auto comms   = make_communicators(device, domains);
   auto streams = make_streams(domains);
-  auto a       = make_buffers(domains, streams, elements, start_a);
-  auto b       = make_buffers(domains, streams, elements, start_b);
-  auto c       = make_buffers(domains, streams, elements, start_c);
+  auto a       = make_buffers<T>(domains, streams, elements, start_a<T>);
+  auto b       = make_buffers<T>(domains, streams, elements, start_b<T>);
+  auto c       = make_buffers<T>(domains, streams, elements, start_c<T>);
 
   cuda::event fork{device};
   auto join = make_events(device, domains.size());
@@ -315,12 +306,14 @@ void triad(nvbench::state& state)
         bc | cuda::std::views::transform(cuda::std::ranges::begin),
         bc | cuda::std::views::transform(cuda::std::ranges::size),
         a | cuda::std::views::transform(cuda::std::ranges::begin),
-        [] __device__(const auto& in) {
-          return cuda::std::get<0>(in) + (scalar * cuda::std::get<1>(in));
+        [] __device__(const auto& in) -> T {
+          return cuda::std::get<0>(in) + (scalar<T> * cuda::std::get<1>(in));
         });
     });
   });
 }
-NVBENCH_BENCH(triad).set_name("triad").add_int64_power_of_two_axis(
-  "Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
+NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
+  .set_name("triad")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(min_elements_pow2, max_elements_pow2, elements_stride));
 } // namespace
