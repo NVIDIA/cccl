@@ -75,7 +75,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       slack_alert_ts: ${{ steps.slack-alert.outputs.ts }}
+      slack_alert_text: ${{ steps.slack-alert-message.outputs.text }}
     steps:
+      - name: Prepare test notification
+        id: slack-alert-message
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          delimiter="EOF_$(openssl rand -hex 16)"
+          {
+            echo "text<<${delimiter}"
+            printf ":test_tube: TEST — Workflow 'nightly' has failed:\n\n"
+            printf ":large_red_square: Finished in 4h 51m: "
+            printf "Pass: 81%%/1164 | Total: 48d 19h | Max: 4h 05m | Hits: 23%%/5305298\n\n"
+            printf "Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834\n"
+            echo "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
+
       - name: Post test notification
         id: slack-alert
         uses: slackapi/slack-github-action@v1.26.0
@@ -83,10 +98,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
         with:
           channel-id: ${{ vars.SLACK_CHANNEL_CI_TEST }}
-          slack-message: |
-            :test_tube: TEST — Workflow 'nightly' has failed:
-
-            Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834
+          slack-message: ${{ steps.slack-alert-message.outputs.text }}
 
   publish-failure-analysis:
     name: Post AI failure analysis to Slack
@@ -119,9 +131,11 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_CI_TEST }}
           SLACK_THREAD_TS: ${{ needs.post-failure-notification.outputs.slack_alert_ts }}
+          SLACK_PARENT_TEXT: ${{ needs.post-failure-notification.outputs.slack_alert_text }}
           SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
         shell: bash --noprofile --norc -euo pipefail {0}
         run: |
           test -n "${SLACK_THREAD_TS}"
+          test -n "${SLACK_PARENT_TEXT}"
           printf '%s' "${SLACK_THREAD}" | \
             python3 ci/util/publish_slack_thread.py

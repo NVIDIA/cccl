@@ -17,6 +17,7 @@ class PublishError(RuntimeError):
 
 
 SLACK_TIMESTAMP = re.compile(r"[0-9]+\.[0-9]+")
+SLACK_UPDATE_LIMIT = 40000
 
 
 class NoRedirectHandler(request.HTTPRedirectHandler):
@@ -51,19 +52,9 @@ def load_thread(stream):
     return overview, replies
 
 
-def post_message(token, channel_id, text, thread_ts=None):
-    payload = {
-        "channel": channel_id,
-        "text": text,
-        "parse": "none",
-        "unfurl_links": False,
-        "unfurl_media": False,
-    }
-    if thread_ts is not None:
-        payload["thread_ts"] = thread_ts
-
+def call_slack_api(token, method, payload):
     api_request = request.Request(
-        "https://slack.com/api/chat.postMessage",
+        f"https://slack.com/api/{method}",
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {token}",
@@ -101,27 +92,66 @@ def post_message(token, channel_id, text, thread_ts=None):
     if result.get("ok") is not True:
         slack_error = result.get("error", "unknown_error")
         raise PublishError(f"Slack API error: {slack_error}")
+    return result
+
+
+def require_message_ts(result):
     message_ts = result.get("ts")
     if not isinstance(message_ts, str) or not message_ts:
         raise PublishError("Slack response did not contain a message timestamp")
     return message_ts
 
 
+def post_message(token, channel_id, text, thread_ts=None):
+    payload = {
+        "channel": channel_id,
+        "text": text,
+        "parse": "none",
+        "unfurl_links": False,
+        "unfurl_media": False,
+    }
+    if thread_ts is not None:
+        payload["thread_ts"] = thread_ts
+    return require_message_ts(call_slack_api(token, "chat.postMessage", payload))
+
+
+def update_message(token, channel_id, message_ts, text):
+    payload = {"channel": channel_id, "ts": message_ts, "text": text}
+    updated_ts = require_message_ts(call_slack_api(token, "chat.update", payload))
+    if updated_ts != message_ts:
+        raise PublishError("Slack updated an unexpected message timestamp")
+
+
 def main():
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel_id = os.environ.get("SLACK_CHANNEL_ID")
     thread_ts = os.environ.get("SLACK_THREAD_TS")
+    parent_text = os.environ.get("SLACK_PARENT_TEXT")
     if not token:
         raise PublishError("SLACK_BOT_TOKEN is required")
     if not channel_id:
         raise PublishError("SLACK_CHANNEL_ID is required")
     if thread_ts and SLACK_TIMESTAMP.fullmatch(thread_ts) is None:
         raise PublishError("SLACK_THREAD_TS is not a valid Slack timestamp")
+    if bool(thread_ts) != bool(parent_text):
+        raise PublishError(
+            "SLACK_THREAD_TS and SLACK_PARENT_TEXT must be provided together"
+        )
 
     overview, replies = load_thread(sys.stdin)
     if thread_ts:
         parent_ts = thread_ts
-        replies.insert(0, overview)
+        updated_parent = f"{parent_text.rstrip(chr(10))}\n\n{overview}"
+        if len(updated_parent) > SLACK_UPDATE_LIMIT:
+            raise PublishError(
+                "updated parent message exceeds Slack's 40,000-character limit"
+            )
+        try:
+            update_message(token, channel_id, parent_ts, updated_parent)
+        except PublishError as exception:
+            raise PublishError(
+                f"parent message update failed: {exception}"
+            ) from exception
     else:
         try:
             parent_ts = post_message(token, channel_id, overview)

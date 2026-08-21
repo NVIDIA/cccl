@@ -126,6 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       slack_alert_ts: ${{ steps.check-workflow.outputs.slack_alert_ts }}
+      slack_alert_text: ${{ steps.check-workflow.outputs.slack_alert_text }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -251,7 +252,10 @@ jobs:
         needs.analyze-failures.result == 'success' &&
         (
           needs.verify-workflow.result != 'failure' ||
-          needs.verify-workflow.outputs.slack_alert_ts != ''
+          (
+            needs.verify-workflow.outputs.slack_alert_ts != '' &&
+            needs.verify-workflow.outputs.slack_alert_text != ''
+          )
         )
       }}
     needs:
@@ -274,6 +278,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
           SLACK_THREAD_TS: ${{ needs.verify-workflow.outputs.slack_alert_ts }}
+          SLACK_PARENT_TEXT: ${{ needs.verify-workflow.outputs.slack_alert_text }}
           SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
         shell: bash --noprofile --norc -euo pipefail {0}
         run: |
