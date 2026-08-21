@@ -30,6 +30,9 @@ test_cluster(const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts
   uint3 index = blockIdx;
   NV_IF_TARGET(NV_PROVIDES_SM_90, (index = __clusterIdx();))
 
+  test_same_level_queries(cuda::cluster, hier);
+  test_same_level_queries(cuda::grid, hier);
+
   // 1. Test cuda::cluster.dims(x, hier)
   test_dims(dims, cuda::cluster, cuda::grid, hier);
 

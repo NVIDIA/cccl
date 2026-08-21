@@ -23,6 +23,8 @@ TEST_DEVICE_FUNC void test_block()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
+  test_same_level_queries(cuda::block);
+
   // 1. Test cuda::block.dims(x)
   {
     uint3 exp{1, 1, 1};

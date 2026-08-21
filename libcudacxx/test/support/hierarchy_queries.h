@@ -116,6 +116,18 @@ TEST_DEVICE_FUNC void test_rank(const cuda::std::size_t exp, const Level& level,
   assert(level.template rank_as<unsigned long long>(args...) == static_cast<unsigned long long>(exp));
 }
 
+template <class Level, class... Args>
+TEST_DEVICE_FUNC void test_same_level_queries(const Level& level, Args... args)
+{
+  test_dims(uint3{1, 1, 1}, level, level, args...);
+  test_static_dims(ulonglong3{1, 1, 1}, level, level, args...);
+  test_extents(cuda::std::extents<unsigned, 1, 1, 1>{}, level, level, args...);
+  test_static_count(level, level, args...);
+  test_count(1, level, level, args...);
+  test_index(uint3{0, 0, 0}, level, level, args...);
+  test_rank(0, level, level, args...);
+}
+
 template <class... Args>
 TEST_DEVICE_FUNC constexpr cuda::std::size_t mul_static_extents(Args... args)
 {

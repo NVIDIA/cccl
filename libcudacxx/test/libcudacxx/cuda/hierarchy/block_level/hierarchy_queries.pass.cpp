@@ -24,6 +24,8 @@ template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
 TEST_DEVICE_FUNC void test_block(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
+  test_same_level_queries(cuda::block, hier);
+
   // 1. Test cuda::block.dims(x, hier)
   {
     uint3 exp{1, 1, 1};

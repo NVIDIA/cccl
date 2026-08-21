@@ -231,6 +231,7 @@ template <class _Dims>
   auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
   return hierarchy_level_desc<block_level, decltype(__translated_dims)>(__translated_dims);
 }
+
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
