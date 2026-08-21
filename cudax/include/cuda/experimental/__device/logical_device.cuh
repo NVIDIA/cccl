@@ -88,6 +88,13 @@ public:
       , __kind(kinds::green_context)
       , __ctx(__gctx.__transformed)
   {}
+
+  //! @brief Construct logical_device from a `__logical_device_ref`
+  logical_device(::cuda::__logical_device_ref __device)
+      : __dev_id(__device.underlying_device().get())
+      , __kind(kinds::green_context)
+      , __ctx(::cuda::__driver::__ctxFromGreenCtx(__device.green_context()))
+  {}
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
 
   //! @brief Compares two logical_devices for equality
