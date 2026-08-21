@@ -19,15 +19,21 @@
 
 using namespace hostjit::codegen;
 
+// With an init value: 8 args
 // (temp_storage, temp_bytes, d_in, d_out, num_items, op_state, init_state, stream)
-using reduce_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
+using reduce_init_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
+
+// Without an init value: 7 args
+// (temp_storage, temp_bytes, d_in, d_out, num_items, op_state, stream)
+using reduce_no_init_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*);
 
 CUresult cccl_device_reduce_build_ex(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -38,25 +44,42 @@ CUresult cccl_device_reduce_build_ex(
   cccl_build_config* build_config)
 try
 {
+  if (init_kind == CCCL_FUTURE_VALUE_INIT)
+  {
+    fprintf(stderr, "\nERROR in cccl_device_reduce_build_ex(): future value init is not supported\n");
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(build_config, cub_path, thrust_path);
 
-  auto result =
-    CubCall::from("cub/device/device_reduce.cuh")
-      .run("cub::DeviceReduce::Reduce")
-      .name("cccl_jit_reduce")
-      .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init, stream)
-      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+  CubCallResult result = [&] {
+    auto base = CubCall::from("cub/device/device_reduce.cuh").run("cub::DeviceReduce::Reduce").name("cccl_jit_reduce");
+
+    if (init_kind == CCCL_NO_INIT)
+    {
+      // cub::DeviceReduce::Reduce with the stateless cub::detail::reduce::no_init tag
+      return base.with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, no_init(init), stream)
+        .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+    else // CCCL_VALUE_INIT
+    {
+      cccl_value_t init_val{init, nullptr}; // state=nullptr; passed at run time
+      return base.with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init_val, stream)
+        .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+  }();
 
   build->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_cubin(result.cubin, build->payload, build->payload_size);
   build->jit_compiler     = result.compiler;
   build->reduce_fn        = reinterpret_cast<void*>(result.fn_ptr);
-  build->accumulator_size = init.type.size;
+  build->accumulator_size = init.size;
   build->determinism      = determinism;
+  build->init_kind        = init_kind;
 
   return CUDA_SUCCESS;
 }
@@ -82,7 +105,19 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  auto reduce_fn = reinterpret_cast<reduce_fn_t>(build.reduce_fn);
+
+  // The stored fn pointer's arity depends on the build's init kind: CCCL_NO_INIT
+  // builds compile the 7-arg wrapper without the init pointer, value-init builds
+  // the 8-arg one. Select the matching cast; `init` is ignored for CCCL_NO_INIT.
+  if (build.init_kind == CCCL_NO_INIT)
+  {
+    auto reduce_fn   = reinterpret_cast<reduce_no_init_fn_t>(build.reduce_fn);
+    const int status = reduce_fn(
+      d_temp_storage, temp_storage_bytes, d_in.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
+    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+  }
+
+  auto reduce_fn = reinterpret_cast<reduce_init_fn_t>(build.reduce_fn);
 
   // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state, stream
   const int status = reduce_fn(
@@ -141,7 +176,8 @@ CUresult cccl_device_reduce_build(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -156,6 +192,7 @@ CUresult cccl_device_reduce_build(
     d_out,
     op,
     init,
+    init_kind,
     determinism,
     cc_major,
     cc_minor,

@@ -85,6 +85,18 @@ inline future_val_t future_val(cccl_type_info t)
   return {t};
 }
 
+// no_init_t: reduce without an initial value.  Generates the stateless
+// cub::detail::reduce::no_init tag in the CUB call with no wrapper parameter.
+// Carries type info so find_accum_type can resolve accum_t correctly.
+struct no_init_t
+{
+  cccl_type_info type;
+};
+inline no_init_t no_init(cccl_type_info t)
+{
+  return {t};
+}
+
 // unary_op_t: wraps a cccl_op_t used as a unary transform operator (T -> U).
 // Carries the input/output type info so the functor can be typed correctly.
 struct unary_op_t
@@ -199,6 +211,7 @@ using Arg = std::variant<
   double_buffer_t,
   selector_out_t,
   future_val_t,
+  no_init_t,
   cccl_value_t,
   force_accum_type_t,
   typed_scalar_t>;
