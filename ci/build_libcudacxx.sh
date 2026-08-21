@@ -35,8 +35,11 @@ source "${ci_dir}/build_common.sh"
 print_environment_details
 
 PRESET="libcudacxx"
+BUILD_OPTIONS=()
 if $codegen_tests; then
   PRESET="libcudacxx-codegen-filecheck"
+  # Report every FileCheck failure in the requested suite.
+  BUILD_OPTIONS=(-- -k 0)
 fi
 
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
@@ -44,7 +47,7 @@ CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${C
 if [[ -n "$build_target" ]]; then
   configure_preset "$PRESET" "$PRESET" "${CMAKE_OPTIONS[@]}"
   if ! $CONFIGURE_ONLY; then
-    build_preset "$PRESET" "$PRESET" --target "$build_target"
+    build_preset "$PRESET" "$PRESET" --target "$build_target" "${BUILD_OPTIONS[@]}"
   fi
   print_time_summary
   exit 0
