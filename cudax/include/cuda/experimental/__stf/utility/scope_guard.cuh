@@ -882,8 +882,8 @@ struct __ignore_policy
 };
 
 // Success-hook forwarding shared by the single-policy wrappers (`__catch_only_t`,
-// `__as_policy`, `__policy_pow`): both arities delegate to the wrapped policy, which owns
-// the expression type.
+// `__as_policy`, `__policy_pow`): both arities delegate to the wrapped policy. The outer
+// `operator<<` enforces that the forwarded answer preserves the callable's expression type.
 template <class _P>
 struct __forwards_success
 {
@@ -1040,9 +1040,9 @@ using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
 template <class _R>
 inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<__normalized_t<_R>>;
 
-// Success-hook forwarding shared by the `&` and `|` composites: rightmost-wins (the right
-// element owns the expression type). The exception hook -- where the two composites differ --
-// lives in the derived types.
+// Success-hook forwarding shared by the `&` and `|` composites: rightmost-wins. The outer
+// `operator<<` enforces that the selected hook preserves the callable's expression type. The
+// exception hook -- where the two composites differ -- lives in the derived types.
 template <class _L, class _R>
 struct __composite_hooks
 {
@@ -1135,10 +1135,7 @@ inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, expecting
 
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
-// acceptance is interpreted at `decltype(fn())`. A plain arm's answer must therefore be
-// interpretable at the callable's result type -- `retry | subst(-1)` works, but
-// `retry | as_expected` does not (an `unexpected` does not convert to the raw result);
-// nest `on_throw(as_expected) << [&]{ return on_throw(retry * n) << f; }` for that spelling.
+// acceptance is interpreted at `decltype(fn())`.
 template <class _L, class _R>
 struct __policy_or : __composite_hooks<_L, _R>
 {
@@ -1178,61 +1175,30 @@ struct __policy_or : __composite_hooks<_L, _R>
       }
     };
 
-    // When the left arm owns the expression type (on_success), both arms answer in that owned
-    // type: a match wraps the left's unexpected, a decline lifts the right arm's raw value
-    // through on_success. This is what makes `expecting<E> | subst(v)` work.
-    if constexpr (__has_on_success_with<_L, _Raw>)
+    // Interpret both arms at the callable's result type. Void callables surface ignore so
+    // this composite can still sit as a top-level policy.
+    _CCCL_TRY
     {
-      using _Owned = decltype(::cuda::std::declval<_L&>().on_success(::cuda::std::declval<_Raw>()));
-      _CCCL_TRY
+      if constexpr (::cuda::std::is_void_v<_Raw>)
       {
-        return _Owned{this->__l_(__exception, __loc, __fn)};
+        __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
+        return ::std::ignore;
       }
-      _CCCL_CATCH_ALL
+      else
       {
-        return this->__l_.on_success(__reobserve_right());
+        return __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
       }
     }
-    else if constexpr (::cuda::std::is_void_v<_Raw> && __has_on_success_void<_L>)
+    _CCCL_CATCH_ALL
     {
-      using _Owned = decltype(::cuda::std::declval<_L&>().on_success());
-      _CCCL_TRY
-      {
-        return _Owned{this->__l_(__exception, __loc, __fn)};
-      }
-      _CCCL_CATCH_ALL
+      if constexpr (::cuda::std::is_void_v<_Raw>)
       {
         __reobserve_right();
-        return this->__l_.on_success();
+        return ::std::ignore;
       }
-    }
-    else
-    {
-      // Neither arm owns: interpret each at the callable's result type. Void callables surface
-      // ignore so this composite can still sit as a top-level policy.
-      _CCCL_TRY
+      else
       {
-        if constexpr (::cuda::std::is_void_v<_Raw>)
-        {
-          __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-          return ::std::ignore;
-        }
-        else
-        {
-          return __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-        }
-      }
-      _CCCL_CATCH_ALL
-      {
-        if constexpr (::cuda::std::is_void_v<_Raw>)
-        {
-          __reobserve_right();
-          return ::std::ignore;
-        }
-        else
-        {
-          return __reobserve_right();
-        }
+        return __reobserve_right();
       }
     }
   }
@@ -1407,53 +1373,22 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
                 "on_throw has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly");
 
-  using _Result = decltype(__f());
-  using _P      = _Reaction;
+  using _Expr = decltype(__f());
+  using _P    = _Reaction;
 
-  if constexpr (::cuda::std::is_void_v<_Result>)
+  if constexpr (::cuda::std::is_void_v<_Expr>)
   {
-    if constexpr (__has_on_success_void<_P>)
-    {
-      // A success hook owns the type (e.g. defer, as_expected): the expression is what it makes.
-      using _Expr = decltype(::cuda::std::declval<_P&>().on_success());
-      _CCCL_TRY
-      {
-        __f();
-        return __policy.__reaction_.on_success();
-      }
-      _CCCL_CATCH (const ::std::exception& __exception)
-      {
-        return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_, __f);
-      }
-      _CCCL_CATCH_ALL
-      {
-        return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_, __f);
-      }
-    }
-    else
-    {
-      // No success hook: the expression is void, the result passing through.
-      _CCCL_TRY
-      {
-        __f();
-      }
-      _CCCL_CATCH (const ::std::exception& __exception)
-      {
-        return detail::__on_exception<void>(__policy.__reaction_, &__exception, __policy.__loc_, __f);
-      }
-      _CCCL_CATCH_ALL
-      {
-        return detail::__on_exception<void>(__policy.__reaction_, nullptr, __policy.__loc_, __f);
-      }
-    }
-  }
-  else if constexpr (__has_on_success_with<_P, _Result>)
-  {
-    // A success hook transforms/owns the non-void result; the expression is its return type.
-    using _Expr = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_Result>()));
     _CCCL_TRY
     {
-      return __policy.__reaction_.on_success(__f());
+      __f();
+      if constexpr (__has_on_success_void<_P>)
+      {
+        using _Answer = decltype(::cuda::std::declval<_P&>().on_success());
+        static_assert(::cuda::std::is_same_v<_Answer, _Expr>,
+                      "a policy's on_success must preserve the expression type; policies no "
+                      "longer own it (SPEC-ADDENDUM-7)");
+        __policy.__reaction_.on_success();
+      }
     }
     _CCCL_CATCH (const ::std::exception& __exception)
     {
@@ -1466,20 +1401,28 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
   }
   else
   {
-    // No hook accepts the non-void result: pass it through, unless a void-only success hook
-    // (e.g. defer over a non-void callable) means the result has no channel.
-    static_assert(!__has_on_success_void<_P>, "the policy's on_success cannot accept the callable's result");
     _CCCL_TRY
     {
-      return __f();
+      if constexpr (__has_on_success_with<_P, _Expr>)
+      {
+        using _Answer = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_Expr>()));
+        static_assert(::cuda::std::is_same_v<_Answer, _Expr>,
+                      "a policy's on_success must preserve the expression type; policies no "
+                      "longer own it (SPEC-ADDENDUM-7)");
+        return __policy.__reaction_.on_success(__f());
+      }
+      else
+      {
+        return __f();
+      }
     }
     _CCCL_CATCH (const ::std::exception& __exception)
     {
-      return detail::__on_exception<_Result>(__policy.__reaction_, &__exception, __policy.__loc_, __f);
+      return detail::__on_exception<_Expr>(__policy.__reaction_, &__exception, __policy.__loc_, __f);
     }
     _CCCL_CATCH_ALL
     {
-      return detail::__on_exception<_Result>(__policy.__reaction_, nullptr, __policy.__loc_, __f);
+      return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_, __f);
     }
   }
 }
@@ -1941,15 +1884,14 @@ void abort(_Ts&&...) = delete;
 /**
  * @brief Creates a policy saying how to react if a callable throws.
  *
- * Apply the policy with `on_throw(policy) << callable`, which evaluates to the callable's
- * result when nothing goes wrong -- or to a type owned by a success hook, such as the
- * `std::exception_ptr` of `defer` or the `cuda::std::expected` of `as_expected`.
+ * Apply the policy with `on_throw(policy) << callable`. Its expression type is always
+ * `decltype(callable())`; no policy changes it.
  *
  * A policy is an object exposing any of two optional capabilities, discovered by compile-time
  * introspection: the exception hook
  * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
  * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
- * a success hook `on_success(...)` that observes or replaces the result. The named policies
+ * a success hook `on_success(...)` that observes the result while preserving its type. The named policies
  * include @ref exception_policies::notify_t "notify", @ref exception_policies::subst_t "subst", @ref
  * exception_policies::defer_t "defer",
  * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
