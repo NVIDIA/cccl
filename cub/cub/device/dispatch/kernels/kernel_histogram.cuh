@@ -205,7 +205,7 @@ struct Transforms
 
 #if _CCCL_HAS_NVBF16()
     _CCCL_HOST_DEVICE
-    _CCCL_FORCEINLINE int SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_FORCEINLINE int SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level) const
     {
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                         (return __hge(sample, min_level) && __hlt(sample, max_level);),
@@ -254,6 +254,17 @@ struct Transforms
         (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
     }
 #endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+    // Unlike __half above, compute in float on all architectures: __nv_bfloat16 is too imprecise for the intermediate
+    // arithmetic (e.g. it cannot represent all bin indices beyond 256), and its native arithmetic requires SM80, so
+    // binning would otherwise differ between supported architectures
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__nv_bfloat16 sample, __nv_bfloat16 min_level, ScaleT scale) const
+    {
+      return static_cast<int>(
+        (__bfloat162float(sample) - __bfloat162float(min_level)) * __bfloat162float(scale.reciprocal));
+    }
+#endif // _CCCL_HAS_NVBF16()
 
   public:
     //! @brief Initializes the ScaleTransform for the given parameters
