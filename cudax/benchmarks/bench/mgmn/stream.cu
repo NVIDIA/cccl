@@ -45,7 +45,7 @@ inline constexpr int elements_stride   = 1;
 
 [[nodiscard]] cuda::device_ref state_device(nvbench::state& state)
 {
-  return cuda::devices[state.get_device()->get_id()];
+  return cuda::devices[state.get_device().value().get_id()]; // NOLINT(bugprone-unchecked-optional-access)
 }
 
 [[nodiscard]] std::vector<cudax::nccl_communicator>
