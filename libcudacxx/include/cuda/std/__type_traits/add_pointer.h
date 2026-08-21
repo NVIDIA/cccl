@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_referenceable.h>
+#include <cuda/std/__concepts/can_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -36,7 +36,7 @@ template <class _Tp>
 using add_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_POINTER(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_ADD_POINTER ^^^ / vvv !_CCCL_BUILTIN_ADD_POINTER vvv
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value || is_void<_Tp>::value>
+template <class _Tp, bool = __can_reference<_Tp> || is_void_v<_Tp>>
 struct __add_pointer_impl
 {
   using type _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>*;

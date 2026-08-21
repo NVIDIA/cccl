@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
@@ -39,10 +38,6 @@ template <class _Tp>
 using remove_cvref_t _CCCL_NODEBUG_ALIAS = remove_cv_t<remove_reference_t<_Tp>>;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CVREF) && !defined(_LIBCUDACXX_USE_REMOVE_CVREF_FALLBACK)
-
-template <class _Tp, class _Up>
-struct __is_same_uncvref : _IsSame<remove_cvref_t<_Tp>, remove_cvref_t<_Up>>
-{};
 
 template <class _Tp>
 struct remove_cvref

@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/can_reference.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
@@ -30,7 +31,6 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
@@ -131,7 +131,7 @@ struct __swappable_with
   using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
   using __swap2 = decltype((__test_swap<_Up, _Tp>(0)));
 
-  static const bool value = _IsNotSame<__swap1, __nat>::value && _IsNotSame<__swap2, __nat>::value;
+  static const bool value = !is_same_v<__swap1, __nat> && !is_same_v<__swap2, __nat>;
 };
 
 template <class _Tp, class _Up>
@@ -161,7 +161,7 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 template <class _Tp, class _Up>
 inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __can_reference<_Tp>>
 inline constexpr bool is_swappable_v = false;
 
 template <class _Tp>
@@ -171,7 +171,7 @@ inline constexpr bool is_swappable_v<_Tp, true> =
 template <class _Tp, class _Up>
 inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __can_reference<_Tp>>
 inline constexpr bool is_nothrow_swappable_v = false;
 
 template <class _Tp>
