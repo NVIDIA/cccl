@@ -412,8 +412,8 @@ template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
     , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
-                                        __tuple_all_copy_assignable_v<_Tp...>,
-                                        __tuple_all_move_assignable_v<_Tp...>>
+                                        __tuple_constraints<_Tp...>::__all_copy_assignable,
+                                        __tuple_constraints<_Tp...>::__all_move_assignable>
 {
   _CCCL_HIDE_FROM_ABI constexpr __tuple_impl() = default;
 

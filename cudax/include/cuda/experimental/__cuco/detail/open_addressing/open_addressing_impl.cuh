@@ -281,6 +281,7 @@ public:
     __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
         __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
+    _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to insert keys");
 
     return __read_counter(__counter, __stream);
   }
@@ -325,6 +326,7 @@ public:
       __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
         <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
           __first, __num_keys, __stencil, __pred, __container_ref);
+      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to insert keys");
     }
   }
 
@@ -359,6 +361,7 @@ public:
           ::cuda::std::identity{},
           __output_begin,
           __container_ref);
+      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
     }
   }
 
@@ -389,6 +392,7 @@ public:
     __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
         __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
+    _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
   }
 
   //! @brief Asynchronously finds the payloads for keys in `[first, last)`.

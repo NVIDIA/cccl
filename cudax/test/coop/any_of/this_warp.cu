@@ -138,7 +138,7 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_group(cudax::this_warp{});
+    test_group(cudax::this_warp{cudax::implicit_hierarchy()});
     test_group(cudax::this_warp{config});
   }
 };
