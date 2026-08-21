@@ -143,22 +143,23 @@ private:
       desc[peer].flags         = cudaMemAccessFlagsProtReadWrite;
     }
 
-    // Parameter structure for cudaGraphAddMemAllocNode - most values are constants.
-    static cudaMemAllocNodeParams params = [] {
-      cudaMemAllocNodeParams result{};
-      result.poolProps.allocType               = cudaMemAllocationTypePinned;
-      result.poolProps.handleTypes             = cudaMemHandleTypeNone;
-      result.poolProps.location                = {.type = cudaMemLocationTypeDevice, .id = 0};
-      result.poolProps.win32SecurityAttributes = nullptr;
+    // Parameter structure for cudaGraphAddMemAllocNode - most values are
+    // constants. This MUST be a local, not a function-local static: the driver
+    // writes the resulting device pointer back into params.dptr (read below),
+    // so a shared static would let two graph contexts allocating concurrently
+    // read each other's dptr -> silent wrong-pointer/data corruption.
+    cudaMemAllocNodeParams params{};
+    params.poolProps.allocType               = cudaMemAllocationTypePinned;
+    params.poolProps.handleTypes             = cudaMemHandleTypeNone;
+    params.poolProps.location                = {.type = cudaMemLocationTypeDevice, .id = 0};
+    params.poolProps.win32SecurityAttributes = nullptr;
 #if _CCCL_CTK_AT_LEAST(12, 3)
-      result.poolProps.maxSize = 0;
+    params.poolProps.maxSize = 0;
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
-      result.accessDescs     = nullptr;
-      result.accessDescCount = 0;
-      result.bytesize        = 0;
-      result.dptr            = nullptr;
-      return result;
-    }();
+    params.accessDescs     = nullptr;
+    params.accessDescCount = 0;
+    params.bytesize        = 0;
+    params.dptr            = nullptr;
 
     // Set only the variable parameters
     params.poolProps.location.id = device_ordinal(memory_node);

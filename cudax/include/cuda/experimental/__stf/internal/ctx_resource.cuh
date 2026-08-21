@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -78,14 +79,23 @@ public:
   ctx_resource_set& operator=(ctx_resource_set&&) = default;
 
   //! Store a resource until it is released
+  //!
+  //! Called during task submission (e.g. from parallel_for / host_launch on the
+  //! graph backend), which may run concurrently on several host threads sharing
+  //! one context. The backing vector would otherwise be corrupted by concurrent
+  //! push_back (lost/duplicated resources -> later double-free or leak), so the
+  //! mutation is serialized. The mutex lives behind a unique_ptr only to keep
+  //! this type movable (it is returned by value from export_resources()).
   void add(::std::shared_ptr<ctx_resource> r)
   {
+    const ::std::lock_guard<::std::mutex> guard(*mtx);
     resources.push_back(mv(r));
   }
 
   //! Release all resources asynchronously
   void release(cudaStream_t stream)
   {
+    const ::std::lock_guard<::std::mutex> guard(*mtx);
     _CCCL_ASSERT(!resources_released, "Resources have already been released on this context");
 
     // Release stream-dependent resources and compact them out of `resources` by
@@ -171,5 +181,11 @@ public:
 private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release
+
+  // Serializes add() against concurrent submitters and against release()'s
+  // compaction. Behind a unique_ptr so the class stays movable (std::mutex is
+  // not). export/import run at finalize time (single phase caller) but take the
+  // lock too for consistency.
+  ::std::unique_ptr<::std::mutex> mtx = ::std::make_unique<::std::mutex>();
 };
 } // end namespace cuda::experimental::stf

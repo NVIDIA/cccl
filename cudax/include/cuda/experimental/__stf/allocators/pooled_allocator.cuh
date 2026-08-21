@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <mutex>
 #include <optional>
 
 namespace cuda::experimental::stf
@@ -274,6 +275,13 @@ public:
                        size_t block_size,
                        event_list& prereqs)
   {
+    // One pool set is shared by all logical data in a context. Task acquire()
+    // only holds per-logical-data mutexes, so submitters with distinct logical
+    // data reach this set concurrently. get_pool()'s lazy multimap emplace and
+    // block_data_pool::get_entry()'s check-then-set of the per-entry `used`
+    // flag are otherwise unsynchronized (concurrent rehash -> UB; two threads
+    // handed the same block -> silent data corruption). Serialize both.
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     // Get the pool or create it lazily
     block_data_pool* pool = get_pool(ctx, root_allocator, prereqs, memory_node, block_size);
     if (!pool)
@@ -286,6 +294,7 @@ public:
 
   void release_pool_entry(const data_place& memory_node, size_t block_size, const event_list& prereqs, void* ptr)
   {
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     const size_t padded_sz = next_power_of_two(block_size);
     const auto key         = ::std::make_pair(to_index(memory_node), padded_sz);
 
@@ -308,8 +317,19 @@ public:
 
   event_list deinit_pools(backend_ctx_untyped& ctx)
   {
+    // Runs at context finalize (submitters expected quiesced). Swap the map
+    // out under the lock so any stray in-flight op sees an empty set and fails
+    // loudly (release_pool_entry aborts on an unknown pointer) instead of
+    // touching a pool that is being unpopulated, and so unpopulate's
+    // deallocations run outside the lock -- same janitor idiom as
+    // cached_block_allocator::deinit.
+    decltype(map) janitor;
+    {
+      const ::std::lock_guard<::std::mutex> guard(mtx);
+      map.swap(janitor);
+    }
     event_list res;
-    for (auto& entry : map)
+    for (auto& entry : janitor)
     {
       event_list per_place_res;
 
@@ -405,6 +425,12 @@ private:
                             block_data_pool,
                             ::cuda::experimental::stf::hash<::std::pair<size_t, size_t>>>
     map;
+
+  // Protects `map` (lazy pool creation) and, transitively, each pool's entry
+  // `used`/`available_cnt`/`prereqs` state against concurrent task submission
+  // from multiple host threads. The pool objects are only reachable through
+  // this set, so one mutex here covers block_data_pool too.
+  ::std::mutex mtx;
 
 private:
   pooled_allocator_config config = {
