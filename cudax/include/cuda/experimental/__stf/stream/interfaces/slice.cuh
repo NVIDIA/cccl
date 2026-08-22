@@ -19,6 +19,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -44,7 +46,7 @@ public:
   using typename base::element_type;
   using typename base::shape_t;
 
-  using mutable_value_type = typename ::std::remove_const<T>::type;
+  using mutable_value_type = typename ::cuda::std::remove_const<T>::type;
 
   slice_stream_interface(T* p)
       : base(slice<T, dimensions>(p))
@@ -263,7 +265,7 @@ public:
     unpin(this->instance(instance_id));
   }
 
-  ::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
+  ::cuda::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
   {
     const auto attributes = cuda_try<cudaPointerGetAttributes>(this->instance(instance_id).data_handle());
     // Implicitly converted to an optional

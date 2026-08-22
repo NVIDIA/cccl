@@ -11,23 +11,35 @@ on:
         description: "The dispatch.json's windows_standalone.jobs.<name> array of dispatch jobs."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        type: string
+        required: false
+        default: ${{ github.repository }}
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ${{ github.sha }}
 
 jobs:
   run-jobs:
-    name: ${{ matrix.name }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'windows-latest' }}
-    permissions:
-      id-token: write
-      contents: read
+    name: "${{ matrix.name }}"
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.job-array) }}
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'windows-latest' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.commit }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-windows
         with:

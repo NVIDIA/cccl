@@ -27,5 +27,9 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_array mdspan.array values
     --case inspect_before_update mdspan.update.before values
     --case inspect_after_update mdspan.update.after values
+    --case inspect_aliased_before_update mdspan.aliased.before.whole whole
+    --case inspect_aliased_before_update mdspan.aliased.before.prefix prefix
+    --case inspect_aliased_after_update mdspan.aliased.after.whole whole
+    --case inspect_aliased_after_update mdspan.aliased.after.prefix prefix
     # gersemi: on
 )

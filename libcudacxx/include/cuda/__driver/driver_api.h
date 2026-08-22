@@ -281,6 +281,56 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   return static_cast<::cuda::std::size_t>(__result);
 }
 
+#  if _CCCL_CTK_AT_LEAST(12, 4)
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __deviceGetDevResource(::CUdevice __dev, ::CUdevResourceType __type)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDevResource);
+  ::CUdevResource __resource{};
+
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the device SM resource", __dev, &__resource, __type);
+  return __resource;
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+// Note: this function doesn't need to be [[nodiscard]]. The returned remainder is technically
+// an optional output (and can be NULL in the actual driver call), the true return value is
+// __groups.
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __devSmResourceSplit(
+  ::CUdevResource* __groups,
+  unsigned int __n_groups,
+  const ::CUdevResource& __input,
+  ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevSmResourceSplit);
+  ::CUdevResource __remainder{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to split the SM resource",
+    __groups,
+    __n_groups,
+    &__input,
+    &__remainder,
+    /*__flags*/ 0U,
+    __params);
+  return __remainder;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevResourceDesc
+__devResourceGenerateDesc(::CUdevResource* __resources, unsigned int __num_resources)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevResourceGenerateDesc);
+  ::CUdevResourceDesc __ret{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to generate a resource descriptor", &__ret, __resources, __num_resources);
+  return __ret;
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
+
 // Primary context management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)
@@ -1023,12 +1073,13 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 
 #  if _CCCL_CTK_AT_LEAST(12, 5)
 // Add actual resource description input once exposure is ready
-[[nodiscard]] _CCCL_HOST_API inline ::CUgreenCtx __greenCtxCreate(::CUdevice __dev)
+[[nodiscard]] _CCCL_HOST_API inline ::CUgreenCtx
+__greenCtxCreate(::CUdevice __dev, ::CUdevResourceDesc __descriptor = nullptr)
 {
   ::CUgreenCtx __result;
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxCreate, cuGreenCtxCreate, 12, 5);
   ::cuda::__driver::__call_driver_fn(
-    __driver_fn, "Failed to create a green context", &__result, nullptr, __dev, ::CU_GREEN_CTX_DEFAULT_STREAM);
+    __driver_fn, "Failed to create a green context", &__result, __descriptor, __dev, ::CU_GREEN_CTX_DEFAULT_STREAM);
   return __result;
 }
 
@@ -1038,6 +1089,18 @@ __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-e
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12, 5);
   return static_cast<::cudaError_t>(__driver_fn(__green_ctx));
 }
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __ctxGetDevResource(::CUcontext __ctx, ::CUdevResourceType __type)
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuCtxGetDevResource, cuCtxGetDevResource, 12, 5);
+  ::CUdevResource __result{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to query a device resource of a context", __ctx, &__result, __type);
+  return __result;
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __ctxFromGreenCtx(::CUgreenCtx __green_ctx)
 {
   ::CUcontext __result;
@@ -1045,6 +1108,29 @@ __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-e
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to convert a green context", &__result, __green_ctx);
   return __result;
 }
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUstream
+__greenCtxStreamCreate(::CUgreenCtx __green_ctx, unsigned int __flags, int __priority)
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxStreamCreate, cuGreenCtxStreamCreate, 12, 5);
+  ::CUstream __result{};
+
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to create a stream from a green context",
+    &__result,
+    __green_ctx,
+    // From the driver docs (as of 13.3.1):
+    //
+    // > The supported values for flags are:
+    // >
+    // > - CU_STREAM_NON_BLOCKING: This must be specified
+    __flags | ::CU_STREAM_NON_BLOCKING,
+    __priority);
+  return __result;
+}
+
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
