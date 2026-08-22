@@ -1,3 +1,12 @@
+#ifndef _WIN32
+#  ifndef _GNU_SOURCE
+#    define _GNU_SOURCE // for dlinfo / RTLD_DI_LINKMAP
+#  endif
+#endif
+
+#include <cstdio>
+#include <cstdlib>
+
 #include <hostjit/loader.hpp>
 
 #ifdef _WIN32
@@ -5,6 +14,7 @@
 #  include <windows.h>
 #else
 #  include <dlfcn.h>
+#  include <link.h>
 #endif
 
 namespace hostjit
@@ -12,33 +22,49 @@ namespace hostjit
 #ifdef _WIN32
 namespace
 {
-// Run C++ static constructors in a DLL loaded with /NOENTRY /NODEFAULTLIB.
-// The compiler places CUDA fatbin registration in the .CRT$XCU section.
-// Without CRT startup, these never run, so we walk the merged .CRT section
-// in the PE and call each non-null function pointer.
-void runStaticInitializers(HMODULE module)
+// GetProcAddress on a loaded DLL only searches that module's own export table,
+// not the DLLs it imports. The JIT module imports cudaDeviceSynchronize from
+// cudart, so look for it in the DLLs the module itself imports, named in its
+// import directory. This mirrors Linux dlsym(handle, ...), which follows the
+// module's dependency graph, and it matters beyond convenience: a process can
+// hold more than one cudart, each with its own module registry and its own
+// pending-unload queue, and only the instance the module registered its fatbin
+// with can drain ours. Taking whatever copy is loaded in the process would be a
+// coin toss between them.
+void* resolveFromModuleImports(void* module, const char* name)
 {
-  auto base = reinterpret_cast<const unsigned char*>(module);
-  auto dos  = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
-  auto nt   = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-  auto sec  = IMAGE_FIRST_SECTION(nt);
-
-  for (WORD i = 0; i < nt->FileHeader.NumberOfSections; ++i, ++sec)
+  auto* base = static_cast<unsigned char*>(module);
+  auto* dos  = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
+  if (dos->e_magic != IMAGE_DOS_SIGNATURE)
   {
-    if (memcmp(sec->Name, ".CRT", 4) == 0)
+    return nullptr;
+  }
+  auto* nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+  if (nt->Signature != IMAGE_NT_SIGNATURE)
+  {
+    return nullptr;
+  }
+  const IMAGE_DATA_DIRECTORY& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+  if (dir.VirtualAddress == 0 || dir.Size == 0)
+  {
+    return nullptr;
+  }
+  for (auto* desc = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); desc->Name != 0; ++desc)
+  {
+    const char* dll = reinterpret_cast<const char*>(base + desc->Name);
+    // The module is loaded, so its imports are too: ask for the handle by name
+    // rather than loading anything.
+    HMODULE imported = GetModuleHandleA(dll);
+    if (!imported)
     {
-      using InitFunc = void(__cdecl*)();
-      auto funcs     = reinterpret_cast<InitFunc*>(const_cast<unsigned char*>(base) + sec->VirtualAddress);
-      size_t count   = sec->SizeOfRawData / sizeof(InitFunc);
-      for (size_t j = 0; j < count; ++j)
-      {
-        if (funcs[j])
-        {
-          funcs[j]();
-        }
-      }
+      continue;
+    }
+    if (auto* s = reinterpret_cast<void*>(GetProcAddress(imported, name)))
+    {
+      return s;
     }
   }
+  return nullptr;
 }
 
 std::string getWindowsError()
@@ -124,10 +150,9 @@ bool DynamicLibrary::load(const std::string& library_path)
     }
     return false;
   }
-
-  // The DLL is linked with /NOENTRY (no CRT startup), so C++ static
-  // constructors (e.g. CUDA fatbin registration) haven't run yet.
-  runStaticInitializers(static_cast<HMODULE>(handle_));
+  // Nothing to do after LoadLibrary: the DLL names its own entry point, which runs
+  // the static constructors, so the fatbin is already registered. Running them from
+  // here as well would register it twice.
 #else
   dlerror();
   handle_ = dlopen(library_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
@@ -195,16 +220,108 @@ void DynamicLibrary::unload()
 {
   if (handle_)
   {
-    // Intentionally do NOT unload (dlclose / FreeLibrary) a compiled JIT module. See #9367.
+    // Kernel launches are asynchronous, so kernels from this module may still be
+    // executing on the GPU when the caller unloads it, and the CUDA runtime keeps
+    // a pointer into the module's embedded fatbin (modules are loaded lazily).
+    // dlclose / FreeLibrary unmaps the module's memory immediately, so without a
+    // barrier a later CUDA call would dereference freed memory and crash.
+    // Synchronize first, so all GPU work referencing the module has finished
+    // before its memory goes away.
     //
-    // Each JIT .so is built by Clang with the classic fatbin embedding (-fcuda-include-gpubinary),
-    // which emits a module ctor (__cuda_module_ctor -> __cudaRegisterFatBinary)
-    // in .init_array but NO matching unregister dtor (.fini_array / __cudaUnregisterFatBinary).
-    // Unloading such a module unmaps its fatbin while the CUDA runtime still holds a pointer to it;
-    // that dangling registration corrupts the runtime's module table, so a later module's kernel
-    // launch silently no-ops.
+    // cudaDeviceSynchronize is looked up by symbol in the loaded module (which
+    // links cudart) rather than called directly, so this file needs no cudart
+    // link dependency. The module always links cudart, so the symbol must
+    // resolve; if it does not, we cannot drain in-flight work and unmapping the
+    // module anyway would risk a use-after-unmap crash -- fail loudly instead of
+    // skipping the barrier silently.
+    using sync_fn = int (*)();
+    sync_fn sync  = nullptr;
+    {
+#ifdef _WIN32
+      // Resolve from the cudart the module imports rather than from the module's
+      // own exports -- GetProcAddress on handle_ would not find an imported
+      // symbol.
+      sync = reinterpret_cast<sync_fn>(resolveFromModuleImports(handle_, "cudaDeviceSynchronize"));
+#else
+      sync = reinterpret_cast<sync_fn>(dlsym(handle_, "cudaDeviceSynchronize"));
+#endif
+      if (!sync)
+      {
+        std::fprintf(stderr, "hostjit: cudaDeviceSynchronize not found in JIT module; cannot safely unload\n");
+        std::abort();
+      }
+      sync();
+    }
+
+    // The module unregisters its fatbin on its own when the OS unloads it, but we
+    // want that done while it is still mapped, so that the flush below can give the
+    // device state back at unload time. The module exports __cudacc_module_fini()
+    // for exactly this; it is one-shot, so the OS hook afterwards finds nothing to do.
+    runModuleFini();
+
+    // Unregistering only queues the module for unload; the runtime issues the
+    // driver call from its next entry point, so without this the module would
+    // stay resident on the device for as long as the process makes no CUDA call.
+    // One more runtime call, made while the module is still mapped, drains that
+    // queue and gives the device state back at unload time. Nothing public says
+    // when the runtime issues that driver call or how to force it, so this rests
+    // on measured behaviour.
+    sync();
+
+    // The fatbin is unregistered, so it is now safe to unmap the module.
+#ifdef _WIN32
+    FreeLibrary(static_cast<HMODULE>(handle_));
+#else
+    dlclose(handle_);
+#endif
     handle_ = nullptr;
   }
   last_error_.clear();
+}
+
+std::string DynamicLibrary::getLoadedModulePath() const
+{
+  if (!handle_)
+  {
+    return {};
+  }
+#ifdef _WIN32
+  char path[MAX_PATH] = {};
+  DWORD n             = GetModuleFileNameA(static_cast<HMODULE>(handle_), path, static_cast<DWORD>(sizeof(path)));
+  return (n > 0) ? std::string(path, n) : std::string{};
+#else
+  struct link_map* lm = nullptr;
+  if (dlinfo(handle_, RTLD_DI_LINKMAP, &lm) == 0 && lm != nullptr && lm->l_name != nullptr)
+  {
+    return std::string(lm->l_name);
+  }
+  return {};
+#endif
+}
+
+void DynamicLibrary::runModuleFini()
+{
+  if (!handle_)
+  {
+    return;
+  }
+
+#ifdef _WIN32
+  auto proc = GetProcAddress(static_cast<HMODULE>(handle_), "__cudacc_module_fini");
+  auto fini = reinterpret_cast<void(__cdecl*)(void)>(proc);
+#else
+  auto fini = reinterpret_cast<void (*)(void)>(dlsym(handle_, "__cudacc_module_fini"));
+#endif
+
+  // Every library the compiler produces exports this. Its absence means the image
+  // came from somewhere else, and this class has no way to tear such an image
+  // down: unmapping it anyway would leave the fatbin registered against memory
+  // that is gone, which is the crash the unload sequence exists to prevent.
+  if (!fini)
+  {
+    std::fprintf(stderr, "hostjit: __cudacc_module_fini not found in the loaded module; cannot safely unload\n");
+    std::abort();
+  }
+  fini();
 }
 } // namespace hostjit
