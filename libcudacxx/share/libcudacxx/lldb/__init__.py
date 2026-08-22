@@ -9,6 +9,7 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import annotated_ptr
 import atomic
 import buffer
 import complex
@@ -30,6 +31,7 @@ _CATEGORY = "cccl"
 _FORMATTERS = (
     memory_resource,
     atomic,
+    annotated_ptr,
     buffer,
     std_array,
     complex,
@@ -43,6 +45,7 @@ _FORMATTERS = (
     span,
     optional,
 )
+
 InternalDict = dict[str, object]
 
 
