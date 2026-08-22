@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/host_arch.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
