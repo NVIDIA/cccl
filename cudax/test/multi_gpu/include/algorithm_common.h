@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/std/cstddef>
+#include <cuda/std/random>
 
 #include <chrono>
 #include <exception>
@@ -19,6 +20,11 @@
 #include <vector>
 
 #include <c2h/catch2_test_helper.h>
+
+[[nodiscard]] inline cuda::std::minstd_rand make_rng(const c2h::seed_t& seed)
+{
+  return cuda::std::minstd_rand(static_cast<cuda::std::minstd_rand::result_type>(seed.get()));
+}
 
 template <class Fn>
 void run_threaded(cuda::std::size_t num_ranks, Fn fn)
