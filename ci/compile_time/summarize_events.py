@@ -11,10 +11,25 @@ from pathlib import Path
 from typing import Any, Callable
 
 DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
+GROUP_BY_EVENT = "event"
+GROUP_BY_PRIMARY_TEMPLATE = "primary-template"
+GROUP_BY_CHOICES = (GROUP_BY_EVENT, GROUP_BY_PRIMARY_TEMPLATE)
+TEMPLATE_INSTANTIATION_EVENT_NAMES = frozenset(
+    {
+        "Instantiating Template Class",
+        "Instantiating Template Function",
+    }
+)
+TEMPLATE_INSTANTIATION_FILTER_LABELS = frozenset(
+    {
+        "template-instantiation",
+        "template-class-instantiation",
+        "template-function-instantiation",
+    }
+)
 SYMBOL_SCOPE_EVENT_NAMES = {
     "Scanning Function Body",
-    "Instantiating Template Class",
-    "Instantiating Template Function",
+    *TEMPLATE_INSTANTIATION_EVENT_NAMES,
     "Generating Function IR",
     "OptFunction",
 }
@@ -38,6 +53,7 @@ class ReportConfig:
     exclusive_scope: str
     sort_by: str
     top_n: int
+    group_by: str
     tag: str | None
     threshold_us: float = 0.0
     scope_filter: re.Pattern[str] | None = None
@@ -197,7 +213,7 @@ def normalize_project_file(detail: str, repo_root: Path) -> str | None:
     except ValueError:
         return None
 
-    if detail.startswith("build/"):
+    if "build" in Path(detail).parts:
         return None
     return detail
 
@@ -230,6 +246,15 @@ def symbol_name_prefix(symbol: str) -> str:
         prefix_start = before_parameters.rfind(" ", 0, operator_scope)
         return before_parameters[prefix_start + 1 :]
     return before_parameters.rsplit(None, 1)[-1]
+
+
+def primary_template_name(detail: str) -> str:
+    # NVCC supplies the primary template before the bracketed specialization.
+    # Prefer that label over attempting to parse arbitrary C++ symbol syntax.
+    reported_primary, separator, _ = detail.partition(" [")
+    if separator and reported_primary.strip():
+        return reported_primary.strip()
+    return symbol_name_prefix(detail)
 
 
 def itanium_nested_scope_candidates(symbol: str) -> list[str]:
@@ -304,6 +329,8 @@ def report_event_identity(
         event_key = normalize_project_file(event.detail, repo_root)
         if event_key is None:
             return None
+    elif config.group_by == GROUP_BY_PRIMARY_TEMPLATE:
+        event_key = primary_template_name(event.detail)
     else:
         event_key = event.key(repo_root)
 
@@ -919,14 +946,21 @@ def slugify(value: str) -> str:
     return slug or "report"
 
 
+def report_filename_pieces(config: ReportConfig) -> list[str]:
+    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
+    if config.group_by != GROUP_BY_EVENT:
+        pieces.insert(3, f"grouped-by-{config.group_by}")
+    if config.timing == "exclusive":
+        pieces.append(config.exclusive_scope)
+    pieces.append(f"by-{config.sort_by}")
+    return pieces
+
+
 def default_output_path(
     output_dir: Path,
     config: ReportConfig,
 ) -> Path:
-    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
-    if config.timing == "exclusive":
-        pieces.append(config.exclusive_scope)
-    pieces.append(f"by-{config.sort_by}")
+    pieces = report_filename_pieces(config)
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -937,10 +971,8 @@ def comparison_output_path(
     config: ReportConfig,
     direction: str,
 ) -> Path:
-    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
-    if config.timing == "exclusive":
-        pieces.append(config.exclusive_scope)
-    pieces.extend([f"by-{config.sort_by}", direction])
+    pieces = report_filename_pieces(config)
+    pieces.append(direction)
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -1185,11 +1217,20 @@ def report_config(
     exclusive_scope: str,
     sort_by: str,
     top_n: int,
+    group_by: str,
     tag: str | None,
     threshold_s: float,
     scope_filter: re.Pattern[str] | None,
 ) -> ReportConfig:
     spec = resolve_filter(filter_name)
+    if group_by == GROUP_BY_PRIMARY_TEMPLATE:
+        if spec.label not in TEMPLATE_INSTANTIATION_FILTER_LABELS:
+            raise ValueError(
+                "primary-template grouping requires a built-in template "
+                "instantiation filter"
+            )
+    elif group_by != GROUP_BY_EVENT:
+        raise ValueError(f"unsupported group_by '{group_by}'")
     resolved_exclusive_scope = (
         spec.default_exclusive_scope if exclusive_scope == "auto" else exclusive_scope
     )
@@ -1201,6 +1242,7 @@ def report_config(
         exclusive_scope=resolved_exclusive_scope,
         sort_by=sort_by,
         top_n=top_n,
+        group_by=group_by,
         tag=tag,
         threshold_us=threshold_s * 1_000_000.0,
         scope_filter=scope_filter,
@@ -1210,18 +1252,22 @@ def report_config(
 def single_slice_request(
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> SliceRequest:
-    config = report_config(
-        slice_id=slugify(args.tag or args.filter),
-        title=args.tag or resolve_filter(args.filter).description,
-        filter_name=args.filter,
-        timing=args.timing,
-        exclusive_scope=args.exclusive_scope,
-        sort_by=args.sort,
-        top_n=args.top,
-        tag=args.tag,
-        threshold_s=args.threshold,
-        scope_filter=compile_scope_filter(args.scope_filter, parser),
-    )
+    try:
+        config = report_config(
+            slice_id=slugify(args.tag or args.filter),
+            title=args.tag or resolve_filter(args.filter).description,
+            filter_name=args.filter,
+            timing=args.timing,
+            exclusive_scope=args.exclusive_scope,
+            sort_by=args.sort,
+            top_n=args.top,
+            group_by=args.group_by,
+            tag=args.tag,
+            threshold_s=args.threshold,
+            scope_filter=compile_scope_filter(args.scope_filter, parser),
+        )
+    except ValueError as e:
+        parser.error(str(e))
     return SliceRequest(config=config, filter_name=args.filter)
 
 
@@ -1259,6 +1305,7 @@ def slice_request_from_json(
     top_n = require_slice_field(slice_data, "top", path)
     threshold = require_slice_field(slice_data, "threshold", path)
     exclusive_scope = slice_data.get("exclusive_scope", "auto")
+    group_by = slice_data.get("group_by", GROUP_BY_EVENT)
     scope_filter_pattern = slice_data.get("scope_filter", DEFAULT_SCOPE_FILTER)
 
     if not isinstance(title, str) or not title:
@@ -1271,6 +1318,8 @@ def slice_request_from_json(
         raise ValueError(f"{path}: unsupported sort '{sort_by}'")
     if exclusive_scope not in ("auto", "all", "same-filter"):
         raise ValueError(f"{path}: unsupported exclusive_scope '{exclusive_scope}'")
+    if group_by not in GROUP_BY_CHOICES:
+        raise ValueError(f"{path}: unsupported group_by '{group_by}'")
     if isinstance(top_n, bool) or not isinstance(top_n, int) or top_n <= 0:
         raise ValueError(f"{path}: top must be a positive integer")
     if (
@@ -1294,6 +1343,7 @@ def slice_request_from_json(
         exclusive_scope=exclusive_scope,
         sort_by=sort_by,
         top_n=top_n,
+        group_by=group_by,
         tag=None,
         threshold_s=float(threshold),
         scope_filter=compile_scope_filter(scope_filter_pattern, parser),
@@ -1364,6 +1414,7 @@ def run_slice_report(
         "exclusive_scope": config.exclusive_scope,
         "sort": config.sort_by,
         "top": config.top_n,
+        "group_by": config.group_by,
         "threshold_s": config.threshold_us / 1_000_000.0,
         "output_dir": slice_output_dir.as_posix(),
         "children": [],
@@ -1547,6 +1598,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--group-by",
+        choices=GROUP_BY_CHOICES,
+        default=GROUP_BY_EVENT,
+        help=(
+            "event identity grouping; primary-template aggregates template "
+            "instantiation specializations by NVCC's reported primary template"
+        ),
+    )
+    parser.add_argument(
         "-o",
         "--output-dir",
         type=Path,
@@ -1638,6 +1698,7 @@ def main() -> None:
             (args.timing != parser.get_default("timing"), "--inclusive/--exclusive"),
             (args.top != parser.get_default("top"), "--top"),
             (args.sort != parser.get_default("sort"), "--sort"),
+            (args.group_by != parser.get_default("group_by"), "--group-by"),
             (args.threshold != parser.get_default("threshold"), "--threshold"),
             (
                 args.exclusive_scope != parser.get_default("exclusive_scope"),
