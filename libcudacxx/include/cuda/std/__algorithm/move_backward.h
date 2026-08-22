@@ -72,9 +72,11 @@ template <class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_API constexpr _BidirectionalIterator2
 move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
-  return ::cuda::std::__move_backward<_ClassicAlgPolicy>(
-           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
-    .second;
+  return ::cuda::std::__rewrap_iter(
+    __result,
+    ::cuda::std::__move_backward<_ClassicAlgPolicy>(
+      ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
+      .second);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
