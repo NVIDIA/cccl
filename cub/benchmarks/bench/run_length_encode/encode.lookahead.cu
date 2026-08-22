@@ -41,7 +41,16 @@
 #      define USES_LOOKAHEAD() 1
 // only the lookahead-viable key types: power-of-two sizes dividing 16 with alignment == size
 using rle_key_types =
-  nvbench::type_list<nvbench::int8_t, nvbench::int16_t, nvbench::int32_t, nvbench::int64_t, int128_t>;
+  nvbench::type_list<nvbench::int8_t,
+                     nvbench::int16_t,
+                     nvbench::int32_t,
+                     nvbench::int64_t
+#      if _CCCL_HAS_INT128()
+                     ,
+                     int128_t
+#      endif // !_CCCL_HAS_INT128()
+                     >;
+
 #      include "base.cuh"
 
 #    endif // __cccl_ptx_isa < 920
