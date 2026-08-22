@@ -110,7 +110,7 @@ inline const char* access_mode_string(access_mode mode)
       return "reduce"; // op ?
     default:
       assert(false);
-      abort();
+      ::std::abort();
   }
 }
 

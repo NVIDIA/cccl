@@ -434,7 +434,7 @@ private:
               type_name<shape_t>.data(),
               static_cast<int>(tname.size()),
               tname.data());
-      abort();
+      ::std::abort();
     }
     return &shape;
   }
@@ -450,7 +450,7 @@ private:
               type_name<T>.data(),
               static_cast<int>(tname.size()),
               tname.data());
-      abort();
+      ::std::abort();
     }
     return &instance(instance_id);
   }
@@ -467,7 +467,7 @@ private:
               type_name<T>.data(),
               static_cast<int>(tname.size()),
               tname.data());
-      abort();
+      ::std::abort();
     }
     return &instance(instance_id);
   }

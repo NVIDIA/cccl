@@ -303,7 +303,7 @@ public:
 
     // Should not be reached
     fprintf(stderr, "Error: pointer %p was released, but does not belong to a known pool.\n", ptr);
-    abort();
+    ::std::abort();
   }
 
   event_list deinit_pools(backend_ctx_untyped& ctx)

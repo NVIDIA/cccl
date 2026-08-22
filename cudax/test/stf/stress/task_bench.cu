@@ -82,11 +82,11 @@ bool skip_task(test_id id, int t, int i, int /*W*/)
       return (i % stride != 0);
     }
     default:
-      abort();
+      std::abort();
   }
 
   // should not be reached
-  abort();
+  std::abort();
   return true;
 }
 #if _CCCL_COMPILER(MSVC)
@@ -172,7 +172,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
       }
       break;
     default:
-      abort();
+      std::abort();
   }
 
   return res;

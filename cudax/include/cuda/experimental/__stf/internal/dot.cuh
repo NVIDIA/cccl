@@ -562,7 +562,7 @@ public:
   {
     // Timing metadata is diagnostic only; allocation or locking failures must
     // not interfere with task teardown.
-    on_throw(notify, loc) << [&] {
+    on_throw(exception_policies::notify, loc) << [&] {
       ::std::scoped_lock guard(mtx);
 
       if (!tracing_enabled)
@@ -940,7 +940,7 @@ private:
             break;
           default:
             fprintf(stderr, "error: unknown vertex type\n");
-            abort();
+            exception_policies::abort();
         };
 
         outFile << "\"NODE_" << v.first << "\" [style=\"" << style;

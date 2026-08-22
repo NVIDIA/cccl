@@ -132,7 +132,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
                 kernel_limits.block_size_limit,
                 l1_size);
-        abort();
+        ::std::abort();
       }
     }
 
@@ -181,7 +181,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
                 kernel_limits.block_size_limit,
                 l2_size);
-        abort();
+        ::std::abort();
       }
     }
 

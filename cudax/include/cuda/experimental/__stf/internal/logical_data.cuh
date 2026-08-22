@@ -365,7 +365,7 @@ public:
       if (reference_instance_id == instance_id_t::invalid)
       {
         fprintf(stderr, "Error: cannot enable write-back on a logical data with no reference instance.\n");
-        abort();
+        ::std::abort();
       }
     }
 
@@ -450,7 +450,7 @@ public:
 #endif
 
     fprintf(stderr, "FATAL: no valid source found.\n");
-    abort();
+    ::std::abort();
     return instance_id_t::invalid;
   }
 
@@ -660,7 +660,7 @@ public:
 
       default:
         assert(!"Corrupt MSIR state value found.");
-        abort();
+        ::std::abort();
     }
   }
 
@@ -811,7 +811,7 @@ public:
 
           default:
             assert(!"Corrupt MSIR state detected.");
-            abort();
+            ::std::abort();
         }
 
         break;
@@ -911,7 +911,7 @@ public:
 
           default:
             assert(!"Corrupt MSIR state detected.");
-            abort();
+            ::std::abort();
         }
 
         break;
@@ -922,7 +922,7 @@ public:
 
       default:
         assert(!"Corrupt MSIR state detected.");
-        abort();
+        ::std::abort();
     }
   }
 
@@ -1738,7 +1738,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     if (!automatic_unfreeze)
     {
       fprintf(stderr, "Error: destroying frozen logical data without unfreeze and no automatic unfreeze\n");
-      abort();
+      ::std::abort();
     }
 
     // Freeze data automatically : we assume all dependencies on that
@@ -2297,7 +2297,7 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
 
   // This task does not has d in its dependencies
   fprintf(stderr, "FATAL: could not find this piece of data in the current task.\n");
-  abort();
+  ::std::abort();
 
   return instance_id_t::invalid;
 }

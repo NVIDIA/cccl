@@ -130,7 +130,7 @@ public:
 
     // DOT tracing and set_ready_prereqs must not throw after capture has begun,
     // or the stream would be left capturing. Abort instead.
-    on_throw(::std::abort) << [&] {
+    on_throw(exception_policies::abort) << [&] {
       if (dot.is_tracing())
       {
         dot.template add_vertex<task, logical_data_untyped>(*this);
@@ -303,7 +303,7 @@ public:
       if (!dep.get_data().is_initialized())
       {
         fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
+        exception_policies::abort();
       }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());

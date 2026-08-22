@@ -324,7 +324,7 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
     return;
   }
   fprintf(stderr, "%s\n", cuda_exception(status, loc).what());
-  abort();
+  exception_policies::abort();
 }
 
 #ifdef UNITTESTED_FILE

@@ -339,7 +339,7 @@ public:
       auto callback = [](void* raw) {
         // The CUDA runtime calls this back, so an exception thrown by the user code must not
         // leave it.
-        on_throw(::std::abort) << [raw] {
+        on_throw(exception_policies::abort) << [&] {
           auto* w = static_cast<decltype(resolved.get())>(raw);
           SCOPE(exit)
           {
@@ -389,7 +389,7 @@ public:
       auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::cuda::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        on_throw(::std::abort) << [untyped_wrapper] {
+        on_throw(exception_policies::abort) << [&] {
           auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
           SCOPE(exit)
           {

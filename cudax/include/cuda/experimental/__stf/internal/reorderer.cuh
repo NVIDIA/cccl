@@ -375,6 +375,6 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
   }
 
   fprintf(stderr, "Invalid CUDASTF_TASK_ORDER value '%s'\n", reorderer_type);
-  abort();
+  ::std::abort();
 }
 } // namespace cuda::experimental::stf::reserved

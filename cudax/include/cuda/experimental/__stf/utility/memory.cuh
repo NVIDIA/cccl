@@ -238,7 +238,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
     stream,
     [](void* vp) {
       // The CUDA runtime calls this back, so an exception must not leave it.
-      on_throw(::std::abort) << [vp] {
+      on_throw(exception_policies::abort) << [&] {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateHostMemory(args->second, args->first);
         delete args;
@@ -267,7 +267,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      on_throw(::std::abort) << [vp] {
+      on_throw(exception_policies::abort) << [&] {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateManagedMemory(args->second, args->first);
         delete args;
@@ -297,7 +297,7 @@ inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        on_throw(::std::abort) << [vp] {
+        on_throw(exception_policies::abort) << [&] {
           auto args = static_cast<::std::pair<size_t, void*>*>(vp);
           deallocateHostMemory(args->second, args->first);
           delete args;

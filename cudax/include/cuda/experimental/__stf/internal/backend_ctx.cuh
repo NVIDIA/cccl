@@ -222,7 +222,7 @@ protected:
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
       fprintf(stderr, "Internal error.\n");
-      abort();
+      ::std::abort();
       return event_list();
     }
 #if _CCCL_COMPILER(MSVC)

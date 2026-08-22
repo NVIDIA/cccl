@@ -577,13 +577,13 @@ UNITTEST("empty box<1>")
   if (it_end != it_begin)
   {
     fprintf(stderr, "Error: begin() != end()\n");
-    abort();
+    ::std::abort();
   }
 
   // There should be no entry in this range
   for ([[maybe_unused]] const auto& pos : shape)
   {
-    abort();
+    ::std::abort();
   }
 };
 

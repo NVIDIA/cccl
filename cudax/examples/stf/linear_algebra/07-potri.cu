@@ -874,7 +874,7 @@ void PDTRSM(cublasSideMode_t side,
     if (uplo == CUBLAS_FILL_MODE_UPPER)
     {
       // TODO
-      abort();
+      std::abort();
     }
     else
     {
@@ -930,7 +930,7 @@ void PDTRSM(cublasSideMode_t side,
   else
   {
     // TODO
-    abort();
+    std::abort();
   }
   //    std::cout << "[PDTRSM] END" << '\n';
 }

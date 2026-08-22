@@ -208,7 +208,7 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    on_throw(::std::abort) << [&] {
+    on_throw(exception_policies::abort) << [&] {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -373,7 +373,7 @@ public:
       if (!dep.get_data().is_initialized())
       {
         fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
+        exception_policies::abort();
       }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());

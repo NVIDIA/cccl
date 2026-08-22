@@ -103,7 +103,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
       if (!(frozen_mode == access_mode::read && mode == access_mode::read))
       {
         fprintf(stderr, "Error: illegal access on frozen logical data\n");
-        abort();
+        ::std::abort();
       }
     }
 
@@ -112,7 +112,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     if (ctx != d.get_ctx())
     {
       fprintf(stderr, "Error: mismatch between task context and logical data context\n");
-      abort();
+      ::std::abort();
     }
 
     // We possibly "merge" multiple dependencies. If they have different modes, those are combined.

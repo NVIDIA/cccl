@@ -81,7 +81,7 @@ void run()
     if (p(0) != ref_tot)
     {
       fprintf(stderr, "INCORRECT RESULT: p sum = %d, ref tot = %d\n", p(0), ref_tot);
-      abort();
+      std::abort();
     }
   };
 

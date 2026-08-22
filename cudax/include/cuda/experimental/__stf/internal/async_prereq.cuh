@@ -168,7 +168,7 @@ public:
   virtual void sync_with_stream(const backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
     fprintf(stderr, "Unsupported synchronization with stream.\n");
-    abort();
+    exception_policies::abort();
   }
 
   // return stream then depends on the list of events
@@ -465,7 +465,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) const
 {
   fprintf(stderr, "Unsupported synchronization with stream.\n");
-  abort();
+  exception_policies::abort();
   return event_list();
 }
 _CCCL_DIAG_POP
@@ -494,7 +494,7 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
                 typeid(decltype(*item)).name(), // Change made here
                 static_cast<int>(type_name<some_event>.size()),
                 type_name<some_event>.data());
-        abort();
+        exception_policies::abort();
       }
       typechecked = true;
     }

@@ -194,7 +194,7 @@ public:
 
           default:
             assert(!"Corrupt hw_scope value.");
-            abort();
+            ::std::abort();
         }
       }
     }

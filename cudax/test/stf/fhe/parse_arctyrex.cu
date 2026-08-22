@@ -408,7 +408,7 @@ void run(const char* inputfile)
       }
 
       std::cout << "UNRECOGNIZED GATE !" << '\n';
-      abort();
+      std::abort();
     }
   }
 

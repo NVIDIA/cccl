@@ -845,7 +845,7 @@ public:
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
           fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
+          exception_policies::abort();
         }
         else
         {
@@ -1144,7 +1144,7 @@ public:
     else
     {
       fprintf(stderr, "Internal error.\n");
-      abort();
+      exception_policies::abort();
     }
   }
 
@@ -1177,7 +1177,7 @@ public:
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(::std::abort) << [untyped_args] {
+      on_throw(exception_policies::abort) << [&] {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
@@ -1237,7 +1237,7 @@ public:
     else
     {
       fprintf(stderr, "Internal error.\n");
-      abort();
+      exception_policies::abort();
     }
   }
 

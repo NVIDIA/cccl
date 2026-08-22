@@ -165,7 +165,7 @@ public:
   void run_as_task_dynamic(Fun&& /* fun */, graph_ctx& /* ctx */, const ::std::vector<task_dep_untyped>& /* deps */)
   {
     /// TODO
-    abort();
+    ::std::abort();
   }
 
   /**

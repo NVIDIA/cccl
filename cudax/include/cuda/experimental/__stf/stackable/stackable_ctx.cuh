@@ -328,7 +328,7 @@ public:
                   "Error: Invalid access mode transition - parent frozen with %s, requesting %s\n",
                   access_mode_string(parent_frozen_mode),
                   access_mode_string(m));
-          abort();
+          ::std::abort();
         }
       }
 
@@ -687,7 +687,7 @@ private:
                 "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
                 access_mode_string(existing_frozen_mode),
                 access_mode_string(m));
-        abort();
+        ::std::abort();
       }
     }
 
