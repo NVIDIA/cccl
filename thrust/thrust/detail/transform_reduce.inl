@@ -65,4 +65,67 @@ OutputType transform_reduce(
   return thrust::transform_reduce(select_system(system), first, last, unary_op, init, binary_op);
 } // end transform_reduce()
 
+_CCCL_EXEC_CHECK_DISABLE
+template <
+  typename DerivedPolicy,
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1,
+  typename BinaryOp2,
+  // SFINAE: only participate when InputIterator2 is actually an iterator
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
+    int> = 0>
+_CCCL_HOST_DEVICE T transform_reduce(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 reduce_op,
+  BinaryOp2 transform_op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
+  using thrust::system::detail::generic::transform_reduce;
+  return transform_reduce(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+    first1,
+    last1,
+    first2,
+    init,
+    reduce_op,
+    transform_op);
+} // end transform_reduce()
+
+template <
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1,
+  typename BinaryOp2,
+  // SFINAE: only participate when InputIterator2 is actually an iterator
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
+    int> = 0>
+T transform_reduce(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 reduce_op,
+  BinaryOp2 transform_op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+
+  System1 system1;
+  System2 system2;
+
+  return thrust::transform_reduce(select_system(system1, system2), first1, last1, first2, init, reduce_op, transform_op);
+} // end transform_reduce()
+
 THRUST_NAMESPACE_END
