@@ -63,8 +63,13 @@ function Install-Driver {
     # TCC -> MCDM on data center GPUs:
     if ($data_center_gpus -contains $gpu_type) {
         nvidia-smi -fdm 2
-        pnputil /disable-device /class Display
-        pnputil /enable-device /class Display
+        # Only restart NVIDIA display adapters, not other display devices (e.g. QEMU VGA)
+        $nvidia_devices = Get-PnpDevice -Class Display -FriendlyName "NVIDIA*"
+        foreach ($device in $nvidia_devices) {
+            Write-Output "Restarting device: $($device.FriendlyName) ($($device.InstanceId))"
+            pnputil /disable-device "$($device.InstanceId)"
+            pnputil /enable-device "$($device.InstanceId)"
+        }
         # Give it a minute to settle:
         Start-Sleep -Seconds 5
     }
