@@ -21,6 +21,8 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_thread_segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_warp_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -28,13 +30,14 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -42,7 +45,9 @@ namespace detail::segmented_scan
 {
 enum class worker
 {
-  block
+  block,
+  warp,
+  thread
 };
 
 template <typename PolicySelector,
@@ -63,6 +68,36 @@ struct device_segmented_scan_kernel_source
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    warp_segmented_scan_kernel,
+    device_warp_segmented_scan_kernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    thread_segmented_scan_kernel,
+    device_thread_segmented_scan_kernel<
       PolicySelector,
       InputIteratorT,
       OutputIteratorT,
@@ -161,16 +196,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
-               "The memory consistency model does not apply to texture accesses");
-
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
+
+  static constexpr auto int32_max = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
 
   const auto [workers_per_block, block_size, normalized_spw] =
     [&](worker selector) -> ::cuda::std::tuple<int, int, int> {
     switch (selector)
     {
       case worker::block: {
+        _CCCL_ASSERT(active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
         constexpr int workers_per_block = 1;
         const auto max_segments         = active_policy.block.max_segments;
         const auto threads_per_block    = active_policy.block.threads_per_block;
@@ -178,6 +215,30 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
+        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
+      }
+      case worker::warp: {
+        _CCCL_ASSERT(active_policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
+        const auto threads_per_block = active_policy.warp.threads_per_block;
+        const auto max_segments      = active_policy.warp.max_segments;
+        _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
+        _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per warp exceeds maximum value");
+        _CCCL_ASSERT((threads_per_block % warp_threads) == 0,
+                     "Block-size must be a multiple of architectural warp-size");
+        const int workers_per_block = threads_per_block / warp_threads;
+        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
+      }
+      case worker::thread: {
+        _CCCL_ASSERT(active_policy.thread.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
+        const auto threads_per_block = active_policy.thread.threads_per_block;
+        const auto workers_per_block = threads_per_block;
+        // num_segments_per_worker needs to be clamped to ensure that
+        // num_segments_per_worker * workers_per_block fits type int
+        const int max_segments = int32_max / ::cuda::std::max(workers_per_block, 1);
         return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       default:
@@ -192,7 +253,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const auto segments_per_block = num_segments_per_worker * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
-  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
   static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
 
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
@@ -219,6 +279,40 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       case worker::block:
         if (const auto error = CubDebug(launcher.doit(
               kernel_source.segmented_scan_kernel(),
+              d_in,
+              d_out,
+              input_begin_offsets,
+              input_end_offsets,
+              output_begin_offsets,
+              segment_count,
+              scan_op,
+              init_value,
+              num_segments_per_worker));
+            cudaSuccess != error)
+        {
+          return error;
+        };
+        break;
+      case worker::warp:
+        if (const auto error = CubDebug(launcher.doit(
+              kernel_source.warp_segmented_scan_kernel(),
+              d_in,
+              d_out,
+              input_begin_offsets,
+              input_end_offsets,
+              output_begin_offsets,
+              segment_count,
+              scan_op,
+              init_value,
+              num_segments_per_worker));
+            cudaSuccess != error)
+        {
+          return error;
+        };
+        break;
+      case worker::thread:
+        if (const auto error = CubDebug(launcher.doit(
+              kernel_source.thread_segmented_scan_kernel(),
               d_in,
               d_out,
               input_begin_offsets,
