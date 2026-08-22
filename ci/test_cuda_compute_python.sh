@@ -3,11 +3,37 @@
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Paths below are repo-root relative, not the devcontainer workspace path: the
+# wheel fetch now runs on the CI runner for `devcontainer: false` lanes, where
+# the checkout lives somewhere else entirely.
+repo_root="$(cd "$ci_dir/.." && pwd)"
 source "$ci_dir/pyenv_helper.sh"
 
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
+
+# Provisioning the wheel needs tooling the minimal test container deliberately
+# lacks (gh to fetch the artifact, docker to build one locally), so it runs
+# before the handoff below and is skipped once we are on the other side of it.
+if [[ -z "${CCCL_INSIDE_MINIMAL_CONTAINER:-}" ]]; then
+  # Fetch or build the cuda_cccl wheel:
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
+    "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
+  else
+    "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
+  fi
+
+  # Hand the rest of this script to a container that has nothing in it but
+  # Python, so that any reliance on a host compiler or a system CUDA toolkit
+  # fails here instead of silently passing. Lanes opt in with `devcontainer:
+  # false` in ci/matrix.yaml; JOB_DEVCONTAINER is set by the CI action.
+  if [[ "${JOB_DEVCONTAINER:-true}" == "false" ]]; then
+    exec "$ci_dir/util/python/run_in_minimal_container.sh" "$0" "$@"
+  fi
+fi
+
 # Pin cuda-toolkit to the container's CTK minor and set cuda_version /
 # cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
 pin_cuda_toolkit "${ctk_mode}"
@@ -15,17 +41,9 @@ pin_cuda_toolkit "${ctk_mode}"
 # Setup Python environment
 setup_python_env "${py_version}"
 
-# Fetch or build the cuda_cccl wheel:
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
-else
-  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
-fi
-
 # Install cuda_cccl. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
 # (system-provided toolkit) depending on the -ctk-mode arg.
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
+CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
@@ -38,7 +56,7 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   pytest_extra+=(-x)
 fi
 
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
+cd "${repo_root}/python/cuda_cccl/tests/"
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   # The test isolates itself in a fresh subprocess (LLVM initialization is
   # process-wide and only cold once), but it carries the free_threading marker,

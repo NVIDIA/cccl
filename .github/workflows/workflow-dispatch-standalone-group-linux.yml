@@ -47,6 +47,7 @@ jobs:
           environment: ${{ matrix.environment }}
           command: ${{ matrix.command }}
           image:   ${{ matrix.image }}
+          devcontainer: ${{ matrix.devcontainer }}
           runner:  ${{ matrix.runner }}
           cuda:    ${{ matrix.cuda }}
           host:    ${{ matrix.host }}

@@ -87,7 +87,9 @@ sysctk13 = [
 ]
 # The test extras do not include CuPy. The cuda.compute examples (run via
 # tests/test_examples.py) require it; install it separately (e.g.
-# `pip install cupy-cuda13x`).
+# `pip install cupy-cuda13x[ctk]`). Use the `ctk` extra unless a system CUDA
+# toolkit is already present: CuPy loads curand/cublas/cufft/... at first use
+# and nothing here installs them for it.
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296

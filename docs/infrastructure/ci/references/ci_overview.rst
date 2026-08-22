@@ -147,6 +147,39 @@ groups for the next run. They also block merge while present, forcing a clean fi
 The recognized tags and their semantics are catalogued in :ref:`infra-ci-skip-tags`.
 ``[bench-only]`` is shorthand for the common benchmark-request combination.
 
+Jobs that opt out of the devcontainer
+-------------------------------------
+
+Most jobs run inside the CCCL devcontainer selected by their ``ctk`` and ``cxx`` tags.
+A matrix job may instead set ``devcontainer: false``, which runs its command directly on
+the CI runner and makes the command responsible for providing its own environment.
+
+The Python test lanes use this. ``cuda.compute`` is meant to work with nothing installed
+beyond its declared pip dependencies -- no host compiler and no system CUDA toolkit --
+but the devcontainer supplies both, so a test running there cannot distinguish "we depend
+only on our wheels" from "we happened to find ``gcc`` and ``/usr/local/cuda`` lying
+around". These lanes therefore fetch the wheel artifact on the runner (which needs
+``gh``) and then hand the test payload to a minimal container via
+``ci/util/python/run_in_minimal_container.sh``, where an undeclared dependency fails
+loudly. The same applies to both the v1 (NVRTC) and v2 (HostJIT) backends.
+
+These Python lanes deliberately keep the devcontainer, because they genuinely need what
+it provides:
+
+* ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
+  toolkit.
+* ``test_headers`` -- compiles C++, so it needs a host compiler.
+* ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
+* ``test_py_stf`` -- ``ci/test_cuda_stf_python.sh`` has not been converted; ``cuda-stf`` is
+  a separate wheel with its own producer, so it is left for a follow-up.
+
+Every other Linux Python test lane sets the flag, in ``pull_request``,
+``pull_request_lite``, ``nightly`` and ``weekly`` alike. The ``python-wheels`` publish
+workflow is intentionally untouched for now.
+
+``devcontainer: false`` is Linux-only; ``build-workflow.py`` raises if it is combined with
+an MSVC host compiler, since ``workflow-run-job-windows`` does not honor the flag.
+
 Reproducing a failure locally
 -----------------------------
 
@@ -154,7 +187,15 @@ CI jobs run the build and test scripts in ``ci/`` inside the devcontainers descr
 ``.devcontainer/README.md``. A failing job's log names the exact container and script
 invocation. Pull the same container and run the same ``ci/build_<project>.sh`` or
 ``ci/test_<project>.sh`` line to reproduce the CI environment, as walked through at
-:ref:`infra-ci-reproducing-locally`. For targeted single-test iteration,
+:ref:`infra-ci-reproducing-locally`.
+
+Jobs that set ``devcontainer: false`` are the exception: they run the script directly on
+the runner, and the script provisions its own container. Their failure logs print the bare
+``ci/test_<project>.sh`` invocation rather than a ``.devcontainer/launch.sh`` one -- run
+that from a checkout on a machine with Docker and a GPU, and the script recreates the same
+minimal container CI used.
+
+For targeted single-test iteration,
 ``ci/util/build_and_test_targets.sh`` builds and runs a named subset, covered at
 :ref:`infra-ci-targeted-builds`; for a regression hunt, see
 :doc:`/cccl/development/build_and_bisect_tools`.
