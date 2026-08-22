@@ -91,7 +91,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   NumSegmentsParameterT num_segments,
   cudaStream_t stream,
   const TuningT& tuning,
-  [[maybe_unused]] const EnvT& env)
+  const EnvT& env)
 {
   // ---------------------------------------------------------------------------
   // Execution requirements.
@@ -231,20 +231,46 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     // conservative 64-bit upper bound here.
     constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
-    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      ::cuda::args::constant<SelectDirection>{},
-      num_segments,
-      total_num_items,
-      stream,
-      tuning);
+    const auto dispatch_with_outputs = [&](auto d_keys_out_it, auto d_values_out_it) -> cudaError_t {
+      return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out_it,
+        d_values_in,
+        d_values_out_it,
+        segment_sizes,
+        k,
+        ::cuda::args::constant<SelectDirection>{},
+        num_segments,
+        total_num_items,
+        stream,
+        tuning);
+    };
+
+    if constexpr (::cuda::std::execution::__queryable_with<EnvT, batched_topk::get_output_padding_t>)
+    {
+      const auto& padding         = env.query(batched_topk::get_output_padding_t{});
+      using padding_t             = ::cuda::std::remove_cvref_t<decltype(padding)>;
+      constexpr bool is_keys_only = ::cuda::std::is_same_v<it_value_t<it_value_t<ValueInputIteratorItT>>, NullType>;
+      static_assert(is_keys_only == !padding_t::has_value,
+                    "cub::DeviceBatchedTopK::OutputPadding requires one value for Keys and two values for Pairs");
+
+      const auto padded_keys_out = batched_topk::make_padded_output_segments_iterator(d_keys_out, padding.key);
+      if constexpr (is_keys_only)
+      {
+        return dispatch_with_outputs(padded_keys_out, d_values_out);
+      }
+      else
+      {
+        const auto padded_values_out = batched_topk::make_padded_output_segments_iterator(d_values_out, padding.value);
+        return dispatch_with_outputs(padded_keys_out, padded_values_out);
+      }
+    }
+    else
+    {
+      return dispatch_with_outputs(d_keys_out, d_values_out);
+    }
   }
   else
   {
@@ -338,6 +364,31 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //! unspecified and may change across releases (temporary-storage handling is an implementation detail). Treat this
 //! purely as guidance for choosing bounds rather than as a guarantee.
 //!
+//! Fixed-width output padding
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! By default, each segment writes only its selected items and leaves any remaining output positions untouched. To
+//! request fixed-width output, compose ``DeviceBatchedTopK::OutputPadding`` into the existing execution environment:
+//!
+//! .. code-block:: c++
+//!
+//!     auto env = cuda::std::execution::env{
+//!       requirements,
+//!       cub::DeviceBatchedTopK::OutputPadding(key_pad, value_pad),
+//!       cuda::stream_ref{stream}};
+//!     cub::DeviceBatchedTopK::MaxPairs(
+//!       d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
+//!
+//! For segment ``i``, let ``width_i = max(k_i, 0)``, ``size_i = max(segment_sizes_i, 0)``, and
+//! ``selected_i = min(width_i, size_i)``. The algorithm writes selected items to ``[0, selected_i)`` and padding to
+//! ``[selected_i, width_i)``. The caller must provide at least ``width_i`` positions in each applicable per-segment
+//! output range. Use ``OutputPadding(key_pad)`` with the Keys APIs and ``OutputPadding(key_pad, value_pad)`` with the
+//! Pairs APIs.
+//!
+//! Padding values are copied into the execution environment and passed to device code as part of the kernel
+//! arguments. Each value's type must therefore be copyable and valid to pass to device code, and the value must be
+//! assignable through its corresponding output iterator.
+//!
 //! Current constraints (initial API surface)
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -413,6 +464,30 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //! @endrst
 struct DeviceBatchedTopK
 {
+  //! @brief Creates an execution-environment property that pads unused keys in fixed-width output segments.
+  //!
+  //! Compose this property with the call's other properties via `cuda::std::execution::env`. See *Fixed-width output
+  //! padding* above for the exact per-segment selected and padded ranges, storage contract, and value-type
+  //! requirements.
+  template <typename KeyT>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto OutputPadding(KeyT key)
+  {
+    using padding_t = detail::batched_topk::output_padding_values<KeyT, NullType, false>;
+    return ::cuda::std::execution::prop{detail::batched_topk::get_output_padding_t{}, padding_t{key, {}}};
+  }
+
+  //! @brief Creates an execution-environment property that pads unused key-value pairs in fixed-width output segments.
+  //!
+  //! Compose this property with the call's other properties via `cuda::std::execution::env`. See *Fixed-width output
+  //! padding* above for the exact per-segment selected and padded ranges, storage contract, and value-type
+  //! requirements.
+  template <typename KeyT, typename ValueT>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto OutputPadding(KeyT key, ValueT value)
+  {
+    using padding_t = detail::batched_topk::output_padding_values<KeyT, ValueT, true>;
+    return ::cuda::std::execution::prop{detail::batched_topk::get_output_padding_t{}, padding_t{key, value}};
+  }
+
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
