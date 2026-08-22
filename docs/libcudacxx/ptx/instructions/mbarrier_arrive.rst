@@ -27,6 +27,13 @@ mbarrier.arrive.expect_tx
 
 .. include:: generated/mbarrier_arrive_expect_tx.rst
 
+.. _libcudacxx-ptx-instructions-mbarrier-arrive-drop:
+
+mbarrier.arrive_drop
+--------------------
+
+.. include:: generated/mbarrier_arrive_drop.rst
+
 Usage
 -----
 
