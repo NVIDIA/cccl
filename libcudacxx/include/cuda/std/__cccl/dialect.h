@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/builtin.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,7 +112,11 @@
 
 // We need to treat host and device separately
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
+#  if _CCCL_HAS_RDC()
+#    define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE inline constexpr
+#  else // ^^^ _CCCL_HAS_RDC() ^^^ / vvv !_CCCL_HAS_RDC() vvv
+#    define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
+#  endif // ^^^ !_CCCL_HAS_RDC() ^^^
 #else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
       // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
