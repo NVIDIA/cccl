@@ -18,6 +18,8 @@
 
 #include <cub/agent/agent_batched_topk.cuh>
 #include <cub/agent/agent_batched_topk_cluster.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -27,6 +29,8 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -35,6 +39,97 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
+template <typename KeyT, typename ValueT, int ThreadsPerBlock, int ItemsPerThread>
+union sort_temp_storage
+{
+  typename BlockLoad<KeyT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>::TempStorage load_keys;
+  typename BlockLoad<ValueT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>::TempStorage load_values;
+  typename BlockRadixSort<KeyT, ThreadsPerBlock, ItemsPerThread, ValueT>::TempStorage sort;
+};
+
+template <typename KeyT, typename ValueT, ::cuda::std::int64_t StaticMaxOut>
+struct find_sort_policy_index
+{
+private:
+  template <int Index>
+  [[nodiscard]] static constexpr int find_index()
+  {
+    if constexpr (Index >= sorted_output_policy_count)
+    {
+      return -1;
+    }
+    else
+    {
+      constexpr sort_policy candidate = sorted_output_policies[Index];
+      constexpr ::cuda::std::int64_t tile_size =
+        ::cuda::std::int64_t{candidate.threads_per_block} * candidate.items_per_thread;
+      static_assert(tile_size <= 65535, "BlockRadixSort supports at most 65535 items per block.");
+      constexpr bool covers = tile_size >= StaticMaxOut;
+      constexpr bool fits_smem =
+        sizeof(sort_temp_storage<KeyT, ValueT, candidate.threads_per_block, candidate.items_per_thread>)
+        <= max_smem_per_block;
+      constexpr int next = find_index<Index + 1>();
+
+      if constexpr (covers && fits_smem)
+      {
+        return next >= 0 ? next : Index;
+      }
+      else
+      {
+        return next;
+      }
+    }
+  }
+
+public:
+  static constexpr int value = find_index<0>();
+};
+
+template <typename KeyT, typename ValueT, ::cuda::std::int64_t StaticMaxOut>
+inline constexpr bool sort_can_cover_v = find_sort_policy_index<KeyT, ValueT, StaticMaxOut>::value >= 0;
+
+template <typename KeyT, typename ValueT, ::cuda::std::int64_t StaticMaxOut>
+struct find_smallest_sort_policy
+{
+  static constexpr int index = find_sort_policy_index<KeyT, ValueT, StaticMaxOut>::value;
+  static_assert(index >= 0,
+                "cub::DeviceBatchedTopK: no sorted-output policy covers the statically-known maximum output size "
+                "within the shared-memory limit.");
+  static constexpr sort_policy policy = sorted_output_policies[index];
+};
+
+template <typename KeyT, typename ValueT, int Index = 0>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::int64_t sort_covered_max()
+{
+  if constexpr (Index >= sorted_output_policy_count)
+  {
+    return 0;
+  }
+  else
+  {
+    constexpr sort_policy candidate = sorted_output_policies[Index];
+    constexpr ::cuda::std::int64_t tile_size =
+      ::cuda::std::int64_t{candidate.threads_per_block} * candidate.items_per_thread;
+    constexpr bool fits_smem =
+      sizeof(sort_temp_storage<KeyT, ValueT, candidate.threads_per_block, candidate.items_per_thread>)
+      <= max_smem_per_block;
+    constexpr ::cuda::std::int64_t next = sort_covered_max<KeyT, ValueT, Index + 1>();
+    return fits_smem && tile_size > next ? tile_size : next;
+  }
+}
+
+struct sixteen_byte_value
+{
+  ::cuda::std::int64_t first;
+  ::cuda::std::int64_t second;
+};
+
+static_assert(sort_covered_max<::cuda::std::int32_t, ::cuda::std::int32_t>() >= 2048);
+static_assert(sort_covered_max<::cuda::std::int64_t, ::cuda::std::int32_t>() >= 2048);
+static_assert(sort_covered_max<::cuda::std::int64_t, ::cuda::std::int64_t>() >= 2048);
+static_assert(sort_covered_max<float, ::cuda::std::int32_t>() >= 2048);
+static_assert(sort_covered_max<::cuda::std::int64_t, sixteen_byte_value>() >= 2048);
+
 // Assert-free search shared by `find_smallest_covering_policy_device` and the backend coverage predicate. Returns the
 // index of the smallest worker policy whose tile size still covers the upper bound on segment size AND whose
 // instantiated agent's shared memory usage fits within the static shared memory limit (max_smem_per_block), or -1 if
@@ -416,6 +511,96 @@ device_batched_topk_kernel(
     // runs.
     return;
   }
+}
+
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          typename KeyT,
+          typename ValueT,
+          typename KeyOutputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT>
+_CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched_topk_sort_kernel(
+  const KeyT* d_key_scratch,
+  const ValueT* d_value_scratch,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k_param,
+  SelectDirectionParameterT select_directions,
+  NumSegmentsParameterT num_segments,
+  ::cuda::std::int64_t max_out)
+{
+  constexpr bool is_keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+  using block_radix_sort_t    = BlockRadixSort<KeyT, ThreadsPerBlock, ItemsPerThread, ValueT>;
+  using block_load_keys_t     = BlockLoad<KeyT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using block_load_values_t   = BlockLoad<ValueT, ThreadsPerBlock, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using traits                = detail::radix::traits_t<KeyT>;
+  using bit_ordered_type      = typename traits::bit_ordered_type;
+
+  const int segment_id = static_cast<int>(blockIdx.x);
+  if (segment_id >= params::get_param(num_segments, 0))
+  {
+    return;
+  }
+
+  const auto segment_size = params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+  const auto k_eff        = static_cast<decltype(segment_size)>(
+    (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
+                          params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                        static_cast<::cuda::std::uint64_t>(segment_size)));
+  if (k_eff == 0)
+  {
+    return;
+  }
+
+  const int valid_items     = static_cast<int>(k_eff);
+  const auto scratch_offset = static_cast<::cuda::std::int64_t>(segment_id) * max_out;
+  const KeyT* const d_keys  = d_key_scratch + scratch_offset;
+
+  __shared__ sort_temp_storage<KeyT, ValueT, ThreadsPerBlock, ItemsPerThread> temp_storage;
+
+  KeyT keys[ItemsPerThread];
+  ValueT values[ItemsPerThread];
+
+  const bool is_successful_dispatch = params::dispatch_discrete(select_directions, segment_id, [&](auto direction_tag) {
+    constexpr bool descending         = decltype(direction_tag)::value == detail::topk::select::max;
+    bit_ordered_type default_key_bits = descending ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
+                                                   : traits::max_raw_binary_key(detail::identity_decomposer_t{});
+    KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
+
+    if constexpr (is_keys_only)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
+    }
+    else
+    {
+      const ValueT* const d_values = d_value_scratch + scratch_offset;
+      block_load_keys_t(temp_storage.load_keys).Load(d_keys, keys, valid_items, default_key);
+      __syncthreads();
+      block_load_values_t(temp_storage.load_values).Load(d_values, values, valid_items, ValueT{});
+      __syncthreads();
+    }
+
+    if constexpr (descending)
+    {
+      block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);
+    }
+    else
+    {
+      block_radix_sort_t(temp_storage.sort).SortBlockedToStriped(keys, values);
+    }
+
+    StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_key_segments_out_it[segment_id], keys, valid_items);
+    if constexpr (!is_keys_only)
+    {
+      StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_value_segments_out_it[segment_id], values, valid_items);
+    }
+  });
+  _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
 }
 } // namespace detail::batched_topk
 

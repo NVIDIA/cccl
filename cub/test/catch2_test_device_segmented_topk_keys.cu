@@ -67,6 +67,8 @@ template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+          cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+            cuda::execution::output_ordering::__output_ordering_t::__unsorted,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -86,7 +88,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk_keys(
     cuda::stream_ref{stream},
     cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
                              cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
-                             cuda::execution::output_ordering::unsorted)};
+                             cuda::execution::output_ordering::__output_ordering_holder_t<OutputOrdering>{})};
   if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
     return cub::DeviceBatchedTopK::MaxKeys(
@@ -107,8 +109,10 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
     cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
       cuda::execution::determinism::__determinism_t::__not_guaranteed,
-    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
-  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
+    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+    cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+      cuda::execution::output_ordering::__output_ordering_t::__unsorted),
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak, OutputOrdering));
 
 // Wrapper-test companion to expect_batched_topk_unsupported_and_skip: when the request's backend is unavailable in this
 // build, dispatch it directly (host), verify the runtime cudaErrorNotSupported, and skip the correctness checks;
@@ -163,6 +167,8 @@ using key_types =
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
+using sorted_key_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
+
 // A (determinism, tie-break) requirement pair, used as a single compile-time test axis. Not a full cross product: a
 // tie-break preference is only meaningful with a deterministic requirement and is `gpu_to_gpu` by definition.
 template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
@@ -186,6 +192,12 @@ using det_tie_combos =
                          cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
                  det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                          cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+using sorted_det_tie_combos =
+  c2h::type_list<det_tie<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>>;
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
@@ -263,6 +275,58 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
 
   // Since the results of top-k are unordered, sort output segments before comparison.
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys return ordered sorted output",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL,
+         sorted_key_types,
+         select_direction_list,
+         sorted_det_tie_combos)
+{
+  using key_t           = c2h::get<0, TestType>;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                            = c2h::get<2, TestType>;
+  constexpr auto direction               = c2h::get<1, TestType>::value;
+  constexpr auto determinism             = combo::determinism;
+  constexpr auto tie_break               = combo::tie_break;
+  constexpr segment_size_t segment_size  = 2051;
+  constexpr segment_size_t static_max_k  = 2048;
+  constexpr segment_index_t num_segments = 3;
+  const segment_size_t k                 = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  skip_unless_batched_topk_keys_supported<direction, determinism, tie_break>(
+    segment_size,
+    d_keys_in,
+    d_keys_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  batched_topk_keys<direction, determinism, tie_break, cuda::execution::output_ordering::__output_ordering_t::__sorted>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
@@ -2114,7 +2178,7 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as n
 // dispatch must elide the launch from `num_segments == 0` alone -- otherwise the grid would use `grid_dim == 0`, an
 // invalid launch configuration. A small size and no determinism requirement route this to the baseline backend; the
 // deterministic-requirement counterpart is below.
-CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determinism requirement)",
+CUB_TEST("DeviceBatchedTopK::MaxKeys sorted output treats zero segments as no work",
          "[keys][segmented][topk][device]",
          CUB_SMALL)
 {
@@ -2135,7 +2199,7 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determi
   auto env             = cuda::std::execution::env{cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
     cuda::execution::tie_break::unspecified,
-    cuda::execution::output_ordering::unsorted)};
+    cuda::execution::output_ordering::sorted)};
 
   cuda::std::size_t temp_storage_bytes = 0;
   auto error                           = cub::DeviceBatchedTopK::MaxKeys(

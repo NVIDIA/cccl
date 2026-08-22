@@ -22,6 +22,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_batched_topk.cuh>
@@ -37,8 +38,10 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/strided_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/argument>
@@ -929,7 +932,7 @@ template <
   typename TotalNumItemsGuaranteeT,
   typename TuningEnvT            = ::cuda::std::execution::env<>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-_CCCL_HOST_API cudaError_t dispatch(
+_CCCL_HOST_API cudaError_t dispatch_select(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -1182,6 +1185,238 @@ _CCCL_HOST_API cudaError_t dispatch(
       return cudaErrorNotSupported;
     }
   });
+}
+
+template <typename KBoundT, typename SegmentSizeBoundT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::int64_t
+max_output_bound(KBoundT k_bound, SegmentSizeBoundT segment_size_bound)
+{
+  const ::cuda::std::int64_t min_bound =
+    ::cuda::std::cmp_less(+k_bound, +segment_size_bound)
+      ? static_cast<::cuda::std::int64_t>(k_bound)
+      : static_cast<::cuda::std::int64_t>(segment_size_bound);
+  return min_bound > 0 ? min_bound : 0;
+}
+
+template <
+  ::cuda::execution::determinism::__determinism_t Determinism =
+    ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
+  ::cuda::execution::tie_break::__tie_break_t TieBreak = ::cuda::execution::tie_break::__tie_break_t::__unspecified,
+  ::cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+    ::cuda::execution::output_ordering::__output_ordering_t::__unsorted,
+  class KeyInputItItT,
+  class KeyOutputItItT,
+  class ValueInputItItT,
+  class ValueOutputItItT,
+  class SegmentSizeParameterT,
+  class KParameterT,
+  class SelectDirectionT,
+  class NumSegmentsParameterT,
+  class TotalNumItemsGuaranteeT,
+  class TuningEnvT            = ::cuda::std::execution::env<>,
+  class KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+_CCCL_HOST_API cudaError_t dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k,
+  SelectDirectionT select_direction,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items_guarantee,
+  cudaStream_t stream,
+  const TuningEnvT& tuning_env           = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  constexpr ::cuda::std::int64_t static_max_out = max_output_bound(
+    ::cuda::args::__traits<KParameterT>::highest, ::cuda::args::__traits<SegmentSizeParameterT>::highest);
+
+  if constexpr (OutputOrdering == ::cuda::execution::output_ordering::__output_ordering_t::__unsorted
+                || static_max_out <= 1)
+  {
+    return dispatch_select<Determinism, TieBreak>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      d_value_segments_it,
+      d_value_segments_out_it,
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items_guarantee,
+      stream,
+      tuning_env,
+      launcher_factory);
+  }
+  else
+  {
+    using key_t                   = it_value_t<it_value_t<KeyInputItItT>>;
+    using value_t                 = it_value_t<it_value_t<ValueInputItItT>>;
+    using num_segments_value_t    = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
+    constexpr bool is_keys_only   = ::cuda::std::is_same_v<value_t, NullType>;
+    constexpr bool sort_can_cover = sort_can_cover_v<key_t, value_t, static_max_out>;
+
+#if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
+  && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
+    static_assert(
+      sort_can_cover,
+      "cub::DeviceBatchedTopK: sorted output cannot cover the statically-known maximum output size within the "
+      "shared-memory limit. Give k a tighter cuda::args::bounds or cuda::args::constant, tighten the segment-size "
+      "bound, or use narrower key/value types.");
+#endif // strict sorted-output coverage check
+
+    if constexpr (!sort_can_cover)
+    {
+      if (d_temp_storage == nullptr)
+      {
+        temp_storage_bytes = 1;
+        return cudaSuccess;
+      }
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      const num_segments_value_t num_segments_value = detail::params::get_param(num_segments, num_segments_value_t{0});
+      const ::cuda::std::int64_t max_out =
+        max_output_bound(::cuda::args::__highest_(k), ::cuda::args::__highest_(segment_sizes));
+
+      if (::cuda::std::cmp_greater(+num_segments_value, ::cuda::std::numeric_limits<int>::max())
+          || !::cuda::std::cmp_greater(+num_segments_value, 0) || max_out <= 0)
+      {
+        return dispatch_select<Determinism, TieBreak>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_key_segments_it,
+          d_key_segments_out_it,
+          d_value_segments_it,
+          d_value_segments_out_it,
+          segment_sizes,
+          k,
+          select_direction,
+          num_segments,
+          total_num_items_guarantee,
+          stream,
+          tuning_env,
+          launcher_factory);
+      }
+
+      const size_t num_segments_size = static_cast<size_t>(num_segments_value);
+      const size_t max_out_size      = static_cast<size_t>(max_out);
+      if (num_segments_size > ::cuda::std::numeric_limits<size_t>::max() / max_out_size)
+      {
+        return cudaErrorInvalidValue;
+      }
+
+      const size_t scratch_elements = num_segments_size * max_out_size;
+      if (scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(key_t)
+          || (!is_keys_only && scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(value_t)))
+      {
+        return cudaErrorInvalidValue;
+      }
+
+      temporary_storage::layout<3> temporary_storage_layout;
+      auto selection_storage = temporary_storage_layout.get_slot(0)->create_alias<::cuda::std::uint8_t>();
+      auto key_scratch       = temporary_storage_layout.get_slot(1)->create_alias<key_t>(scratch_elements);
+      auto value_scratch =
+        temporary_storage_layout.get_slot(2)->create_alias<value_t>(is_keys_only ? 0 : scratch_elements);
+
+      const auto query_key_segments_out_it =
+        ::cuda::make_strided_iterator(::cuda::make_counting_iterator(static_cast<key_t*>(nullptr)), max_out);
+      const auto query_value_segments_out_it =
+        ::cuda::make_strided_iterator(::cuda::make_counting_iterator(static_cast<value_t*>(nullptr)), max_out);
+
+      size_t selection_storage_bytes = 0;
+      if (const auto error = dispatch_select<Determinism, TieBreak>(
+            nullptr,
+            selection_storage_bytes,
+            d_key_segments_it,
+            query_key_segments_out_it,
+            d_value_segments_it,
+            query_value_segments_out_it,
+            segment_sizes,
+            k,
+            select_direction,
+            num_segments,
+            total_num_items_guarantee,
+            stream,
+            tuning_env,
+            launcher_factory))
+      {
+        return error;
+      }
+      selection_storage.grow(selection_storage_bytes);
+
+      if (d_temp_storage == nullptr)
+      {
+        temp_storage_bytes = temporary_storage_layout.get_size();
+        return cudaSuccess;
+      }
+
+      if (const auto error = temporary_storage_layout.map_to_buffer(d_temp_storage, temp_storage_bytes))
+      {
+        return error;
+      }
+
+      const auto launch_key_segments_out_it =
+        ::cuda::make_strided_iterator(::cuda::make_counting_iterator(key_scratch.get()), max_out);
+      const auto launch_value_segments_out_it =
+        ::cuda::make_strided_iterator(::cuda::make_counting_iterator(value_scratch.get()), max_out);
+
+      if (const auto error = dispatch_select<Determinism, TieBreak>(
+            selection_storage.get(),
+            selection_storage_bytes,
+            d_key_segments_it,
+            launch_key_segments_out_it,
+            d_value_segments_it,
+            launch_value_segments_out_it,
+            segment_sizes,
+            k,
+            select_direction,
+            num_segments,
+            total_num_items_guarantee,
+            stream,
+            tuning_env,
+            launcher_factory))
+      {
+        return error;
+      }
+
+      constexpr sort_policy sort = find_smallest_sort_policy<key_t, value_t, static_max_out>::policy;
+      const int grid_dim         = static_cast<int>(num_segments_value);
+      if (const auto error = CubDebug(
+            launcher_factory(grid_dim, sort.threads_per_block, 0, stream, /*dependent_launch=*/false)
+              .doit(device_batched_topk_sort_kernel<
+                      sort.threads_per_block,
+                      sort.items_per_thread,
+                      key_t,
+                      value_t,
+                      KeyOutputItItT,
+                      ValueOutputItItT,
+                      SegmentSizeParameterT,
+                      KParameterT,
+                      const decltype(wrap_select_direction(::cuda::std::declval<SelectDirectionT>())),
+                      NumSegmentsParameterT>,
+                    key_scratch.get(),
+                    value_scratch.get(),
+                    d_key_segments_out_it,
+                    d_value_segments_out_it,
+                    segment_sizes,
+                    k,
+                    wrap_select_direction(select_direction),
+                    num_segments,
+                    max_out)))
+      {
+        return error;
+      }
+
+      return CubDebug(detail::DebugSyncStream(stream));
+    }
+  }
 }
 } // namespace detail::batched_topk
 
