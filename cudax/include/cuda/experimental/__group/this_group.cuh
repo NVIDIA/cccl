@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/implicit_hierarchy.cuh>
@@ -54,12 +55,12 @@ struct __this_mapping_result
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
   {
     return 0;
   }
@@ -69,12 +70,12 @@ struct __this_mapping_result
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
   {
     return 0;
   }
