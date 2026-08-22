@@ -44,9 +44,9 @@
 
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>

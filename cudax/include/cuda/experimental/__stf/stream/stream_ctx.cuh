@@ -530,7 +530,7 @@ public:
     // device so we can restore it on exit (0 means we never switched).
     int prev_device = 0;
 
-    SCOPE(exit)
+    ON_EXIT
     {
       if (startEvent)
       {
@@ -1133,7 +1133,7 @@ namespace reserved
 inline void unit_test_pfor()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  ON_EXIT
   {
     ctx.finalize();
   };
@@ -1311,7 +1311,7 @@ UNITTEST("basic parallel_for test on grid")
 inline void unit_test_launch()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  ON_EXIT
   {
     ctx.finalize();
   };

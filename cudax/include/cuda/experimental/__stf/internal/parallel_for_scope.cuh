@@ -37,8 +37,8 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -720,7 +720,7 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    SCOPE(exit)
+    ON_EXIT
     {
       if (start_event)
       {

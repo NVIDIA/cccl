@@ -30,7 +30,7 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
 #include <cstdint>

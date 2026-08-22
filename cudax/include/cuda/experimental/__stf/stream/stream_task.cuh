@@ -33,7 +33,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <deque>
 
@@ -294,7 +294,7 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    SCOPE(exit)
+    ON_EXIT
     {
       if (start_event)
       {
@@ -431,7 +431,7 @@ private:
     exec_place::device(s0_dev)->*[&] {
       // Disable timing to avoid implicit barriers.
       const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
-      SCOPE(exit)
+      ON_EXIT
       {
         // Asynchronously destroy the event to avoid a memory leak.
         cuda_safe_call(cudaEventDestroy(sync_event));
@@ -544,7 +544,7 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    SCOPE(exit)
+    ON_EXIT
     {
       if (start_event)
       {

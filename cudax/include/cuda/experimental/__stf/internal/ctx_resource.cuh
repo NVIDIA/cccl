@@ -17,7 +17,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <functional>
 #include <memory>

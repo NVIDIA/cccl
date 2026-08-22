@@ -36,7 +36,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <memory>
 #include <type_traits>
@@ -251,7 +251,7 @@ public:
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    SCOPE(exit)
+    ON_EXIT
     {
       if (start_event)
       {
@@ -341,7 +341,7 @@ public:
         // leave it.
         on_throw(exception_policies::abort) << [&] {
           auto* w = static_cast<decltype(resolved.get())>(raw);
-          SCOPE(exit)
+          ON_EXIT
           {
             if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {
@@ -391,7 +391,7 @@ public:
       auto callback = [](void* untyped_wrapper) {
         on_throw(exception_policies::abort) << [&] {
           auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
-          SCOPE(exit)
+          ON_EXIT
           {
             if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {

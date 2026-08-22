@@ -2340,7 +2340,7 @@ auto on_throw(_Reaction&& __reaction,
 }
 
 #ifdef ON_THROW
-#  error "CUDASTF's scope_guard.cuh defines ON_THROW; rename the prior definition"
+#  error "CUDASTF's exception_policy.cuh defines ON_THROW; rename the prior definition"
 #endif
 //! @brief Statement-shaped on_throw: ON_THROW(policy-expression) { body };
 //! The policy expression is evaluated with `exception_policies` visible, so
@@ -3949,15 +3949,15 @@ UNITTEST("type erasure")
 #endif // UNITTESTED_FILE
 
 /**
- * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
- * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
+ * @brief Automatically runs code when a scope is exited (`ON_EXIT`, also `SCOPE(exit)`), exited by means of an
+ * exception (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
+ * The code controlled by `ON_EXIT` / `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
  * defined) those lambdas are invoked via `on_throw(abort)`; in release
  * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
  * controlled code must return `void` (enforced at compile time).
  *
- * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
+ * `ON_EXIT` runs its code at the natural termination of the current scope. Example: @snippet this ON_EXIT
  *
  * `SCOPE(fail)` runs its code if and only if the current scope is left by means of throwing an exception. Example:
  * @snippet this SCOPE(fail)
@@ -3975,6 +3975,13 @@ UNITTEST("type erasure")
 ///@{
 #define SCOPE(kind) \
   auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
+#ifdef ON_EXIT
+#  error "CUDASTF's exception_policy.cuh defines ON_EXIT; rename the prior definition"
+#endif
+//! @brief Statement-shaped scope-exit: `ON_EXIT { body };` runs `body` when the current scope ends.
+//! Equivalent to `SCOPE(exit) { body };`.
+#define ON_EXIT \
+  auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::exit) {}->*[&]()
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -4110,20 +4117,20 @@ auto operator->*(success, F&& f)
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
-UNITTEST("SCOPE(exit)")
+UNITTEST("ON_EXIT")
 {
-  //! [SCOPE(exit)]
-  // SCOPE(exit) runs the lambda upon the termination of the current scope.
+  //! [ON_EXIT]
+  // ON_EXIT runs the lambda upon the termination of the current scope.
   bool done = false;
   {
-    SCOPE(exit)
+    ON_EXIT
     {
       done = true;
     };
-    EXPECT(!done, "SCOPE_EXIT should not run early.");
+    EXPECT(!done, "ON_EXIT should not run early.");
   }
   EXPECT(done);
-  //! [SCOPE(exit)]
+  //! [ON_EXIT]
 };
 
 UNITTEST("SCOPE(fail)")
@@ -4190,7 +4197,7 @@ UNITTEST("SCOPE combinations")
   //! [SCOPE combinations]
   int counter = 0;
   {
-    SCOPE(exit)
+    ON_EXIT
     {
       EXPECT(counter == 2);
       counter = 0;
@@ -4200,7 +4207,7 @@ UNITTEST("SCOPE combinations")
       EXPECT(counter == 1);
       ++counter;
     };
-    SCOPE(exit)
+    ON_EXIT
     {
       EXPECT(counter == 0);
       ++counter;

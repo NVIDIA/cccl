@@ -34,8 +34,8 @@
 
 #include <cuda/std/source_location>
 
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 

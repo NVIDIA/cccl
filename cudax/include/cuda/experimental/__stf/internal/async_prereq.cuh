@@ -29,10 +29,10 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/dot.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/handle.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 
