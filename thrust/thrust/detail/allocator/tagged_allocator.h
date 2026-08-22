@@ -61,6 +61,7 @@ public:
     using other = tagged_allocator<U, Tag, Pointer>;
   }; // end rebind
 
+  _CCCL_EXEC_CHECK_DISABLE
   tagged_allocator() = default;
 
   tagged_allocator(const tagged_allocator&) = default;

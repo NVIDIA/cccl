@@ -76,6 +76,7 @@ private:
   using super_t = thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI device_ptr() = default;
 
   /*! \brief Construct a null \c device_ptr.

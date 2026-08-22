@@ -114,6 +114,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
+  _CCCL_EXEC_CHECK_DISABLE
   tabulate_output_iterator() = default;
 
   //!  This constructor takes as argument a \c BinaryFunction and copies it to a new \p tabulate_output_iterator

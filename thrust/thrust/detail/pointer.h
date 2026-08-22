@@ -170,12 +170,14 @@ public:
 
   /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
    */
-  _CCCL_HOST_DEVICE pointer()
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API pointer()
       : super_t(static_cast<Element*>(nullptr))
   {}
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API pointer(::cuda::std::nullptr_t)
       : super_t(static_cast<Element*>(nullptr))
   {}
 
@@ -185,8 +187,9 @@ public:
    *  \tparam OtherElement \p OtherElement shall be convertible to \p Element.
    */
   // XXX consider making the pointer implementation a template parameter which defaults to Element *
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherElement>
-  _CCCL_HOST_DEVICE explicit pointer(OtherElement* ptr)
+  _CCCL_API explicit pointer(OtherElement* ptr)
       : super_t(ptr)
   {}
 
@@ -197,17 +200,19 @@ public:
    *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
    *                       and its element type shall be convertible to \p Element.
    */
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherPointer, detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer>* = nullptr>
-  _CCCL_HOST_DEVICE pointer(const OtherPointer& other)
+  _CCCL_API pointer(const OtherPointer& other)
       : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle this constructor and creates a duplicate ID with the ctor above
   // OtherPointer's element_type shall be void
   // OtherPointer's system shall be convertible to Tag
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherPointer,
             detail::enable_if_void_pointer_is_system_convertible_t<OtherPointer, pointer>* = nullptr>
-  _CCCL_HOST_DEVICE explicit pointer(const OtherPointer& other)
+  _CCCL_API explicit pointer(const OtherPointer& other)
       : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 #endif
@@ -215,7 +220,8 @@ public:
   // assignment
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE derived_type& operator=(::cuda::std::nullptr_t)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API derived_type& operator=(::cuda::std::nullptr_t)
   {
     super_t::base_reference() = nullptr;
     return static_cast<derived_type&>(*this);
@@ -230,8 +236,9 @@ public:
    *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
    *                       and its element type shall be convertible to \p Element.
    */
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
+  _CCCL_API detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
   operator=(const OtherPointer& other)
   {
     super_t::base_reference() = ::cuda::std::to_address(other);
