@@ -124,6 +124,9 @@ typedef struct cccl_build_config
   size_t num_extra_include_dirs;
   int enable_pch; // Cache precompiled headers on disk to speed up repeated builds
   int verbose; // Log PCH generation/usage and compiler args to build diagnostics
+  // Directory holding the precompiled-header cache. Required when enable_pch is
+  // set. NULL or empty disables PCH regardless of enable_pch.
+  const char* pch_cache_dir;
 } cccl_build_config;
 
 typedef enum cccl_iterator_kind_t
