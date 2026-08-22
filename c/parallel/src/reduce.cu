@@ -209,8 +209,10 @@ try
 
   const auto [input_iterator_name, input_iterator_src] =
     get_specialization<reduce_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+  // Specialize the output iterator on its own value type (not accum_t) so the final
+  // store converts the accumulator to the output type instead of reinterpreting bytes.
   const auto [output_iterator_name, output_iterator_src] =
-    get_specialization<reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
+    get_specialization<reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, output_it.value_type);
 
   const auto [op_name, op_src] = get_specialization<reduction_operation_tag>(
     template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
