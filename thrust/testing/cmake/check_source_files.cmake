@@ -171,6 +171,44 @@ foreach (src ${thrust_srcs})
   endif()
 endforeach()
 
+################################################################################
+# Deprecated-compiler warning ordering check in system headers.
+# config.h issues a `_CCCL_WARNING` when the host compiler is below Thrust's
+# minimum version, which expands to a `#pragma GCC/clang warning`. GCC and Clang
+# silently drop diagnostics in files marked as system header.
+# So the deprecated-compiler check must precede the system-header pragma in config.h,
+# or the warning goes silent with no error. See NVIDIA/cccl#1620.
+set(deprecated_compiler_marker "CCCL_IGNORE_DEPRECATED_COMPILER")
+set(system_header_marker "_CCCL_IMPLICIT_SYSTEM_HEADER_GCC")
+set(thrust_config_h "${Thrust_SOURCE_DIR}/thrust/detail/config/config.h")
+
+file(READ "${thrust_config_h}" thrust_config_h_contents)
+string(
+  FIND "${thrust_config_h_contents}"
+  "${deprecated_compiler_marker}"
+  deprecated_compiler_pos
+)
+string(
+  FIND "${thrust_config_h_contents}"
+  "${system_header_marker}"
+  system_header_pos
+)
+
+if (deprecated_compiler_pos EQUAL -1 OR system_header_pos EQUAL -1)
+  message(
+    "'${thrust_config_h}' no longer contains the expected ${deprecated_compiler_marker} (deprecated-compiler) "
+    "or ${system_header_marker} (system-header) macros. Update this check if either moved or was renamed."
+  )
+  set(found_errors 1)
+elseif (NOT deprecated_compiler_pos LESS system_header_pos)
+  message(
+    "'${thrust_config_h}' marks itself a system header before checking for a "
+    "deprecated compiler. GCC/Clang silently drop diagnostics originating "
+    "from system headers, so this ordering must be preserved (see NVIDIA/cccl#1620)."
+  )
+  set(found_errors 1)
+endif()
+
 if (NOT found_errors EQUAL 0)
   message(FATAL_ERROR "Errors detected.")
 endif()
