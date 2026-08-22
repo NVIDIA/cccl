@@ -179,6 +179,8 @@ runs:
 
         git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
 
+        $env:SCCACHE_ERROR_LOG="$env:TEMP\sccache.log"
+
         # We've been seeing intermittent sccache auth issues on Windows. Make a few attempts to
         # start the server and authenticate:
         sccache --version
@@ -187,11 +189,10 @@ runs:
 
         $exitCode = 0
         try {
-          Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"
+          Write-Host "Executing command: $env:COMMAND"
           Write-Host "In directory: $(Get-Location)"
           Invoke-Expression $env:COMMAND
           $exitCode = $LASTEXITCODE
-          Write-Host "::endgroup::"
           Write-Host "Command finished with exit code $exitCode"
         } catch {
           Write-Host 'Command failed with error'
@@ -199,7 +200,8 @@ runs:
           $exitCode = 1
         } finally {
           Write-Host '::group::Uploading job result artifacts'
-          & bash 'ci/upload_job_result_artifacts.sh' $env:JOB_ID $exitCode
+          Write-Host "In directory: $(Get-Location)"
+          & bash -c "ci/upload_job_result_artifacts.sh $env:JOB_ID $exitCode"
           Write-Host '::endgroup::'
         }
 
@@ -207,8 +209,42 @@ runs:
         exit $exitCode
         EOF
 
+        declare -a extra_launch_args="(
+          ${ENVARGS:-}
+        )"
+
+        # Set up build cluster auth
+        if grep -q 'USE_SCCACHE_DIST=true' <<< "${ENVARGS:-}"; then
+          SCCACHE_DIST_URL="https://amd64.windows.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
+          export SCCACHE_DIST_AUTH_TOKEN;
+
+          extra_launch_args+=(
+            --env "SCCACHE_DIST_AUTH_TOKEN"
+            --env "SCCACHE_DIST_AUTH_TYPE=token"
+            --env "SCCACHE_DIST_MAX_RETRIES=2"
+            --env "SCCACHE_DIST_REQUEST_TIMEOUT=3600"
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL"
+            --env "SCCACHE_DIST_SCHEDULER_URL=$SCCACHE_DIST_URL"
+          )
+
+          echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
+        fi
+
         docker_exit=0
         set +e
+        { set -x; } 2>/dev/null
         docker run \
           -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
@@ -238,6 +274,8 @@ runs:
           --env "JOB_ID=${{inputs.id}}" \
           --env "NVCC_APPEND_FLAGS=-t=100" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
+          --env "RUST_LOG_STYLE=never" \
+          --env "SCCACHE_SERVER_LOG=sccache=debug" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
           --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
@@ -247,11 +285,12 @@ runs:
           --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
-          ${ENVARGS:-} \
+          "${extra_launch_args[@]}" \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
         docker_exit=$?
+        { set +x; } 2>/dev/null
         set -e
 
         artifacts=""

@@ -16,6 +16,11 @@
     "-c",
     "set -euo pipefail; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/.{aws,cache,config}; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/{build,wheelhouse}; if test -z \"${localEnv:WSLENV}\"; then docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/build\" --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/wheelhouse\" --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
   ],
+  "postCreateCommand": [
+    "/bin/bash",
+    "-c",
+    "if ${USE_SCCACHE_DIST:-false} && test -z \"${DISABLE_SCCACHE:+x}\" && test -z \"${SCCACHE_DIST_URL:-}\"; then echo \"export SCCACHE_DIST_URL='https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com'\" >> /home/coder/.bashrc; fi"
+  ],
   "postAttachCommand": [
     "/bin/bash",
     "-c",
@@ -26,9 +31,10 @@
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/rapids-token-sccache-devs",
     "CI": "${localEnv:CI}",
     "NVCC_APPEND_FLAGS": "-t=100",
+    "PARALLEL_LEVEL": "${localEnv:PARALLEL_LEVEL:0}",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
-    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
+    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:2}",
     "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
@@ -38,6 +44,8 @@
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda99.9-gcc15",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
+    "USE_SCCACHE_DIST": "${localEnv:USE_SCCACHE_DIST:true}",
+    "DISABLE_SCCACHE": "${localEnv:DISABLE_SCCACHE:}",
     "CCCL_CUDA_VERSION": "99.9",
     "CCCL_HOST_COMPILER": "gcc",
     "CCCL_HOST_COMPILER_VERSION": "15",

@@ -225,6 +225,7 @@ jobs:
             --env "PRESET=${PRESET}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
+            --env "USE_SCCACHE_DIST=false" \
             --volume "${ci_script}:/compile-time-ci.sh" \
             --volume "${TARGETS_PATH}:/compile-time-targets.json" \
             --volume "${SLICES_PATH}:/compile-time-slices.json" \
