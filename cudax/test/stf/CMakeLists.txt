@@ -22,6 +22,7 @@ set(
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
+  error_checks/dim4_get_index_bounds.cu
   error_checks/double_finalize.cu
   error_checks/erase_frozen.cu
   error_checks/misformed_tasks_dbl_end.cu
