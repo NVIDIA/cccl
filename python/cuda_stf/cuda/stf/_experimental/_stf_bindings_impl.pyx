@@ -1070,6 +1070,20 @@ cdef class logical_data:
         ctx._alive = self._alive
         return ctx
 
+_bundle_view_types = {}
+
+
+def _bundle_view_type(names):
+    """Cached namedtuple type for a bundle's field names (task.get views)."""
+    t = _bundle_view_types.get(names)
+    if t is None:
+        from collections import namedtuple
+
+        t = namedtuple("bundle_view", names)
+        _bundle_view_types[names] = t
+    return t
+
+
 class dep:
     __slots__ = ("ld", "mode", "dplace")
     # ld may be either a logical_data or a stackable_logical_data; both classes
@@ -2133,6 +2147,9 @@ cdef class task:
     cdef _AliveFlag _alive
     # Grid rank of the exec place set through set_exec_place (1 = scalar)
     cdef int _grid_rank
+    # One entry per submitted dependency slot: (arity, field names or None).
+    # A bundle dependency contributes several flat deps but ONE slot.
+    cdef list _slot_map
 
     def __cinit__(self, context ctx):
         self._t = stf_task_create(ctx._ctx)
@@ -2144,6 +2161,7 @@ cdef class task:
         self._mapper_states = []
         self._alive = ctx._alive
         self._grid_rank = 1
+        self._slot_map = []
 
     def __dealloc__(self):
         # See stackable_logical_data.__dealloc__ for why a None _alive must
@@ -2268,6 +2286,35 @@ cdef class task:
         for e in dims:
             n *= e
         return [self.get_stream_at_index(i) for i in range(n)]
+
+    def get(self, slot):
+        """Per-slot view access: one submitted dependency is one slot.
+
+        For a plain dependency this returns its CUDA Array Interface view
+        (like ``get_arg_cai``); for a bundle dependency it returns a
+        ``types.SimpleNamespace`` with one view per field.
+        """
+        if slot < 0 or slot >= len(self._slot_map):
+            raise IndexError(f"task has {len(self._slot_map)} dependency slots")
+        base = 0
+        for s in range(slot):
+            base += self._slot_map[s][0]
+        arity, names, acquired = self._slot_map[slot]
+        if names is None:
+            return self.get_arg_cai(base)
+        # A namedtuple (rather than a plain namespace) so the whole view can
+        # cross kernel boundaries as ONE argument: numba typing supports
+        # namedtuples of arrays, preserving the bundle abstraction on device.
+        # Fields excluded with mode NONE are present but None.
+        views = []
+        k = 0
+        for got in acquired:
+            if got:
+                views.append(self.get_arg_cai(base + k))
+                k += 1
+            else:
+                views.append(None)
+        return _bundle_view_type(tuple(names))(*views)
 
     def get_arg(self, index) -> int:
         if self._lds_args[index]._is_token:
@@ -3085,6 +3132,25 @@ cdef class context:
     def token(self):
         return logical_data.token(self)
 
+    def bundle(self, **fields):
+        """
+        Create a :class:`~cuda.stf._experimental.bundles.bundle`: a non-owning
+        group of logical data usable as a single task dependency.
+
+        Field values must be logical data (bundles group handles; register
+        arrays first with ``ctx.logical_data``). Wrap a value in
+        ``constant`` for a read-only ceiling.
+
+        Example
+        -------
+        >>> A = ctx.bundle(vals=vals, colind=constant(colind))
+        >>> with ctx.task(A.rw(), ly.rw()) as t:
+        ...     a = t.get(0)
+        """
+        from cuda.stf._experimental.bundles import bundle as _bundle
+
+        return _bundle(self, **fields)
+
     def task(self, *args, symbol=None):
         """
         Create a `task`
@@ -3102,6 +3168,12 @@ cdef class context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
+                t._slot_map.append((1, None, None))
+            elif getattr(d, "_stf_bundle_dep", False):
+                # a bundle dependency: several flat deps, one slot
+                for leaf in d.deps:
+                    t.add_dep(leaf)
+                t._slot_map.append((len(d.deps), list(d.names), list(d.acquired)))
             elif isinstance(d, exec_place):
                 if exec_place_set:
                       raise ValueError("Only one exec_place can be given")
@@ -3432,6 +3504,9 @@ cdef class stackable_logical_data:
 cdef class stackable_task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
+    # One entry per submitted dependency slot: (arity, field names or None,
+    # acquired flags or None). A bundle dependency is ONE slot.
+    cdef list _slot_map
     cdef list _lds_args
     # Retain exec places and per-dep data-place overrides referenced by the task.
     cdef list _owners
@@ -3442,6 +3517,7 @@ cdef class stackable_task:
     cdef _AliveFlag _alive
 
     def __cinit__(self, stackable_context ctx):
+        self._slot_map = []
         self._t = stf_stackable_task_create(ctx._ctx)
         if self._t == NULL:
             raise RuntimeError("failed to create STF stackable task")
@@ -3529,6 +3605,31 @@ cdef class stackable_task:
             raise RuntimeError("cannot materialize a token argument")
         cdef void *ptr = stf_task_get(self._t, index)
         return <uintptr_t>ptr
+
+    def get(self, slot):
+        """Per-slot view access: one submitted dependency is one slot.
+
+        Mirrors :meth:`task.get`: plain dependencies return their CUDA Array
+        Interface view; bundle dependencies return a namedtuple of per-field
+        views (excluded fields are None).
+        """
+        if slot < 0 or slot >= len(self._slot_map):
+            raise IndexError(f"task has {len(self._slot_map)} dependency slots")
+        base = 0
+        for i in range(slot):
+            base += self._slot_map[i][0]
+        arity, names, acquired = self._slot_map[slot]
+        if names is None:
+            return self.get_arg_cai(base)
+        views = []
+        k = 0
+        for got in acquired:
+            if got:
+                views.append(self.get_arg_cai(base + k))
+                k += 1
+            else:
+                views.append(None)
+        return _bundle_view_type(tuple(names))(*views)
 
     def get_arg_cai(self, index):
         """Return the argument as a CUDA Array Interface v3 object.
@@ -4425,6 +4526,12 @@ cdef class stackable_context:
             raise RuntimeError("failed to create stackable token")
         return out
 
+    def bundle(self, **fields):
+        """Create a bundle over stackable logical data (see :meth:`context.bundle`)."""
+        from cuda.stf._experimental.bundles import bundle as _bundle
+
+        return _bundle(self, **fields)
+
     def task(self, *args, symbol=None):
         """Create a task on the head (innermost) scope of this context."""
         exec_place_set = False
@@ -4434,6 +4541,12 @@ cdef class stackable_context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
+                t._slot_map.append((1, None, None))
+            elif getattr(d, "_stf_bundle_dep", False):
+                # a bundle dependency: several flat deps, one slot
+                for leaf in d.deps:
+                    t.add_dep(leaf)
+                t._slot_map.append((len(d.deps), list(d.names), list(d.acquired)))
             elif isinstance(d, exec_place):
                 if exec_place_set:
                     raise ValueError("Only one exec_place can be given")

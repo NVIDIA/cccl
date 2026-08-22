@@ -31,6 +31,9 @@ from .paths import (
 _LAZY_SYMBOLS = {
     "AccessMode": "._stf_bindings",
     "CudaStream": "._stf_bindings",
+    "bundle": ".bundles",
+    "bundle_dep": ".bundles",
+    "constant": ".bundles",
     "async_resources": "._stf_bindings",
     "cond": "._stf_bindings",
     "context": "._stf_bindings",
