@@ -2346,16 +2346,17 @@ auto on_throw(_Reaction&& __reaction,
 //! @brief Statement-shaped on_throw: ON_THROW(policy-expression) { body };
 //! The policy expression is evaluated with `exception_policies` visible, so
 //! ON_THROW(notify & retry * 3 | subst(-1)) { return flaky(); }; needs no
-//! qualification. Expands to on_throw(...) << a reference-capturing lambda;
-//! the call-site location is captured exactly as with plain on_throw. The
-//! macro ends at `[&]()`: supply the body type by composition when needed,
-//! as in ON_THROW(retry | subst(-1)) -> int { throw failure(); };.
+//! qualification. All arguments forward to on_throw, so a source_location
+//! may follow the policy: ON_THROW(notify, loc) { body };. Expands to
+//! on_throw(...) << a reference-capturing lambda; the call-site location is
+//! captured exactly as with plain on_throw. The macro ends at `[&]()`:
+//! supply the body type by composition when needed, as in
+//! ON_THROW(retry | subst(-1)) -> int { throw failure(); };.
 #define ON_THROW(...)                                              \
-  ::cuda::experimental::stf::on_throw([&] {                        \
+  [&] {                                                            \
     using namespace ::cuda::experimental::stf::exception_policies; \
-    return (__VA_ARGS__);                                          \
-  }())                                                             \
-    << [&]()
+    return ::cuda::experimental::stf::on_throw(__VA_ARGS__);       \
+  }() << [&]()
 
 #ifdef UNITTESTED_FILE
 UNITTEST("nullval")
