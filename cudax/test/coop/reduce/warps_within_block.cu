@@ -27,8 +27,9 @@
 #include <c2h/generators.h>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-constexpr int nwarps_in_group = 3;
-constexpr int warp_size       = 32;
+constexpr int nwarps_in_group   = 3;
+constexpr int warp_size         = 32;
+constexpr int multi_group_count = 2;
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -80,6 +81,44 @@ struct ReduceKernel
       if (cuda::gpu_thread.is_root_rank(group))
       {
         *d_out = result.value();
+      }
+    }
+  }
+};
+
+template <bool Broadcasted, bool Exhaustive>
+struct MultiGroupReduceKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config, const int* d_in, int* d_out)
+  {
+    cudax::this_block block{config};
+
+    using Barriers = cuda::barrier<cuda::thread_scope_block>[multi_group_count];
+    __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
+    auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+    cudax::group group{
+      cuda::warp, block, cudax::group_by<nwarps_in_group, Exhaustive>{}, cudax::barrier_synchronizer{barriers}};
+
+    if (!cuda::gpu_thread.is_part_of(group))
+    {
+      return;
+    }
+
+    int thread_data[1] = {d_in[cuda::gpu_thread.rank_as<int>(block)]};
+    if constexpr (Broadcasted)
+    {
+      const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, cuda::std::plus<>{});
+      d_out[cuda::gpu_thread.rank_as<int>(block)] = result;
+    }
+    else
+    {
+      const auto result = cudax::coop::reduce(group, thread_data, cuda::std::plus<>{});
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
+      if (result.has_value())
+      {
+        d_out[group.template rank_as<int>(block)] = *result;
       }
     }
   }
@@ -154,6 +193,57 @@ void run_reduce_kernel(
       FAIL("Unsupported number of items");
   }
   stream.sync();
+}
+
+template <bool Broadcasted, bool Exhaustive, bool DynamicExtents = false>
+void run_multi_group_reduce_kernel(cuda::stream_ref stream)
+{
+  constexpr int nwarps_in_block = multi_group_count * nwarps_in_group + (Exhaustive ? 0 : 1);
+  constexpr int block_size      = nwarps_in_block * warp_size;
+  constexpr int group_size      = nwarps_in_group * warp_size;
+  constexpr int output_size     = Broadcasted ? multi_group_count * group_size : multi_group_count;
+
+  c2h::host_vector<int> h_in(block_size);
+  for (int i = 0; i < block_size; ++i)
+  {
+    h_in[i] = i + 1;
+  }
+
+  c2h::device_vector<int> d_in(h_in);
+  c2h::device_vector<int> d_out(output_size);
+  const auto in_ptr  = thrust::raw_pointer_cast(d_in.data());
+  const auto out_ptr = thrust::raw_pointer_cast(d_out.data());
+  if constexpr (DynamicExtents)
+  {
+    // Run-time block dimensions leave the mapped-group count dynamic, so the
+    // reduce falls back to its bounded per-block scratch array.
+    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(block_size));
+    cuda::launch(stream, config, MultiGroupReduceKernel<Broadcasted, Exhaustive>{}, in_ptr, out_ptr);
+  }
+  else
+  {
+    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<block_size>());
+    cuda::launch(stream, config, MultiGroupReduceKernel<Broadcasted, Exhaustive>{}, in_ptr, out_ptr);
+  }
+  stream.sync();
+
+  const c2h::host_vector<int> h_out = d_out;
+  for (int group_rank = 0; group_rank < multi_group_count; ++group_rank)
+  {
+    const auto group_begin = h_in.begin() + group_rank * group_size;
+    const auto expected    = cuda::std::accumulate(group_begin, group_begin + group_size, 0, cuda::std::plus<>{});
+    if constexpr (Broadcasted)
+    {
+      for (int rank = 0; rank < group_size; ++rank)
+      {
+        REQUIRE(h_out[group_rank * group_size + rank] == expected);
+      }
+    }
+    else
+    {
+      REQUIRE(h_out[group_rank] == expected);
+    }
+  }
 }
 
 constexpr int max_size  = 4;
@@ -231,4 +321,24 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
     verify_results(c2h::host_vector<value_t>(nwarps_in_group * warp_size, reference_result),
                    c2h::host_vector<value_t>(d_out));
   }
+}
+
+C2H_TEST("reduce/warps_within_block isolates scratch across mapped groups", "[reduce][warps_within_block]")
+{
+  cuda::stream stream{cuda::devices[0]};
+
+  run_multi_group_reduce_kernel<false, true>(stream);
+  run_multi_group_reduce_kernel<true, true>(stream);
+  run_multi_group_reduce_kernel<false, false>(stream);
+  run_multi_group_reduce_kernel<true, false>(stream);
+}
+
+C2H_TEST("reduce/warps_within_block isolates scratch with run-time extents", "[reduce][warps_within_block]")
+{
+  cuda::stream stream{cuda::devices[0]};
+
+  run_multi_group_reduce_kernel<false, true, true>(stream);
+  run_multi_group_reduce_kernel<true, true, true>(stream);
+  run_multi_group_reduce_kernel<false, false, true>(stream);
+  run_multi_group_reduce_kernel<true, false, true>(stream);
 }
