@@ -1,0 +1,141 @@
+# cuda-coop
+
+`cuda-coop` is the standalone Python distribution for cooperative primitives
+shared across CUDA Python DSL backends. The unqualified import exposes the
+portable common v1 group-first API:
+
+```python
+from cuda import coop
+```
+
+Importing the root safely probes the installed CUTLASS and Numba-CUDA-MLIR
+runtimes, checks the concrete compiler capabilities `cuda.coop` needs, and
+registers each compatible backend. Missing runtimes are ignored. An installed
+but incompatible runtime produces a
+`CudaCoopAutoRegistrationWarning` with the missing capability and upgrade
+guidance while leaving the common API usable. Set
+`CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1` before import to disable these
+probes.
+
+The v1 profile includes group and storage objects; Load and Store; Reduce and
+Sum; Scan aliases; Exchange and Shuffle; Adjacent Difference and single-output
+Discontinuity; key and key/value forms of Merge Sort, Radix Sort, and TopK;
+keys-only Radix Rank; Histogram; and Run-Length Decode. Promotion requires
+matching semantics and result layout in CUTLASS and
+Numba-CUDA-MLIR. Backend callbacks, side outputs, native payload forms, and
+routing controls remain qualified.
+
+The common numeric family is the exact CUTLASS/Numba intersection: `uint8`,
+`int32`, `uint32`, `int64`, `uint64`, `float32`, and `float64`. Python `int`
+and `float` select `int32` and `float32`. Integer-key and counter operations
+use the narrower families documented with those operations. Complex and
+extension aggregate collectives remain qualified Numba-CUDA-MLIR features;
+passing a qualified payload to an unqualified operation does not widen this
+contract. Qualified CUTLASS `ThreadData[T]` is a generic register container,
+so it can preserve complex or user-defined values for indexing and backend
+handoff, but CUTLASS collectives still accept only the dtype families their
+providers implement.
+Python's static type system treats `bool` as a subtype of `int`, so an editor
+cannot express that one exclusion precisely; compiler-time validation still
+rejects boolean payloads from the common numeric family.
+
+Common Shuffle is the exact overlapping block form: a fixed-size per-thread
+payload, `mode="up"` or `mode="down"`, and `distance=1`. It leaves the vacated
+first or last flattened item undefined. Scalar modes, other distances, and
+boundary outputs remain backend-qualified.
+
+Common Histogram accepts a complete block and a fixed-size `ThreadData`
+samples payload without mutating it. `bins` and `bins_per_thread` are positive
+trace-time integers, and `bins` must not exceed
+`group_size * bins_per_thread`. The returned `ThreadData` is striped: member
+rank `r` owns bins `r + i * group_size`, and positions beyond `bins` are zero.
+Every sample must satisfy `0 <= sample < bins`. Portable V1 certifies
+`uint8`, `int32`, `uint32`, `int64`, and `uint64` samples and `int32`,
+`uint32`, `int64`, and `uint64` counters; other dtype support is
+backend-qualified. The Python `int` dtype spelling maps to `int32`.
+
+Backend-qualified packages remain available for backend-specific extensions.
+
+### Typing and editor completion
+
+The wheel ships root and backend-local `py.typed` markers plus public stubs.
+The marker files are intentionally empty: under PEP 561 their presence marks a
+package as typed, while the substantive declarations and docstrings live in
+the adjacent `.pyi` files. `ThreadData` and `TempStorage` are
+compiler-dispatched factories; use the exported `ThreadDataLike[T]` and
+`TempStorageLike` protocols when annotating backend-neutral helpers. An editor
+shows the portable common contract for `from cuda import coop` because compiler
+selection cannot change a Python module's static type. Compiler activation
+changes lowering, not the IDE's static view. Use a qualified import for
+DSL-specific signatures, docstrings, and code completion:
+
+The common runtime also recognizes selected built-in callable objects such as
+`operator.add` by identity. Python annotations cannot describe the identity of
+one callable without accepting arbitrary callbacks, so the common stubs expose
+only the equivalent string literals (`"add"`, `"multiply"`, and so on). Use
+those spellings for strictly typed portable code; qualified APIs type custom
+callbacks where the backend supports them. CUTLASS group-first calls have the
+same identity limitation and expose supported literal spellings in their
+stubs. Numba-CUDA-MLIR group-first calls do the same; its qualified root accepts
+custom callbacks where the backend supports them.
+
+Qualified backend imports provide the activation fallback used when
+automatic probing is disabled: each backend import validates its runtime
+and registers its compiler hooks before serving the portable root API.
+
+Python's standard warning controls can filter registration diagnostics. For
+example, `PYTHONWARNINGS='ignore:cuda.coop automatic DSL registration'`
+suppresses only these warnings; disabling auto-registration is preferable when
+an application intentionally manages compiler activation itself.
+
+The wheel contains the common API. Extras add compiler dependencies.
+The plain `cuda-coop` does not install a compiler. `cu12` and `cu13` add
+toolkit dependencies.
+
+## Layout
+
+```text
+python/cuda_coop/
+├── CMakeLists.txt
+├── pyproject.toml
+├── cuda/
+│   └── coop/
+│       ├── __init__.py
+│       ├── _headers/
+│       └── _core/
+└── tests/
+    ├── contracts/
+    ├── backends/
+    ├── providers/
+    ├── integration/
+    └── support/
+```
+
+The `cuda-coop` distribution owns `cuda/coop/__init__.py` and the backend
+packages under `cuda.coop.<dsl>` added by their commits. The wheel bundles its own private
+libcudacxx, CUB, Thrust, and CUDAX headers under `cuda.coop._headers`; no
+separate header distribution is required. The top-level `cuda` directory
+remains a namespace package without `cuda/__init__.py`.
+
+## Backend-neutral primitive semantics
+
+`cuda.coop._core` is an internal, standard-library-only semantic layer shared
+by backend frontends. It describes normalized cooperative primitive
+specializations and group-lowering plans; backends continue to own validation,
+compilation, linking, caching, rewriting, provider requests, and launching.
+BlockTopK, BlockScan, BlockExchange, WarpScan, WarpExchange, and group Reduce,
+Scan, and Exchange use these shared contracts. CUTLASS group Reduce selects
+broadcasted CUDAX for the default full-group route and exact CUB block/warp
+specializations for supported CUB-only variants. See
+[`docs/core-primitive-architecture.md`](docs/core-primitive-architecture.md)
+for the dependency rules, adapter contract, and validation coverage.
+
+## Local Validation
+
+From the repository root:
+
+```bash
+python -m pytest -q -p no:cacheprovider python/cuda_coop/tests
+python -m ruff check python/cuda_coop
+python -m compileall -q python/cuda_coop/cuda/coop
+```

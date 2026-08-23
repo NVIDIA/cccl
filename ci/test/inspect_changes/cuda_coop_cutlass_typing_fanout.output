@@ -1,0 +1,2 @@
+FULL_BUILD=cuda_coop_contracts cuda_coop_cutlass
+LITE_BUILD=

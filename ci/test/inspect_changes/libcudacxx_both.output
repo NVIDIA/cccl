@@ -1,2 +1,2 @@
-FULL_BUILD=libcudacxx tidy
+FULL_BUILD=libcudacxx cuda_coop_contracts cuda_coop_numba_mlir cuda_coop_cutlass tidy
 LITE_BUILD=cub thrust cudax cccl_c_parallel cccl_c_parallel_v2 python_v2 python_tsan cccl_c_stf python packaging stdpar nvbench_helper

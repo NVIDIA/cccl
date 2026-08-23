@@ -169,6 +169,8 @@ workflows:
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     # cuda.cccl.headers: CPU-only (gpu:false), arch-insensitive
     - {jobs: ['test_headers'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: ['pinned', 'latest', 'sysctk']}
+    # cuda.coop owns independent wheel environments.
+    - {jobs: ['test'], project: 'cuda_coop_contracts', ctk: '13.X', py_version: ['3.10', '3.14'], cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 't4', args: '-min-cmake'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 't4'}
@@ -231,6 +233,7 @@ workflows:
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {project: 'cuda_coop_contracts', jobs: ['test'], ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['test'], args: '-min-cmake', gpu: 't4', sm: 'gpu'}
@@ -361,6 +364,9 @@ workflows:
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
 
+    # cuda.coop wheels and compiler-backed lanes
+    - {jobs: ['test'], project: 'cuda_coop_contracts', ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
+
   weekly:
     # CTK 12.0 full matrix build: default projects
     - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
@@ -482,6 +488,9 @@ workflows:
     # the full test extras cannot resolve on free-threaded Python (numba-cuda
     # has no cp314t wheels).
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+
+    # cuda.coop wheels and compiler-backed lanes
+    - {jobs: ['test'], project: 'cuda_coop_contracts', ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
 
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
@@ -678,6 +687,8 @@ jobs:
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
+  build_py_coop_wheel: { name: "Build cuda-coop", gpu: false, invoke: { prefix: 'build_cuda_coop'} }
+  test_py_coop_contracts: { name: "Test cuda.coop contracts", gpu: false, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage contracts'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
@@ -736,6 +747,11 @@ projects:
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_par', 'test_py_examples']
+  cuda_coop_contracts:
+    name: "cuda.coop Contracts"
+    job_map:
+      build: ['build_py_coop_wheel']
+      test: ['test_py_coop_contracts']
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
     # Only cuda.compute differs between v1 and v2; cuda.cccl.headers does not
