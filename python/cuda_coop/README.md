@@ -225,6 +225,48 @@ common and qualified spellings with an independent oracle, preserve the input,
 and require the linked provider wrappers to disappear from the final binary.
 
 
+### Group-first Scan and Exchange
+
+Scan and Exchange use the same compile-time group dispatch as Reduce:
+
+```python
+group = coop.this_block()
+prefix = coop.scan(group, thread_items, mode="exclusive")
+striped = coop.exchange(group, prefix, mode="blocked_to_striped")
+```
+
+`coop.scan` lowers block scalar or `ThreadData` operands to public
+`cub::BlockScan` and physical-warp scalar operands to public `cub::WarpScan`.
+`coop.exchange` accepts `ThreadData` for complete blocks or physical warps and
+lowers `striped_to_blocked` and `blocked_to_striped` to public
+`cub::BlockExchange` or `cub::WarpExchange`. Exact launch dimensions select the
+CUB specialization; an upper bound such as `maxntid` is never treated as an
+exact shape. Block Exchange supports one through five items per thread;
+logical/scatter WarpExchange supports up to four. Guarded block scatter
+requires signed `Int32` or `Int64`
+ranks because rank -1 is its no-write sentinel; the other block
+scatter modes retain all supported integral rank dtypes. The group marker
+affects planning and artifact identity but is erased before the runtime FFI
+ABI.
+
+Scatter ranks are a caller precondition: every participating write rank
+must address its block or logical-warp tile and write ranks must be unique.
+For flagged block scatter, only ranks with a true flag participate; guarded
+block scatter accepts rank -1 as the sole no-write sentinel. Duplicate write
+ranks and destinations without a writer have unspecified values. The
+direct-CUB migration no longer preserves the retired block shim's behavior for
+invalid ranks. Logical/scatter WarpExchange uses `Int32` ranks and requires the
+exact CTA thread count to be divisible by `threads_in_warp`.
+
+Full-block, physical-warp, and logical-warp group calls delegate through the
+same planners and typed provider artifacts. Exchange wrappers make one
+whole-register-array CUB call and normally own exact typed scratch. The
+compiler-planned storage described below makes size-less storage operational
+for block Load, Store, Scan, Adjacent Difference, Discontinuity, Radix Sort,
+Merge Sort, and BlockExchange.
+
+No handwritten Scan or Exchange collective remains as an automatic fallback.
+
 ### Provider compilation and caching
 
 Provider requests, generated source, features, includes, and symbols are

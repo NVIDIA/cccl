@@ -19,8 +19,10 @@ from collections.abc import Mapping
 from typing import Any, Callable
 
 from .._factory import (
+    _DEFAULT_SELECTOR,
     _bind_if_not_none,
     _reject_prims_specific_load_store_factory_kwargs,
+    _select_positional_enum_alias,
 )
 from .._factory import (
     _make_factory as _make_scoped_factory,
@@ -47,9 +49,11 @@ from .._launch import (
 )
 from .._load_store import validate_payload_selector as _validate_payload_selector
 from .._scope import BLOCK_SCOPE as _SCOPE
+from ._exchange import BlockExchangeType, exchange
 from ._load_store import load, store
 from ._reduce import reduce, sum
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
+from ._shuffle import shuffle
 
 _RADIX_SORT_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit", "descending")
 _RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit")
@@ -135,6 +139,21 @@ def _reject_algorithm(
         factory_name,
         algorithm,
         default=default,
+    )
+
+
+def _select_block_exchange_type(
+    factory_name: str,
+    dtype: Any,
+    block_exchange_type: Any,
+) -> tuple[Any, Any]:
+    return _select_positional_enum_alias(
+        _SCOPE,
+        factory_name,
+        dtype,
+        block_exchange_type,
+        enum_type=BlockExchangeType,
+        keyword_name="block_exchange_type",
     )
 
 
@@ -282,6 +301,38 @@ def make_store(
         overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
         override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
     )
+
+
+def make_exchange(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    block_exchange_type: Any = _DEFAULT_SELECTOR,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block exchange callable.
+
+    The callable binds the CUB exchange mode and CTA metadata, then forwards
+    per-thread scalar or ``ThreadData`` items to :func:`exchange`.
+    """
+    dtype, block_exchange_type = _select_block_exchange_type(
+        "make_exchange",
+        dtype,
+        block_exchange_type,
+    )
+    del dtype, items_per_thread
+    _reject_methods("make_exchange", kwargs)
+    bound = _block_kwargs(
+        "make_exchange",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    if block_exchange_type is not _DEFAULT_SELECTOR:
+        bound["block_exchange_type"] = block_exchange_type
+    return _make_factory("make_exchange", exchange, bound)
 
 
 def make_reduce(
@@ -542,4 +593,44 @@ def make_inclusive_scan(
         inclusive_scan,
         bound,
         overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_shuffle(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int | None = None,
+    block_shuffle_type: Any = _DEFAULT_SELECTOR,
+    distance: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block shuffle callable.
+
+    The callable binds shuffle mode, distance, and CTA metadata, then forwards
+    each scalar or ``ThreadData`` value to :func:`shuffle`.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_shuffle", kwargs)
+    bound = _block_kwargs(
+        "make_shuffle",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    overridable_kwargs: tuple[str, ...] = ()
+    if block_shuffle_type is _DEFAULT_SELECTOR:
+        if "mode" not in bound:
+            bound["mode"] = "up"
+            overridable_kwargs = ("mode",)
+    else:
+        bound["block_shuffle_type"] = block_shuffle_type
+    _bind_if_not_none(bound, "distance", distance)
+    return _make_factory(
+        "make_shuffle",
+        shuffle,
+        bound,
+        overridable_kwargs=overridable_kwargs,
+        override_aliases=(("block_shuffle_type", ("mode",)),),
     )

@@ -57,6 +57,8 @@ _ROOT_OPERATIONS = {
         "inclusive_sum",
         "exclusive_scan",
         "inclusive_scan",
+        "exchange",
+        "shuffle",
     )
 }
 _ROOT_OPERATIONS.update(
@@ -1967,6 +1969,298 @@ class _GroupCallPlanner:
             common_profile_operation=(operation if is_common_root else None),
         )
 
+    def _lower_exchange(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments("exchange", bound)
+        if group.kind not in {"block", "warp", "threads_within_warp"}:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.exchange currently lowers only block, "
+                "physical-warp, and logical-warp groups"
+            )
+        mode = self._constant(bound.arguments["mode"])
+        if hasattr(mode, "value"):
+            mode = mode.value
+        if not isinstance(mode, str):
+            raise TypeError(
+                "cuda.coop.numba_mlir.exchange mode must be a compile-time string"
+            )
+        time_slicing = self._constant(bound.arguments["warp_time_slicing"])
+        if not isinstance(time_slicing, bool):
+            raise TypeError(
+                "cuda.coop.numba_mlir.exchange warp_time_slicing must be a "
+                "compile-time bool"
+            )
+        if group.kind == "block":
+            from ._block import BlockExchangeType
+
+            exchange_types = {
+                "striped_to_blocked": BlockExchangeType.StripedToBlocked,
+                "blocked_to_striped": BlockExchangeType.BlockedToStriped,
+                "warp_striped_to_blocked": (BlockExchangeType.WarpStripedToBlocked),
+                "blocked_to_warp_striped": (BlockExchangeType.BlockedToWarpStriped),
+                "scatter_to_blocked": BlockExchangeType.ScatterToBlocked,
+                "scatter_to_striped": BlockExchangeType.ScatterToStriped,
+                "scatter_to_striped_guarded": (
+                    BlockExchangeType.ScatterToStripedGuarded
+                ),
+                "scatter_to_striped_flagged": (
+                    BlockExchangeType.ScatterToStripedFlagged
+                ),
+            }
+            exchange_type_name = "block_exchange_type"
+        else:
+            from ._warp import WarpExchangeType
+
+            exchange_types = {
+                "striped_to_blocked": WarpExchangeType.StripedToBlocked,
+                "blocked_to_striped": WarpExchangeType.BlockedToStriped,
+                "scatter_to_striped": WarpExchangeType.ScatterToStriped,
+            }
+            exchange_type_name = "warp_exchange_type"
+            if time_slicing:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.exchange warp_time_slicing applies "
+                    "only to block groups"
+                )
+        try:
+            exchange_type = exchange_types[mode]
+        except KeyError as exc:
+            choices = ", ".join(exchange_types)
+            raise ValueError(
+                f"cuda.coop.numba_mlir.exchange mode must be one of: {choices}"
+            ) from exc
+
+        uses_ranks = mode.startswith("scatter_to_")
+        uses_valid_flags = mode == "scatter_to_striped_flagged"
+        has_ranks = not self._is_none(bound.arguments["ranks"])
+        has_valid_flags = not self._is_none(bound.arguments["valid_flags"])
+        if uses_ranks != has_ranks:
+            requirement = "requires" if uses_ranks else "does not accept"
+            raise ValueError(
+                f"cuda.coop.numba_mlir.exchange {mode} {requirement} ranks"
+            )
+        if uses_valid_flags != has_valid_flags:
+            requirement = "requires" if uses_valid_flags else "does not accept"
+            raise ValueError(
+                f"cuda.coop.numba_mlir.exchange {mode} {requirement} valid_flags"
+            )
+        factory, factory_kwargs = self._scope_factory(group, "exchange")
+        factory_kwargs[exchange_type_name] = exchange_type
+        if time_slicing:
+            factory_kwargs["warp_time_slicing"] = True
+        if is_common_root:
+            factory_kwargs["_common_profile_operation"] = "exchange"
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        value = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="exchange_value",
+            value=bound.arguments["value"],
+        )
+        if not self._array_operand_state("exchange", value):
+            raise TypeError(
+                "cuda.coop.numba_mlir.exchange requires a fixed-size ThreadData "
+                "or local-array payload"
+            )
+        if is_common_root and not self._thread_data_operand_state(
+            "exchange",
+            "value",
+            value,
+        ):
+            raise TypeError(
+                "cuda.coop.exchange requires a fixed-size ThreadData payload "
+                "in common V1; use cuda.coop.numba_mlir for backend-qualified "
+                "local-array payload support"
+            )
+        items_per_thread = self._array_extent(value)
+        if (
+            is_common_root
+            and items_per_thread is not None
+            and items_per_thread
+            > _common_root_api._COMMON_V1_MAX_EXCHANGE_ITEMS_PER_THREAD
+        ):
+            raise NotImplementedError(
+                "cuda.coop.exchange supports at most "
+                f"{_common_root_api._COMMON_V1_MAX_EXCHANGE_ITEMS_PER_THREAD} "
+                "items per thread in common V1; use cuda.coop.numba_mlir for "
+                "backend-qualified support"
+            )
+        result_payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="exchange_result",
+            prototype=value,
+            is_array=True,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        runtime_args = [value, result_payload]
+        if uses_ranks:
+            ranks = bound.arguments["ranks"]
+            if not self._array_operand_state("exchange", ranks):
+                raise TypeError(
+                    "cuda.coop.numba_mlir.exchange ranks must be a fixed-size "
+                    "ThreadData or local-array payload"
+                )
+            runtime_args.append(ranks)
+        if uses_valid_flags:
+            valid_flags = bound.arguments["valid_flags"]
+            if not self._array_operand_state("exchange", valid_flags):
+                raise TypeError(
+                    "cuda.coop.numba_mlir.exchange valid_flags must be a "
+                    "fixed-size ThreadData or local-array payload"
+                )
+            runtime_args.append(valid_flags)
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=result_payload,
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        statements.append(ir.Assign(result_payload, inst.target, loc))
+        return statements
+
+    def _lower_shuffle(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments("shuffle", bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.shuffle currently lowers only complete "
+                "physical block groups"
+            )
+        if not self._is_none(bound.arguments.get("block_prefix")) or not self._is_none(
+            bound.arguments.get("block_suffix")
+        ):
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.shuffle root projection currently supports "
+                "the scalar-return ABI without boundary outputs"
+            )
+
+        from ._block import BlockShuffleType
+
+        mode = self._constant(bound.arguments["mode"])
+        if hasattr(mode, "value"):
+            mode = mode.value
+        try:
+            shuffle_type = {
+                "offset": BlockShuffleType.Offset,
+                "rotate": BlockShuffleType.Rotate,
+                "up": BlockShuffleType.Up,
+                "down": BlockShuffleType.Down,
+            }[mode]
+        except KeyError as exc:
+            raise ValueError(
+                "cuda.coop.numba_mlir.shuffle mode must be offset, rotate, up, or down"
+            ) from exc
+        factory, factory_kwargs = self._scope_factory(group, "shuffle")
+        factory_kwargs["block_shuffle_type"] = shuffle_type
+        distance = bound.arguments["distance"]
+        normalized_distance = self._constant(distance)
+        is_default_up_down_distance = (
+            shuffle_type in {BlockShuffleType.Up, BlockShuffleType.Down}
+            and normalized_distance == 1
+        )
+        if not is_default_up_down_distance:
+            factory_kwargs["distance"] = distance
+        value = bound.arguments["value"]
+        array_state = self._is_array_value(value)
+        if array_state is None:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir.shuffle could not resolve cyclic array "
+                "provenance to a concrete scalar or array value"
+            )
+        is_array_value = array_state
+        if is_common_root:
+            is_thread_data = self._is_array_value(
+                value,
+                thread_data_only=True,
+            )
+            if is_thread_data is None:
+                raise GroupRewriteError(
+                    "cuda.coop.shuffle could not resolve value payload provenance"
+                )
+            if not is_thread_data:
+                raise TypeError(
+                    "cuda.coop.shuffle requires a fixed-size ThreadData payload "
+                    "in common V1; use cuda.coop.numba_mlir for backend-qualified "
+                    "scalar or local-array shuffles"
+                )
+            if shuffle_type not in {BlockShuffleType.Up, BlockShuffleType.Down}:
+                raise ValueError(
+                    "cuda.coop.shuffle mode must be 'down' or 'up' in common V1; "
+                    "use cuda.coop.numba_mlir for backend-qualified scalar "
+                    "offset/rotate shuffles"
+                )
+            if (
+                isinstance(normalized_distance, bool)
+                or not isinstance(normalized_distance, Integral)
+                or int(normalized_distance) != 1
+            ):
+                raise ValueError(
+                    "cuda.coop.shuffle distance must be exactly 1 in common V1; "
+                    "use cuda.coop.numba_mlir for backend-qualified scalar "
+                    "shuffles with other distances"
+                )
+        if is_array_value and shuffle_type not in {
+            BlockShuffleType.Up,
+            BlockShuffleType.Down,
+        }:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.shuffle array values currently support "
+                "only 'up' and 'down' modes"
+            )
+        if is_array_value:
+            statements: list[Any] = []
+            scope = inst.target.scope
+            loc = inst.loc
+            result_payload = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="shuffle_result",
+                prototype=value,
+                is_array=True,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            call_statements = self._rewritten_call(
+                inst,
+                factory=factory,
+                args=[value, result_payload],
+                kwargs=factory_kwargs,
+                return_alias=result_payload,
+                common_profile_operation=("shuffle" if is_common_root else None),
+            )
+            call_statements.pop()
+            statements.extend(call_statements)
+            statements.append(ir.Assign(result_payload, inst.target, loc))
+            return statements
+        return self._rewritten_call(
+            inst,
+            factory=factory,
+            args=[value],
+            kwargs=factory_kwargs,
+            common_profile_operation=("shuffle" if is_common_root else None),
+        )
+
     def _lower_root_operation(
         self,
         inst: ir.Assign,
@@ -2084,6 +2378,20 @@ class _GroupCallPlanner:
             replacement = self._lower_scan(
                 inst,
                 operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "exchange":
+            replacement = self._lower_exchange(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "shuffle":
+            replacement = self._lower_shuffle(
+                inst,
                 group=group,
                 bound=bound,
                 is_common_root=is_common_root,

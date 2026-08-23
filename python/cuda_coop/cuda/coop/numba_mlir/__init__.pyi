@@ -25,10 +25,12 @@ from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
+from .._typing import PortableShuffleMode as _PortableShuffleMode
 from .._typing import ReduceAlgorithm as _ReduceAlgorithm
 from .._typing import ReduceOperator as _ReduceOperator
 from .._typing import ScanAlgorithm as _ScanAlgorithm
 from .._typing import ScanOperator as _ScanOperator
+from .._typing import ShuffleMode as _ShuffleMode
 from .._typing import TempStorageSharing as _TempStorageSharing
 from .._typing import ThreadDataLike as _ThreadDataLike
 from .._typing import ThreadGroupKind as _ThreadGroupKind
@@ -981,6 +983,90 @@ def inclusive_scan(
 ) -> _ScalarT:
     """Preserve a scalar type through physical- or logical-warp inclusive Scan."""
 
+@overload
+def exchange(
+    group: _BlockGroup,
+    value: _PayloadT,
+    /,
+    *,
+    mode: _BlockExchangeMode = "striped_to_blocked",
+    ranks: Any = None,
+    valid_flags: Any = None,
+    warp_time_slicing: bool = False,
+) -> _PayloadT:
+    """Return a layout-rearranged ``ThreadData`` payload without mutation.
+
+    The overload set accepts complete blocks, physical warps, and logical warps.
+    The portable modes are ``"striped_to_blocked"`` and
+    ``"blocked_to_striped"``. Blocks additionally support warp-striped and
+    scatter modes; warp groups support scatter-to-striped. Scatter modes consume
+    ``ranks``, flagged block scatter also consumes ``valid_flags``, and
+    ``warp_time_slicing`` is block-only.
+    Cross-backend portability is guaranteed for one through five items per
+    participant; this qualified adapter also accepts larger fixed-size payloads
+    supported by its backend; scalar inputs are not supported. The result
+    preserves the input payload's shape and item type.
+    """
+
+@overload
+def exchange(
+    group: _WarpGroup,
+    value: _PayloadT,
+    /,
+    *,
+    mode: _WarpExchangeMode = "striped_to_blocked",
+    ranks: Any = None,
+    valid_flags: None = None,
+    warp_time_slicing: Literal[False] = False,
+) -> _PayloadT:
+    """Exchange a payload across a physical or logical warp without mutation.
+
+    Warp groups support blocked-to-striped, striped-to-blocked, and
+    scatter-to-striped layouts. Scatter-to-striped consumes ``ranks``. Warp
+    exchange does not accept ``valid_flags`` or ``warp_time_slicing``.
+    """
+
+@overload
+def shuffle(
+    group: _BlockGroup,
+    value: _PayloadT,
+    /,
+    *,
+    mode: _PortableShuffleMode = "down",
+    distance: Literal[1] = 1,
+    block_prefix: None = None,
+    block_suffix: None = None,
+) -> _PayloadT:
+    """Return a unit-shifted Numba payload without mutation.
+
+    ``group`` must be a complete physical block and ``value`` a fixed-size
+    per-thread payload. ``mode`` set to ``"up"`` leaves the first flattened
+    result item undefined; ``mode="down"`` leaves the final result item
+    undefined.
+    ``distance`` must be ``1``. The Numba group-first projection does not
+    expose ``block_prefix`` or ``block_suffix`` outputs.
+    """
+
+@overload
+def shuffle(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: _ShuffleMode = "down",
+    distance: int = 1,
+    block_prefix: None = None,
+    block_suffix: None = None,
+) -> _ScalarT:
+    """Return one Numba scalar selected by a qualified Shuffle mode.
+
+    ``group`` must be a complete physical block and ``value`` one scalar.
+    ``mode`` accepts ``"up"``, ``"down"``, ``"offset"``, or ``"rotate"``;
+    scalar Up and Down lower through signed Offset. ``distance`` is a
+    compile-time integer. Scalar calls do not accept ``block_prefix`` or
+    ``block_suffix`` outputs.
+    """
+
 __all__ = [
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
@@ -994,6 +1080,7 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "gpu_dataclass",
@@ -1004,6 +1091,7 @@ __all__ = [
     "reduce",
     "scan",
     "shared",
+    "shuffle",
     "store",
     "sum",
     "this_block",

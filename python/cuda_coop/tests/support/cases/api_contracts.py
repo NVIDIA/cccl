@@ -569,6 +569,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "inclusive_sum",
             "exclusive_scan",
             "inclusive_scan",
+            "exchange",
+            "shuffle",
         }
     ),
     "numba_mlir": frozenset(
@@ -582,6 +584,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "inclusive_sum",
             "exclusive_scan",
             "inclusive_scan",
+            "exchange",
+            "shuffle",
         }
     ),
 }

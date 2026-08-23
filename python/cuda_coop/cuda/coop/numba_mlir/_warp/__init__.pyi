@@ -5,6 +5,7 @@
 """Typed physical-warp Numba-CUDA-MLIR cooperative primitives."""
 
 from collections.abc import Callable, Mapping
+from enum import IntEnum
 from typing import Any, Protocol, TypeVar, overload
 
 from ..._typing import LoadStoreAlgorithm, ThreadDataLike
@@ -282,6 +283,13 @@ class _MergeSortInvocable(_Invocable, Protocol[_K, _V]):
         temp_storage: TempStorage | None = None,
     ) -> None:
         """Sort a partial key-value tile in place."""
+
+class WarpExchangeType(IntEnum):
+    """CUB physical-warp exchange pattern."""
+
+    StripedToBlocked = 1
+    BlockedToStriped = 2
+    ScatterToStriped = 3
 
 @overload
 def load(
@@ -1223,12 +1231,113 @@ def make_inclusive_scan(
 ) -> _ScanInvocable[Any]:
     """Build a generated inclusive physical-warp scan callable."""
 
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    output_or_ranks: object,
+    /,
+    *,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    dtype: object = None,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Exchange a payload into an output or scatter it in place."""
+
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    ranks: object,
+    /,
+    *,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.ScatterToStriped,
+    dtype: object = None,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Scatter a physical-warp payload into ``output`` by rank."""
+
+@overload
+def exchange(
+    dtype: object,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: object = None,
+    use_output_items: bool | None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ExchangeInvocable[Any]:
+    """Build a generated physical-warp exchange callable."""
+
+@overload
+def warp_exchange(
+    dtype: type[_T],
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: object = None,
+    use_output_items: bool | None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ExchangeInvocable[_T]:
+    """Build a dtype-preserving physical-warp exchange callable."""
+
+@overload
+def warp_exchange(
+    dtype: object,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: object = None,
+    use_output_items: bool | None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ExchangeInvocable[Any]:
+    """Build a generated physical-warp exchange callable."""
+
+@overload
+def make_exchange(
+    dtype: type[_T],
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: object = None,
+    use_output_items: bool | None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ExchangeInvocable[_T]:
+    """Build a dtype-preserving physical-warp exchange callable."""
+
+@overload
+def make_exchange(
+    dtype: object,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: object = None,
+    use_output_items: bool | None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ExchangeInvocable[Any]:
+    """Build a generated physical-warp exchange callable."""
+
 __all__ = [
+    "WarpExchangeType",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",
@@ -1244,6 +1353,7 @@ __all__ = [
     "reduce",
     "store",
     "sum",
+    "warp_exchange",
     "warp_exclusive_scan",
     "warp_exclusive_sum",
     "warp_inclusive_scan",

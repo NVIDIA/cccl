@@ -5,6 +5,7 @@
 """Typed block-scoped Numba-CUDA-MLIR cooperative primitives."""
 
 from collections.abc import Callable, Mapping
+from enum import IntEnum
 from typing import Any, Protocol, TypeVar, overload
 
 from ..._typing import (
@@ -564,6 +565,26 @@ class _RunLengthInvocable(Protocol):
         relative_offset_dtype: object = None,
     ) -> _Invocable:
         """Build a generated fused decode callable."""
+
+class BlockExchangeType(IntEnum):
+    """CUB block-exchange data movement pattern."""
+
+    StripedToBlocked = 1
+    BlockedToStriped = 2
+    WarpStripedToBlocked = 3
+    BlockedToWarpStriped = 4
+    ScatterToBlocked = 5
+    ScatterToStriped = 6
+    ScatterToStripedGuarded = 7
+    ScatterToStripedFlagged = 8
+
+class BlockShuffleType(IntEnum):
+    """CUB block-shuffle movement pattern."""
+
+    Offset = 1
+    Rotate = 2
+    Up = 3
+    Down = 4
 
 @overload
 def load(
@@ -1390,15 +1411,178 @@ def make_inclusive_scan(
 ) -> _ScanInvocable[Any]:
     """Build a generated inclusive block-scan callable."""
 
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    /,
+    *,
+    block_exchange_type: BlockExchangeType = BlockExchangeType.StripedToBlocked,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Exchange a block payload in place."""
+
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    block_exchange_type: BlockExchangeType = BlockExchangeType.StripedToBlocked,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    ranks: object = None,
+    valid_flags: object = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Exchange a block payload into an explicit output payload."""
+
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    output_or_ranks: object,
+    ranks_or_flags: object,
+    /,
+    *,
+    block_exchange_type: BlockExchangeType = BlockExchangeType.ScatterToStriped,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Scatter a block payload with two configured runtime operands."""
+
+@overload
+def exchange(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    ranks: object,
+    valid_flags: object,
+    /,
+    *,
+    block_exchange_type: BlockExchangeType = BlockExchangeType.ScatterToStripedFlagged,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Flagged-scatter a block payload into ``output``."""
+
+@overload
+def exchange(
+    block_exchange_type: BlockExchangeType
+    | object = BlockExchangeType.StripedToBlocked,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    use_output_items: bool | None = None,
+    offset_dtype: object = None,
+    valid_flag_dtype: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ExchangeInvocable[Any]:
+    """Build a block-exchange callable outside compilation."""
+
+def make_exchange(
+    block_exchange_type: BlockExchangeType
+    | object = BlockExchangeType.StripedToBlocked,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    warp_time_slicing: bool = False,
+    use_output_items: bool | None = None,
+    offset_dtype: object = None,
+    valid_flag_dtype: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ExchangeInvocable[Any]:
+    """Build a generated block-exchange callable."""
+
+@overload
+def shuffle(
+    value: object,
+    output: object = None,
+    /,
+    *,
+    block_shuffle_type: BlockShuffleType = BlockShuffleType.Up,
+    distance: object = None,
+    block_prefix: object = None,
+    block_suffix: object = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> object:
+    """Apply a qualified scalar or array block shuffle."""
+
+@overload
+def shuffle(
+    value: object,
+    output: object,
+    boundary: object,
+    /,
+    *,
+    block_shuffle_type: BlockShuffleType = BlockShuffleType.Up,
+    distance: object = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> object:
+    """Shuffle an array payload and expose its boundary item."""
+
+@overload
+def shuffle(
+    block_shuffle_type: BlockShuffleType | object = BlockShuffleType.Up,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int | None = None,
+    distance: object = None,
+    block_prefix: object = None,
+    block_suffix: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ShuffleInvocable[Any]:
+    """Build a block-shuffle callable outside compilation."""
+
+def make_shuffle(
+    block_shuffle_type: BlockShuffleType | object = BlockShuffleType.Up,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int | None = None,
+    distance: object = None,
+    block_prefix: object = None,
+    block_suffix: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ShuffleInvocable[Any]:
+    """Build a generated block-shuffle callable."""
+
 __all__ = [
+    "BlockExchangeType",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
+    "BlockShuffleType",
     "BlockStoreAlgorithm",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",
@@ -1406,10 +1590,12 @@ __all__ = [
     "make_load",
     "make_reduce",
     "make_scan",
+    "make_shuffle",
     "make_store",
     "make_sum",
     "reduce",
     "scan",
+    "shuffle",
     "store",
     "sum",
 ]

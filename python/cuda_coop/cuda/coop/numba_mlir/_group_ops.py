@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from cuda.coop._core.block import BlockShuffleMode
+
 from ._thread_group import ThreadGroup
 
 if TYPE_CHECKING:
@@ -235,7 +237,50 @@ def inclusive_scan(
     )
 
 
+def exchange(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: str = "striped_to_blocked",
+    ranks: Any = None,
+    valid_flags: Any = None,
+    warp_time_slicing: bool = False,
+) -> Any:
+    return _group_primitive_marker(
+        "exchange",
+        group,
+        value,
+        mode=mode,
+        ranks=ranks,
+        valid_flags=valid_flags,
+        warp_time_slicing=warp_time_slicing,
+    )
+
+
+def shuffle(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: Any = BlockShuffleMode.DOWN,
+    distance: Any = 1,
+    block_prefix: Any = None,
+    block_suffix: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "shuffle",
+        group,
+        value,
+        mode=mode,
+        distance=distance,
+        block_prefix=block_prefix,
+        block_suffix=block_suffix,
+    )
+
+
 __all__ = [
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -243,6 +288,7 @@ __all__ = [
     "load",
     "reduce",
     "scan",
+    "shuffle",
     "store",
     "sum",
 ]

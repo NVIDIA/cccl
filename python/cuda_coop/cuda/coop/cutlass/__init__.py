@@ -11,6 +11,7 @@ from cuda.coop._core.root_api import (
 )
 
 from ._compiler import register_trace_context as _register_trace_context
+from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
 from ._group_scan import (
@@ -20,6 +21,7 @@ from ._group_scan import (
     inclusive_sum,
     scan,
 )
+from ._group_shuffle import shuffle
 from ._internal import (
     ThreadData,
     ThreadDataLoadSource,
@@ -54,6 +56,7 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -61,6 +64,7 @@ __all__ = [
     "load",
     "reduce",
     "scan",
+    "shuffle",
     "store",
     "sum",
     "this_block",

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -126,6 +127,15 @@ def lower_numba_mlir_keypair(builder, target, args, kwargs):
         position=mlir_ir.DenseI64ArrayAttr.get([1]),
     )
     builder.store_var(target, result)
+
+
+def _striped_to_blocked_reference(values, threads=THREADS, items=ITEMS_PER_THREAD):
+    expected = np.empty_like(values)
+    for blocked_idx in range(threads * items):
+        source_thread = blocked_idx % threads
+        source_item = blocked_idx // threads
+        expected[blocked_idx] = values[source_thread + source_item * threads]
+    return expected
 
 
 def _add(a, b):

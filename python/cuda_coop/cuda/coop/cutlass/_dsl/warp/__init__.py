@@ -23,6 +23,13 @@ Examples:
 
 from . import _api as _api
 from . import _factory as _factory
+from ._exchange import (
+    WarpExchangeType,
+    exchange,
+    exchange_blocked_to_striped,
+    exchange_scatter_to_striped,
+    exchange_striped_to_blocked,
+)
 from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
@@ -31,6 +38,7 @@ from ._single_phase import TempStorage
 # Secondary compatibility adapters remain available through the private warp
 # module. Its wrappers preserve the private import scope reported by deferred
 # factories.
+make_exchange = _factory.make_exchange
 make_exclusive_scan = _factory.make_exclusive_scan
 make_exclusive_sum = _factory.make_exclusive_sum
 make_inclusive_scan = _factory.make_inclusive_scan
@@ -44,11 +52,17 @@ make_sum = _factory.make_sum
 
 __all__ = [
     "TempStorage",
+    "WarpExchangeType",
+    "exchange",
+    "exchange_blocked_to_striped",
+    "exchange_scatter_to_striped",
+    "exchange_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",

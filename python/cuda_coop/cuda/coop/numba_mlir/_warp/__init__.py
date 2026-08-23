@@ -7,6 +7,7 @@
 import importlib
 
 __all__ = [
+    "WarpExchangeType",
     "reduce",
     "sum",
     "max",
@@ -17,6 +18,7 @@ __all__ = [
     "inclusive_scan",
     "load",
     "store",
+    "exchange",
     "warp_reduce",
     "warp_sum",
     "warp_max",
@@ -27,6 +29,8 @@ __all__ = [
     "warp_inclusive_scan",
     "warp_load",
     "warp_store",
+    "warp_exchange",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",

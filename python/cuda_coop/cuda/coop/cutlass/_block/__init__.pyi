@@ -8,6 +8,25 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl._launch import CutlassLaunchMetadata as _CutlassLaunchMetadata
+from .._dsl.block import BlockExchangeType as BlockExchangeType
+from .._dsl.block import BlockShuffleType as BlockShuffleType
+from .._dsl.block import exchange as exchange
+from .._dsl.block import exchange_blocked_to_striped as exchange_blocked_to_striped
+from .._dsl.block import (
+    exchange_blocked_to_warp_striped as exchange_blocked_to_warp_striped,
+)
+from .._dsl.block import exchange_scatter_to_blocked as exchange_scatter_to_blocked
+from .._dsl.block import exchange_scatter_to_striped as exchange_scatter_to_striped
+from .._dsl.block import (
+    exchange_scatter_to_striped_flagged as exchange_scatter_to_striped_flagged,
+)
+from .._dsl.block import (
+    exchange_scatter_to_striped_guarded as exchange_scatter_to_striped_guarded,
+)
+from .._dsl.block import exchange_striped_to_blocked as exchange_striped_to_blocked
+from .._dsl.block import (
+    exchange_warp_striped_to_blocked as exchange_warp_striped_to_blocked,
+)
 from .._dsl.block import exclusive_scan as exclusive_scan
 from .._dsl.block import exclusive_sum as exclusive_sum
 from .._dsl.block import inclusive_scan as inclusive_scan
@@ -17,6 +36,11 @@ from .._dsl.block import radix_sort_pairs_descending as radix_sort_pairs_descend
 from .._dsl.block import reduce as reduce
 from .._dsl.block import row_sum as row_sum
 from .._dsl.block import scan as scan
+from .._dsl.block import shuffle as shuffle
+from .._dsl.block import shuffle_down as shuffle_down
+from .._dsl.block import shuffle_offset as shuffle_offset
+from .._dsl.block import shuffle_rotate as shuffle_rotate
+from .._dsl.block import shuffle_up as shuffle_up
 from .._dsl.block import sum as sum
 
 class _DeferredValue(Protocol):
@@ -254,6 +278,17 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_exchange(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    block_exchange_type: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block exchange specialization."""
+
 def make_scan(
     dtype: object,
     threads_per_block: object = None,
@@ -345,6 +380,18 @@ def make_sum(
 ) -> _DeferredValue:
     """Build a deferred block sum specialization."""
 
+def make_shuffle(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int | None = None,
+    block_shuffle_type: object = None,
+    distance: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block shuffle specialization."""
+
 def make_radix_sort_keys_descending(
     dtype: object,
     threads_per_block: object = None,
@@ -373,12 +420,24 @@ def make_radix_sort_pairs_descending(
     """Build a deferred descending block radix-pair-sort specialization."""
 
 __all__ = [
+    "BlockExchangeType",
+    "BlockShuffleType",
     "TempStorage",
+    "exchange",
+    "exchange_blocked_to_striped",
+    "exchange_blocked_to_warp_striped",
+    "exchange_scatter_to_blocked",
+    "exchange_scatter_to_striped",
+    "exchange_scatter_to_striped_flagged",
+    "exchange_scatter_to_striped_guarded",
+    "exchange_striped_to_blocked",
+    "exchange_warp_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",
@@ -388,6 +447,7 @@ __all__ = [
     "make_radix_sort_pairs_descending",
     "make_reduce",
     "make_scan",
+    "make_shuffle",
     "make_store",
     "make_sum",
     "radix_sort_keys_descending",
@@ -395,6 +455,11 @@ __all__ = [
     "reduce",
     "row_sum",
     "scan",
+    "shuffle",
+    "shuffle_down",
+    "shuffle_offset",
+    "shuffle_rotate",
+    "shuffle_up",
     "store",
     "sum",
 ]

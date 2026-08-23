@@ -18,8 +18,10 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from .._factory import (
+    _DEFAULT_SELECTOR,
     _bind_if_not_none,
     _reject_prims_specific_load_store_factory_kwargs,
+    _select_positional_enum_alias,
 )
 from .._factory import (
     _make_factory as _make_scoped_factory,
@@ -39,6 +41,7 @@ from .._factory import (
 from .._launch import resolve_threads_in_warp
 from .._load_store import validate_payload_selector as _validate_payload_selector
 from .._scope import WARP_SCOPE as _SCOPE
+from ._exchange import WarpExchangeType, exchange
 from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum
@@ -81,6 +84,21 @@ def _reject_if_supplied(factory_name: str, name: str, value: Any) -> None:
 
 def _reject_methods(factory_name: str, kwargs: dict[str, Any]) -> None:
     _reject_methods_for_scope(_SCOPE, factory_name, kwargs)
+
+
+def _select_warp_exchange_type(
+    factory_name: str,
+    dtype: Any,
+    warp_exchange_type: Any,
+) -> tuple[Any, Any]:
+    return _select_positional_enum_alias(
+        _SCOPE,
+        factory_name,
+        dtype,
+        warp_exchange_type,
+        enum_type=WarpExchangeType,
+        keyword_name="warp_exchange_type",
+    )
 
 
 def _normalize_valid_items_aliases(
@@ -215,6 +233,37 @@ def make_store(
         overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
         override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
     )
+
+
+def make_exchange(
+    dtype: Any,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: Any = _DEFAULT_SELECTOR,
+    offset_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp exchange callable.
+
+    The callable binds the CUB exchange mode and logical-warp width, then
+    forwards scalar or ``ThreadData`` items to :func:`exchange`.
+    """
+    dtype, warp_exchange_type = _select_warp_exchange_type(
+        "make_exchange",
+        dtype,
+        warp_exchange_type,
+    )
+    del dtype, items_per_thread
+    _reject_if_supplied("make_exchange", "offset_dtype", offset_dtype)
+    _reject_methods("make_exchange", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_exchange",
+        threads_in_warp,
+    )
+    if warp_exchange_type is not _DEFAULT_SELECTOR:
+        bound["warp_exchange_type"] = warp_exchange_type
+    return _make_factory("make_exchange", exchange, bound)
 
 
 def make_reduce(

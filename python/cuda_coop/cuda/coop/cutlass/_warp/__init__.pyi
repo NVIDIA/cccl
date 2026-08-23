@@ -8,6 +8,10 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl.warp import WarpExchangeType as WarpExchangeType
+from .._dsl.warp import exchange as exchange
+from .._dsl.warp import exchange_blocked_to_striped as exchange_blocked_to_striped
+from .._dsl.warp import exchange_scatter_to_striped as exchange_scatter_to_striped
+from .._dsl.warp import exchange_striped_to_blocked as exchange_striped_to_blocked
 from .._dsl.warp import exclusive_scan as exclusive_scan
 from .._dsl.warp import exclusive_sum as exclusive_sum
 from .._dsl.warp import inclusive_scan as inclusive_scan
@@ -223,6 +227,16 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_exchange(
+    dtype: object,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: object = None,
+    offset_dtype: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp exchange specialization."""
+
 def make_exclusive_scan(
     dtype: object,
     scan_op: object = None,
@@ -295,11 +309,16 @@ def make_min(
 __all__ = [
     "TempStorage",
     "WarpExchangeType",
+    "exchange",
+    "exchange_blocked_to_striped",
+    "exchange_scatter_to_striped",
+    "exchange_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
     "make_inclusive_scan",
