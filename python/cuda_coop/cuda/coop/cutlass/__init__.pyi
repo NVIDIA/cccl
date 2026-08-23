@@ -6,6 +6,7 @@
 
 from . import _block as _block
 from . import _warp as _warp
+from . import aot as aot
 from ._group_adjacent_difference import adjacent_difference as adjacent_difference
 from ._group_discontinuity import discontinuity as discontinuity
 from ._group_exchange import exchange as exchange
@@ -18,6 +19,7 @@ from ._group_radix import radix_rank as radix_rank
 from ._group_radix import radix_sort_keys as radix_sort_keys
 from ._group_radix import radix_sort_pairs as radix_sort_pairs
 from ._group_reduce import reduce as reduce
+from ._group_reduce import sum as sum
 from ._group_run_length_decode import run_length_decode as run_length_decode
 from ._group_scan import exclusive_scan as exclusive_scan
 from ._group_scan import exclusive_sum as exclusive_sum
@@ -75,6 +77,7 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "adjacent_difference",
+    "aot",
     "discontinuity",
     "exchange",
     "exclusive_scan",

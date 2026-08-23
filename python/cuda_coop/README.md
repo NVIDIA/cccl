@@ -56,8 +56,8 @@ backend-qualified. The Python `int` dtype spelling maps to `int32`.
 
 Backend-qualified packages remain available for backend-specific extensions:
 
-- `cuda.coop.cutlass`
 - `cuda.coop.numba_mlir`
+- `cuda.coop.cutlass`
 
 ### Typing and editor completion
 
@@ -113,10 +113,10 @@ variant. The explicit spellings `cutlass-cu12`, `cutlass-cu13`,
 
 ## Initial Boundaries
 
-- `cuda.coop.cutlass` is the shared CUTLASS cooperative-primitive surface and
-  is common-v1 conforming.
 - `cuda.coop.numba_mlir` is the qualified cooperative-primitive frontend for
   `numba-cuda-mlir` kernels and is common-v1 conforming.
+- `cuda.coop.cutlass` is the shared CUTLASS cooperative-primitive surface and
+  is common-v1 conforming.
   It combines the CuTe provider implementation and Prims array adapter behind
   one public root API.
 
@@ -142,7 +142,7 @@ python/cuda_coop/
 ```
 
 The `cuda-coop` distribution owns `cuda/coop/__init__.py` and the backend
-packages under `cuda.coop.<dsl>` added by their commits. The wheel bundles its own private
+packages under `cuda.coop.<dsl>`. The wheel bundles its own private
 libcudacxx, CUB, Thrust, and CUDAX headers under `cuda.coop._headers`; no
 separate header distribution is required. The top-level `cuda` directory
 remains a namespace package without `cuda/__init__.py`.
@@ -169,18 +169,79 @@ completion:
 import cuda.coop.cutlass as coop
 ```
 
-It exposes `ThreadData`, `TempStorage`, group descriptors and `this_*`
-helpers, plus the group-first collectives as they land on the portable
-contract, beginning with `load` and `store`. Importing
+It exposes `ThreadData`, `TempStorage`, group descriptors and `this_*` helpers,
+plus group-first `load`, `store`, `reduce`, `sum`, scan aliases, `exchange`,
+`adjacent_difference`, `discontinuity`, `shuffle`, `histogram`,
+`run_length_decode`, `radix_rank`, `radix_sort_keys`, `radix_sort_pairs`,
+`merge_sort_keys`, `merge_sort_pairs`, and TopK. Importing
 `from cuda import coop` performs this activation automatically when the
 installed CUTLASS runtime satisfies the required capability contract. The
 qualified import remains useful for CUTLASS-specific signatures and helpers.
 
-Load and Store accept compiler-traced tensors and CUTLASS array ("Prims")
-payloads behind one root API, with partial-tile `valid_items`/`oob_default`
-controls and element offsets. Wrappers are rendered once per trace, compiled
-to LTO-IR with NVRTC against the wheel's private CCCL headers, and attached
-during CUTLASS finalization.
+```python
+import cuda.coop.cutlass
+from cuda import coop
+from cutlass import cute
+
+
+@cute.kernel
+def kernel(values: cute.Tensor, output: cute.Tensor):
+    tidx, _, _ = cute.arch.thread_idx()
+    group = coop.this_block()
+    output[tidx] = coop.sum(group, values[tidx])
+```
+
+`cuda.coop.cutlass` remains the full CUTLASS-specific namespace:
+
+```python
+import cuda.coop.cutlass as coop
+```
+
+In addition to the common calls, it exports `Payload`, ThreadData adaptation
+protocols and class helpers, and lazy `coop.aot` host-side provider-pack
+tooling. Cooperative primitives are public only through functions whose first
+argument is a `ThreadGroup`.
+
+The provider compiler and CUTLASS tensor implementation live in the private,
+non-eager `cuda.coop.cutlass._dsl` package. It is an implementation detail,
+not a user import surface.
+
+The primitive boundary is a per-thread register payload represented by
+`ThreadData`. CUTLASS tensor loads and stores classify their route before
+provider registration. A raw compact pointer plus exact complete block or
+physical-warp facts uses the same public-CUB artifact as group-first Load and
+Store. Non-contiguous, logical-warp, statically unproven, or CUB-incompatible
+tensors retain an explicit CuTe indexing payload adapter without CUB provenance.
+Public `cutlass.Array` values and Prims-specific bounds or memory controls select
+the private Prims array adapter. A CUTLASS dtype by itself does not select the
+route. `offset=` is CUB-compatible and does not by itself select Prims.
+
+`ThreadData.from_payload` adapts supported per-thread CUTLASS register fragments.
+Memory-backed tensors and `cutlass.Array` values must be loaded before they are
+passed to register collectives. Group-shape parameters remain compile-time
+values; runtime value operands continue to flow through the generated provider
+ABI.
+
+Producer integrations can defer that register transfer behind a capability:
+
+```python
+@cute.jit
+def consume_accumulator(accumulator_source):
+    values = coop.ThreadData.load(accumulator_source)
+    selected = coop.topk_max_keys(coop.this_block(), values, 8)
+    return selected.to_tensor_ssa(like=accumulator_source)
+```
+
+`ThreadData.load` asks the producer source to issue its selected load, then
+adapts the resulting per-thread register payload. The producer retains the copy
+atom, thread partition, readiness, and lifetime policy. A bare TMEM tensor does
+not carry that policy and remains unsupported. The tracing hook is an
+integration protocol for producers such as CUTLASS; application code consumes
+the source and does not implement the hook. An accumulator consumer returns
+a register vector with the source's shape; `to_tensor_ssa(like=source)` performs
+that final materialization. Each call invokes the hook once during tracing.
+Producers should reject a second call when an accumulator sub-tile is
+single-use.
 
 ### Reduce result ownership
 
@@ -224,6 +285,33 @@ Numba-CUDA-MLIR. Its explicit block-algorithm and warp-valid-count routes use
 common and qualified spellings with an independent oracle, preserve the input,
 and require the linked provider wrappers to disappear from the final binary.
 
+### Group-first pipeline
+
+The preferred single-phase path specifies the block shape once, at launch, and
+the item count once, on `ThreadData`:
+
+```python
+block_group = coop.this_block()
+items = coop.ThreadData(items_per_thread)
+coop.load(block_group, values_in, items)
+results = coop.reduce(block_group, items)
+coop.store(block_group, values_out, results)
+```
+
+`this_block()` recovers the exact launch shape. Every root collective receives
+its group explicitly: the group selects the participating threads, while
+`ThreadData` remains the single source of the per-thread item count. Hard
+defined-thread-domain facts remain compile-time correctness metadata, so a
+root-only reduction result cannot be fed into another collective even when the
+caller supplies a group explicitly.
+
+Group-first Load and Store lower to public CUB for complete blocks and complete
+physical warps. The `ThreadData` item count selects the CUB specialization; a
+scalar Store means one item per member. Their CUTLASS tensor or `cutlass.Array`
+operand must prove a raw compact iterator/pointer. Common and qualified root
+calls share that exact plan and artifact. `cutlass.Array` values without that
+proof continue through the internal Prims array adapter, while non-contiguous
+CuTe tensors use the recorded indexing payload adapter.
 
 ### Group-first Scan and Exchange
 
@@ -314,7 +402,6 @@ against direct C++ kernels.
 Those comparisons must record the exact kernel, target SM, toolchain, commands,
 normalized disassembly, registers, and shared/local-memory usage; conclusions
 apply only to the recorded configuration.
-
 
 ### Common Radix Sort
 
@@ -414,8 +501,7 @@ explicit or planned `TempStorage` contracts. Multi-warp
 specializations require exact compiler launch facts so the Python planner and
 generated provider agree on shape and scratch size.
 
-
-### Provider compilation and caching
+### Provider compilation, caching, and AOT packs
 
 Provider requests, generated source, features, includes, and symbols are
 canonicalized before compilation. The persistent provider cache validates
@@ -432,7 +518,6 @@ is an installation identity, not a live integrity scan of every header.
 Reinstall a wheel instead of editing its installed headers in place. Use a
 clean Git or custom header root while developing header changes.
 
-
 NVRTC 12.8 and newer uses automatic precompiled headers by default. Set
 `CUDA_COOP_CUTLASS_PROVIDER_PCH=off` for a rollback or measurement baseline.
 The PCH pool is private to one process: NVRTC PCH files embed process-specific
@@ -441,6 +526,125 @@ PCH therefore amortizes multiple compatible, uncached provider bundles in one
 process; it does not eliminate the first-ever compile. If a PCH-enabled compile
 fails, the provider disables that compatibility domain and retries once without
 PCH. A failed PCH creation reported after a successful compile disables later
+reuse without invalidating the compiled artifact.
+
+For deployment-sensitive cold starts, capture the exact provider bundles
+requested by representative CuTe specializations:
+
+```python
+from cutlass.base_dsl.compiler import GPUArch
+from cuda.coop.cutlass import aot
+
+with aot.capture("build/row-topk.coop-aot", name="row-topk") as captured:
+    cute.compile[GPUArch("sm_120a")].to_precompiled_mlir(
+        run_topk,
+        *representative_fake_args,
+    )
+
+print(captured.result.entries)
+```
+
+Repeat the compile inside the context for every intended compile-time dtype,
+item count, block or warp shape, supported comparator/operator choice and
+compile-time state, scratch mode, and architecture. Runtime-only values that do
+not change provider requests do not create extra entries. Capture does not
+expand primitive support: public-CUB lowering still rejects arbitrary or
+stateful Python operators. Capture is generic workload observation;
+`cuda-coop` does not ship a fixed primitive catalog or prebuilt provider
+artifacts.
+`to_precompiled_mlir()` is preferred because it runs trace finalization without
+compiling the caller backend. Ordinary `cute.compile()` is also supported.
+
+Select a relocated pack explicitly around compilation:
+
+```python
+with aot.use("/opt/packs/row-topk.coop-aot", mode="required"):
+    compiled = cute.compile(run_topk, *runtime_args)
+```
+
+`mode="auto"` falls back to the optimized JIT path when an exact compatible
+entry is absent, `required` fails before header discovery or NVRTC, and `off`
+provides a clean baseline. Pack corruption is an integrity error in every
+active mode and never falls back. Environment-based deployment uses one
+absolute pack path:
+
+```bash
+export CUDA_COOP_CUTLASS_AOT_PACK_PATH=/opt/packs/row-topk.coop-aot
+export CUDA_COOP_CUTLASS_AOT_MODE=required  # auto, required, or off
+```
+
+The command-line wrapper runs Python scripts or modules with the invoking
+interpreter:
+
+```bash
+cuda-coop-aot capture --output build/row-topk.coop-aot -- \
+  python build_workload.py
+cuda-coop-aot inspect build/row-topk.coop-aot
+cuda-coop-aot run --pack /opt/packs/row-topk.coop-aot --mode required -- \
+  python app.py
+```
+
+A v1 pack is a relocatable, create-only directory with a canonical manifest,
+content-addressed LTO-IR and generated source for audit. Matching is exact for
+the provider ABI, prepared source, symbol set, compiler options, layouts, and
+the complete compute/SM target, including `a` or `f` suffixes. The CUDA major
+must match and the consumer nvJitLink minor must be at least the producer
+NVRTC minor. V1 capture requires Linux `renameat2`; V1 use requires Linux
+`memfd_create`, file seals, and procfs. Verified artifacts are materialized in
+sealed process-lifetime files before linking.
+
+Packs contain native device code: integrity validation detects malformation and
+corruption, but it is not provenance or semantic-code validation. Only consume
+packs from trusted build pipelines. The generated provider source can contain
+compile-time operator definitions or values and should be reviewed before
+distribution. The pack does not record caller MLIR, cubins, host engines,
+application source, environment dumps, or workload argument vectors.
+
+The kernel owner defines the representative specialization matrix. A build
+operator captures and audits it; a deployment operator selects one reviewed
+pack and normally uses `required`. Pack merging, registry discovery, lifecycle
+management, and caller-kernel AOT are outside the v1 API.
+
+### Compiler-planned block scratch
+
+`coop.TempStorage` is the canonical public spelling. Omit its byte size and
+alignment to let the compiler plan exact scratch for group-first Load, Store,
+Scan, Adjacent Difference, Discontinuity, Radix Sort, Merge Sort, and supported
+Exchange routes:
+
+```python
+block = coop.this_block()
+storage = coop.TempStorage()
+items = coop.ThreadData(4)
+coop.load(block, source, items, temp_storage=storage)
+items = coop.adjacent_difference(block, items, temp_storage=storage)
+flags = coop.discontinuity(block, items, temp_storage=storage)
+prefix = coop.scan(block, items, temp_storage=storage)
+ordered = coop.radix_sort_keys(block, prefix, temp_storage=storage)
+ordered = coop.merge_sort_keys(block, ordered, temp_storage=storage)
+coop.store(block, destination, ordered, temp_storage=storage)
+```
+
+For the default `sharing="shared"`, `auto_sync=None` resolves to `True` and each
+supported collective inserts a post-call CTA barrier, so the same scratch can
+be reused safely by the next collective. Pass `auto_sync=False` only when the
+kernel provides the required `storage.sync()` calls itself. With
+`sharing="exclusive"`, each call site receives a disjoint slice,
+`auto_sync=None` resolves to `False`, and `auto_sync=True` is rejected because
+no reuse barrier is needed. Warp calls and providers without an exact-layout
+registration remain implementation-owned and reject inferred storage.
+
+During trace finalization, all registered specializations are compiled in one
+NVRTC LTO-IR program. Name expressions recover the exact C++
+`sizeof(TempStorage)` and `alignof(TempStorage)` values. The planner validates
+all events before changing MLIR, inserts one aligned shared allocation per
+kernel/storage identity, and backpatches each fixed i32 address/size operand
+before module hashing. Shared storage gives every call offset zero and sizes
+the allocation to the strongest exact layout. Exclusive storage assigns every
+static call site an aligned, disjoint slice. CuTe
+derives the launch shared-memory size, so callers do not pass `smem=`. This
+experimental slice supports ordinary `cute.kernel` traces; other kernel entry
+forms are not yet accepted for compiler-planned storage.
 
 ## CUTLASS Examples And Benchmarks
 
@@ -695,7 +899,6 @@ Prims-specific memory controls, CuTe tensor defaulting, runtime valid counts,
 and representative final-cubin LTO-IR inlining. The runtime matrix contains one
 node for each behavior-distinct route.
 
-
 ## Numba-CUDA-MLIR Backend
 
 The portable group-first spelling next to `numba_cuda_mlir.cuda` is:
@@ -728,9 +931,8 @@ def kernel(source, destination, totals):
 
 The qualified package shares CUTLASS's thread hierarchy vocabulary:
 `ThreadHierarchy`, `ThreadGroup`, `this_thread`, `this_warp`, `this_block`,
-`this_cluster`, and `this_grid`. It also exports the common-v1 root
-operations as they land on the portable contract, with the same positional
-and keyword order.
+`this_cluster`, and `this_grid`. It also exports the same common-v1 root
+operations with the same positional and keyword order.
 
 `rank`, `count`, `rank_as`, `count_as`, `sync`, `sync_aligned`, and
 `is_member` lower when the configured launch provides their required facts.
@@ -748,16 +950,16 @@ group-first interface:
   static mapped groups through CUDAX.
 - A root Reduce with `valid_items`, or with a block `algorithm`, lowers through
   direct CUB and requires `broadcast=False`.
+- Grid rank and count use exact configured launch dimensions. Grid sync is
+  rejected because the current launcher cannot request a verified cooperative
+  launch, and Grid Reduce is rejected until a reviewed compiler-managed
+  device-workspace contract is available.
 - Root Scan, Exchange, Adjacent Difference, Discontinuity, Shuffle, Histogram,
   Run-Length Decode, Radix Rank, key and pair Radix/Merge Sort, and key and pair
   TopK lower through the established functional providers. The portable pair
   adapters preserve correlated integral keys and numeric values without
   mutating inputs; callbacks, side outputs, and backend-native payloads remain
   qualified.
-- Grid rank and count use exact configured launch dimensions. Grid sync is
-  rejected because the current launcher cannot request a verified cooperative
-  launch, and Grid Reduce is rejected until a reviewed compiler-managed
-  device-workspace contract is available.
 
 Group planning runs after device-function inlining. It detects group markers
 before promoting exact launch facts into the current compiler state, so typing
@@ -765,9 +967,6 @@ and lowering continue in the same attempt without replaying planners merely to
 activate launch facts. Generated CUDAX and CUB providers attach as real
 LTO-IR, and their device overloads are forced inline so the final cubin does
 not retain provider call frames.
-
-The runnable group example is
-[`examples/numba_mlir/group_hierarchy.py`](examples/numba_mlir/group_hierarchy.py).
 
 This experimental path requires the whole-function planner and configured
 launch contracts proposed in upstream `numba-cuda-mlir`
@@ -780,6 +979,9 @@ dynamic-shared-memory minima and
 specialization retry. Until releases contain those contracts, use a compatible
 source build.
 
+The runnable group example is
+[`examples/numba_mlir/group_hierarchy.py`](examples/numba_mlir/group_hierarchy.py).
+
 ## Local Validation
 
 From the repository root:
@@ -787,10 +989,23 @@ From the repository root:
 ```bash
 python -m pytest -q -p no:cacheprovider python/cuda_coop/tests
 python -m ruff check python/cuda_coop
-python -m compileall -q python/cuda_coop/cuda/coop
+python -m compileall -q python/cuda_coop/cuda/coop/cutlass \
+  python/cuda_coop/examples python/cuda_coop/benchmarks
 ```
 
 The Numba-CUDA-MLIR corpus lives under `tests/backends/numba_mlir`. Pure host
 checks, compiler checks, representative GPU runtime coverage, and broad stress
 matrices have separate directories. Use the focused layers during iteration
 and reserve `stress` for scheduled or final qualification.
+
+The CUTLASS provider final-link proof lives in
+`python/cuda_coop/tests/providers/cutlass/test_ltoir_inlining.py`. Run it in an environment
+with CUTLASS Python DSL, a CUDA-capable PyTorch runtime, PTX 9.3-capable
+`ptxas`, and `nvdisasm` on `PATH`; the test emits provider LTOIR and CuTe DSL
+dump artifacts under pytest `tmp_path`, then disassembles the final cubin and
+asserts no `cuda_coop_cutlass_*` provider symbols survive.
+If the default CUDA Toolkit `ptxas` is too old but a compatible assembler is
+available elsewhere, set
+`CUDA_COOP_CUTLASS_PTXAS=/abs/path/to/ptxas`. CUTLASS runtime tests probe that
+override first and prepend its directory to `PATH` before launching
+provider-backed CUTLASS code.

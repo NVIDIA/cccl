@@ -158,3 +158,20 @@ executable = [
   { name = "reduce", symbols = ["reduce", "sum", "min", "max"] },
   { name = "scan", symbols = ["scan", "exclusive_scan", "inclusive_scan"] },
 ]
+
+[[surface]]
+backend = "cutlass"
+scope = "aot"
+public_surface = "cuda.coop.cutlass.aot"
+value_model = "backend_free"
+provider = "portable exact-bundle CUTLASS provider packs"
+enforcement = "migration"
+migration_sources = [
+  "tests/contracts/public_api/test_cutlass_aot.py",
+  "tests/backends/cutlass/unit/test_aot_pack.py",
+  "tests/backends/cutlass/compile/test_aot_pack_resolution.py",
+]
+collection_paths_by_evidence = { api = ["tests/contracts/public_api/test_cutlass_aot.py"], semantics = ["tests/backends/cutlass/unit/test_aot_pack.py"], compile = ["tests/backends/cutlass/compile/test_aot_pack_resolution.py"] }
+executable = [
+  { name = "pack", symbols = ["capture", "use", "inspect"], required_evidence = ["api", "semantics", "compile"] },
+]

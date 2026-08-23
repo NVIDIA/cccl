@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -60,6 +61,7 @@ PROVIDER_BUNDLE_ABI_VERSION = 1
 BUNDLE_METADATA_VERSION = 3
 LAYOUT_METADATA_VERSION = BUNDLE_METADATA_VERSION
 RESOLUTION_ROUTE_PRECOMPILED = "precompiled"
+RESOLUTION_ROUTE_AOT_PACK = "aot_pack"
 RESOLUTION_ROUTE_MEMORY = "memory"
 RESOLUTION_ROUTE_DISK = "disk"
 RESOLUTION_ROUTE_CLANG = "clang"
@@ -264,7 +266,7 @@ def _bundle_precompile_resolver(
 ) -> _BundlePrecompileResolver:
     if not callable(callback):
         raise TypeError("bundle precompile resolver must be callable")
-    if route not in {RESOLUTION_ROUTE_PRECOMPILED}:
+    if route not in {RESOLUTION_ROUTE_PRECOMPILED, RESOLUTION_ROUTE_AOT_PACK}:
         raise ValueError(f"unsupported bundle precompile resolver route {route!r}")
     if not isinstance(phase, str) or not phase:
         raise ValueError("bundle precompile resolver phase must be a nonempty string")
@@ -1564,6 +1566,14 @@ def _compile_bundle_source(
     )
 
     resolvers = _ACTIVE_PRECOMPILE_RESOLVERS.get()
+    if (
+        "CUDA_COOP_CUTLASS_AOT_PACK_PATH" in os.environ
+        or "CUDA_COOP_CUTLASS_AOT_MODE" in os.environ
+    ):
+        aot_pack = importlib.import_module("cuda.coop.cutlass._aot_pack")
+        environment_resolver = aot_pack._environment_precompile_resolver()
+        if environment_resolver is not None:
+            resolvers = (environment_resolver, *resolvers)
     if resolvers:
         for resolver in reversed(resolvers):
             phase_started_ns = time.perf_counter_ns()

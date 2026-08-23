@@ -69,6 +69,7 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "adjacent_difference",
+    "aot",
     "discontinuity",
     "exchange",
     "exclusive_scan",
@@ -106,7 +107,7 @@ def __getattr__(name: str):
         value = module.TempStorage
         globals()[name] = value
         return value
-    if name in {"_block", "_warp"}:
+    if name in {"aot", "_block", "_warp"}:
         module = _importlib.import_module(f"{__name__}.{name}")
         globals()[name] = module
         return module

@@ -26,8 +26,9 @@ stubs are the authoritative typed declaration of each qualified surface.
 ``cuda.coop.cutlass`` activates the CUTLASS CuTe DSL backend explicitly. On
 import it validates the installed ``nvidia-cutlass-dsl`` runtime, registers a
 compiler trace context, and becomes the common-root fallback backend. Beyond
-the portable operations it adds deferred ``make_*`` operation factories and
-``Payload`` selection for CUTLASS array ("Prims") payloads. See
+the portable operations it adds deferred ``make_*`` operation factories,
+``Payload`` selection for CUTLASS array ("Prims") payloads, and the
+:mod:`cuda.coop.cutlass.aot` ahead-of-time provider-pack surface. See
 :doc:`coop_cutlass`.
 
 .. py:module:: cuda.coop.numba_mlir
