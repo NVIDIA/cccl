@@ -1,0 +1,282 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Secondary deferred block-primitive adapters for CuTe DSL kernels.
+
+Private ``coop._block.*`` calls are retained for internal compatibility. This
+module preserves the scoped ``make_*`` factory shape: each function
+validates and binds compile-time configuration, then returns a lightweight
+callable that invokes a single-phase primitive such as :func:`sum`,
+:func:`radix_sort_pairs`, or :func:`topk_max_keys` from inside a CuTe kernel
+trace. The factories stay under ``cuda.coop.cutlass._block`` and are not part
+of the public group-first API.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any, Callable
+
+from .._factory import (
+    _bind_if_not_none,
+    _reject_prims_specific_load_store_factory_kwargs,
+)
+from .._factory import (
+    _make_factory as _make_scoped_factory,
+)
+from .._factory import (
+    _normalize_pair_dtype_aliases as _normalize_pair_dtype_aliases_for_scope,
+)
+from .._factory import (
+    _reject_algorithm as _reject_algorithm_for_scope,
+)
+from .._factory import (
+    _reject_if_supplied as _reject_if_supplied_for_scope,
+)
+from .._factory import (
+    _reject_methods as _reject_methods_for_scope,
+)
+from .._factory import (
+    _resolve_static_items_per_thread as _resolve_static_items_per_thread_for_scope,
+)
+from .._launch import (
+    LAUNCH_METADATA_KEYS,
+    bind_block_launch_kwargs,
+    resolve_block_threads,
+)
+from .._load_store import validate_payload_selector as _validate_payload_selector
+from .._scope import BLOCK_SCOPE as _SCOPE
+from ._load_store import load, store
+
+_RADIX_SORT_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit", "descending")
+_RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit")
+_RADIX_RANK_OVERRIDABLE_KWARGS = (
+    "begin_bit",
+    "end_bit",
+    "radix_bits",
+    "descending",
+)
+_RADIX_RANK_OVERRIDE_ALIASES = (
+    ("end_bit", ("radix_bits",)),
+    ("radix_bits", ("end_bit",)),
+)
+_MERGE_SORT_OVERRIDABLE_KWARGS = ("valid_items", "oob_default")
+_TOPK_OVERRIDABLE_KWARGS = ("num_valid", "begin_bit", "end_bit")
+_REDUCE_VALID_OVERRIDABLE_KWARGS = ("num_valid",)
+_REDUCE_VALID_OVERRIDE_ALIASES = (("valid_items", ("num_valid",)),)
+_LOAD_STORE_VALID_OVERRIDABLE_KWARGS = (
+    "valid_items",
+    "num_valid_items",
+    "oob_default",
+)
+_LOAD_STORE_VALID_OVERRIDE_ALIASES = (
+    ("valid_items", ("num_valid_items",)),
+    ("num_valid_items", ("valid_items",)),
+)
+_HISTOGRAM_OVERRIDABLE_KWARGS = ("bins",)
+_RUN_LENGTH_OVERRIDABLE_KWARGS = ("total_decoded_size",)
+_SCAN_OUTPUT_OVERRIDABLE_KWARGS = ("block_aggregate",)
+
+
+def _make_factory(
+    factory_name: str,
+    primitive: Callable[..., Any],
+    kwargs: Mapping[str, Any],
+    *,
+    overridable_kwargs: tuple[str, ...] = (),
+    override_aliases: tuple[tuple[str, tuple[str, ...]], ...] = (),
+):
+    return _make_scoped_factory(
+        _SCOPE,
+        factory_name=factory_name,
+        primitive=primitive,
+        kwargs=kwargs,
+        overridable_kwargs=overridable_kwargs,
+        override_aliases=override_aliases,
+        launch_metadata_keys=LAUNCH_METADATA_KEYS,
+    )
+
+
+def _reject_if_supplied(factory_name: str, name: str, value: Any) -> None:
+    _reject_if_supplied_for_scope(_SCOPE, factory_name, name, value)
+
+
+def _block_kwargs(
+    factory_name: str,
+    *,
+    threads_per_block: Any,
+    dim: Any,
+    kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    return bind_block_launch_kwargs(
+        _SCOPE,
+        factory_name,
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+
+
+def _reject_methods(factory_name: str, kwargs: dict[str, Any]) -> None:
+    _reject_methods_for_scope(_SCOPE, factory_name, kwargs)
+
+
+def _reject_algorithm(
+    factory_name: str,
+    algorithm: Any,
+    *,
+    default: Any,
+) -> None:
+    _reject_algorithm_for_scope(
+        _SCOPE,
+        factory_name,
+        algorithm,
+        default=default,
+    )
+
+
+def _normalize_valid_items_aliases(
+    factory_name: str,
+    *,
+    valid_items: Any,
+    num_valid_items: Any,
+) -> Any:
+    if valid_items is not None and num_valid_items is not None:
+        raise TypeError(
+            f"{_SCOPE}.{factory_name} got both valid_items and num_valid_items"
+        )
+    return valid_items if valid_items is not None else num_valid_items
+
+
+def _normalize_pair_dtype_aliases(
+    factory_name: str,
+    keys: Any,
+    values: Any,
+    key_dtype: Any,
+    value_dtype: Any,
+) -> tuple[Any, Any]:
+    return _normalize_pair_dtype_aliases_for_scope(
+        _SCOPE,
+        factory_name,
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+
+
+def make_load(
+    dtype: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    algorithm: Any = "direct",
+    *,
+    dim: Any = None,
+    valid_items: Any = None,
+    num_valid_items: Any = None,
+    oob_default: Any = None,
+    payload: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block load callable.
+
+    The callable binds layout, item-count, CTA-size options, and optional dtype,
+    then forwards each kernel-trace call to :func:`load`.
+    """
+    _validate_payload_selector(
+        payload,
+        scope=_SCOPE,
+        primitive_name="make_load",
+    )
+    _reject_methods("make_load", kwargs)
+    _reject_prims_specific_load_store_factory_kwargs(_SCOPE, "make_load", kwargs)
+    bound = dict(kwargs)
+    resolved_threads = resolve_block_threads(
+        _SCOPE,
+        "make_load",
+        threads_per_block=threads_per_block,
+        dim=dim,
+    )
+    if resolved_threads is not None:
+        bound["threads_per_block"] = resolved_threads
+    valid_items = _normalize_valid_items_aliases(
+        "make_load",
+        valid_items=valid_items,
+        num_valid_items=num_valid_items,
+    )
+    bound.update(
+        items_per_thread=_resolve_static_items_per_thread_for_scope(
+            _SCOPE,
+            "make_load",
+            items_per_thread,
+        ),
+        algorithm=algorithm,
+    )
+    _bind_if_not_none(bound, "dtype", dtype)
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    _bind_if_not_none(bound, "oob_default", oob_default)
+    return _make_factory(
+        "make_load",
+        load,
+        bound,
+        overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
+        override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
+    )
+
+
+def make_store(
+    dtype: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    algorithm: Any = "direct",
+    *,
+    dim: Any = None,
+    valid_items: Any = None,
+    num_valid_items: Any = None,
+    payload: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block store callable.
+
+    The callable binds layout, item-count, CTA-size options, and optional dtype,
+    then forwards each kernel-trace call to :func:`store`.
+    """
+    _validate_payload_selector(
+        payload,
+        scope=_SCOPE,
+        primitive_name="make_store",
+    )
+    _reject_methods("make_store", kwargs)
+    _reject_prims_specific_load_store_factory_kwargs(_SCOPE, "make_store", kwargs)
+    bound = dict(kwargs)
+    resolved_threads = resolve_block_threads(
+        _SCOPE,
+        "make_store",
+        threads_per_block=threads_per_block,
+        dim=dim,
+    )
+    if resolved_threads is not None:
+        bound["threads_per_block"] = resolved_threads
+    valid_items = _normalize_valid_items_aliases(
+        "make_store",
+        valid_items=valid_items,
+        num_valid_items=num_valid_items,
+    )
+    bound.update(
+        items_per_thread=_resolve_static_items_per_thread_for_scope(
+            _SCOPE,
+            "make_store",
+            items_per_thread,
+        ),
+        algorithm=algorithm,
+    )
+    _bind_if_not_none(bound, "dtype", dtype)
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_store",
+        store,
+        bound,
+        overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
+        override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
+    )

@@ -27,7 +27,8 @@ The compiler integration supplies launch facts such as the block dimensions;
 they are not repeated in the operation calls. Importing ``cuda.coop`` probes
 each installed compiler backend and activates the compatible ones
 automatically; a kernel traced by that compiler then lowers the portable
-calls through it.
+calls through it. The first backend is :doc:`coop_cutlass`
+(:mod:`cuda.coop.cutlass`).
 
 Operation families
 ------------------

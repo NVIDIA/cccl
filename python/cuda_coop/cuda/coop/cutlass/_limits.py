@@ -1,0 +1,11 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""CUTLASS frontend qualification limits."""
+
+from cuda.coop._core.root_api import _COMMON_V1_MAX_EXCHANGE_ITEMS_PER_THREAD
+
+MAX_GROUP_EXCHANGE_ITEMS_PER_THREAD = _COMMON_V1_MAX_EXCHANGE_ITEMS_PER_THREAD
+
+__all__ = ["MAX_GROUP_EXCHANGE_ITEMS_PER_THREAD"]

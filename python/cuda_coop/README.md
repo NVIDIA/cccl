@@ -54,7 +54,9 @@ Every sample must satisfy `0 <= sample < bins`. Portable V1 certifies
 `uint32`, `int64`, and `uint64` counters; other dtype support is
 backend-qualified. The Python `int` dtype spelling maps to `int32`.
 
-Backend-qualified packages remain available for backend-specific extensions.
+Backend-qualified packages remain available for backend-specific extensions:
+
+- `cuda.coop.cutlass`
 
 ### Typing and editor completion
 
@@ -88,9 +90,19 @@ example, `PYTHONWARNINGS='ignore:cuda.coop automatic DSL registration'`
 suppresses only these warnings; disabling auto-registration is preferable when
 an application intentionally manages compiler activation itself.
 
-The wheel contains the common API. Extras add compiler dependencies.
+The wheel contains the common API plus the CUTLASS adapter and stubs.
+Extras add compiler dependencies.
 The plain `cuda-coop` does not install a compiler. `cu12` and `cu13` add
-toolkit dependencies.
+toolkit dependencies. The `cutlass` and `cutlass-cu13` extras select CUDA 13
+and `nvidia-cutlass-dsl>=4.8,<5`; `cutlass-cu12` selects the same compiler
+range with CUDA 12 dependencies.
+
+## Initial Boundaries
+
+- `cuda.coop.cutlass` is the shared CUTLASS cooperative-primitive surface and
+  is common-v1 conforming.
+  It combines the CuTe provider implementation and Prims array adapter behind
+  one public root API.
 
 ## Layout
 
@@ -102,7 +114,8 @@ python/cuda_coop/
 │   └── coop/
 │       ├── __init__.py
 │       ├── _headers/
-│       └── _core/
+│       ├── _core/
+│       └── cutlass/
 └── tests/
     ├── contracts/
     ├── backends/
@@ -129,6 +142,46 @@ broadcasted CUDAX for the default full-group route and exact CUB block/warp
 specializations for supported CUB-only variants. See
 [`docs/core-primitive-architecture.md`](docs/core-primitive-architecture.md)
 for the dependency rules, adapter contract, and validation coverage.
+
+## CUTLASS Backend
+
+Use the qualified package for direct CUTLASS code and CUTLASS-specific editor
+completion:
+
+```python
+import cuda.coop.cutlass as coop
+```
+
+It exposes `ThreadData`, `TempStorage`, group descriptors and `this_*`
+helpers, plus the group-first collectives as they land on the portable
+contract, beginning with `load` and `store`. Importing
+`from cuda import coop` performs this activation automatically when the
+installed CUTLASS runtime satisfies the required capability contract. The
+qualified import remains useful for CUTLASS-specific signatures and helpers.
+
+Load and Store accept compiler-traced tensors and CUTLASS array ("Prims")
+payloads behind one root API, with partial-tile `valid_items`/`oob_default`
+controls and element offsets. Wrappers are rendered once per trace, compiled
+to LTO-IR with NVRTC against the wheel's private CCCL headers, and attached
+during CUTLASS finalization.
+
+### Provider compilation and caching
+
+Provider requests, generated source, features, includes, and symbols are
+canonicalized before compilation. The persistent provider cache validates
+non-editable wheel headers from complete hashed PEP 376 `RECORD` entries, then
+uses Git tree identities for remaining roots in clean source checkouts.
+Dirty Git trees and roots without usable wheel or clean-Git provenance use a
+conservative content walk. Cache artifacts and their metadata are published
+atomically under per-artifact locks. Cache schema v3 deliberately ignores
+artifacts written by older schemas, so the first provider resolution after the
+upgrade is cold and later exact resolutions reuse v3 entries.
+
+The PEP 376 fast path treats a non-editable wheel installation as immutable; it
+is an installation identity, not a live integrity scan of every header.
+Reinstall a wheel instead of editing its installed headers in place. Use a
+clean Git or custom header root while developing header changes.
+
 
 ## Local Validation
 

@@ -44,6 +44,18 @@ cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
 ]
+cutlass = [
+  "cuda-coop[cu13]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
+cutlass-cu12 = [
+  "cuda-coop[cu12]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
+cutlass-cu13 = [
+  "cuda-coop[cu13]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
 test = [
   "pytest",
   "pytest-cov",
