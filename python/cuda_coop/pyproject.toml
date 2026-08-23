@@ -26,7 +26,6 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "cuda-core",
   "cuda-pathfinder>=1.2.3",
   "numpy",
   "typing_extensions>=4.12.0",
@@ -35,6 +34,11 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
+cutlass = [
+  "cuda-bindings>=13.0.0,<14.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]>=13.0.0,<14.0.0",
+  "nvidia-cutlass-dsl[cu13]>=4.8,<5",
+]
 test = [
   "mypy",
   "numpy",
@@ -119,6 +123,9 @@ known-first-party = [
   "cuda.coop._core.block",
   "cuda.coop._core.group",
   "cuda.coop._core.warp",
+  "cuda.coop.cutlass",
+  "cuda.coop.cutlass._compiler",
+  "cuda.coop.cutlass._lowering",
 ]
 
 [tool.pytest.ini_options]
