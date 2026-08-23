@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import multiprocessing
 import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -409,3 +411,171 @@ with provider_bundle.artifact_lock(sys.argv[2], scope="test"):
     _, stderr = process.communicate(timeout=5)
     assert process.returncode == 0, stderr
     assert acquired_path.read_text(encoding="utf-8") == "acquired"
+
+
+def _forked_artifact_lock_worker(
+    artifact_path,
+    inherited_descriptor,
+    inherited_identity,
+    connection,
+):
+    try:
+        descriptor_stat = os.fstat(inherited_descriptor)
+    except OSError:
+        inherited_lock_descriptor = False
+    else:
+        inherited_lock_descriptor = (
+            descriptor_stat.st_dev,
+            descriptor_stat.st_ino,
+        ) == inherited_identity
+    connection.send(("inherited_lock_descriptor", inherited_lock_descriptor))
+    with provider_bundle.artifact_lock(artifact_path, scope="test"):
+        connection.send(("acquired", True))
+    connection.close()
+
+
+def _fork_inside_artifact_lock_worker(artifact_path, connection):
+    report_read, report_write = os.pipe()
+    child_pid = None
+    descriptor = None
+    with provider_bundle.artifact_lock(artifact_path, scope="test"):
+        with provider_bundle._STATE_LOCK:
+            active_descriptors = tuple(provider_bundle._ACTIVE_ARTIFACT_LOCK_FDS)
+        assert len(active_descriptors) == 1
+        descriptor = active_descriptors[0]
+        child_pid = os.fork()
+        if child_pid == 0:
+            os.close(report_read)
+            reused_read, reused_write = os.pipe()
+            if descriptor not in (reused_read, reused_write):
+                os.dup2(reused_read, descriptor)
+
+    assert child_pid is not None
+    assert descriptor is not None
+    if child_pid == 0:
+        try:
+            os.fstat(descriptor)
+        except OSError:
+            os.write(report_write, b"0")
+        else:
+            os.write(report_write, b"1")
+        os._exit(0)
+
+    os.close(report_write)
+    descriptor_survived = os.read(report_read, 1) == b"1"
+    _, child_status = os.waitpid(child_pid, 0)
+    connection.send(
+        {
+            "child_exitcode": os.waitstatus_to_exitcode(child_status),
+            "descriptor_survived": descriptor_survived,
+        }
+    )
+    connection.close()
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "fork"),
+    reason="test requires POSIX fork state reset",
+)
+@pytest.mark.filterwarnings(
+    "ignore:This process .* is multi-threaded, use of fork.*:DeprecationWarning"
+)
+def test_artifact_lock_state_resets_after_fork(tmp_path):
+    artifact_path = str(tmp_path / "bundle.ltoir")
+    lock_held = threading.Event()
+    release_lock = threading.Event()
+
+    def hold_artifact_lock():
+        with provider_bundle.artifact_lock(artifact_path, scope="test"):
+            lock_held.set()
+            release_lock.wait()
+
+    holder = threading.Thread(target=hold_artifact_lock)
+    holder.start()
+    process = None
+    parent_connection = None
+    child_connection = None
+    try:
+        assert lock_held.wait(timeout=5)
+        with provider_bundle._STATE_LOCK:
+            inherited_descriptors = tuple(provider_bundle._ACTIVE_ARTIFACT_LOCK_FDS)
+        assert len(inherited_descriptors) == 1
+        inherited_descriptor = inherited_descriptors[0]
+        descriptor_stat = os.fstat(inherited_descriptor)
+        inherited_identity = (
+            descriptor_stat.st_dev,
+            descriptor_stat.st_ino,
+        )
+        context = multiprocessing.get_context("fork")
+        parent_connection, child_connection = context.Pipe(duplex=False)
+        process = context.Process(
+            target=_forked_artifact_lock_worker,
+            args=(
+                artifact_path,
+                inherited_descriptor,
+                inherited_identity,
+                child_connection,
+            ),
+        )
+        process.start()
+        assert parent_connection.poll(5)
+        assert parent_connection.recv() == (
+            "inherited_lock_descriptor",
+            False,
+        )
+        assert not parent_connection.poll(0.2)
+        release_lock.set()
+        assert parent_connection.poll(5)
+        assert parent_connection.recv() == ("acquired", True)
+        process.join(timeout=5)
+    finally:
+        release_lock.set()
+        holder.join(timeout=5)
+        if process is not None and process.is_alive():
+            process.terminate()
+        if process is not None:
+            process.join(timeout=5)
+        if parent_connection is not None:
+            parent_connection.close()
+        if child_connection is not None:
+            child_connection.close()
+
+    assert not holder.is_alive()
+    assert process is not None
+    assert not process.is_alive()
+    assert process.exitcode == 0
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "fork"),
+    reason="test requires POSIX fork state reset",
+)
+@pytest.mark.filterwarnings(
+    "ignore:This process .* is multi-threaded, use of fork.*:DeprecationWarning"
+)
+def test_artifact_lock_context_ignores_stale_child_descriptor(tmp_path):
+    artifact_path = str(tmp_path / "bundle.ltoir")
+    context = multiprocessing.get_context("fork")
+    parent_connection, child_connection = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_fork_inside_artifact_lock_worker,
+        args=(artifact_path, child_connection),
+    )
+    process.start()
+    try:
+        assert parent_connection.poll(10)
+        result = parent_connection.recv()
+        process.join(timeout=5)
+    finally:
+        if process.is_alive():
+            process.terminate()
+        process.join(timeout=5)
+        parent_connection.close()
+        child_connection.close()
+
+    assert not process.is_alive()
+    assert process.exitcode == 0
+    assert result == {
+        "child_exitcode": 0,
+        "descriptor_survived": True,
+    }

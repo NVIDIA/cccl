@@ -37,6 +37,8 @@ from cuda.coop._headers._identity import (
     include_dirs_identity as resolve_include_dirs_identity,
 )
 
+from . import _provider_pch
+
 if os.name == "nt":
     import msvcrt
 else:
@@ -188,6 +190,7 @@ _PHASE_COUNTS: dict[str, int] = {}
 _PHASE_TIMINGS_NS: dict[str, int] = {}
 _STATE_LOCK = threading.RLock()
 _ARTIFACT_LOCKS: dict[str, threading.RLock] = {}
+_ACTIVE_ARTIFACT_LOCK_FDS: set[int] = set()
 _UNKNOWN_COMPILER_PROCESS_TOKEN = f"unknown-{os.getpid()}-{os.urandom(8).hex()}"
 _ACTIVE_PRECOMPILE_RESOLVERS: ContextVar[
     tuple[Callable[[BundleResolutionRequest], BundleResolution | None], ...]
@@ -201,6 +204,34 @@ _ACTIVE_POST_RESOLUTION_OBSERVERS: ContextVar[
     "cuda_coop_cutlass_active_post_resolution_observers",
     default=(),
 )
+
+
+def _acquire_state_lock_before_fork() -> None:
+    _STATE_LOCK.acquire()
+
+
+def _release_state_lock_after_fork() -> None:
+    _STATE_LOCK.release()
+
+
+def _reset_locks_after_fork() -> None:
+    global _ACTIVE_ARTIFACT_LOCK_FDS, _ARTIFACT_LOCKS, _STATE_LOCK
+    for descriptor in _ACTIVE_ARTIFACT_LOCK_FDS:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+    _ACTIVE_ARTIFACT_LOCK_FDS = set()
+    _STATE_LOCK = threading.RLock()
+    _ARTIFACT_LOCKS = {}
+
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(
+        before=_acquire_state_lock_before_fork,
+        after_in_parent=_release_state_lock_after_fork,
+        after_in_child=_reset_locks_after_fork,
+    )
 
 
 def _cache_dir_name() -> str:
@@ -316,6 +347,16 @@ def _local_artifact_lock(path: str) -> threading.RLock:
         return _ARTIFACT_LOCKS.setdefault(real_path, threading.RLock())
 
 
+def _close_artifact_lock_descriptor(descriptor: int) -> None:
+    with _STATE_LOCK:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        finally:
+            _ACTIVE_ARTIFACT_LOCK_FDS.discard(descriptor)
+
+
 @contextmanager
 def artifact_lock(path: str, *, scope: str):
     """Serialize one cache artifact across threads and processes."""
@@ -326,9 +367,13 @@ def artifact_lock(path: str, *, scope: str):
         flags = os.O_CREAT | os.O_RDWR
         flags |= getattr(os, "O_CLOEXEC", 0)
         flags |= getattr(os, "O_NOFOLLOW", 0)
+        descriptor_owner_pid = os.getpid()
+        descriptor: int | None = None
         try:
-            fd = os.open(lock_path, flags, 0o600)
-            lock_stat = os.fstat(fd)
+            with _STATE_LOCK:
+                descriptor = os.open(lock_path, flags, 0o600)
+                _ACTIVE_ARTIFACT_LOCK_FDS.add(descriptor)
+            lock_stat = os.fstat(descriptor)
             if not stat.S_ISREG(lock_stat.st_mode):
                 raise OSError("provider artifact lock is not a regular file")
             getuid = getattr(os, "getuid", None)
@@ -336,30 +381,32 @@ def artifact_lock(path: str, *, scope: str):
                 raise OSError("provider artifact lock is not owned by this user")
             if os.name == "nt":
                 if lock_stat.st_size == 0:
-                    os.write(fd, b"\0")
-                os.lseek(fd, 0, os.SEEK_SET)
-                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                    os.write(descriptor, b"\0")
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
             else:
-                fcntl.flock(fd, fcntl.LOCK_EX)
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
         except OSError as exc:
-            if "fd" in locals():
-                os.close(fd)
+            if descriptor is not None and os.getpid() == descriptor_owner_pid:
+                _close_artifact_lock_descriptor(descriptor)
             raise DSLRuntimeError(
                 f"Failed locking {scope} provider cache artifact.",
                 cause=exc,
             ) from exc
+        assert descriptor is not None
         try:
             yield
         finally:
-            try:
-                if os.name == "nt":
-                    os.lseek(fd, 0, os.SEEK_SET)
-                    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-                else:
-                    fcntl.flock(fd, fcntl.LOCK_UN)
-            except OSError:
-                pass
-            os.close(fd)
+            if os.getpid() == descriptor_owner_pid:
+                try:
+                    if os.name == "nt":
+                        os.lseek(descriptor, 0, os.SEEK_SET)
+                        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+                    else:
+                        fcntl.flock(descriptor, fcntl.LOCK_UN)
+                except OSError:
+                    pass
+                _close_artifact_lock_descriptor(descriptor)
 
 
 def append_external_link_file_attr(module: ir.Module, path: str) -> None:
@@ -510,27 +557,39 @@ def select_bundle_format(scope: str) -> str:
 
 
 def get_nvrtc_program_log(prog: Any) -> str:
-    err, log_size = cuda_nvrtc.nvrtcGetProgramLogSize(prog)
+    get_log_size = getattr(cuda_nvrtc, "nvrtcGetProgramLogSize", None)
+    get_log = getattr(cuda_nvrtc, "nvrtcGetProgramLog", None)
+    if not callable(get_log_size) or not callable(get_log):
+        return ""
+    err, log_size = get_log_size(prog)
     if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS or log_size <= 0:
         return ""
     log = bytearray(log_size)
-    err = cuda_nvrtc.nvrtcGetProgramLog(prog, log)[0]
+    err = get_log(prog, log)[0]
     if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
         return ""
     return bytes(log).decode("utf-8", errors="replace").strip("\x00").strip()
 
 
-def get_nvrtc_version() -> str | None:
+def get_nvrtc_version_tuple() -> tuple[int, int] | None:
     version = getattr(cuda_nvrtc, "nvrtcVersion", None)
     if not callable(version):
         return None
     try:
         err, major, minor = version()
+        parsed_version = int(major), int(minor)
     except (TypeError, ValueError):
         return None
     if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
         return None
-    return f"{major}.{minor}"
+    return parsed_version
+
+
+def get_nvrtc_version() -> str | None:
+    version = get_nvrtc_version_tuple()
+    if version is None:
+        return None
+    return f"{version[0]}.{version[1]}"
 
 
 def resolve_clang_compiler(
@@ -1089,25 +1148,13 @@ def _compile_clang_bundle(
     return cached
 
 
-def _compile_nvrtc_bundle(
-    source: str,
+def _create_nvrtc_program(
+    source_bytes: bytes,
+    encoded_expressions: tuple[bytes, ...],
     *,
-    output_path: str,
-    cache_identity: BundleCacheIdentity,
-    compiler_options: tuple[str, ...],
-    include_dirs: list[str],
-    prepared_probes: _PreparedLayoutProbes,
-    nvrtc_version: str | None,
     scope: str,
-) -> _CachedBundle:
-    global _NVRTC_COMPILE_PROGRAM_COUNTER
-
-    source_bytes = source.encode("utf-8")
-    opts = [
-        *(option.encode("ascii") for option in compiler_options),
-        *cccl_include_options(include_dirs),
-    ]
-    err, prog = cuda_nvrtc.nvrtcCreateProgram(
+) -> Any:
+    err, program = cuda_nvrtc.nvrtcCreateProgram(
         source_bytes,
         b"cuda_coop_cutlass_bundle.cu",
         0,
@@ -1118,62 +1165,159 @@ def _compile_nvrtc_bundle(
         raise DSLRuntimeError(
             f"Failed creating NVRTC program for {scope} provider bundle."
         )
-
     try:
-        encoded_expressions = tuple(
-            expression.encode("utf-8") for expression in prepared_probes.expressions
-        )
         for expression in encoded_expressions:
-            result = cuda_nvrtc.nvrtcAddNameExpression(prog, expression)
+            result = cuda_nvrtc.nvrtcAddNameExpression(program, expression)
             err = result[0] if isinstance(result, tuple) else result
             if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
                 raise DSLRuntimeError(
                     f"Failed registering an NVRTC layout probe for {scope} "
                     "provider bundle."
                 )
+    except BaseException:
+        cuda_nvrtc.nvrtcDestroyProgram(program)
+        raise
+    return program
 
-        err = cuda_nvrtc.nvrtcCompileProgram(prog, len(opts), opts)[0]
-        if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise DSLRuntimeError(
-                f"Failed compiling {scope} provider shim to LTO-IR.",
-                cause=RuntimeError(get_nvrtc_program_log(prog)),
-            )
-        with _STATE_LOCK:
-            _NVRTC_COMPILE_PROGRAM_COUNTER += 1
 
-        layouts_by_expression = {}
-        for expression, encoded_expression in zip(
-            prepared_probes.expressions,
-            encoded_expressions,
-        ):
-            err, lowered_name = cuda_nvrtc.nvrtcGetLoweredName(
-                prog,
-                encoded_expression,
+def _compile_nvrtc_program(
+    program: Any,
+    options: list[bytes],
+) -> tuple[Any, int]:
+    global _NVRTC_COMPILE_PROGRAM_COUNTER
+
+    started_ns = time.perf_counter_ns()
+    with _STATE_LOCK:
+        _NVRTC_COMPILE_PROGRAM_COUNTER += 1
+    result = cuda_nvrtc.nvrtcCompileProgram(program, len(options), options)
+    duration_ns = max(0, time.perf_counter_ns() - started_ns)
+    err = result[0] if isinstance(result, tuple) else result
+    return err, duration_ns
+
+
+def _compile_nvrtc_bundle(
+    source: str,
+    *,
+    output_path: str,
+    cache_identity: BundleCacheIdentity,
+    compiler_options: tuple[str, ...],
+    include_dirs: list[str],
+    prepared_probes: _PreparedLayoutProbes,
+    nvrtc_version: str | None,
+    nvrtc_version_tuple: tuple[int, int] | None,
+    bundle_arch: str,
+    bundle_sm_arch: str,
+    header_identity: str,
+    phase_timings_ns: dict[str, int],
+    scope: str,
+) -> _CachedBundle:
+    source_bytes = source.encode("utf-8")
+    base_options = [
+        *(option.encode("ascii") for option in compiler_options),
+        *cccl_include_options(include_dirs),
+    ]
+    encoded_expressions = tuple(
+        expression.encode("utf-8") for expression in prepared_probes.expressions
+    )
+    pch_session: _provider_pch.PCHSession | None = None
+    program = None
+    try:
+        with _provider_pch.pch_session(
+            nvrtc_version=nvrtc_version_tuple,
+            bundle_arch=bundle_arch,
+            bundle_sm_arch=bundle_sm_arch,
+            compiler_options=compiler_options,
+            include_dirs=tuple(include_dirs),
+            header_identity=header_identity,
+            preamble_identity=_provider_pch.provider_preamble_identity(source),
+        ) as pch_session:
+            program = _create_nvrtc_program(
+                source_bytes,
+                encoded_expressions,
+                scope=scope,
             )
+            options = [*base_options, *pch_session.options]
+            err, compile_duration_ns = _compile_nvrtc_program(program, options)
+            pch_fallback_log = ""
+            used_pch = pch_session.enabled
+            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS and pch_session.enabled:
+                pch_fallback_log = get_nvrtc_program_log(program)
+                pch_session.disable_after_failure(compile_duration_ns)
+                cuda_nvrtc.nvrtcDestroyProgram(program)
+                program = None
+                program = _create_nvrtc_program(
+                    source_bytes,
+                    encoded_expressions,
+                    scope=scope,
+                )
+                err, retry_duration_ns = _compile_nvrtc_program(
+                    program,
+                    base_options,
+                )
+                pch_session.phase_timings_ns["pch_fallback"] += retry_duration_ns
+                used_pch = False
+            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                program_log = get_nvrtc_program_log(program)
+                if pch_fallback_log:
+                    program_log = (
+                        "PCH-enabled compilation failed:\n"
+                        f"{pch_fallback_log}\n"
+                        "Retry without PCH failed:\n"
+                        f"{program_log}"
+                    )
+                raise DSLRuntimeError(
+                    f"Failed compiling {scope} provider shim to LTO-IR.",
+                    cause=RuntimeError(program_log),
+                )
+            if used_pch:
+                pch_session.record_success(
+                    cuda_nvrtc,
+                    program,
+                    compile_duration_ns=compile_duration_ns,
+                    program_log=get_nvrtc_program_log(program),
+                )
+            layouts_by_expression = {}
+            for expression, encoded_expression in zip(
+                prepared_probes.expressions,
+                encoded_expressions,
+            ):
+                err, lowered_name = cuda_nvrtc.nvrtcGetLoweredName(
+                    program,
+                    encoded_expression,
+                )
+                if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                    raise DSLRuntimeError(
+                        f"Failed retrieving an NVRTC layout probe for {scope} "
+                        "provider bundle."
+                    )
+                layouts_by_expression[expression] = _decode_layout_probe_name(
+                    lowered_name,
+                    symbol=prepared_probes.symbol,
+                    expression=expression,
+                )
+
+            err, blob_size = cuda_nvrtc.nvrtcGetLTOIRSize(program)
             if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
                 raise DSLRuntimeError(
-                    f"Failed retrieving an NVRTC layout probe for {scope} "
-                    "provider bundle."
+                    f"Failed querying NVRTC LTO-IR size for {scope} provider shim."
                 )
-            layouts_by_expression[expression] = _decode_layout_probe_name(
-                lowered_name,
-                symbol=prepared_probes.symbol,
-                expression=expression,
-            )
-
-        err, blob_size = cuda_nvrtc.nvrtcGetLTOIRSize(prog)
-        if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise DSLRuntimeError(
-                f"Failed querying NVRTC LTO-IR size for {scope} provider shim."
-            )
-        artifact_blob = bytearray(blob_size)
-        err = cuda_nvrtc.nvrtcGetLTOIR(prog, artifact_blob)[0]
-        if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise DSLRuntimeError(
-                f"Failed retrieving NVRTC LTO-IR for {scope} provider shim."
-            )
+            artifact_blob = bytearray(blob_size)
+            err = cuda_nvrtc.nvrtcGetLTOIR(program, artifact_blob)[0]
+            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                raise DSLRuntimeError(
+                    f"Failed retrieving NVRTC LTO-IR for {scope} provider shim."
+                )
+    except _provider_pch.PCHConfigurationError as exc:
+        raise DSLRuntimeError(
+            f"Invalid {scope} provider PCH configuration.",
+            cause=exc,
+        ) from exc
     finally:
-        cuda_nvrtc.nvrtcDestroyProgram(prog)
+        if pch_session is not None:
+            for phase, duration_ns in pch_session.phase_timings_ns.items():
+                phase_timings_ns[phase] = phase_timings_ns.get(phase, 0) + duration_ns
+        if program is not None:
+            cuda_nvrtc.nvrtcDestroyProgram(program)
 
     cached = _CachedBundle(
         path=output_path,
@@ -1281,13 +1425,19 @@ def _compile_bundle_source(
     clangxx: str | None = None
     clang_version: str | None = None
     if bundle_format == "ltoir":
-        nvrtc_version = get_nvrtc_version()
+        nvrtc_version_tuple = get_nvrtc_version_tuple()
+        nvrtc_version = (
+            None
+            if nvrtc_version_tuple is None
+            else f"{nvrtc_version_tuple[0]}.{nvrtc_version_tuple[1]}"
+        )
         cache_compiler_version = (
             nvrtc_version
             if nvrtc_version is not None
             else _UNKNOWN_COMPILER_PROCESS_TOKEN
         )
     else:
+        nvrtc_version_tuple = None
         nvrtc_version = None
         clangxx, clang_version, cache_compiler_version = resolve_clang_compiler(which)
     cache_identity = make_bundle_cache_identity(
@@ -1390,6 +1540,11 @@ def _compile_bundle_source(
                 include_dirs=include_dirs,
                 prepared_probes=prepared_probes,
                 nvrtc_version=nvrtc_version,
+                nvrtc_version_tuple=nvrtc_version_tuple,
+                bundle_arch=bundle_arch,
+                bundle_sm_arch=bundle_sm_arch,
+                header_identity=include_identity.digest,
+                phase_timings_ns=phase_timings_ns,
                 scope=scope,
             )
             route = RESOLUTION_ROUTE_NVRTC
