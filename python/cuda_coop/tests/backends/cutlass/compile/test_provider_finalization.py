@@ -73,12 +73,12 @@ def test_trace_finalizer_compiles_and_links_registered_requests(monkeypatch):
     session.add(_Request())
     _state.set_bundle_session(compile_options, session)
 
-    compiled_sources: list[str] = []
+    compiled_sources: list[tuple[str, tuple[str, ...]]] = []
     materialized: list[tuple[object, ...]] = []
     linked: list[tuple[object, str]] = []
 
-    def compile_source(source: str) -> str:
-        compiled_sources.append(source)
+    def compile_source(source: str, symbols: tuple[str, ...]) -> str:
+        compiled_sources.append((source, symbols))
         return "/tmp/cuda_coop_foundation_test.ltoir"
 
     monkeypatch.setattr(finalizer, "_compile_bundle_source", compile_source)
@@ -96,7 +96,8 @@ def test_trace_finalizer_compiles_and_links_registered_requests(monkeypatch):
     finalizer._trace_finalize_hook(dsl, module, "kernel")
 
     assert len(compiled_sources) == 1
-    assert "cuda_coop_foundation_test" in compiled_sources[0]
+    assert "cuda_coop_foundation_test" in compiled_sources[0][0]
+    assert compiled_sources[0][1] == ("cuda_coop_foundation_test",)
     assert materialized == [()]
     assert linked == [(module, "/tmp/cuda_coop_foundation_test.ltoir")]
     assert _state.lookup_bundle_session(compile_options) is None

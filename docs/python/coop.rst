@@ -130,6 +130,22 @@ total decoded stream size:
    :end-before: # docs: end numba-qualified-run-length-decode
    :dedent: 4
 
+CUTLASS AOT packs
+-----------------
+
+The CUTLASS backend can capture exact provider LTO-IR bundles with
+``cuda-coop-aot`` or :func:`cuda.coop.cutlass.aot.capture` and select them with
+:func:`cuda.coop.cutlass.aot.use`. Treat a pack as executable device code:
+digests detect corruption but do not authenticate its producer or establish
+that its LTO-IR is safe. Consume only packs from a build or producer you trust.
+
+Reuse matches the provider ABI, rendered source, bundle format, target
+architecture, compiler options, layout expressions, and nvJitLink
+compatibility. The writer version is informational. Exact hits intentionally
+avoid current-header discovery, so a header or provider change that alters the
+ABI or semantics of otherwise identical rendered source requires a
+provider-ABI bump.
+
 .. _cuda-coop-examples:
 
 Examples

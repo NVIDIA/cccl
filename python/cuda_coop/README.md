@@ -123,6 +123,37 @@ type declarations for the exact dtype, boundary, and result contracts:
 - [CUTLASS API](cuda/coop/cutlass/__init__.pyi)
 - [Numba-CUDA-MLIR API](cuda/coop/numba_mlir/__init__.pyi)
 
+## CUTLASS provider AOT packs
+
+The CUTLASS backend normally compiles its generated provider bundles as it
+traces a workload. An AOT pack records those exact LTO-IR bundles for reuse on
+machines with compatible CUDA and `cuda.coop` installations. Capture and
+consume packs with the `cuda-coop-aot` command, which requires
+`cuda-coop[cutlass]`. Pack capture, inspection, and use currently require
+Linux:
+
+```console
+cuda-coop-aot capture --output workload.coop-aot -- python workload.py
+cuda-coop-aot inspect workload.coop-aot
+cuda-coop-aot run --pack workload.coop-aot --mode required -- python workload.py
+```
+
+`auto` mode falls back to normal provider compilation after a pack miss,
+`required` reports the miss, and `off` ignores the selected pack. The same
+controls are available through `cuda.coop.cutlass.aot.capture()` and
+`cuda.coop.cutlass.aot.use()`.
+
+Treat an AOT pack as executable device code. Pack digests detect corruption;
+they do not authenticate who produced the pack or prove that its LTO-IR is
+safe. Consume only packs captured by a build or producer you trust.
+
+Pack reuse matches the provider ABI, exact rendered source, bundle format,
+target architecture, compiler options, scratch-layout expressions, and
+nvJitLink compatibility. The recorded writer version is informational, and an
+exact hit intentionally precedes current-header discovery. A change in shipped
+headers that can alter an otherwise identical provider's ABI or semantics must
+bump the provider ABI and invalidate older packs.
+
 ## Examples
 
 The [examples guide](examples/README.md) contains complete programs that

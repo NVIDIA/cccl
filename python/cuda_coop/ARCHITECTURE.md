@@ -72,6 +72,13 @@ before querying its version or constructing PCH state. Renderer kinds, source
 bytes, generated symbols, bundle identities, cache schemas, and AOT manifests
 must not change merely because Python modules move.
 
+AOT portability is governed by the provider ABI plus exact rendered source,
+bundle format, architecture, compiler options, layout expressions, and linker
+compatibility. The writer version is diagnostic rather than an equality gate,
+and current headers are intentionally absent from an exact-hit lookup. A
+header or provider change that can alter the ABI or semantics of identical
+rendered source therefore requires a provider-ABI bump.
+
 ### Numba-CUDA-MLIR
 
 Numba-CUDA-MLIR performs cooperative planning before type inference. Its

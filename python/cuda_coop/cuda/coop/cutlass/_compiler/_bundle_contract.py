@@ -42,6 +42,8 @@ LAYOUT_METADATA_VERSION = BUNDLE_METADATA_VERSION
 
 RESOLUTION_ROUTE_PRECOMPILED = "precompiled"
 
+RESOLUTION_ROUTE_AOT_PACK = "aot_pack"
+
 RESOLUTION_ROUTE_MEMORY = "memory"
 
 RESOLUTION_ROUTE_DISK = "disk"
@@ -125,6 +127,7 @@ class BundleResolutionRequest:
 
     identity: BundleIdentity
     source: str
+    symbols: tuple[str, ...]
 
 
 @dataclass(frozen=True)

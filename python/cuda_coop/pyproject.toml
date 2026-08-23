@@ -33,6 +33,9 @@ dependencies = [
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
+[project.scripts]
+cuda-coop-aot = "cuda.coop._aot_cli:main"
+
 [project.optional-dependencies]
 cutlass = [
   "cuda-bindings>=13.0.0,<14.0.0",
