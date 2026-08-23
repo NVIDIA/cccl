@@ -4,7 +4,7 @@
 
 """Typed physical-warp Numba-CUDA-MLIR cooperative primitives."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any, Protocol, TypeVar, overload
 
 from ..._typing import LoadStoreAlgorithm, ThreadDataLike
@@ -517,11 +517,351 @@ def make_store(
 ) -> _StoreInvocable[Any]:
     """Build a physical-warp store callable from a compiler dtype token."""
 
+@overload
+def reduce(
+    dtype: type[_T],
+    binary_op: Callable[[_T, _T], _T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp reduction callable."""
+
+@overload
+def reduce(
+    value: _T,
+    /,
+    *,
+    binary_op: Callable[[_T, _T], _T],
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Reduce physical-warp values with a device callback."""
+
+@overload
+def reduce(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    binary_op: Callable[[_T, _T], _T],
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Reduce the valid physical-warp prefix with a callback."""
+
+@overload
+def reduce(
+    dtype: object,
+    binary_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a physical-warp reduction from a compiler dtype token."""
+
+@overload
+def sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp sum callable."""
+
+@overload
+def sum(
+    value: _T,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Sum physical-warp values."""
+
+@overload
+def sum(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Sum the valid physical-warp prefix."""
+
+@overload
+def sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a physical-warp sum from a compiler dtype token."""
+
+@overload
+def max(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp maximum callable."""
+
+@overload
+def max(
+    value: _T,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return the physical-warp maximum."""
+
+@overload
+def max(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return the valid physical-warp prefix maximum."""
+
+@overload
+def max(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a physical-warp maximum from a compiler dtype token."""
+
+@overload
+def min(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp minimum callable."""
+
+@overload
+def min(
+    value: _T,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return the physical-warp minimum."""
+
+@overload
+def min(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return the valid physical-warp prefix minimum."""
+
+@overload
+def min(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a physical-warp minimum from a compiler dtype token."""
+
+@overload
+def warp_reduce(
+    dtype: type[_T],
+    binary_op: Callable[[_T, _T], _T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp reduction callable."""
+
+@overload
+def warp_reduce(
+    dtype: object,
+    binary_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp reduction callable."""
+
+@overload
+def make_reduce(
+    dtype: type[_T],
+    binary_op: Callable[[_T, _T], _T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp reduction callable."""
+
+@overload
+def make_reduce(
+    dtype: object,
+    binary_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp reduction callable."""
+
+@overload
+def warp_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp sum callable."""
+
+@overload
+def warp_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp sum callable."""
+
+@overload
+def make_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp sum callable."""
+
+@overload
+def make_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp sum callable."""
+
+@overload
+def warp_max(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp maximum callable."""
+
+@overload
+def warp_max(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp maximum callable."""
+
+@overload
+def make_max(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp maximum callable."""
+
+@overload
+def make_max(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp maximum callable."""
+
+@overload
+def warp_min(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp minimum callable."""
+
+@overload
+def warp_min(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp minimum callable."""
+
+@overload
+def make_min(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving physical-warp minimum callable."""
+
+@overload
+def make_min(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a generated physical-warp minimum callable."""
+
 __all__ = [
     "load",
     "make_load",
+    "make_max",
+    "make_min",
+    "make_reduce",
     "make_store",
+    "make_sum",
+    "max",
+    "min",
+    "reduce",
     "store",
+    "sum",
     "warp_load",
+    "warp_max",
+    "warp_min",
+    "warp_reduce",
     "warp_store",
+    "warp_sum",
 ]

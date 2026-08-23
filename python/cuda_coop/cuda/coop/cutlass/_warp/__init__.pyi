@@ -8,6 +8,10 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl.warp import WarpExchangeType as WarpExchangeType
+from .._dsl.warp import max as max
+from .._dsl.warp import min as min
+from .._dsl.warp import reduce as reduce
+from .._dsl.warp import sum as sum
 
 class _DeferredValue(Protocol):
     """Deferred scoped callable that returns one transformed value."""
@@ -214,11 +218,52 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_reduce(
+    dtype: object,
+    binary_op: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp reduction specialization."""
+
+def make_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp sum specialization."""
+
+def make_max(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp maximum specialization."""
+
+def make_min(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp minimum specialization."""
+
 __all__ = [
     "TempStorage",
     "WarpExchangeType",
     "load",
     "make_load",
+    "make_max",
+    "make_min",
+    "make_reduce",
     "make_store",
+    "make_sum",
+    "max",
+    "min",
+    "reduce",
     "store",
+    "sum",
 ]

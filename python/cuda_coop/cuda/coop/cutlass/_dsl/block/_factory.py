@@ -48,6 +48,7 @@ from .._launch import (
 from .._load_store import validate_payload_selector as _validate_payload_selector
 from .._scope import BLOCK_SCOPE as _SCOPE
 from ._load_store import load, store
+from ._reduce import reduce, sum
 
 _RADIX_SORT_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit", "descending")
 _RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit")
@@ -279,4 +280,88 @@ def make_store(
         bound,
         overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
         override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
+    )
+
+
+def make_reduce(
+    dtype: Any,
+    threads_per_block: Any = None,
+    binary_op: Any = None,
+    items_per_thread: int = 1,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    num_valid: Any = None,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block reduce callable.
+
+    The callable binds the reduction operator and CTA metadata, then forwards
+    each scalar or ``ThreadData`` value to :func:`reduce`. An explicitly
+    selected CUB ``algorithm`` is a static deferred-call argument; omission
+    preserves the scoped primitive's canonical full-group CUDAX route.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_reduce", kwargs)
+    if num_valid is not None and valid_items is not None:
+        raise TypeError(f"{_SCOPE}.make_reduce got both num_valid and valid_items")
+    if valid_items is not None:
+        num_valid = valid_items
+    bound = _block_kwargs(
+        "make_reduce",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "binary_op", binary_op)
+    _bind_if_not_none(bound, "num_valid", num_valid)
+    _bind_if_not_none(bound, "algorithm", algorithm)
+    return _make_factory(
+        "make_reduce",
+        reduce,
+        bound,
+        overridable_kwargs=_REDUCE_VALID_OVERRIDABLE_KWARGS,
+        override_aliases=_REDUCE_VALID_OVERRIDE_ALIASES,
+    )
+
+
+def make_sum(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    num_valid: Any = None,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block sum callable.
+
+    The callable binds CTA metadata and forwards each scalar or ``ThreadData``
+    value to :func:`sum`. An explicitly selected CUB ``algorithm`` is a static
+    deferred-call argument; omission preserves the scoped primitive's
+    canonical full-group CUDAX route.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_sum", kwargs)
+    if num_valid is not None and valid_items is not None:
+        raise TypeError(f"{_SCOPE}.make_sum got both num_valid and valid_items")
+    if valid_items is not None:
+        num_valid = valid_items
+    bound = _block_kwargs(
+        "make_sum",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "num_valid", num_valid)
+    _bind_if_not_none(bound, "algorithm", algorithm)
+    return _make_factory(
+        "make_sum",
+        sum,
+        bound,
+        overridable_kwargs=_REDUCE_VALID_OVERRIDABLE_KWARGS,
+        override_aliases=_REDUCE_VALID_OVERRIDE_ALIASES,
     )

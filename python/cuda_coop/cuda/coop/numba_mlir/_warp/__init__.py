@@ -7,12 +7,24 @@
 import importlib
 
 __all__ = [
+    "reduce",
+    "sum",
+    "max",
+    "min",
     "load",
-    "make_load",
-    "make_store",
     "store",
+    "warp_reduce",
+    "warp_sum",
+    "warp_max",
+    "warp_min",
     "warp_load",
     "warp_store",
+    "make_load",
+    "make_max",
+    "make_min",
+    "make_reduce",
+    "make_store",
+    "make_sum",
 ]
 
 

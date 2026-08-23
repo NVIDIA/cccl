@@ -11,7 +11,9 @@ from typing import Any
 
 from ._group_ops import (
     load,
+    reduce,
     store,
+    sum,
 )
 from ._thread_group import (
     Hierarchy,
@@ -278,8 +280,10 @@ __all__ = [
     "gpu_dataclass",
     "load",
     "local",
+    "reduce",
     "shared",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

@@ -50,6 +50,8 @@ _ROOT_OPERATIONS = {
     for name in (
         "load",
         "store",
+        "reduce",
+        "sum",
     )
 }
 _ROOT_OPERATIONS.update(
@@ -1634,6 +1636,142 @@ class _GroupCallPlanner:
             return_alias=return_alias,
         )
 
+    def _lower_reduce(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        from ._group_provider import _validate_group_reduce_support
+
+        if bound.arguments.get("args"):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir.reduce accepts no extra positional arguments"
+            )
+        if bound.arguments.get("kwargs"):
+            names = ", ".join(sorted(bound.arguments["kwargs"]))
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.reduce got unexpected keyword(s): {names}"
+            )
+
+        if is_common_root:
+            value = bound.arguments["value"]
+            if self._array_operand_state(operation, value) and not (
+                self._thread_data_operand_state(operation, "value", value)
+            ):
+                raise TypeError(
+                    f"cuda.coop.{operation} accepts only a scalar or fixed-size "
+                    "ThreadData value payload in common V1; use "
+                    "cuda.coop.numba_mlir for backend-qualified local-array "
+                    "payload support"
+                )
+
+        has_valid = not self._is_none(bound.arguments["valid_items"])
+        has_algorithm = not self._is_none(bound.arguments["algorithm"])
+        if has_valid or has_algorithm:
+            if group.kind not in {"block", "warp", "threads_within_warp"}:
+                raise NotImplementedError(
+                    "valid_items and explicit CUB algorithms are supported only "
+                    "for physical block, physical-warp, and logical-warp groups"
+                )
+            broadcast = self._constant(bound.arguments["broadcast"])
+            if not isinstance(broadcast, bool):
+                raise TypeError(
+                    "cuda.coop.numba_mlir.reduce broadcast must be a compile-time bool"
+                )
+            if broadcast:
+                raise NotImplementedError(
+                    "direct CUB reduce returns a defined value only at the group "
+                    "root; it cannot satisfy broadcast=True"
+                )
+            if has_valid:
+                is_static, valid_items = self._try_constant(
+                    bound.arguments["valid_items"]
+                )
+                if is_static:
+                    if isinstance(valid_items, bool) or not isinstance(
+                        valid_items, Integral
+                    ):
+                        raise TypeError(
+                            "cuda.coop.numba_mlir.reduce valid_items must be "
+                            "an integer, not bool"
+                        )
+                    group_size = group.static_size
+                    assert group_size is not None
+                    if not 1 <= int(valid_items) <= group_size:
+                        raise ValueError(
+                            "cuda.coop.numba_mlir.reduce static valid_items "
+                            f"must be between 1 and group size {group_size}"
+                        )
+            binary_op_ref = bound.arguments["binary_op"]
+            binary_op = self._constant(binary_op_ref)
+            from ._group_provider import _normalize_reduce_operation
+
+            normalized_op = _normalize_reduce_operation(binary_op)
+            if normalized_op == "sum":
+                factory, kwargs = self._scope_factory(group, "sum")
+            elif group.kind == "block":
+                from ._block._block_reduce import block_reduce_builtin
+
+                assert group.hierarchy is not None
+                factory = block_reduce_builtin
+                kwargs = {
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": normalized_op,
+                }
+            elif group.kind in {"warp", "threads_within_warp"}:
+                from ._warp._warp_reduce import warp_reduce_builtin
+
+                assert group.hierarchy is not None
+                threads_in_warp = group.static_size
+                assert threads_in_warp is not None
+                factory = warp_reduce_builtin
+                kwargs = {
+                    "threads_in_warp": threads_in_warp,
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": normalized_op,
+                }
+            if has_valid:
+                name = "num_valid" if group.kind == "block" else "valid_items"
+                kwargs[name] = bound.arguments["valid_items"]
+            if has_algorithm:
+                if group.kind != "block":
+                    raise NotImplementedError(
+                        "CUB algorithm selection applies to BlockReduce, not WarpReduce"
+                    )
+                kwargs["algorithm"] = bound.arguments["algorithm"]
+            return self._rewritten_call(
+                inst,
+                factory=factory,
+                args=[bound.arguments["value"]],
+                kwargs=kwargs,
+                common_profile_operation=(operation if is_common_root else None),
+            )
+
+        _validate_group_reduce_support(group)
+        if group.kind == "grid":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.reduce grid groups require a hidden "
+                "per-launch provider workspace; support is intentionally "
+                "deferred until the backend exposes that ABI"
+            )
+        from ._group_provider import group_reduce
+
+        return self._rewritten_call(
+            inst,
+            factory=group_reduce,
+            args=[bound.arguments["value"]],
+            kwargs={
+                "group": group,
+                "binary_op": bound.arguments["binary_op"],
+                "broadcast": bound.arguments["broadcast"],
+            },
+            common_profile_operation=(operation if is_common_root else None),
+        )
+
     def _lower_root_operation(
         self,
         inst: ir.Assign,
@@ -1727,6 +1865,14 @@ class _GroupCallPlanner:
             )
         if operation in {"load", "store"}:
             replacement = self._lower_load_store(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {"reduce", "sum"}:
+            replacement = self._lower_reduce(
                 inst,
                 operation=operation,
                 group=group,

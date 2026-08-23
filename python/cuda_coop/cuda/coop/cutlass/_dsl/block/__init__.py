@@ -28,18 +28,26 @@ CUDAX/CUB plan owns the actual scratch and does not charge that object.
 from . import _api as _api
 from . import _factory as _factory
 from ._load_store import load, store
+from ._reduce import reduce, row_sum, sum
 from ._single_phase import TempStorage
 
 # Secondary compatibility adapters remain available through the private block
 # module. Its wrappers preserve the private import scope reported by deferred
 # factories.
 make_load = _factory.make_load
+make_reduce = _factory.make_reduce
 make_store = _factory.make_store
+make_sum = _factory.make_sum
 
 __all__ = [
     "TempStorage",
     "load",
     "make_load",
+    "make_reduce",
     "make_store",
+    "make_sum",
+    "reduce",
+    "row_sum",
     "store",
+    "sum",
 ]

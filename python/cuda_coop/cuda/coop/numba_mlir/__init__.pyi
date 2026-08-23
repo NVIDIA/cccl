@@ -24,6 +24,8 @@ from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
+from .._typing import ReduceAlgorithm as _ReduceAlgorithm
+from .._typing import ReduceOperator as _ReduceOperator
 from .._typing import TempStorageSharing as _TempStorageSharing
 from .._typing import ThreadDataLike as _ThreadDataLike
 from .._typing import ThreadGroupKind as _ThreadGroupKind
@@ -471,6 +473,143 @@ def store(
 ) -> None:
     """Store a scalar or thread-local payload across a physical or logical warp."""
 
+@overload
+def reduce(
+    group: _ReductionGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ItemT:
+    """Reduce a full-group payload and preserve its element type."""
+
+@overload
+def reduce(
+    group: _ReductionGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ScalarValueT:
+    """Reduce full-group scalar values while preserving their static type."""
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: _ReduceAlgorithm | None = None,
+) -> _ScalarValueT:
+    """Reduce a scalar through direct CUB BlockReduce at the block root.
+
+    ``valid_items`` accepts Python, NumPy, and structural compiler integers.
+    """
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ScalarValueT:
+    """Reduce a scalar with an explicit direct CUB BlockReduce algorithm."""
+
+@overload
+def reduce(
+    group: _WarpGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: None = None,
+) -> _ScalarValueT:
+    """Reduce a valid scalar prefix through direct CUB WarpReduce.
+
+    ``valid_items`` accepts Python, NumPy, and structural compiler integers.
+    """
+
+@overload
+def sum(
+    group: _ReductionGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ItemT:
+    """Sum a full-group payload and preserve its element type."""
+
+@overload
+def sum(
+    group: _ReductionGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ScalarValueT:
+    """Sum full-group scalar values while preserving their static type."""
+
+@overload
+def sum(
+    group: _BlockGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: _ReduceAlgorithm | None = None,
+) -> _ScalarValueT:
+    """Sum a scalar through direct CUB BlockReduce at the block root.
+
+    ``valid_items`` accepts Python, NumPy, and structural compiler integers.
+    """
+
+@overload
+def sum(
+    group: _BlockGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ScalarValueT:
+    """Sum a scalar with an explicit direct CUB BlockReduce algorithm."""
+
+@overload
+def sum(
+    group: _WarpGroup,
+    value: _ScalarValueT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: None = None,
+) -> _ScalarValueT:
+    """Sum a valid scalar prefix through direct CUB WarpReduce.
+
+    ``valid_items`` accepts Python, NumPy, and structural compiler integers.
+    """
+
 __all__ = [
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
@@ -486,8 +625,10 @@ __all__ = [
     "gpu_dataclass",
     "load",
     "local",
+    "reduce",
     "shared",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

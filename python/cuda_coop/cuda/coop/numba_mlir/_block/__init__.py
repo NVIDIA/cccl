@@ -10,9 +10,13 @@ __all__ = [
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
     "load",
-    "make_load",
-    "make_store",
+    "reduce",
+    "sum",
     "store",
+    "make_load",
+    "make_reduce",
+    "make_store",
+    "make_sum",
 ]
 
 

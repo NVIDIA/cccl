@@ -8,6 +8,7 @@ from . import _block as _block
 from . import _warp as _warp
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_reduce import reduce as reduce
 from ._types import Hierarchy as Hierarchy
 from ._types import Payload as Payload
 from ._types import TempStorage as TempStorage
@@ -54,7 +55,9 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "load",
+    "reduce",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

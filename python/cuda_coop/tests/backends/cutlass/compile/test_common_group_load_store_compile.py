@@ -75,3 +75,34 @@ def test_common_load_store_compiles_for_block_and_physical_warp(
     )
 
     assert all(callable(result) for result in compiled)
+
+
+def test_portable_root_sum_example_compiles_from_its_source_module(
+    source_examples: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    del source_examples
+    from examples.cutlass import portable_root_sum
+
+    monkeypatch.setenv(
+        "CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR",
+        str(tmp_path / "provider-cache"),
+    )
+    monkeypatch.setenv(
+        "CUDA_COOP_CUTLASS_PROVIDER_CCCL_ROOT",
+        str(REPO_ROOT),
+    )
+
+    run, *_ = portable_root_sum.make_runner()
+    fake_values = runtime.make_fake_compact_tensor(
+        Int32,
+        (portable_root_sum.TILE_ITEMS,),
+    )
+    fake_totals = runtime.make_fake_compact_tensor(
+        Int32,
+        (1,),
+    )
+    compiled = cute.compile(run, fake_values, fake_values, fake_totals)
+
+    assert callable(compiled)

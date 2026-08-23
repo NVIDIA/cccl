@@ -182,6 +182,49 @@ controls and element offsets. Wrappers are rendered once per trace, compiled
 to LTO-IR with NVRTC against the wheel's private CCCL headers, and attached
 during CUTLASS finalization.
 
+### Reduce result ownership
+
+Full physical block and warp results are defined on every member, so
+rank-zero-only consumption remains valid but is not required. For a valid-count
+block or physical-warp reduction, fold each member's items first and consume the
+direct-CUB scalar only at group rank zero. This contract deliberately does not promise
+bitwise compatibility with the former floating-point reduction tree. Unsigned
+integer arithmetic follows the selected type's modular C++ semantics; inputs
+that would cause signed integer overflow are outside the supported contract.
+Floating-point sum/product and min/max follow the selected official CUDAX/CUB
+implementation, so reassociation may change rounding, NaN
+selection/propagation, and signed zero. Tests require common and qualified group
+calls that select the same artifact to be bitwise identical.
+The selected official CUDAX/CUB route is also normative for NaN payload and
+selection, infinities, and signed zero; direct Python and direct C++
+probes for one route must match bitwise on one toolchain. Finite mathematical
+sum/product results use `rtol=2e-6, atol=2e-6` for `float32` and
+`rtol=1e-12, atol=1e-12` for `float64`. No equivalence is promised across
+different routes or algorithms.
+
+The group-first route contract is:
+
+| Scope and request | Official route | Result contract |
+| --- | --- | --- |
+| Full block or physical warp, scalar or `ThreadData` | broadcasted CUDAX Reduce | scalar, defined on every member |
+| Full thread, cluster, or static `group_by` group | CUDAX Reduce | scalar, broadcast to every member by default or root-owned with `broadcast=False` |
+| Grid group | blocked | waits for a reviewed compiler-managed device-workspace contract |
+| Group-first full block or physical warp with `broadcast=False` | root-only CUDAX Reduce | scalar, defined only at group rank zero |
+| Any supplied valid count on block or physical warp, scalar input | direct CUB Reduce | scalar, defined only at group rank zero, including when the count equals the group size |
+| Any supplied valid count on block or physical warp, `ThreadData` input | unsupported | explicitly fold lane items to a scalar first |
+| Full block with explicit CUB algorithm | direct CUB `BlockReduce` | scalar, defined only at block rank zero |
+
+Focused planner, runtime, and final-cubin tests cover the direct-CUB Reduce
+selectors.
+
+The common-v1 exact conformance cohort exercises non-sum `reduce` with `max`
+on both complete blocks and physical warps under CUTLASS and
+Numba-CUDA-MLIR. Its explicit block-algorithm and warp-valid-count routes use
+`broadcast=False`, consume the result only at group rank zero, compare the
+common and qualified spellings with an independent oracle, preserve the input,
+and require the linked provider wrappers to disappear from the final binary.
+
+
 ### Provider compilation and caching
 
 Provider requests, generated source, features, includes, and symbols are
@@ -221,11 +264,13 @@ A portable kernel body is:
 
 ```python
 @cuda.jit
-def kernel(source, destination):
+def kernel(source, destination, totals):
+    tid = cuda.threadIdx.x
     block = coop.this_block()
     items = coop.ThreadData(1)
     coop.load(block, source, items)
     coop.store(block, destination, items)
+    totals[tid] = coop.reduce(block, items[0])
 ```
 
 The qualified package shares CUTLASS's thread hierarchy vocabulary:
@@ -245,9 +290,14 @@ enums through the same group-first interface:
 
 - Root Load and Store lower complete physical blocks and warps through the
   established public CUB implementations.
+- Root Reduce lowers full thread, physical-warp, block, SM90+ cluster, and
+  static mapped groups through CUDAX.
+- A root Reduce with `valid_items`, or with a block `algorithm`, lowers through
+  direct CUB and requires `broadcast=False`.
 - Grid rank and count use exact configured launch dimensions. Grid sync is
   rejected because the current launcher cannot request a verified cooperative
-  launch.
+  launch, and Grid Reduce is rejected until a reviewed compiler-managed
+  device-workspace contract is available.
 
 Group planning runs after device-function inlining. It detects group markers
 before promoting exact launch facts into the current compiler state, so typing
@@ -255,6 +305,9 @@ and lowering continue in the same attempt without replaying planners merely to
 activate launch facts. Generated CUDAX and CUB providers attach as real
 LTO-IR, and their device overloads are forced inline so the final cubin does
 not retain provider call frames.
+
+The runnable group example is
+[`examples/numba_mlir/group_hierarchy.py`](examples/numba_mlir/group_hierarchy.py).
 
 This experimental path requires the whole-function planner and configured
 launch contracts proposed in upstream `numba-cuda-mlir`

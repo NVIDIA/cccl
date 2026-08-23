@@ -40,6 +40,7 @@ from .._launch import resolve_threads_in_warp
 from .._load_store import validate_payload_selector as _validate_payload_selector
 from .._scope import WARP_SCOPE as _SCOPE
 from ._load_store import load, store
+from ._reduce import max, min, reduce, sum
 
 _VALID_ITEMS_OVERRIDABLE_KWARGS = ("valid_items",)
 _SCAN_OVERRIDABLE_KWARGS = ("valid_items", "warp_aggregate")
@@ -212,4 +213,114 @@ def make_store(
         bound,
         overridable_kwargs=_LOAD_STORE_VALID_OVERRIDABLE_KWARGS,
         override_aliases=_LOAD_STORE_VALID_OVERRIDE_ALIASES,
+    )
+
+
+def make_reduce(
+    dtype: Any,
+    binary_op: Any = None,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp reduce callable.
+
+    The callable binds the reduction operator and logical-warp width, then
+    forwards each scalar value to :func:`reduce`.
+    """
+    del dtype
+    _reject_methods("make_reduce", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_reduce",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "binary_op", binary_op)
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_reduce",
+        reduce,
+        bound,
+        overridable_kwargs=_VALID_ITEMS_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_sum(
+    dtype: Any,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp sum callable.
+
+    The callable binds logical-warp width and forwards each scalar value to
+    :func:`sum`.
+    """
+    del dtype
+    _reject_methods("make_sum", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_sum",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_sum",
+        sum,
+        bound,
+        overridable_kwargs=_VALID_ITEMS_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_max(
+    dtype: Any,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp max callable.
+
+    The callable binds logical-warp width and forwards each scalar value to
+    :func:`max`.
+    """
+    del dtype
+    _reject_methods("make_max", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_max",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_max",
+        max,
+        bound,
+        overridable_kwargs=_VALID_ITEMS_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_min(
+    dtype: Any,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp min callable.
+
+    The callable binds logical-warp width and forwards each scalar value to
+    :func:`min`.
+    """
+    del dtype
+    _reject_methods("make_min", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_min",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_min",
+        min,
+        bound,
+        overridable_kwargs=_VALID_ITEMS_OVERRIDABLE_KWARGS,
     )

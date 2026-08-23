@@ -4,11 +4,12 @@
 
 """Typed block-scoped Numba-CUDA-MLIR cooperative primitives."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any, Protocol, TypeVar, overload
 
 from ..._typing import (
     LoadStoreAlgorithm,
+    ReduceAlgorithm,
     ThreadDataLike,
 )
 from ..._typing import _ValidItems as _ValidItems
@@ -742,11 +743,179 @@ def make_store(
 ) -> _StoreInvocable[Any]:
     """Build a block-store callable from a compiler dtype token."""
 
+@overload
+def reduce(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    binary_op: Callable[[_T, _T], _T] | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving block-reduction callable outside compilation."""
+
+@overload
+def reduce(
+    value: _T | ThreadDataLike[_T],
+    /,
+    *,
+    binary_op: Callable[[_T, _T], _T] | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _T:
+    """Reduce block values with a qualified device callback."""
+
+@overload
+def reduce(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    binary_op: Callable[[_T, _T], _T] | None = None,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _T:
+    """Reduce the valid prefix of scalar block inputs."""
+
+@overload
+def reduce(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    binary_op: object = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a block-reduction callable from an external compiler dtype token."""
+
+@overload
+def sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving block-sum callable outside compilation."""
+
+@overload
+def sum(
+    value: _T | ThreadDataLike[_T],
+    /,
+    *,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _T:
+    """Sum block values and preserve their item type."""
+
+@overload
+def sum(
+    value: _T,
+    valid_items: object,
+    /,
+    *,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _T:
+    """Sum the valid prefix of scalar block inputs."""
+
+@overload
+def sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a block-sum callable from an external compiler dtype token."""
+
+@overload
+def make_reduce(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    binary_op: Callable[[_T, _T], _T] | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving block-reduction callable."""
+
+@overload
+def make_reduce(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    binary_op: object = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a block-reduction callable from a compiler dtype token."""
+
+@overload
+def make_sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[_T]:
+    """Build a dtype-preserving block-sum callable."""
+
+@overload
+def make_sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    algorithm: ReduceAlgorithm = "warp_reductions",
+    num_valid: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ReduceInvocable[Any]:
+    """Build a block-sum callable from a compiler dtype token."""
+
 __all__ = [
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
     "load",
     "make_load",
+    "make_reduce",
     "make_store",
+    "make_sum",
+    "reduce",
     "store",
+    "sum",
 ]

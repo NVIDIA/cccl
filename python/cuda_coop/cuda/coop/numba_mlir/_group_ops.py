@@ -78,7 +78,49 @@ def store(
     )
 
 
+def reduce(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    binary_op: Any = None,
+    broadcast: bool = True,
+    valid_items: Any = None,
+    algorithm: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "reduce",
+        group,
+        value,
+        binary_op=binary_op,
+        broadcast=broadcast,
+        valid_items=valid_items,
+        algorithm=algorithm,
+    )
+
+
+def sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: Any = None,
+    algorithm: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "sum",
+        group,
+        value,
+        broadcast=broadcast,
+        valid_items=valid_items,
+        algorithm=algorithm,
+    )
+
+
 __all__ = [
     "load",
+    "reduce",
     "store",
+    "sum",
 ]

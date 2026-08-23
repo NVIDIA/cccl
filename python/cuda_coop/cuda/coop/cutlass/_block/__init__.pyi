@@ -10,6 +10,9 @@ from .. import ThreadData as _ThreadData
 from .._dsl._launch import CutlassLaunchMetadata as _CutlassLaunchMetadata
 from .._dsl.block import radix_sort_keys_descending as radix_sort_keys_descending
 from .._dsl.block import radix_sort_pairs_descending as radix_sort_pairs_descending
+from .._dsl.block import reduce as reduce
+from .._dsl.block import row_sum as row_sum
+from .._dsl.block import sum as sum
 
 class _DeferredValue(Protocol):
     """Deferred scoped callable that returns one transformed value."""
@@ -246,6 +249,31 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_reduce(
+    dtype: object,
+    threads_per_block: object = None,
+    binary_op: object = None,
+    items_per_thread: int = 1,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block reduction specialization."""
+
+def make_sum(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block sum specialization."""
+
 def make_radix_sort_keys_descending(
     dtype: object,
     threads_per_block: object = None,
@@ -279,8 +307,13 @@ __all__ = [
     "make_load",
     "make_radix_sort_keys_descending",
     "make_radix_sort_pairs_descending",
+    "make_reduce",
     "make_store",
+    "make_sum",
     "radix_sort_keys_descending",
     "radix_sort_pairs_descending",
+    "reduce",
+    "row_sum",
     "store",
+    "sum",
 ]
