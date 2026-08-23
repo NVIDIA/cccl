@@ -14,6 +14,7 @@ from itertools import count
 
 import numpy as np
 from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir import types as _numba_types
 from numba_cuda_mlir.extending import (
     WholeFunctionPlanner,
     register_planner,
@@ -244,7 +245,15 @@ class CoopSinglePhaseRewrite(Rewrite):
 
     _CUDA_ROOT_MODULES = frozenset({"cuda", "numba_cuda_mlir.cuda"})
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
-        {"load", "scan", "store", "warp_load", "warp_store"}
+        {
+            "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "scan",
+            "store",
+            "warp_load",
+            "warp_store",
+        }
     )
     _OP_SPECS = {
         "group_reduce": {
@@ -498,6 +507,46 @@ class CoopSinglePhaseRewrite(Rewrite):
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
         },
+        "merge_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "compare_op"},
+        },
+        "merge_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "compare_op",
+            },
+        },
         "warp_load": {
             "namespace": "warp",
             "runtime_arg_counts": {2, 3, 4},
@@ -550,17 +599,71 @@ class CoopSinglePhaseRewrite(Rewrite):
             },
             "required_factory_kwargs": {"dtype"},
         },
+        "warp_merge_sort_keys": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "items_per_thread", "compare_op"},
+        },
+        "warp_merge_sort_pairs": {
+            "namespace": "warp",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+            },
+        },
     }
-    _BLOCK_OPS = frozenset({"load", "scan", "store", "shuffle", "exchange"})
+    _BLOCK_OPS = frozenset(
+        {
+            "exchange",
+            "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "scan",
+            "shuffle",
+            "store",
+        }
+    )
     _WARP_OPS = frozenset(
         {
-            "warp_load",
-            "warp_store",
             "warp_exchange",
-            "warp_exclusive_sum",
-            "warp_inclusive_sum",
             "warp_exclusive_scan",
+            "warp_exclusive_sum",
             "warp_inclusive_scan",
+            "warp_inclusive_sum",
+            "warp_load",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
+            "warp_store",
         }
     )
 
@@ -1849,6 +1952,161 @@ class CoopSinglePhaseRewrite(Rewrite):
             getitem_temp_storage=getitem_temp_storage,
         )
 
+    @staticmethod
+    def _lossless_merge_sort_sentinel(value: object, key_dtype: object) -> object:
+        from ._common import _NUMBA_MLIR_DTYPE_NAMES
+
+        try:
+            key_dtype = normalize_dtype_param(key_dtype)
+        except (TypeError, ValueError):
+            return value
+        dtype_name = _NUMBA_MLIR_DTYPE_NAMES.get(key_dtype)
+        if dtype_name is None:
+            return value
+        numpy_dtype = np.dtype(dtype_name)
+
+        if key_dtype == _numba_types.boolean:
+            if not isinstance(value, (bool, np.bool_)):
+                raise CoopSinglePhaseRewriteError(
+                    "Merge Sort oob_default must have the same bool dtype as keys"
+                )
+            return np.bool_(value)
+
+        if isinstance(key_dtype, _numba_types.Integer):
+            if isinstance(value, (bool, np.bool_)):
+                raise CoopSinglePhaseRewriteError(
+                    "Merge Sort oob_default must be an integer, not bool"
+                )
+            try:
+                integer = operator.index(value)
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(
+                    "Merge Sort oob_default must be an integer for integer keys"
+                ) from exc
+            limits = np.iinfo(numpy_dtype)
+            if not limits.min <= integer <= limits.max:
+                raise CoopSinglePhaseRewriteError(
+                    f"Merge Sort oob_default={integer} is not representable "
+                    f"in keys dtype {dtype_name}"
+                )
+            return numpy_dtype.type(integer)
+
+        if isinstance(key_dtype, _numba_types.Float):
+            if isinstance(value, (bool, np.bool_)):
+                raise CoopSinglePhaseRewriteError(
+                    "Merge Sort oob_default must be numeric, not bool"
+                )
+            if not isinstance(value, (int, float, np.integer, np.floating)):
+                raise CoopSinglePhaseRewriteError(
+                    "Merge Sort oob_default must be numeric for floating keys"
+                )
+            with np.errstate(over="ignore", invalid="ignore"):
+                converted = numpy_dtype.type(value)
+            original_float = float(value)
+            converted_float = float(converted)
+            exact = original_float == converted_float
+            if exact and original_float == 0.0:
+                exact = np.signbit(original_float) == np.signbit(converted_float)
+            if isinstance(value, (int, np.integer)) and np.isfinite(converted_float):
+                exact = exact and int(converted_float) == int(value)
+            if not exact or np.isnan(original_float):
+                raise CoopSinglePhaseRewriteError(
+                    f"Merge Sort oob_default={value!r} is not losslessly "
+                    f"representable in keys dtype {dtype_name}"
+                )
+            return converted
+
+        return value
+
+    def _validate_merge_sort_runtime_controls(
+        self,
+        *,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        control_vars: dict[str, ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> tuple[tuple[int, object], ...]:
+        if op_name not in {
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
+        }:
+            return ()
+
+        operation = "merge_sort_pairs" if "pairs" in op_name else "merge_sort_keys"
+        prefix = f"cuda.coop.numba_mlir.{operation}"
+        valid_items_var = control_vars.get("valid_items")
+        if valid_items_var is not None:
+            static_valid_items = self._resolve_factory_kwarg_value(
+                "valid_items", valid_items_var
+            )
+            if static_valid_items is not _UNRESOLVED:
+                if isinstance(static_valid_items, (bool, np.bool_)):
+                    raise CoopSinglePhaseRewriteError(
+                        f"{prefix} valid_items must be an integer, not bool"
+                    )
+                try:
+                    operator.index(static_valid_items)
+                except TypeError as exc:
+                    raise CoopSinglePhaseRewriteError(
+                        f"{prefix} valid_items must be an integer"
+                    ) from exc
+            else:
+                valid_items_dtype = self._resolve_var_dtype(valid_items_var)
+                if valid_items_dtype is None:
+                    valid_items_dtype = self._resolve_var_numba_type(valid_items_var)
+                if valid_items_dtype == _numba_types.boolean:
+                    raise CoopSinglePhaseRewriteError(
+                        f"{prefix} valid_items must be an integer, not bool"
+                    )
+                if valid_items_dtype is not None and not isinstance(
+                    valid_items_dtype, _numba_types.Integer
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        f"{prefix} valid_items must have an integer dtype"
+                    )
+
+        oob_default_var = control_vars.get("oob_default")
+        if oob_default_var is None:
+            return ()
+        key_dtype = factory_kwargs.get("keys" if "pairs" in op_name else "dtype")
+        if key_dtype is None:
+            raise CoopSinglePhaseRewriteError(
+                f"{prefix} could not infer the keys dtype before validating oob_default"
+            )
+        static_oob_default = self._resolve_factory_kwarg_value(
+            "oob_default", oob_default_var
+        )
+        if static_oob_default is not _UNRESOLVED:
+            converted = self._lossless_merge_sort_sentinel(
+                static_oob_default,
+                key_dtype,
+            )
+            argument_index = next(
+                index
+                for index, argument in enumerate(runtime_args)
+                if argument is oob_default_var or argument.name == oob_default_var.name
+            )
+            return ((argument_index, converted),)
+
+        oob_default_dtype = self._resolve_var_dtype(oob_default_var)
+        if oob_default_dtype is None:
+            oob_default_dtype = self._resolve_var_numba_type(oob_default_var)
+        if oob_default_dtype is None:
+            return ()
+        try:
+            key_dtype = normalize_dtype_param(key_dtype)
+            oob_default_dtype = normalize_dtype_param(oob_default_dtype)
+        except (TypeError, ValueError):
+            pass
+        if oob_default_dtype != key_dtype:
+            raise CoopSinglePhaseRewriteError(
+                f"{prefix} oob_default must have the same dtype as keys "
+                f"({key_dtype}); got {oob_default_dtype}"
+            )
+        return ()
+
     def _validate_and_split_args(
         self, op_name: str, call: ir.Expr, getitem_temp_storage: ir.Var | None
     ) -> tuple[
@@ -1886,6 +2144,7 @@ class CoopSinglePhaseRewrite(Rewrite):
         extra_runtime_arg_count = runtime_arg_count - base_runtime_arg_count
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
+        runtime_factory_control_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
@@ -1898,6 +2157,9 @@ class CoopSinglePhaseRewrite(Rewrite):
                 factory_kwargs[name] = True
                 seen_factory_kwargs.add(name)
                 seen_runtime_factory_kwargs.add(name)
+                value_var = runtime_args[base_runtime_arg_count + index]
+                if isinstance(value_var, ir.Var):
+                    runtime_factory_control_vars[name] = value_var
         for name, value_var in call.kws:
             if name == "temp_storage" and op_name in self._TEMP_STORAGE_RUNTIME_KW_OPS:
                 if runtime_temp_storage is not None:
@@ -2011,6 +2273,7 @@ class CoopSinglePhaseRewrite(Rewrite):
             factory_kwargs[name] = True
             seen_factory_kwargs.add(name)
             seen_runtime_factory_kwargs.add(name)
+            runtime_factory_control_vars[name] = value_var
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
         self._validate_integer_runtime_controls(
@@ -2024,6 +2287,12 @@ class CoopSinglePhaseRewrite(Rewrite):
             allowed_factory_kwargs,
             seen_factory_kwargs,
             factory_kwargs,
+        )
+        runtime_arg_constant_replacements = self._validate_merge_sort_runtime_controls(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            control_vars=runtime_factory_control_vars,
+            factory_kwargs=factory_kwargs,
         )
         if op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
@@ -2063,7 +2332,7 @@ class CoopSinglePhaseRewrite(Rewrite):
             runtime_temp_storage,
             factory_kwargs,
             tuple(factory_kw_value_vars),
-            (),
+            runtime_arg_constant_replacements,
         )
 
     def _validate_integer_runtime_controls(
@@ -2193,6 +2462,10 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "exchange": frozenset({"exchange"}),
                 "warp_exchange": frozenset({"exchange"}),
                 "shuffle": frozenset({"shuffle"}),
+                "merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
+                "warp_merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "warp_merge_sort_pairs": frozenset({"merge_sort_pairs"}),
             }
             if common_profile_operation not in operation_families.get(
                 op_name, frozenset()
@@ -2200,9 +2473,33 @@ class CoopSinglePhaseRewrite(Rewrite):
                 raise CoopSinglePhaseRewriteError(
                     "_common_profile_operation does not match the rewritten group operation"
                 )
-            from ._common import _validate_common_numeric_dtype
+            from ._common import (
+                _validate_common_integer_key_dtype,
+                _validate_common_numeric_dtype,
+            )
 
-            if op_name in {"load", "warp_load", "store", "warp_store"}:
+            if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("dtype"),
+                        operation=common_profile_operation,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("keys"),
+                        operation=common_profile_operation,
+                    )
+                    _validate_common_numeric_dtype(
+                        factory_kwargs.get("values"),
+                        operation=common_profile_operation,
+                        parameter="values",
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"load", "warp_load", "store", "warp_store"}:
                 operand_names = (
                     ("source", "output")
                     if op_name in {"load", "warp_load"}
@@ -2495,7 +2792,7 @@ class CoopSinglePhaseRewrite(Rewrite):
             return factory_kwargs.get(name)
 
         def factory_kwarg_matches(name: str, actual, expected) -> bool:
-            if name == "dtype":
+            if name in {"dtype", "keys", "values"}:
                 try:
                     actual = normalize_dtype_param(actual)
                     expected = normalize_dtype_param(expected)
@@ -2779,6 +3076,57 @@ class CoopSinglePhaseRewrite(Rewrite):
                     self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
                 if output_var is not None:
                     self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
+            return
+        if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+            keys_var, keys_spec = candidate(0)
+            if keys_spec is None:
+                return
+            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._infer_thread_data_dtype_from_writes(keys_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+        if op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
+            keys_var, keys_spec = candidate(0)
+            values_var, values_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name,
+                "keys",
+                keys_spec,
+                "values",
+                values_spec,
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and values_spec is not None:
+                extent = values_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            value_dtype = values_spec.dtype if values_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._resolve_var_dtype(values_var)
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._infer_thread_data_dtype_from_writes(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._infer_thread_data_dtype_from_writes(values_var)
+            if key_dtype is None:
+                key_dtype = factory_value("keys")
+            if value_dtype is None:
+                value_dtype = factory_value("values")
+            infer_kwarg("keys", key_dtype)
+            infer_kwarg("values", value_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if value_dtype is not None and values_var is not None:
+                self._record_inferred_thread_data_dtype(values_var, value_dtype)
             return
         if op_name == "shuffle":
             if len(runtime_args) == 1:
@@ -3802,6 +4150,16 @@ class CoopSinglePhaseRewrite(Rewrite):
                 continue
             assert match is not None
             rewritten_runtime_args = list(match.runtime_args)
+            for argument_index, value in match.runtime_arg_constant_replacements:
+                replacement_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_runtime_constant_{next(_GLOBAL_NAME_COUNTER)}__",
+                    match.loc,
+                )
+                new_block.append(
+                    ir.Assign(ir.Const(value, match.loc), replacement_var, match.loc)
+                )
+                rewritten_runtime_args[argument_index] = replacement_var
             if match.preserve_root_store_payload:
                 if len(rewritten_runtime_args) < 2:
                     raise CoopSinglePhaseRewriteError(

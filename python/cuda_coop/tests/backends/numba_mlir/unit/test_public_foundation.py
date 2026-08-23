@@ -28,6 +28,8 @@ _PUBLIC_EXPORTS = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shared",

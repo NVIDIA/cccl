@@ -295,6 +295,58 @@ def shuffle(
     )
 
 
+def merge_sort_keys(
+    group: ThreadGroup,
+    keys: Any,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    temp_storage: Any = None,
+    compare_op: Any = None,
+) -> Any:
+    """Merge-sort keys across a block or warp group."""
+
+    return _group_primitive_marker(
+        "merge_sort_keys",
+        group,
+        keys,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
+        compare_op=compare_op,
+    )
+
+
+def merge_sort_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    temp_storage: Any = None,
+    compare_op: Any = None,
+) -> tuple[Any, Any]:
+    """Merge-sort keys and associated values across a block or warp group."""
+
+    return _group_primitive_marker(
+        "merge_sort_pairs",
+        group,
+        keys,
+        values,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
+        compare_op=compare_op,
+    )
+
+
 __all__ = [
     "exchange",
     "exclusive_scan",
@@ -302,6 +354,8 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

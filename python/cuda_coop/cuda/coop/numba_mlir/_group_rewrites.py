@@ -11,6 +11,7 @@ from itertools import count
 from numbers import Integral
 from typing import Any
 
+import numpy as np
 from numba_cuda_mlir import types
 from numba_cuda_mlir.errors import ForceLiteralArg
 from numba_cuda_mlir.extending import (
@@ -48,22 +49,22 @@ _GROUP_CONSTRUCTORS = {
     _common_root_api.this_cluster: _thread_groups.this_cluster,
     _common_root_api.this_grid: _thread_groups.this_grid,
 }
-_ROOT_OPERATIONS = {
-    getattr(_group_ops, name): name
-    for name in (
-        "load",
-        "store",
-        "reduce",
-        "sum",
-        "scan",
-        "exclusive_sum",
-        "inclusive_sum",
-        "exclusive_scan",
-        "inclusive_scan",
-        "exchange",
-        "shuffle",
-    )
-}
+_QUALIFIED_OPERATIONS = (
+    "load",
+    "store",
+    "reduce",
+    "sum",
+    "scan",
+    "exclusive_sum",
+    "inclusive_sum",
+    "exclusive_scan",
+    "inclusive_scan",
+    "exchange",
+    "shuffle",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+)
+_ROOT_OPERATIONS = {getattr(_group_ops, name): name for name in _QUALIFIED_OPERATIONS}
 _ROOT_OPERATIONS.update(
     {
         getattr(_common_root_api, name): name
@@ -79,6 +80,8 @@ _ROOT_OPERATIONS.update(
             "inclusive_scan",
             "exchange",
             "shuffle",
+            "merge_sort_keys",
+            "merge_sort_pairs",
         )
     }
 )
@@ -100,28 +103,23 @@ class GroupRewriteError(Exception):
     """A group-first call was recognized but could not be lowered safely."""
 
 
+def _builtin_less(lhs: Any, rhs: Any) -> bool:
+    return lhs < rhs
+
+
+def _builtin_greater(lhs: Any, rhs: Any) -> bool:
+    return lhs > rhs
+
+
 def _group_operation_name(function: Any) -> str | None:
-    """Return the operation represented by one supported marker callable."""
+    """Return the group-first operation represented by one marker callable."""
 
     operation = getattr(function, "__cuda_coop_backend_member__", None)
-    supported = {
-        "exchange",
-        "exclusive_scan",
-        "exclusive_sum",
-        "inclusive_scan",
-        "inclusive_sum",
-        "load",
-        "reduce",
-        "scan",
-        "shuffle",
-        "store",
-        "sum",
-    }
-    if operation in supported:
+    if operation in _QUALIFIED_OPERATIONS:
         return operation
     if getattr(function, "__module__", None) == _group_ops.__name__:
         name = getattr(function, "__name__", None)
-        if name in supported:
+        if name in _QUALIFIED_OPERATIONS:
             return name
     return None
 
@@ -595,7 +593,23 @@ class _GroupCallPlanner:
             )
         if definition.op != "call":
             return False
-        return False
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        pair_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+        }.get(operation)
+        if pair_arguments is None:
+            return False
+        if index < 0:
+            index += len(pair_arguments)
+        if not 0 <= index < len(pair_arguments):
+            return False
+        bound = self._bind(function, definition)
+        return self._is_array_value(
+            bound.arguments[pair_arguments[index]],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -686,6 +700,7 @@ class _GroupCallPlanner:
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
             "shuffle": "value",
         }.get(operation)
         if array_result_argument is None:
@@ -867,7 +882,22 @@ class _GroupCallPlanner:
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
-        return None
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        tuple_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+        }.get(operation)
+        if tuple_arguments is None:
+            return None
+        if index < 0:
+            index += len(tuple_arguments)
+        if not 0 <= index < len(tuple_arguments):
+            return None
+        bound = self._bind(function, definition)
+        return self._array_extent(
+            bound.arguments[tuple_arguments[index]],
+            seen=set(seen),
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -953,12 +983,47 @@ class _GroupCallPlanner:
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
+            "merge_sort_pairs": "keys",
             "shuffle": "value",
         }.get(operation)
         if shape_argument is None:
             return None
         bound = self._bind(function, definition)
         return self._array_extent(bound.arguments[shape_argument], seen=seen)
+
+    def _copy_array_payload(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        source: ir.Var,
+        destination: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+        known_items_per_thread: int | None = None,
+    ) -> None:
+        extent = (
+            known_items_per_thread
+            if known_items_per_thread is not None
+            else self._array_extent(source)
+        )
+        if extent is None:
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} could not infer a static "
+                "items_per_thread extent for its non-mutating result"
+            )
+        for item_index in range(extent):
+            index = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_copy_index_{item_index}",
+                value=item_index,
+            )
+            item = self._new_var(scope, loc, f"{operation}_copy_item_{item_index}")
+            statements.append(ir.Assign(ir.Expr.getitem(source, index, loc), item, loc))
+            statements.append(ir.SetItem(destination, index, item, loc))
 
     def _typed_payload_like(
         self,
@@ -1083,6 +1148,8 @@ class _GroupCallPlanner:
             name = {
                 "exchange": "warp_exchange",
                 "load": "warp_load",
+                "merge_sort_keys": "warp_merge_sort_keys",
+                "merge_sort_pairs": "warp_merge_sort_pairs",
                 "store": "warp_store",
                 "sum": "warp_sum",
                 "exclusive_sum": "warp_exclusive_sum",
@@ -1773,6 +1840,228 @@ class _GroupCallPlanner:
             common_profile_operation="shuffle" if is_common_root else None,
         )
 
+    def _lower_merge_sort(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind not in {"block", "warp", "threads_within_warp"}:
+            raise NotImplementedError(
+                f"cuda.coop.numba_mlir.{operation} currently lowers only "
+                "physical block, physical-warp, and logical-warp groups"
+            )
+
+        descending = self._constant(bound.arguments["descending"])
+        if not isinstance(descending, bool):
+            raise TypeError(
+                f"cuda.coop.numba_mlir.{operation} descending must be a "
+                "compile-time bool"
+            )
+        compare_arg = bound.arguments.get("compare_op")
+        if self._is_none(compare_arg):
+            compare_op = _builtin_greater if descending else _builtin_less
+        else:
+            if descending:
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} custom compare_op and "
+                    "descending=True are mutually exclusive"
+                )
+            compare_op = compare_arg
+
+        has_valid_items = not self._is_none(bound.arguments["valid_items"])
+        has_oob_default = not self._is_none(bound.arguments["oob_default"])
+        if has_valid_items != has_oob_default:
+            raise ValueError(
+                f"cuda.coop.numba_mlir.{operation} valid_items and "
+                "oob_default must be provided together"
+            )
+        if has_valid_items:
+            is_static, valid_items = self._try_constant(bound.arguments["valid_items"])
+            if is_static:
+                if isinstance(valid_items, (bool, np.bool_)) or not isinstance(
+                    valid_items, Integral
+                ):
+                    raise TypeError(
+                        f"cuda.coop.numba_mlir.{operation} valid_items must be "
+                        "an integer, not bool"
+                        if isinstance(valid_items, (bool, np.bool_))
+                        else f"cuda.coop.numba_mlir.{operation} valid_items "
+                        "must be an integer"
+                    )
+                items_per_thread = self._array_extent(bound.arguments["keys"])
+                if items_per_thread is None and not self._array_operand_state(
+                    operation, bound.arguments["keys"]
+                ):
+                    items_per_thread = 1
+                group_size = group.static_size
+                if items_per_thread is not None and group_size is not None:
+                    maximum = group_size * items_per_thread
+                    if not 0 <= int(valid_items) <= maximum:
+                        raise ValueError(
+                            f"cuda.coop.numba_mlir.{operation} static "
+                            f"valid_items must be in [0, {maximum}]"
+                        )
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        factory_kwargs["compare_op"] = compare_op
+        if has_valid_items:
+            factory_kwargs["valid_items"] = bound.arguments["valid_items"]
+            factory_kwargs["oob_default"] = bound.arguments["oob_default"]
+        if not self._is_none(bound.arguments["temp_storage"]):
+            if group.kind != "block":
+                raise NotImplementedError(
+                    "cuda.coop.numba_mlir Merge Sort TempStorage is supported "
+                    "only for block groups"
+                )
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        keys = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys",
+            value=bound.arguments["keys"],
+        )
+        if is_common_root and not self._thread_data_operand_state(
+            operation, "keys", keys
+        ):
+            raise TypeError(
+                f"cuda.coop.{operation} requires keys to be fixed-size "
+                "ThreadData in common V1; use cuda.coop.numba_mlir for "
+                "backend-qualified scalar or local-array payloads"
+            )
+        keys_payload, keys_are_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=keys,
+            scope=scope,
+            loc=loc,
+        )
+        result_keys = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+            prototype=keys,
+            is_array=keys_are_array,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        self._copy_array_payload(
+            statements,
+            operation=operation,
+            source=keys_payload,
+            destination=result_keys,
+            scope=scope,
+            loc=loc,
+            known_items_per_thread=1 if not keys_are_array else None,
+        )
+
+        runtime_args = [result_keys]
+        result_values = None
+        values_are_array = False
+        if operation == "merge_sort_pairs":
+            values = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values",
+                value=bound.arguments["values"],
+            )
+            if is_common_root and not self._thread_data_operand_state(
+                operation, "values", values
+            ):
+                raise TypeError(
+                    "cuda.coop.merge_sort_pairs requires values to be "
+                    "fixed-size ThreadData in common V1; use "
+                    "cuda.coop.numba_mlir for backend-qualified scalar or "
+                    "local-array payloads"
+                )
+            values_payload, values_are_array = self._boxed_group_operand(
+                statements,
+                operation=operation,
+                value=values,
+                scope=scope,
+                loc=loc,
+            )
+            if values_are_array != keys_are_array:
+                raise TypeError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same scalar or ThreadData shape"
+                )
+            if self._array_extent(values_payload) != self._array_extent(keys_payload):
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same items_per_thread"
+                )
+            result_values = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values_result",
+                prototype=values,
+                is_array=values_are_array,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            self._copy_array_payload(
+                statements,
+                operation=operation,
+                source=values_payload,
+                destination=result_values,
+                scope=scope,
+                loc=loc,
+                known_items_per_thread=1 if not values_are_array else None,
+            )
+            runtime_args.append(result_values)
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=(
+                result_keys if result_values is None else (result_keys, result_values)
+            ),
+            common_profile_operation=(operation if is_common_root else None),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        keys_result = self._result_value(
+            statements,
+            payload=result_keys,
+            is_array=keys_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+        )
+        if result_values is None:
+            statements.append(ir.Assign(keys_result, inst.target, loc))
+            return statements
+
+        values_result = self._result_value(
+            statements,
+            payload=result_values,
+            is_array=values_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_values_result",
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.build_tuple([keys_result, values_result], loc),
+                inst.target,
+                loc,
+            )
+        )
+        return statements
+
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str
     ) -> None:
@@ -1880,6 +2169,14 @@ class _GroupCallPlanner:
         elif operation == "shuffle":
             replacement = self._lower_shuffle(
                 inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation in {"merge_sort_keys", "merge_sort_pairs"}:
+            replacement = self._lower_merge_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
             )
         else:
             raise AssertionError(f"unhandled cuda.coop operation {operation!r}")

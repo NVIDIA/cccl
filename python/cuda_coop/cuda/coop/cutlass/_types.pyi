@@ -163,6 +163,7 @@ _IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
 _RunValueT = TypeVar("_RunValueT", bound=_PortableRunValue)
 _RunLengthT = TypeVar("_RunLengthT", bound=_PortableRunLength)
 _CutlassOrderedItem: TypeAlias = _PortableNumericScalar
+_BlockMergeSortKeyT = TypeVar("_BlockMergeSortKeyT", bound=_CutlassOrderedItem)
 _WarpMergeSortKeyT = TypeVar("_WarpMergeSortKeyT", bound=_CutlassOrderedItem)
 _CutlassTopKKeyT = TypeVar("_CutlassTopKKeyT", bound=_CutlassOrderedItem)
 _CutlassTopKValueT = TypeVar("_CutlassTopKValueT", bound=_CutlassOrderedItem)
