@@ -277,6 +277,8 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
@@ -486,6 +488,8 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name in {
+        "adjacent_difference",
+        "discontinuity",
         "exchange",
         "exclusive_scan",
         "exclusive_sum",

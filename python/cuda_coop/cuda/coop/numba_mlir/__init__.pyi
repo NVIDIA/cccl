@@ -1144,6 +1144,180 @@ def radix_rank(
     """Return one signed 32-bit radix rank per block thread."""
 
 @overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["left"] = "left",
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return left differences in a fresh per-thread payload."""
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return right differences for a full or partial tile."""
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ItemT,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return right differences with a full-tile successor boundary."""
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["left"] = "left",
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return one left scalar difference per thread."""
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return one right scalar difference per thread."""
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ScalarT,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return one right scalar difference with a successor boundary."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["heads"] = "heads",
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> _ThreadDataLike[int]:
+    """Return fresh signed 32-bit head flags."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["tails"],
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ItemT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> _ThreadDataLike[int]:
+    """Return fresh signed 32-bit tail flags."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["heads_and_tails"],
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: _ItemT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> tuple[_ThreadDataLike[int], _ThreadDataLike[int]]:
+    """Return fresh signed 32-bit head and tail flag payloads."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["heads"] = "heads",
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> int:
+    """Return one signed 32-bit scalar head flag per thread."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["tails"],
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ScalarT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> int:
+    """Return one signed 32-bit scalar tail flag per thread."""
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["heads_and_tails"],
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: _ScalarT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> tuple[int, int]:
+    """Return signed 32-bit scalar head and tail flags per thread."""
+
+@overload
 def shuffle(
     group: ThreadGroup[Literal["block"]],
     value: _ThreadDataLike[_ItemT],
@@ -1250,6 +1424,8 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

@@ -4,6 +4,14 @@
 
 """Planner-private block providers for Numba-CUDA-MLIR."""
 
+from ._block_adjacent_difference import (
+    BlockAdjacentDifferenceType as BlockAdjacentDifferenceType,
+)
+from ._block_adjacent_difference import adjacent_difference as adjacent_difference
+from ._block_discontinuity import (
+    BlockDiscontinuityType as BlockDiscontinuityType,
+)
+from ._block_discontinuity import discontinuity as discontinuity
 from ._block_exchange import BlockExchangeType as BlockExchangeType
 from ._block_exchange import exchange as exchange
 from ._block_load_store import load as load

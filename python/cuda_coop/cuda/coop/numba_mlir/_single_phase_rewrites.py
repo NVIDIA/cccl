@@ -272,6 +272,8 @@ class CoopSinglePhaseRewrite(Rewrite):
             "_qualified_group_topk_max_pairs",
             "_qualified_group_topk_min_keys",
             "_qualified_group_topk_min_pairs",
+            "adjacent_difference",
+            "discontinuity",
             "warp_load",
             "warp_store",
         }
@@ -344,6 +346,27 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "_common_profile_operation",
             },
             "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "adjacent_difference": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4},
+            "allowed_factory_kwargs": {
+                "block_adjacent_difference_type",
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "difference_op",
+                "methods",
+                "valid_items",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "difference_op",
+            },
         },
         "scan": {
             "namespace": "block",
@@ -510,6 +533,23 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "methods",
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
+        },
+        "discontinuity": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "flag_op",
+                "flag_dtype",
+                "block_discontinuity_type",
+                "methods",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "flag_op"},
         },
         "exchange": {
             "namespace": "block",
@@ -2571,7 +2611,23 @@ class CoopSinglePhaseRewrite(Rewrite):
             runtime_args=runtime_args,
             factory_kwargs=factory_kwargs,
         )
-        if op_name == "shuffle":
+        if op_name == "adjacent_difference":
+            self._finalize_adjacent_difference_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "discontinuity":
+            self._finalize_discontinuity_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+            runtime_args = self._reorder_discontinuity_runtime_args(
+                runtime_args,
+                factory_kwargs,
+            )
+        elif op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
                 runtime_arg_count=len(runtime_args),
                 seen_factory_kwargs=seen_factory_kwargs,
@@ -2806,6 +2862,8 @@ class CoopSinglePhaseRewrite(Rewrite):
             factory_kwargs.get("valid_items")
         ):
             parameter, index = "valid_items", 1
+        elif op_name == "adjacent_difference" and factory_kwargs.get("valid_items"):
+            parameter, index = "valid_items", 2
         if parameter is None or index is None or index >= len(runtime_args):
             return
         value = runtime_args[index]
@@ -3037,6 +3095,8 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "warp_inclusive_scan": frozenset({"scan", "inclusive_scan"}),
                 "exchange": frozenset({"exchange"}),
                 "warp_exchange": frozenset({"exchange"}),
+                "adjacent_difference": frozenset({"adjacent_difference"}),
+                "discontinuity": frozenset({"discontinuity"}),
                 "shuffle": frozenset({"shuffle"}),
                 "merge_sort_keys": frozenset({"merge_sort_keys"}),
                 "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
@@ -3119,6 +3179,195 @@ class CoopSinglePhaseRewrite(Rewrite):
             preserve_root_store_payload,
             root_store_scalar,
         )
+
+    def _finalize_adjacent_difference_factory_kwargs(
+        self,
+        runtime_arg_count: int,
+        seen_factory_kwargs: set[str],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        from ._block._block_adjacent_difference import (
+            BlockAdjacentDifferenceType,
+        )
+
+        adjacent_type = factory_kwargs.get(
+            "block_adjacent_difference_type",
+            BlockAdjacentDifferenceType.SubtractLeft,
+        )
+        try:
+            adjacent_type = BlockAdjacentDifferenceType(adjacent_type)
+        except (TypeError, ValueError) as exc:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'adjacent_difference' "
+                "block_adjacent_difference_type must be a "
+                "BlockAdjacentDifferenceType value."
+            ) from exc
+
+        if adjacent_type is BlockAdjacentDifferenceType.SubtractLeft:
+            tile_kw = "tile_predecessor_item"
+            invalid_tile_kw = "tile_successor_item"
+        else:
+            tile_kw = "tile_successor_item"
+            invalid_tile_kw = "tile_predecessor_item"
+        if invalid_tile_kw in seen_factory_kwargs:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'adjacent_difference' received invalid "
+                f"'{invalid_tile_kw}' for {adjacent_type.name}."
+            )
+
+        has_valid_items = "valid_items" in seen_factory_kwargs
+        has_boundary = tile_kw in seen_factory_kwargs
+        if runtime_arg_count == 4:
+            if not has_valid_items:
+                factory_kwargs["valid_items"] = True
+                seen_factory_kwargs.add("valid_items")
+                has_valid_items = True
+            if not has_boundary:
+                factory_kwargs[tile_kw] = True
+                seen_factory_kwargs.add(tile_kw)
+                has_boundary = True
+        elif runtime_arg_count == 3:
+            if has_valid_items and has_boundary:
+                raise CoopSinglePhaseRewriteError(
+                    "coop single-phase 'adjacent_difference' cannot map three "
+                    "runtime arguments to both valid_items and a boundary item."
+                )
+            if not has_valid_items and not has_boundary:
+                factory_kwargs["valid_items"] = True
+                seen_factory_kwargs.add("valid_items")
+                has_valid_items = True
+        elif runtime_arg_count != 2:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'adjacent_difference' expects two, three, "
+                "or four runtime arguments."
+            )
+
+        if (
+            adjacent_type is BlockAdjacentDifferenceType.SubtractRight
+            and has_valid_items
+            and has_boundary
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'adjacent_difference' cannot combine a "
+                "right partial tile with tile_successor_item."
+            )
+        expected_count = 2 + int(has_valid_items) + int(has_boundary)
+        if runtime_arg_count != expected_count:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'adjacent_difference' runtime argument "
+                f"count {runtime_arg_count} does not match {expected_count}."
+            )
+
+    def _finalize_discontinuity_factory_kwargs(
+        self,
+        runtime_arg_count: int,
+        seen_factory_kwargs: set[str],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        from ._block._block_discontinuity import BlockDiscontinuityType
+
+        discontinuity_type = factory_kwargs.get(
+            "block_discontinuity_type",
+            BlockDiscontinuityType.HEADS,
+        )
+        try:
+            discontinuity_type = BlockDiscontinuityType(discontinuity_type)
+        except (TypeError, ValueError) as exc:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'discontinuity' block_discontinuity_type "
+                "must be a BlockDiscontinuityType value."
+            ) from exc
+
+        has_predecessor = "tile_predecessor_item" in seen_factory_kwargs
+        has_successor = "tile_successor_item" in seen_factory_kwargs
+        if discontinuity_type is BlockDiscontinuityType.HEADS:
+            if has_successor:
+                raise CoopSinglePhaseRewriteError(
+                    "coop single-phase 'discontinuity' HEADS does not accept "
+                    "tile_successor_item."
+                )
+            if runtime_arg_count == 3 and not has_predecessor:
+                factory_kwargs["tile_predecessor_item"] = True
+                seen_factory_kwargs.add("tile_predecessor_item")
+                has_predecessor = True
+            expected_count = 2 + int(has_predecessor)
+        elif discontinuity_type is BlockDiscontinuityType.TAILS:
+            if has_predecessor:
+                raise CoopSinglePhaseRewriteError(
+                    "coop single-phase 'discontinuity' TAILS does not accept "
+                    "tile_predecessor_item."
+                )
+            if runtime_arg_count == 3 and not has_successor:
+                factory_kwargs["tile_successor_item"] = True
+                seen_factory_kwargs.add("tile_successor_item")
+                has_successor = True
+            expected_count = 2 + int(has_successor)
+        else:
+            if runtime_arg_count == 5:
+                if not has_predecessor:
+                    factory_kwargs["tile_predecessor_item"] = True
+                    seen_factory_kwargs.add("tile_predecessor_item")
+                    has_predecessor = True
+                if not has_successor:
+                    factory_kwargs["tile_successor_item"] = True
+                    seen_factory_kwargs.add("tile_successor_item")
+                    has_successor = True
+            elif runtime_arg_count == 4:
+                if has_predecessor and has_successor:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop single-phase 'discontinuity' cannot map four "
+                        "runtime arguments to both boundary items."
+                    )
+                if not has_predecessor and not has_successor:
+                    factory_kwargs["tile_predecessor_item"] = True
+                    seen_factory_kwargs.add("tile_predecessor_item")
+                    has_predecessor = True
+            expected_count = 3 + int(has_predecessor) + int(has_successor)
+        if runtime_arg_count != expected_count:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'discontinuity' runtime argument count "
+                f"{runtime_arg_count} does not match {expected_count}."
+            )
+
+    @staticmethod
+    def _reorder_discontinuity_runtime_args(
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> list[ir.Var]:
+        from ._block._block_discontinuity import BlockDiscontinuityType
+
+        discontinuity_type = BlockDiscontinuityType(
+            factory_kwargs.get(
+                "block_discontinuity_type",
+                BlockDiscontinuityType.HEADS,
+            )
+        )
+        if discontinuity_type in {
+            BlockDiscontinuityType.HEADS,
+            BlockDiscontinuityType.TAILS,
+        }:
+            if len(runtime_args) < 2:
+                return runtime_args
+            return [runtime_args[1], runtime_args[0], *runtime_args[2:]]
+        if len(runtime_args) < 3:
+            return runtime_args
+
+        input_items, head_flags, tail_flags = runtime_args[:3]
+        has_predecessor = "tile_predecessor_item" in factory_kwargs
+        has_successor = "tile_successor_item" in factory_kwargs
+        if has_predecessor and has_successor:
+            return [
+                head_flags,
+                runtime_args[3],
+                tail_flags,
+                runtime_args[4],
+                input_items,
+            ]
+        if has_predecessor:
+            return [head_flags, runtime_args[3], tail_flags, input_items]
+        if has_successor:
+            return [head_flags, tail_flags, runtime_args[3], input_items]
+        return [head_flags, tail_flags, input_items]
 
     def _finalize_shuffle_factory_kwargs(
         self,
@@ -3609,6 +3858,156 @@ class CoopSinglePhaseRewrite(Rewrite):
                     self._record_inferred_thread_data_dtype(
                         aggregate_var, inferred_dtype
                     )
+            return
+
+        if op_name == "adjacent_difference":
+            input_var, input_spec = candidate(0)
+            output_var, output_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name,
+                "input",
+                input_spec,
+                "output",
+                output_spec,
+            )
+            extent = input_spec.items_per_thread if input_spec is not None else None
+            if extent is None and output_spec is not None:
+                extent = output_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+
+            input_dtype = input_spec.dtype if input_spec is not None else None
+            output_dtype = output_spec.dtype if output_spec is not None else None
+            if input_dtype is None and input_var is not None:
+                input_dtype = self._resolve_var_dtype(input_var)
+            if output_dtype is None and output_var is not None:
+                output_dtype = self._resolve_var_dtype(output_var)
+            if (
+                input_dtype is not None
+                and output_dtype is not None
+                and not _dtype_values_match(input_dtype, output_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop adjacent_difference input and output dtypes must match."
+                )
+            inferred_dtype = input_dtype
+            if inferred_dtype is None:
+                inferred_dtype = output_dtype
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+            for payload_var in (input_var, output_var):
+                if inferred_dtype is not None and payload_var is not None:
+                    self._record_inferred_thread_data_dtype(
+                        payload_var,
+                        inferred_dtype,
+                    )
+
+            boundary_index = 2 + int(bool(factory_kwargs.get("valid_items")))
+            boundary_name = None
+            if factory_kwargs.get("tile_predecessor_item"):
+                boundary_name = "tile_predecessor_item"
+            elif factory_kwargs.get("tile_successor_item"):
+                boundary_name = "tile_successor_item"
+            if boundary_name is not None and boundary_index < len(runtime_args):
+                boundary_dtype = self._resolve_var_dtype(runtime_args[boundary_index])
+                if (
+                    inferred_dtype is not None
+                    and boundary_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, boundary_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop adjacent_difference boundary dtype must match "
+                        "the input dtype."
+                    )
+            return
+
+        if op_name == "discontinuity":
+            from ._block._block_discontinuity import BlockDiscontinuityType
+
+            mode = BlockDiscontinuityType(
+                factory_kwargs.get(
+                    "block_discontinuity_type",
+                    BlockDiscontinuityType.HEADS,
+                )
+            )
+            input_var, input_spec = candidate(0)
+            head_var, head_spec = candidate(1)
+            tail_var, tail_spec = (
+                candidate(2)
+                if mode is BlockDiscontinuityType.HEADS_AND_TAILS
+                else (None, None)
+            )
+            self._require_matching_items_per_thread(
+                op_name,
+                "input",
+                input_spec,
+                "head flags",
+                head_spec,
+            )
+            self._require_matching_items_per_thread(
+                op_name,
+                "input",
+                input_spec,
+                "tail flags",
+                tail_spec,
+            )
+            extent = input_spec.items_per_thread if input_spec is not None else None
+            if extent is None and head_spec is not None:
+                extent = head_spec.items_per_thread
+            if extent is None and tail_spec is not None:
+                extent = tail_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+
+            inferred_dtype = input_spec.dtype if input_spec is not None else None
+            if inferred_dtype is None and input_var is not None:
+                inferred_dtype = self._resolve_var_dtype(input_var)
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+
+            from numba_cuda_mlir import types as numba_mlir_types
+
+            flag_dtype = numba_mlir_types.int32
+            infer_kwarg("flag_dtype", flag_dtype)
+            for flag_name, flag_var, flag_spec in (
+                ("head", head_var, head_spec),
+                ("tail", tail_var, tail_spec),
+            ):
+                if flag_var is None:
+                    continue
+                actual_flag_dtype = flag_spec.dtype if flag_spec is not None else None
+                if actual_flag_dtype is None:
+                    actual_flag_dtype = self._resolve_var_dtype(flag_var)
+                if actual_flag_dtype is not None and not _dtype_values_match(
+                    actual_flag_dtype,
+                    flag_dtype,
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        f"coop discontinuity {flag_name} flags must use int32 dtype."
+                    )
+                self._record_inferred_thread_data_dtype(flag_var, flag_dtype)
+            if inferred_dtype is not None and input_var is not None:
+                self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
+
+            boundary_index = 3 if mode is BlockDiscontinuityType.HEADS_AND_TAILS else 2
+            for boundary_name in (
+                "tile_predecessor_item",
+                "tile_successor_item",
+            ):
+                if not factory_kwargs.get(boundary_name):
+                    continue
+                if boundary_index >= len(runtime_args):
+                    break
+                boundary_dtype = self._resolve_var_dtype(runtime_args[boundary_index])
+                if (
+                    inferred_dtype is not None
+                    and boundary_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, boundary_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop discontinuity boundary dtype must match the input dtype."
+                    )
+                boundary_index += 1
             return
 
         if op_name in {
