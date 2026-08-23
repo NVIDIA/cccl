@@ -44,7 +44,22 @@ function(cudax_add_sharded_test target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+# Tests of the opt-in cuSPARSE-backed sparse products (sharded_sparse.cuh);
+# these link against cuSPARSE and are gated like the STF mathlib tests.
+set(
+  sharded_sparse_test_sources
+  sparse/spmv_spmm.cu
+  sparse/rebalance.cu
+  sparse/handle_lifecycle.cu
+)
+
 foreach (source IN LISTS sharded_test_sources)
   cudax_add_sharded_test(test_target "${source}")
 endforeach()
 
+if (cudax_ENABLE_CUSPARSE)
+  foreach (source IN LISTS sharded_sparse_test_sources)
+    cudax_add_sharded_test(test_target "${source}")
+    target_link_libraries(${test_target} PRIVATE CUDA::cusparse)
+  endforeach()
+endif()

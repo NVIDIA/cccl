@@ -32,6 +32,9 @@ function(cudax_add_header_test label definitions)
       # Sharded headers are compiled separately (they build on places):
       "cuda/experimental/sharded.cuh"
       "cuda/experimental/__sharded/*"
+      # Opt-in vendor header: #errors without the cuSPARSE headers, compiled
+      # separately when cudax_ENABLE_CUSPARSE is set:
+      "cuda/experimental/sharded_sparse.cuh"
       # STF headers are compiled separately:
       "cuda/experimental/stf.cuh"
       "cuda/experimental/__stf/*"
@@ -92,6 +95,29 @@ function(cudax_add_header_test label definitions)
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
     )
+
+    if (cudax_ENABLE_CUSPARSE)
+      ##########################################
+      # Sharded sparse (opt-in vendor header)  #
+      set(headertest_target cudax.headers.${label}.sharded_sparse)
+      cccl_generate_header_tests(
+        ${headertest_target}
+        cudax/include
+        GLOBS #
+          "cuda/experimental/sharded_sparse.cuh"
+        HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+      )
+      target_link_libraries(
+        ${headertest_target}
+        PUBLIC cudax.compiler_interface
+      )
+      target_compile_options(
+        ${headertest_target}
+        PRIVATE
+          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+      )
+    endif()
   endif()
 
   # FIXME: Enable MSVC

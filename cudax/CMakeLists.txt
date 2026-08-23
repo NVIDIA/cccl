@@ -30,6 +30,11 @@ option(
   "Enable STF tests/examples that use cublas/cusolver."
   OFF
 )
+option(
+  cudax_ENABLE_CUSPARSE
+  "Enable sharded tests that use cuSPARSE (the opt-in sharded_sparse header)."
+  OFF
+)
 option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
 
 if (cudax_ENABLE_CUFILE)
