@@ -8,6 +8,10 @@ from ._block_exchange import BlockExchangeType as BlockExchangeType
 from ._block_exchange import exchange as exchange
 from ._block_load_store import load as load
 from ._block_load_store import store as store
+from ._block_reduce import block_reduce_builtin as block_reduce_builtin
+from ._block_reduce import reduce as reduce
+from ._block_reduce import sum as sum
+from ._block_scan import scan as scan
 from ._block_shuffle import BlockShuffleType as BlockShuffleType
 from ._block_shuffle import shuffle as shuffle
 

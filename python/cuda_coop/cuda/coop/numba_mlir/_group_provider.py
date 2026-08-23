@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""LTO-IR providers for Numba-CUDA-MLIR thread-group methods."""
+"""LTO-IR providers for Numba-CUDA-MLIR CUDAX group operations."""
 
 from __future__ import annotations
 
 import hashlib
+import operator
 import os
 import re
 import weakref
@@ -42,11 +43,15 @@ _LEVEL_ORDER = {
 }
 _INCLUDE_LINES = (
     "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
+    "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP",
     "#include <cuda/barrier>",
     "#include <cuda/devices>",
+    "#include <cuda/functional>",
     "#include <cuda/hierarchy>",
     "#include <cuda/std/cstdint>",
+    "#include <cuda/std/functional>",
     "#include <cuda/std/type_traits>",
+    "#include <cuda/experimental/coop.cuh>",
     "#include <cuda/experimental/group.cuh>",
 )
 _LTOIR_CACHE: dict[tuple[int, str], bytes] = {}
@@ -261,4 +266,237 @@ def make_group_method_invocable(
     return result
 
 
-__all__ = ["make_group_method_invocable"]
+_REDUCE_OPS = {
+    "sum": "::cuda::std::plus<>{}",
+    "multiplies": "::cuda::std::multiplies<>{}",
+    "min": "::cuda::minimum<>{}",
+    "max": "::cuda::maximum<>{}",
+    "bit_and": "::cuda::std::bit_and<>{}",
+    "bit_or": "::cuda::std::bit_or<>{}",
+    "bit_xor": "::cuda::std::bit_xor<>{}",
+}
+_REDUCE_OP_ALIASES = {
+    None: "sum",
+    "+": "sum",
+    "sum": "sum",
+    "add": "sum",
+    "plus": "sum",
+    "*": "multiplies",
+    "mul": "multiplies",
+    "multiply": "multiplies",
+    "multiplies": "multiplies",
+    "min": "min",
+    "minimum": "min",
+    "max": "max",
+    "maximum": "max",
+    "&": "bit_and",
+    "bit_and": "bit_and",
+    "|": "bit_or",
+    "bit_or": "bit_or",
+    "^": "bit_xor",
+    "bit_xor": "bit_xor",
+}
+_CALLABLE_REDUCE_OP_ALIASES = {
+    operator.add: "sum",
+    operator.mul: "multiplies",
+    operator.and_: "bit_and",
+    operator.or_: "bit_or",
+    operator.xor: "bit_xor",
+}
+_CALLABLE_REDUCE_OP_NAME_ALIASES = {
+    ("_operator", "add"): "sum",
+    ("_operator", "mul"): "multiplies",
+    ("_operator", "and_"): "bit_and",
+    ("_operator", "or_"): "bit_or",
+    ("_operator", "xor"): "bit_xor",
+    ("operator", "add"): "sum",
+    ("operator", "mul"): "multiplies",
+    ("operator", "and_"): "bit_and",
+    ("operator", "or_"): "bit_or",
+    ("operator", "xor"): "bit_xor",
+    ("numpy", "add"): "sum",
+    ("numpy", "multiply"): "multiplies",
+    ("numpy", "minimum"): "min",
+    ("numpy", "maximum"): "max",
+    ("numpy", "bitwise_and"): "bit_and",
+    ("numpy", "bitwise_or"): "bit_or",
+    ("numpy", "bitwise_xor"): "bit_xor",
+}
+
+
+def _normalize_reduce_operation(binary_op: Any) -> str:
+    """Map one public built-in reduction selector to its provider token."""
+
+    try:
+        return _REDUCE_OP_ALIASES[binary_op]
+    except (KeyError, TypeError):
+        pass
+    try:
+        return _CALLABLE_REDUCE_OP_ALIASES[binary_op]
+    except (KeyError, TypeError):
+        pass
+    if callable(binary_op):
+        key = (
+            getattr(binary_op, "__module__", ""),
+            getattr(binary_op, "__name__", ""),
+        )
+        try:
+            return _CALLABLE_REDUCE_OP_NAME_ALIASES[key]
+        except KeyError:
+            pass
+    raise NotImplementedError(
+        "cuda.coop.numba_mlir.reduce currently supports sum, multiplies, min, "
+        "max, bit_and, bit_or, and bit_xor reductions"
+    )
+
+
+def group_reduce(
+    dtype: Any,
+    group: ThreadGroup,
+    binary_op: Any = None,
+    items_per_thread: int = 1,
+    broadcast: bool = True,
+    methods: Any = None,
+) -> _RawCAbiInvocable:
+    """Compile the private CUDAX provider used by group-first lowering."""
+
+    if not isinstance(group, ThreadGroup):
+        raise TypeError("cuda.coop.numba_mlir.reduce group must be a ThreadGroup")
+    if not isinstance(broadcast, bool):
+        raise TypeError("cuda.coop.numba_mlir.reduce broadcast must be a bool")
+    if methods is not None:
+        raise NotImplementedError(
+            "cuda.coop.numba_mlir.reduce CUDAX lowering does not yet support "
+            "custom dtype methods"
+        )
+    return make_group_reduce_invocable(
+        group=group,
+        dtype=dtype,
+        items_per_thread=items_per_thread,
+        operation=_normalize_reduce_operation(binary_op),
+        broadcast=broadcast,
+    )
+
+
+def make_group_reduce_invocable(
+    *,
+    group: ThreadGroup,
+    dtype: Any,
+    items_per_thread: int,
+    operation: str,
+    broadcast: bool,
+) -> _RawCAbiInvocable:
+    """Materialize a CUDAX group Reduce provider as inlinable LTO-IR."""
+
+    if not isinstance(group, ThreadGroup):
+        raise TypeError("cuda.coop.numba_mlir.reduce group must be a ThreadGroup")
+    dtype = normalize_dtype_param(dtype)
+    if group.kind == "grid":
+        raise NotImplementedError(
+            "cuda.coop.numba_mlir.reduce grid groups require a hidden "
+            "per-launch workspace, which the Numba-CUDA-MLIR provider ABI "
+            "does not expose yet"
+        )
+    if operation not in _REDUCE_OPS:
+        allowed = ", ".join(sorted(_REDUCE_OPS))
+        raise NotImplementedError(
+            "cuda.coop.numba_mlir.reduce CUDAX lowering supports built-in "
+            f"operators {{{allowed}}}; got {operation!r}"
+        )
+    if (
+        not isinstance(items_per_thread, int)
+        or isinstance(items_per_thread, bool)
+        or items_per_thread < 1
+    ):
+        raise ValueError("items_per_thread must be a positive integer")
+    if not isinstance(broadcast, bool):
+        raise TypeError("cuda.coop.numba_mlir.reduce broadcast must be a bool")
+
+    key = (
+        "reduce",
+        group.semantic_key,
+        dtype,
+        items_per_thread,
+        operation,
+        broadcast,
+        _current_cc(),
+    )
+    cached = _INVOCABLE_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    cpp_type = _cpp_type(dtype)
+    mode = "broadcast" if broadcast else "root"
+    symbol = (
+        "cuda_coop_numba_mlir_group_reduce_"
+        f"{group.symbol_suffix}_{operation}_{_type_token(dtype)}_"
+        f"x{items_per_thread}_{mode}"
+    )
+    if items_per_thread == 1:
+        parameter = f"{cpp_type} item"
+        expected_types = (dtype,)
+        abi_types = (dtype,)
+        transforms = ("value",)
+        thread_data = f"  {cpp_type} thread_data[1] = {{item}};"
+    else:
+        parameter = "void* raw_items"
+        expected_types = (types.Array(dtype, 1, "C"),)
+        abi_types = (types.CPointer(types.none),)
+        transforms = ("ptr",)
+        thread_data = (
+            f"  auto& thread_data = *reinterpret_cast<{cpp_type} "
+            f"(*)[{items_per_thread}]>(raw_items);"
+        )
+
+    lines = [
+        f'extern "C" __device__ {cpp_type} {symbol}({parameter}) {{',
+        *_group_prelude(group),
+    ]
+    if group.mapping is not None and group.complete_membership is False:
+        lines.extend(
+            [
+                "  if (!::cuda::gpu_thread.is_part_of(group)) {",
+                f"    return {cpp_type}{{}};",
+                "  }",
+            ]
+        )
+    lines.append(thread_data)
+    operator_cpp = _REDUCE_OPS[operation]
+    if broadcast:
+        lines.extend(
+            [
+                "  auto reduced = ::cuda::experimental::coop::reduce(",
+                "      ::cuda::experimental::broadcasted, group, thread_data,",
+                f"      {operator_cpp});",
+                f"  {cpp_type} result = reduced;",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "  auto reduced = ::cuda::experimental::coop::reduce(",
+                f"      group, thread_data, {operator_cpp});",
+                f"  {cpp_type} result = reduced.value_or({cpp_type}{{}});",
+            ]
+        )
+    if group.kind != "thread":
+        lines.append("  group.sync_aligned();")
+    lines.extend(("  return result;", "}"))
+
+    result = _RawCAbiInvocable(
+        source=_source(lines),
+        symbol=symbol,
+        return_type=dtype,
+        expected_types=expected_types,
+        abi_types=abi_types,
+        transforms=transforms,
+    )
+    _INVOCABLE_CACHE[key] = result
+    return result
+
+
+__all__ = [
+    "group_reduce",
+    "make_group_method_invocable",
+    "make_group_reduce_invocable",
+]

@@ -9,6 +9,7 @@ import cuda.coop.numba_mlir as coop
 
 _PUBLIC_EXPORTS = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -19,13 +20,20 @@ _PUBLIC_EXPORTS = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -34,17 +42,13 @@ _PUBLIC_EXPORTS = [
 ]
 
 
-def test_public_exports_add_only_the_movement_family():
+def test_public_exports_cover_the_incremental_primitive_families():
     assert coop.__all__ == _PUBLIC_EXPORTS
     assert sorted(name for name in dir(coop) if not name.startswith("_")) == (
         _PUBLIC_EXPORTS
     )
 
-    for name in (
-        "reduce",
-        "scan",
-        "radix_sort_keys",
-    ):
+    for name in ("radix_sort_keys", "histogram", "topk_max_keys"):
         assert not hasattr(coop, name)
 
     assert "_block" not in coop.__all__

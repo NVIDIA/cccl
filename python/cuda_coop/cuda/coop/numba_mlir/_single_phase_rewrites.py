@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Movement-only provider lowering for Numba-CUDA-MLIR."""
+"""Single-phase cooperative-provider lowering for Numba-CUDA-MLIR."""
 
 from __future__ import annotations
 
@@ -240,13 +240,198 @@ class _TempStorageGlobalPlan:
 
 @register_rewrite("before-inference")
 class CoopSinglePhaseRewrite(Rewrite):
-    """Rewrite movement providers into two-phase invocable calls."""
+    """Rewrite planner-private providers into two-phase invocable calls."""
 
     _CUDA_ROOT_MODULES = frozenset({"cuda", "numba_cuda_mlir.cuda"})
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
-        {"load", "store", "warp_load", "warp_store"}
+        {"load", "scan", "store", "warp_load", "warp_store"}
     )
     _OP_SPECS = {
+        "group_reduce": {
+            "namespace": "group",
+            "runtime_arg_counts": {1},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "group",
+                "binary_op",
+                "items_per_thread",
+                "broadcast",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "group"},
+        },
+        "block_reduce_builtin": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+            },
+        },
+        "reduce": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+            },
+        },
+        "sum": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "scan": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "mode",
+                "scan_op",
+                "initial_value",
+                "block_aggregate",
+                "algorithm",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "warp_reduce_builtin": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "binary_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "binary_op"},
+        },
+        "warp_reduce": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "binary_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "methods",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "binary_op"},
+        },
+        "warp_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_exclusive_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("warp_aggregate",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "warp_aggregate",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_inclusive_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("warp_aggregate",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "warp_aggregate",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_exclusive_scan": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2, 3},
+            "runtime_factory_kwargs": ("valid_items", "warp_aggregate"),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "scan_op",
+                "initial_value",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "warp_aggregate",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "scan_op"},
+        },
+        "warp_inclusive_scan": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2, 3},
+            "runtime_factory_kwargs": ("valid_items", "warp_aggregate"),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "scan_op",
+                "initial_value",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "warp_aggregate",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {"dtype", "scan_op"},
+        },
         "load": {
             "namespace": "block",
             "runtime_arg_counts": {2, 3, 4},
@@ -366,8 +551,18 @@ class CoopSinglePhaseRewrite(Rewrite):
             "required_factory_kwargs": {"dtype"},
         },
     }
-    _BLOCK_OPS = frozenset({"load", "store", "shuffle", "exchange"})
-    _WARP_OPS = frozenset({"warp_load", "warp_store", "warp_exchange"})
+    _BLOCK_OPS = frozenset({"load", "scan", "store", "shuffle", "exchange"})
+    _WARP_OPS = frozenset(
+        {
+            "warp_load",
+            "warp_store",
+            "warp_exchange",
+            "warp_exclusive_sum",
+            "warp_inclusive_sum",
+            "warp_exclusive_scan",
+            "warp_inclusive_scan",
+        }
+    )
 
     @staticmethod
     def _require_matching_items_per_thread(
@@ -520,6 +715,8 @@ class CoopSinglePhaseRewrite(Rewrite):
         if not callable(obj) or name not in self._OP_SPECS:
             return False
         expected_ns = self._OP_SPECS[name]["namespace"]
+        if expected_ns == "group":
+            return module_name == "cuda.coop.numba_mlir._group_provider"
         private_namespace = f"_{expected_ns}"
         return (
             module_name == f"cuda.coop.numba_mlir.{private_namespace}"
@@ -1729,6 +1926,24 @@ class CoopSinglePhaseRewrite(Rewrite):
                     )
                 runtime_offset_var = value_var
                 continue
+            if name == "block_aggregate" and op_name == "scan":
+                value = self._resolve_factory_kwarg_value(name, value_var)
+                if value is None:
+                    continue
+                if "block_aggregate" in seen_factory_kwargs:
+                    raise CoopSinglePhaseRewriteError(
+                        "Duplicate coop single-phase 'scan' runtime argument "
+                        "'block_aggregate'."
+                    )
+                if value is not _UNRESOLVED or not isinstance(value_var, ir.Var):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop single-phase 'scan' block_aggregate must be a "
+                        "runtime array variable."
+                    )
+                runtime_args.append(value_var)
+                factory_kwargs["block_aggregate"] = True
+                seen_factory_kwargs.add("block_aggregate")
+                continue
             if name in {"block_prefix", "block_suffix"} and op_name == "shuffle":
                 value = self._resolve_factory_kwarg_value(name, value_var)
                 if value is None:
@@ -1798,6 +2013,11 @@ class CoopSinglePhaseRewrite(Rewrite):
             seen_runtime_factory_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
+        self._validate_integer_runtime_controls(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            factory_kwargs=factory_kwargs,
+        )
         self._infer_factory_kwargs_from_thread_data(
             op_name,
             runtime_args,
@@ -1845,6 +2065,51 @@ class CoopSinglePhaseRewrite(Rewrite):
             tuple(factory_kw_value_vars),
             (),
         )
+
+    def _validate_integer_runtime_controls(
+        self,
+        *,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        """Reject bool and noninteger partial-tile controls before codegen."""
+
+        parameter = None
+        index = None
+        if op_name in {"reduce", "sum", "block_reduce_builtin"} and factory_kwargs.get(
+            "num_valid"
+        ):
+            parameter, index = "valid_items", 1
+        elif op_name in {
+            "warp_reduce",
+            "warp_sum",
+            "warp_reduce_builtin",
+        } and factory_kwargs.get("valid_items"):
+            parameter, index = "valid_items", 1
+        elif op_name in {"warp_exclusive_scan", "warp_inclusive_scan"} and (
+            factory_kwargs.get("valid_items")
+        ):
+            parameter, index = "valid_items", 1
+        if parameter is None or index is None or index >= len(runtime_args):
+            return
+        value = runtime_args[index]
+        if not isinstance(value, ir.Var):
+            raise CoopSinglePhaseRewriteError(
+                f"coop single-phase '{op_name}' {parameter} must be an integer"
+            )
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        value_type = self._resolve_var_numba_type(value)
+        if value_type is None:
+            value_type = self._resolve_var_dtype(value)
+        if isinstance(value_type, numba_mlir_types.Boolean) or not isinstance(
+            value_type, numba_mlir_types.Integer
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"coop single-phase '{op_name}' {parameter} must be an "
+                "integer, not bool or a noninteger scalar"
+            )
 
     @staticmethod
     def _store_algorithm_mutates_payload(op_name: str, algorithm: object) -> bool:
@@ -1905,6 +2170,26 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "warp_load": frozenset({"load"}),
                 "store": frozenset({"store"}),
                 "warp_store": frozenset({"store"}),
+                "group_reduce": frozenset({"reduce", "sum"}),
+                "block_reduce_builtin": frozenset({"reduce", "sum"}),
+                "reduce": frozenset({"reduce"}),
+                "sum": frozenset({"reduce", "sum"}),
+                "warp_reduce_builtin": frozenset({"reduce", "sum"}),
+                "warp_reduce": frozenset({"reduce"}),
+                "warp_sum": frozenset({"reduce", "sum"}),
+                "scan": frozenset(
+                    {
+                        "scan",
+                        "exclusive_sum",
+                        "inclusive_sum",
+                        "exclusive_scan",
+                        "inclusive_scan",
+                    }
+                ),
+                "warp_exclusive_sum": frozenset({"scan", "exclusive_sum"}),
+                "warp_inclusive_sum": frozenset({"scan", "inclusive_sum"}),
+                "warp_exclusive_scan": frozenset({"scan", "exclusive_scan"}),
+                "warp_inclusive_scan": frozenset({"scan", "inclusive_scan"}),
                 "exchange": frozenset({"exchange"}),
                 "warp_exchange": frozenset({"exchange"}),
                 "shuffle": frozenset({"shuffle"}),
@@ -2244,6 +2529,130 @@ class CoopSinglePhaseRewrite(Rewrite):
                     f"coop movement {op_name!r} could not infer the static extent of a typed group payload"
                 )
             return (value, spec)
+
+        if op_name in {
+            "group_reduce",
+            "block_reduce_builtin",
+            "reduce",
+            "sum",
+            "warp_reduce_builtin",
+            "warp_reduce",
+            "warp_sum",
+        }:
+            payload_var, payload_spec = candidate(0)
+            if payload_spec is not None:
+                infer_kwarg("items_per_thread", payload_spec.items_per_thread)
+            inferred_dtype = payload_spec.dtype if payload_spec is not None else None
+            if inferred_dtype is None and payload_var is not None:
+                inferred_dtype = self._resolve_var_dtype(payload_var)
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+            if inferred_dtype is not None and payload_var is not None:
+                self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            return
+
+        if op_name == "scan":
+            input_var, input_spec = candidate(0)
+            output_var, output_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "input", input_spec, "output", output_spec
+            )
+            input_dtype = input_spec.dtype if input_spec is not None else None
+            output_dtype = output_spec.dtype if output_spec is not None else None
+            if input_dtype is None and input_var is not None:
+                input_dtype = self._resolve_var_dtype(input_var)
+            if output_dtype is None and output_var is not None:
+                output_dtype = self._resolve_var_dtype(output_var)
+            if (
+                input_dtype is not None
+                and output_dtype is not None
+                and not _dtype_values_match(input_dtype, output_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop scan requires input/output arrays to have matching dtype."
+                )
+            inferred_dtype = input_dtype
+            if inferred_dtype is None:
+                inferred_dtype = output_dtype
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            extent = input_spec.items_per_thread if input_spec is not None else None
+            if extent is None and output_spec is not None:
+                extent = output_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            infer_kwarg("dtype", inferred_dtype)
+            for payload_var in (input_var, output_var):
+                if inferred_dtype is not None and payload_var is not None:
+                    self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            if factory_kwargs.get("block_aggregate"):
+                aggregate_var, aggregate_spec = candidate(2)
+                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan block_aggregate must be a one-item "
+                        "ThreadData or local array."
+                    )
+                aggregate_dtype = aggregate_spec.dtype
+                if aggregate_dtype is None and aggregate_var is not None:
+                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
+                if (
+                    inferred_dtype is not None
+                    and aggregate_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan block_aggregate dtype must match the input dtype."
+                    )
+                if aggregate_var is not None and inferred_dtype is not None:
+                    self._record_inferred_thread_data_dtype(
+                        aggregate_var, inferred_dtype
+                    )
+            return
+
+        if op_name in {
+            "warp_exclusive_sum",
+            "warp_inclusive_sum",
+            "warp_exclusive_scan",
+            "warp_inclusive_scan",
+        }:
+            value_var, value_spec = candidate(0)
+            inferred_dtype = value_spec.dtype if value_spec is not None else None
+            if inferred_dtype is None and value_var is not None:
+                inferred_dtype = self._resolve_var_dtype(value_var)
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+            aggregate_index = None
+            if factory_kwargs.get("warp_aggregate"):
+                aggregate_index = (
+                    2
+                    if factory_kwargs.get("valid_items")
+                    and op_name in {"warp_exclusive_scan", "warp_inclusive_scan"}
+                    else 1
+                )
+            if aggregate_index is not None:
+                aggregate_var, aggregate_spec = candidate(aggregate_index)
+                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan warp_aggregate must be a one-item "
+                        "ThreadData or local array."
+                    )
+                aggregate_dtype = aggregate_spec.dtype
+                if aggregate_dtype is None and aggregate_var is not None:
+                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
+                if (
+                    inferred_dtype is not None
+                    and aggregate_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan warp_aggregate dtype must match the input dtype."
+                    )
+                if aggregate_var is not None and inferred_dtype is not None:
+                    self._record_inferred_thread_data_dtype(
+                        aggregate_var, inferred_dtype
+                    )
+            return
 
         if op_name in {"load", "store", "warp_load", "warp_store"}:
             payload_var, payload_spec = candidate(1)
@@ -3493,7 +3902,7 @@ from . import _group_rewrites as _group_rewrites  # noqa: E402
 
 @register_planner
 class CoopWholeFunctionPlanner(WholeFunctionPlanner):
-    """Apply movement rewrites after device-function inlining."""
+    """Apply cooperative-provider rewrites after device-function inlining."""
 
     def run(self) -> bool:
         rewrite = CoopSinglePhaseRewrite(self.state)

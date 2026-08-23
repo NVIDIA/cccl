@@ -331,9 +331,14 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
 [[nodiscard]] _CCCL_DEVICE_API auto
 __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
+  using _MappingResult = typename _Group::__mapping_result_type;
+
   constexpr auto __nwarps_in_group = warp.static_count(__group);
   static_assert(__nwarps_in_group != ::cuda::std::dynamic_extent,
                 "cuda::coop::reduce requires the group to have statically known size");
+  constexpr auto __ngroups = _MappingResult::static_group_count();
+  static_assert(__ngroups != ::cuda::std::dynamic_extent,
+                "cuda::coop::reduce requires the number of groups to be statically known");
 
   using _WarpReduce = ::cub::WarpReduce<_Tp>;
   struct _AdditionalScratch
@@ -347,15 +352,19 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
     typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_group];
     _AdditionalScratch __additional_;
   };
-  __shared__ _Scratch __scratch;
+  __shared__ _Scratch __scratch[__ngroups];
 
-  const auto __partial = _WarpReduce{__scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
+  const auto __scratch_index = (__ngroups == 1) ? 0u : __group.__mapping_result().group_rank();
+  auto& __group_scratch      = __scratch[__scratch_index];
+
+  const auto __partial =
+    _WarpReduce{__group_scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
   __group.sync_aligned();
 
   this_warp __warp{__group.hierarchy()};
   if (gpu_thread.is_root_rank(__warp))
   {
-    __scratch.__additional_.__partials_[warp.rank(__group)] = __partial;
+    __group_scratch.__additional_.__partials_[warp.rank(__group)] = __partial;
   }
   __group.sync_aligned();
 
@@ -363,19 +372,19 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
   if (warp.is_root_rank(__group))
   {
     const auto __value = (gpu_thread.rank(__warp) < __nwarps_in_group)
-                         ? __scratch.__additional_.__partials_[gpu_thread.rank(__warp)]
+                         ? __group_scratch.__additional_.__partials_[gpu_thread.rank(__warp)]
                          : ::cuda::identity_element<_RedFn, _Tp>();
-    __result           = _WarpReduce{__scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
+    __result           = _WarpReduce{__group_scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
   }
 
   if constexpr (_Broadcasted)
   {
     if (gpu_thread.is_root_rank(__group))
     {
-      __scratch.__additional_.__bcast_ = __result;
+      __group_scratch.__additional_.__bcast_ = __result;
     }
     __group.sync_aligned();
-    return __scratch.__additional_.__bcast_;
+    return __group_scratch.__additional_.__bcast_;
   }
   else
   {

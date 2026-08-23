@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Movement-only whole-function lowering for Numba-CUDA-MLIR groups."""
+"""Whole-function lowering for Numba-CUDA-MLIR group-first primitives."""
 
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ from cuda.coop._core import root_api as _common_root_api
 
 from . import _group_ops
 from . import _thread_group as _thread_groups
+from ._scan_op import ScanOp
 
 _NAME_COUNTER = count()
 _PAYLOAD_DTYPE_LIKE = "like"
@@ -48,12 +49,37 @@ _GROUP_CONSTRUCTORS = {
     _common_root_api.this_grid: _thread_groups.this_grid,
 }
 _ROOT_OPERATIONS = {
-    getattr(_group_ops, name): name for name in ("load", "store", "exchange", "shuffle")
+    getattr(_group_ops, name): name
+    for name in (
+        "load",
+        "store",
+        "reduce",
+        "sum",
+        "scan",
+        "exclusive_sum",
+        "inclusive_sum",
+        "exclusive_scan",
+        "inclusive_scan",
+        "exchange",
+        "shuffle",
+    )
 }
 _ROOT_OPERATIONS.update(
     {
         getattr(_common_root_api, name): name
-        for name in ("load", "store", "exchange", "shuffle")
+        for name in (
+            "load",
+            "store",
+            "reduce",
+            "sum",
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+            "exchange",
+            "shuffle",
+        )
     }
 )
 _GROUP_METHODS = frozenset(
@@ -75,14 +101,27 @@ class GroupRewriteError(Exception):
 
 
 def _group_operation_name(function: Any) -> str | None:
-    """Return the movement operation represented by one marker callable."""
+    """Return the operation represented by one supported marker callable."""
 
     operation = getattr(function, "__cuda_coop_backend_member__", None)
-    if operation in {"exchange", "load", "shuffle", "store"}:
+    supported = {
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "load",
+        "reduce",
+        "scan",
+        "shuffle",
+        "store",
+        "sum",
+    }
+    if operation in supported:
         return operation
     if getattr(function, "__module__", None) == _group_ops.__name__:
         name = getattr(function, "__name__", None)
-        if name in {"exchange", "load", "shuffle", "store"}:
+        if name in supported:
             return name
     return None
 
@@ -285,6 +324,41 @@ class _GroupCallPlanner:
                 _common_root_api._LOAD_STORE_ALGORITHMS,
                 False,
             ),
+            "reduce": (
+                "algorithm",
+                _common_root_api._REDUCE_ALGORITHMS,
+                True,
+            ),
+            "sum": (
+                "algorithm",
+                _common_root_api._REDUCE_ALGORITHMS,
+                True,
+            ),
+            "scan": (
+                "algorithm",
+                _common_root_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "exclusive_sum": (
+                "algorithm",
+                _common_root_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "inclusive_sum": (
+                "algorithm",
+                _common_root_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "exclusive_scan": (
+                "algorithm",
+                _common_root_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "inclusive_scan": (
+                "algorithm",
+                _common_root_api._SCAN_ALGORITHMS,
+                True,
+            ),
             "exchange": ("mode", _common_root_api._EXCHANGE_MODES, False),
             "shuffle": ("mode", _common_root_api._SHUFFLE_MODES, False),
         }
@@ -298,6 +372,35 @@ class _GroupCallPlanner:
                 allowed,
                 allow_none=allow_none,
             )
+        if operation == "scan":
+            bound.arguments["mode"] = self._validate_common_selector(
+                operation,
+                "mode",
+                bound.arguments["mode"],
+                _common_root_api._SCAN_MODES,
+            )
+        if operation == "reduce":
+            from ._group_provider import _normalize_reduce_operation
+
+            try:
+                _normalize_reduce_operation(
+                    self._constant(bound.arguments["binary_op"])
+                )
+            except NotImplementedError as exc:
+                raise ValueError(
+                    "cuda.coop.reduce binary_op accepts built-in operators only; "
+                    "use cuda.coop.numba_mlir for backend-specific behavior"
+                ) from exc
+        if operation in {"scan", "exclusive_scan", "inclusive_scan"}:
+            scan_op = bound.arguments.get("scan_op")
+            if not self._is_none(scan_op):
+                normalized_scan_op = ScanOp(self._constant(scan_op))
+                if normalized_scan_op.is_callable:
+                    raise ValueError(
+                        f"cuda.coop.{operation} scan_op accepts built-in "
+                        "operators only; use cuda.coop.numba_mlir for "
+                        "backend-specific callbacks"
+                    )
 
     def _hierarchy(self, value: Any) -> ThreadHierarchy | None:
         if isinstance(value, ThreadHierarchy):
@@ -578,6 +681,11 @@ class _GroupCallPlanner:
         array_result_argument = {
             "exchange": "value",
             "load": "output",
+            "scan": "value",
+            "exclusive_sum": "value",
+            "inclusive_sum": "value",
+            "exclusive_scan": "value",
+            "inclusive_scan": "value",
             "shuffle": "value",
         }.get(operation)
         if array_result_argument is None:
@@ -840,6 +948,11 @@ class _GroupCallPlanner:
         shape_argument = {
             "exchange": "value",
             "load": "output",
+            "scan": "value",
+            "exclusive_sum": "value",
+            "inclusive_sum": "value",
+            "exclusive_scan": "value",
+            "inclusive_scan": "value",
             "shuffle": "value",
         }.get(operation)
         if shape_argument is None:
@@ -894,6 +1007,64 @@ class _GroupCallPlanner:
         )
         return payload
 
+    def _boxed_group_operand(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        value: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+    ) -> tuple[ir.Var, bool]:
+        """Represent a scalar as a one-item payload for array-only providers."""
+
+        is_array = self._array_operand_state(operation, value)
+        if is_array:
+            return value, True
+        payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input",
+            prototype=value,
+            is_array=False,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input_index",
+            value=0,
+        )
+        statements.append(ir.SetItem(payload, index, value, loc))
+        return payload, False
+
+    def _result_value(
+        self,
+        statements: list[Any],
+        *,
+        payload: ir.Var,
+        is_array: bool,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+    ) -> ir.Var:
+        """Return an array payload or unbox its sole scalar item."""
+
+        if is_array:
+            return payload
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_index",
+            value=0,
+        )
+        result = self._new_var(scope, loc, f"{stem}_scalar")
+        statements.append(ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc))
+        return result
+
     def _scope_factory(
         self, group: ThreadGroup, operation: str
     ) -> tuple[Any, dict[str, Any]]:
@@ -913,6 +1084,11 @@ class _GroupCallPlanner:
                 "exchange": "warp_exchange",
                 "load": "warp_load",
                 "store": "warp_store",
+                "sum": "warp_sum",
+                "exclusive_sum": "warp_exclusive_sum",
+                "inclusive_sum": "warp_inclusive_sum",
+                "exclusive_scan": "warp_exclusive_scan",
+                "inclusive_scan": "warp_inclusive_scan",
             }[operation]
             threads_in_warp = _cub_warp_width(group)
             return (
@@ -987,6 +1163,168 @@ class _GroupCallPlanner:
             return_alias=return_alias,
         )
 
+    def _lower_reduce(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments("reduce", bound)
+        broadcast = self._constant(bound.arguments["broadcast"])
+        if not isinstance(broadcast, bool):
+            raise TypeError(
+                "cuda.coop.numba_mlir.reduce broadcast must be a compile-time bool"
+            )
+
+        value = bound.arguments["value"]
+        if (
+            is_common_root
+            and self._array_operand_state(operation, value)
+            and not (self._thread_data_operand_state(operation, "value", value))
+        ):
+            raise TypeError(
+                f"cuda.coop.{operation} accepts only a scalar or fixed-size "
+                "ThreadData value payload in common V1; use "
+                "cuda.coop.numba_mlir for backend-qualified local arrays"
+            )
+
+        has_valid = not self._is_none(bound.arguments["valid_items"])
+        has_algorithm = not self._is_none(bound.arguments["algorithm"])
+        binary_op = self._constant(bound.arguments["binary_op"])
+        custom_binary_op = None
+        from ._group_provider import _normalize_reduce_operation
+
+        try:
+            normalized_op = _normalize_reduce_operation(binary_op)
+        except NotImplementedError:
+            if is_common_root or not callable(binary_op):
+                raise
+            normalized_op = None
+            custom_binary_op = binary_op
+
+        if has_valid or has_algorithm or custom_binary_op is not None:
+            if group.kind not in {"block", "warp", "threads_within_warp"}:
+                raise NotImplementedError(
+                    "valid_items, custom callbacks, and explicit CUB algorithms "
+                    "are supported only for block, physical-warp, and "
+                    "logical-warp groups"
+                )
+            if broadcast:
+                raise NotImplementedError(
+                    "direct CUB reduce returns a defined value only at the group "
+                    "root; it cannot satisfy broadcast=True"
+                )
+            if has_valid:
+                is_static, valid_items = self._try_constant(
+                    bound.arguments["valid_items"]
+                )
+                if is_static:
+                    if isinstance(valid_items, bool) or not isinstance(
+                        valid_items, Integral
+                    ):
+                        raise TypeError(
+                            "cuda.coop.numba_mlir.reduce valid_items must be an "
+                            "integer, not bool"
+                        )
+                    group_size = group.static_size
+                    assert group_size is not None
+                    if not 1 <= int(valid_items) <= group_size:
+                        raise ValueError(
+                            "cuda.coop.numba_mlir.reduce static valid_items must "
+                            f"be between 1 and group size {group_size}"
+                        )
+            if (
+                group.kind == "block"
+                and self._array_operand_state(operation, value)
+                and not has_algorithm
+            ):
+                raise ValueError(
+                    "cuda.coop.numba_mlir.reduce ThreadData BlockReduce "
+                    "requires an explicit algorithm"
+                )
+            if normalized_op == "sum":
+                factory, factory_kwargs = self._scope_factory(group, "sum")
+            elif custom_binary_op is not None and group.kind == "block":
+                from ._block._block_reduce import reduce
+
+                assert group.hierarchy is not None
+                factory = reduce
+                factory_kwargs = {
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": custom_binary_op,
+                }
+            elif custom_binary_op is not None:
+                from ._warp._warp_reduce import warp_reduce
+
+                assert group.hierarchy is not None
+                threads_in_warp = group.static_size
+                assert threads_in_warp is not None
+                factory = warp_reduce
+                factory_kwargs = {
+                    "threads_in_warp": threads_in_warp,
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": custom_binary_op,
+                }
+            elif group.kind == "block":
+                from ._block._block_reduce import block_reduce_builtin
+
+                assert group.hierarchy is not None
+                factory = block_reduce_builtin
+                factory_kwargs = {
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": normalized_op,
+                }
+            else:
+                from ._warp._warp_reduce import warp_reduce_builtin
+
+                assert group.hierarchy is not None
+                threads_in_warp = group.static_size
+                assert threads_in_warp is not None
+                factory = warp_reduce_builtin
+                factory_kwargs = {
+                    "threads_in_warp": threads_in_warp,
+                    "threads_per_block": group.hierarchy.block_dim,
+                    "binary_op": normalized_op,
+                }
+            if has_valid:
+                parameter = "num_valid" if group.kind == "block" else "valid_items"
+                factory_kwargs[parameter] = bound.arguments["valid_items"]
+            if has_algorithm:
+                if group.kind != "block":
+                    raise NotImplementedError(
+                        "CUB algorithm selection applies to BlockReduce, not WarpReduce"
+                    )
+                factory_kwargs["algorithm"] = bound.arguments["algorithm"]
+            return self._rewritten_call(
+                inst,
+                factory=factory,
+                args=[value],
+                kwargs=factory_kwargs,
+                common_profile_operation=(operation if is_common_root else None),
+            )
+
+        if group.kind == "grid":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.reduce grid groups require a hidden "
+                "per-launch provider workspace"
+            )
+        from ._group_provider import group_reduce
+
+        return self._rewritten_call(
+            inst,
+            factory=group_reduce,
+            args=[value],
+            kwargs={
+                "group": group,
+                "binary_op": bound.arguments["binary_op"],
+                "broadcast": broadcast,
+            },
+            common_profile_operation=(operation if is_common_root else None),
+        )
+
     @staticmethod
     def _reject_extra_root_arguments(
         operation: str, bound: inspect.BoundArguments
@@ -1000,6 +1338,191 @@ class _GroupCallPlanner:
             raise GroupRewriteError(
                 f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
             )
+
+    def _validate_scan_aggregate(
+        self,
+        bound: inspect.BoundArguments,
+    ) -> None:
+        aggregate = bound.arguments["aggregate_output"]
+        if self._is_none(aggregate):
+            return
+        if not self._array_operand_state("scan", aggregate):
+            raise TypeError(
+                "cuda.coop.numba_mlir.scan aggregate_output must be a "
+                "single-item ThreadData or local array"
+            )
+        extent = self._array_extent(aggregate)
+        if extent != 1:
+            raise ValueError(
+                "cuda.coop.numba_mlir.scan aggregate_output must contain "
+                "exactly one item"
+            )
+
+    def _lower_scan(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments("scan", bound)
+        mode = self._constant(bound.arguments["mode"])
+        if mode not in {"exclusive", "inclusive"}:
+            raise ValueError(
+                "cuda.coop.numba_mlir.scan mode must be 'exclusive' or 'inclusive'"
+            )
+        if mode == "inclusive" and not self._is_none(bound.arguments["initial_value"]):
+            raise ValueError(
+                "cuda.coop.numba_mlir.scan initial_value is not supported for "
+                "inclusive scans"
+            )
+        self._validate_scan_aggregate(bound)
+
+        if group.kind == "block":
+            if not self._is_none(bound.arguments["valid_items"]):
+                raise NotImplementedError(
+                    "cuda.coop.numba_mlir.scan valid_items applies to physical "
+                    "and logical warp groups, not block groups"
+                )
+            factory, factory_kwargs = self._scope_factory(group, "scan")
+            factory_kwargs.update(
+                {
+                    "mode": mode,
+                    "scan_op": (
+                        "+"
+                        if self._is_none(bound.arguments["scan_op"])
+                        else bound.arguments["scan_op"]
+                    ),
+                }
+            )
+            if not self._is_none(bound.arguments["initial_value"]):
+                factory_kwargs["initial_value"] = bound.arguments["initial_value"]
+            if not self._is_none(bound.arguments["algorithm"]):
+                factory_kwargs["algorithm"] = bound.arguments["algorithm"]
+            if not self._is_none(bound.arguments["temp_storage"]):
+                factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+            if not self._is_none(bound.arguments["aggregate_output"]):
+                factory_kwargs["block_aggregate"] = bound.arguments["aggregate_output"]
+
+            statements: list[Any] = []
+            scope = inst.target.scope
+            loc = inst.loc
+            value = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="scan_value",
+                value=bound.arguments["value"],
+            )
+            if is_common_root and self._array_operand_state("scan", value):
+                if not self._thread_data_operand_state(operation, "value", value):
+                    raise TypeError(
+                        f"cuda.coop.{operation} accepts only a scalar or fixed-size "
+                        "ThreadData value payload in common V1; use "
+                        "cuda.coop.numba_mlir for backend-qualified local arrays"
+                    )
+            input_payload, is_array = self._boxed_group_operand(
+                statements,
+                operation="scan",
+                value=value,
+                scope=scope,
+                loc=loc,
+            )
+            result_payload = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="scan_result",
+                prototype=value,
+                is_array=is_array,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            call_statements = self._rewritten_call(
+                inst,
+                factory=factory,
+                args=[input_payload, result_payload],
+                kwargs=factory_kwargs,
+                return_alias=result_payload,
+                common_profile_operation=(operation if is_common_root else None),
+            )
+            call_statements.pop()
+            statements.extend(call_statements)
+            result = self._result_value(
+                statements,
+                payload=result_payload,
+                is_array=is_array,
+                scope=scope,
+                loc=loc,
+                stem="scan_result",
+            )
+            statements.append(ir.Assign(result, inst.target, loc))
+            return statements
+
+        if group.kind not in {"warp", "threads_within_warp"}:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.scan currently lowers only block, "
+                "physical-warp, and logical-warp groups"
+            )
+        if not self._is_none(bound.arguments["algorithm"]):
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.scan algorithm applies only to block groups"
+            )
+        if not self._is_none(bound.arguments["temp_storage"]):
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.scan temp_storage applies only to block groups"
+            )
+        if self._array_operand_state("scan", bound.arguments["value"]):
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.scan warp groups support one scalar value "
+                "per lane"
+            )
+
+        scan_op = bound.arguments["scan_op"]
+        default_sum = self._is_none(scan_op)
+        if not default_sum:
+            default_sum = ScanOp(self._constant(scan_op)).is_sum
+        has_initial = not self._is_none(bound.arguments["initial_value"])
+        has_valid_items = not self._is_none(bound.arguments["valid_items"])
+        if has_valid_items:
+            is_static, valid_items = self._try_constant(bound.arguments["valid_items"])
+            if is_static:
+                if isinstance(valid_items, bool) or not isinstance(
+                    valid_items, Integral
+                ):
+                    raise TypeError(
+                        "cuda.coop.numba_mlir.scan valid_items must be an "
+                        "integer, not bool"
+                    )
+                group_size = group.static_size
+                assert group_size is not None
+                if not 1 <= int(valid_items) <= group_size:
+                    raise ValueError(
+                        "cuda.coop.numba_mlir.scan static valid_items must be "
+                        f"between 1 and group size {group_size}"
+                    )
+        factory_operation = (
+            f"{mode}_sum"
+            if default_sum and not has_initial and not has_valid_items
+            else f"{mode}_scan"
+        )
+        factory, factory_kwargs = self._scope_factory(group, factory_operation)
+        if factory_operation.endswith("_scan"):
+            factory_kwargs["scan_op"] = "+" if default_sum else scan_op
+        if has_initial:
+            factory_kwargs["initial_value"] = bound.arguments["initial_value"]
+        if has_valid_items:
+            factory_kwargs["valid_items"] = bound.arguments["valid_items"]
+        if not self._is_none(bound.arguments["aggregate_output"]):
+            factory_kwargs["warp_aggregate"] = bound.arguments["aggregate_output"]
+        return self._rewritten_call(
+            inst,
+            factory=factory,
+            args=[bound.arguments["value"]],
+            kwargs=factory_kwargs,
+            common_profile_operation=(operation if is_common_root else None),
+        )
 
     def _lower_exchange(
         self,
@@ -1268,16 +1791,82 @@ class _GroupCallPlanner:
         if is_common_root:
             _common_root_api._validate_common_v1_operation_group(operation, group)
         group = self._resolve_group(group, feature=operation)
+        if operation == "sum":
+            bound.arguments["binary_op"] = None
+        elif operation in {
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }:
+            bound.arguments["mode"] = (
+                "exclusive" if operation.startswith("exclusive") else "inclusive"
+            )
+            if operation.endswith("_sum"):
+                bound.arguments["scan_op"] = None
+                bound.arguments["initial_value"] = None
+            elif operation == "exclusive_scan":
+                bound.arguments.setdefault("scan_op", None)
+                bound.arguments.setdefault("initial_value", None)
+            else:
+                bound.arguments.setdefault("scan_op", None)
+                bound.arguments["initial_value"] = None
         bound.arguments.setdefault("block_prefix", None)
         bound.arguments.setdefault("block_suffix", None)
         bound.arguments.setdefault("valid_items", None)
+        bound.arguments.setdefault("aggregate_output", None)
         bound.arguments.setdefault("ranks", None)
         bound.arguments.setdefault("valid_flags", None)
         bound.arguments.setdefault("warp_time_slicing", False)
         if is_common_root:
             self._validate_common_arguments(operation, bound)
+        normalized_scan_op = None
+        if operation in {"scan", "exclusive_scan", "inclusive_scan"}:
+            scan_op = bound.arguments.get("scan_op")
+            if not self._is_none(scan_op):
+                normalized_scan_op = ScanOp(self._constant(scan_op))
+                if (
+                    self._constant(bound.arguments["mode"]) == "exclusive"
+                    and not normalized_scan_op.is_sum
+                    and self._is_none(bound.arguments["initial_value"])
+                ):
+                    raise ValueError(
+                        "cuda.coop.numba_mlir.scan requires initial_value for "
+                        "non-default exclusive scans"
+                    )
+        if (
+            is_common_root
+            and normalized_scan_op is not None
+            and normalized_scan_op.is_callable
+        ):
+            raise ValueError(
+                "cuda.coop scan operations accept built-in operators only; "
+                "use cuda.coop.numba_mlir for a custom scan callback"
+            )
         if operation in {"load", "store"}:
             replacement = self._lower_load_store(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {"reduce", "sum"}:
+            replacement = self._lower_reduce(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }:
+            replacement = self._lower_scan(
                 inst,
                 operation=operation,
                 group=group,

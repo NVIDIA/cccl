@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba-CUDA-MLIR-qualified cooperative group building blocks."""
+"""Numba-CUDA-MLIR-qualified group-first cooperative primitives."""
 
+from collections.abc import Callable
 from enum import IntEnum
 from typing import Any, Generic, Literal, Protocol, TypeAlias, overload
 
@@ -13,13 +14,22 @@ from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
+from .._typing import ReduceAlgorithm as _ReduceAlgorithm
+from .._typing import ReduceOperator as _ReduceOperator
+from .._typing import ScanAlgorithm as _ScanAlgorithm
+from .._typing import ScanOperator as _ScanOperator
 from .._typing import TempStorageSharing as _TempStorageSharing
 from .._typing import ThreadDataLike as _ThreadDataLike
 from .._typing import ThreadGroupKind as _ThreadGroupKind
 from .._typing import ThreadLevel as _ThreadLevel
+from .._typing import _NonSumScanOperator as _NonSumScanOperator
+from .._typing import _ScalarValue as _ScalarValue
+from .._typing import _SumScanOperator as _SumScanOperator
 from .._typing import _SynchronizableGroupKind as _SynchronizableGroupKind
+from .._typing import _ValidItems as _ValidItems
 
 _ItemT = TypeVar("_ItemT")
+_ScalarT = TypeVar("_ScalarT", bound=_ScalarValue)
 _OpT = TypeVar("_OpT")
 _DataclassT = TypeVar("_DataclassT")
 _GroupKindT_co = TypeVar(
@@ -47,6 +57,11 @@ class BlockStoreAlgorithm(IntEnum):
     TRANSPOSE: int
     WARP_TRANSPOSE: int
     WARP_TRANSPOSE_TIMESLICED: int
+
+class BlockScanAlgorithm(IntEnum):
+    RAKING: int
+    RAKING_MEMOIZE: int
+    WARP_SCANS: int
 
 class WarpLoadAlgorithm(IntEnum):
     DIRECT: int
@@ -133,6 +148,19 @@ class ThreadGroup(
 
     def is_member(self) -> _NumpyUint8:
         """Return a NumPy-compatible ``uint8`` membership flag."""
+
+_ReductionGroup: TypeAlias = ThreadGroup[
+    Literal[
+        "thread",
+        "warp",
+        "threads_within_warp",
+        "warps_within_block",
+        "block",
+        "cluster",
+    ]
+]
+_BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
+_WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
 
 class TempStorage:
     """Explicit opaque byte scratch for planned shared-memory operations."""
@@ -277,6 +305,536 @@ def store(
 ) -> None:
     """Store a per-thread tile through a physical or logical warp."""
 
+@overload
+def reduce(
+    group: _ReductionGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ItemT:
+    """Reduce a full-group payload through the CUDAX group provider."""
+
+@overload
+def reduce(
+    group: _ReductionGroup,
+    value: _ScalarT,
+    /,
+    *,
+    binary_op: _ReduceOperator | None = None,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ScalarT:
+    """Reduce full-group scalar values through the CUDAX group provider."""
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    binary_op: _ReduceOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ItemT:
+    """Reduce ThreadData through explicitly selected CUB BlockReduce."""
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    binary_op: _ReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: _ReduceAlgorithm | None = None,
+) -> _ScalarT:
+    """Reduce a valid scalar prefix through direct CUB BlockReduce."""
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    binary_op: _ReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ScalarT:
+    """Reduce a scalar through explicitly selected CUB BlockReduce."""
+
+@overload
+def reduce(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    binary_op: _ReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: None = None,
+) -> _ScalarT:
+    """Reduce a valid scalar prefix through direct CUB WarpReduce."""
+
+@overload
+def reduce(
+    group: _BlockGroup,
+    value: _ItemT,
+    /,
+    *,
+    binary_op: Callable[[_ItemT, _ItemT], _ItemT],
+    broadcast: Literal[False],
+    valid_items: _ValidItems | None = None,
+    algorithm: _ReduceAlgorithm | None = None,
+) -> _ItemT:
+    """Reduce scalar values with a qualified BlockReduce callback."""
+
+@overload
+def reduce(
+    group: _WarpGroup,
+    value: _ItemT,
+    /,
+    *,
+    binary_op: Callable[[_ItemT, _ItemT], _ItemT],
+    broadcast: Literal[False],
+    valid_items: _ValidItems | None = None,
+    algorithm: None = None,
+) -> _ItemT:
+    """Reduce scalar values with a qualified WarpReduce callback."""
+
+@overload
+def sum(
+    group: _ReductionGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ItemT:
+    """Sum a full-group payload through the CUDAX group provider."""
+
+@overload
+def sum(
+    group: _ReductionGroup,
+    value: _ScalarT,
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: None = None,
+    algorithm: None = None,
+) -> _ScalarT:
+    """Sum full-group scalar values through the CUDAX group provider."""
+
+@overload
+def sum(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ItemT:
+    """Sum ThreadData through explicitly selected CUB BlockReduce."""
+
+@overload
+def sum(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: _ReduceAlgorithm | None = None,
+) -> _ScalarT:
+    """Sum a valid scalar prefix through direct CUB BlockReduce."""
+
+@overload
+def sum(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _ReduceAlgorithm,
+) -> _ScalarT:
+    """Sum a scalar through explicitly selected CUB BlockReduce."""
+
+@overload
+def sum(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    broadcast: Literal[False],
+    valid_items: _ValidItems,
+    algorithm: None = None,
+) -> _ScalarT:
+    """Sum a valid scalar prefix through direct CUB WarpReduce."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ItemT | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return out-of-place block-exclusive sums."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _NonSumScanOperator | Callable[[_ItemT, _ItemT], _ItemT],
+    initial_value: _ItemT,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return a non-sum block-exclusive scan from an explicit initial value."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["inclusive"],
+    scan_op: _ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    initial_value: None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return an out-of-place block-inclusive scan."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ScalarT | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-exclusive scalar sum."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _NonSumScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT],
+    initial_value: _ScalarT,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a non-sum block-exclusive scalar scan."""
+
+@overload
+def scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["inclusive"],
+    scan_op: _ScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    initial_value: None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-inclusive scalar scan."""
+
+@overload
+def scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ScalarT | None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-exclusive scalar sum."""
+
+@overload
+def scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["exclusive"] = "exclusive",
+    scan_op: _NonSumScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT],
+    initial_value: _ScalarT,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a non-sum warp-exclusive scalar scan."""
+
+@overload
+def scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["inclusive"],
+    scan_op: _ScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    initial_value: None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-inclusive scalar scan."""
+
+@overload
+def exclusive_sum(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return out-of-place block-exclusive sums with the input shape."""
+
+@overload
+def exclusive_sum(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-exclusive scalar sum."""
+
+@overload
+def exclusive_sum(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-exclusive scalar sum."""
+
+@overload
+def inclusive_sum(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return out-of-place block-inclusive sums with the input shape."""
+
+@overload
+def inclusive_sum(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-inclusive scalar sum."""
+
+@overload
+def inclusive_sum(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-inclusive scalar sum."""
+
+@overload
+def exclusive_scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ItemT | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return an out-of-place block-exclusive sum."""
+
+@overload
+def exclusive_scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    scan_op: _NonSumScanOperator | Callable[[_ItemT, _ItemT], _ItemT],
+    initial_value: _ItemT,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return a non-sum block-exclusive scan."""
+
+@overload
+def exclusive_scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ScalarT | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-exclusive scalar sum."""
+
+@overload
+def exclusive_scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _NonSumScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT],
+    initial_value: _ScalarT,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a non-sum block-exclusive scalar scan."""
+
+@overload
+def exclusive_scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _SumScanOperator | None = None,
+    initial_value: _ScalarT | None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-exclusive scalar sum."""
+
+@overload
+def exclusive_scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _NonSumScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT],
+    initial_value: _ScalarT,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a non-sum warp-exclusive scalar scan."""
+
+@overload
+def inclusive_scan(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    scan_op: _ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return an out-of-place block-inclusive scan."""
+
+@overload
+def inclusive_scan(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _ScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    algorithm: _ScanAlgorithm | BlockScanAlgorithm | None = None,
+    temp_storage: TempStorage | None = None,
+    valid_items: None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a block-inclusive scalar scan."""
+
+@overload
+def inclusive_scan(
+    group: _WarpGroup,
+    value: _ScalarT,
+    /,
+    *,
+    scan_op: _ScanOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+    valid_items: _ValidItems | None = None,
+    aggregate_output: _ThreadDataLike[_ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a physical- or logical-warp-inclusive scalar scan."""
+
 def exchange(
     group: ThreadGroup[Any],
     value: _ThreadDataLike[_ItemT],
@@ -332,6 +890,7 @@ def this_grid() -> ThreadGroup[Literal["grid"]]:
 
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -342,13 +901,20 @@ __all__ = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

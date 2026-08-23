@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile-time data-movement markers for Numba-CUDA-MLIR."""
+"""Compile-time group-first primitive markers for Numba-CUDA-MLIR."""
 
 from __future__ import annotations
 
@@ -78,6 +78,177 @@ def store(
     )
 
 
+def reduce(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    binary_op: Any = None,
+    broadcast: bool = True,
+    valid_items: Any = None,
+    algorithm: Any = None,
+) -> Any:
+    """Reduce values across a group."""
+
+    return _group_primitive_marker(
+        "reduce",
+        group,
+        value,
+        binary_op=binary_op,
+        broadcast=broadcast,
+        valid_items=valid_items,
+        algorithm=algorithm,
+    )
+
+
+def sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: Any = None,
+    algorithm: Any = None,
+) -> Any:
+    """Sum values across a group."""
+
+    return _group_primitive_marker(
+        "sum",
+        group,
+        value,
+        broadcast=broadcast,
+        valid_items=valid_items,
+        algorithm=algorithm,
+    )
+
+
+def scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: str = "exclusive",
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    """Scan values across a block or warp group."""
+
+    return _group_primitive_marker(
+        "scan",
+        group,
+        value,
+        mode=mode,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def exclusive_sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    """Return an exclusive prefix sum across a block or warp group."""
+
+    return _group_primitive_marker(
+        "exclusive_sum",
+        group,
+        value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def inclusive_sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    """Return an inclusive prefix sum across a block or warp group."""
+
+    return _group_primitive_marker(
+        "inclusive_sum",
+        group,
+        value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def exclusive_scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    """Return an exclusive scan across a block or warp group."""
+
+    return _group_primitive_marker(
+        "exclusive_scan",
+        group,
+        value,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def inclusive_scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    scan_op: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    """Return an inclusive scan across a block or warp group."""
+
+    return _group_primitive_marker(
+        "inclusive_scan",
+        group,
+        value,
+        scan_op=scan_op,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
 def exchange(
     group: ThreadGroup,
     value: Any,
@@ -124,4 +295,16 @@ def shuffle(
     )
 
 
-__all__ = ["exchange", "load", "shuffle", "store"]
+__all__ = [
+    "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
+    "load",
+    "reduce",
+    "scan",
+    "shuffle",
+    "store",
+    "sum",
+]

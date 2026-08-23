@@ -122,7 +122,7 @@ def test_mapped_parent_queries_render_the_parent_group():
     assert _group_provider._query_expr(mapped, "count", "warp") == (
         "group.count(group_parent)"
     )
-    assert "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP" not in (
+    assert "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP" in (
         _group_provider._INCLUDE_LINES
     )
 

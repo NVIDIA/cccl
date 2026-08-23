@@ -8,6 +8,13 @@ from ._warp_exchange import WarpExchangeType as WarpExchangeType
 from ._warp_exchange import warp_exchange as warp_exchange
 from ._warp_load_store import warp_load as warp_load
 from ._warp_load_store import warp_store as warp_store
+from ._warp_reduce import warp_reduce as warp_reduce
+from ._warp_reduce import warp_reduce_builtin as warp_reduce_builtin
+from ._warp_reduce import warp_sum as warp_sum
+from ._warp_scan import warp_exclusive_scan as warp_exclusive_scan
+from ._warp_scan import warp_exclusive_sum as warp_exclusive_sum
+from ._warp_scan import warp_inclusive_scan as warp_inclusive_scan
+from ._warp_scan import warp_inclusive_sum as warp_inclusive_sum
 
 exchange = warp_exchange
 load = warp_load

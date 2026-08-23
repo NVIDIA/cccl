@@ -23,7 +23,9 @@
 
 // Q: Do we want to enable this by default, or do we want the user to define some macro to get the interoperability with
 //    cooperative groups?
-#if __has_include(<cooperative_groups.h>)
+#if defined(_CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP)
+#  define _CCCL_HAS_COOPERATIVE_GROUPS() 0
+#elif __has_include(<cooperative_groups.h>)
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 1
 #else // ^^^ has cooperative groups ^^^ / vvv no cooperative groups vvv
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 0

@@ -7,6 +7,13 @@
 from ._group_exchange import exchange as exchange
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_reduce import reduce as reduce
+from ._group_reduce import sum as sum
+from ._group_scan import exclusive_scan as exclusive_scan
+from ._group_scan import exclusive_sum as exclusive_sum
+from ._group_scan import inclusive_scan as inclusive_scan
+from ._group_scan import inclusive_sum as inclusive_sum
+from ._group_scan import scan as scan
 from ._group_shuffle import shuffle as shuffle
 from ._types import Hierarchy as Hierarchy
 from ._types import TempStorage as TempStorage
@@ -52,9 +59,16 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "reduce",
+    "scan",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

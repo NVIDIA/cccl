@@ -267,6 +267,7 @@ class TempStorage:
 
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -277,13 +278,20 @@ __all__ = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -468,12 +476,25 @@ def __getattr__(name):
         value = getattr(importlib.import_module(f"{__name__}._dataclass"), name)
         globals()[name] = value
         return value
-    if name in {"exchange", "load", "shuffle", "store"}:
+    if name in {
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "load",
+        "reduce",
+        "scan",
+        "shuffle",
+        "store",
+        "sum",
+    }:
         value = getattr(importlib.import_module(f"{__name__}._group_ops"), name)
         globals()[name] = value
         return value
     if name in {
         "BlockLoadAlgorithm",
+        "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
