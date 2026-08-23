@@ -29,25 +29,41 @@ from . import _api as _api
 from . import _factory as _factory
 from ._load_store import load, store
 from ._reduce import reduce, row_sum, sum
+from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._single_phase import TempStorage
 
 # Secondary compatibility adapters remain available through the private block
 # module. Its wrappers preserve the private import scope reported by deferred
 # factories.
+make_exclusive_scan = _factory.make_exclusive_scan
+make_exclusive_sum = _factory.make_exclusive_sum
+make_inclusive_scan = _factory.make_inclusive_scan
+make_inclusive_sum = _factory.make_inclusive_sum
 make_load = _factory.make_load
 make_reduce = _factory.make_reduce
+make_scan = _factory.make_scan
 make_store = _factory.make_store
 make_sum = _factory.make_sum
 
 __all__ = [
     "TempStorage",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_reduce",
+    "make_scan",
     "make_store",
     "make_sum",
     "reduce",
     "row_sum",
+    "scan",
     "store",
     "sum",
 ]

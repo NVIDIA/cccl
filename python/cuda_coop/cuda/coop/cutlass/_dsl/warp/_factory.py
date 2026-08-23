@@ -41,6 +41,7 @@ from .._load_store import validate_payload_selector as _validate_payload_selecto
 from .._scope import WARP_SCOPE as _SCOPE
 from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
+from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum
 
 _VALID_ITEMS_OVERRIDABLE_KWARGS = ("valid_items",)
 _SCAN_OVERRIDABLE_KWARGS = ("valid_items", "warp_aggregate")
@@ -323,4 +324,126 @@ def make_min(
         min,
         bound,
         overridable_kwargs=_VALID_ITEMS_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_exclusive_sum(
+    dtype: Any,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp exclusive-sum callable.
+
+    The callable binds logical-warp width and optional valid-lane defaults,
+    then forwards each scalar value to :func:`exclusive_sum`.
+    """
+    del dtype
+    _reject_methods("make_exclusive_sum", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_exclusive_sum",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_exclusive_sum",
+        exclusive_sum,
+        bound,
+        overridable_kwargs=_SCAN_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_inclusive_sum(
+    dtype: Any,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp inclusive-sum callable.
+
+    The callable binds logical-warp width and optional valid-lane defaults,
+    then forwards each scalar value to :func:`inclusive_sum`.
+    """
+    del dtype
+    _reject_methods("make_inclusive_sum", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_inclusive_sum",
+        threads_in_warp,
+    )
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_inclusive_sum",
+        inclusive_sum,
+        bound,
+        overridable_kwargs=_SCAN_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_exclusive_scan(
+    dtype: Any,
+    scan_op: Any = None,
+    initial_value: Any = None,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp exclusive-scan callable.
+
+    The callable binds scan operator, optional initial value, logical-warp
+    width, and optional valid-lane defaults before forwarding each scalar value
+    to :func:`exclusive_scan`.
+    """
+    del dtype
+    _reject_methods("make_exclusive_scan", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_exclusive_scan",
+        threads_in_warp,
+    )
+    if scan_op is not None:
+        bound["scan_op"] = scan_op
+    if initial_value is not None:
+        bound["initial_value"] = initial_value
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_exclusive_scan",
+        exclusive_scan,
+        bound,
+        overridable_kwargs=_SCAN_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_inclusive_scan(
+    dtype: Any,
+    scan_op: Any = None,
+    initial_value: Any = None,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp inclusive-scan callable.
+
+    The callable binds scan operator, optional initial value, logical-warp
+    width, and optional valid-lane defaults before forwarding each scalar value
+    to :func:`inclusive_scan`.
+    """
+    del dtype
+    _reject_methods("make_inclusive_scan", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_inclusive_scan",
+        threads_in_warp,
+    )
+    if scan_op is not None:
+        bound["scan_op"] = scan_op
+    if initial_value is not None:
+        bound["initial_value"] = initial_value
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    return _make_factory(
+        "make_inclusive_scan",
+        inclusive_scan,
+        bound,
+        overridable_kwargs=_SCAN_OVERRIDABLE_KWARGS,
     )

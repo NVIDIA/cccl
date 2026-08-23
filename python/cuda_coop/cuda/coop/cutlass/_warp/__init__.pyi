@@ -8,9 +8,14 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl.warp import WarpExchangeType as WarpExchangeType
+from .._dsl.warp import exclusive_scan as exclusive_scan
+from .._dsl.warp import exclusive_sum as exclusive_sum
+from .._dsl.warp import inclusive_scan as inclusive_scan
+from .._dsl.warp import inclusive_sum as inclusive_sum
 from .._dsl.warp import max as max
 from .._dsl.warp import min as min
 from .._dsl.warp import reduce as reduce
+from .._dsl.warp import scan as scan
 from .._dsl.warp import sum as sum
 
 class _DeferredValue(Protocol):
@@ -218,6 +223,42 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_exclusive_scan(
+    dtype: object,
+    scan_op: object = None,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred exclusive physical-warp scan specialization."""
+
+def make_inclusive_scan(
+    dtype: object,
+    scan_op: object = None,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred inclusive physical-warp scan specialization."""
+
+def make_exclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred exclusive physical-warp sum specialization."""
+
+def make_inclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred inclusive physical-warp sum specialization."""
+
 def make_reduce(
     dtype: object,
     binary_op: object = None,
@@ -254,7 +295,15 @@ def make_min(
 __all__ = [
     "TempStorage",
     "WarpExchangeType",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_max",
     "make_min",
@@ -264,6 +313,7 @@ __all__ = [
     "max",
     "min",
     "reduce",
+    "scan",
     "store",
     "sum",
 ]

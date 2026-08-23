@@ -10,11 +10,13 @@ from typing import Any, Protocol, TypeVar, overload
 from ..._typing import (
     LoadStoreAlgorithm,
     ReduceAlgorithm,
+    ScanAlgorithm,
     ThreadDataLike,
 )
 from ..._typing import _ValidItems as _ValidItems
 from .. import (
     BlockLoadAlgorithm,
+    BlockScanAlgorithm,
     BlockStoreAlgorithm,
     TempStorage,
 )
@@ -907,15 +909,507 @@ def make_sum(
 ) -> _ReduceInvocable[Any]:
     """Build a block-sum callable from a compiler dtype token."""
 
+@overload
+def scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    mode: str = "exclusive",
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    block_aggregate: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving block-scan callable outside compilation."""
+
+@overload
+def scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    mode: str = "exclusive",
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    block_aggregate: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Scan a block payload into an explicit output payload."""
+
+@overload
+def scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    aggregate_or_prefix: object,
+    /,
+    *,
+    mode: str = "exclusive",
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Scan a block payload and expose one configured runtime result."""
+
+@overload
+def scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    mode: str = "exclusive",
+    scan_op: object = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    block_aggregate: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a block-scan callable from an external compiler dtype token."""
+
+@overload
+def exclusive_sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive block-sum callable."""
+
+@overload
+def exclusive_sum(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write exclusive block-sum prefixes to ``output``."""
+
+@overload
+def exclusive_sum(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    aggregate_or_prefix: object,
+    /,
+    *,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write exclusive prefixes and one configured runtime result."""
+
+@overload
+def exclusive_sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an exclusive block-sum callable from a compiler dtype token."""
+
+@overload
+def inclusive_sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive block-sum callable."""
+
+@overload
+def inclusive_sum(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write inclusive block-sum prefixes to ``output``."""
+
+@overload
+def inclusive_sum(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    aggregate_or_prefix: object,
+    /,
+    *,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write inclusive prefixes and one configured runtime result."""
+
+@overload
+def inclusive_sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an inclusive block-sum callable from a compiler dtype token."""
+
+@overload
+def exclusive_scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive block-scan callable."""
+
+@overload
+def exclusive_scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write exclusive callback-based prefixes to ``output``."""
+
+@overload
+def exclusive_scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    aggregate_or_prefix: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write exclusive prefixes and one configured runtime result."""
+
+@overload
+def exclusive_scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an exclusive block-scan callable from a compiler dtype token."""
+
+@overload
+def inclusive_scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive block-scan callable."""
+
+@overload
+def inclusive_scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write inclusive callback-based prefixes to ``output``."""
+
+@overload
+def inclusive_scan(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    aggregate_or_prefix: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write inclusive prefixes and one configured runtime result."""
+
+@overload
+def inclusive_scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an inclusive block-scan callable from a compiler dtype token."""
+
+@overload
+def make_scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    mode: str = "exclusive",
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    block_aggregate: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving generated block-scan callable."""
+
+@overload
+def make_scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    mode: str = "exclusive",
+    scan_op: object = "+",
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    block_aggregate: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated block-scan callable."""
+
+@overload
+def make_exclusive_sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving generated exclusive block-sum callable."""
+
+@overload
+def make_exclusive_sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive block-sum callable."""
+
+@overload
+def make_inclusive_sum(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving generated inclusive block-sum callable."""
+
+@overload
+def make_inclusive_sum(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive block-sum callable."""
+
+@overload
+def make_exclusive_scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving generated exclusive block-scan callable."""
+
+@overload
+def make_exclusive_scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive block-scan callable."""
+
+@overload
+def make_inclusive_scan(
+    dtype: type[_T],
+    threads_per_block: _Dim | None = None,
+    scan_op: Callable[[_T, _T], _T] | str = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving generated inclusive block-scan callable."""
+
+@overload
+def make_inclusive_scan(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    block_prefix_callback_op: object = None,
+    prefix_op: object = None,
+    algorithm: ScanAlgorithm | BlockScanAlgorithm = "raking",
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive block-scan callable."""
+
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_reduce",
+    "make_scan",
     "make_store",
     "make_sum",
     "reduce",
+    "scan",
     "store",
     "sum",
 ]

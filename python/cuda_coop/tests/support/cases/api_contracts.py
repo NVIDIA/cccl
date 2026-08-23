@@ -558,8 +558,32 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
     "core": _COMMON_DIRECT_EVIDENCE_OPERATIONS,
     # Backend evidence becomes required as each backend commit lands its
     # implementation and test lanes.
-    "cutlass": frozenset({"load", "store"}),
-    "numba_mlir": frozenset({"load", "store"}),
+    "cutlass": frozenset(
+        {
+            "load",
+            "store",
+            "reduce",
+            "sum",
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }
+    ),
+    "numba_mlir": frozenset(
+        {
+            "load",
+            "store",
+            "reduce",
+            "sum",
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }
+    ),
 }
 
 COMMON_PROFILE_ROLE_METADATA = {
@@ -674,17 +698,11 @@ _COMMON_SUM_EVIDENCE_COLLECTION_PATHS = {
     **_COMMON_SUM_SCAN_EVIDENCE_COLLECTION_PATHS,
     "cutlass": {
         **_COMMON_SUM_SCAN_EVIDENCE_COLLECTION_PATHS["cutlass"],
-        "runtime": (
-            "tests/backends/cutlass/runtime/test_common_root_sum_scan.py",
-            "tests/backends/cutlass/runtime/test_common_profile.py",
-        ),
+        "runtime": ("tests/backends/cutlass/runtime/test_common_root_sum_scan.py",),
     },
     "numba_mlir": {
         **_COMMON_SUM_SCAN_EVIDENCE_COLLECTION_PATHS["numba_mlir"],
-        "runtime": (
-            "tests/backends/numba_mlir/runtime/test_common_root_sum_scan.py",
-            "tests/backends/numba_mlir/runtime/test_common_profile.py",
-        ),
+        "runtime": ("tests/backends/numba_mlir/runtime/test_common_root_sum_scan.py",),
     },
 }
 _COMMON_EXCHANGE_EVIDENCE_COLLECTION_PATHS = {

@@ -10,8 +10,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from ._group_ops import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
     load,
     reduce,
+    scan,
     store,
     sum,
 )
@@ -269,6 +274,7 @@ __all__ = [
     "NoAlgorithm",
     "BlockLoadAlgorithm",
     "BlockStoreAlgorithm",
+    "BlockScanAlgorithm",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "Hierarchy",
@@ -277,10 +283,15 @@ __all__ = [
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "scan",
     "shared",
     "store",
     "sum",

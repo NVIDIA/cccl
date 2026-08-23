@@ -25,11 +25,16 @@ from . import _api as _api
 from . import _factory as _factory
 from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
+from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._single_phase import TempStorage
 
 # Secondary compatibility adapters remain available through the private warp
 # module. Its wrappers preserve the private import scope reported by deferred
 # factories.
+make_exclusive_scan = _factory.make_exclusive_scan
+make_exclusive_sum = _factory.make_exclusive_sum
+make_inclusive_scan = _factory.make_inclusive_scan
+make_inclusive_sum = _factory.make_inclusive_sum
 make_load = _factory.make_load
 make_max = _factory.make_max
 make_min = _factory.make_min
@@ -39,7 +44,15 @@ make_sum = _factory.make_sum
 
 __all__ = [
     "TempStorage",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_max",
     "make_min",
@@ -49,6 +62,7 @@ __all__ = [
     "max",
     "min",
     "reduce",
+    "scan",
     "store",
     "sum",
 ]

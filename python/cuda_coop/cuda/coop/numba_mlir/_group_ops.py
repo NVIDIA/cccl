@@ -118,9 +118,131 @@ def sum(
     )
 
 
+def scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: str = "exclusive",
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "scan",
+        group,
+        value,
+        mode=mode,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def exclusive_sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "exclusive_sum",
+        group,
+        value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def inclusive_sum(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "inclusive_sum",
+        group,
+        value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def exclusive_scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "exclusive_scan",
+        group,
+        value,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
+def inclusive_scan(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    scan_op: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "inclusive_scan",
+        group,
+        value,
+        scan_op=scan_op,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
+        valid_items=valid_items,
+        aggregate_output=aggregate_output,
+    )
+
+
 __all__ = [
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "store",
     "sum",
 ]

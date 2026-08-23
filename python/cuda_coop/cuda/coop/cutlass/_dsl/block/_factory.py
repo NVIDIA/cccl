@@ -49,6 +49,7 @@ from .._load_store import validate_payload_selector as _validate_payload_selecto
 from .._scope import BLOCK_SCOPE as _SCOPE
 from ._load_store import load, store
 from ._reduce import reduce, sum
+from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 
 _RADIX_SORT_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit", "descending")
 _RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit")
@@ -364,4 +365,181 @@ def make_sum(
         bound,
         overridable_kwargs=_REDUCE_VALID_OVERRIDABLE_KWARGS,
         override_aliases=_REDUCE_VALID_OVERRIDE_ALIASES,
+    )
+
+
+def make_scan(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    initial_value: Any = None,
+    mode: str = "exclusive",
+    scan_op: Any = "+",
+    prefix_op: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block scan callable.
+
+    The callable binds scan mode, operator, optional initial value, and CTA
+    metadata before forwarding each value to :func:`scan`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_scan", "prefix_op", prefix_op)
+    _reject_methods("make_scan", kwargs)
+    bound = _block_kwargs(
+        "make_scan",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    bound["mode"] = mode
+    bound["scan_op"] = scan_op
+    _bind_if_not_none(bound, "initial_value", initial_value)
+    return _make_factory(
+        "make_scan",
+        scan,
+        bound,
+        overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_exclusive_sum(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    prefix_op: Any = None,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block exclusive-sum callable.
+
+    The callable binds CTA metadata and forwards each scalar or ``ThreadData``
+    value to :func:`exclusive_sum`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_exclusive_sum", "prefix_op", prefix_op)
+    _reject_algorithm("make_exclusive_sum", algorithm, default=None)
+    _reject_methods("make_exclusive_sum", kwargs)
+    bound = _block_kwargs(
+        "make_exclusive_sum",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    return _make_factory(
+        "make_exclusive_sum",
+        exclusive_sum,
+        bound,
+        overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_inclusive_sum(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    prefix_op: Any = None,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block inclusive-sum callable.
+
+    The callable binds CTA metadata and forwards each scalar or ``ThreadData``
+    value to :func:`inclusive_sum`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_inclusive_sum", "prefix_op", prefix_op)
+    _reject_algorithm("make_inclusive_sum", algorithm, default=None)
+    _reject_methods("make_inclusive_sum", kwargs)
+    bound = _block_kwargs(
+        "make_inclusive_sum",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    return _make_factory(
+        "make_inclusive_sum",
+        inclusive_sum,
+        bound,
+        overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_exclusive_scan(
+    dtype: Any,
+    threads_per_block: Any = None,
+    scan_op: Any = "+",
+    items_per_thread: int = 1,
+    initial_value: Any = None,
+    prefix_op: Any = None,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block exclusive-scan callable.
+
+    The callable binds scan operator, optional initial value, and CTA metadata
+    before forwarding each value to :func:`exclusive_scan`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_exclusive_scan", "prefix_op", prefix_op)
+    _reject_algorithm("make_exclusive_scan", algorithm, default=None)
+    _reject_methods("make_exclusive_scan", kwargs)
+    bound = _block_kwargs(
+        "make_exclusive_scan",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    bound["scan_op"] = scan_op
+    _bind_if_not_none(bound, "initial_value", initial_value)
+    return _make_factory(
+        "make_exclusive_scan",
+        exclusive_scan,
+        bound,
+        overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_inclusive_scan(
+    dtype: Any,
+    threads_per_block: Any = None,
+    scan_op: Any = "+",
+    items_per_thread: int = 1,
+    initial_value: Any = None,
+    prefix_op: Any = None,
+    algorithm: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block inclusive-scan callable.
+
+    The callable binds scan operator, optional initial value, and CTA metadata
+    before forwarding each value to :func:`inclusive_scan`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_inclusive_scan", "prefix_op", prefix_op)
+    _reject_algorithm("make_inclusive_scan", algorithm, default=None)
+    _reject_methods("make_inclusive_scan", kwargs)
+    bound = _block_kwargs(
+        "make_inclusive_scan",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    bound["scan_op"] = scan_op
+    _bind_if_not_none(bound, "initial_value", initial_value)
+    return _make_factory(
+        "make_inclusive_scan",
+        inclusive_scan,
+        bound,
+        overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
     )

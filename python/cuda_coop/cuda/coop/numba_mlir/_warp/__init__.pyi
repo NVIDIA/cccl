@@ -845,8 +845,394 @@ def make_min(
 ) -> _ReduceInvocable[Any]:
     """Build a generated physical-warp minimum callable."""
 
+@overload
+def exclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp sum callable."""
+
+@overload
+def exclusive_sum(
+    value: _T,
+    /,
+    *,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an exclusive physical-warp sum prefix."""
+
+@overload
+def exclusive_sum(
+    value: _T,
+    warp_aggregate: object,
+    /,
+    *,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return a prefix and write the exclusive physical-warp aggregate."""
+
+@overload
+def exclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an exclusive physical-warp sum from a compiler dtype token."""
+
+@overload
+def inclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp sum callable."""
+
+@overload
+def inclusive_sum(
+    value: _T,
+    /,
+    *,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an inclusive physical-warp sum prefix."""
+
+@overload
+def inclusive_sum(
+    value: _T,
+    warp_aggregate: object,
+    /,
+    *,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return a prefix and write the inclusive physical-warp aggregate."""
+
+@overload
+def inclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an inclusive physical-warp sum from a compiler dtype token."""
+
+@overload
+def exclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp scan callable."""
+
+@overload
+def exclusive_scan(
+    value: _T,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an exclusive callback-based physical-warp prefix."""
+
+@overload
+def exclusive_scan(
+    value: _T,
+    valid_items_or_aggregate: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an exclusive prefix with one enabled runtime operand."""
+
+@overload
+def exclusive_scan(
+    value: _T,
+    valid_items: object,
+    warp_aggregate: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return a partial exclusive prefix and write its aggregate."""
+
+@overload
+def exclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an exclusive physical-warp scan from a compiler dtype token."""
+
+@overload
+def inclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp scan callable."""
+
+@overload
+def inclusive_scan(
+    value: _T,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an inclusive callback-based physical-warp prefix."""
+
+@overload
+def inclusive_scan(
+    value: _T,
+    valid_items_or_aggregate: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return an inclusive prefix with one enabled runtime operand."""
+
+@overload
+def inclusive_scan(
+    value: _T,
+    valid_items: object,
+    warp_aggregate: object,
+    /,
+    *,
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _T:
+    """Return a partial inclusive prefix and write its aggregate."""
+
+@overload
+def inclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build an inclusive physical-warp scan from a compiler dtype token."""
+
+@overload
+def warp_exclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp sum callable."""
+
+@overload
+def warp_exclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive physical-warp sum callable."""
+
+@overload
+def make_exclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp sum callable."""
+
+@overload
+def make_exclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive physical-warp sum callable."""
+
+@overload
+def warp_inclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp sum callable."""
+
+@overload
+def warp_inclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive physical-warp sum callable."""
+
+@overload
+def make_inclusive_sum(
+    dtype: type[_T],
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp sum callable."""
+
+@overload
+def make_inclusive_sum(
+    dtype: object,
+    threads_in_warp: int = 32,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive physical-warp sum callable."""
+
+@overload
+def warp_exclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp scan callable."""
+
+@overload
+def warp_exclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive physical-warp scan callable."""
+
+@overload
+def make_exclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving exclusive physical-warp scan callable."""
+
+@overload
+def make_exclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated exclusive physical-warp scan callable."""
+
+@overload
+def warp_inclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp scan callable."""
+
+@overload
+def warp_inclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive physical-warp scan callable."""
+
+@overload
+def make_inclusive_scan(
+    dtype: type[_T],
+    scan_op: Callable[[_T, _T], _T],
+    initial_value: _T | None = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[_T]:
+    """Build a dtype-preserving inclusive physical-warp scan callable."""
+
+@overload
+def make_inclusive_scan(
+    dtype: object,
+    scan_op: object,
+    initial_value: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    warp_aggregate: object = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _ScanInvocable[Any]:
+    """Build a generated inclusive physical-warp scan callable."""
+
 __all__ = [
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_max",
     "make_min",
@@ -858,6 +1244,10 @@ __all__ = [
     "reduce",
     "store",
     "sum",
+    "warp_exclusive_scan",
+    "warp_exclusive_sum",
+    "warp_inclusive_scan",
+    "warp_inclusive_sum",
     "warp_load",
     "warp_max",
     "warp_min",

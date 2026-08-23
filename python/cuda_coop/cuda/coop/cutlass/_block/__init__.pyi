@@ -8,10 +8,15 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl._launch import CutlassLaunchMetadata as _CutlassLaunchMetadata
+from .._dsl.block import exclusive_scan as exclusive_scan
+from .._dsl.block import exclusive_sum as exclusive_sum
+from .._dsl.block import inclusive_scan as inclusive_scan
+from .._dsl.block import inclusive_sum as inclusive_sum
 from .._dsl.block import radix_sort_keys_descending as radix_sort_keys_descending
 from .._dsl.block import radix_sort_pairs_descending as radix_sort_pairs_descending
 from .._dsl.block import reduce as reduce
 from .._dsl.block import row_sum as row_sum
+from .._dsl.block import scan as scan
 from .._dsl.block import sum as sum
 
 class _DeferredValue(Protocol):
@@ -249,6 +254,72 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_scan(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    mode: str = "exclusive",
+    scan_op: object = "+",
+    prefix_op: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block scan specialization."""
+
+def make_exclusive_scan(
+    dtype: object,
+    threads_per_block: object = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    prefix_op: object = None,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred exclusive block scan specialization."""
+
+def make_inclusive_scan(
+    dtype: object,
+    threads_per_block: object = None,
+    scan_op: object = "+",
+    items_per_thread: int = 1,
+    initial_value: object = None,
+    prefix_op: object = None,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred inclusive block scan specialization."""
+
+def make_exclusive_sum(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    prefix_op: object = None,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred exclusive block sum specialization."""
+
+def make_inclusive_sum(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    prefix_op: object = None,
+    algorithm: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred inclusive block sum specialization."""
+
 def make_reduce(
     dtype: object,
     threads_per_block: object = None,
@@ -303,17 +374,27 @@ def make_radix_sort_pairs_descending(
 
 __all__ = [
     "TempStorage",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
     "make_load",
     "make_radix_sort_keys_descending",
     "make_radix_sort_pairs_descending",
     "make_reduce",
+    "make_scan",
     "make_store",
     "make_sum",
     "radix_sort_keys_descending",
     "radix_sort_pairs_descending",
     "reduce",
     "row_sum",
+    "scan",
     "store",
     "sum",
 ]
