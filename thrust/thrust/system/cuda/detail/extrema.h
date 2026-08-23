@@ -83,7 +83,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
     return {first, first};
   }
 
-  cudaStream_t stream = cuda_cub::stream(policy);
+  const cudaStream_t stream = cuda_cub::stream(policy);
 
   // TODO(bgruber): with CCCL 4.0 switch to cub::DeviceReduce::ArgMinLastMax to conform to the C++ standard
   ::cuda::std::size_t tmp_size = 0;
@@ -104,9 +104,9 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
   const auto aligned_tmp_size = ::cuda::round_up(tmp_size, alignof(offset_t));
   // Allocate: the algorithm's temporary storage followed by two index slots (min, max).
   thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + 2 * sizeof(offset_t));
-  void* tmp_ptr       = static_cast<void*>(tmp.data().get());
-  offset_t* min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
-  offset_t* max_index = min_index + 1;
+  void* const tmp_ptr       = static_cast<void*>(tmp.data().get());
+  offset_t* const min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
+  offset_t* const max_index = min_index + 1;
 
   // TODO(bgruber): with CCCL 4.0 switch to cub::DeviceReduce::ArgMinLastMax to conform to the C++ standard
   error = cub::DeviceReduce::ArgMinMax(
