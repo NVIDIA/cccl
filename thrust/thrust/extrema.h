@@ -471,9 +471,10 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
- *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin points to the first
- *  occurrence of the smallest element and \c imax points to the last occurrence of the largest element.
+ *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
+ *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
  *  This function is potentially more efficient than separate calls to \p min_element and \p max_element.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -514,9 +515,10 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
- *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin points to the first
- *  occurrence of the smallest element and \c imax points to the last occurrence of the largest element.
+ *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
+ *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
  *  This function is potentially more efficient than separate calls to \p min_element and \p max_element.
  *
  *  \param first The beginning of the sequence.
@@ -551,9 +553,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
 template <typename ForwardIterator>
 ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
- *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin points to the first
- *  occurrence of the smallest element and \c imax points to the last occurrence of the largest element.
+ *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
+ *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
  *  This function is potentially more efficient than separate calls to \p min_element and \p max_element.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -622,9 +625,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
   ForwardIterator last,
   BinaryPredicate comp);
 
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
- *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin points to the first
- *  occurrence of the smallest element and \c imax points to the last occurrence of the largest element.
+ *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
+ *  returned by \p min_element and \c imax is the same iterator returned by \p max_element.
  *  This function is potentially more efficient than separate calls to \p min_element and \p max_element.
  *
  *  \param first The beginning of the sequence.

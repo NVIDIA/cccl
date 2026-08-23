@@ -85,6 +85,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
     return {first, first};
   }
 
+  // TODO(bgruber): with CCCL 4.0 switch to cub::DeviceReduce::ArgMinLastMax to conform to the C++ standard
   ::cuda::std::size_t tmp_size = 0;
   auto error                   = cub::DeviceReduce::ArgMinMax(
     nullptr,
@@ -107,6 +108,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
   offset_t* min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
   offset_t* max_index = min_index + 1;
 
+  // TODO(bgruber): with CCCL 4.0 switch to cub::DeviceReduce::ArgMinLastMax to conform to the C++ standard
   error = cub::DeviceReduce::ArgMinMax(
     tmp_ptr,
     tmp_size,

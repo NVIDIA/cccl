@@ -84,9 +84,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
       imin = first;
     }
 
-    if (!wrapped_comp(*first, *imax))
+    // TODO(bgruber): for CCCL 4.0, switch to `!wrapped_comp(*first, *imax)` to conform to the C++ standard
+    if (wrapped_comp(*imax, *first))
     {
-      imax = first; // *first >= *imax: update for last occurrence (C++ standard behavior)
+      imax = first;
     }
   }
 

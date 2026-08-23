@@ -101,39 +101,28 @@ struct max_element_reduction
   } // end operator()()
 }; // end max_element_reduction
 
-// return the smaller & larger element: first occurrence for min, last occurrence for max (per C++ standard)
+// return the smaller & larger element making sure to prefer the
+// first occurrence of the minimum/maximum element
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct minmax_element_reduction
 {
   BinaryPredicate comp;
 
-  using pair_type = ::cuda::std::tuple<InputType, IndexType>;
-
   _CCCL_HOST_DEVICE minmax_element_reduction(BinaryPredicate comp)
       : comp(comp)
   {}
 
-  _CCCL_HOST_DEVICE pair_type last_max(const pair_type& lhs, const pair_type& rhs) const
-  {
-    if (comp(::cuda::std::get<0>(lhs), ::cuda::std::get<0>(rhs)))
-    {
-      return rhs;
-    }
-    if (comp(::cuda::std::get<0>(rhs), ::cuda::std::get<0>(lhs)))
-    {
-      return lhs;
-    }
-    // values are equivalent, prefer value with larger index (last occurrence, per C++ standard)
-    return ::cuda::std::get<1>(lhs) < ::cuda::std::get<1>(rhs) ? rhs : lhs;
-  }
-
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<pair_type, pair_type>
-  operator()(const ::cuda::std::tuple<pair_type, pair_type>& lhs, const ::cuda::std::tuple<pair_type, pair_type>& rhs)
+  _CCCL_HOST_DEVICE ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>
+  operator()(
+    const ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>& lhs,
+    const ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>& rhs)
   {
     return ::cuda::std::make_tuple(
       min_element_reduction<InputType, IndexType, BinaryPredicate>(
         comp)(::cuda::std::get<0>(lhs), ::cuda::std::get<0>(rhs)),
-      last_max(::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
+      max_element_reduction<InputType, IndexType, BinaryPredicate>(
+        comp)(::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
   } // end operator()()
 }; // end minmax_element_reduction
 
