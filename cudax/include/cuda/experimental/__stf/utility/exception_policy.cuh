@@ -1695,7 +1695,7 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * rethrow-on-exhaustion; composites erase whole; a sink composes with `&`, `|`,
  * `*`, `when`, `always` and re-erases.
  *
- * Custom runtime policies derive from the public @ref sink_base: implement
+ * Custom runtime policies derive from the public @ref sink_base and implement
  * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
  * default to `passthrough` and are unchecked. Erased |-composites are
  * `passthrough` (a loud, value-checked unbox on first throw is their
@@ -2312,7 +2312,7 @@ exception_sink type_erase(_P&& __p)
  * Vocabulary visibility: the named policies live in the non-inline namespace
  * `exception_policies`. Blessed patterns are a block-scope
  * `using namespace cuda::experimental::stf::exception_policies;` at the function that
- * configures sinks, or a namespace alias (`namespace pol = ...::exception_policies;`):
+ * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::exception_policies;`):
  *
  * @code
  * using namespace cuda::experimental::stf::exception_policies;
