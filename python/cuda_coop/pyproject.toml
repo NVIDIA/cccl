@@ -39,6 +39,14 @@ cutlass = [
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]>=13.0.0,<14.0.0",
   "nvidia-cutlass-dsl[cu13]>=4.8,<5",
 ]
+numba-cuda-mlir-cu12 = [
+  "cuda-core>=0.5.1,<2",
+  "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
+]
+numba-cuda-mlir-cu13 = [
+  "cuda-core>=0.5.1,<2",
+  "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
+]
 test = [
   "mypy",
   "numpy",
@@ -126,6 +134,9 @@ known-first-party = [
   "cuda.coop.cutlass",
   "cuda.coop.cutlass._compiler",
   "cuda.coop.cutlass._lowering",
+  "cuda.coop.numba_mlir",
+  "cuda.coop.numba_mlir._compiler",
+  "cuda.coop.numba_mlir._lowering",
 ]
 
 [tool.pytest.ini_options]

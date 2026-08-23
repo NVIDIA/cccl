@@ -1,0 +1,7 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Foundation lowering package for Numba-CUDA-MLIR."""
+
+__all__: tuple[str, ...] = ()
