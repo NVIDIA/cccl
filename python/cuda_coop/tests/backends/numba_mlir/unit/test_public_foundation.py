@@ -15,16 +15,24 @@ from cuda.coop.numba_mlir import (
 from cuda.coop.numba_mlir._compiler import _activation
 
 _PUBLIC_EXPORTS = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "WarpLoadAlgorithm",
+    "WarpStoreAlgorithm",
+    "exchange",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "load",
     "local",
     "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -33,22 +41,50 @@ _PUBLIC_EXPORTS = [
 ]
 
 
-def test_public_exports_only_group_and_storage_building_blocks():
+def test_public_exports_cover_the_incremental_primitive_families():
     assert coop.__all__ == _PUBLIC_EXPORTS
     assert sorted(name for name in dir(coop) if not name.startswith("_")) == (
         _PUBLIC_EXPORTS
     )
 
-    for name in ("exchange", "load", "reduce", "scan", "shuffle", "store"):
+    for name in ("reduce", "scan"):
         assert not hasattr(coop, name)
 
     assert "_block" not in coop.__all__
     assert "_warp" not in coop.__all__
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group_load_store" not in loaded
+    assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
+
+
+def test_group_markers_use_exact_callable_identity():
+    from cuda.coop.numba_mlir._compiler._operations import group_operation_name
+
+    assert group_operation_name(coop.load) == "load"
+
+    def load(*args, **kwargs):
+        del args, kwargs
+
+    load.__module__ = coop.load.__module__
+    load.__name__ = coop.load.__name__
+    load.__cuda_coop_backend_member__ = "load"
+    assert group_operation_name(load) is None
+
+
+def test_lowering_factories_use_exact_callable_identity():
+    from cuda.coop.numba_mlir import _lowering
+    from cuda.coop.numba_mlir._compiler._operations import factory_operation
+
+    assert factory_operation(_lowering.load) is not None
+
+    def load(*args, **kwargs):
+        del args, kwargs
+
+    load.__module__ = _lowering.load.__module__
+    load.__name__ = _lowering.load.__name__
+    assert factory_operation(load) is None
 
 
 def test_compiler_hooks_are_registered_exactly_once_and_idempotently():

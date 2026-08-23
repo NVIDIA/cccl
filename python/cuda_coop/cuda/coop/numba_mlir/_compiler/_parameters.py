@@ -2,15 +2,56 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Dtype normalization for Numba-CUDA-MLIR lowering.
+"""Trace-static parameter normalization for Numba-CUDA-MLIR lowering.
 
-This module canonicalizes public dtype spellings before compiler lowering.
+This module canonicalizes dimensions, dtypes, portable dtype profiles, and
+typed scalar literals before provider construction.  It does not inspect IR,
+infer launch metadata, or own persistent cache formats.
 """
 
+import operator
+from collections import namedtuple
 from typing import Union
 
 import numpy as np
 from numba_cuda_mlir import types as numba_mlir_types
+
+from cuda.coop._core.dtype_policy import (
+    validate_portable_numeric_dtype_name,
+)
+
+dim3 = namedtuple("dim3", ("x", "y", "z"))
+
+
+def normalize_dim_param(dim) -> dim3:
+    """Normalize a positive one-, two-, or three-dimensional extent."""
+
+    if isinstance(dim, dim3):
+        values = tuple(dim)
+    elif isinstance(dim, tuple):
+        if not 1 <= len(dim) <= 3:
+            raise ValueError(
+                f"Tuple dimension must have one, two, or three elements; got {len(dim)}"
+            )
+        values = dim
+    else:
+        values = (dim,)
+
+    normalized = []
+    for value in values:
+        if isinstance(value, bool):
+            raise TypeError("Dimension values must be integers")
+        try:
+            value = operator.index(value)
+        except TypeError as exc:
+            raise TypeError("Dimension values must be integers") from exc
+        if value <= 0:
+            raise ValueError(f"Dimension values must be positive, got {dim!r}")
+        normalized.append(value)
+
+    normalized.extend([1] * (3 - len(normalized)))
+    return dim3(*normalized)
+
 
 _NP_DTYPE_TO_NUMBA_MLIR_TYPE = {
     np.dtype(np.bool_): numba_mlir_types.boolean,
@@ -92,3 +133,33 @@ def normalize_dtype_param(
         raise ValueError(f"Invalid Numba-CUDA-MLIR type name: {dtype}")
 
     raise ValueError(f"Unrecognized dtype format: {dtype}")
+
+
+_NUMBA_MLIR_DTYPE_NAMES = {
+    numba_mlir_type: np_dtype.name
+    for np_dtype, numba_mlir_type in _NP_DTYPE_TO_NUMBA_MLIR_TYPE.items()
+}
+
+
+def _normalize_common_dtype(dtype):
+    """Return a backend dtype and its portable normalized name."""
+
+    dtype = normalize_dtype_param(dtype)
+    return dtype, _NUMBA_MLIR_DTYPE_NAMES.get(dtype, str(dtype))
+
+
+def _validate_common_numeric_dtype(
+    dtype,
+    *,
+    operation: str,
+    parameter: str | None = None,
+):
+    """Return one normalized dtype from the portable numeric profile."""
+
+    dtype, dtype_name = _normalize_common_dtype(dtype)
+    validate_portable_numeric_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+    )
+    return dtype

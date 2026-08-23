@@ -2,25 +2,37 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Whole-function group hierarchy planner for Numba-CUDA-MLIR.
+"""Shared whole-function group planner for Numba-CUDA-MLIR.
 
-This module resolves compile-time hierarchy descriptors and group methods
-against exact launch metadata.
+This module owns cross-family IR provenance, hierarchy and payload caches,
+result construction, and orchestration. Primitive-specific lowering methods
+live in the adjacent semantic group mixins.
 """
 
+from .._thread_data import ThreadData
+from ._group_exchange import _ExchangePlanning
+from ._group_load_store import _LoadStorePlanning
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
     _NAME_COUNTER,
+    _PAYLOAD_DTYPE_LIKE,
     _PORTABLE_GROUP_CONSTRUCTORS,
+    _ROOT_OPERATIONS,
     Any,
     ForceLiteralArg,
     GroupRewriteError,
+    Integral,
     LaunchFactOrigin,
     LaunchFacts,
     ThreadGroup,
     ThreadHierarchy,
     WholeFunctionPlanner,
+    _cuda_module,
+    _group_operation_name,
+    _is_common_root_operation,
+    _portable_api,
+    _typed_group_payload_like,
     inspect,
     ir,
     normalize_thread_level,
@@ -29,10 +41,15 @@ from ._group_planner_support import (
     resolve_thread_group,
     types,
 )
+from ._group_shuffle import _ShufflePlanning
 
 
-class _GroupCallPlanner:
-    """Lower compile-time group descriptors and group methods."""
+class _GroupCallPlanner(
+    _LoadStorePlanning,
+    _ExchangePlanning,
+    _ShufflePlanning,
+):
+    """Coordinate semantic family lowering against one function IR."""
 
     def __init__(self, state, launch_config: dict[str, Any]) -> None:
         self.state = state
@@ -101,6 +118,13 @@ class _GroupCallPlanner:
         except KeyError:
             return None
 
+    def _all_definitions(self, value: ir.Var) -> tuple[Any, ...]:
+        definitions = getattr(self.func_ir, "_definitions", {}).get(value.name, ())
+        if definitions:
+            return tuple(definitions)
+        definition = self._definition(value)
+        return () if definition is None else (definition,)
+
     def _callable(self, value: Any) -> Any:
         current = self._definition(value)
         attrs: list[str] = []
@@ -145,6 +169,24 @@ class _GroupCallPlanner:
                 f"cuda.coop.numba_mlir group arguments that shape provider specialization must be compile-time constants; got {value.name!r}"
             ) from exc
 
+    def _try_constant(self, value: Any) -> tuple[bool, Any]:
+        """Resolve a constant without requesting dispatcher specialization."""
+        if isinstance(value, ir.Var):
+            definition = self._definition(value)
+            if isinstance(definition, ir.Arg):
+                argtype = self.state.args[definition.index]
+                if isinstance(argtype, types.Literal):
+                    return (True, argtype.literal_value)
+                if isinstance(argtype, types.NoneType) or (
+                    isinstance(argtype, types.Omitted) and argtype.value is None
+                ):
+                    return (True, None)
+                return (False, None)
+        try:
+            return (True, self._constant(value))
+        except (ForceLiteralArg, GroupRewriteError):
+            return (False, None)
+
     def _bind(self, function: Any, call: ir.Expr) -> inspect.BoundArguments:
         if call.vararg is not None or call.varkwarg is not None:
             raise GroupRewriteError(
@@ -156,6 +198,72 @@ class _GroupCallPlanner:
             raise GroupRewriteError(str(exc)) from exc
         bound.apply_defaults()
         return bound
+
+    @staticmethod
+    def _reject_extra_root_arguments(
+        operation: str, bound: inspect.BoundArguments
+    ) -> None:
+        if bound.arguments.get("args"):
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} accepts no extra positional arguments"
+            )
+        if bound.arguments.get("kwargs"):
+            names = ", ".join(sorted(bound.arguments["kwargs"]))
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
+            )
+
+    def _validate_common_selector(
+        self,
+        operation: str,
+        parameter: str,
+        value: Any,
+        allowed: frozenset[str],
+        *,
+        allow_none: bool = False,
+    ) -> Any:
+        """Validate one common-root selector bypassed by identity rewriting."""
+        token = self._constant(value)
+        if token is None and allow_none:
+            return None
+        token = getattr(token, "value", token)
+        if isinstance(token, str):
+            token = token.strip().lower().replace("-", "_")
+        if token not in allowed:
+            choices = ", ".join(sorted(allowed))
+            raise ValueError(
+                f"cuda.coop.{operation} {parameter} must be one of: {choices}; use a backend-qualified import for backend-only controls"
+            )
+        return token
+
+    def _validate_common_arguments(
+        self, operation: str, bound: inspect.BoundArguments
+    ) -> None:
+        """Enforce portable API restrictions before backend lowering."""
+        selector_specs = {
+            "load": (
+                "algorithm",
+                _portable_api._LOAD_STORE_ALGORITHMS,
+                False,
+            ),
+            "store": (
+                "algorithm",
+                _portable_api._LOAD_STORE_ALGORITHMS,
+                False,
+            ),
+            "exchange": ("mode", _portable_api._EXCHANGE_MODES, False),
+            "shuffle": ("mode", _portable_api._SHUFFLE_MODES, False),
+        }
+        spec = selector_specs.get(operation)
+        if spec is not None:
+            parameter, allowed, allow_none = spec
+            bound.arguments[parameter] = self._validate_common_selector(
+                operation,
+                parameter,
+                bound.arguments[parameter],
+                allowed,
+                allow_none=allow_none,
+            )
 
     def _hierarchy(self, value: Any) -> ThreadHierarchy | None:
         if isinstance(value, ThreadHierarchy):
@@ -278,26 +386,640 @@ class _GroupCallPlanner:
             resolved = resolved.with_hierarchy(resolved.hierarchy, source="common_root")
         return resolved
 
+    def _is_none(self, value: Any) -> bool:
+        resolved, constant = self._try_constant(value)
+        return resolved and constant is None
+
+    @staticmethod
+    def _merge_array_states(states: tuple[bool | None, ...]) -> bool | None:
+        if not states or any((state is False for state in states)):
+            return False
+        if any((state is True for state in states)):
+            return True
+        return None
+
+    def _is_array_tuple_item(
+        self, value: Any, index: int, *, seen: set[str], thread_data_only: bool = False
+    ) -> bool | None:
+        if not isinstance(value, ir.Var):
+            return False
+        seen_key = f"{value.name}[{index}]"
+        if seen_key in seen:
+            return None
+        seen.add(seen_key)
+        return self._merge_array_states(
+            tuple(
+                (
+                    self._is_array_tuple_item_definition(
+                        definition,
+                        index,
+                        seen=set(seen),
+                        thread_data_only=thread_data_only,
+                    )
+                    for definition in self._all_definitions(value)
+                )
+            )
+        )
+
+    def _is_array_tuple_item_definition(
+        self, definition: Any, index: int, *, seen: set[str], thread_data_only: bool
+    ) -> bool | None:
+        if isinstance(definition, ir.Var):
+            return self._is_array_tuple_item(
+                definition, index, seen=seen, thread_data_only=thread_data_only
+            )
+        if not isinstance(definition, ir.Expr):
+            return False
+        if definition.op in {"cast", "exhaust_iter"}:
+            return self._is_array_tuple_item(
+                definition.value, index, seen=seen, thread_data_only=thread_data_only
+            )
+        if definition.op == "phi":
+            incoming_values = getattr(definition, "incoming_values", ())
+            return self._merge_array_states(
+                tuple(
+                    (
+                        self._is_array_tuple_item(
+                            incoming,
+                            index,
+                            seen=set(seen),
+                            thread_data_only=thread_data_only,
+                        )
+                        for incoming in incoming_values
+                    )
+                )
+            )
+        if definition.op == "build_tuple":
+            items = tuple(getattr(definition, "items", ()))
+            if not -len(items) <= index < len(items):
+                return False
+            return self._is_array_value(
+                items[index], seen=set(seen), thread_data_only=thread_data_only
+            )
+        if definition.op != "call":
+            return False
+        return False
+
+    def _is_array_value(
+        self,
+        value: Any,
+        *,
+        seen: set[str] | None = None,
+        thread_data_only: bool = False,
+    ) -> bool | None:
+        if not isinstance(value, ir.Var):
+            return False
+        if seen is None:
+            seen = set()
+        if value.name in seen:
+            return None
+        seen.add(value.name)
+        return self._merge_array_states(
+            tuple(
+                (
+                    self._is_array_definition(
+                        definition, seen=set(seen), thread_data_only=thread_data_only
+                    )
+                    for definition in self._all_definitions(value)
+                )
+            )
+        )
+
+    def _is_array_definition(
+        self, definition: Any, *, seen: set[str], thread_data_only: bool
+    ) -> bool | None:
+        if isinstance(definition, ir.Var):
+            return self._is_array_value(
+                definition, seen=seen, thread_data_only=thread_data_only
+            )
+        if not isinstance(definition, ir.Expr):
+            return False
+        if definition.op == "cast":
+            return self._is_array_value(
+                definition.value, seen=seen, thread_data_only=thread_data_only
+            )
+        if definition.op == "phi":
+            incoming_values = getattr(definition, "incoming_values", ())
+            return self._merge_array_states(
+                tuple(
+                    (
+                        self._is_array_value(
+                            incoming, seen=set(seen), thread_data_only=thread_data_only
+                        )
+                        for incoming in incoming_values
+                    )
+                )
+            )
+        if definition.op in {"getitem", "static_getitem"}:
+            index = getattr(definition, "index", None)
+            if isinstance(index, ir.Var):
+                try:
+                    index = self._constant(index)
+                except GroupRewriteError:
+                    return False
+            if isinstance(index, Integral) and (not isinstance(index, bool)):
+                return self._is_array_tuple_item(
+                    definition.value,
+                    int(index),
+                    seen=set(seen),
+                    thread_data_only=thread_data_only,
+                )
+            return False
+        if definition.op != "call":
+            return False
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        if function in {ThreadData, _portable_api.ThreadData}:
+            return True
+        if function is _typed_group_payload_like:
+            return self._is_array_value(
+                definition.args[0], seen=seen, thread_data_only=thread_data_only
+            )
+        if function is _cuda_module.local.array:
+            return not thread_data_only
+        array_result_argument = {
+            "exchange": "value",
+            "load": "output",
+            "shuffle": "value",
+        }.get(operation)
+        if array_result_argument is None:
+            return False
+        bound = self._bind(function, definition)
+        return self._is_array_value(
+            bound.arguments[array_result_argument],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
+
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
         return ir.Var(scope, f"__cuda_coop_group_{stem}_{next(_NAME_COUNTER)}__", loc)
+
+    def _value_var(
+        self, statements: list[Any], *, scope: Any, loc: ir.Loc, stem: str, value: Any
+    ) -> ir.Var:
+        if isinstance(value, ir.Var):
+            return value
+        result = self._new_var(scope, loc, stem)
+        if value is None or isinstance(value, (bool, int, float, str, tuple)):
+            rhs = ir.Const(value, loc)
+        else:
+            rhs = ir.Global(result.name, value, loc)
+        statements.append(ir.Assign(rhs, result, loc))
+        return result
 
     def _rewritten_call(
         self,
         inst: ir.Assign,
         *,
         factory: Any,
+        args: list[Any],
+        kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
+        common_root_operation: str | None = None,
     ) -> list[Any]:
         statements: list[Any] = []
+        scope = inst.target.scope
         loc = inst.loc
-        function_var = self._new_var(inst.target.scope, loc, "factory")
+        if common_root_operation is not None:
+            kwargs = dict(kwargs)
+            kwargs.setdefault("_common_root_operation", common_root_operation)
+        function_var = self._new_var(scope, loc, "factory")
         statements.append(
             ir.Assign(ir.Global(function_var.name, factory, loc), function_var, loc)
         )
-        statements.append(
-            ir.Assign(ir.Expr.call(function_var, [], (), loc), inst.target, loc)
+        rewritten_args = [
+            self._value_var(
+                statements, scope=scope, loc=loc, stem=f"arg{idx}", value=value
+            )
+            for idx, value in enumerate(args)
+        ]
+        rewritten_kwargs = tuple(
+            (
+                (
+                    name,
+                    self._value_var(
+                        statements, scope=scope, loc=loc, stem=name, value=value
+                    ),
+                )
+                for name, value in kwargs.items()
+            )
         )
+        call_target = (
+            inst.target
+            if return_alias is None
+            else self._new_var(scope, loc, "ignored_result")
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.call(function_var, rewritten_args, rewritten_kwargs, loc),
+                call_target,
+                loc,
+            )
+        )
+        if isinstance(return_alias, tuple):
+            statements.append(
+                ir.Assign(
+                    ir.Expr.build_tuple(list(return_alias), loc), inst.target, loc
+                )
+            )
+        elif return_alias is not None:
+            statements.append(ir.Assign(return_alias, inst.target, loc))
         return statements
+
+    def _array_operand_state(self, operation: str, value: Any) -> bool:
+        state = self._is_array_value(value)
+        if state is None:
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} could not resolve cyclic array provenance to a concrete scalar or array value"
+            )
+        return state
+
+    def _thread_data_operand_state(
+        self, operation: str, parameter: str, value: Any
+    ) -> bool:
+        state = self._is_array_value(value, thread_data_only=True)
+        if state is None:
+            raise GroupRewriteError(
+                f"cuda.coop.{operation} could not resolve {parameter} payload provenance"
+            )
+        return state
+
+    def _array_extent(self, value: Any, *, seen: set[str] | None = None) -> int | None:
+        if not isinstance(value, ir.Var):
+            return None
+        if seen is None:
+            seen = set()
+        if value.name in seen:
+            return None
+        seen.add(value.name)
+        extents: set[int] = set()
+        for definition in self._all_definitions(value):
+            extent = self._array_extent_definition(definition, seen=set(seen))
+            if extent is not None:
+                extents.add(extent)
+        if len(extents) > 1:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir array aliases have inconsistent items_per_thread extents"
+            )
+        return next(iter(extents), None)
+
+    def _array_extent_tuple_item(
+        self, value: Any, index: int, *, seen: set[str]
+    ) -> int | None:
+        if not isinstance(value, ir.Var):
+            return None
+        seen_key = f"{value.name}[{index}]"
+        if seen_key in seen:
+            return None
+        seen.add(seen_key)
+        extents = {
+            extent
+            for definition in self._all_definitions(value)
+            if (
+                extent := self._array_extent_tuple_item_definition(
+                    definition, index, seen=set(seen)
+                )
+            )
+            is not None
+        }
+        if len(extents) > 1:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir tuple projections have inconsistent items_per_thread extents"
+            )
+        return next(iter(extents), None)
+
+    def _array_extent_tuple_item_definition(
+        self, definition: Any, index: int, *, seen: set[str]
+    ) -> int | None:
+        if isinstance(definition, ir.Var):
+            return self._array_extent_tuple_item(definition, index, seen=seen)
+        if not isinstance(definition, ir.Expr):
+            return None
+        if definition.op in {"cast", "exhaust_iter"}:
+            return self._array_extent_tuple_item(definition.value, index, seen=seen)
+        if definition.op == "phi":
+            extents = {
+                extent
+                for incoming in getattr(definition, "incoming_values", ())
+                if (
+                    extent := self._array_extent_tuple_item(
+                        incoming, index, seen=set(seen)
+                    )
+                )
+                is not None
+            }
+            if len(extents) > 1:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir loop-carried tuple payloads have inconsistent items_per_thread extents"
+                )
+            return next(iter(extents), None)
+        if definition.op == "build_tuple":
+            items = tuple(getattr(definition, "items", ()))
+            if not -len(items) <= index < len(items):
+                return None
+            return self._array_extent(items[index], seen=set(seen))
+        if definition.op != "call":
+            return None
+        return None
+
+    def _array_extent_definition(
+        self, definition: Any, *, seen: set[str]
+    ) -> int | None:
+        if isinstance(definition, ir.Var):
+            return self._array_extent(definition, seen=seen)
+        if not isinstance(definition, ir.Expr):
+            return None
+        if definition.op == "cast":
+            return self._array_extent(definition.value, seen=seen)
+        if definition.op == "phi":
+            extents = {
+                extent
+                for incoming in getattr(definition, "incoming_values", ())
+                if (extent := self._array_extent(incoming, seen=set(seen))) is not None
+            }
+            if len(extents) > 1:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir loop-carried payloads have inconsistent items_per_thread extents"
+                )
+            return next(iter(extents), None)
+        if definition.op in {"getitem", "static_getitem"}:
+            index = getattr(definition, "index", None)
+            if isinstance(index, ir.Var):
+                try:
+                    index = self._constant(index)
+                except GroupRewriteError:
+                    return None
+            if isinstance(index, Integral) and (not isinstance(index, bool)):
+                return self._array_extent_tuple_item(
+                    definition.value, int(index), seen=set(seen)
+                )
+            return None
+        if definition.op != "call":
+            return None
+        function = self._callable(definition.func)
+        if function is _typed_group_payload_like:
+            try:
+                is_array = self._constant(definition.args[1])
+            except (GroupRewriteError, IndexError):
+                return None
+            if len(definition.args) >= 4:
+                try:
+                    extent = self._constant(definition.args[3])
+                except GroupRewriteError:
+                    return None
+                if isinstance(extent, Integral) and (not isinstance(extent, bool)):
+                    return int(extent)
+                return None
+            if is_array is False:
+                return 1
+            return self._array_extent(definition.args[0], seen=seen)
+        if function in {ThreadData, _portable_api.ThreadData}:
+            bound = self._bind(function, definition)
+            extent_argument = bound.arguments["items_per_thread"]
+            try:
+                extent = self._constant(extent_argument)
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and (not isinstance(extent, bool)):
+                return int(extent)
+            return None
+        if function is _cuda_module.local.array:
+            if not definition.args:
+                return None
+            try:
+                extent = self._constant(definition.args[0])
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and (not isinstance(extent, bool)):
+                return int(extent)
+            return None
+        operation = _group_operation_name(function)
+        shape_argument = {
+            "exchange": "value",
+            "load": "output",
+            "shuffle": "value",
+        }.get(operation)
+        if shape_argument is None:
+            return None
+        bound = self._bind(function, definition)
+        return self._array_extent(bound.arguments[shape_argument], seen=seen)
+
+    def _copy_array_payload(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        source: ir.Var,
+        destination: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+        known_items_per_thread: int | None = None,
+    ) -> None:
+        """Copy a static local payload into a fresh result payload."""
+
+        extent = (
+            known_items_per_thread
+            if known_items_per_thread is not None
+            else self._array_extent(source)
+        )
+        if extent is None:
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} could not infer a static "
+                "items_per_thread extent for its non-mutating result"
+            )
+        for item_index in range(extent):
+            index = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_copy_index_{item_index}",
+                value=item_index,
+            )
+            item = self._new_var(scope, loc, f"{operation}_copy_item_{item_index}")
+            statements.append(ir.Assign(ir.Expr.getitem(source, index, loc), item, loc))
+            statements.append(ir.SetItem(destination, index, item, loc))
+
+    def _typed_payload_like(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        prototype: ir.Var,
+        is_array: bool,
+        dtype_policy: str,
+        items_per_thread: Any = None,
+    ) -> ir.Var:
+        function_var = self._new_var(scope, loc, f"{stem}_payload_factory")
+        statements.append(
+            ir.Assign(
+                ir.Global(function_var.name, _typed_group_payload_like, loc),
+                function_var,
+                loc,
+            )
+        )
+        is_array_var = self._value_var(
+            statements, scope=scope, loc=loc, stem=f"{stem}_is_array", value=is_array
+        )
+        dtype_policy_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_dtype_policy",
+            value=dtype_policy,
+        )
+        args = [prototype, is_array_var, dtype_policy_var]
+        if items_per_thread is not None:
+            args.append(
+                self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem=f"{stem}_items_per_thread",
+                    value=items_per_thread,
+                )
+            )
+        payload = self._new_var(scope, loc, f"{stem}_payload")
+        statements.append(
+            ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
+        )
+        return payload
+
+    def _boxed_group_operand(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        value: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+    ) -> tuple[ir.Var, bool]:
+        """Represent a scalar as a one-item payload for array-only providers."""
+
+        is_array = self._array_operand_state(operation, value)
+        if is_array:
+            return value, True
+        payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input",
+            prototype=value,
+            is_array=False,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input_index",
+            value=0,
+        )
+        statements.append(ir.SetItem(payload, index, value, loc))
+        return payload, False
+
+    def _result_value(
+        self,
+        statements: list[Any],
+        *,
+        payload: ir.Var,
+        is_array: bool,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+    ) -> ir.Var:
+        """Return an array payload or unbox its sole scalar item."""
+
+        if is_array:
+            return payload
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_index",
+            value=0,
+        )
+        result = self._new_var(scope, loc, f"{stem}_scalar")
+        statements.append(ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc))
+        return result
+
+    def _scope_factory(
+        self, group: ThreadGroup, operation: str
+    ) -> tuple[Any, dict[str, Any]]:
+        assert group.hierarchy is not None
+        block_dim = group.hierarchy.block_dim
+        assert block_dim is not None
+        if group.kind == "block":
+            from .. import _lowering as block
+
+            return (getattr(block, operation), {"threads_per_block": block_dim})
+        if group.kind in {"warp", "threads_within_warp"}:
+            from cuda.coop._core.group._contracts import _cub_warp_width
+
+            from .. import _lowering as warp
+
+            name = {
+                "exchange": "warp_exchange",
+                "load": "warp_load",
+                "store": "warp_store",
+            }[operation]
+            threads_in_warp = _cub_warp_width(group)
+            return (
+                getattr(warp, name),
+                {"threads_in_warp": threads_in_warp, "threads_per_block": block_dim},
+            )
+        raise NotImplementedError(
+            f"cuda.coop.numba_mlir.{operation} currently lowers only block, physical-warp, and logical-warp groups through CUB"
+        )
+
+    def _lower_root_operation(
+        self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str
+    ) -> None:
+        bound = self._bind(function, call)
+        if bound.arguments.get("kwargs"):
+            names = ", ".join(sorted(bound.arguments["kwargs"]))
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
+            )
+        group = self._group(bound.arguments["group"])
+        if group is None:
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} requires a compile-time ThreadGroup from this_*()"
+            )
+        is_common_root = _is_common_root_operation(function, operation)
+        if is_common_root:
+            _portable_api._validate_portable_operation_group(operation, group)
+        group = self._resolve_group(group, feature=operation)
+        bound.arguments.setdefault("block_prefix", None)
+        bound.arguments.setdefault("block_suffix", None)
+        bound.arguments.setdefault("valid_items", None)
+        bound.arguments.setdefault("ranks", None)
+        bound.arguments.setdefault("valid_flags", None)
+        bound.arguments.setdefault("warp_time_slicing", False)
+        if is_common_root:
+            self._validate_common_arguments(operation, bound)
+        if operation in {"load", "store"}:
+            replacement = self._lower_load_store(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "exchange":
+            replacement = self._lower_exchange(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation == "shuffle":
+            replacement = self._lower_shuffle(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        else:
+            raise AssertionError(f"unhandled cuda.coop operation {operation!r}")
+        self.dead_func_names.add(call.func.name)
+        self.replacements[inst] = replacement
 
     def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
         definition = self._definition(call.func)
@@ -386,7 +1108,9 @@ class _GroupCallPlanner:
             compile_context=self._provider_compile_context(),
         )
         self.dead_func_names.add(call.func.name)
-        self.replacements[inst] = self._rewritten_call(inst, factory=invocable)
+        self.replacements[inst] = self._rewritten_call(
+            inst, factory=invocable, args=[], kwargs={}
+        )
 
     def _mark_descriptor_calls(self) -> None:
         for block in self.func_ir.blocks.values():
@@ -457,10 +1181,7 @@ class _GroupCallPlanner:
                         continue
                 names = ", ".join(sorted(used_names))
                 raise GroupRewriteError(
-                    "cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
-                    "compile-time descriptors and may only feed this_*(), "
-                    "group_by(), or group methods; "
-                    f"descriptor use involving {names!r} would escape to runtime"
+                    f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are compile-time descriptors and may only feed this_*(), group_by(), group methods, or group-first primitives; descriptor use involving {names!r} would escape to runtime"
                 )
 
     def run(self) -> bool:
@@ -471,6 +1192,11 @@ class _GroupCallPlanner:
                     continue
                 call = inst.value
                 if not isinstance(call, ir.Expr) or call.op != "call":
+                    continue
+                function = self._callable(call.func)
+                operation = _ROOT_OPERATIONS.get(function)
+                if operation is not None:
+                    self._lower_root_operation(inst, call, function, operation)
                     continue
                 method = self._group_method(call)
                 if method is not None:
@@ -515,7 +1241,11 @@ def has_group_markers(func_ir) -> bool:
             if not isinstance(value, ir.Expr) or value.op != "call":
                 continue
             function = analyzer._callable(value.func)
-            if function is ThreadHierarchy or function in _GROUP_CONSTRUCTORS:
+            if (
+                function is ThreadHierarchy
+                or function in _GROUP_CONSTRUCTORS
+                or function in _ROOT_OPERATIONS
+            ):
                 return True
             function_definition = analyzer._definition(value.func)
             if (
@@ -530,7 +1260,7 @@ def has_group_markers(func_ir) -> bool:
 
 @register_planner
 class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
-    """Resolve compile-time groups against one exact configured launch."""
+    """Resolve movement groups against one exact configured launch."""
 
     def run(self) -> bool:
         if not has_group_markers(self.state.func_ir):

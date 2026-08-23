@@ -4,6 +4,7 @@
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.numba_cuda.compiler import run_frontend
@@ -73,6 +74,47 @@ def test_qualified_storage_calls_lower_to_compiler_arrays():
     assert cuda.local.array in targets
     assert cuda.shared.array in targets
     assert typingctx.refresh_count == 1
+
+
+@pytest.mark.parametrize(
+    "alignment",
+    [16, np.int64(16)],
+    ids=["builtin-int", "index-integer"],
+)
+def test_thread_data_rewrite_matches_runtime_alignment_aliases(alignment):
+    def kernel():
+        data = coop.ThreadData(
+            2,
+            types.int32,
+            alignas=alignment,
+            alignment=alignment,
+        )
+        return data[0]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert cuda.local.array in _call_targets(func_ir)
+
+
+def test_thread_data_rewrite_rejects_conflicting_alignment_aliases():
+    def kernel():
+        return coop.ThreadData(2, types.int32, alignas=16, alignment=32)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="alignas and alignment must match when both are set",
+    ):
+        _rewrite(kernel)
+
+
+def test_thread_data_rewrite_accepts_explicit_default_alignment():
+    def kernel():
+        data = coop.ThreadData(2, types.int32, alignment=None)
+        return data[0]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert cuda.local.array in _call_targets(func_ir)
 
 
 def test_common_thread_data_uses_only_the_portable_signature():

@@ -22,6 +22,8 @@ pytestmark = [
     ),
 ]
 
+_INDEX_ALIGNMENT = np.int64(16)
+
 
 @cuda.jit
 def _storage_foundation_kernel(output):
@@ -33,9 +35,46 @@ def _storage_foundation_kernel(output):
     output[0] = data[0] + data[1] + scratch[0]
 
 
+@cuda.jit
+def _storage_alignment_alias_kernel(output):
+    data = coop.ThreadData(
+        2,
+        types.int32,
+        alignas=_INDEX_ALIGNMENT,
+        alignment=_INDEX_ALIGNMENT,
+    )
+    data[0] = 7
+    data[1] = 11
+    output[0] = data[0] + data[1]
+
+
+@cuda.jit
+def _storage_default_alignment_kernel(output):
+    data = coop.ThreadData(2, types.int32, alignment=None)
+    data[0] = 7
+    data[1] = 11
+    output[0] = data[0] + data[1]
+
+
 def test_qualified_storage_constructors_compile_and_run():
     output = np.zeros(1, dtype=np.int32)
 
     _storage_foundation_kernel[1, 1](output)
 
     assert output.tolist() == [31]
+
+
+def test_thread_data_alignment_aliases_compile_and_run():
+    output = np.zeros(1, dtype=np.int32)
+
+    _storage_alignment_alias_kernel[1, 1](output)
+
+    assert output.tolist() == [18]
+
+
+def test_thread_data_explicit_default_alignment_compiles_and_runs():
+    output = np.zeros(1, dtype=np.int32)
+
+    _storage_default_alignment_kernel[1, 1](output)
+
+    assert output.tolist() == [18]

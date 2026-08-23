@@ -20,17 +20,32 @@ from ._thread_group import (
     this_warp,
 )
 
+_GROUP_OPERATION_MODULES = {
+    "exchange": "_group_exchange",
+    "load": "_group_load_store",
+    "shuffle": "_group_shuffle",
+    "store": "_group_load_store",
+}
+
 __all__ = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "WarpLoadAlgorithm",
+    "WarpStoreAlgorithm",
+    "exchange",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "load",
     "local",
     "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -52,6 +67,20 @@ def __getattr__(name):
         return value
     if name in {"gpu_dataclass", "gpu_dataclass_argument_handler"}:
         value = getattr(importlib.import_module(f"{__name__}._dataclass"), name)
+        globals()[name] = value
+        return value
+    if name in _GROUP_OPERATION_MODULES:
+        module_name = _GROUP_OPERATION_MODULES[name]
+        value = getattr(importlib.import_module(f"{__name__}.{module_name}"), name)
+        globals()[name] = value
+        return value
+    if name in {
+        "BlockLoadAlgorithm",
+        "BlockStoreAlgorithm",
+        "WarpLoadAlgorithm",
+        "WarpStoreAlgorithm",
+    }:
+        value = getattr(importlib.import_module(f"{__name__}._enums"), name)
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

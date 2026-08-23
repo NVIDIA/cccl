@@ -4,6 +4,10 @@
 
 """CUTLASS-qualified cooperative primitives and payload helpers."""
 
+from ._group_exchange import exchange as exchange
+from ._group_load_store import load as load
+from ._group_load_store import store as store
+from ._group_shuffle import shuffle as shuffle
 from ._temp_storage import TempStorage as TempStorage
 from ._thread_data import ThreadData as ThreadData
 from ._thread_data import ThreadDataLoadSource as ThreadDataLoadSource
@@ -27,6 +31,10 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
+    "load",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
