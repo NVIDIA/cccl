@@ -23,7 +23,6 @@
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 
-
 using namespace cuda::experimental::places;
 
 namespace
@@ -39,7 +38,6 @@ __global__ void touch_kernel(int* ptr, int n)
 
 void test_construction_and_factories()
 {
-
   // From an explicit vector of places
   place_group g1(places_from_devices({0}));
   EXPECT(g1.size() == 1UL);
@@ -75,7 +73,6 @@ void test_construction_and_factories()
 
 void test_streams()
 {
-
   auto group = place_group::by_locality_domains();
 
   // A stream can be picked and used on every place, for every color
@@ -124,7 +121,6 @@ void test_streams()
 
 void test_memory_resources()
 {
-
   auto group = place_group::by_devices({0});
 
   auto mr        = group.memory_resource(0);
@@ -152,7 +148,6 @@ void test_memory_resources()
 
 void test_borrowing_from_stf()
 {
-
   using ::cuda::experimental::stf::async_resources_handle;
 
   async_resources_handle handle;
@@ -188,7 +183,6 @@ void test_borrowing_from_stf()
 
 void test_move_semantics()
 {
-
   place_group g(places_from_devices({0}));
   cudaStream_t s = g.get_stream(0);
 
@@ -202,7 +196,6 @@ void test_move_semantics()
 
 int main()
 {
-
   cuda_safe_call(cudaSetDevice(0));
 
   test_construction_and_factories();
