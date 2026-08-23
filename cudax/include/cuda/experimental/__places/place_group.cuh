@@ -365,15 +365,22 @@ public:
   /// synchronizing does not create streams.
   void sync()
   {
-    ::std::lock_guard<::std::mutex> lock(mutex_);
-    for (size_t i = 0; i < places_.size(); i++)
+    // Snapshot under the lock, synchronize unlocked: a host function
+    // enqueued on a cached stream may itself call get_stream() and would
+    // deadlock against cudaStreamSynchronize() otherwise.
+    ::std::vector<::std::vector<cudaStream_t>> snapshot;
     {
-      if (i >= stream_cache_.size() || stream_cache_[i].empty())
+      ::std::lock_guard<::std::mutex> lock(mutex_);
+      snapshot = stream_cache_;
+    }
+    for (size_t i = 0; i < snapshot.size() && i < places_.size(); i++)
+    {
+      if (snapshot[i].empty())
       {
         continue;
       }
       exec_place_scope scope(places_[i]);
-      for (cudaStream_t s : stream_cache_[i])
+      for (cudaStream_t s : snapshot[i])
       {
         cuda_safe_call(cudaStreamSynchronize(s));
       }
