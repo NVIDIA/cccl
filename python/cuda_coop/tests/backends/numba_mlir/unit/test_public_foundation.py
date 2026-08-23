@@ -7,17 +7,25 @@ import sys
 
 import cuda.coop.numba_mlir as coop
 
-_FOUNDATION_EXPORTS = [
+_PUBLIC_EXPORTS = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "WarpLoadAlgorithm",
+    "WarpStoreAlgorithm",
+    "exchange",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "load",
     "local",
     "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -26,29 +34,27 @@ _FOUNDATION_EXPORTS = [
 ]
 
 
-def test_foundation_exports_only_group_and_storage_building_blocks():
-    assert coop.__all__ == _FOUNDATION_EXPORTS
+def test_public_exports_add_only_the_movement_family():
+    assert coop.__all__ == _PUBLIC_EXPORTS
     assert sorted(name for name in dir(coop) if not name.startswith("_")) == (
-        _FOUNDATION_EXPORTS
+        _PUBLIC_EXPORTS
     )
 
     for name in (
-        "load",
-        "store",
         "reduce",
         "scan",
-        "exchange",
         "radix_sort_keys",
-        "_block",
-        "_warp",
     ):
         assert not hasattr(coop, name)
 
+    assert "_block" not in coop.__all__
+    assert "_warp" not in coop.__all__
+
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group_ops" not in loaded
+    assert "cuda.coop.numba_mlir._group_ops" in loaded
     assert "cuda.coop.numba_mlir._single_phase_rewrites" in loaded
-    assert not any(name.startswith("cuda.coop.numba_mlir._block") for name in loaded)
-    assert not any(name.startswith("cuda.coop.numba_mlir._warp") for name in loaded)
+    assert importlib.import_module("cuda.coop.numba_mlir._block").__all__ == ()
+    assert importlib.import_module("cuda.coop.numba_mlir._warp").__all__ == ()
 
 
 def test_compiler_hooks_are_registered_exactly_once_and_idempotently():

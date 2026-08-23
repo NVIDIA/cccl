@@ -25,7 +25,7 @@ pytestmark = [
 
 @cuda.jit
 def _storage_foundation_kernel(output):
-    data = coop.ThreadData(2, types.int32, alignas=16)
+    data = coop.ThreadData(2, types.int32, alignment=16)
     scratch = coop.TempStorage(32, alignment=16)
     data[0] = 7
     data[1] = 11

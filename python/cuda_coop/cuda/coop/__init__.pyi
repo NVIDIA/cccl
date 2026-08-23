@@ -305,7 +305,7 @@ def load(
     valid_items: _ValidItems | None = None,
     oob_default: None = None,
     offset: _IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate and return ``output`` with a physical- or logical-warp tile."""
 
@@ -320,7 +320,7 @@ def load(
     valid_items: _ValidItems,
     oob_default: _PortableNumericT,
     offset: _IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate a partial physical- or logical-warp tile and fill invalid items."""
 
@@ -348,7 +348,7 @@ def store(
     algorithm: _WarpLoadStoreAlgorithm = "direct",
     valid_items: _ValidItems | None = None,
     offset: _IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: None = None,
 ) -> None:
     """Store one scalar or per-thread payload across a physical or logical warp."""
 
@@ -813,7 +813,7 @@ def exchange(
 
     ``group`` may be a complete block, physical warp, or logical warp. The
     portable modes are ``"striped_to_blocked"`` and ``"blocked_to_striped"``.
-    ``value`` must own one through five items per participant; scalar inputs are
+    ``value`` must own one or more items per participant; scalar inputs are
     not supported. The result preserves the input payload's shape and item type.
     """
 

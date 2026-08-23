@@ -4,6 +4,7 @@
 
 """Numba-CUDA-MLIR-qualified cooperative group building blocks."""
 
+from enum import IntEnum
 from typing import Any, Generic, Literal, Protocol, TypeAlias, overload
 
 from numpy import int32 as _NumpyInt32
@@ -30,6 +31,34 @@ _GroupKindT_co = TypeVar(
 _ArrayShape: TypeAlias = int | tuple[int, ...]
 
 Hierarchy = ThreadHierarchy
+
+class BlockLoadAlgorithm(IntEnum):
+    DIRECT: int
+    STRIPED: int
+    VECTORIZE: int
+    TRANSPOSE: int
+    WARP_TRANSPOSE: int
+    WARP_TRANSPOSE_TIMESLICED: int
+
+class BlockStoreAlgorithm(IntEnum):
+    DIRECT: int
+    STRIPED: int
+    VECTORIZE: int
+    TRANSPOSE: int
+    WARP_TRANSPOSE: int
+    WARP_TRANSPOSE_TIMESLICED: int
+
+class WarpLoadAlgorithm(IntEnum):
+    DIRECT: int
+    STRIPED: int
+    VECTORIZE: int
+    TRANSPOSE: int
+
+class WarpStoreAlgorithm(IntEnum):
+    DIRECT: int
+    STRIPED: int
+    VECTORIZE: int
+    TRANSPOSE: int
 
 class StatefulFunction(Generic[_OpT]):
     """Device callable paired with explicit state for generated wrappers."""
@@ -129,9 +158,8 @@ class _LocalMemory(Protocol):
         self,
         shape: _ArrayShape,
         dtype: object,
-        alignas: int | None = 8,
         *,
-        alignment: int | None = None,
+        alignment: int | None = 8,
     ) -> Any:
         """Allocate thread-local compiler storage."""
 
@@ -142,9 +170,8 @@ class _SharedMemory(Protocol):
         self,
         shape: _ArrayShape,
         dtype: object,
-        alignas: int | None = 8,
         *,
-        alignment: int | None = None,
+        alignment: int | None = 8,
     ) -> Any:
         """Allocate shared compiler storage."""
 
@@ -171,6 +198,7 @@ def ThreadData(
     dtype: type[_ItemT],
     *,
     alignas: int = 8,
+    alignment: int | None = None,
 ) -> _ThreadDataLike[_ItemT]:
     """Construct typed thread-local storage."""
 
@@ -180,6 +208,7 @@ def ThreadData(
     dtype: object = None,
     *,
     alignas: int = 8,
+    alignment: int | None = None,
 ) -> _ThreadDataLike[Any]:
     """Construct storage using a compiler dtype token or inferred dtype."""
 
@@ -189,6 +218,102 @@ def gpu_dataclass(
     compute_temp_storage: bool = True,
 ) -> _DataclassT:
     """Register a dataclass instance for Numba-CUDA-MLIR device use."""
+
+@overload
+def load(
+    group: ThreadGroup[Literal["block"]],
+    source: Any,
+    output: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    algorithm: str | int | BlockLoadAlgorithm = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: TempStorage | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Load a per-thread tile through a block group."""
+
+@overload
+def load(
+    group: ThreadGroup[Literal["warp", "threads_within_warp"]],
+    source: Any,
+    output: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    algorithm: str | int | WarpLoadAlgorithm = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Load a per-thread tile through a physical or logical warp."""
+
+@overload
+def store(
+    group: ThreadGroup[Literal["block"]],
+    destination: Any,
+    value: Any,
+    /,
+    *,
+    algorithm: str | int | BlockStoreAlgorithm = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Store a per-thread tile through a block group."""
+
+@overload
+def store(
+    group: ThreadGroup[Literal["warp", "threads_within_warp"]],
+    destination: Any,
+    value: Any,
+    /,
+    *,
+    algorithm: str | int | WarpStoreAlgorithm = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: None = None,
+) -> None:
+    """Store a per-thread tile through a physical or logical warp."""
+
+def exchange(
+    group: ThreadGroup[Any],
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: str = "striped_to_blocked",
+    ranks: Any = None,
+    valid_flags: Any = None,
+    warp_time_slicing: bool = False,
+) -> _ThreadDataLike[_ItemT]:
+    """Rearrange a fixed-size per-thread tile within a group."""
+
+@overload
+def shuffle(
+    group: ThreadGroup[Literal["block"]],
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: str = "down",
+    distance: int = 1,
+    block_prefix: None = None,
+    block_suffix: None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Shuffle a tile without exposing private boundary outputs."""
+
+@overload
+def shuffle(
+    group: ThreadGroup[Literal["block"]],
+    value: _ItemT,
+    /,
+    *,
+    mode: str = "down",
+    distance: int = 1,
+    block_prefix: None = None,
+    block_suffix: None = None,
+) -> _ItemT:
+    """Shuffle a scalar value without boundary outputs."""
 
 def this_thread() -> ThreadGroup[Literal["thread"]]:
     """Describe the current thread."""
@@ -206,16 +331,24 @@ def this_grid() -> ThreadGroup[Literal["grid"]]:
     """Describe the current grid."""
 
 __all__ = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "WarpLoadAlgorithm",
+    "WarpStoreAlgorithm",
+    "exchange",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "load",
     "local",
     "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",

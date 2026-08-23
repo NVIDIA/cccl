@@ -13,8 +13,8 @@ class _FakeLocal:
     def __init__(self):
         self.calls = []
 
-    def array(self, shape, dtype, *, alignas, **kwargs):
-        call = (shape, dtype, alignas, kwargs)
+    def array(self, shape, dtype, *, alignment, **kwargs):
+        call = (shape, dtype, alignment, kwargs)
         self.calls.append(call)
         return call
 
@@ -36,13 +36,23 @@ def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
     result = coop.ThreadData(
         items_per_thread=4,
         dtype="int32",
-        alignas=16,
+        alignment=16,
     )
+    compatible = coop.ThreadData(1, "int16", alignas=16)
     inferred = coop.ThreadData(2)
 
     assert result == (4, "int32", 16, {})
+    assert compatible == (1, "int16", 16, {})
     assert inferred == (2, None, 8, {})
-    assert fake_runtime.local.calls == [result, inferred]
+    assert fake_runtime.local.calls == [result, compatible, inferred]
+
+
+def test_thread_data_rejects_conflicting_alignment_aliases(fake_runtime):
+    del fake_runtime
+    with pytest.raises(ValueError, match="alignas and alignment must match"):
+        coop.ThreadData(1, alignas=16, alignment=32)
+    with pytest.raises(ValueError, match="alignas and alignment must match"):
+        coop.ThreadData(1, alignas=8, alignment=16)
 
 
 @pytest.mark.parametrize(
@@ -80,29 +90,29 @@ def test_thread_data_validates_extent(
 
 
 @pytest.mark.parametrize(
-    ("alignas", "error_type", "message"),
+    ("alignment", "error_type", "message"),
     [
-        (True, TypeError, "alignas must be an integer"),
-        (1.5, TypeError, "alignas must be an integer"),
-        (0, ValueError, "alignas must be a positive integer"),
-        (-1, ValueError, "alignas must be a positive integer"),
-        (3, ValueError, "alignas must be a power of 2"),
+        (True, TypeError, "alignment must be an integer"),
+        (1.5, TypeError, "alignment must be an integer"),
+        (0, ValueError, "alignment must be a positive integer"),
+        (-1, ValueError, "alignment must be a positive integer"),
+        (3, ValueError, "alignment must be a power of 2"),
         (
             struct.calcsize("P") // 2,
             ValueError,
-            f"alignas must be a multiple of {struct.calcsize('P')}",
+            f"alignment must be a multiple of {struct.calcsize('P')}",
         ),
     ],
 )
 def test_thread_data_validates_alignment(
     fake_runtime,
-    alignas,
+    alignment,
     error_type,
     message,
 ):
     del fake_runtime
     with pytest.raises(error_type, match=message):
-        coop.ThreadData(1, alignas=alignas)
+        coop.ThreadData(1, alignment=alignment)
 
 
 def test_temp_storage_uses_canonical_defaults_and_normalization():

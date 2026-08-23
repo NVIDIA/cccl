@@ -14,7 +14,7 @@ from ..support._subprocess import (
 )
 
 
-def test_cutlass_foundation_exports_only_group_and_value_types():
+def test_cutlass_foundation_exports_current_public_surface():
     script = textwrap.dedent(
         """
         import sys
@@ -30,6 +30,10 @@ def test_cutlass_foundation_exports_only_group_and_value_types():
             "ThreadDataTensorMetadata",
             "ThreadGroup",
             "ThreadHierarchy",
+            "exchange",
+            "load",
+            "shuffle",
+            "store",
             "this_block",
             "this_cluster",
             "this_grid",

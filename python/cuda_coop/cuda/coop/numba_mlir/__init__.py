@@ -27,6 +27,16 @@ _MINIMUM_RUNTIME_VERSION = "0.5.0"
 _RUNTIME_EXTRA = "cuda-coop[numba-cuda-mlir]"
 
 
+class _DefaultThreadDataAlignment:
+    """Distinguish an omitted legacy keyword while preserving its signature."""
+
+    def __repr__(self):
+        return "8"
+
+
+_DEFAULT_THREAD_DATA_ALIGNMENT = _DefaultThreadDataAlignment()
+
+
 @dataclass(frozen=True)
 class _RegistrationSnapshot:
     planner_registry: Any
@@ -163,7 +173,8 @@ def ThreadData(
     items_per_thread,
     dtype=None,
     *,
-    alignas=8,
+    alignas=_DEFAULT_THREAD_DATA_ALIGNMENT,
+    alignment=None,
 ):
     """Create fixed-size thread-local storage for cooperative operations."""
 
@@ -176,21 +187,31 @@ def ThreadData(
     if items_per_thread <= 0:
         raise ValueError("items_per_thread must be a positive integer")
 
+    if alignas is _DEFAULT_THREAD_DATA_ALIGNMENT:
+        alignas = 8 if alignment is None else alignment
+    elif alignment is not None:
+        if alignas != alignment:
+            raise ValueError("alignas and alignment must match when both are set")
+
     if isinstance(alignas, bool):
-        raise TypeError("alignas must be an integer")
+        raise TypeError("alignment must be an integer")
     try:
         alignas = operator.index(alignas)
     except TypeError as exc:
-        raise TypeError("alignas must be an integer") from exc
+        raise TypeError("alignment must be an integer") from exc
     if alignas <= 0:
-        raise ValueError("alignas must be a positive integer")
+        raise ValueError("alignment must be a positive integer")
     if alignas & (alignas - 1):
-        raise ValueError("alignas must be a power of 2")
+        raise ValueError("alignment must be a power of 2")
     pointer_size = struct.calcsize("P")
     if alignas % pointer_size:
-        raise ValueError(f"alignas must be a multiple of {pointer_size}")
+        raise ValueError(f"alignment must be a multiple of {pointer_size}")
 
-    return _require_runtime().local.array(items_per_thread, dtype, alignas=alignas)
+    return _require_runtime().local.array(
+        items_per_thread,
+        dtype,
+        alignment=alignas,
+    )
 
 
 class TempStorage:
@@ -245,16 +266,24 @@ class TempStorage:
 
 
 __all__ = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "WarpLoadAlgorithm",
+    "WarpStoreAlgorithm",
+    "exchange",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "load",
     "local",
     "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -437,6 +466,19 @@ def __getattr__(name):
         return value
     if name in {"gpu_dataclass", "gpu_dataclass_argument_handler"}:
         value = getattr(importlib.import_module(f"{__name__}._dataclass"), name)
+        globals()[name] = value
+        return value
+    if name in {"exchange", "load", "shuffle", "store"}:
+        value = getattr(importlib.import_module(f"{__name__}._group_ops"), name)
+        globals()[name] = value
+        return value
+    if name in {
+        "BlockLoadAlgorithm",
+        "BlockStoreAlgorithm",
+        "WarpLoadAlgorithm",
+        "WarpStoreAlgorithm",
+    }:
+        value = getattr(importlib.import_module(f"{__name__}._enums"), name)
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

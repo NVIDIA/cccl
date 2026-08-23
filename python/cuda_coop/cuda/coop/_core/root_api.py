@@ -84,7 +84,6 @@ _GROUP_OPERATIONS = (
 )
 
 _BLOCK_AND_WARP_GROUPS = ("block", "warp", "threads_within_warp")
-_COMMON_V1_MAX_EXCHANGE_ITEMS_PER_THREAD = 5
 _REDUCTION_GROUPS = (
     "thread",
     "warp",

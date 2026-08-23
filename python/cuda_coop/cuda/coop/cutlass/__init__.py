@@ -11,6 +11,9 @@ from cuda.coop._core.root_api import (
 )
 
 from ._compiler import register_trace_context as _register_trace_context
+from ._group_exchange import exchange
+from ._group_load_store import load, store
+from ._group_shuffle import shuffle
 from ._internal import (
     ThreadData,
     ThreadDataLoadSource,
@@ -43,6 +46,10 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
+    "load",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",

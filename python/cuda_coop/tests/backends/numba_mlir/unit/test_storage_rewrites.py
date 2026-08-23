@@ -87,11 +87,11 @@ def test_common_thread_data_uses_only_the_portable_signature():
 
 def test_common_thread_data_rejects_qualified_alignment_control():
     def kernel():
-        return common_coop.ThreadData(2, types.int32, alignas=16)
+        return common_coop.ThreadData(2, types.int32, alignment=16)
 
     with pytest.raises(
         CoopSinglePhaseRewriteError,
-        match=r"cuda\.coop\.ThreadData got unexpected keyword.*alignas",
+        match=r"cuda\.coop\.ThreadData got unexpected keyword.*alignment",
     ):
         _rewrite(kernel)
 

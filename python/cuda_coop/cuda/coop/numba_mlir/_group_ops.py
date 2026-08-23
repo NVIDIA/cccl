@@ -1,0 +1,127 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Compile-time data-movement markers for Numba-CUDA-MLIR."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from cuda.coop._core.block import BlockShuffleMode
+
+from ._thread_group import ThreadGroup
+
+if TYPE_CHECKING:
+    from . import ThreadData
+
+_ROOT_SCOPE = __name__.rsplit(".", 1)[0]
+
+
+def _group_primitive_marker(operation: str, *args: Any, **kwargs: Any) -> Any:
+    del args, kwargs
+    raise RuntimeError(
+        f"{_ROOT_SCOPE}.{operation} is a compile-time kernel construct and "
+        "must be lowered by the whole-function planner"
+    )
+
+
+def load(
+    group: ThreadGroup,
+    source: Any,
+    output: ThreadData,
+    /,
+    *,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
+) -> ThreadData:
+    """Load a per-thread tile through a block or warp group."""
+
+    return _group_primitive_marker(
+        "load",
+        group,
+        source,
+        output,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+
+def store(
+    group: ThreadGroup,
+    destination: Any,
+    value: Any,
+    /,
+    *,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
+) -> None:
+    """Store a per-thread tile through a block or warp group."""
+
+    _group_primitive_marker(
+        "store",
+        group,
+        destination,
+        value,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+
+def exchange(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: str = "striped_to_blocked",
+    ranks: Any = None,
+    valid_flags: Any = None,
+    warp_time_slicing: bool = False,
+) -> Any:
+    """Rearrange a fixed-size per-thread tile within a group."""
+
+    return _group_primitive_marker(
+        "exchange",
+        group,
+        value,
+        mode=mode,
+        ranks=ranks,
+        valid_flags=valid_flags,
+        warp_time_slicing=warp_time_slicing,
+    )
+
+
+def shuffle(
+    group: ThreadGroup,
+    value: Any,
+    /,
+    *,
+    mode: Any = BlockShuffleMode.DOWN,
+    distance: Any = 1,
+    block_prefix: Any = None,
+    block_suffix: Any = None,
+) -> Any:
+    """Shuffle scalar values or fixed-size per-thread tiles within a block."""
+
+    return _group_primitive_marker(
+        "shuffle",
+        group,
+        value,
+        mode=mode,
+        distance=distance,
+        block_prefix=block_prefix,
+        block_suffix=block_suffix,
+    )
+
+
+__all__ = ["exchange", "load", "shuffle", "store"]
