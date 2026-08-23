@@ -36,5 +36,6 @@
 #include <cuda/experimental/__sharded/scan.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/sharded_csr.cuh>
 #include <cuda/experimental/__sharded/transform.cuh>
 #include <cuda/experimental/__sharded/unique.cuh>

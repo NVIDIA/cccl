@@ -83,6 +83,8 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <typeindex>
+#include <unordered_map>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -222,8 +224,9 @@ inline void check_not_capturing(cudaStream_t stream, const char* what)
 
 /**
  * @brief A group of execution places plus the execution resources attached to
- * them: lazily initialized per-place stream pools and per-place memory
- * resources.
+ * them: lazily initialized per-place stream pools, per-place memory
+ * resources, and a type-erased per-place library-state cache (see
+ * `lib_state`).
  *
  * See the file-level comment for the grid-versus-group rationale. In short: a
  * grid is a stateless value naming places; a `place_group` is the resource
@@ -490,6 +493,66 @@ public:
     return owned_resources_ != nullptr;
   }
 
+  // ==========================================================================
+  // Per-place library state
+  // ==========================================================================
+
+  /**
+   * @brief Type-erased per-place library state owned by the group.
+   *
+   * Vendor-call layers stash their PER-PLACE library state here — objects
+   * whose natural scope is "this place, for as long as this resource scope
+   * lives", such as a cuSPARSE/cuBLAS handle per place (the `raft::handle_t`
+   * precedent). This is the group-scope counterpart of the per-container
+   * `lib_state()` slots: handles are place-bound values and belong here;
+   * descriptors, plans and workspaces are matrix-bound and stay with the
+   * container whose addresses they describe.
+   *
+   * Entries are keyed by (place index, state type), created lazily on first
+   * use, shared by every caller of the same (place, type) slot, and destroyed
+   * when the group is destroyed (through a deleter captured at creation, so
+   * this header stays vendor-free). `make()` is invoked on first use and must
+   * return a `_State*` the group takes ownership of.
+   *
+   * Lifetime rule: a group must outlive anything that uses its places'
+   * resources — containers built over the group, and any per-container state
+   * referring to handles cached here (this is already the group contract for
+   * streams and memory).
+   *
+   * Thread-safe: concurrent calls for the same slot yield the same object.
+   */
+  template <typename _State, typename _Make>
+  _State& lib_state(size_t place_idx, _Make&& make)
+  {
+    _CCCL_ASSERT(place_idx < places_.size(), "place_group: place index out of range");
+    ::std::lock_guard<::std::mutex> lock(mutex_);
+    auto& slot = lib_state_cache_[place_idx];
+    auto it    = slot.find(::std::type_index(typeid(_State)));
+    if (it == slot.end())
+    {
+      _State* s = make();
+      it        = slot
+                    .emplace(::std::type_index(typeid(_State)),
+                             ::std::shared_ptr<void>(s,
+                                                     [](void* p) {
+                                                delete static_cast<_State*>(p);
+                                                     }))
+                    .first;
+    }
+    return *static_cast<_State*>(it->second.get());
+  }
+
+  /// @brief True when per-place library state of type `_State` has already
+  /// been created for the idx-th place (inspection hook; does not create).
+  template <typename _State>
+  bool has_lib_state(size_t place_idx) const
+  {
+    _CCCL_ASSERT(place_idx < places_.size(), "place_group: place index out of range");
+    ::std::lock_guard<::std::mutex> lock(mutex_);
+    const auto& slot = lib_state_cache_[place_idx];
+    return slot.find(::std::type_index(typeid(_State))) != slot.end();
+  }
+
   // Non-copyable and not move-assignable; move-CONSTRUCTIBLE so factories
   // and ownership transfer work. Moving requires exclusive
   // access to the source: no concurrent lazy stream creation (get_stream)
@@ -500,6 +563,7 @@ public:
       , resources_(other.resources_)
       , keep_alive_(mv(other.keep_alive_))
       , stream_cache_(mv(other.stream_cache_))
+      , lib_state_cache_(mv(other.lib_state_cache_))
       , stream_color_counter_(other.stream_color_counter_.load(::std::memory_order_relaxed))
   {
     other.resources_ = nullptr;
@@ -520,6 +584,7 @@ private:
     ::std::ignore = m;
 
     stream_cache_.resize(places_.size());
+    lib_state_cache_.resize(places_.size());
   }
 
   // Materialize (lazily, once) the per-place streams from the registry's
@@ -557,6 +622,9 @@ private:
 
   mutable ::std::mutex mutex_;
   ::std::vector<::std::vector<cudaStream_t>> stream_cache_; // one slot per place
+  // Per-place type-erased library state: one (type -> object) map per place.
+  // Objects are destroyed with the group, via deleters captured at creation.
+  ::std::vector<::std::unordered_map<::std::type_index, ::std::shared_ptr<void>>> lib_state_cache_;
   ::std::atomic<size_t> stream_color_counter_{0};
 };
 
@@ -759,6 +827,163 @@ UNITTEST("place_group move semantics")
   EXPECT(moved.owns_resources());
   // The cached stream survives the move
   EXPECT(moved.get_stream(0) == s);
+};
+
+// A probe standing in for a per-place library handle: counts constructions
+// and destructions, and remembers which place it was made for. Inline
+// statics: this only exists in the unittest TU.
+struct lib_state_probe
+{
+  static inline int live      = 0;
+  static inline int created   = 0;
+  static inline int destroyed = 0;
+
+  static void reset()
+  {
+    live = created = destroyed = 0;
+  }
+
+  size_t place_idx;
+
+  explicit lib_state_probe(size_t idx)
+      : place_idx(idx)
+  {
+    created++;
+    live++;
+  }
+
+  lib_state_probe(const lib_state_probe&)            = delete;
+  lib_state_probe& operator=(const lib_state_probe&) = delete;
+
+  ~lib_state_probe()
+  {
+    destroyed++;
+    live--;
+  }
+};
+
+// A second cached type: (place, type) keys must not collide across types.
+struct lib_state_other
+{
+  int tag = 7;
+};
+
+UNITTEST("place_group lib_state: identity and laziness")
+{
+  lib_state_probe::reset();
+
+  place_group group = place_group::by_locality_domains();
+  const size_t n    = group.size();
+
+  // Nothing is created before first use.
+  for (size_t i = 0; i < n; i++)
+  {
+    EXPECT(!group.has_lib_state<lib_state_probe>(i));
+  }
+  EXPECT(lib_state_probe::created == 0);
+
+  // First use creates; the same (place, type) always yields the SAME object.
+  ::std::vector<lib_state_probe*> first(n);
+  for (size_t i = 0; i < n; i++)
+  {
+    first[i] = &group.lib_state<lib_state_probe>(i, [i] {
+      return new lib_state_probe(i);
+    });
+    EXPECT(group.has_lib_state<lib_state_probe>(i));
+    EXPECT(first[i]->place_idx == i);
+  }
+  EXPECT(lib_state_probe::created == static_cast<int>(n));
+
+  for (size_t i = 0; i < n; i++)
+  {
+    auto* again = &group.lib_state<lib_state_probe>(i, [i]() -> lib_state_probe* {
+      // Must not be invoked: the slot is already populated.
+      EXPECT(false);
+      return nullptr;
+    });
+    EXPECT(again == first[i]);
+  }
+  EXPECT(lib_state_probe::created == static_cast<int>(n));
+
+  // Different places hold different objects.
+  for (size_t i = 1; i < n; i++)
+  {
+    EXPECT(first[i] != first[0]);
+  }
+
+  // A different type on the same place is a different slot.
+  auto& other = group.lib_state<lib_state_other>(0, [] {
+    return new lib_state_other();
+  });
+  EXPECT(other.tag == 7);
+  EXPECT(static_cast<void*>(&other) != static_cast<void*>(first[0]));
+  // ...and creating it did not disturb the probe slots.
+  EXPECT(lib_state_probe::created == static_cast<int>(n));
+};
+
+UNITTEST("place_group lib_state: isolation between groups")
+{
+  lib_state_probe::reset();
+
+  // Two groups over the same places are distinct resource scopes: their
+  // caches do not share state.
+  place_group a(exec_place::device(0));
+  place_group b(exec_place::device(0));
+
+  auto* in_a = &a.lib_state<lib_state_probe>(0, [] {
+    return new lib_state_probe(0);
+  });
+  EXPECT(!b.has_lib_state<lib_state_probe>(0));
+  auto* in_b = &b.lib_state<lib_state_probe>(0, [] {
+    return new lib_state_probe(0);
+  });
+  EXPECT(in_a != in_b);
+  EXPECT(lib_state_probe::created == 2);
+};
+
+UNITTEST("place_group lib_state: teardown destroys exactly once, with the group")
+{
+  lib_state_probe::reset();
+
+  {
+    place_group group = place_group::by_locality_domains();
+    for (size_t i = 0; i < group.size(); i++)
+    {
+      group.lib_state<lib_state_probe>(i, [i] {
+        return new lib_state_probe(i);
+      });
+    }
+    EXPECT(lib_state_probe::live == static_cast<int>(group.size()));
+    // Cached objects live for the whole group lifetime...
+  }
+  // ...and are destroyed exactly once, with the group.
+  EXPECT(lib_state_probe::live == 0);
+  EXPECT(lib_state_probe::destroyed == lib_state_probe::created);
+};
+
+UNITTEST("place_group lib_state: cache survives a move")
+{
+  lib_state_probe::reset();
+
+  auto* before = static_cast<lib_state_probe*>(nullptr);
+  {
+    place_group g(exec_place::device(0));
+    before = &g.lib_state<lib_state_probe>(0, [] {
+      return new lib_state_probe(0);
+    });
+
+    place_group moved(mv(g));
+    // The cached object survives the move, no re-creation, no double destroy.
+    EXPECT(moved.has_lib_state<lib_state_probe>(0));
+    auto* after = &moved.lib_state<lib_state_probe>(0, []() -> lib_state_probe* {
+      EXPECT(false);
+      return nullptr;
+    });
+    EXPECT(after == before);
+    EXPECT(lib_state_probe::created == 1);
+  }
+  // Global balance after the surviving owner dies.
+  EXPECT(lib_state_probe::live == 0);
 };
 
 #endif // UNITTESTED_FILE
