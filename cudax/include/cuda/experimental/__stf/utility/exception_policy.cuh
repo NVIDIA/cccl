@@ -92,7 +92,7 @@ namespace cuda::experimental::stf
  * The conversion operator lets a `nullval` expression appear wherever a value of any type is
  * expected, references included: a never-returning call may be `return`ed from a function of
  * any result type, or supply one arm of a ternary whose other arm produces the legitimate
- * value, as in `ready ? front() : abort()`. The operator can never run -- running it would
+ * value. The operator can never run -- running it would
  * require an object that cannot exist -- so its body exists to satisfy the compiler, not to
  * execute.
  */
@@ -203,8 +203,9 @@ inline const notify_t notify{};
 
 /**
  * @brief Reporting ending: report through `notify`, then `std::abort`. Usable as
- * `on_throw(abort) << callable`, in ternaries (`ready ? front() : abort()`), and as a bare
- * call `abort()`.
+ * `on_throw(abort) << callable`. The policy acts through its hook only; it has no bare-call
+ * form, so `exception_policies::abort()` as a plain statement does not compile. Ending a
+ * program directly remains `std::abort()`.
  *
  * Inside `exception_policies`, plain `abort` finds this object before the C library's function.
  * Code that sees both through using-directives gets an ambiguity error rather than a silent
@@ -220,12 +221,6 @@ struct abort_t
   //! @cond
   using __exception_sink_tag = void;
   //! @endcond
-
-  //! @brief The bare call: usable in ternaries -- `ready ? front() : abort()`.
-  [[noreturn]] nullval operator()() const noexcept
-  {
-    ::std::abort();
-  }
 
   //! @brief The exception hook: report, then die.
   template <class _Fn>
@@ -244,11 +239,6 @@ struct terminate_t
   //! @cond
   using __exception_sink_tag = void;
   //! @endcond
-
-  [[noreturn]] nullval operator()() const noexcept
-  {
-    ::std::terminate();
-  }
 
   template <class _Fn>
   [[noreturn]] nullval
@@ -2374,18 +2364,21 @@ UNITTEST("nullval")
   static_assert(!::std::is_convertible_v<int, nullval>);
   // A never-returning call may be returned from a function of any result type, references
   // included; the conversion typechecks and never runs.
-  [[maybe_unused]] const auto propagates = []() -> int& {
-    return cuda::experimental::stf::exception_policies::abort();
+  const auto never = []() -> nullval {
+    ::std::abort();
+  };
+  [[maybe_unused]] const auto propagates = [&]() -> int& {
+    return never();
   };
   // A `nullval` expression also supplies one arm of a ternary, the other arm setting the type.
-  const auto pick = [](bool ok) -> int {
-    return ok ? 42 : cuda::experimental::stf::exception_policies::abort();
+  const auto pick = [&](bool ok) -> int {
+    return ok ? 42 : never();
   };
   EXPECT(pick(true) == 42);
 };
 
 // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-//  - abort();                                      // deleted tripwire: qualify exception_policies::abort
+//  - exception_policies::abort();                  // the policy has no bare-call form; hooks only
 //  - on_throw(abort & notify) << [] {};            // "policies after a never-returning policy are unreachable"
 //  - on_throw(notify) << []() noexcept {};         // existing rule, unchanged message
 //  - on_throw(notify & subst(42)) << []() -> int& {...}; // reference result vs owned substitution (existing rule)
