@@ -288,11 +288,37 @@ private:
   {
     if constexpr (::cuda::std::is_integral_v<Incrementable>)
     {
-      return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
+      const difference_type dist = static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
+      if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+      {
+        return dist;
+      }
+      else
+      {
+        if (dist == 0)
+        {
+          return 0;
+        }
+        _CCCL_ASSERT(dist % static_cast<difference_type>(stride()) == 0,
+                     "Underlying iterator difference must be divisible by the stride");
+        return dist / static_cast<difference_type>(stride());
+      }
     }
     else
     {
-      return y.base() - this->base();
+      const auto dist = y.base() - this->base();
+      if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+      {
+        return dist;
+      }
+      else
+      {
+        if (dist == 0)
+        {
+          return 0;
+        }
+        return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
+      }
     }
   }
 
