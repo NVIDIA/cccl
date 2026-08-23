@@ -27,5 +27,14 @@
 #pragma once
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/adjacent_difference.cuh>
+#include <cuda/experimental/__sharded/copy_if.cuh>
+#include <cuda/experimental/__sharded/count.cuh>
+#include <cuda/experimental/__sharded/fill.cuh>
+#include <cuda/experimental/__sharded/histogram.cuh>
+#include <cuda/experimental/__sharded/reduce.cuh>
+#include <cuda/experimental/__sharded/scan.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/transform.cuh>
+#include <cuda/experimental/__sharded/unique.cuh>
