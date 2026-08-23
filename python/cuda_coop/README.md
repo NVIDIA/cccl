@@ -1,30 +1,132 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative CUDA primitives for Python kernel DSLs. Its
-portable API describes CUDA thread groups, per-thread data, temporary storage,
-and collectives without importing a compiler at module load time.
+`cuda.coop` brings CCCL cooperative primitives to Python kernel DSLs. Kernel
+code describes a participating thread group and its per-thread values, then
+calls the same group-first operations with CUTLASS Python DSL or
+Numba-CUDA-MLIR.
 
 ```python
 import numpy as np
+from numba_cuda_mlir import cuda
 
 from cuda import coop
 
-block = coop.this_block()
-items = coop.ThreadData(2, dtype=np.int32)
-loaded = coop.load(block, source, items, valid_items=count, oob_default=0)
-total = coop.sum(block, loaded)
-coop.store(block, destination, loaded)
+
+@cuda.jit
+def exclusive_prefix(values, prefixes):
+    block = coop.this_block()
+    items = coop.ThreadData(2, dtype=np.int32)
+    loaded = coop.load(block, values, items)
+    scanned = coop.exclusive_sum(block, loaded)
+    coop.store(block, prefixes, scanned)
 ```
 
-The common surface includes load/store, reduce/scan, exchange/shuffle,
-adjacent-difference and discontinuity, histogram and run-length decode,
-merge/radix sorting, radix rank, and TopK. CUTLASS Python DSL and
-Numba-CUDA-MLIR integrations lower the same root calls in their compiler
-contexts.
+The calls inside the kernel are compile-time constructs. The active compiler
+lowers them to CCCL providers and accounts for any shared memory they need.
 
-These functions are compile-time kernel constructs. Importing `cuda.coop`
-succeeds without a compiler backend. A backend-dependent call outside a
-compatible compiler context reports a structured context error.
+## Install
 
-See the [CCCL documentation](https://nvidia.github.io/cccl/python.html) for the
-supported signatures and examples.
+The base distribution contains the portable contract and bundled CCCL headers.
+Add the extra for the compiler you use:
+
+```console
+python -m pip install "cuda-coop[cutlass]"
+python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
+```
+
+Use `numba-cuda-mlir-cu12` with a CUDA 12 environment. The `cutlass` extra
+selects the supported CUDA 13 CUTLASS Python DSL stack. See
+[`pyproject.toml`](pyproject.toml) for the current dependency bounds.
+
+## Portable and qualified imports
+
+Use the portable root when a kernel only needs behavior shared by the two
+backends:
+
+```python
+from cuda import coop
+```
+
+Import a qualified module for backend-specific signatures, payload adapters,
+callbacks, or optional outputs:
+
+```python
+import cuda.coop.cutlass as coop
+# or
+import cuda.coop.numba_mlir as coop
+```
+
+Importing the portable root probes an explicit allowlist containing CUTLASS
+Python DSL and Numba-CUDA-MLIR. Each installed candidate must provide the
+compiler hooks required by its adapter before `cuda.coop` registers it. A
+missing backend is ignored. An incompatible installed backend emits a
+`CudaCoopAutoRegistrationWarning` without preventing another compatible
+backend from registering.
+
+Set `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1` before the root import when an
+application manages activation itself. A later qualified import validates and
+registers that backend:
+
+```python
+import os
+
+os.environ["CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"] = "1"
+
+from cuda import coop
+import cuda.coop.cutlass
+```
+
+The base import remains usable when neither compiler is installed. Calling a
+compiler-dependent operation outside a compatible compilation context reports
+a context error.
+
+## Programming model
+
+Every collective receives its participating group as the first argument.
+`this_warp()` and `this_block()` refer to physical launch groups, while
+`group_by()` can partition a warp into smaller logical groups. Group support is
+part of each operation's contract.
+
+`ThreadData(items_per_thread, dtype=...)` describes a fixed-size register
+payload owned by each thread. Most collectives return a fresh payload and leave
+their input unchanged. `TempStorage()` asks the compiler to plan scratch space;
+`TempStorage(size_in_bytes, alignment=...)` supplies an explicit capacity.
+
+The portable surface is:
+
+| Family | Calls | Supported portable groups |
+| --- | --- | --- |
+| Data movement | `load`, `store`, `exchange` | block, warp, logical warp |
+| Reduction | `reduce`, `sum` | thread, block, warp, logical warp, cluster |
+| Scan | `scan`, `exclusive_sum`, `inclusive_sum`, `exclusive_scan`, `inclusive_scan` | block, warp, logical warp |
+| Neighbors | `adjacent_difference`, `discontinuity`, `shuffle` | block |
+| Comparison sort | `merge_sort_keys`, `merge_sort_pairs` | block, warp, logical warp |
+| Radix | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` | block |
+| Counting | `histogram`, `run_length_decode` | block |
+| Selection | `topk_min_keys`, `topk_min_pairs`, `topk_max_keys`, `topk_max_pairs` | block |
+
+Portable TopK writes an unordered result into the first `k` flattened blocked
+positions; the rest of the returned payload is undefined. Operations with a
+`valid_items` argument treat it as a uniform prefix length. Consult the shipped
+type declarations for the exact dtype, boundary, and result contracts:
+
+- [portable API](cuda/coop/__init__.pyi)
+- [CUTLASS API](cuda/coop/cutlass/__init__.pyi)
+- [Numba-CUDA-MLIR API](cuda/coop/numba_mlir/__init__.pyi)
+
+## Examples
+
+The [examples guide](examples/README.md) contains complete programs that
+validate their results:
+
+- portable block load, scan, and store with
+  [CUTLASS Python DSL](examples/cutlass/common_block_scan.py) and
+  [Numba-CUDA-MLIR](examples/numba_mlir/common_block_scan.py)
+- qualified radix sort and TopK with
+  [CUTLASS Python DSL](examples/cutlass/qualified_radix_topk.py)
+- qualified histogram and run-length decode with
+  [Numba-CUDA-MLIR](examples/numba_mlir/qualified_histogram_decode.py)
+
+The package is an alpha API. The
+[CCCL documentation](https://nvidia.github.io/cccl/python.html) carries the
+release documentation as the public surface stabilizes.
