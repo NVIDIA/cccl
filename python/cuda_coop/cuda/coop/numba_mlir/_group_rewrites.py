@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import inspect
+import operator
 from itertools import count
 from numbers import Integral
 from typing import Any
@@ -24,6 +25,10 @@ from cuda.coop._core import (
     resolve_thread_group,
 )
 from cuda.coop._core import root_api as _common_root_api
+from cuda.coop._core.block import (
+    normalize_block_histogram_positive_int,
+    validate_block_histogram_output_capacity,
+)
 
 from . import _group_ops
 from . import _thread_group as _thread_groups
@@ -61,6 +66,8 @@ _ROOT_OPERATIONS = {
         "adjacent_difference",
         "discontinuity",
         "shuffle",
+        "histogram",
+        "run_length_decode",
     )
 }
 _ROOT_OPERATIONS.update(
@@ -2541,6 +2548,688 @@ class _GroupCallPlanner:
             common_profile_operation=("shuffle" if is_common_root else None),
         )
 
+    def _lower_histogram(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        operation = "histogram"
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.histogram currently lowers only complete "
+                "physical block groups"
+            )
+
+        bins = self._constant(bound.arguments["bins"])
+        bins_per_thread = self._constant(bound.arguments["bins_per_thread"])
+        bins = normalize_block_histogram_positive_int(
+            "bins",
+            bins,
+            scope="cuda.coop.numba_mlir.histogram",
+        )
+        bins_per_thread = normalize_block_histogram_positive_int(
+            "bins_per_thread",
+            bins_per_thread,
+            scope="cuda.coop.numba_mlir.histogram",
+        )
+        group_size = group.static_size
+        assert group_size is not None
+        validate_block_histogram_output_capacity(
+            bins=bins,
+            bins_per_thread=bins_per_thread,
+            block_threads=group_size,
+            scope="cuda.coop.numba_mlir.histogram",
+        )
+
+        if is_common_root:
+            is_thread_data = self._is_array_value(
+                bound.arguments["samples"],
+                thread_data_only=True,
+            )
+            if is_thread_data is None:
+                raise GroupRewriteError(
+                    "cuda.coop.histogram could not resolve samples payload provenance"
+                )
+            if not is_thread_data:
+                raise TypeError(
+                    "cuda.coop.histogram requires samples to be coop.ThreadData "
+                    "in common V1; use cuda.coop.numba_mlir for "
+                    "backend-qualified payloads"
+                )
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        samples = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_samples",
+            value=bound.arguments["samples"],
+        )
+        if not self._array_operand_state(operation, samples):
+            raise TypeError(
+                "cuda.coop.numba_mlir.histogram requires a fixed-size "
+                "ThreadData samples payload"
+            )
+        provider_samples = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_provider_samples",
+            prototype=samples,
+            is_array=True,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        self._copy_array_payload(
+            statements,
+            operation=operation,
+            source=samples,
+            destination=provider_samples,
+            scope=scope,
+            loc=loc,
+        )
+
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        counter_dtype = bound.arguments["counter_dtype"]
+        if self._is_none(counter_dtype):
+            counter_dtype = numba_mlir_types.int32
+        else:
+            from ._common import normalize_dtype_param
+
+            counter_dtype = self._constant(counter_dtype)
+            counter_dtype = (
+                numba_mlir_types.int32
+                if counter_dtype is int
+                else normalize_dtype_param(counter_dtype)
+            )
+        provider_counter_dtype = _histogram_provider_counter_dtype(counter_dtype)
+        histogram = self._emit_shared_array(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_counters",
+            items=bins,
+            dtype=provider_counter_dtype,
+        )
+        result = self._thread_data_payload(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_result",
+            items_per_thread=bins_per_thread,
+            dtype=counter_dtype,
+        )
+
+        from . import _block as block
+        from ._group_provider import make_group_method_invocable
+
+        parent = self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_parent",
+            factory=block.histogram,
+            args=[provider_samples, histogram],
+            kwargs={
+                "algorithm": bound.arguments["algorithm"],
+                **({"_common_profile_operation": operation} if is_common_root else {}),
+            },
+        )
+        self._emit_method_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram",
+            receiver=parent,
+            method="init",
+            args=[],
+            kwargs={},
+        )
+        sync_invocable = make_group_method_invocable(
+            group=group,
+            operation="sync",
+            dtype=None,
+            level="thread",
+        )
+        self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_sync_after_init",
+            factory=sync_invocable,
+            args=[],
+            kwargs={},
+        )
+        self._emit_method_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram",
+            receiver=parent,
+            method="composite",
+            args=[],
+            kwargs={},
+        )
+        self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_sync_after_composite",
+            factory=sync_invocable,
+            args=[],
+            kwargs={},
+        )
+        rank_invocable = make_group_method_invocable(
+            group=group,
+            operation="rank",
+            dtype=None,
+            level="thread",
+        )
+        rank = self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_rank",
+            factory=rank_invocable,
+            args=[],
+            kwargs={},
+        )
+        bins_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="histogram_bins",
+            value=bins,
+        )
+        for item_index in range(bins_per_thread):
+            offset = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"histogram_offset_{item_index}",
+                value=item_index * group_size,
+            )
+            striped_index = self._new_var(
+                scope, loc, f"histogram_striped_index_{item_index}"
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.add, rank, offset, loc),
+                    striped_index,
+                    loc,
+                )
+            )
+            safe_index = self._new_var(scope, loc, f"histogram_safe_index_{item_index}")
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.mod, striped_index, bins_var, loc),
+                    safe_index,
+                    loc,
+                )
+            )
+            counter = self._new_var(scope, loc, f"histogram_counter_{item_index}")
+            statements.append(
+                ir.Assign(ir.Expr.getitem(histogram, safe_index, loc), counter, loc)
+            )
+            is_valid = self._new_var(
+                scope, loc, f"histogram_counter_valid_{item_index}"
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.lt, striped_index, bins_var, loc),
+                    is_valid,
+                    loc,
+                )
+            )
+            projected = self._new_var(
+                scope, loc, f"histogram_projected_counter_{item_index}"
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.mul, counter, is_valid, loc),
+                    projected,
+                    loc,
+                )
+            )
+            output_index = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"histogram_output_index_{item_index}",
+                value=item_index,
+            )
+            statements.append(ir.SetItem(result, output_index, projected, loc))
+        statements.append(ir.Assign(result, inst.target, loc))
+        return statements
+
+    def _lower_run_length_decode(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        operation = "run_length_decode"
+        scope_name = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                f"{scope_name}.run_length_decode currently lowers only complete "
+                "physical block groups"
+            )
+
+        decoded_items_per_thread = self._constant(
+            bound.arguments["decoded_items_per_thread"]
+        )
+        if isinstance(decoded_items_per_thread, bool) or not isinstance(
+            decoded_items_per_thread,
+            Integral,
+        ):
+            raise TypeError(
+                f"{scope_name}.run_length_decode "
+                "decoded_items_per_thread must be a compile-time positive integer"
+            )
+        decoded_items_per_thread = int(decoded_items_per_thread)
+        if decoded_items_per_thread < 1:
+            raise ValueError(
+                f"{scope_name}.run_length_decode "
+                "decoded_items_per_thread must be a compile-time positive integer"
+            )
+
+        offset_is_static, static_offset = self._try_constant(
+            bound.arguments["decoded_window_offset"]
+        )
+        if offset_is_static:
+            if isinstance(static_offset, bool) or not isinstance(
+                static_offset,
+                Integral,
+            ):
+                raise TypeError(
+                    f"{scope_name}.run_length_decode decoded_window_offset must "
+                    "be an integer"
+                )
+            if int(static_offset) < 0:
+                raise ValueError(
+                    f"{scope_name}.run_length_decode decoded_window_offset must "
+                    "be non-negative"
+                )
+
+        if is_common_root:
+            for name in ("run_values", "run_lengths"):
+                is_thread_data = self._is_array_value(
+                    bound.arguments[name],
+                    thread_data_only=True,
+                )
+                if is_thread_data is None:
+                    raise GroupRewriteError(
+                        f"cuda.coop.run_length_decode could not resolve {name} "
+                        "payload provenance"
+                    )
+                if not is_thread_data:
+                    raise TypeError(
+                        f"cuda.coop.run_length_decode requires {name} to be "
+                        "coop.ThreadData in common V1; use "
+                        "cuda.coop.numba_mlir for backend-qualified payloads"
+                    )
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        run_values = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_values",
+            value=bound.arguments["run_values"],
+        )
+        run_lengths = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_lengths",
+            value=bound.arguments["run_lengths"],
+        )
+        if not self._array_operand_state(
+            operation, run_values
+        ) or not self._array_operand_state(operation, run_lengths):
+            raise TypeError(
+                f"{scope_name}.run_length_decode requires fixed-size "
+                "ThreadData run_values and run_lengths payloads"
+            )
+        runs_per_thread = self._array_extent(run_values)
+        if runs_per_thread is None:
+            raise GroupRewriteError(
+                f"{scope_name}.run_length_decode could not infer runs_per_thread"
+            )
+        if self._array_extent(run_lengths) != runs_per_thread:
+            raise ValueError(
+                f"{scope_name}.run_length_decode run_values and "
+                "run_lengths must have the same items_per_thread"
+            )
+
+        decoded_items = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_decoded",
+            prototype=run_values,
+            is_array=True,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            items_per_thread=decoded_items_per_thread,
+        )
+        total_decoded_size = bound.arguments.get("total_decoded_size")
+        if self._is_none(total_decoded_size):
+            total_decoded_size = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="run_length_total_decoded_size",
+                prototype=run_lengths,
+                is_array=True,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+                items_per_thread=1,
+            )
+        elif not self._array_operand_state(operation, total_decoded_size):
+            raise TypeError(
+                f"{scope_name}.run_length_decode total_decoded_size "
+                "must be a single-item ThreadData output"
+            )
+        elif self._array_extent(total_decoded_size) not in {None, 1}:
+            raise ValueError(
+                f"{scope_name}.run_length_decode total_decoded_size "
+                "must contain exactly one item"
+            )
+
+        from ._block import _block_run_length_decode
+
+        parent_kwargs = {}
+        if offset_is_static:
+            parent_kwargs["_static_decoded_window_offset"] = int(static_offset)
+        decoded_offset_dtype = bound.arguments.get("decoded_offset_dtype")
+        if not self._is_none(decoded_offset_dtype):
+            parent_kwargs["decoded_offset_dtype"] = decoded_offset_dtype
+        parent = self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_parent",
+            factory=(
+                _block_run_length_decode._common_run_length
+                if is_common_root
+                else _block_run_length_decode._qualified_group_run_length
+            ),
+            args=[
+                run_values,
+                run_lengths,
+                runs_per_thread,
+                decoded_items_per_thread,
+                total_decoded_size,
+            ],
+            kwargs=parent_kwargs,
+        )
+        decoded_window_offset = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_decoded_window_offset",
+            value=bound.arguments["decoded_window_offset"],
+        )
+        decode_args = [decoded_items, decoded_window_offset]
+        relative_offsets = bound.arguments.get("relative_offsets")
+        if not self._is_none(relative_offsets):
+            if not self._array_operand_state(operation, relative_offsets):
+                raise TypeError(
+                    f"{scope_name}.run_length_decode relative_offsets "
+                    "must be a ThreadData output"
+                )
+            relative_offsets = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="run_length_relative_offsets",
+                value=relative_offsets,
+            )
+            decode_args.append(relative_offsets)
+
+        mask_index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_mask_index",
+            value=0,
+        )
+        zero_literal = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_zero_literal",
+            value=0,
+        )
+        statements.append(ir.SetItem(decoded_items, mask_index, zero_literal, loc))
+        decoded_zero = self._new_var(scope, loc, "run_length_decoded_zero")
+        statements.append(
+            ir.Assign(
+                ir.Expr.getitem(decoded_items, mask_index, loc),
+                decoded_zero,
+                loc,
+            )
+        )
+        relative_sentinel = None
+        if not self._is_none(relative_offsets):
+            minus_one_literal = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem="run_length_minus_one_literal",
+                value=-1,
+            )
+            statements.append(
+                ir.SetItem(
+                    relative_offsets,
+                    mask_index,
+                    minus_one_literal,
+                    loc,
+                )
+            )
+            relative_sentinel = self._new_var(
+                scope,
+                loc,
+                "run_length_relative_sentinel",
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.getitem(relative_offsets, mask_index, loc),
+                    relative_sentinel,
+                    loc,
+                )
+            )
+        self._emit_method_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length",
+            receiver=parent,
+            method="decode",
+            args=decode_args,
+            kwargs={},
+        )
+
+        from numba_cuda_mlir import cuda as cuda_module
+
+        from ._group_provider import make_group_method_invocable
+
+        rank_invocable = make_group_method_invocable(
+            group=group,
+            operation="rank",
+            dtype=None,
+            level="thread",
+        )
+        rank = self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_rank",
+            factory=rank_invocable,
+            args=[],
+            kwargs={},
+        )
+        decoded_items_per_thread_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_decoded_items_per_thread",
+            value=decoded_items_per_thread,
+        )
+        rank_base = self._new_var(scope, loc, "run_length_rank_base")
+        statements.append(
+            ir.Assign(
+                ir.Expr.binop(
+                    operator.mul,
+                    rank,
+                    decoded_items_per_thread_var,
+                    loc,
+                ),
+                rank_base,
+                loc,
+            )
+        )
+        total_value = self._new_var(scope, loc, "run_length_total")
+        statements.append(
+            ir.Assign(
+                ir.Expr.getitem(total_decoded_size, mask_index, loc),
+                total_value,
+                loc,
+            )
+        )
+        offset_is_in_range = self._new_var(
+            scope,
+            loc,
+            "run_length_offset_is_in_range",
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.binop(
+                    operator.lt,
+                    decoded_window_offset,
+                    total_value,
+                    loc,
+                ),
+                offset_is_in_range,
+                loc,
+            )
+        )
+        safe_offset = self._emit_factory_call(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem="run_length_safe_offset",
+            factory=cuda_module.selp,
+            args=[offset_is_in_range, decoded_window_offset, total_value],
+            kwargs={},
+        )
+        remaining_items = self._new_var(scope, loc, "run_length_remaining_items")
+        statements.append(
+            ir.Assign(
+                ir.Expr.binop(operator.sub, total_value, safe_offset, loc),
+                remaining_items,
+                loc,
+            )
+        )
+        for item_index in range(decoded_items_per_thread):
+            item_index_var = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"run_length_item_index_{item_index}",
+                value=item_index,
+            )
+            local_target = self._new_var(
+                scope,
+                loc,
+                f"run_length_local_target_{item_index}",
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.add, rank_base, item_index_var, loc),
+                    local_target,
+                    loc,
+                )
+            )
+            is_valid = self._new_var(
+                scope,
+                loc,
+                f"run_length_item_valid_{item_index}",
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.binop(operator.lt, local_target, remaining_items, loc),
+                    is_valid,
+                    loc,
+                )
+            )
+            decoded_value = self._new_var(
+                scope,
+                loc,
+                f"run_length_decoded_value_{item_index}",
+            )
+            statements.append(
+                ir.Assign(
+                    ir.Expr.getitem(decoded_items, item_index_var, loc),
+                    decoded_value,
+                    loc,
+                )
+            )
+            projected = self._emit_factory_call(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"run_length_projected_value_{item_index}",
+                factory=cuda_module.selp,
+                args=[is_valid, decoded_value, decoded_zero],
+                kwargs={},
+            )
+            statements.append(ir.SetItem(decoded_items, item_index_var, projected, loc))
+            if not self._is_none(relative_offsets):
+                relative_value = self._new_var(
+                    scope,
+                    loc,
+                    f"run_length_relative_value_{item_index}",
+                )
+                statements.append(
+                    ir.Assign(
+                        ir.Expr.getitem(relative_offsets, item_index_var, loc),
+                        relative_value,
+                        loc,
+                    )
+                )
+                assert relative_sentinel is not None
+                projected_relative = self._emit_factory_call(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem=f"run_length_projected_relative_{item_index}",
+                    factory=cuda_module.selp,
+                    args=[is_valid, relative_value, relative_sentinel],
+                    kwargs={},
+                )
+                statements.append(
+                    ir.SetItem(
+                        relative_offsets,
+                        item_index_var,
+                        projected_relative,
+                        loc,
+                    )
+                )
+        statements.append(ir.Assign(decoded_items, inst.target, loc))
+        return statements
+
     def _lower_root_operation(
         self,
         inst: ir.Assign,
@@ -2685,6 +3374,20 @@ class _GroupCallPlanner:
             )
         elif operation == "shuffle":
             replacement = self._lower_shuffle(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "histogram":
+            replacement = self._lower_histogram(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "run_length_decode":
+            replacement = self._lower_run_length_decode(
                 inst,
                 group=group,
                 bound=bound,

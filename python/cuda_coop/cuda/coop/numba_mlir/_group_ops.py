@@ -331,16 +331,70 @@ def shuffle(
     )
 
 
+def histogram(
+    group: ThreadGroup,
+    samples: Any,
+    /,
+    *,
+    bins: Any,
+    bins_per_thread: Any = 1,
+    counter_dtype: Any = None,
+    algorithm: Any = "atomic",
+) -> Any:
+    """Return striped block-histogram counters without mutating ``samples``.
+
+    Every sample must satisfy CUB's ``0 <= sample < bins`` precondition;
+    violating it is undefined behavior.
+    """
+
+    return _group_primitive_marker(
+        "histogram",
+        group,
+        samples,
+        bins=bins,
+        bins_per_thread=bins_per_thread,
+        counter_dtype=counter_dtype,
+        algorithm=algorithm,
+    )
+
+
+def run_length_decode(
+    group: ThreadGroup,
+    run_values: Any,
+    run_lengths: Any,
+    /,
+    *,
+    decoded_items_per_thread: Any,
+    decoded_window_offset: Any = 0,
+    relative_offsets: Any = None,
+    total_decoded_size: Any = None,
+    decoded_offset_dtype: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "run_length_decode",
+        group,
+        run_values,
+        run_lengths,
+        decoded_items_per_thread=decoded_items_per_thread,
+        decoded_window_offset=decoded_window_offset,
+        relative_offsets=relative_offsets,
+        total_decoded_size=total_decoded_size,
+        decoded_offset_dtype=decoded_offset_dtype,
+    )
+
+
 __all__ = [
     "adjacent_difference",
     "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "reduce",
+    "run_length_decode",
     "scan",
     "shuffle",
     "store",

@@ -16,6 +16,7 @@ from ..._typing import (
 )
 from ..._typing import _ValidItems as _ValidItems
 from .. import (
+    BlockHistogramAlgorithm,
     BlockLoadAlgorithm,
     BlockScanAlgorithm,
     BlockStoreAlgorithm,
@@ -1762,10 +1763,103 @@ def make_shuffle(
 ) -> _ShuffleInvocable[Any]:
     """Build a generated block-shuffle callable."""
 
+@overload
+def histogram(
+    samples: object,
+    histogram: object,
+    /,
+    *,
+    algorithm: BlockHistogramAlgorithm = BlockHistogramAlgorithm.ATOMIC,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    bins: int = 256,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+    item_dtype: object = None,
+    counter_dtype: object = None,
+) -> _Histogram:
+    """Bind block samples and a shared histogram parent object."""
+
+@overload
+def histogram(
+    items: object = None,
+    histogram: object = None,
+    algorithm: BlockHistogramAlgorithm = BlockHistogramAlgorithm.ATOMIC,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    bins: int = 256,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+    item_dtype: object = None,
+    counter_dtype: object = None,
+) -> _Histogram:
+    """Build or bind a block-histogram parent outside compilation."""
+
+def make_histogram(
+    items: object = None,
+    histogram: object = None,
+    algorithm: BlockHistogramAlgorithm = BlockHistogramAlgorithm.ATOMIC,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    bins: int = 256,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+    item_dtype: object = None,
+    counter_dtype: object = None,
+) -> _Histogram:
+    """Build a generated block-histogram parent constructor."""
+
+@overload
+def run_length(
+    run_values: object,
+    run_lengths: object,
+    runs_per_thread: int = 1,
+    decoded_items_per_thread: int = 1,
+    total_decoded_size: object = None,
+    /,
+    *,
+    decoded_offset_dtype: object = None,
+    temp_storage: TempStorage | None = None,
+    threads_per_block: _Dim | None = None,
+    dim: _Dim | None = None,
+    item_dtype: object = None,
+) -> _RunLengthDecoder:
+    """Bind run-length encoded payloads and return a decoder."""
+
+@overload
+def run_length(
+    run_values: object = None,
+    run_lengths: object = None,
+    runs_per_thread: int = 1,
+    decoded_items_per_thread: int = 1,
+    total_decoded_size: object = None,
+    decoded_offset_dtype: object = None,
+    temp_storage: TempStorage | None = None,
+    threads_per_block: _Dim | None = None,
+    dim: _Dim | None = None,
+    item_dtype: object = None,
+) -> _RunLengthInvocable:
+    """Build a run-length parent factory outside compilation."""
+
+def make_run_length(
+    run_values: object = None,
+    run_lengths: object = None,
+    runs_per_thread: int = 1,
+    decoded_items_per_thread: int = 1,
+    total_decoded_size: object = None,
+    decoded_offset_dtype: object = None,
+    temp_storage: TempStorage | None = None,
+    threads_per_block: _Dim | None = None,
+    dim: _Dim | None = None,
+    item_dtype: object = None,
+) -> _RunLengthInvocable:
+    """Build a generated run-length decoder parent constructor."""
+
 __all__ = [
     "BlockAdjacentDifferenceType",
     "BlockDiscontinuityType",
     "BlockExchangeType",
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockShuffleType",
@@ -1775,6 +1869,7 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -1783,15 +1878,18 @@ __all__ = [
     "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
+    "make_histogram",
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
     "make_reduce",
+    "make_run_length",
     "make_scan",
     "make_shuffle",
     "make_store",
     "make_sum",
     "reduce",
+    "run_length",
     "scan",
     "shuffle",
     "store",

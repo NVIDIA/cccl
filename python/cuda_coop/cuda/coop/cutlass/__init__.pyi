@@ -9,9 +9,11 @@ from . import _warp as _warp
 from ._group_adjacent_difference import adjacent_difference as adjacent_difference
 from ._group_discontinuity import discontinuity as discontinuity
 from ._group_exchange import exchange as exchange
+from ._group_histogram import histogram as histogram
 from ._group_load_store import load as load
 from ._group_load_store import store as store
 from ._group_reduce import reduce as reduce
+from ._group_run_length_decode import run_length_decode as run_length_decode
 from ._group_scan import exclusive_scan as exclusive_scan
 from ._group_scan import exclusive_sum as exclusive_sum
 from ._group_scan import inclusive_scan as inclusive_scan
@@ -68,10 +70,12 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "reduce",
+    "run_length_decode",
     "scan",
     "shuffle",
     "store",

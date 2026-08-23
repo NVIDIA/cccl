@@ -52,8 +52,10 @@ from ._exchange import (
     exchange_striped_to_blocked,
     exchange_warp_striped_to_blocked,
 )
+from ._histogram import histogram
 from ._load_store import load, store
 from ._reduce import reduce, row_sum, sum
+from ._run_length import BlockRunLengthDecode, run_length, run_length_decode
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._shuffle import (
     BlockShuffleType,
@@ -73,10 +75,12 @@ make_discontinuity = _factory.make_discontinuity
 make_exchange = _factory.make_exchange
 make_exclusive_scan = _factory.make_exclusive_scan
 make_exclusive_sum = _factory.make_exclusive_sum
+make_histogram = _factory.make_histogram
 make_inclusive_scan = _factory.make_inclusive_scan
 make_inclusive_sum = _factory.make_inclusive_sum
 make_load = _factory.make_load
 make_reduce = _factory.make_reduce
+make_run_length = _factory.make_run_length
 make_scan = _factory.make_scan
 make_shuffle = _factory.make_shuffle
 make_store = _factory.make_store
@@ -86,6 +90,7 @@ __all__ = [
     "BlockAdjacentDifferenceType",
     "BlockDiscontinuityType",
     "BlockExchangeType",
+    "BlockRunLengthDecode",
     "BlockShuffleType",
     "TempStorage",
     "adjacent_difference",
@@ -106,6 +111,7 @@ __all__ = [
     "exchange_warp_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -114,16 +120,20 @@ __all__ = [
     "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
+    "make_histogram",
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
     "make_reduce",
+    "make_run_length",
     "make_scan",
     "make_shuffle",
     "make_store",
     "make_sum",
     "reduce",
     "row_sum",
+    "run_length",
+    "run_length_decode",
     "scan",
     "shuffle",
     "shuffle_down",

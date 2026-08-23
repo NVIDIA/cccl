@@ -52,8 +52,10 @@ from .._scope import BLOCK_SCOPE as _SCOPE
 from ._difference import adjacent_difference
 from ._discontinuity import discontinuity
 from ._exchange import BlockExchangeType, exchange
+from ._histogram import histogram
 from ._load_store import load, store
 from ._reduce import reduce, sum
+from ._run_length import run_length
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._shuffle import shuffle
 
@@ -689,4 +691,82 @@ def make_shuffle(
         bound,
         overridable_kwargs=overridable_kwargs,
         override_aliases=(("block_shuffle_type", ("mode",)),),
+    )
+
+
+def make_histogram(
+    item_dtype: Any,
+    counter_dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    bins: Any = None,
+    bins_per_thread: int | None = None,
+    algorithm: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block histogram callable.
+
+    The callable binds counter dtype, optional histogram defaults, and CTA
+    metadata before forwarding per-thread samples to :func:`histogram`.
+    ``bins`` is trace-time static. Deferred calls may override a bound value
+    with another static bin count.
+    """
+    del item_dtype, items_per_thread
+    _reject_methods("make_histogram", kwargs)
+    bound = _block_kwargs(
+        "make_histogram",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    bound["counter_dtype"] = counter_dtype
+    _bind_if_not_none(bound, "bins", bins)
+    _bind_if_not_none(bound, "bins_per_thread", bins_per_thread)
+    _bind_if_not_none(bound, "algorithm", algorithm)
+    return _make_factory(
+        "make_histogram",
+        histogram,
+        bound,
+        overridable_kwargs=_HISTOGRAM_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_run_length(
+    item_dtype: Any,
+    threads_per_block: Any = None,
+    runs_per_thread: int | None = None,
+    decoded_items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    total_decoded_size: Any = None,
+    decoded_offset_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block run-length callable.
+
+    The callable binds decoded-window options, optional decoded-size outputs,
+    and CTA metadata, then forwards run values and lengths to
+    :func:`run_length` to create the decode parent. Deferred calls may override
+    runtime ``total_decoded_size`` defaults.
+    """
+    del item_dtype
+    _reject_methods("make_run_length", kwargs)
+    bound = _block_kwargs(
+        "make_run_length",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    if runs_per_thread is not None:
+        bound["runs_per_thread"] = runs_per_thread
+    bound["decoded_items_per_thread"] = decoded_items_per_thread
+    _bind_if_not_none(bound, "decoded_offset_dtype", decoded_offset_dtype)
+    _bind_if_not_none(bound, "total_decoded_size", total_decoded_size)
+    return _make_factory(
+        "make_run_length",
+        run_length,
+        bound,
+        overridable_kwargs=_RUN_LENGTH_OVERRIDABLE_KWARGS,
     )

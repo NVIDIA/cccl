@@ -25,6 +25,7 @@ from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
+from .._typing import HistogramAlgorithm as _HistogramAlgorithm
 from .._typing import PortableShuffleMode as _PortableShuffleMode
 from .._typing import ReduceAlgorithm as _ReduceAlgorithm
 from .._typing import ReduceOperator as _ReduceOperator
@@ -205,6 +206,12 @@ class BlockScanAlgorithm(IntEnum):
     RAKING = 0
     RAKING_MEMOIZE = 1
     WARP_SCANS = 2
+
+class BlockHistogramAlgorithm(IntEnum):
+    """CUB block-histogram algorithm choices."""
+
+    SORT = 0
+    ATOMIC = 1
 
 class StatefulFunction(Generic[_OpT]):
     """Device callable paired with explicit state for generated C++ wrappers."""
@@ -1328,7 +1335,128 @@ def shuffle(
     ``block_suffix`` outputs.
     """
 
+@overload
+def histogram(
+    group: _BlockGroup,
+    samples: _ThreadDataLike[Any],
+    /,
+    *,
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: type[_CounterT],
+    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> _ThreadDataLike[_CounterT]:
+    """Return striped counters typed by a portable dtype class.
+
+    The complete block leaves compiler-produced ``samples`` unchanged.
+    Positive static capacity covers every bin; excess striped slots are zero.
+    Every sample must satisfy ``0 <= sample < bins``; violating this CUB
+    precondition is undefined behavior.
+    """
+
+@overload
+def histogram(
+    group: _BlockGroup,
+    samples: _ThreadDataLike[Any],
+    /,
+    *,
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: None = None,
+    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> _ThreadDataLike[int]:
+    """Return default signed-integer striped block histogram counters.
+
+    The complete block leaves compiler-produced ``samples`` unchanged.
+    Positive static capacity covers every bin; excess striped slots are zero.
+    Every sample must satisfy ``0 <= sample < bins``; violating this CUB
+    precondition is undefined behavior.
+    """
+
+@overload
+def histogram(
+    group: _BlockGroup,
+    samples: _ThreadDataLike[Any],
+    /,
+    *,
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: object,
+    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> _ThreadDataLike[Any]:
+    """Return counters using an external Numba compiler dtype token.
+
+    The complete block leaves compiler-produced ``samples`` unchanged.
+    Positive static capacity covers every bin; excess striped slots are zero.
+    Every sample must satisfy ``0 <= sample < bins``; violating this CUB
+    precondition is undefined behavior.
+    """
+
+@overload
+def run_length_decode(
+    group: _BlockGroup,
+    run_values: _ThreadDataLike[_RunValueT],
+    run_lengths: _ThreadDataLike[_RunLengthT],
+    /,
+    *,
+    decoded_items_per_thread: _TraceInteger,
+    decoded_window_offset: _IntegerValue = 0,
+    relative_offsets: _ThreadDataLike[_RunLengthT] | None = None,
+    total_decoded_size: _ThreadDataLike[_RunLengthT] | None = None,
+    decoded_offset_dtype: object = None,
+) -> _ThreadDataLike[_RunValueT]:
+    """Decode one blockwise run-length window with Numba side outputs.
+
+    ``group`` is the complete block. ``run_values`` and ``run_lengths`` are
+    matching positive-size compiler payloads. ``decoded_items_per_thread``
+    fixes the positive result extent, while uniform
+    ``decoded_window_offset`` selects a nonnegative stream position
+    representable in the run-length dtype; dynamic callers guarantee its range.
+    ``relative_offsets`` receives offsets within each run and
+    ``total_decoded_size`` receives the block-wide stream size; both use the
+    run-length dtype. Out-of-range relative offsets are the length-typed
+    all-ones value (the unsigned maximum or signed ``-1``).
+    ``decoded_offset_dtype`` may spell that compiler dtype explicitly. Actual
+    runs have positive lengths; zeros are allowed only as one trailing padding
+    suffix, and the block-wide sum is positive and representable in the
+    run-length dtype. Out-of-range decoded values are zero and the inputs remain
+    unchanged.
+    """
+
+@overload
+def run_length_decode(
+    group: _BlockGroup,
+    run_values: _ThreadDataLike[_NumbaRunValueT],
+    run_lengths: _ThreadDataLike[_NumbaRunLengthT],
+    /,
+    *,
+    decoded_items_per_thread: _TraceInteger,
+    decoded_window_offset: _IntegerValue = 0,
+    relative_offsets: _ThreadDataLike[_NumbaRunLengthT] | None = None,
+    total_decoded_size: _ThreadDataLike[_NumbaRunLengthT] | None = None,
+    decoded_offset_dtype: object = None,
+) -> _ThreadDataLike[_NumbaRunValueT]:
+    """Decode values using the broader Numba-CUDA-MLIR dtype surface.
+
+    ``group`` is the complete block. ``run_values`` may use Numba compiler
+    integer, floating, or Boolean scalar dtypes; ``run_lengths`` may use its
+    8-, 16-, 32-, or 64-bit integer dtypes. Both payloads have matching
+    positive extents. ``decoded_items_per_thread`` fixes the positive result
+    extent, while uniform ``decoded_window_offset`` selects a nonnegative
+    stream position representable in the run-length dtype; dynamic callers
+    guarantee its range. ``relative_offsets`` receives offsets within each run
+    and ``total_decoded_size`` receives the block-wide stream size; both use
+    the run-length dtype. Out-of-range relative offsets are the length-typed
+    all-ones value (the unsigned maximum or signed ``-1``).
+    ``decoded_offset_dtype`` may spell that compiler dtype explicitly. Actual
+    runs have positive lengths; zeros are allowed only as one trailing padding
+    suffix, and the block-wide sum is positive and representable in the
+    run-length dtype. Out-of-range decoded values are zero and inputs are
+    unchanged.
+    """
+
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -1347,11 +1475,13 @@ __all__ = [
     "exclusive_scan",
     "exclusive_sum",
     "gpu_dataclass",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",

@@ -11,6 +11,7 @@ from .._dsl._launch import CutlassLaunchMetadata as _CutlassLaunchMetadata
 from .._dsl.block import BlockAdjacentDifferenceType as BlockAdjacentDifferenceType
 from .._dsl.block import BlockDiscontinuityType as BlockDiscontinuityType
 from .._dsl.block import BlockExchangeType as BlockExchangeType
+from .._dsl.block import BlockRunLengthDecode as BlockRunLengthDecode
 from .._dsl.block import BlockShuffleType as BlockShuffleType
 from .._dsl.block import adjacent_difference as adjacent_difference
 from .._dsl.block import (
@@ -44,12 +45,15 @@ from .._dsl.block import (
 )
 from .._dsl.block import exclusive_scan as exclusive_scan
 from .._dsl.block import exclusive_sum as exclusive_sum
+from .._dsl.block import histogram as histogram
 from .._dsl.block import inclusive_scan as inclusive_scan
 from .._dsl.block import inclusive_sum as inclusive_sum
 from .._dsl.block import radix_sort_keys_descending as radix_sort_keys_descending
 from .._dsl.block import radix_sort_pairs_descending as radix_sort_pairs_descending
 from .._dsl.block import reduce as reduce
 from .._dsl.block import row_sum as row_sum
+from .._dsl.block import run_length as run_length
+from .._dsl.block import run_length_decode as run_length_decode
 from .._dsl.block import scan as scan
 from .._dsl.block import shuffle as shuffle
 from .._dsl.block import shuffle_down as shuffle_down
@@ -457,10 +461,38 @@ def make_radix_sort_pairs_descending(
 ) -> _DeferredPair:
     """Build a deferred descending block radix-pair-sort specialization."""
 
+def make_histogram(
+    item_dtype: object,
+    counter_dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    bins: object = None,
+    bins_per_thread: int | None = None,
+    algorithm: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block histogram specialization."""
+
+def make_run_length(
+    item_dtype: object,
+    threads_per_block: object = None,
+    runs_per_thread: int | None = None,
+    decoded_items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    total_decoded_size: object = None,
+    decoded_offset_dtype: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block run-length specialization."""
+
 __all__ = [
     "BlockAdjacentDifferenceType",
     "BlockDiscontinuityType",
     "BlockExchangeType",
+    "BlockRunLengthDecode",
     "BlockShuffleType",
     "TempStorage",
     "adjacent_difference",
@@ -481,6 +513,7 @@ __all__ = [
     "exchange_warp_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -489,12 +522,14 @@ __all__ = [
     "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",
+    "make_histogram",
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
     "make_radix_sort_keys_descending",
     "make_radix_sort_pairs_descending",
     "make_reduce",
+    "make_run_length",
     "make_scan",
     "make_shuffle",
     "make_store",
@@ -503,6 +538,8 @@ __all__ = [
     "radix_sort_pairs_descending",
     "reduce",
     "row_sum",
+    "run_length",
+    "run_length_decode",
     "scan",
     "shuffle",
     "shuffle_down",

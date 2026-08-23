@@ -573,6 +573,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "shuffle",
             "adjacent_difference",
             "discontinuity",
+            "histogram",
+            "run_length_decode",
         }
     ),
     "numba_mlir": frozenset(
@@ -590,6 +592,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "shuffle",
             "adjacent_difference",
             "discontinuity",
+            "histogram",
+            "run_length_decode",
         }
     ),
 }
