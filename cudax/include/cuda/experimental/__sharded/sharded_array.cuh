@@ -41,6 +41,7 @@
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__sharded/fork_join.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
 
 #include <algorithm>
@@ -599,6 +600,112 @@ public:
 
   // ========== Stream ordering: composing with a caller stream ==========
 
+  /**
+   * @brief Declare that the shards' subsequent work depends on the work
+   *        currently enqueued on @p stream (fork a caller stream out to the
+   *        per-shard streams).
+   *
+   * ORDERING DECLARATION, NOT A SYNCHRONIZATION: one event is recorded on
+   * @p stream and every shard stream waits on it. The host returns
+   * immediately; nothing is synchronized and no work is awaited. Use it to
+   * hand results produced on a caller stream to per-shard consumers without
+   * a host round-trip:
+   *
+   * @code
+   * producer<<<..., s>>>(...);   // writes the array's memory on stream s
+   * data.fork_from(s);           // shard streams now depend on the producer
+   * transform(group, data, op);  // per-shard work sees the produced values
+   * @endcode
+   *
+   * Capture-safe: inside an active CUDA graph capture the event record/wait
+   * pair becomes graph dependencies, making `fork_from`/`join_into` the
+   * composition idiom between a captured caller stream and the shard streams.
+   *
+   * Events are drawn from a small pool owned by the container (lazily
+   * created, reused across calls; see `reserved::fork_join_event_pool` for the
+   * ownership rationale), so adopted arrays with foreign streams are fully
+   * supported. Shards without a reference stream are skipped: their
+   * operations are synchronous and need no ordering. Concurrent
+   * `fork_from`/`join_into` calls on the same container reuse the pooled
+   * events and must be ordered externally.
+   */
+  void fork_from(cudaStream_t stream) const
+  {
+    cudaEvent_t event = nullptr; // recorded once, on the first distinct shard stream
+    for (const auto& s : shards_)
+    {
+      if (!s.stream || s.stream == stream)
+      {
+        continue;
+      }
+      if (!event)
+      {
+        int device                             = -1;
+        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+        if (stream)
+        {
+          cuda_safe_call(cudaStreamIsCapturing(stream, &capture_status));
+        }
+        if (stream && capture_status == cudaStreamCaptureStatusNone)
+        {
+          // stream_ref::device() is version-portable (cudaStreamGetDevice
+          // itself requires CUDA 12.8+); green-context streams report their
+          // underlying device, which is exactly the event-pool key we want.
+          device = ::cuda::stream_ref{stream}.device().get();
+        }
+        else
+        {
+          // Under capture, querying a stream's device is not permitted on
+          // every driver (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED); the event
+          // recorded on a capturing stream only becomes a graph dependency
+          // node, so the current device is the right home for it.
+          cuda_safe_call(cudaGetDevice(&device));
+        }
+        event = fork_join_events_.fork_event(device);
+        cuda_safe_call(cudaEventRecord(event, stream));
+      }
+      cuda_safe_call(cudaStreamWaitEvent(s.stream, event, 0));
+    }
+  }
+
+  /**
+   * @brief Declare that subsequent work on @p stream depends on the work
+   *        currently enqueued on every shard stream (join the per-shard
+   *        streams back into a caller stream).
+   *
+   * ORDERING DECLARATION, NOT A SYNCHRONIZATION: an event is recorded on each
+   * shard stream and @p stream waits on all of them. The host returns
+   * immediately; nothing is synchronized. The mirror image of `fork_from`:
+   *
+   * @code
+   * transform(group, data, op);  // per-shard producers on the shard streams
+   * data.join_into(s);           // stream s now depends on all of them
+   * reader<<<..., s>>>(...);     // sees every shard's results
+   * @endcode
+   *
+   * Capture-safe and pool-backed exactly like `fork_from` (see there for the
+   * event-ownership and concurrency notes).
+   */
+  void join_into(cudaStream_t stream) const
+  {
+    for (size_t i = 0; i < shards_.size(); i++)
+    {
+      const auto& s = shards_[i];
+      if (!s.stream || s.stream == stream)
+      {
+        continue;
+      }
+      cudaEvent_t event = nullptr;
+      {
+        // Create/record in the shard's context so the event matches its stream.
+        exec_place_scope scope(s.exec);
+        event = fork_join_events_.join_event(i);
+        cuda_safe_call(cudaEventRecord(event, s.stream));
+      }
+      cuda_safe_call(cudaStreamWaitEvent(stream, event, 0));
+    }
+  }
+
   // ========== Move-only semantics ==========
 
   sharded_array(sharded_array&& other) noexcept
@@ -606,6 +713,7 @@ public:
       , total_size_(other.total_size_)
       , ownership_(other.ownership_)
       , contiguous_backing_(mv(other.contiguous_backing_))
+      , fork_join_events_(mv(other.fork_join_events_))
   {
     each_shard.parent_ = this;
     other.total_size_  = 0;
@@ -621,6 +729,7 @@ public:
       total_size_         = other.total_size_;
       ownership_          = other.ownership_;
       contiguous_backing_ = mv(other.contiguous_backing_);
+      fork_join_events_   = mv(other.fork_join_events_);
       other.total_size_   = 0;
       other.ownership_    = ownership::view;
       // each_shard.parent_ already points to this
@@ -977,6 +1086,9 @@ private:
   // Set only by allocate_contiguous: the VMM backing (one VA range, physical
   // blocks owned per shard's place). Shards are then non-owning views.
   ::std::shared_ptr<places::localized_array> contiguous_backing_;
+  // Pooled events for fork_from/join_into (lazily created; mutable because
+  // the ordering declarations are const — they do not modify elements).
+  mutable reserved::fork_join_event_pool fork_join_events_;
 };
 
 // ============================================================================

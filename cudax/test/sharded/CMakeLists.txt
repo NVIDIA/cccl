@@ -3,6 +3,7 @@ set(
   include_only.cu
   containers/sharded_array.cu
   containers/contiguous.cu
+  containers/fork_join.cu
   algorithms/elementwise.cu
   algorithms/reduce_scan.cu
   algorithms/count_histogram.cu

@@ -57,6 +57,31 @@ are exact, physical ownership snaps to the allocation granularity, and
 consumers. Because the range is mapped once, shard sizes are fixed;
 size-mutating operations must refuse such arrays.
 
+Composing with a caller stream: ``fork_from`` / ``join_into``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharded work runs on per-shard streams; callers usually have *one* stream
+carrying the surrounding computation. ``fork_from(stream)`` declares that the
+shard streams depend on the work currently enqueued on the caller stream (one
+event recorded on it, every shard stream waits); ``join_into(stream)`` is the
+mirror (one event per shard stream, the caller stream waits on all). Both are
+ordering declarations, not synchronizations — the host returns immediately:
+
+.. code-block:: cpp
+
+   producer<<<grid, block, 0, s>>>(...); // writes data's memory on stream s
+   data.fork_from(s);                    // shards now depend on the producer
+   transform(group, data, out, op);      // per-shard work on the shard streams
+   out.join_into(s);                     // s now depends on every shard
+   consumer<<<grid, block, 0, s>>>(...); // sees all results; no host sync
+
+The events come from a small pool owned by the container (created lazily,
+reused across calls), so adopted arrays over foreign streams are supported
+identically. Both members are capture-safe: inside an active CUDA graph
+capture the record/wait pairs become graph dependencies, making
+``fork_from``/``join_into`` the composition idiom between a captured caller
+stream (or graph) and the per-shard work.
+
 Algorithms
 ----------
 
