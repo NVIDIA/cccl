@@ -80,6 +80,8 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -165,6 +167,54 @@ inline constexpr bool has_place_resources<
     ::cuda::std::is_same_v<decltype(::cuda::std::declval<Handle&>().get_place_resources()), exec_place_resources&>>> =
   true;
 } // namespace reserved
+
+// ============================================================================
+// Stream-capture query
+// ============================================================================
+
+/**
+ * @brief True when @p stream is part of an active CUDA stream capture, or
+ * when an active global-mode capture elsewhere in the process would make
+ * synchronizing operations on this thread illegal.
+ *
+ * `nullptr` queries the legacy default stream; because the legacy stream
+ * implicitly interacts with every capture in `cudaStreamCaptureModeGlobal`,
+ * the query then acts as a process-wide capture probe (the driver reports
+ * `cudaErrorStreamCaptureImplicit`, which this function maps to `true`).
+ */
+inline bool stream_in_capture(cudaStream_t stream = nullptr)
+{
+  cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+  const cudaError_t res          = cudaStreamIsCapturing(stream, &status);
+  if (res == cudaErrorStreamCaptureImplicit)
+  {
+    (void) cudaGetLastError(); // clear the sticky error
+    return true;
+  }
+  cuda_safe_call(res);
+  return status != cudaStreamCaptureStatusNone;
+}
+
+/**
+ * @brief Throw when @p stream is part of an active CUDA stream capture (or,
+ * for `nullptr`, when a global-mode capture is active anywhere in the
+ * process): the named operation synchronizes, allocates or performs host
+ * transfers, none of which can be recorded into a CUDA graph.
+ *
+ * The check itself is a safe query: refusing an operation this way leaves the
+ * ongoing capture VALID, so the caller can catch the exception and keep
+ * capturing supported work.
+ */
+inline void check_not_capturing(cudaStream_t stream, const char* what)
+{
+  if (stream_in_capture(stream))
+  {
+    _CCCL_THROW(::std::runtime_error,
+                ::std::string(what)
+                  + ": not supported during CUDA graph capture (the operation cannot be "
+                    "recorded into a graph; the capture stays valid)");
+  }
+}
 
 // ============================================================================
 // place_group
@@ -348,11 +398,14 @@ public:
   }
 
   /// @brief Synchronize every stream created so far, on every place.
+  /// @throws std::runtime_error under an active CUDA stream capture
+  /// (synchronization cannot be recorded into a graph).
   ///
   /// Lazy by design: places whose pools were never touched are skipped, so
   /// synchronizing does not create streams.
   void sync()
   {
+    check_not_capturing(nullptr, "place_group::sync");
     // Snapshot under the lock, synchronize unlocked: a host function
     // enqueued on a cached stream may itself call get_stream() and would
     // deadlock against cudaStreamSynchronize() otherwise.
@@ -370,6 +423,10 @@ public:
       exec_place_scope scope(places_[i]);
       for (cudaStream_t s : snapshot[i])
       {
+        if (stream_in_capture(s))
+        {
+          _CCCL_THROW(::std::runtime_error, "place_group::sync: not supported during CUDA stream capture");
+        }
         cuda_safe_call(cudaStreamSynchronize(s));
       }
     }

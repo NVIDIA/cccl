@@ -59,6 +59,9 @@ template <typename _Tp>
     return 0;
   }
 
+  // Size write-back requires host synchronization: cannot be captured
+  reserved::check_not_capturing(data, "sharded::unique");
+
   const size_t num_shards = data.num_shards();
   using count_type        = ::cuda::std::int64_t;
 

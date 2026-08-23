@@ -122,3 +122,86 @@ for. These algorithms therefore throw ``std::invalid_argument`` on contiguous
 (``allocate_contiguous``) arrays, leaving them untouched. Read-only
 algorithms (``count`` / ``count_if``, ``histogram_even``, ``reduce`` et al.)
 remain available on every sharded array, contiguous ones included.
+CUDA graph capture
+------------------
+
+The sharded surface splits cleanly along the capture boundary: elementwise
+computation records into a CUDA graph; everything that allocates, transfers
+host data or synchronizes refuses cleanly instead of corrupting the capture.
+
+What captures
+~~~~~~~~~~~~~
+
+The elementwise algorithms (``fill``, ``sequence``, ``iota``, ``tabulate``,
+``generate``, ``for_each``, ``transform``) called with ``blocking = false``
+are pure per-shard kernel launches on the shards' reference streams, so they
+capture with the containers' fork/join members — the documented way to
+compose sharded work with a caller stream or graph: begin capture on an
+origin stream, ``fork_from(origin)`` so every shard stream depends on it,
+record the pipeline, and ``join_into(origin)`` before ending the capture
+(the record/wait pairs become graph dependencies):
+
+.. code-block:: cpp
+
+   cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal);
+   data.fork_from(origin);                          // fork
+
+   transform(group, data, out, op, /*blocking=*/false);
+   for_each(group, out, update, /*blocking=*/false);
+
+   out.join_into(origin);                           // join
+   cudaStreamEndCapture(origin, &graph);
+
+The captured graph is placement-faithful: each shard's kernels are recorded
+from that place's stream, and the per-place SM confinement of those streams
+survives instantiation and replay (pinned by an SM-id check in the test
+suite). Replays recompute from the *current* contents of the shards, so inputs
+may be rewritten — outside the graph — between launches. Contiguous
+(``allocate_contiguous``) arrays capture transparently: the VMM mappings
+pre-exist the capture, and per-shard stages compose with whole-array kernels
+through ``contiguous_data()`` inside one graph.
+
+What must stay outside — and how it fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Everything else on the surface performs host-side work a graph cannot
+represent. Those operations *refuse* under an active capture by throwing
+``std::runtime_error`` before touching the stream; the check is a safe
+query, so the ongoing capture remains VALID and keeps accepting supported
+work. The refusing set:
+
+- container allocation: ``allocate`` (all overloads) and
+  ``allocate_contiguous``;
+- host transfers: ``copy_from_host``, ``copy_to_host``, ``copy_between``;
+- synchronization: ``sharded_array::sync`` and ``place_group::sync`` —
+  and therefore the elementwise algorithms when called
+  with ``blocking = true``, which throw at their final sync (their kernels
+  are already recorded; the capture is still valid and can be completed or
+  abandoned);
+- the synchronous algorithms, all of which stage per-place partials through
+  the host: ``reduce`` / ``sum`` / ``min`` / ``max``, ``inclusive_scan`` /
+  ``exclusive_scan``, ``count`` / ``count_if``, ``histogram_even``,
+  ``copy_if`` / ``filter`` / ``remove_if``, ``unique``,
+  ``adjacent_difference``.
+
+The guards also refuse when a global-mode capture is active anywhere in the
+process, since the underlying synchronization would invalidate it under the
+CUDA capture rules. Shard adoption and ``slice`` are host-only bookkeeping
+and remain usable during capture; ``place_group`` construction and lazy
+stream materialization record nothing into a graph. Construct groups and
+containers before capturing, and destroy owning containers outside capture
+(freeing is stream-ordered and is not guarded).
+
+Graph-owned memory
+~~~~~~~~~~~~~~~~~~
+
+``place_memory_resource`` stream-ordered allocation is itself capturable: an
+``allocate`` on a capturing stream records a graph memory node drawing from
+the place's (locality-domain) pool, so placed temporaries can live inside a
+graph when the allocate/deallocate pair is enclosed in the capture. An
+allocation *not* freed inside the graph stays live after a launch — the
+captured pointer is readable — and relaunching before freeing fails; the
+pointer can be released outside the graph with ``cudaFreeAsync``, which
+re-arms the launch. The shipped contract stays simple — allocate outside
+capture; capture computation only — and the test suite pins both the
+recorded-allocation semantics and the failure shape of violations.

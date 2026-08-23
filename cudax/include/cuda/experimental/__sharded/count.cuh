@@ -92,6 +92,9 @@ template <typename _Tp, typename _Pred>
     return 0;
   }
 
+  // Host-side combine + synchronization: cannot be recorded into a CUDA graph
+  reserved::check_not_capturing(data, "sharded::count_if");
+
   const size_t num_shards = data.num_shards();
 
   // Pinned host memory for the per-place counts (zero-initialized so skipped

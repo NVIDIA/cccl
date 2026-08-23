@@ -168,6 +168,15 @@ public:
    */
   static sharded_array allocate(const ::std::vector<shard_spec>& specs)
   {
+    places::check_not_capturing(nullptr, "sharded_array::allocate");
+    for (const auto& spec : specs)
+    {
+      if (cudaStream_t stream = ::std::get<3>(spec))
+      {
+        places::check_not_capturing(stream, "sharded_array::allocate");
+      }
+    }
+
     sharded_array arr;
     arr.ownership_ = ownership::owning_shards;
 
@@ -305,6 +314,15 @@ public:
    */
   static sharded_array allocate_contiguous(const ::std::vector<shard_spec>& specs)
   {
+    places::check_not_capturing(nullptr, "sharded_array::allocate_contiguous");
+    for (const auto& spec : specs)
+    {
+      if (cudaStream_t stream = ::std::get<3>(spec))
+      {
+        places::check_not_capturing(stream, "sharded_array::allocate_contiguous");
+      }
+    }
+
     sharded_array arr;
     arr.ownership_ = ownership::owning_backing; // released via contiguous_backing_
 
@@ -486,6 +504,7 @@ public:
    */
   void copy_from_host(const _Tp* host_data)
   {
+    check_not_capturing_any("sharded_array::copy_from_host");
     for (auto& s : shards_)
     {
       if (s.size == 0)
@@ -512,6 +531,7 @@ public:
    */
   void copy_to_host(_Tp* host_data) const
   {
+    check_not_capturing_any("sharded_array::copy_to_host");
     each_shard->*[host_data](const auto& s) {
       cuda_safe_call(cudaMemcpy(host_data + s.global_offset, s.data, s.size_bytes(), cudaMemcpyDefault));
     };
@@ -579,19 +599,27 @@ public:
   /// execution context). Prefer this over synchronizing the raw stream: it
   /// activates the shard's exec place the way every other shard operation
   /// does.
+  /// @throws std::runtime_error under an active CUDA stream capture.
   void sync(size_t shard_idx) const
   {
     const auto& s = shard(shard_idx);
+    places::check_not_capturing(nullptr, "sharded_array::sync");
     if (s.stream)
     {
+      places::check_not_capturing(s.stream, "sharded_array::sync");
       exec_place_scope scope(s.exec);
       cuda_safe_call(cudaStreamSynchronize(s.stream));
     }
   }
 
   /// @brief Synchronize every shard's reference stream.
+  /// @throws std::runtime_error under an active CUDA stream capture
+  /// (synchronization cannot be recorded into a graph; the capture stays
+  /// valid, so pass `blocking = false` to the elementwise algorithms and
+  /// synchronize outside capture instead).
   void sync() const
   {
+    check_not_capturing_any("sharded_array::sync");
     for (size_t i = 0; i < shards_.size(); i++)
     {
       sync(i);
@@ -1036,6 +1064,21 @@ public:
   }
 
 private:
+  /// Refuse synchronous/host-side member operations under an active capture:
+  /// probes a global-mode capture anywhere in the process (legacy stream) and
+  /// each shard's reference stream. Throws without touching the capture.
+  void check_not_capturing_any(const char* what) const
+  {
+    places::check_not_capturing(nullptr, what);
+    for (const auto& s : shards_)
+    {
+      if (s.stream)
+      {
+        places::check_not_capturing(s.stream, what);
+      }
+    }
+  }
+
   static ::std::vector<size_t> split_evenly(size_t total_size, size_t parts)
   {
     ::std::vector<size_t> sizes(parts, 0);
@@ -1090,6 +1133,29 @@ private:
   // the ordering declarations are const — they do not modify elements).
   mutable reserved::fork_join_event_pool fork_join_events_;
 };
+
+namespace reserved
+{
+/**
+ * @brief Refuse a synchronous sharded algorithm under an active CUDA stream
+ * capture: probes a global-mode capture anywhere in the process (legacy
+ * stream) and every shard's reference stream (delegating to
+ * `places::check_not_capturing`). Safe query; throwing leaves the capture
+ * valid.
+ */
+template <typename _Tp>
+void check_not_capturing(const sharded_array<_Tp>& data, const char* what)
+{
+  places::check_not_capturing(nullptr, what);
+  for (const auto& s : data)
+  {
+    if (s.stream)
+    {
+      places::check_not_capturing(s.stream, what);
+    }
+  }
+}
+} // namespace reserved
 
 // ============================================================================
 // Compatibility checks
@@ -1157,6 +1223,9 @@ void copy_between(const sharded_array<_Tp>& src, sharded_array<_Tp>& dst)
   {
     return;
   }
+
+  reserved::check_not_capturing(src, "sharded::copy_between");
+  reserved::check_not_capturing(dst, "sharded::copy_between");
 
   for (auto& dst_shard : dst)
   {
