@@ -412,7 +412,7 @@ attached state).
 
 .. code:: cpp
 
-    #include <cuda/experimental/__places/place_group.cuh>
+    #include <cuda/experimental/places.cuh>
     using namespace cuda::experimental::places;
 
     // One place per locality domain of every device (whole devices where
@@ -438,6 +438,7 @@ with a CUDASTF context, it can *borrow* the context's
 .. code:: cpp
 
     cuda::experimental::stf::context ctx;
+    auto places = places_from_devices({0}); // or any explicit vector of places
     place_group group{places, ctx.async_resources()};
 
 .. _places-memory-allocation:
