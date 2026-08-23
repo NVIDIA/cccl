@@ -15,6 +15,12 @@ from collections.abc import Callable
 from typing import Any
 
 from .._compiler._operations import register_factory
+from ._adjacent_difference import (
+    BlockAdjacentDifferenceType as BlockAdjacentDifferenceType,
+)
+from ._adjacent_difference import adjacent_difference as adjacent_difference
+from ._discontinuity import BlockDiscontinuityType as BlockDiscontinuityType
+from ._discontinuity import discontinuity as discontinuity
 from ._exchange import BlockExchangeType as BlockExchangeType
 from ._exchange import WarpExchangeType as WarpExchangeType
 from ._exchange import exchange as exchange
@@ -82,7 +88,9 @@ def _register(namespace: str, *factories: Callable[..., Any]) -> None:
 
 _register(
     "block",
+    adjacent_difference,
     block_reduce_builtin,
+    discontinuity,
     exchange,
     load,
     merge_sort_keys,

@@ -291,7 +291,23 @@ class _ArgumentRewrite:
             runtime_args=runtime_args,
             factory_kwargs=factory_kwargs,
         )
-        if op_name == "shuffle":
+        if op_name == "adjacent_difference":
+            self._finalize_adjacent_difference_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "discontinuity":
+            self._finalize_discontinuity_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+            runtime_args = self._reorder_discontinuity_runtime_args(
+                runtime_args,
+                factory_kwargs,
+            )
+        elif op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
                 runtime_arg_count=len(runtime_args),
                 seen_factory_kwargs=seen_factory_kwargs,

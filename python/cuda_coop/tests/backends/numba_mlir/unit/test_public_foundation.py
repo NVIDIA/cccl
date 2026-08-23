@@ -26,6 +26,8 @@ _PUBLIC_EXPORTS = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

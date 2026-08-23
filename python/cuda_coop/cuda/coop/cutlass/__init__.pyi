@@ -4,6 +4,8 @@
 
 """CUTLASS-qualified cooperative primitives and payload helpers."""
 
+from ._group_adjacent_difference import adjacent_difference as adjacent_difference
+from ._group_discontinuity import discontinuity as discontinuity
 from ._group_exchange import exchange as exchange
 from ._group_load_store import load as load
 from ._group_load_store import store as store
@@ -47,6 +49,8 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

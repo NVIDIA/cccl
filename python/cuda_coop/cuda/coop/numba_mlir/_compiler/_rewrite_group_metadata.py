@@ -96,6 +96,8 @@ class _GroupMetadataRewrite:
                 "warp_inclusive_scan": frozenset({"scan", "inclusive_scan"}),
                 "exchange": frozenset({"exchange"}),
                 "warp_exchange": frozenset({"exchange"}),
+                "adjacent_difference": frozenset({"adjacent_difference"}),
+                "discontinuity": frozenset({"discontinuity"}),
                 "shuffle": frozenset({"shuffle"}),
                 "merge_sort_keys": frozenset({"merge_sort_keys"}),
                 "merge_sort_pairs": frozenset({"merge_sort_pairs"}),

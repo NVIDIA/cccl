@@ -43,6 +43,8 @@ from cuda.coop._core import (
 from cuda.coop._core import api as _portable_api
 
 from .. import _thread_group as _thread_groups
+from .._group_adjacent_difference import adjacent_difference
+from .._group_discontinuity import discontinuity
 from .._group_exchange import exchange
 from .._group_load_store import load, store
 from .._group_merge_sort import merge_sort_keys, merge_sort_pairs
@@ -100,6 +102,8 @@ _QUALIFIED_OPERATIONS = (
     "exclusive_scan",
     "inclusive_scan",
     "exchange",
+    "adjacent_difference",
+    "discontinuity",
     "shuffle",
     "merge_sort_keys",
     "merge_sort_pairs",
@@ -114,6 +118,8 @@ _QUALIFIED_OPERATIONS = (
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
     for function in (
+        adjacent_difference,
+        discontinuity,
         exchange,
         exclusive_scan,
         exclusive_sum,
@@ -153,6 +159,8 @@ _ROOT_OPERATIONS.update(
             "exclusive_scan",
             "inclusive_scan",
             "exchange",
+            "adjacent_difference",
+            "discontinuity",
             "shuffle",
             "merge_sort_keys",
             "merge_sort_pairs",
@@ -202,6 +210,14 @@ def _static_bool(scope_name: str, operation: str, name: str, value: Any) -> bool
     if not isinstance(value, bool):
         raise TypeError(f"{scope_name}.{operation} {name} must be a compile-time bool")
     return value
+
+
+def _builtin_subtract(lhs: Any, rhs: Any) -> Any:
+    return lhs - rhs
+
+
+def _builtin_not_equal(lhs: Any, rhs: Any) -> bool:
+    return lhs != rhs
 
 
 def _group_operation_name(function: Any) -> str | None:

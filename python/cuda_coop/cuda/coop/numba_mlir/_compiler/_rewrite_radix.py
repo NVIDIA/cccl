@@ -256,6 +256,8 @@ class _RadixRewrite:
             factory_kwargs.get("valid_items")
         ):
             parameter, index = "valid_items", 1
+        elif op_name == "adjacent_difference" and factory_kwargs.get("valid_items"):
+            parameter, index = "valid_items", 2
         if parameter is None or index is None or index >= len(runtime_args):
             return
         value = runtime_args[index]

@@ -21,6 +21,8 @@ from ._thread_group import (
 )
 
 _GROUP_OPERATION_MODULES = {
+    "adjacent_difference": "_group_adjacent_difference",
+    "discontinuity": "_group_discontinuity",
     "exchange": "_group_exchange",
     "exclusive_scan": "_group_scan",
     "exclusive_sum": "_group_scan",
@@ -55,6 +57,8 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

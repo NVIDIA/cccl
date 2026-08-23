@@ -10,6 +10,8 @@ live in the adjacent semantic group mixins.
 """
 
 from .._thread_data import ThreadData
+from ._group_adjacent_difference import _AdjacentDifferencePlanning
+from ._group_discontinuity import _DiscontinuityPlanning
 from ._group_exchange import _ExchangePlanning
 from ._group_load_store import _LoadStorePlanning
 from ._group_merge_sort import _MergeSortPlanning
@@ -55,6 +57,8 @@ class _GroupCallPlanner(
     _ReducePlanning,
     _ScanPlanning,
     _ExchangePlanning,
+    _AdjacentDifferencePlanning,
+    _DiscontinuityPlanning,
     _ShufflePlanning,
     _MergeSortPlanning,
     _RadixPlanning,
@@ -284,6 +288,16 @@ class _GroupCallPlanner(
                 True,
             ),
             "exchange": ("mode", _portable_api._EXCHANGE_MODES, False),
+            "adjacent_difference": (
+                "direction",
+                _portable_api._ADJACENT_DIFFERENCE_DIRECTIONS,
+                False,
+            ),
+            "discontinuity": (
+                "mode",
+                _portable_api._DISCONTINUITY_MODES,
+                False,
+            ),
             "shuffle": ("mode", _portable_api._SHUFFLE_MODES, False),
         }
         spec = selector_specs.get(operation)
@@ -521,6 +535,29 @@ class _GroupCallPlanner(
             return False
         function = self._callable(definition.func)
         operation = _group_operation_name(function)
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is not BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return False
+            if index < 0:
+                index += 2
+            if not 0 <= index < 2:
+                return False
+            return self._is_array_value(
+                bound.arguments["value"],
+                seen=seen,
+                thread_data_only=thread_data_only,
+            )
+
         pair_arguments = {
             "merge_sort_pairs": ("keys", "values"),
             "radix_sort_pairs": ("keys", "values"),
@@ -617,7 +654,27 @@ class _GroupCallPlanner(
             )
         if function is _cuda_module.local.array:
             return not thread_data_only
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return False
+            return self._is_array_value(
+                bound.arguments["value"],
+                seen=seen,
+                thread_data_only=thread_data_only,
+            )
         array_result_argument = {
+            "adjacent_difference": "value",
+            "discontinuity": "value",
             "exchange": "value",
             "load": "output",
             "radix_rank": "keys",
@@ -813,6 +870,25 @@ class _GroupCallPlanner(
             return None
         function = self._callable(definition.func)
         operation = _group_operation_name(function)
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is not BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return None
+            if index < 0:
+                index += 2
+            if not 0 <= index < 2:
+                return None
+            return self._array_extent(bound.arguments["value"], seen=set(seen))
+
         tuple_arguments = {
             "merge_sort_pairs": ("keys", "values"),
             "radix_sort_pairs": ("keys", "values"),
@@ -904,6 +980,8 @@ class _GroupCallPlanner(
             return None
         operation = _group_operation_name(function)
         shape_argument = {
+            "adjacent_difference": "value",
+            "discontinuity": "value",
             "exchange": "value",
             "load": "output",
             "radix_rank": "keys",
@@ -1141,6 +1219,8 @@ class _GroupCallPlanner(
             else:
                 bound.arguments.setdefault("scan_op", None)
                 bound.arguments["initial_value"] = None
+        bound.arguments.setdefault("difference_op", None)
+        bound.arguments.setdefault("flag_op", None)
         bound.arguments.setdefault("block_prefix", None)
         bound.arguments.setdefault("block_suffix", None)
         bound.arguments.setdefault("valid_items", None)
@@ -1213,6 +1293,20 @@ class _GroupCallPlanner(
         elif operation == "exchange":
             replacement = self._lower_exchange(
                 inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation == "adjacent_difference":
+            replacement = self._lower_adjacent_difference(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "discontinuity":
+            replacement = self._lower_discontinuity(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
             )
         elif operation == "shuffle":
             replacement = self._lower_shuffle(

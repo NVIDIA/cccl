@@ -9,7 +9,9 @@ across focused rewrite mixins. This module owns registration, the stable
 operation specification table, match/apply ordering, and whole-function retry.
 """
 
+from ._rewrite_adjacent_difference import _AdjacentDifferenceRewrite
 from ._rewrite_arguments import _ArgumentRewrite
+from ._rewrite_discontinuity import _DiscontinuityRewrite
 from ._rewrite_exchange import _ExchangeRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
 from ._rewrite_invocables import _InvocableRewrite
@@ -48,6 +50,8 @@ class CoopSinglePhaseRewrite(
     _TopKRewrite,
     _GroupMetadataRewrite,
     _ScanRewrite,
+    _AdjacentDifferenceRewrite,
+    _DiscontinuityRewrite,
     _ShuffleRewrite,
     _ExchangeRewrite,
     _PayloadRewrite,
@@ -84,6 +88,8 @@ class CoopSinglePhaseRewrite(
             "_qualified_group_topk_max_pairs",
             "_qualified_group_topk_min_keys",
             "_qualified_group_topk_min_pairs",
+            "adjacent_difference",
+            "discontinuity",
             "warp_load",
             "warp_store",
         }
@@ -157,6 +163,27 @@ class CoopSinglePhaseRewrite(
                 "_common_root_operation",
             },
             "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "adjacent_difference": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4},
+            "allowed_factory_kwargs": {
+                "block_adjacent_difference_type",
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "difference_op",
+                "methods",
+                "valid_items",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "difference_op",
+            },
         },
         "scan": {
             "namespace": "block",
@@ -325,6 +352,23 @@ class CoopSinglePhaseRewrite(
                 "methods",
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
+        },
+        "discontinuity": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "flag_op",
+                "flag_dtype",
+                "block_discontinuity_type",
+                "methods",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "flag_op"},
         },
         "exchange": {
             "namespace": "block",

@@ -30,6 +30,8 @@ def test_cutlass_foundation_exports_current_public_surface():
             "ThreadDataTensorMetadata",
             "ThreadGroup",
             "ThreadHierarchy",
+            "adjacent_difference",
+            "discontinuity",
             "exchange",
             "exclusive_scan",
             "exclusive_sum",
