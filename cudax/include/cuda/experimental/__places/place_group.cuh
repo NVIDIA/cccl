@@ -347,18 +347,6 @@ public:
     return get_stream(place, color == auto_stream_color ? next_stream_color() : color);
   }
 
-  /// @brief Synchronize the stream of a place at the given color.
-  void sync_stream(const exec_place& place, size_t color = 0)
-  {
-    exec_place_scope scope(place);
-    cuda_safe_call(cudaStreamSynchronize(get_stream(place, color)));
-  }
-
-  void sync_stream(size_t place_idx, size_t color = 0)
-  {
-    sync_stream(place(place_idx), color);
-  }
-
   /// @brief Synchronize every stream created so far, on every place.
   ///
   /// Lazy by design: places whose pools were never touched are skipped, so
