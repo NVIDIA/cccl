@@ -77,11 +77,11 @@ TEST_FUNC void test_primary_template()
     cuda::std::tuple t1(T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
 
-#if TEST_COMPILER(GCC, <, 11)
+#if !TEST_COMPILER(GCC, <, 12) // GCC fails to deduct here, also with std::tuple
     const T v{};
     cuda::std::tuple t2(T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
-#endif // TEST_COMPILER(GCC, <, 11)
+#endif // !TEST_COMPILER(GCC, <, 12)
   }
   { // Testing (4)
     int x = 101;

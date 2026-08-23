@@ -212,10 +212,10 @@ public:
     const size_t pz = static_cast<size_t>(p.get(2));
     const size_t pt = static_cast<size_t>(p.get(3));
 
-    _CCCL_ASSERT(p.get(0) >= 0 && px <= x, "invalid position");
-    _CCCL_ASSERT(p.get(1) >= 0 && py <= y, "invalid position");
-    _CCCL_ASSERT(p.get(2) >= 0 && pz <= z, "invalid position");
-    _CCCL_ASSERT(p.get(3) >= 0 && pt <= t, "invalid position");
+    _CCCL_ASSERT(p.get(0) >= 0 && px < x, "invalid position");
+    _CCCL_ASSERT(p.get(1) >= 0 && py < y, "invalid position");
+    _CCCL_ASSERT(p.get(2) >= 0 && pz < z, "invalid position");
+    _CCCL_ASSERT(p.get(3) >= 0 && pt < t, "invalid position");
 
     return px + x * (py + y * (pz + pt * z));
   }
