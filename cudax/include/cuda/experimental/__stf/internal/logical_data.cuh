@@ -2485,7 +2485,7 @@ inline void reclaim_memory(
   reclaimed_s = 0;
 
   ctx.get_dot()->set_current_color("red");
-  ON_EXIT
+  SCOPE(exit)
   {
     ctx.get_dot()->set_current_color("white");
   };

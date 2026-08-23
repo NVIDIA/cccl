@@ -131,8 +131,8 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
     // Free the temporary device memory on the way out, even if set_device_tmp
     // or the launch throws. Installed before the malloc so a throw from
     // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
-    // because ON_EXIT is noexcept.
-    ON_EXIT
+    // because SCOPE(exit) is noexcept.
+    SCOPE(exit)
     {
       if (th_dev_tmp_ptr)
       {
@@ -239,7 +239,7 @@ public:
 
     auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, arg_type>);
 
-    ON_EXIT
+    SCOPE(exit)
     {
       /* If there was managed memory allocated we need to deallocate it */
       void* sys_mem = interpreted_policy.get_system_mem();
@@ -409,7 +409,7 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    ON_EXIT
+    SCOPE(exit)
     {
       if (start_event)
       {

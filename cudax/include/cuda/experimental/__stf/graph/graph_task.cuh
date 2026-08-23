@@ -373,7 +373,7 @@ public:
       // cuda_safe_call(cudaEventRecord(start_event));
     }
 
-    ON_EXIT
+    SCOPE(exit)
     {
       end_uncleared();
       if (record_time)
@@ -731,7 +731,7 @@ public:
       // cuda_safe_call(cudaEventRecord(start_event));
     }
 
-    ON_EXIT
+    SCOPE(exit)
     {
       end_uncleared();
       if (record_time)

@@ -720,7 +720,7 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    ON_EXIT
+    SCOPE(exit)
     {
       if (start_event)
       {

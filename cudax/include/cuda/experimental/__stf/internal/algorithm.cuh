@@ -250,7 +250,7 @@ public:
     auto adapter = setup_allocator(gctx, stream);
 
     // Speaking of which.
-    ON_EXIT
+    SCOPE(exit)
     {
       adapter.clear();
     };
@@ -310,7 +310,7 @@ public:
     auto adapter = setup_allocator(gctx, stream);
 
     // Speaking of which.
-    ON_EXIT
+    SCOPE(exit)
     {
       adapter.clear();
     };

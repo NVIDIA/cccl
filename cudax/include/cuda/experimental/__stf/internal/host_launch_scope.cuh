@@ -251,7 +251,7 @@ public:
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    ON_EXIT
+    SCOPE(exit)
     {
       if (start_event)
       {
@@ -341,7 +341,7 @@ public:
         // leave it.
         on_throw(exception_policies::abort) << [&] {
           auto* w = static_cast<decltype(resolved.get())>(raw);
-          ON_EXIT
+          SCOPE(exit)
           {
             if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {
@@ -391,7 +391,7 @@ public:
       auto callback = [](void* untyped_wrapper) {
         on_throw(exception_policies::abort) << [&] {
           auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
-          ON_EXIT
+          SCOPE(exit)
           {
             if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {

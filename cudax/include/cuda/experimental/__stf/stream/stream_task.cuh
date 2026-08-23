@@ -294,7 +294,7 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    ON_EXIT
+    SCOPE(exit)
     {
       if (start_event)
       {
@@ -431,7 +431,7 @@ private:
     exec_place::device(s0_dev)->*[&] {
       // Disable timing to avoid implicit barriers.
       const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
-      ON_EXIT
+      SCOPE(exit)
       {
         // Asynchronously destroy the event to avoid a memory leak.
         cuda_safe_call(cudaEventDestroy(sync_event));
@@ -544,7 +544,7 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    ON_EXIT
+    SCOPE(exit)
     {
       if (start_event)
       {
