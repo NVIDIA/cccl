@@ -31,6 +31,7 @@ def test_cutlass_foundation_exports_current_public_surface():
             "ThreadGroup",
             "ThreadHierarchy",
             "adjacent_difference",
+            "aot",
             "discontinuity",
             "exchange",
             "exclusive_scan",
@@ -63,10 +64,12 @@ def test_cutlass_foundation_exports_current_public_surface():
         assert coop.__all__ == expected
         assert sorted(name for name in dir(coop) if not name.startswith("_")) == expected
         assert not hasattr(coop, "Payload")
-        assert not hasattr(coop, "aot")
         assert not hasattr(coop, "_block")
         assert not hasattr(coop, "_warp")
         assert "numpy" not in sys.modules
+
+        assert coop.aot.__name__ == "cuda.coop.cutlass.aot"
+        assert "cuda.coop.cutlass._dsl._provider_bundle" not in sys.modules
 
         dsl = _cuda_coop_test_dsl.CuTeDSL._get_dsl()
         assert len(dsl.trace_context_factories) == 1

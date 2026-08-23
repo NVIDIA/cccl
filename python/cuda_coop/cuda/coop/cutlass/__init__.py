@@ -67,6 +67,7 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "adjacent_difference",
+    "aot",
     "discontinuity",
     "exchange",
     "exclusive_scan",
@@ -104,6 +105,10 @@ def __getattr__(name: str):
         value = module.TempStorage
         globals()[name] = value
         return value
+    if name == "aot":
+        module = _importlib.import_module(f"{__name__}.aot")
+        globals()[name] = module
+        return module
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

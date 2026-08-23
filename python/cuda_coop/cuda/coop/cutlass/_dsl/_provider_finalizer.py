@@ -74,7 +74,7 @@ def _select_bundle_format() -> str:
     return _provider_bundle_support.select_bundle_format(_ROOT_SCOPE)
 
 
-def _compile_bundle_source(source: str) -> str:
+def _compile_bundle_source(source: str, symbols: tuple[str, ...]) -> str:
     return _provider_bundle_support.compile_bundle_source(
         source,
         scope=_ROOT_SCOPE,
@@ -83,6 +83,7 @@ def _compile_bundle_source(source: str) -> str:
         select_bundle_format=_select_bundle_format,
         resolve_nvrtc_sm_arch=_resolve_nvrtc_sm_arch,
         resolve_nvrtc_arch=_resolve_nvrtc_arch,
+        symbols=symbols,
         which=shutil.which,
     )
 
@@ -90,6 +91,7 @@ def _compile_bundle_source(source: str) -> str:
 def _compile_bundle_source_with_layouts(
     source: str,
     probes: dict[object, _provider_support.ScratchLayoutProbe],
+    symbols: tuple[str, ...],
 ) -> _provider_bundle_support.BundleCompilation:
     return _provider_bundle_support.compile_bundle_source_with_layouts(
         source,
@@ -107,6 +109,7 @@ def _compile_bundle_source_with_layouts(
         select_bundle_format=_select_bundle_format,
         resolve_nvrtc_sm_arch=_resolve_nvrtc_sm_arch,
         resolve_nvrtc_arch=_resolve_nvrtc_arch,
+        symbols=symbols,
         which=shutil.which,
     )
 
@@ -148,8 +151,9 @@ def _trace_finalize_hook(dsl: Any, module: Any, function_name: str) -> None:
         )
 
     source = _render_bundle_source(requests)
+    symbols = tuple(sorted(request.symbol_name for request in requests))
     if probes:
-        compilation = _compile_bundle_source_with_layouts(source, probes)
+        compilation = _compile_bundle_source_with_layouts(source, probes, symbols)
         bundle_path = compilation.path
         layouts = {
             key: _provider_support.ScratchLayout(
@@ -159,7 +163,7 @@ def _trace_finalize_hook(dsl: Any, module: Any, function_name: str) -> None:
             for key, layout in compilation.layouts.items()
         }
     else:
-        bundle_path = _compile_bundle_source(source)
+        bundle_path = _compile_bundle_source(source, symbols)
         layouts = {}
 
     plans = _provider_support.plan_deferred_temp_storage_events(events, layouts)
