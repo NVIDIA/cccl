@@ -266,6 +266,7 @@ class TempStorage:
 
 
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -284,6 +285,7 @@ __all__ = [
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -294,6 +296,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",
@@ -495,6 +498,7 @@ def __getattr__(name):
         "exclusive_sum",
         "inclusive_scan",
         "inclusive_sum",
+        "histogram",
         "load",
         "merge_sort_keys",
         "merge_sort_pairs",
@@ -502,6 +506,7 @@ def __getattr__(name):
         "radix_sort_keys",
         "radix_sort_pairs",
         "reduce",
+        "run_length_decode",
         "scan",
         "shuffle",
         "store",
@@ -515,6 +520,7 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name in {
+        "BlockHistogramAlgorithm",
         "BlockLoadAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",

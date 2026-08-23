@@ -682,6 +682,53 @@ class CoopSinglePhaseRewrite(Rewrite):
             },
             "required_factory_kwargs": {"keys", "values", "threads_per_block"},
         },
+        "_group_histogram": {
+            "namespace": "block",
+            "runtime_arg_counts": {2},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+                "algorithm",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+            },
+        },
+        "_group_run_length_decode": {
+            "namespace": "block",
+            "runtime_arg_counts": {5, 6},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "relative_offset_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+                "_static_decoded_window_offset",
+                "_common_profile_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+            },
+        },
         "warp_load": {
             "namespace": "warp",
             "runtime_arg_counts": {2, 3, 4},
@@ -2165,7 +2212,15 @@ class CoopSinglePhaseRewrite(Rewrite):
                 and value_type.value is None
             ):
                 return None
-        if name == "dtype":
+        if name in {
+            "dtype",
+            "item_dtype",
+            "counter_dtype",
+            "run_length_dtype",
+            "decoded_offset_dtype",
+            "total_decoded_size_dtype",
+            "relative_offset_dtype",
+        }:
             dtype = self._resolve_dtype_ref(value_ref)
             if dtype is not None:
                 return dtype
@@ -2647,6 +2702,11 @@ class CoopSinglePhaseRewrite(Rewrite):
                 seen_factory_kwargs=seen_factory_kwargs,
                 factory_kwargs=factory_kwargs,
             )
+        elif op_name == "_group_run_length_decode":
+            self._finalize_group_run_length_decode_factory_kwargs(
+                runtime_args=runtime_args,
+                factory_kwargs=factory_kwargs,
+            )
         missing = required_factory_kwargs - seen_factory_kwargs
         if missing:
             missing_csv = ", ".join(sorted(missing))
@@ -3014,6 +3074,78 @@ class CoopSinglePhaseRewrite(Rewrite):
         ):
             raise CoopSinglePhaseRewriteError(f"{prefix} end_bit must exceed begin_bit")
 
+    def _finalize_group_run_length_decode_factory_kwargs(
+        self,
+        *,
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        """Validate the fused decode offset and remove planner metadata."""
+
+        run_length_dtype = factory_kwargs.get("run_length_dtype")
+        try:
+            run_length_dtype = normalize_dtype_param(run_length_dtype)
+        except (TypeError, ValueError) as exc:
+            raise CoopSinglePhaseRewriteError(
+                "coop run_length_decode could not resolve run_lengths dtype"
+            ) from exc
+        if isinstance(run_length_dtype, _numba_types.Boolean) or not isinstance(
+            run_length_dtype,
+            _numba_types.Integer,
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "coop run_length_decode run_lengths must have an integer dtype"
+            )
+
+        static_offset = factory_kwargs.pop(
+            "_static_decoded_window_offset",
+            None,
+        )
+        if static_offset is not None:
+            if isinstance(static_offset, bool) or not isinstance(static_offset, int):
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode decoded_window_offset must be an integer"
+                )
+            if static_offset < 0:
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode decoded_window_offset must be non-negative"
+                )
+            bitwidth = getattr(run_length_dtype, "bitwidth", None)
+            signed = getattr(run_length_dtype, "signed", None)
+            if isinstance(bitwidth, int) and isinstance(signed, bool):
+                value_bits = bitwidth - 1 if signed else bitwidth
+                if static_offset >= 1 << value_bits:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop run_length_decode decoded_window_offset must be "
+                        "representable in the run_lengths dtype"
+                    )
+            return
+
+        offset_var = runtime_args[-1]
+        offset_dtype = self._resolve_var_dtype(offset_var)
+        if offset_dtype is None:
+            offset_dtype = self._resolve_var_numba_type(offset_var)
+        try:
+            offset_dtype = normalize_dtype_param(offset_dtype)
+        except (TypeError, ValueError) as exc:
+            raise CoopSinglePhaseRewriteError(
+                "coop run_length_decode decoded_window_offset must have an "
+                "integer dtype"
+            ) from exc
+        if isinstance(offset_dtype, _numba_types.Boolean) or not isinstance(
+            offset_dtype,
+            _numba_types.Integer,
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "coop run_length_decode decoded_window_offset must have an "
+                "integer dtype"
+            )
+        if not _dtype_values_match(offset_dtype, run_length_dtype):
+            raise CoopSinglePhaseRewriteError(
+                "coop run_length_decode decoded_window_offset dtype must match "
+                "run_lengths"
+            )
+
     @staticmethod
     def _store_algorithm_mutates_payload(op_name: str, algorithm: object) -> bool:
         if isinstance(algorithm, bool):
@@ -3102,6 +3234,8 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
                 "warp_merge_sort_keys": frozenset({"merge_sort_keys"}),
                 "warp_merge_sort_pairs": frozenset({"merge_sort_pairs"}),
+                "_group_histogram": frozenset({"histogram"}),
+                "_group_run_length_decode": frozenset({"run_length_decode"}),
             }
             if common_profile_operation not in operation_families.get(
                 op_name, frozenset()
@@ -3110,11 +3244,29 @@ class CoopSinglePhaseRewrite(Rewrite):
                     "_common_profile_operation does not match the rewritten group operation"
                 )
             from ._common import (
+                _validate_common_histogram_dtypes,
                 _validate_common_integer_key_dtype,
                 _validate_common_numeric_dtype,
+                _validate_common_run_length_decode_dtypes,
             )
 
-            if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+            if op_name == "_group_histogram":
+                try:
+                    _validate_common_histogram_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("counter_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name == "_group_run_length_decode":
+                try:
+                    _validate_common_run_length_decode_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("run_length_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
                 try:
                     _validate_common_integer_key_dtype(
                         factory_kwargs.get("dtype"),
@@ -3670,7 +3822,17 @@ class CoopSinglePhaseRewrite(Rewrite):
                 raise CoopSinglePhaseRewriteError(str(exc)) from exc
 
         def factory_kwarg_matches(name: str, actual, expected) -> bool:
-            if name in {"dtype", "keys", "values"}:
+            if name in {
+                "dtype",
+                "keys",
+                "values",
+                "item_dtype",
+                "counter_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "relative_offset_dtype",
+            }:
                 try:
                     actual = normalize_dtype_param(actual)
                     expected = normalize_dtype_param(expected)
@@ -3779,6 +3941,189 @@ class CoopSinglePhaseRewrite(Rewrite):
                 self._record_inferred_thread_data_dtype(key_var, key_dtype)
             if value_dtype is not None and value_var is not None:
                 self._record_inferred_thread_data_dtype(value_var, value_dtype)
+            return
+
+        def array_candidate(
+            index: int,
+        ) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
+            if not 0 <= index < len(runtime_args):
+                return (None, None)
+            value = runtime_args[index]
+            if not isinstance(value, ir.Var):
+                return (None, None)
+            spec = self._resolve_array_spec_from_var(value, seen=set())
+            if self._is_typed_group_payload_var(value) and (
+                spec is None or spec.items_per_thread is None
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement {op_name!r} could not infer the static "
+                    "extent of a typed group payload"
+                )
+            return (value, spec)
+
+        def inferred_array_dtype(
+            value: ir.Var | None,
+            spec: _ThreadDataSpec | None,
+        ):
+            dtype = spec.dtype if spec is not None else None
+            if dtype is None and value is not None:
+                dtype = self._resolve_var_dtype(value)
+            if dtype is None and value is not None:
+                dtype = self._infer_thread_data_dtype_from_writes(value)
+            return dtype
+
+        if op_name == "_group_histogram":
+            samples_var, samples_spec = array_candidate(0)
+            histogram_var, histogram_spec = array_candidate(1)
+            if samples_spec is None or samples_spec.items_per_thread is None:
+                raise CoopSinglePhaseRewriteError(
+                    "coop histogram requires a fixed-size samples array"
+                )
+            if histogram_spec is None or histogram_spec.items_per_thread is None:
+                raise CoopSinglePhaseRewriteError(
+                    "coop histogram requires a fixed-size counter array"
+                )
+            infer_kwarg("items_per_thread", samples_spec.items_per_thread)
+            infer_kwarg("bins", histogram_spec.items_per_thread)
+            item_dtype = inferred_array_dtype(samples_var, samples_spec)
+            counter_dtype = inferred_array_dtype(histogram_var, histogram_spec)
+            infer_kwarg("item_dtype", item_dtype)
+            infer_kwarg("counter_dtype", counter_dtype)
+            if item_dtype is not None and samples_var is not None:
+                self._record_inferred_thread_data_dtype(samples_var, item_dtype)
+            return
+
+        if op_name == "_group_run_length_decode":
+            with_relative_offsets = factory_kwargs.get("with_relative_offsets")
+            if not isinstance(with_relative_offsets, bool):
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode with_relative_offsets must be a "
+                    "compile-time bool"
+                )
+            expected_count = 6 if with_relative_offsets else 5
+            if len(runtime_args) != expected_count:
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode runtime arguments do not match "
+                    "with_relative_offsets"
+                )
+
+            run_values_var, run_values_spec = array_candidate(0)
+            run_lengths_var, run_lengths_spec = array_candidate(1)
+            total_var, total_spec = array_candidate(2)
+            decoded_var, decoded_spec = array_candidate(3)
+            relative_var = None
+            relative_spec = None
+            if with_relative_offsets:
+                relative_var, relative_spec = array_candidate(4)
+
+            required_specs = {
+                "run_values": run_values_spec,
+                "run_lengths": run_lengths_spec,
+                "total_decoded_size": total_spec,
+                "decoded_items": decoded_spec,
+            }
+            if with_relative_offsets:
+                required_specs["relative_offsets"] = relative_spec
+            for name, spec in required_specs.items():
+                if spec is None or spec.items_per_thread is None:
+                    raise CoopSinglePhaseRewriteError(
+                        f"coop run_length_decode requires a fixed-size {name} array"
+                    )
+
+            assert run_values_spec is not None
+            assert run_lengths_spec is not None
+            assert total_spec is not None
+            assert decoded_spec is not None
+            runs_per_thread = run_values_spec.items_per_thread
+            if run_lengths_spec.items_per_thread != runs_per_thread:
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode run_values and run_lengths must "
+                    "have matching extents"
+                )
+            if total_spec.items_per_thread != 1:
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode total_decoded_size must contain "
+                    "exactly one item"
+                )
+            decoded_items_per_thread = factory_value("decoded_items_per_thread")
+            if decoded_spec.items_per_thread != decoded_items_per_thread:
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode decoded output extent must match "
+                    "decoded_items_per_thread"
+                )
+            if with_relative_offsets:
+                assert relative_spec is not None
+                if relative_spec.items_per_thread != decoded_items_per_thread:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop run_length_decode relative_offsets extent must "
+                        "match decoded_items_per_thread"
+                    )
+
+            item_dtype = inferred_array_dtype(run_values_var, run_values_spec)
+            decoded_dtype = inferred_array_dtype(decoded_var, decoded_spec)
+            if (
+                item_dtype is not None
+                and decoded_dtype is not None
+                and not _dtype_values_match(item_dtype, decoded_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode decoded dtype must match run_values"
+                )
+            item_dtype = item_dtype if item_dtype is not None else decoded_dtype
+            run_length_dtype = inferred_array_dtype(run_lengths_var, run_lengths_spec)
+            total_dtype = inferred_array_dtype(total_var, total_spec)
+            if (
+                run_length_dtype is not None
+                and total_dtype is not None
+                and not _dtype_values_match(run_length_dtype, total_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode total_decoded_size dtype must "
+                    "match run_lengths"
+                )
+            total_dtype = total_dtype if total_dtype is not None else run_length_dtype
+            decoded_offset_dtype = factory_value("decoded_offset_dtype")
+            if decoded_offset_dtype is None:
+                decoded_offset_dtype = run_length_dtype
+            if (
+                run_length_dtype is not None
+                and decoded_offset_dtype is not None
+                and not _dtype_values_match(
+                    run_length_dtype,
+                    decoded_offset_dtype,
+                )
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop run_length_decode decoded offset dtype must match run_lengths"
+                )
+
+            infer_kwarg("runs_per_thread", runs_per_thread)
+            infer_kwarg("item_dtype", item_dtype)
+            infer_kwarg("run_length_dtype", run_length_dtype)
+            infer_kwarg("total_decoded_size_dtype", total_dtype)
+            infer_kwarg("decoded_offset_dtype", decoded_offset_dtype)
+            if with_relative_offsets:
+                relative_dtype = inferred_array_dtype(relative_var, relative_spec)
+                if (
+                    run_length_dtype is not None
+                    and relative_dtype is not None
+                    and not _dtype_values_match(run_length_dtype, relative_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop run_length_decode relative_offsets dtype must "
+                        "match run_lengths"
+                    )
+                infer_kwarg("relative_offset_dtype", relative_dtype)
+
+            for value, dtype in (
+                (run_values_var, item_dtype),
+                (decoded_var, item_dtype),
+                (run_lengths_var, run_length_dtype),
+                (total_var, run_length_dtype),
+                (relative_var, run_length_dtype),
+            ):
+                if value is not None and dtype is not None:
+                    self._record_inferred_thread_data_dtype(value, dtype)
             return
 
         if op_name in {

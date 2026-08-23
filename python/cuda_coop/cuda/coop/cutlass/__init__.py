@@ -14,10 +14,12 @@ from ._compiler import register_trace_context as _register_trace_context
 from ._group_adjacent_difference import adjacent_difference
 from ._group_discontinuity import discontinuity
 from ._group_exchange import exchange
+from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from ._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from ._group_reduce import reduce, sum
+from ._group_run_length_decode import run_length_decode
 from ._group_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -69,6 +71,7 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -78,6 +81,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shuffle",
     "store",

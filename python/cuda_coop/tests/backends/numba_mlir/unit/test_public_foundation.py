@@ -8,6 +8,7 @@ import sys
 import cuda.coop.numba_mlir as coop
 
 _PUBLIC_EXPORTS = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -26,6 +27,7 @@ _PUBLIC_EXPORTS = [
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -36,6 +38,7 @@ _PUBLIC_EXPORTS = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",
@@ -58,9 +61,6 @@ def test_public_exports_cover_the_incremental_primitive_families():
     assert sorted(name for name in dir(coop) if not name.startswith("_")) == (
         _PUBLIC_EXPORTS
     )
-
-    for name in ("histogram",):
-        assert not hasattr(coop, name)
 
     assert "_block" not in coop.__all__
     assert "_warp" not in coop.__all__
