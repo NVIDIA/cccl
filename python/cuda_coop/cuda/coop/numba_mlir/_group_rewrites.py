@@ -66,8 +66,17 @@ _ROOT_OPERATIONS = {
         "adjacent_difference",
         "discontinuity",
         "shuffle",
+        "merge_sort_keys",
+        "merge_sort_pairs",
+        "radix_sort_keys",
+        "radix_sort_pairs",
+        "radix_rank",
         "histogram",
         "run_length_decode",
+        "topk_max_keys",
+        "topk_min_keys",
+        "topk_max_pairs",
+        "topk_min_pairs",
     )
 }
 _ROOT_OPERATIONS.update(
@@ -2420,6 +2429,158 @@ class _GroupCallPlanner:
         )
         return statements
 
+    def _lower_radix_rank(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        operation = "radix_rank"
+        scope_name = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                f"{scope_name}.radix_rank currently lowers only complete physical "
+                "block groups"
+            )
+
+        if is_common_root:
+            is_thread_data = self._is_array_value(
+                bound.arguments["keys"],
+                thread_data_only=True,
+            )
+            if is_thread_data is None:
+                raise GroupRewriteError(
+                    "cuda.coop.radix_rank could not resolve keys payload provenance"
+                )
+            if not is_thread_data:
+                raise TypeError(
+                    "cuda.coop.radix_rank requires keys to be coop.ThreadData "
+                    "in common V1; use cuda.coop.numba_mlir for "
+                    "backend-qualified payloads"
+                )
+
+        begin_bit = self._constant(bound.arguments["begin_bit"])
+        end_bit = (
+            None
+            if self._is_none(bound.arguments["end_bit"])
+            else self._constant(bound.arguments["end_bit"])
+        )
+        radix_bits = (
+            None
+            if self._is_none(bound.arguments["radix_bits"])
+            else self._constant(bound.arguments["radix_bits"])
+        )
+        for name, value in (("begin_bit", begin_bit), ("end_bit", end_bit)):
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, Integral)
+            ):
+                raise TypeError(
+                    f"{scope_name}.radix_rank {name} must be a compile-time integer"
+                )
+        if radix_bits is not None and (
+            isinstance(radix_bits, bool) or not isinstance(radix_bits, Integral)
+        ):
+            raise TypeError(
+                f"{scope_name}.radix_rank radix_bits must be a compile-time integer"
+            )
+        begin_bit = int(begin_bit)
+        if begin_bit < 0:
+            raise ValueError(f"{scope_name}.radix_rank begin_bit must be non-negative")
+        if radix_bits is not None:
+            radix_bits = int(radix_bits)
+            if radix_bits <= 0:
+                raise ValueError(f"{scope_name}.radix_rank radix_bits must be positive")
+        if end_bit is None:
+            end_bit = begin_bit + (4 if radix_bits is None else radix_bits)
+        else:
+            end_bit = int(end_bit)
+            if radix_bits is not None and end_bit != begin_bit + radix_bits:
+                raise ValueError(
+                    f"{scope_name}.radix_rank radix_bits must match end_bit - begin_bit"
+                )
+        if end_bit <= begin_bit:
+            raise ValueError(
+                f"{scope_name}.radix_rank end_bit must be greater than begin_bit"
+            )
+        if end_bit - begin_bit > 8:
+            raise ValueError(f"{scope_name}.radix_rank bit width must be <= 8")
+        descending = self._constant(bound.arguments["descending"])
+        if not isinstance(descending, bool):
+            raise TypeError(
+                f"{scope_name}.radix_rank descending must be a compile-time bool"
+            )
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        keys = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys",
+            value=bound.arguments["keys"],
+        )
+        keys_payload, is_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=keys,
+            scope=scope,
+            loc=loc,
+        )
+        ranks_payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_result",
+            prototype=keys,
+            is_array=is_array,
+            dtype_policy=_PAYLOAD_DTYPE_INT32,
+        )
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        if is_common_root:
+            from ._block import _block_radix_rank
+
+            factory = _block_radix_rank._common_radix_rank
+        factory_kwargs.update(
+            {
+                "begin_bit": begin_bit,
+                "end_bit": end_bit,
+                "descending": descending,
+            }
+        )
+        prefix = bound.arguments.get("exclusive_digit_prefix")
+        if not self._is_none(prefix):
+            if not self._array_operand_state(operation, prefix):
+                raise TypeError(
+                    "cuda.coop.numba_mlir.radix_rank "
+                    "exclusive_digit_prefix must be an explicit array payload"
+                )
+            factory_kwargs["exclusive_digit_prefix"] = prefix
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=[keys_payload, ranks_payload],
+            kwargs=factory_kwargs,
+            return_alias=ranks_payload,
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        result = self._result_value(
+            statements,
+            payload=ranks_payload,
+            is_array=is_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_result",
+        )
+        statements.append(ir.Assign(result, inst.target, loc))
+        return statements
+
     def _lower_shuffle(
         self,
         inst: ir.Assign,
@@ -2547,6 +2708,716 @@ class _GroupCallPlanner:
             kwargs=factory_kwargs,
             common_profile_operation=("shuffle" if is_common_root else None),
         )
+
+    def _lower_merge_sort(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind not in {"block", "warp", "threads_within_warp"}:
+            raise NotImplementedError(
+                f"cuda.coop.numba_mlir.{operation} currently lowers only "
+                "physical block, physical-warp, and logical-warp groups"
+            )
+        descending = self._constant(bound.arguments["descending"])
+        if not isinstance(descending, bool):
+            raise TypeError(
+                f"cuda.coop.numba_mlir.{operation} descending must be a "
+                "compile-time bool"
+            )
+        compare_arg = bound.arguments.get("compare_op")
+        if self._is_none(compare_arg):
+            compare_op = _builtin_greater if descending else _builtin_less
+        else:
+            if descending:
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} custom compare_op and "
+                    "descending=True are mutually exclusive"
+                )
+            compare_op = compare_arg
+        has_valid_items = not self._is_none(bound.arguments["valid_items"])
+        has_oob_default = not self._is_none(bound.arguments["oob_default"])
+        if has_valid_items != has_oob_default:
+            raise ValueError(
+                f"cuda.coop.numba_mlir.{operation} valid_items and oob_default "
+                "must be provided together"
+            )
+        if has_valid_items:
+            is_static, valid_items = self._try_constant(bound.arguments["valid_items"])
+            if is_static:
+                if isinstance(valid_items, bool) or not isinstance(
+                    valid_items, Integral
+                ):
+                    raise TypeError(
+                        f"cuda.coop.numba_mlir.{operation} valid_items must be "
+                        "an integer, not bool"
+                    )
+                items_per_thread = self._array_extent(bound.arguments["keys"])
+                group_size = group.static_size
+                if items_per_thread is not None and group_size is not None:
+                    maximum = group_size * items_per_thread
+                    if not 0 <= int(valid_items) <= maximum:
+                        raise ValueError(
+                            f"cuda.coop.numba_mlir.{operation} static "
+                            f"valid_items must be in [0, {maximum}]"
+                        )
+
+        if is_common_root:
+            assert operation in {"merge_sort_keys", "merge_sort_pairs"}
+            parameters = (
+                ("keys", "values") if operation.endswith("_pairs") else ("keys",)
+            )
+            for parameter in parameters:
+                is_thread_data = self._is_array_value(
+                    bound.arguments[parameter],
+                    thread_data_only=True,
+                )
+                if is_thread_data is None:
+                    raise GroupRewriteError(
+                        f"cuda.coop.{operation} could not resolve {parameter} "
+                        "payload provenance"
+                    )
+                if not is_thread_data:
+                    raise TypeError(
+                        f"cuda.coop.{operation} requires {parameter} to be "
+                        "coop.ThreadData in common V1; use cuda.coop.numba_mlir "
+                        "for backend-qualified payloads"
+                    )
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        if is_common_root:
+            if group.kind == "block":
+                from ._block import _block_merge_sort
+
+                factory = getattr(_block_merge_sort, f"_common_{operation}")
+            else:
+                from ._warp import _warp_merge_sort
+
+                factory = getattr(
+                    _warp_merge_sort,
+                    f"_common_warp_{operation}",
+                )
+        factory_kwargs["compare_op"] = compare_op
+        if has_valid_items:
+            factory_kwargs["valid_items"] = bound.arguments["valid_items"]
+        if has_oob_default:
+            factory_kwargs["oob_default"] = bound.arguments["oob_default"]
+        if not self._is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        keys = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys",
+            value=bound.arguments["keys"],
+        )
+        keys_payload, keys_are_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=keys,
+            scope=scope,
+            loc=loc,
+        )
+        result_keys = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+            prototype=keys,
+            is_array=keys_are_array,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        self._copy_array_payload(
+            statements,
+            operation=operation,
+            source=keys_payload,
+            destination=result_keys,
+            scope=scope,
+            loc=loc,
+            known_items_per_thread=1 if not keys_are_array else None,
+        )
+
+        runtime_args = [result_keys]
+        result_values = None
+        values_are_array = False
+        if operation == "merge_sort_pairs":
+            values = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values",
+                value=bound.arguments["values"],
+            )
+            values_payload, values_are_array = self._boxed_group_operand(
+                statements,
+                operation=operation,
+                value=values,
+                scope=scope,
+                loc=loc,
+            )
+            if values_are_array != keys_are_array:
+                raise TypeError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same scalar or ThreadData shape"
+                )
+            if self._array_extent(values_payload) != self._array_extent(keys_payload):
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same items_per_thread"
+                )
+            result_values = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values_result",
+                prototype=values,
+                is_array=values_are_array,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            self._copy_array_payload(
+                statements,
+                operation=operation,
+                source=values_payload,
+                destination=result_values,
+                scope=scope,
+                loc=loc,
+                known_items_per_thread=1 if not values_are_array else None,
+            )
+            runtime_args.append(result_values)
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=(
+                result_keys if result_values is None else (result_keys, result_values)
+            ),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        keys_result = self._result_value(
+            statements,
+            payload=result_keys,
+            is_array=keys_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+        )
+        if result_values is None:
+            statements.append(ir.Assign(keys_result, inst.target, loc))
+            return statements
+
+        values_result = self._result_value(
+            statements,
+            payload=result_values,
+            is_array=values_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_values_result",
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.build_tuple([keys_result, values_result], loc),
+                inst.target,
+                loc,
+            )
+        )
+        return statements
+
+    def _lower_radix_sort(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                f"cuda.coop.numba_mlir.{operation} currently lowers only "
+                "complete physical block groups"
+            )
+        scope_name = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+        descending_is_static, descending = self._try_constant(
+            bound.arguments["descending"]
+        )
+        if not descending_is_static or not isinstance(descending, bool):
+            raise TypeError(
+                f"{scope_name}.{operation} descending must be a compile-time bool"
+            )
+        blocked_is_static, blocked_to_striped = self._try_constant(
+            bound.arguments["blocked_to_striped"]
+        )
+        if not blocked_is_static or not isinstance(blocked_to_striped, bool):
+            raise TypeError(
+                f"{scope_name}.{operation} blocked_to_striped must be a "
+                "compile-time bool"
+            )
+
+        if is_common_root:
+            assert operation in {"radix_sort_keys", "radix_sort_pairs"}
+            parameters = (
+                ("keys", "values") if operation.endswith("_pairs") else ("keys",)
+            )
+            for parameter in parameters:
+                is_thread_data = self._is_array_value(
+                    bound.arguments[parameter],
+                    thread_data_only=True,
+                )
+                if is_thread_data is None:
+                    raise GroupRewriteError(
+                        f"cuda.coop.{operation} could not resolve {parameter} "
+                        "payload provenance"
+                    )
+                if not is_thread_data:
+                    raise TypeError(
+                        f"cuda.coop.{operation} requires {parameter} to be "
+                        "coop.ThreadData in common V1; use cuda.coop.numba_mlir "
+                        "for backend-qualified payloads"
+                    )
+
+        factory_operation = f"{operation}_descending" if descending else operation
+        factory, factory_kwargs = self._scope_factory(group, factory_operation)
+        if is_common_root:
+            from ._block import _block_radix_sort
+
+            factory = getattr(_block_radix_sort, f"_common_{operation}")
+            factory_kwargs["descending"] = descending
+        elif blocked_to_striped:
+            factory_kwargs["blocked_to_striped"] = True
+        if not self._is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        begin_bit = bound.arguments["begin_bit"]
+        end_bit = bound.arguments["end_bit"]
+        begin_is_static, static_begin = self._try_constant(begin_bit)
+        end_is_none = self._is_none(end_bit)
+        end_is_static, static_end = (
+            (True, None) if end_is_none else self._try_constant(end_bit)
+        )
+
+        for name, is_static, value in (
+            ("begin_bit", begin_is_static, static_begin),
+            ("end_bit", end_is_static and not end_is_none, static_end),
+        ):
+            if is_static and (
+                isinstance(value, bool) or not isinstance(value, Integral)
+            ):
+                raise TypeError(f"{scope_name}.{operation} {name} must be an integer")
+        if begin_is_static:
+            static_begin = int(static_begin)
+            if static_begin < 0:
+                raise ValueError(
+                    f"{scope_name}.{operation} begin_bit must be non-negative"
+                )
+        if end_is_static and not end_is_none:
+            static_end = int(static_end)
+            if static_end < 1:
+                raise ValueError(f"{scope_name}.{operation} end_bit must be positive")
+            if begin_is_static and static_end <= static_begin:
+                raise ValueError(
+                    f"{scope_name}.{operation} end_bit must be greater than begin_bit"
+                )
+
+        if not end_is_none:
+            factory_kwargs["begin_bit"] = begin_bit
+            factory_kwargs["end_bit"] = end_bit
+        elif not (begin_is_static and static_begin == 0):
+            # The single-phase rewrite knows the inferred key dtype. Preserve
+            # the runtime begin bound and let it replace this explicit None
+            # with that dtype's bit width before invoking CUB.
+            factory_kwargs["begin_bit"] = begin_bit
+            factory_kwargs["end_bit"] = None
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        keys = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys",
+            value=bound.arguments["keys"],
+        )
+        keys_payload, keys_are_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=keys,
+            scope=scope,
+            loc=loc,
+        )
+        result_keys = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+            prototype=keys,
+            is_array=keys_are_array,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        self._copy_array_payload(
+            statements,
+            operation=operation,
+            source=keys_payload,
+            destination=result_keys,
+            scope=scope,
+            loc=loc,
+            known_items_per_thread=1 if not keys_are_array else None,
+        )
+
+        runtime_args = [result_keys]
+        result_values = None
+        values_are_array = False
+        if operation == "radix_sort_pairs":
+            values = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values",
+                value=bound.arguments["values"],
+            )
+            values_payload, values_are_array = self._boxed_group_operand(
+                statements,
+                operation=operation,
+                value=values,
+                scope=scope,
+                loc=loc,
+            )
+            if values_are_array != keys_are_array:
+                raise TypeError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same scalar or ThreadData shape"
+                )
+            if self._array_extent(values_payload) != self._array_extent(keys_payload):
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same items_per_thread"
+                )
+            result_values = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values_result",
+                prototype=values,
+                is_array=values_are_array,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            self._copy_array_payload(
+                statements,
+                operation=operation,
+                source=values_payload,
+                destination=result_values,
+                scope=scope,
+                loc=loc,
+                known_items_per_thread=1 if not values_are_array else None,
+            )
+            runtime_args.append(result_values)
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=(
+                result_keys if result_values is None else (result_keys, result_values)
+            ),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        keys_result = self._result_value(
+            statements,
+            payload=result_keys,
+            is_array=keys_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+        )
+        if result_values is None:
+            statements.append(ir.Assign(keys_result, inst.target, loc))
+            return statements
+
+        values_result = self._result_value(
+            statements,
+            payload=result_values,
+            is_array=values_are_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_values_result",
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.build_tuple([keys_result, values_result], loc),
+                inst.target,
+                loc,
+            )
+        )
+        return statements
+
+    def _lower_topk(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        self._reject_extra_root_arguments(operation, bound)
+        scope_name = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+        if group.kind != "block":
+            raise NotImplementedError(
+                f"{scope_name}.{operation} currently lowers only "
+                "complete physical block groups"
+            )
+
+        if is_common_root:
+            assert operation in {
+                "topk_max_keys",
+                "topk_min_keys",
+                "topk_max_pairs",
+                "topk_min_pairs",
+            }
+            parameters = (
+                ("keys", "values") if operation.endswith("_pairs") else ("keys",)
+            )
+            for parameter in parameters:
+                is_thread_data = self._is_array_value(
+                    bound.arguments[parameter],
+                    thread_data_only=True,
+                )
+                if is_thread_data is None:
+                    raise GroupRewriteError(
+                        f"{scope_name}.{operation} could not resolve {parameter} "
+                        "payload provenance"
+                    )
+                if not is_thread_data:
+                    raise TypeError(
+                        f"{scope_name}.{operation} requires {parameter} to be "
+                        "coop.ThreadData in common V1; use cuda.coop.numba_mlir "
+                        "for backend-qualified payloads"
+                    )
+            items_per_thread = self._array_extent(bound.arguments["keys"])
+            if items_per_thread is None:
+                raise GroupRewriteError(
+                    f"{scope_name}.{operation} could not infer a static "
+                    "items_per_thread extent"
+                )
+            if items_per_thread <= 0:
+                raise ValueError(
+                    f"{scope_name}.{operation} keys.items_per_thread must be positive"
+                )
+            assert group.hierarchy is not None
+            block_dim = group.hierarchy.block_dim
+            if block_dim is not None and block_dim[1:] != (1, 1):
+                raise ValueError(
+                    f"{scope_name}.{operation} requires a one-dimensional block"
+                )
+            if group.static_size is not None and group.static_size > 1024:
+                raise ValueError(
+                    f"{scope_name}.{operation} block thread count must be <= 1024"
+                )
+
+            def static_int(name: str, value: Any) -> int | None:
+                is_static, static_value = self._try_constant(value)
+                if not is_static:
+                    return None
+                if isinstance(static_value, bool) or not isinstance(
+                    static_value, Integral
+                ):
+                    raise TypeError(
+                        f"{scope_name}.{operation} {name} must be an int-like scalar"
+                    )
+                return int(static_value)
+
+            static_k = static_int("k", bound.arguments["k"])
+            if static_k is not None and static_k <= 0:
+                raise ValueError(f"{scope_name}.{operation} k must be positive")
+
+            tile_size = (
+                None
+                if group.static_size is None
+                else group.static_size * items_per_thread
+            )
+            if self._is_none(bound.arguments["valid_items"]):
+                static_valid_items = tile_size
+            else:
+                static_valid_items = static_int(
+                    "valid_items", bound.arguments["valid_items"]
+                )
+                if static_valid_items is not None and static_valid_items <= 0:
+                    raise ValueError(
+                        f"{scope_name}.{operation} valid_items must be positive"
+                    )
+                if (
+                    static_valid_items is not None
+                    and tile_size is not None
+                    and static_valid_items > tile_size
+                ):
+                    raise ValueError(
+                        f"{scope_name}.{operation} valid_items must be <= tile size "
+                        f"{tile_size}"
+                    )
+            if (
+                static_k is not None
+                and static_valid_items is not None
+                and static_k > static_valid_items
+            ):
+                raise ValueError(f"{scope_name}.{operation} k must be <= valid_items")
+
+            static_begin = static_int("begin_bit", bound.arguments["begin_bit"])
+            if static_begin is not None and static_begin < 0:
+                raise ValueError(
+                    f"{scope_name}.{operation} begin_bit must be non-negative"
+                )
+            if self._is_none(bound.arguments["end_bit"]):
+                static_end = None
+            else:
+                static_end = static_int("end_bit", bound.arguments["end_bit"])
+                if static_end is not None and static_end < 1:
+                    raise ValueError(
+                        f"{scope_name}.{operation} end_bit must be positive"
+                    )
+                if (
+                    static_begin is not None
+                    and static_end is not None
+                    and static_end <= static_begin
+                ):
+                    raise ValueError(
+                        f"{scope_name}.{operation} end_bit must be greater than "
+                        "begin_bit"
+                    )
+
+        begin_bit = bound.arguments["begin_bit"]
+        end_bit = bound.arguments["end_bit"]
+        begin_is_static, static_begin = self._try_constant(begin_bit)
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        if is_common_root:
+            from ._block import _block_topk
+
+            factory = getattr(_block_topk, f"_common_{operation}")
+        elif self._is_none(end_bit) and not (begin_is_static and static_begin == 0):
+            from ._block import _block_topk
+
+            factory = getattr(_block_topk, f"_qualified_group_{operation}")
+        if not self._is_none(bound.arguments["valid_items"]):
+            factory_kwargs["num_valid"] = bound.arguments["valid_items"]
+        if self._is_none(end_bit):
+            if not (begin_is_static and static_begin == 0):
+                factory_kwargs["begin_bit"] = begin_bit
+        else:
+            factory_kwargs["begin_bit"] = begin_bit
+            factory_kwargs["end_bit"] = end_bit
+        if not self._is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        keys = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys",
+            value=bound.arguments["keys"],
+        )
+        if not self._array_operand_state(operation, keys):
+            raise TypeError(
+                f"cuda.coop.numba_mlir.{operation} requires a fixed-size "
+                "ThreadData key payload"
+            )
+        result_keys = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_keys_result",
+            prototype=keys,
+            is_array=True,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        self._copy_array_payload(
+            statements,
+            operation=operation,
+            source=keys,
+            destination=result_keys,
+            scope=scope,
+            loc=loc,
+        )
+
+        runtime_args = [result_keys]
+        result_values = None
+        if operation.endswith("_pairs"):
+            values = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values",
+                value=bound.arguments["values"],
+            )
+            if not self._array_operand_state(operation, values):
+                raise TypeError(
+                    f"cuda.coop.numba_mlir.{operation} requires a fixed-size "
+                    "ThreadData value payload"
+                )
+            if self._array_extent(values) != self._array_extent(keys):
+                raise ValueError(
+                    f"cuda.coop.numba_mlir.{operation} keys and values must "
+                    "have the same items_per_thread"
+                )
+            result_values = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_values_result",
+                prototype=values,
+                is_array=True,
+                dtype_policy=_PAYLOAD_DTYPE_LIKE,
+            )
+            self._copy_array_payload(
+                statements,
+                operation=operation,
+                source=values,
+                destination=result_values,
+                scope=scope,
+                loc=loc,
+            )
+            runtime_args.append(result_values)
+        runtime_args.append(bound.arguments["k"])
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=(
+                result_keys if result_values is None else (result_keys, result_values)
+            ),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        if result_values is None:
+            statements.append(ir.Assign(result_keys, inst.target, loc))
+        else:
+            statements.append(
+                ir.Assign(
+                    ir.Expr.build_tuple([result_keys, result_values], loc),
+                    inst.target,
+                    loc,
+                )
+            )
+        return statements
 
     def _lower_histogram(
         self,
@@ -3379,6 +4250,29 @@ class _GroupCallPlanner:
                 bound=bound,
                 is_common_root=is_common_root,
             )
+        elif operation in {"merge_sort_keys", "merge_sort_pairs"}:
+            replacement = self._lower_merge_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {"radix_sort_keys", "radix_sort_pairs"}:
+            replacement = self._lower_radix_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "radix_rank":
+            replacement = self._lower_radix_rank(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
         elif operation == "histogram":
             replacement = self._lower_histogram(
                 inst,
@@ -3389,6 +4283,19 @@ class _GroupCallPlanner:
         elif operation == "run_length_decode":
             replacement = self._lower_run_length_decode(
                 inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {
+            "topk_max_keys",
+            "topk_min_keys",
+            "topk_max_pairs",
+            "topk_min_pairs",
+        }:
+            replacement = self._lower_topk(
+                inst,
+                operation=operation,
                 group=group,
                 bound=bound,
                 is_common_root=is_common_root,

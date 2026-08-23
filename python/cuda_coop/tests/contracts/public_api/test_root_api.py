@@ -13,6 +13,8 @@ import pytest
 from cuda.coop._core import root_api
 
 from ...support.cases.api_contracts import (
+    COMMON_PROFILE_DTYPE_FAMILIES,
+    COMMON_PROFILE_MATRIX,
     GROUP_CONSTRUCTOR_SIGNATURES,
     PORTABLE_GROUP_FIRST_EXPORTS,
     PORTABLE_GROUP_PRIMITIVE_SIGNATURES,
@@ -42,6 +44,93 @@ def test_root_api_exposes_common_group_first_contract() -> None:
     }:
         member = getattr(root_api, name)
         assert member.__cuda_coop_backend_member__ == name
+
+
+def test_common_profile_matrix_covers_every_promoted_operation() -> None:
+    from cuda.coop._core.dtype_policy import (
+        COMMON_V1_INTEGER_KEY_DTYPE_NAMES,
+        COMMON_V1_INTEGER_VALUE_DTYPE_NAMES,
+        COMMON_V1_NUMERIC_DTYPE_NAMES,
+    )
+
+    production_dtype_families = {
+        "numeric": COMMON_V1_NUMERIC_DTYPE_NAMES,
+        "integer_value": COMMON_V1_INTEGER_VALUE_DTYPE_NAMES,
+        "integer_key": COMMON_V1_INTEGER_KEY_DTYPE_NAMES,
+    }
+    assert tuple(production_dtype_families) == tuple(COMMON_PROFILE_DTYPE_FAMILIES)
+    for family, dtype_names in production_dtype_families.items():
+        assert tuple(dtype_names) == tuple(
+            COMMON_PROFILE_DTYPE_FAMILIES[family]["canonical_dtypes"]
+        )
+    assert tuple(COMMON_PROFILE_MATRIX) == tuple(PORTABLE_GROUP_PRIMITIVE_SIGNATURES)
+    assert tuple(root_api._COMMON_V1_OPERATION_GROUPS) == tuple(
+        PORTABLE_GROUP_PRIMITIVE_SIGNATURES
+    )
+    for name, profile in COMMON_PROFILE_MATRIX.items():
+        assert profile["signature"] == PORTABLE_GROUP_PRIMITIVE_SIGNATURES[name]
+        assert (
+            tuple(
+                root_api._common_v1_group_name(kind)
+                for kind in root_api._COMMON_V1_OPERATION_GROUPS[name]
+            )
+            == profile["supported_groups"]
+        )
+        assert profile["supported_groups"]
+        assert profile["result_layout"]
+        assert profile["mutation_rule"]
+        assert isinstance(profile["preconditions"], tuple)
+        assert profile["dtype_contract"]
+        assert set(profile["dtype_contract"].values()) <= set(
+            COMMON_PROFILE_DTYPE_FAMILIES
+        )
+        assert profile["certified_backends"] == ("cutlass", "numba_mlir")
+        assert profile["required_evidence"] == {
+            "core": ("api", "semantics"),
+            "cutlass": ("lowering", "compile", "runtime", "link"),
+            "numba_mlir": ("lowering", "compile", "runtime", "link"),
+        }
+        assert profile["evidence_enforcement"] == {
+            "core": "required",
+            "cutlass": "required",
+            "numba_mlir": "required",
+        }
+        assert set(profile["evidence_collection_paths"]) == {
+            "core",
+            "cutlass",
+            "numba_mlir",
+        }
+        assert {
+            role: tuple(lanes)
+            for role, lanes in profile["evidence_collection_paths"].items()
+        } == {
+            "core": ("api", "semantics"),
+            "cutlass": ("lowering", "compile", "runtime", "link"),
+            "numba_mlir": ("lowering", "compile", "runtime", "link"),
+        }
+
+    assert COMMON_PROFILE_MATRIX["load"]["mutation_rule"] == (
+        "populates and returns output"
+    )
+    assert COMMON_PROFILE_MATRIX["store"]["result_layout"] == "None"
+    assert COMMON_PROFILE_MATRIX["discontinuity"]["result_layout"] == (
+        "shape-preserving int32 flags"
+    )
+    assert COMMON_PROFILE_MATRIX["histogram"]["result_layout"] == (
+        "striped counters by rank plus i times group size; out-of-range slots are zero"
+    )
+    assert COMMON_PROFILE_MATRIX["run_length_decode"]["result_layout"] == (
+        "decoded_items_per_thread values per member in blocked window order; "
+        "out-of-range positions are zero"
+    )
+    assert COMMON_PROFILE_MATRIX["topk_max_keys"]["result_layout"] == (
+        "shape- and dtype-preserving payload; exactly the first k blocked "
+        "positions are defined and unordered; remaining positions are unspecified"
+    )
+    assert (
+        COMMON_PROFILE_MATRIX["topk_min_keys"]["result_layout"]
+        == (COMMON_PROFILE_MATRIX["topk_max_keys"]["result_layout"])
+    )
 
 
 @pytest.mark.evidence_for("group.load", backend="core", evidence="api")

@@ -31,8 +31,12 @@ from .._dsl.block import exchange_blocked_to_striped as exchange_blocked_to_stri
 from .._dsl.block import (
     exchange_blocked_to_warp_striped as exchange_blocked_to_warp_striped,
 )
-from .._dsl.block import exchange_scatter_to_blocked as exchange_scatter_to_blocked
-from .._dsl.block import exchange_scatter_to_striped as exchange_scatter_to_striped
+from .._dsl.block import (
+    exchange_scatter_to_blocked as exchange_scatter_to_blocked,
+)
+from .._dsl.block import (
+    exchange_scatter_to_striped as exchange_scatter_to_striped,
+)
 from .._dsl.block import (
     exchange_scatter_to_striped_flagged as exchange_scatter_to_striped_flagged,
 )
@@ -48,7 +52,12 @@ from .._dsl.block import exclusive_sum as exclusive_sum
 from .._dsl.block import histogram as histogram
 from .._dsl.block import inclusive_scan as inclusive_scan
 from .._dsl.block import inclusive_sum as inclusive_sum
+from .._dsl.block import merge_sort_keys as merge_sort_keys
+from .._dsl.block import merge_sort_pairs as merge_sort_pairs
+from .._dsl.block import radix_rank as radix_rank
+from .._dsl.block import radix_sort_keys as radix_sort_keys
 from .._dsl.block import radix_sort_keys_descending as radix_sort_keys_descending
+from .._dsl.block import radix_sort_pairs as radix_sort_pairs
 from .._dsl.block import radix_sort_pairs_descending as radix_sort_pairs_descending
 from .._dsl.block import reduce as reduce
 from .._dsl.block import row_sum as row_sum
@@ -61,6 +70,10 @@ from .._dsl.block import shuffle_offset as shuffle_offset
 from .._dsl.block import shuffle_rotate as shuffle_rotate
 from .._dsl.block import shuffle_up as shuffle_up
 from .._dsl.block import sum as sum
+from .._dsl.block import topk_max_keys as topk_max_keys
+from .._dsl.block import topk_max_pairs as topk_max_pairs
+from .._dsl.block import topk_min_keys as topk_min_keys
+from .._dsl.block import topk_min_pairs as topk_min_pairs
 
 class _DeferredValue(Protocol):
     """Deferred scoped callable that returns one transformed value."""
@@ -434,6 +447,64 @@ def make_shuffle(
 ) -> _DeferredValue:
     """Build a deferred block shuffle specialization."""
 
+def make_merge_sort_keys(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    *,
+    descending: bool | None = None,
+    dim: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block key merge-sort specialization."""
+
+def make_merge_sort_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    *,
+    descending: bool | None = None,
+    dim: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    **kwargs: object,
+) -> _DeferredPair:
+    """Build a deferred block key-value merge-sort specialization."""
+
+def make_radix_rank(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    radix_bits: object = None,
+    descending: bool = False,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block radix-rank specialization."""
+
+def make_radix_sort_keys(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    descending: bool = False,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block radix-key-sort specialization."""
+
 def make_radix_sort_keys_descending(
     dtype: object,
     threads_per_block: object = None,
@@ -445,6 +516,22 @@ def make_radix_sort_keys_descending(
     **kwargs: object,
 ) -> _DeferredValue:
     """Build a deferred descending block radix-key-sort specialization."""
+
+def make_radix_sort_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    descending: bool = False,
+    *,
+    dim: object = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    **kwargs: object,
+) -> _DeferredPair:
+    """Build a deferred block radix-pair-sort specialization."""
 
 def make_radix_sort_pairs_descending(
     keys: object = None,
@@ -488,6 +575,64 @@ def make_run_length(
 ) -> _DeferredValue:
     """Build a deferred block run-length specialization."""
 
+def make_topk_max_keys(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    valid_items: object = None,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred maximum-key TopK specialization."""
+
+def make_topk_min_keys(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    valid_items: object = None,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred minimum-key TopK specialization."""
+
+def make_topk_max_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    **kwargs: object,
+) -> _DeferredPair:
+    """Build a deferred maximum-pair TopK specialization."""
+
+def make_topk_min_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    *,
+    dim: object = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    begin_bit: object = 0,
+    end_bit: object = None,
+    **kwargs: object,
+) -> _DeferredPair:
+    """Build a deferred minimum-pair TopK specialization."""
+
 __all__ = [
     "BlockAdjacentDifferenceType",
     "BlockDiscontinuityType",
@@ -526,7 +671,12 @@ __all__ = [
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
+    "make_radix_rank",
+    "make_radix_sort_keys",
     "make_radix_sort_keys_descending",
+    "make_radix_sort_pairs",
     "make_radix_sort_pairs_descending",
     "make_reduce",
     "make_run_length",
@@ -534,7 +684,16 @@ __all__ = [
     "make_shuffle",
     "make_store",
     "make_sum",
+    "make_topk_max_keys",
+    "make_topk_max_pairs",
+    "make_topk_min_keys",
+    "make_topk_min_pairs",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
     "radix_sort_keys_descending",
+    "radix_sort_pairs",
     "radix_sort_pairs_descending",
     "reduce",
     "row_sum",
@@ -548,4 +707,8 @@ __all__ = [
     "shuffle_up",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

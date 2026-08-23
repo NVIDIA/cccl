@@ -165,3 +165,140 @@ def _subtract(a, b):
 @cuda.jit(device=True)
 def _different(a, b):
     return a != b
+
+
+def _validate_ranks(keys, ranks, begin_bit, end_bit, descending=False):
+    radix_bits = end_bit - begin_bit
+    mask = (1 << radix_bits) - 1
+    digits = (keys >> begin_bit) & mask
+    max_digit = 1 << radix_bits
+
+    counts = np.zeros(max_digit, dtype=np.int32)
+    for digit in digits:
+        counts[int(digit)] += 1
+
+    offsets = {}
+    prefix = 0
+    digit_iter = range(max_digit - 1, -1, -1) if descending else range(max_digit)
+    for digit in digit_iter:
+        offsets[digit] = prefix
+        prefix += int(counts[digit])
+
+    np.testing.assert_array_equal(
+        np.sort(ranks), np.arange(len(ranks), dtype=ranks.dtype)
+    )
+    for idx, rank in enumerate(ranks):
+        digit = int(digits[idx])
+        assert offsets[digit] <= rank < offsets[digit] + int(counts[digit])
+
+
+def _exclusive_digit_prefix_reference(
+    keys, begin_bit, end_bit, block_threads=THREADS, descending=False
+):
+    radix_bits = end_bit - begin_bit
+    radix_digits = 1 << radix_bits
+    bins_per_thread = max(1, (radix_digits + block_threads - 1) // block_threads)
+    digits = (keys >> begin_bit) & (radix_digits - 1)
+
+    counts = np.zeros(radix_digits, dtype=np.int32)
+    for digit in digits:
+        counts[int(digit)] += 1
+
+    prefix = np.zeros(radix_digits, dtype=np.int32)
+    running = 0
+    digit_iter = range(radix_digits - 1, -1, -1) if descending else range(radix_digits)
+    for digit in digit_iter:
+        prefix[digit] = running
+        running += int(counts[digit])
+
+    expected = np.full((block_threads, bins_per_thread), -1, dtype=np.int32)
+    for tid in range(block_threads):
+        for track in range(bins_per_thread):
+            bin_idx = tid * bins_per_thread + track
+            if block_threads == radix_digits or bin_idx < radix_digits:
+                expected[tid, track] = prefix[bin_idx]
+    return expected
+
+
+def _make_topk_stress_inputs(tile_size, num_tiles, total_items):
+    keys = np.empty(total_items, dtype=np.int32)
+    values = np.empty(total_items, dtype=np.int32)
+    for tile_idx in range(num_tiles):
+        start = tile_idx * tile_size
+        end = min(start + tile_size, total_items)
+        local = np.arange(end - start, dtype=np.int32)
+        keys[start:end] = (
+            ((local * np.int32(37)) + np.int32(11)) % np.int32(tile_size)
+        ) + np.int32(tile_idx * 4096)
+        values[start:end] = np.int32(tile_idx * 10000) + local * np.int32(13)
+    return keys, values
+
+
+def _make_topk_rank_flags(tile_size, num_tiles, total_items, k):
+    flags = np.zeros(num_tiles * tile_size, dtype=np.int32)
+    for tile_idx in range(num_tiles):
+        start = tile_idx * tile_size
+        valid = min(tile_size, total_items - start)
+        flags[start : start + min(k, valid)] = np.int32(1)
+    return flags
+
+
+def _host_pair_checksum(keys, values):
+    checksum = np.int64(0)
+    for key, value in zip(keys, values, strict=True):
+        checksum += np.int64(int(key)) * np.int64(1315423911) + np.int64(
+            int(value)
+        ) * np.int64(2654435761)
+    return checksum
+
+
+def _assert_topk_stress_output(
+    h_keys,
+    h_values,
+    h_keys_out,
+    h_values_out,
+    h_ranks_out,
+    h_checksums,
+    tile_size,
+    num_tiles,
+    total_items,
+    k,
+):
+    for tile_idx in range(num_tiles):
+        start = tile_idx * tile_size
+        end = min(start + tile_size, total_items)
+        valid = end - start
+        runtime_k = min(k, valid)
+
+        tile_keys = h_keys[start:end]
+        tile_values = h_values[start:end]
+        expected_indices = np.argsort(tile_keys)[-runtime_k:]
+        expected_pairs = sorted(
+            zip(tile_keys[expected_indices], tile_values[expected_indices], strict=True)
+        )
+        actual_pairs = sorted(
+            zip(
+                h_keys_out[start : start + runtime_k],
+                h_values_out[start : start + runtime_k],
+                strict=True,
+            )
+        )
+        assert actual_pairs == expected_pairs
+
+        expected_ranks = np.minimum(
+            np.arange(tile_size, dtype=np.int32),
+            np.int32(runtime_k),
+        )
+        np.testing.assert_array_equal(
+            h_ranks_out[start : start + tile_size],
+            expected_ranks,
+        )
+
+        expected_keys = np.asarray([key for key, _ in expected_pairs], dtype=np.int32)
+        expected_values = np.asarray(
+            [value for _, value in expected_pairs], dtype=np.int32
+        )
+        assert h_checksums[tile_idx] == _host_pair_checksum(
+            expected_keys,
+            expected_values,
+        )

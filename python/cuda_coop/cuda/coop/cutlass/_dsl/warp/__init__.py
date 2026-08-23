@@ -34,6 +34,7 @@ from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._single_phase import TempStorage
+from ._sort import merge_sort_keys, merge_sort_pairs
 
 # Secondary compatibility adapters remain available through the private warp
 # module. Its wrappers preserve the private import scope reported by deferred
@@ -45,6 +46,8 @@ make_inclusive_scan = _factory.make_inclusive_scan
 make_inclusive_sum = _factory.make_inclusive_sum
 make_load = _factory.make_load
 make_max = _factory.make_max
+make_merge_sort_keys = _factory.make_merge_sort_keys
+make_merge_sort_pairs = _factory.make_merge_sort_pairs
 make_min = _factory.make_min
 make_reduce = _factory.make_reduce
 make_store = _factory.make_store
@@ -69,11 +72,15 @@ __all__ = [
     "make_inclusive_sum",
     "make_load",
     "make_max",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
     "make_min",
     "make_reduce",
     "make_store",
     "make_sum",
     "max",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "min",
     "reduce",
     "scan",

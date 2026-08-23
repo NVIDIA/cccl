@@ -331,6 +331,125 @@ def shuffle(
     )
 
 
+def merge_sort_keys(
+    group: ThreadGroup,
+    keys: Any,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    temp_storage: Any = None,
+    compare_op: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "merge_sort_keys",
+        group,
+        keys,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
+        compare_op=compare_op,
+    )
+
+
+def merge_sort_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    temp_storage: Any = None,
+    compare_op: Any = None,
+) -> tuple[Any, Any]:
+    return _group_primitive_marker(
+        "merge_sort_pairs",
+        group,
+        keys,
+        values,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
+        compare_op=compare_op,
+    )
+
+
+def radix_sort_keys(
+    group: ThreadGroup,
+    keys: Any,
+    /,
+    *,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    descending: bool = False,
+    temp_storage: Any = None,
+    blocked_to_striped: bool = False,
+) -> Any:
+    return _group_primitive_marker(
+        "radix_sort_keys",
+        group,
+        keys,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+        temp_storage=temp_storage,
+        blocked_to_striped=blocked_to_striped,
+    )
+
+
+def radix_sort_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    /,
+    *,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    descending: bool = False,
+    temp_storage: Any = None,
+    blocked_to_striped: bool = False,
+) -> tuple[Any, Any]:
+    return _group_primitive_marker(
+        "radix_sort_pairs",
+        group,
+        keys,
+        values,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+        temp_storage=temp_storage,
+        blocked_to_striped=blocked_to_striped,
+    )
+
+
+def radix_rank(
+    group: ThreadGroup,
+    keys: Any,
+    /,
+    *,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    radix_bits: Any | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "radix_rank",
+        group,
+        keys,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        radix_bits=radix_bits,
+        descending=descending,
+        exclusive_digit_prefix=exclusive_digit_prefix,
+    )
+
+
 def histogram(
     group: ThreadGroup,
     samples: Any,
@@ -383,6 +502,102 @@ def run_length_decode(
     )
 
 
+def topk_max_keys(
+    group: ThreadGroup,
+    keys: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "topk_max_keys",
+        group,
+        keys,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_min_keys(
+    group: ThreadGroup,
+    keys: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> Any:
+    return _group_primitive_marker(
+        "topk_min_keys",
+        group,
+        keys,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_max_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> tuple[Any, Any]:
+    return _group_primitive_marker(
+        "topk_max_pairs",
+        group,
+        keys,
+        values,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_min_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> tuple[Any, Any]:
+    return _group_primitive_marker(
+        "topk_min_pairs",
+        group,
+        keys,
+        values,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
 __all__ = [
     "adjacent_difference",
     "discontinuity",
@@ -393,10 +608,19 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

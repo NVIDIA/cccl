@@ -31,6 +31,10 @@ _MERGE_SORT_SEMANTICS = "tests/contracts/core/test_common_group_merge_sort_seman
 _RADIX_RANK_SEMANTICS = "tests/contracts/core/test_common_group_radix_rank_semantics.py"
 _RADIX_SORT_SEMANTICS = "tests/contracts/core/test_common_group_radix_sort_semantics.py"
 _TOPK_SEMANTICS = "tests/contracts/core/test_common_group_topk_semantics.py"
+_UNMARKED_EXACT_NODE = (
+    "tests/contracts/parity/test_coverage_manifest.py"
+    "::test_only_fully_passing_tests_earn_conformance_evidence"
+)
 
 
 def _run_pytest(*arguments: str) -> subprocess.CompletedProcess[str]:
@@ -252,6 +256,12 @@ def test_ignore_keeps_an_exact_required_lane_inactive() -> None:
         "-k",
         "test_argument_binding_classifies_omitted_static_and_runtime_values",
     )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_xdist_exact_unmarked_node_does_not_activate_sibling_claims() -> None:
+    completed = _run_pytest("-n", "2", _UNMARKED_EXACT_NODE)
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
 

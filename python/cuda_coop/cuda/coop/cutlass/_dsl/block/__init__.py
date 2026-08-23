@@ -66,6 +66,19 @@ from ._shuffle import (
     shuffle_up,
 )
 from ._single_phase import TempStorage
+from ._sort import (
+    merge_sort_keys,
+    merge_sort_pairs,
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_keys_descending,
+    radix_sort_pairs,
+    radix_sort_pairs_descending,
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 # Secondary compatibility adapters remain available through the private block
 # module. Its wrappers preserve the private import scope reported by deferred
@@ -79,12 +92,23 @@ make_histogram = _factory.make_histogram
 make_inclusive_scan = _factory.make_inclusive_scan
 make_inclusive_sum = _factory.make_inclusive_sum
 make_load = _factory.make_load
+make_merge_sort_keys = _factory.make_merge_sort_keys
+make_merge_sort_pairs = _factory.make_merge_sort_pairs
+make_radix_rank = _factory.make_radix_rank
+make_radix_sort_keys = _factory.make_radix_sort_keys
+make_radix_sort_keys_descending = _factory.make_radix_sort_keys_descending
+make_radix_sort_pairs = _factory.make_radix_sort_pairs
+make_radix_sort_pairs_descending = _factory.make_radix_sort_pairs_descending
 make_reduce = _factory.make_reduce
 make_run_length = _factory.make_run_length
 make_scan = _factory.make_scan
 make_shuffle = _factory.make_shuffle
 make_store = _factory.make_store
 make_sum = _factory.make_sum
+make_topk_max_keys = _factory.make_topk_max_keys
+make_topk_max_pairs = _factory.make_topk_max_pairs
+make_topk_min_keys = _factory.make_topk_min_keys
+make_topk_min_pairs = _factory.make_topk_min_pairs
 
 __all__ = [
     "BlockAdjacentDifferenceType",
@@ -124,12 +148,30 @@ __all__ = [
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
+    "make_radix_rank",
+    "make_radix_sort_keys",
+    "make_radix_sort_keys_descending",
+    "make_radix_sort_pairs",
+    "make_radix_sort_pairs_descending",
     "make_reduce",
     "make_run_length",
     "make_scan",
     "make_shuffle",
     "make_store",
     "make_sum",
+    "make_topk_max_keys",
+    "make_topk_max_pairs",
+    "make_topk_min_keys",
+    "make_topk_min_pairs",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_keys_descending",
+    "radix_sort_pairs",
+    "radix_sort_pairs_descending",
     "reduce",
     "row_sum",
     "run_length",
@@ -142,4 +184,8 @@ __all__ = [
     "shuffle_up",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

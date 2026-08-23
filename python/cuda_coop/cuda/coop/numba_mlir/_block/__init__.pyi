@@ -1764,6 +1764,491 @@ def make_shuffle(
     """Build a generated block-shuffle callable."""
 
 @overload
+def merge_sort_keys(
+    keys: ThreadDataLike[_K],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    descending: bool | None = None,
+    valid_items: None = None,
+    oob_default: None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort a block key payload in place."""
+
+@overload
+def merge_sort_keys(
+    keys: ThreadDataLike[_K],
+    valid_items: _ValidItems,
+    oob_default: _K,
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort a partial block key payload in place.
+
+    ``oob_default`` must sort after every valid key under ``compare_op``.
+    """
+
+@overload
+def merge_sort_keys(
+    dtype: type[_K],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[_K]:
+    """Build a dtype-preserving block key-sort callable."""
+
+@overload
+def merge_sort_keys(
+    dtype: _DTypeToken,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build a block key-sort callable from a compiler dtype token."""
+
+@overload
+def merge_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    descending: bool | None = None,
+    valid_items: None = None,
+    oob_default: None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort block key-value payloads in place."""
+
+@overload
+def merge_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    valid_items: _ValidItems,
+    oob_default: _K,
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort partial block key-value payloads in place.
+
+    ``oob_default`` must sort after every valid key under ``compare_op``.
+    """
+
+@overload
+def merge_sort_pairs(
+    keys: type[_K],
+    values: type[_V],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[_K, _V]:
+    """Build a dtype-preserving block key-value sort callable."""
+
+@overload
+def merge_sort_pairs(
+    keys: _DTypeToken,
+    values: _DTypeToken,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build a block key-value sort callable from compiler dtype tokens."""
+
+@overload
+def make_merge_sort_keys(
+    dtype: type[_K],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[_K]:
+    """Build a dtype-preserving generated block key-sort callable."""
+
+@overload
+def make_merge_sort_keys(
+    dtype: _DTypeToken,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    value_dtype: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build a generated block key-sort callable."""
+
+@overload
+def make_merge_sort_pairs(
+    keys: type[_K],
+    values: type[_V],
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: Callable[[_K, _K], object] | None = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[_K, _V]:
+    """Build a dtype-preserving generated block key-value sort callable."""
+
+@overload
+def make_merge_sort_pairs(
+    keys: _DTypeToken,
+    values: _DTypeToken,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build a generated block key-value sort callable."""
+
+@overload
+def radix_sort_keys(
+    keys: ThreadDataLike[_K],
+    /,
+    *,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort block keys in ascending order in place."""
+
+@overload
+def radix_sort_keys(
+    keys: ThreadDataLike[_K],
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    blocked_to_striped: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort block keys using a runtime bit range."""
+
+@overload
+def radix_sort_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    value_dtype: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build an ascending block radix-key-sort callable."""
+
+@overload
+def radix_sort_keys_descending(
+    keys: ThreadDataLike[_K],
+    /,
+    *,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort block keys in descending order in place."""
+
+@overload
+def radix_sort_keys_descending(
+    keys: ThreadDataLike[_K],
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    blocked_to_striped: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Descending-radix-sort block keys using a runtime bit range."""
+
+@overload
+def radix_sort_keys_descending(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    value_dtype: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build a descending block radix-key-sort callable."""
+
+@overload
+def radix_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    /,
+    *,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort block key-value payloads in ascending order."""
+
+@overload
+def radix_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    blocked_to_striped: bool = False,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort pairs using a runtime bit range."""
+
+@overload
+def radix_sort_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build an ascending block radix-pair-sort callable."""
+
+@overload
+def radix_sort_pairs_descending(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    /,
+    *,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Radix-sort block key-value payloads in descending order."""
+
+@overload
+def radix_sort_pairs_descending(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    blocked_to_striped: bool = False,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Descending-radix-sort pairs using a runtime bit range."""
+
+@overload
+def radix_sort_pairs_descending(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build a descending block radix-pair-sort callable."""
+
+def make_radix_sort_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    value_dtype: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build an ascending block radix-key-sort callable."""
+
+def make_radix_sort_keys_descending(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    value_dtype: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    dim: _Dim | None = None,
+) -> _TransformInvocable[Any]:
+    """Build a descending block radix-key-sort callable."""
+
+def make_radix_sort_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build an ascending block radix-pair-sort callable."""
+
+def make_radix_sort_pairs_descending(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    blocked_to_striped: bool = False,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _PairTransformInvocable[Any, Any]:
+    """Build a descending block radix-pair-sort callable."""
+
+@overload
+def radix_rank(
+    keys: ThreadDataLike[_K],
+    ranks: object,
+    /,
+    *,
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    radix_bits: int | None = None,
+    descending: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    exclusive_digit_prefix: object = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write stable radix ranks for a block key payload."""
+
+@overload
+def radix_rank(
+    keys: ThreadDataLike[_K],
+    ranks: object,
+    exclusive_digit_prefix: object,
+    /,
+    *,
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    radix_bits: int | None = None,
+    descending: bool = False,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write radix ranks and the exclusive digit prefix."""
+
+@overload
+def radix_rank(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: object = None,
+    dim: _Dim | None = None,
+) -> _RadixRankInvocable[Any]:
+    """Build a block radix-rank callable outside compilation."""
+
+def make_radix_rank(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: object = None,
+    dim: _Dim | None = None,
+) -> _RadixRankInvocable[Any]:
+    """Build a generated block radix-rank callable."""
+
+@overload
 def histogram(
     samples: object,
     histogram: object,
@@ -1855,6 +2340,358 @@ def make_run_length(
 ) -> _RunLengthInvocable:
     """Build a generated run-length decoder parent constructor."""
 
+@overload
+def topk_max_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    /,
+    *,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum block keys into the first ``k`` positions."""
+
+@overload
+def topk_max_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    num_valid: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum keys from a valid prefix."""
+
+@overload
+def topk_max_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum keys using a runtime bit range."""
+
+@overload
+def topk_max_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    num_valid: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum keys from a valid prefix and runtime bit range."""
+
+@overload
+def topk_max_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dim: _Dim | None = None,
+) -> _TopKKeysInvocable[Any]:
+    """Build a maximum-key TopK callable outside compilation."""
+
+@overload
+def topk_min_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    /,
+    *,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum block keys into the first ``k`` positions."""
+
+@overload
+def topk_min_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    num_valid: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum keys from a valid prefix."""
+
+@overload
+def topk_min_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum keys using a runtime bit range."""
+
+@overload
+def topk_min_keys(
+    keys: ThreadDataLike[_K],
+    k: object,
+    num_valid: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum keys from a valid prefix and runtime bit range."""
+
+@overload
+def topk_min_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dim: _Dim | None = None,
+) -> _TopKKeysInvocable[Any]:
+    """Build a minimum-key TopK callable outside compilation."""
+
+@overload
+def topk_max_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    /,
+    *,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum block key-value pairs in place."""
+
+@overload
+def topk_max_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    num_valid: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum pairs from a valid prefix."""
+
+@overload
+def topk_max_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum pairs using a runtime bit range."""
+
+@overload
+def topk_max_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    num_valid: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select maximum pairs from a valid prefix and runtime bit range."""
+
+@overload
+def topk_max_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _TopKPairsInvocable[Any, Any]:
+    """Build a maximum-pair TopK callable outside compilation."""
+
+@overload
+def topk_min_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    /,
+    *,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum block key-value pairs in place."""
+
+@overload
+def topk_min_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    num_valid: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum pairs from a valid prefix."""
+
+@overload
+def topk_min_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum pairs using a runtime bit range."""
+
+@overload
+def topk_min_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    k: object,
+    num_valid: object,
+    begin_bit: object,
+    end_bit: object,
+    /,
+    *,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Select minimum pairs from a valid prefix and runtime bit range."""
+
+@overload
+def topk_min_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _TopKPairsInvocable[Any, Any]:
+    """Build a minimum-pair TopK callable outside compilation."""
+
+def make_topk_max_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dim: _Dim | None = None,
+) -> _TopKKeysInvocable[Any]:
+    """Build a generated maximum-key TopK callable."""
+
+def make_topk_min_keys(
+    dtype: object,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    dim: _Dim | None = None,
+) -> _TopKKeysInvocable[Any]:
+    """Build a generated minimum-key TopK callable."""
+
+def make_topk_max_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _TopKPairsInvocable[Any, Any]:
+    """Build a generated maximum-pair TopK callable."""
+
+def make_topk_min_pairs(
+    keys: object = None,
+    values: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    num_valid: object = None,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    key_dtype: object = None,
+    value_dtype: object = None,
+    dim: _Dim | None = None,
+) -> _TopKPairsInvocable[Any, Any]:
+    """Build a generated minimum-pair TopK callable."""
+
 __all__ = [
     "BlockAdjacentDifferenceType",
     "BlockDiscontinuityType",
@@ -1882,16 +2719,38 @@ __all__ = [
     "make_inclusive_scan",
     "make_inclusive_sum",
     "make_load",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
+    "make_radix_rank",
+    "make_radix_sort_keys",
+    "make_radix_sort_keys_descending",
+    "make_radix_sort_pairs",
+    "make_radix_sort_pairs_descending",
     "make_reduce",
     "make_run_length",
     "make_scan",
     "make_shuffle",
     "make_store",
     "make_sum",
+    "make_topk_max_keys",
+    "make_topk_max_pairs",
+    "make_topk_min_keys",
+    "make_topk_min_pairs",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_keys_descending",
+    "radix_sort_pairs",
+    "radix_sort_pairs_descending",
     "reduce",
     "run_length",
     "scan",
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

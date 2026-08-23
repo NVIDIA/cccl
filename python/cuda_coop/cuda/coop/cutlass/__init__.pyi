@@ -12,6 +12,11 @@ from ._group_exchange import exchange as exchange
 from ._group_histogram import histogram as histogram
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_merge_sort import merge_sort_keys as merge_sort_keys
+from ._group_merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._group_radix import radix_rank as radix_rank
+from ._group_radix import radix_sort_keys as radix_sort_keys
+from ._group_radix import radix_sort_pairs as radix_sort_pairs
 from ._group_reduce import reduce as reduce
 from ._group_run_length_decode import run_length_decode as run_length_decode
 from ._group_scan import exclusive_scan as exclusive_scan
@@ -20,6 +25,10 @@ from ._group_scan import inclusive_scan as inclusive_scan
 from ._group_scan import inclusive_sum as inclusive_sum
 from ._group_scan import scan as scan
 from ._group_shuffle import shuffle as shuffle
+from ._group_topk import topk_max_keys as topk_max_keys
+from ._group_topk import topk_max_pairs as topk_max_pairs
+from ._group_topk import topk_min_keys as topk_min_keys
+from ._group_topk import topk_min_pairs as topk_min_pairs
 from ._types import Hierarchy as Hierarchy
 from ._types import Payload as Payload
 from ._types import TempStorage as TempStorage
@@ -74,6 +83,11 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -85,4 +99,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

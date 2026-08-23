@@ -1329,6 +1329,220 @@ def make_exchange(
 ) -> _ExchangeInvocable[Any]:
     """Build a generated physical-warp exchange callable."""
 
+@overload
+def merge_sort_keys(
+    keys: ThreadDataLike[_K],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object],
+    dtype: object = None,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    valid_items: None = None,
+    oob_default: None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort a physical-warp key payload in place."""
+
+@overload
+def merge_sort_keys(
+    keys: ThreadDataLike[_K],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object],
+    dtype: object = None,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    valid_items: _ValidItems,
+    oob_default: _K,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort a partial physical-warp key payload in place.
+
+    ``oob_default`` must sort after every valid key under ``compare_op``.
+    """
+
+@overload
+def merge_sort_keys(
+    dtype: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a physical-warp key or key-value merge-sort callable."""
+
+@overload
+def merge_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object],
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    valid_items: None = None,
+    oob_default: None = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort physical-warp key-value payloads in place."""
+
+@overload
+def merge_sort_pairs(
+    keys: ThreadDataLike[_K],
+    values: ThreadDataLike[_V],
+    /,
+    *,
+    compare_op: Callable[[_K, _K], object],
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    valid_items: _ValidItems,
+    oob_default: _K,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Sort partial physical-warp key-value payloads in place.
+
+    ``oob_default`` must sort after every valid key under ``compare_op``.
+    """
+
+@overload
+def merge_sort_pairs(
+    keys: _DTypeToken,
+    values: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a physical-warp key-value merge-sort callable."""
+
+@overload
+def warp_merge_sort_keys(
+    dtype: type[_K],
+    items_per_thread: int,
+    compare_op: Callable[[_K, _K], object],
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[_K, Any]:
+    """Build a dtype-preserving physical-warp merge-sort callable."""
+
+@overload
+def warp_merge_sort_keys(
+    dtype: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a generated physical-warp key-sort callable."""
+
+@overload
+def make_merge_sort_keys(
+    dtype: type[_K],
+    items_per_thread: int,
+    compare_op: Callable[[_K, _K], object],
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[_K, Any]:
+    """Build a dtype-preserving physical-warp merge-sort callable."""
+
+@overload
+def make_merge_sort_keys(
+    dtype: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a generated physical-warp key-sort callable."""
+
+@overload
+def warp_merge_sort_pairs(
+    keys: type[_K],
+    values: type[_V],
+    items_per_thread: int,
+    compare_op: Callable[[_K, _K], object],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[_K, _V]:
+    """Build a dtype-preserving physical-warp key-value sort callable."""
+
+@overload
+def warp_merge_sort_pairs(
+    keys: _DTypeToken,
+    values: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a generated physical-warp key-value sort callable."""
+
+@overload
+def make_merge_sort_pairs(
+    keys: type[_K],
+    values: type[_V],
+    items_per_thread: int,
+    compare_op: Callable[[_K, _K], object],
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[_K, _V]:
+    """Build a dtype-preserving physical-warp key-value sort callable."""
+
+@overload
+def make_merge_sort_pairs(
+    keys: _DTypeToken,
+    values: _DTypeToken,
+    items_per_thread: int,
+    compare_op: object,
+    threads_in_warp: int = 32,
+    valid_items: object = None,
+    oob_default: object = None,
+    methods: _Methods | None = None,
+    threads_per_block: int | tuple[int, ...] | None = None,
+) -> _MergeSortInvocable[Any, Any]:
+    """Build a generated physical-warp key-value sort callable."""
+
 __all__ = [
     "WarpExchangeType",
     "exchange",
@@ -1344,11 +1558,15 @@ __all__ = [
     "make_inclusive_sum",
     "make_load",
     "make_max",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
     "make_min",
     "make_reduce",
     "make_store",
     "make_sum",
     "max",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "min",
     "reduce",
     "store",
@@ -1360,6 +1578,8 @@ __all__ = [
     "warp_inclusive_sum",
     "warp_load",
     "warp_max",
+    "warp_merge_sort_keys",
+    "warp_merge_sort_pairs",
     "warp_min",
     "warp_reduce",
     "warp_store",

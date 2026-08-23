@@ -56,7 +56,9 @@ value_model = "backend_free"
 provider = "test coverage manifest"
 enforcement = "required"
 migration_sources = []
+collection_paths_by_evidence = { semantics = ["tests/contracts/parity/test_coverage_manifest.py"] }
 executable = [
+  { name = "manifest", symbols = ["coverage.toml"], required_evidence = ["semantics"] },
   { name = "evidence_outcomes", symbols = ["evidence_for"], required_evidence = ["semantics"], collection_paths_by_evidence = { semantics = ["tests/contracts/core/evidence_outcome_fixture.py", "tests/contracts/core/evidence_collection_skip_fixture.py"] } },
 ]
 

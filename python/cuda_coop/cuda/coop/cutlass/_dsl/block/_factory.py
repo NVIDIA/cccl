@@ -58,6 +58,19 @@ from ._reduce import reduce, sum
 from ._run_length import run_length
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from ._shuffle import shuffle
+from ._sort import (
+    merge_sort_keys,
+    merge_sort_pairs,
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_keys_descending,
+    radix_sort_pairs,
+    radix_sort_pairs_descending,
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 _RADIX_SORT_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit", "descending")
 _RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS = ("begin_bit", "end_bit")
@@ -159,6 +172,31 @@ def _select_block_exchange_type(
         enum_type=BlockExchangeType,
         keyword_name="block_exchange_type",
     )
+
+
+def _bind_radix_sort_defaults(
+    bound: dict[str, Any],
+    *,
+    begin_bit: Any,
+    end_bit: Any | None,
+    descending: bool | None = None,
+) -> None:
+    bound["begin_bit"] = begin_bit
+    _bind_if_not_none(bound, "end_bit", end_bit)
+    if descending is not None:
+        bound["descending"] = descending
+
+
+def _bind_topk_defaults(
+    bound: dict[str, Any],
+    *,
+    num_valid: Any,
+    begin_bit: Any,
+    end_bit: Any | None,
+) -> None:
+    _bind_if_not_none(bound, "num_valid", num_valid)
+    bound["begin_bit"] = begin_bit
+    _bind_if_not_none(bound, "end_bit", end_bit)
 
 
 def _normalize_valid_items_aliases(
@@ -337,6 +375,479 @@ def make_exchange(
     if block_exchange_type is not _DEFAULT_SELECTOR:
         bound["block_exchange_type"] = block_exchange_type
     return _make_factory("make_exchange", exchange, bound)
+
+
+def make_merge_sort_keys(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    compare_op: Any = None,
+    *,
+    descending: bool | None = None,
+    dim: Any = None,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block merge-sort-keys callable.
+
+    The callable binds optional sort direction, partial-tile defaults, and CTA
+    metadata, then forwards scalar or ``ThreadData`` keys to
+    :func:`merge_sort_keys`. Deferred calls may override the value defaults.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_merge_sort_keys", "compare_op", compare_op)
+    _reject_methods("make_merge_sort_keys", kwargs)
+    bound = _block_kwargs(
+        "make_merge_sort_keys",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "descending", descending)
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    _bind_if_not_none(bound, "oob_default", oob_default)
+    return _make_factory(
+        "make_merge_sort_keys",
+        merge_sort_keys,
+        bound,
+        overridable_kwargs=_MERGE_SORT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_merge_sort_pairs(
+    keys: Any = None,
+    values: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    compare_op: Any = None,
+    *,
+    descending: bool | None = None,
+    dim: Any = None,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block merge-sort-pairs callable.
+
+    The callable binds optional sort direction, partial-tile defaults, and CTA
+    metadata, then forwards key/value scalar or ``ThreadData`` pairs to
+    :func:`merge_sort_pairs`. Deferred calls may override the value defaults.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_merge_sort_pairs",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_if_supplied("make_merge_sort_pairs", "compare_op", compare_op)
+    _reject_methods("make_merge_sort_pairs", kwargs)
+    bound = _block_kwargs(
+        "make_merge_sort_pairs",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "descending", descending)
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    _bind_if_not_none(bound, "oob_default", oob_default)
+    return _make_factory(
+        "make_merge_sort_pairs",
+        merge_sort_pairs,
+        bound,
+        overridable_kwargs=_MERGE_SORT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_radix_sort_keys(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    descending: bool = False,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block radix-sort-keys callable.
+
+    The callable binds CTA metadata and radix bit-slice defaults, then forwards
+    each key tile to :func:`radix_sort_keys`. Deferred calls may override the
+    bound bit slice or sort direction.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_radix_sort_keys", kwargs)
+    bound = _block_kwargs(
+        "make_radix_sort_keys",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_radix_sort_defaults(
+        bound,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+    )
+    return _make_factory(
+        "make_radix_sort_keys",
+        radix_sort_keys,
+        bound,
+        overridable_kwargs=_RADIX_SORT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_radix_sort_keys_descending(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred descending block radix-sort-keys callable.
+
+    The callable binds CTA metadata and radix bit-slice defaults, then forwards
+    each key tile to :func:`radix_sort_keys_descending`. Deferred calls may
+    override the bound bit slice.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_radix_sort_keys_descending", kwargs)
+    bound = _block_kwargs(
+        "make_radix_sort_keys_descending",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_radix_sort_defaults(
+        bound,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_radix_sort_keys_descending",
+        radix_sort_keys_descending,
+        bound,
+        overridable_kwargs=_RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_radix_sort_pairs(
+    keys: Any = None,
+    values: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    descending: bool = False,
+    *,
+    dim: Any = None,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block radix-sort-pairs callable.
+
+    The callable binds CTA metadata and radix bit-slice defaults, then forwards
+    key/value tiles to :func:`radix_sort_pairs`. Deferred calls may override the
+    bound bit slice or sort direction.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_radix_sort_pairs",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_methods("make_radix_sort_pairs", kwargs)
+    bound = _block_kwargs(
+        "make_radix_sort_pairs",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_radix_sort_defaults(
+        bound,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+    )
+    return _make_factory(
+        "make_radix_sort_pairs",
+        radix_sort_pairs,
+        bound,
+        overridable_kwargs=_RADIX_SORT_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_radix_sort_pairs_descending(
+    keys: Any = None,
+    values: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    *,
+    dim: Any = None,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred descending block radix-sort-pairs callable.
+
+    The callable binds CTA metadata and radix bit-slice defaults, then forwards
+    key/value tiles to :func:`radix_sort_pairs_descending`. Deferred calls may
+    override the bound bit slice.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_radix_sort_pairs_descending",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_methods("make_radix_sort_pairs_descending", kwargs)
+    bound = _block_kwargs(
+        "make_radix_sort_pairs_descending",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_radix_sort_defaults(
+        bound,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_radix_sort_pairs_descending",
+        radix_sort_pairs_descending,
+        bound,
+        overridable_kwargs=_RADIX_SORT_DESCENDING_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_radix_rank(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    radix_bits: Any | None = None,
+    descending: bool = False,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block radix-rank callable.
+
+    The callable binds CTA metadata and radix bit-slice defaults, then forwards
+    each key tile to :func:`radix_rank`. Deferred calls may override the bound
+    bit slice or rank direction.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_radix_rank", kwargs)
+    bound = _block_kwargs(
+        "make_radix_rank",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    bound["begin_bit"] = begin_bit
+    _bind_if_not_none(bound, "end_bit", end_bit)
+    _bind_if_not_none(bound, "radix_bits", radix_bits)
+    bound["descending"] = descending
+    return _make_factory(
+        "make_radix_rank",
+        radix_rank,
+        bound,
+        overridable_kwargs=_RADIX_RANK_OVERRIDABLE_KWARGS,
+        override_aliases=_RADIX_RANK_OVERRIDE_ALIASES,
+    )
+
+
+def make_topk_max_keys(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    num_valid: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block TopK-largest-keys callable.
+
+    The callable binds CTA metadata plus optional valid-count and radix
+    bit-slice defaults, then forwards key tiles plus runtime ``k`` to
+    :func:`topk_max_keys`. Deferred calls may override the value defaults.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_topk_max_keys", kwargs)
+    bound = _block_kwargs(
+        "make_topk_max_keys",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_topk_defaults(
+        bound,
+        num_valid=num_valid,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_topk_max_keys",
+        topk_max_keys,
+        bound,
+        overridable_kwargs=_TOPK_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_topk_min_keys(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    num_valid: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block TopK-smallest-keys callable.
+
+    The callable binds CTA metadata plus optional valid-count and radix
+    bit-slice defaults, then forwards key tiles plus runtime ``k`` to
+    :func:`topk_min_keys`. Deferred calls may override the value defaults.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_topk_min_keys", kwargs)
+    bound = _block_kwargs(
+        "make_topk_min_keys",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_topk_defaults(
+        bound,
+        num_valid=num_valid,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_topk_min_keys",
+        topk_min_keys,
+        bound,
+        overridable_kwargs=_TOPK_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_topk_max_pairs(
+    keys: Any = None,
+    values: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    num_valid: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block TopK-largest-pairs callable.
+
+    The callable binds CTA metadata plus optional valid-count and radix
+    bit-slice defaults, then forwards key/value tiles plus runtime ``k`` to
+    :func:`topk_max_pairs`. Deferred calls may override the value defaults.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_topk_max_pairs",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_methods("make_topk_max_pairs", kwargs)
+    bound = _block_kwargs(
+        "make_topk_max_pairs",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_topk_defaults(
+        bound,
+        num_valid=num_valid,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_topk_max_pairs",
+        topk_max_pairs,
+        bound,
+        overridable_kwargs=_TOPK_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_topk_min_pairs(
+    keys: Any = None,
+    values: Any = None,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    *,
+    dim: Any = None,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    num_valid: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block TopK-smallest-pairs callable.
+
+    The callable binds CTA metadata plus optional valid-count and radix
+    bit-slice defaults, then forwards key/value tiles plus runtime ``k`` to
+    :func:`topk_min_pairs`. Deferred calls may override the value defaults.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_topk_min_pairs",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_methods("make_topk_min_pairs", kwargs)
+    bound = _block_kwargs(
+        "make_topk_min_pairs",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_topk_defaults(
+        bound,
+        num_valid=num_valid,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    return _make_factory(
+        "make_topk_min_pairs",
+        topk_min_pairs,
+        bound,
+        overridable_kwargs=_TOPK_OVERRIDABLE_KWARGS,
+    )
 
 
 def make_reduce(

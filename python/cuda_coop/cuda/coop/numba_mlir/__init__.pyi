@@ -1336,6 +1336,287 @@ def shuffle(
     """
 
 @overload
+def merge_sort_keys(
+    group: _MemoryGroup,
+    keys: _ThreadDataLike[_NumbaMergeSortKeyT],
+    /,
+    *,
+    descending: bool = False,
+    valid_items: None = None,
+    oob_default: None = None,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> _ThreadDataLike[_NumbaMergeSortKeyT]:
+    """Return fully merge-sorted numeric keys without mutating ``keys``.
+
+    Complete physical blocks, physical warps, and logical warps are supported;
+    a block must contain a power-of-two number of threads. The returned local
+    payload preserves the input item type and item count. ``compare_op`` is a
+    Numba-CUDA-MLIR device predicate; omit it for the built-in order selected by
+    ``descending``.
+    """
+
+@overload
+def merge_sort_keys(
+    group: _MemoryGroup,
+    keys: _ThreadDataLike[_NumbaMergeSortKeyT],
+    /,
+    *,
+    descending: bool = False,
+    valid_items: _ValidItems,
+    oob_default: _NumbaMergeSortKeyT,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> _ThreadDataLike[_NumbaMergeSortKeyT]:
+    """Return a partial-tile merge-sorted numeric payload.
+
+    ``valid_items`` and the key-typed ``oob_default`` are required together.
+    A block must contain a power-of-two number of threads. The sentinel must
+    sort after every valid key under the selected comparator: greater for the
+    built-in ascending order and less for descending. Only the valid sorted
+    prefix is defined; the output preserves the input item type and item count.
+    """
+
+@overload
+def merge_sort_keys(
+    group: _MemoryGroup,
+    keys: _NumbaMergeSortKeyT,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: None = None,
+    oob_default: None = None,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> _NumbaMergeSortKeyT:
+    """Return one fully merge-sorted Numba scalar key per group member.
+
+    The qualified whole-function rewrite boxes scalar block, physical-warp, and
+    logical-warp operands into a one-item local payload and projects the scalar
+    result.
+    """
+
+@overload
+def merge_sort_keys(
+    group: _MemoryGroup,
+    keys: _NumbaMergeSortKeyT,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: _ValidItems,
+    oob_default: _NumbaMergeSortKeyT,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> _NumbaMergeSortKeyT:
+    """Return one partial-tile merge-sorted Numba scalar key per member.
+
+    ``oob_default`` must sort after every valid key under the selected
+    comparator: greater for the built-in ascending order and less for
+    descending. Block thread counts must be powers of two; only the valid
+    sorted prefix is defined.
+    """
+
+@overload
+def merge_sort_pairs(
+    group: _MemoryGroup,
+    keys: _ThreadDataLike[_NumbaMergeSortKeyT],
+    values: _ThreadDataLike[_NumbaPairValueT],
+    /,
+    *,
+    descending: bool = False,
+    valid_items: None = None,
+    oob_default: None = None,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> tuple[
+    _ThreadDataLike[_NumbaMergeSortKeyT],
+    _ThreadDataLike[_NumbaPairValueT],
+]:
+    """Return fully merge-sorted Numba key/value payloads."""
+
+@overload
+def merge_sort_pairs(
+    group: _MemoryGroup,
+    keys: _ThreadDataLike[_NumbaMergeSortKeyT],
+    values: _ThreadDataLike[_NumbaPairValueT],
+    /,
+    *,
+    descending: bool = False,
+    valid_items: _ValidItems,
+    oob_default: _NumbaMergeSortKeyT,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> tuple[
+    _ThreadDataLike[_NumbaMergeSortKeyT],
+    _ThreadDataLike[_NumbaPairValueT],
+]:
+    """Return partial-tile merge-sorted Numba key/value payloads.
+
+    For a partial tile, provide ``valid_items`` and ``oob_default`` together;
+    the sentinel must sort after every valid key under the selected comparator.
+    Block thread counts must be powers of two.
+    """
+
+@overload
+def merge_sort_pairs(
+    group: _MemoryGroup,
+    keys: _NumbaMergeSortKeyT,
+    values: _NumbaPairValueT,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: None = None,
+    oob_default: None = None,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> tuple[_NumbaMergeSortKeyT, _NumbaPairValueT]:
+    """Return one fully merge-sorted Numba key/value pair per member."""
+
+@overload
+def merge_sort_pairs(
+    group: _MemoryGroup,
+    keys: _NumbaMergeSortKeyT,
+    values: _NumbaPairValueT,
+    /,
+    *,
+    descending: bool = False,
+    valid_items: _ValidItems,
+    oob_default: _NumbaMergeSortKeyT,
+    temp_storage: TempStorage | None = None,
+    compare_op: Callable[[_NumbaMergeSortKeyT, _NumbaMergeSortKeyT], bool]
+    | None = None,
+) -> tuple[_NumbaMergeSortKeyT, _NumbaPairValueT]:
+    """Return one partial-tile merge-sorted Numba pair per member."""
+
+@overload
+def radix_sort_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> _ThreadDataLike[_IntegerKeyT]:
+    """Return a full-tile radix-sorted Numba block payload.
+
+    ``group`` must be a complete physical block. ``keys`` supplies signed or
+    unsigned 32- or 64-bit per-thread keys. ``begin_bit`` and ``end_bit``
+    select a half-open interval in CUB's bit-ordered key representation;
+    ``end_bit`` defaults to the key width, including when only ``begin_bit`` is
+    supplied.
+    ``descending`` selects descending order. ``temp_storage`` supplies optional
+    caller-owned scratch. ``blocked_to_striped`` selects striped output instead
+    of blocked output. The returned payload preserves the input item type and
+    item count without mutating ``keys``.
+    """
+
+@overload
+def radix_sort_keys(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> _IntegerKeyT:
+    """Return one radix-sorted scalar key per Numba block thread.
+
+    ``group`` must be a complete physical block. ``keys`` supplies one signed
+    or unsigned 32- or 64-bit key. ``begin_bit`` selects the least significant
+    participating bit; ``end_bit`` is exclusive and defaults to the key width.
+    ``descending`` selects descending order. ``temp_storage`` supplies optional
+    caller-owned scratch. ``blocked_to_striped`` selects striped output instead
+    of blocked output. The scalar result preserves the key type.
+    """
+
+@overload
+def radix_sort_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    values: _ThreadDataLike[_NumbaPairValueT],
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> tuple[_ThreadDataLike[_IntegerKeyT], _ThreadDataLike[_NumbaPairValueT]]:
+    """Return radix-sorted Numba key/value payloads without mutation."""
+
+@overload
+def radix_sort_pairs(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    values: _NumbaPairValueT,
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> tuple[_IntegerKeyT, _NumbaPairValueT]:
+    """Return one radix-sorted Numba key/value pair per block member."""
+
+@overload
+def radix_rank(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    /,
+    *,
+    begin_bit: _TraceInteger = 0,
+    end_bit: _TraceInteger | None = None,
+    radix_bits: _TraceInteger | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: _ThreadDataLike[int]
+    | _ThreadDataLike[_NumpyInt32]
+    | None = None,
+) -> _ThreadDataLike[int]:
+    """Return signed 32-bit ranks for a Numba thread-data key payload.
+
+    The complete block ranks one trace-static CUB bit-ordered digit without
+    mutating ``keys``. ``begin_bit``, ``end_bit``, and ``radix_bits`` are
+    trace-time Python or NumPy integers; the selected interval defaults to
+    four bits and may contain at most eight bits. ``exclusive_digit_prefix``
+    optionally receives signed 32-bit per-digit prefix counters.
+    """
+
+@overload
+def radix_rank(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    /,
+    *,
+    begin_bit: _TraceInteger = 0,
+    end_bit: _TraceInteger | None = None,
+    radix_bits: _TraceInteger | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: _ThreadDataLike[int]
+    | _ThreadDataLike[_NumpyInt32]
+    | None = None,
+) -> int:
+    """Return one signed 32-bit rank for a Numba scalar integer key.
+
+    The specialization controls and optional prefix output have the same
+    meaning as for the thread-data overload. The whole-function rewrite boxes
+    the scalar into a one-item local payload and projects the scalar result.
+    """
+
+@overload
 def histogram(
     group: _BlockGroup,
     samples: _ThreadDataLike[Any],
@@ -1455,6 +1736,108 @@ def run_length_decode(
     unchanged.
     """
 
+def topk_max_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_NumbaTopKKeyT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _ThreadDataLike[_NumbaTopKKeyT]:
+    """Select the largest keys from a Numba ``ThreadData`` block tile.
+
+    ``group`` must be a complete one-dimensional physical block. ``keys`` is
+    a fixed-size payload using a built-in Numba TopK key dtype. Uniform ``k``
+    and ``valid_items`` satisfy ``1 <= k <= valid_items``; omitting
+    ``valid_items`` selects the full tile. Uniform ``begin_bit`` and
+    ``end_bit`` select a nonempty half-open interval, with ``end_bit=None``
+    selecting the key width. Only the first ``k`` flattened blocked positions
+    are defined. That prefix is unordered, ties do not expand it, and the tail
+    is undefined. The new payload preserves the input item type and count
+    without mutating ``keys``. ``temp_storage`` may name one reusable allocation
+    shared with other block primitives.
+    """
+
+def topk_min_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_NumbaTopKKeyT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _ThreadDataLike[_NumbaTopKKeyT]:
+    """Select the smallest keys from a Numba ``ThreadData`` block tile.
+
+    ``group`` must be a complete one-dimensional physical block. ``keys`` is
+    a fixed-size payload using a built-in Numba TopK key dtype. Uniform ``k``
+    and ``valid_items`` satisfy ``1 <= k <= valid_items``; omitting
+    ``valid_items`` selects the full tile. Uniform ``begin_bit`` and
+    ``end_bit`` select a nonempty half-open interval, with ``end_bit=None``
+    selecting the key width. Only the first ``k`` flattened blocked positions
+    are defined. That prefix is unordered, ties do not expand it, and the tail
+    is undefined. The new payload preserves the input item type and count
+    without mutating ``keys``. ``temp_storage`` may name one reusable allocation
+    shared with other block primitives.
+    """
+
+def topk_max_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_NumbaTopKKeyT],
+    values: _ThreadDataLike[_NumbaTopKValueT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[
+    _ThreadDataLike[_NumbaTopKKeyT],
+    _ThreadDataLike[_NumbaTopKValueT],
+]:
+    """Select largest-key Numba ``ThreadData`` pairs without mutation.
+
+    ``group`` is a complete one-dimensional physical block. ``keys`` and
+    ``values`` are matching fixed-size payloads using built-in Numba TopK
+    dtypes. Uniform ``k``, ``valid_items``, ``begin_bit``, and ``end_bit``
+    follow the qualified keys-only contract. Only the first ``k`` unordered
+    pairs are defined, and each value remains attached to its key. Both result
+    item types are preserved. ``temp_storage`` may name one reusable allocation
+    shared with other block primitives.
+    """
+
+def topk_min_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_NumbaTopKKeyT],
+    values: _ThreadDataLike[_NumbaTopKValueT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[
+    _ThreadDataLike[_NumbaTopKKeyT],
+    _ThreadDataLike[_NumbaTopKValueT],
+]:
+    """Select smallest-key Numba ``ThreadData`` pairs without mutation.
+
+    ``group`` is a complete one-dimensional physical block. ``keys`` and
+    ``values`` are matching fixed-size payloads using built-in Numba TopK
+    dtypes. Uniform ``k``, ``valid_items``, ``begin_bit``, and ``end_bit``
+    follow the qualified keys-only contract. Only the first ``k`` unordered
+    pairs are defined, and each value remains attached to its key. Both result
+    item types are preserved. ``temp_storage`` may name one reusable allocation
+    shared with other block primitives.
+    """
+
 __all__ = [
     "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
@@ -1480,6 +1863,11 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -1492,4 +1880,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

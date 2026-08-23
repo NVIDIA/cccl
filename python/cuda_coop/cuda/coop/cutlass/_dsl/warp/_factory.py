@@ -45,6 +45,7 @@ from ._exchange import WarpExchangeType, exchange
 from ._load_store import load, store
 from ._reduce import max, min, reduce, sum
 from ._scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum
+from ._sort import merge_sort_keys, merge_sort_pairs
 
 _VALID_ITEMS_OVERRIDABLE_KWARGS = ("valid_items",)
 _SCAN_OVERRIDABLE_KWARGS = ("valid_items", "warp_aggregate")
@@ -495,4 +496,82 @@ def make_inclusive_scan(
         inclusive_scan,
         bound,
         overridable_kwargs=_SCAN_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_merge_sort_keys(
+    dtype: Any,
+    items_per_thread: int = 1,
+    compare_op: Any = None,
+    value_dtype: Any = None,
+    threads_in_warp: int = 32,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp merge-sort-keys callable.
+
+    The callable binds compare direction and logical-warp width, then forwards
+    scalar or ``ThreadData`` keys to :func:`merge_sort_keys`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_merge_sort_keys", "value_dtype", value_dtype)
+    _reject_methods("make_merge_sort_keys", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_merge_sort_keys",
+        threads_in_warp,
+    )
+    if compare_op is not None:
+        bound["compare_op"] = compare_op
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    _bind_if_not_none(bound, "oob_default", oob_default)
+    return _make_factory(
+        "make_merge_sort_keys",
+        merge_sort_keys,
+        bound,
+        overridable_kwargs=_MERGE_SORT_PARTIAL_OVERRIDABLE_KWARGS,
+    )
+
+
+def make_merge_sort_pairs(
+    keys: Any = None,
+    values: Any = None,
+    items_per_thread: int = 1,
+    compare_op: Any = None,
+    threads_in_warp: int = 32,
+    key_dtype: Any = None,
+    value_dtype: Any = None,
+    valid_items: Any = None,
+    oob_default: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred warp merge-sort-pairs callable.
+
+    The callable binds compare direction and logical-warp width, then forwards
+    key/value scalar or ``ThreadData`` pairs to :func:`merge_sort_pairs`.
+    """
+    keys, values = _normalize_pair_dtype_aliases(
+        "make_merge_sort_pairs",
+        keys,
+        values,
+        key_dtype,
+        value_dtype,
+    )
+    del keys, values, items_per_thread
+    _reject_methods("make_merge_sort_pairs", kwargs)
+    bound = dict(kwargs)
+    bound["threads_in_warp"] = _resolve_threads_in_warp(
+        "make_merge_sort_pairs",
+        threads_in_warp,
+    )
+    if compare_op is not None:
+        bound["compare_op"] = compare_op
+    _bind_if_not_none(bound, "valid_items", valid_items)
+    _bind_if_not_none(bound, "oob_default", oob_default)
+    return _make_factory(
+        "make_merge_sort_pairs",
+        merge_sort_pairs,
+        bound,
+        overridable_kwargs=_MERGE_SORT_PARTIAL_OVERRIDABLE_KWARGS,
     )

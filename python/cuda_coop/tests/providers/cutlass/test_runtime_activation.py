@@ -310,6 +310,144 @@ def test_common_grid_sync_is_rejected_without_disabling_qualified_cutlass() -> N
     )
 
 
+def test_common_and_qualified_logical_merge_sort_share_cutlass_provider() -> None:
+    _assert_source_passes(
+        _with_fake_cutlass_runtime(
+            """
+        import sys
+        import types
+
+        from cuda import coop as common
+        import cuda.coop.cutlass as qualified
+        from cuda.coop._core.group_dispatch import LaunchFacts
+        from cuda.coop.cutlass._dsl import _launch
+        from cuda.coop.cutlass import _group_reduce
+
+        _launch.infer_launch_facts = lambda *args, **kwargs: LaunchFacts(
+            exact_block_dim=64
+        )
+
+        logical_warp = qualified.this_warp().group_by(8)
+        reduce_calls = []
+        _group_reduce._reduce = lambda group, value, **kwargs: (
+            reduce_calls.append((group, value, kwargs)) or "mapped-sum"
+        )
+        assert common.sum(logical_warp, 7) == "mapped-sum"
+        assert qualified.sum(logical_warp, 7) == "mapped-sum"
+        assert [call[0].kind for call in reduce_calls] == [
+            "threads_within_warp",
+            "threads_within_warp",
+        ]
+
+        calls = []
+        provider = types.ModuleType(
+            "cuda.coop.cutlass._dsl._cub_merge_sort_provider"
+        )
+        provider.provider_merge_sort = lambda **kwargs: (
+            calls.append(kwargs) or "qualified-result"
+        )
+        sys.modules[provider.__name__] = provider
+
+        keys = qualified.ThreadData.from_values(3, 1, dtype=int)
+        assert common.merge_sort_keys(logical_warp, keys) == "qualified-result"
+        assert qualified.merge_sort_keys(
+            logical_warp,
+            keys,
+        ) == "qualified-result"
+        assert len(calls) == 2
+        assert all(
+            call["group"].kind == "threads_within_warp" for call in calls
+        )
+        assert all(call["source"] == "cutlass_root" for call in calls)
+        """
+        )
+    )
+
+
+def test_group_first_signatures_and_exports_are_explicit() -> None:
+    _assert_source_passes(
+        _with_fake_cutlass_runtime(
+            """
+        import inspect
+
+        from cuda import coop as common
+        import cuda.coop.cutlass as qualified
+
+        common_names = (
+            "load", "store", "reduce", "sum", "scan", "exclusive_sum",
+            "inclusive_sum", "exclusive_scan", "inclusive_scan", "exchange",
+            "adjacent_difference", "discontinuity", "shuffle",
+            "merge_sort_keys", "radix_sort_keys", "radix_rank", "histogram",
+            "run_length_decode", "topk_max_keys", "topk_min_keys",
+        )
+        advanced_suffixes = {
+            "scan": ("valid_items", "aggregate_output"),
+            "exclusive_sum": ("valid_items", "aggregate_output"),
+            "inclusive_sum": ("valid_items", "aggregate_output"),
+            "exclusive_scan": ("valid_items", "aggregate_output"),
+            "inclusive_scan": ("valid_items", "aggregate_output"),
+            "exchange": ("ranks", "valid_flags", "warp_time_slicing"),
+            "adjacent_difference": ("difference_op",),
+            "discontinuity": ("flag_op",),
+            "shuffle": ("block_prefix", "block_suffix"),
+            "merge_sort_keys": ("compare_op",),
+            "radix_rank": ("exclusive_digit_prefix",),
+            "run_length_decode": (
+                "relative_offsets", "total_decoded_size", "decoded_offset_dtype",
+            ),
+        }
+        for name in common_names:
+            common_parameters = tuple(inspect.signature(getattr(common, name)).parameters.values())
+            qualified_parameters = tuple(inspect.signature(getattr(qualified, name)).parameters.values())
+            prefix = qualified_parameters[:len(common_parameters)]
+            assert tuple(parameter.name for parameter in prefix) == tuple(
+                parameter.name for parameter in common_parameters
+            ), name
+            assert tuple(parameter.kind for parameter in prefix) == tuple(
+                parameter.kind for parameter in common_parameters
+            ), name
+            assert tuple(parameter.default for parameter in prefix) == tuple(
+                parameter.default for parameter in common_parameters
+            ), name
+            suffix = tuple(parameter.name for parameter in qualified_parameters[len(prefix):])
+            assert suffix == advanced_suffixes.get(name, ()), name
+            assert all(
+                parameter.kind is inspect.Parameter.KEYWORD_ONLY
+                for parameter in qualified_parameters[len(prefix):]
+            ), name
+
+        for name in (
+            *common_names,
+            "merge_sort_pairs",
+            "radix_sort_pairs",
+            "topk_max_pairs",
+            "topk_min_pairs",
+        ):
+            assert name in qualified.__all__
+            assert name in dir(qualified)
+
+        assert dir(qualified) == sorted(qualified.__all__)
+        assert "block" not in qualified.__all__
+        assert "warp" not in qualified.__all__
+        assert "block" not in dir(qualified)
+        assert "warp" not in dir(qualified)
+
+        for name in ("merge_sort_pairs", "radix_sort_pairs", "topk_max_pairs", "topk_min_pairs"):
+            parameters = inspect.signature(getattr(qualified, name)).parameters.values()
+            assert all(
+                parameter.kind not in {
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                }
+                for parameter in parameters
+            ), name
+
+        assert inspect.signature(qualified.ThreadData).parameters["values"].kind is inspect.Parameter.KEYWORD_ONLY
+        """
+        )
+    )
+
+
 def test_temp_storage_inference_and_validation_match_the_common_contract() -> None:
     _assert_source_passes(
         _with_fake_cutlass_runtime(
@@ -350,6 +488,68 @@ def test_temp_storage_inference_and_validation_match_the_common_contract() -> No
                 assert message in str(error), str(error)
             else:
                 raise AssertionError(f"TempStorage accepted {kwargs!r}")
+        """
+        )
+    )
+
+
+def test_topk_adapter_preserves_inputs_and_validates_launch_shape() -> None:
+    _assert_source_passes(
+        _with_fake_cutlass_runtime(
+            """
+        import sys
+        import types
+
+        import cuda.coop.cutlass as coop
+        from cuda.coop._core import LaunchFacts
+        from cuda.coop.cutlass._dsl import _launch
+
+        launch_dim = [32]
+        _launch.current_kernel_launch_facts = lambda: LaunchFacts(
+            exact_block_dim=launch_dim[0]
+        )
+
+        keys = coop.ThreadData.from_values(3, 1)
+        captured = {}
+
+        def provider_topk_keys(**kwargs):
+            captured.update(kwargs)
+            return coop.ThreadData.from_values(1, 3)
+
+        provider = types.SimpleNamespace(provider_topk_keys=provider_topk_keys)
+        block = types.ModuleType("cuda.coop.cutlass._dsl.block")
+        block.__path__ = []
+        block._provider = provider
+        sys.modules["cuda.coop.cutlass._dsl.block"] = block
+
+        result = coop.topk_max_keys(
+            coop.this_block(),
+            keys,
+            4,
+            valid_items=23,
+            begin_bit=1,
+            end_bit=7,
+        )
+        assert result is not keys
+        assert tuple(keys) == (3, 1)
+        assert tuple(result) == (1, 3)
+        assert captured["key"] is keys
+        assert captured["num_valid"] == 23
+        assert captured["block_threads"] == 32
+        assert captured["descending"] is True
+
+        for group, block_dim, message in (
+            (coop.this_warp(), 32, "this_block"),
+            (coop.this_block(), (32, 2), "one-dimensional"),
+            (coop.this_block(), 2048, "<= 1024"),
+        ):
+            launch_dim[0] = block_dim
+            try:
+                coop.topk_min_keys(group, keys, 1)
+            except (NotImplementedError, ValueError) as error:
+                assert message in str(error)
+            else:
+                raise AssertionError("unsupported TopK launch unexpectedly succeeded")
         """
         )
     )

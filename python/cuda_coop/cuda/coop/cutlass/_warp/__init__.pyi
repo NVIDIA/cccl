@@ -10,13 +10,17 @@ from .. import ThreadData as _ThreadData
 from .._dsl.warp import WarpExchangeType as WarpExchangeType
 from .._dsl.warp import exchange as exchange
 from .._dsl.warp import exchange_blocked_to_striped as exchange_blocked_to_striped
-from .._dsl.warp import exchange_scatter_to_striped as exchange_scatter_to_striped
+from .._dsl.warp import (
+    exchange_scatter_to_striped as exchange_scatter_to_striped,
+)
 from .._dsl.warp import exchange_striped_to_blocked as exchange_striped_to_blocked
 from .._dsl.warp import exclusive_scan as exclusive_scan
 from .._dsl.warp import exclusive_sum as exclusive_sum
 from .._dsl.warp import inclusive_scan as inclusive_scan
 from .._dsl.warp import inclusive_sum as inclusive_sum
 from .._dsl.warp import max as max
+from .._dsl.warp import merge_sort_keys as merge_sort_keys
+from .._dsl.warp import merge_sort_pairs as merge_sort_pairs
 from .._dsl.warp import min as min
 from .._dsl.warp import reduce as reduce
 from .._dsl.warp import scan as scan
@@ -306,6 +310,26 @@ def make_min(
 ) -> _DeferredValue:
     """Build a deferred physical-warp minimum specialization."""
 
+def make_merge_sort_keys(
+    dtype: object,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    value_dtype: object = None,
+    threads_in_warp: int = 32,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred physical-warp key merge-sort specialization."""
+
+def make_merge_sort_pairs(
+    keys: object,
+    values: object,
+    items_per_thread: int = 1,
+    compare_op: object = None,
+    threads_in_warp: int = 32,
+    **kwargs: object,
+) -> _DeferredPair:
+    """Build a deferred physical-warp key-value merge-sort specialization."""
+
 __all__ = [
     "TempStorage",
     "WarpExchangeType",
@@ -325,11 +349,15 @@ __all__ = [
     "make_inclusive_sum",
     "make_load",
     "make_max",
+    "make_merge_sort_keys",
+    "make_merge_sort_pairs",
     "make_min",
     "make_reduce",
     "make_store",
     "make_sum",
     "max",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "min",
     "reduce",
     "scan",
