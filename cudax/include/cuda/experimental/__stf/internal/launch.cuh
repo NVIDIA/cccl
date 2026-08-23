@@ -289,7 +289,7 @@ private:
   void run_on_host(Fun&& f)
   {
     _CCCL_ASSERT(false, "Not yet implemented");
-    exception_policies::abort();
+    abort();
   }
 
   Arg arg;

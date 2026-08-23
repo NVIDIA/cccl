@@ -303,7 +303,7 @@ public:
       if (!dep.get_data().is_initialized())
       {
         fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        exception_policies::abort();
+        abort();
       }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());

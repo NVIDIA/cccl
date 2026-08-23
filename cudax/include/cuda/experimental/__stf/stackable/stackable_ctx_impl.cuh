@@ -1353,7 +1353,7 @@ public:
       if (it == head_map.end())
       {
         fprintf(stderr, "Error: context offset isn't set in this thread\n");
-        exception_policies::abort();
+        abort();
       }
       return it->second;
     }
@@ -1827,7 +1827,7 @@ public:
     if (offset != get_root_offset())
     {
       fprintf(stderr, "Error: fence() not supported in nested contexts.\n");
-      exception_policies::abort();
+      abort();
     }
 
     return get_ctx(offset).fence();
@@ -1842,7 +1842,7 @@ public:
     if (offset != get_root_offset())
     {
       fprintf(stderr, "Error: wait() not supported in nested contexts.\n");
-      exception_policies::abort();
+      abort();
     }
 
     // get_ld() returns a logical_data handle by value (a copy), so bind it to a

@@ -75,7 +75,7 @@ void load_input_file(std::string filename, std::vector<body>& particles)
   if (!infile)
   {
     std::cerr << "Error opening file." << '\n';
-    std::abort();
+    abort();
     return;
   }
 

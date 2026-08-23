@@ -940,7 +940,7 @@ private:
             break;
           default:
             fprintf(stderr, "error: unknown vertex type\n");
-            exception_policies::abort();
+            abort();
         };
 
         outFile << "\"NODE_" << v.first << "\" [style=\"" << style;

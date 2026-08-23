@@ -845,7 +845,7 @@ public:
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
           fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          exception_policies::abort();
+          abort();
         }
         else
         {
@@ -1144,7 +1144,7 @@ public:
     else
     {
       fprintf(stderr, "Internal error.\n");
-      exception_policies::abort();
+      abort();
     }
   }
 
@@ -1237,7 +1237,7 @@ public:
     else
     {
       fprintf(stderr, "Internal error.\n");
-      exception_policies::abort();
+      abort();
     }
   }
 
