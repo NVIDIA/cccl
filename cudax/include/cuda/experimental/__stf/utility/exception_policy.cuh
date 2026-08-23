@@ -2259,11 +2259,12 @@ exception_sink type_erase(_P&& __p)
 }
 } // namespace exception_policies
 
-// Tripwire: the abort policy moved to exception_policies. An
-// unqualified `abort` here would silently find ::abort (die with no
-// report). Any such use must fail to compile instead.
-template <class... _Ts>
-void abort(_Ts&&...) = delete;
+// The abort tripwire that once lived at this spot is retired. It caught bare abort() calls
+// during the migration of the policy vocabulary into exception_policies, when such calls
+// could silently rebind; with the policies in a non-inline namespace, a bare abort() in
+// this scope can only mean ::abort, which is what callers expect. Policy uses spell
+// exception_policies::abort (or arrive through ON_THROW, which injects the namespace for
+// the policy expression only).
 
 /**
  * @brief Creates a policy saying how to react if a callable throws.
