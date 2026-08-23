@@ -20,6 +20,10 @@ from ._group_scan import inclusive_scan as inclusive_scan
 from ._group_scan import inclusive_sum as inclusive_sum
 from ._group_scan import scan as scan
 from ._group_shuffle import shuffle as shuffle
+from ._group_topk import topk_max_keys as topk_max_keys
+from ._group_topk import topk_max_pairs as topk_max_pairs
+from ._group_topk import topk_min_keys as topk_min_keys
+from ._group_topk import topk_min_pairs as topk_min_pairs
 from ._types import Hierarchy as Hierarchy
 from ._types import TempStorage as TempStorage
 from ._types import ThreadData as ThreadData
@@ -84,4 +88,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

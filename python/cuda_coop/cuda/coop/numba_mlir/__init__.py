@@ -302,6 +302,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 
@@ -498,6 +502,10 @@ def __getattr__(name):
         "shuffle",
         "store",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         value = getattr(importlib.import_module(f"{__name__}._group_ops"), name)
         globals()[name] = value

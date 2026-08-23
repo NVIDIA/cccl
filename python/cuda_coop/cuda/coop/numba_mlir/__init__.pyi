@@ -89,6 +89,8 @@ _NumbaPairValue: TypeAlias = (
     | _NumpyFloat64
 )
 _NumbaPairValueT = TypeVar("_NumbaPairValueT", bound=_NumbaPairValue)
+_TopKKeyT = TypeVar("_TopKKeyT", bound=_NumbaOrderedItem)
+_TopKValueT = TypeVar("_TopKValueT", bound=_NumbaPairValue)
 
 Hierarchy = ThreadHierarchy
 
@@ -1167,6 +1169,60 @@ def shuffle(
 ) -> _ItemT:
     """Shuffle a scalar value without boundary outputs."""
 
+def topk_max_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_TopKKeyT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _ThreadDataLike[_TopKKeyT]:
+    """Select the largest keys into a fresh fixed-size block payload."""
+
+def topk_min_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_TopKKeyT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> _ThreadDataLike[_TopKKeyT]:
+    """Select the smallest keys into a fresh fixed-size block payload."""
+
+def topk_max_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_TopKKeyT],
+    values: _ThreadDataLike[_TopKValueT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[_ThreadDataLike[_TopKKeyT], _ThreadDataLike[_TopKValueT]]:
+    """Select largest-key pairs into fresh matching block payloads."""
+
+def topk_min_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_TopKKeyT],
+    values: _ThreadDataLike[_TopKValueT],
+    k: _IntegerValue,
+    /,
+    *,
+    valid_items: _ValidItems | None = None,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[_ThreadDataLike[_TopKKeyT], _ThreadDataLike[_TopKValueT]]:
+    """Select smallest-key pairs into fresh matching block payloads."""
+
 def this_thread() -> ThreadGroup[Literal["thread"]]:
     """Describe the current thread."""
 
@@ -1219,4 +1275,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

@@ -44,6 +44,10 @@ _PUBLIC_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 
@@ -53,7 +57,7 @@ def test_public_exports_cover_the_incremental_primitive_families():
         _PUBLIC_EXPORTS
     )
 
-    for name in ("histogram", "topk_max_keys"):
+    for name in ("histogram",):
         assert not hasattr(coop, name)
 
     assert "_block" not in coop.__all__

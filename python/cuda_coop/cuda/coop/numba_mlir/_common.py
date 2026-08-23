@@ -200,6 +200,14 @@ def _normalize_common_dtype(dtype):
     return dtype, _NUMBA_MLIR_DTYPE_NAMES.get(dtype, str(dtype))
 
 
+def _validate_common_integer_key_dtype(dtype, *, operation: str):
+    """Return one normalized key dtype from the portable integer profile."""
+
+    dtype, dtype_name = _normalize_common_dtype(dtype)
+    validate_common_v1_integer_key_dtype_name(dtype_name, operation=operation)
+    return dtype
+
+
 def _validate_common_numeric_dtype(
     dtype,
     *,

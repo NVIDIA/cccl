@@ -424,6 +424,110 @@ def radix_rank(
     )
 
 
+def topk_max_keys(
+    group: ThreadGroup,
+    keys: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> Any:
+    """Select the largest keys into a fresh fixed-size payload."""
+
+    return _group_primitive_marker(
+        "topk_max_keys",
+        group,
+        keys,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_min_keys(
+    group: ThreadGroup,
+    keys: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> Any:
+    """Select the smallest keys into a fresh fixed-size payload."""
+
+    return _group_primitive_marker(
+        "topk_min_keys",
+        group,
+        keys,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_max_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> tuple[Any, Any]:
+    """Select largest-key pairs into fresh fixed-size payloads."""
+
+    return _group_primitive_marker(
+        "topk_max_pairs",
+        group,
+        keys,
+        values,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
+def topk_min_pairs(
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
+    k: Any,
+    /,
+    *,
+    valid_items: Any = None,
+    begin_bit: Any = 0,
+    end_bit: Any | None = None,
+    temp_storage: Any = None,
+) -> tuple[Any, Any]:
+    """Select smallest-key pairs into fresh fixed-size payloads."""
+
+    return _group_primitive_marker(
+        "topk_min_pairs",
+        group,
+        keys,
+        values,
+        k,
+        valid_items=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        temp_storage=temp_storage,
+    )
+
+
 __all__ = [
     "exchange",
     "exclusive_scan",
@@ -441,4 +545,8 @@ __all__ = [
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
