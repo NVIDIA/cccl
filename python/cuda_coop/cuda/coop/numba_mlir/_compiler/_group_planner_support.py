@@ -46,10 +46,12 @@ from .. import _thread_group as _thread_groups
 from .._group_adjacent_difference import adjacent_difference
 from .._group_discontinuity import discontinuity
 from .._group_exchange import exchange
+from .._group_histogram import histogram
 from .._group_load_store import load, store
 from .._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from .._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from .._group_reduce import reduce, sum
+from .._group_run_length_decode import run_length_decode
 from .._group_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -114,6 +116,8 @@ _QUALIFIED_OPERATIONS = (
     "topk_max_pairs",
     "topk_min_keys",
     "topk_min_pairs",
+    "histogram",
+    "run_length_decode",
 )
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
@@ -123,6 +127,7 @@ _ROOT_OPERATIONS = {
         exchange,
         exclusive_scan,
         exclusive_sum,
+        histogram,
         inclusive_scan,
         inclusive_sum,
         load,
@@ -132,6 +137,7 @@ _ROOT_OPERATIONS = {
         radix_sort_keys,
         radix_sort_pairs,
         reduce,
+        run_length_decode,
         scan,
         shuffle,
         store,
@@ -168,6 +174,8 @@ _ROOT_OPERATIONS.update(
             "topk_max_pairs",
             "topk_min_keys",
             "topk_min_pairs",
+            "histogram",
+            "run_length_decode",
         )
     }
 )
@@ -218,6 +226,16 @@ def _builtin_subtract(lhs: Any, rhs: Any) -> Any:
 
 def _builtin_not_equal(lhs: Any, rhs: Any) -> bool:
     return lhs != rhs
+
+
+def _histogram_provider_counter_dtype(counter_dtype: Any) -> Any:
+    """Use the unsigned CUB accumulator matching the public counter width."""
+
+    if counter_dtype in (types.int32, types.uint32):
+        return types.uint32
+    if counter_dtype in (types.int64, types.uint64):
+        return types.uint64
+    return counter_dtype
 
 
 def _group_operation_name(function: Any) -> str | None:

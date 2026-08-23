@@ -15,6 +15,7 @@ from cuda.coop.numba_mlir import (
 from cuda.coop.numba_mlir._compiler import _activation
 
 _PUBLIC_EXPORTS = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -33,6 +34,7 @@ _PUBLIC_EXPORTS = [
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -43,6 +45,7 @@ _PUBLIC_EXPORTS = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",

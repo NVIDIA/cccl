@@ -26,6 +26,7 @@ _GROUP_OPERATION_MODULES = {
     "exchange": "_group_exchange",
     "exclusive_scan": "_group_scan",
     "exclusive_sum": "_group_scan",
+    "histogram": "_group_histogram",
     "inclusive_scan": "_group_scan",
     "inclusive_sum": "_group_scan",
     "load": "_group_load_store",
@@ -35,6 +36,7 @@ _GROUP_OPERATION_MODULES = {
     "radix_sort_keys": "_group_radix",
     "radix_sort_pairs": "_group_radix",
     "reduce": "_group_reduce",
+    "run_length_decode": "_group_run_length_decode",
     "scan": "_group_scan",
     "shuffle": "_group_shuffle",
     "store": "_group_load_store",
@@ -46,6 +48,7 @@ _GROUP_OPERATION_MODULES = {
 }
 
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -64,6 +67,7 @@ __all__ = [
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -74,6 +78,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",
@@ -112,6 +117,7 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name in {
+        "BlockHistogramAlgorithm",
         "BlockLoadAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",

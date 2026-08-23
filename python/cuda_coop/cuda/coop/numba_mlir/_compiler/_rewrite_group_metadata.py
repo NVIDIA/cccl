@@ -103,6 +103,8 @@ class _GroupMetadataRewrite:
                 "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
                 "warp_merge_sort_keys": frozenset({"merge_sort_keys"}),
                 "warp_merge_sort_pairs": frozenset({"merge_sort_pairs"}),
+                "_group_histogram": frozenset({"histogram"}),
+                "_group_run_length_decode": frozenset({"run_length_decode"}),
             }
             if common_root_operation not in operation_families.get(
                 op_name, frozenset()
@@ -111,11 +113,29 @@ class _GroupMetadataRewrite:
                     "_common_root_operation does not match the rewritten group operation"
                 )
             from ._parameters import (
+                _validate_common_histogram_dtypes,
                 _validate_common_integer_key_dtype,
                 _validate_common_numeric_dtype,
+                _validate_common_run_length_decode_dtypes,
             )
 
-            if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+            if op_name == "_group_histogram":
+                try:
+                    _validate_common_histogram_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("counter_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name == "_group_run_length_decode":
+                try:
+                    _validate_common_run_length_decode_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("run_length_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
                 try:
                     _validate_common_integer_key_dtype(
                         factory_kwargs.get("dtype"),

@@ -25,6 +25,7 @@ from ._exchange import BlockExchangeType as BlockExchangeType
 from ._exchange import WarpExchangeType as WarpExchangeType
 from ._exchange import exchange as exchange
 from ._exchange import warp_exchange as warp_exchange
+from ._histogram import _group_histogram as _group_histogram
 from ._load_store import load as load
 from ._load_store import store as store
 from ._load_store import warp_load as warp_load
@@ -48,6 +49,9 @@ from ._reduce import sum as sum
 from ._reduce import warp_reduce as warp_reduce
 from ._reduce import warp_reduce_builtin as warp_reduce_builtin
 from ._reduce import warp_sum as warp_sum
+from ._run_length_decode import (
+    _group_run_length_decode as _group_run_length_decode,
+)
 from ._scan import scan as scan
 from ._scan import warp_exclusive_scan as warp_exclusive_scan
 from ._scan import warp_exclusive_sum as warp_exclusive_sum
@@ -120,6 +124,8 @@ _register(
     _qualified_group_topk_max_pairs,
     _qualified_group_topk_min_keys,
     _qualified_group_topk_min_pairs,
+    _group_histogram,
+    _group_run_length_decode,
 )
 _register(
     "group",

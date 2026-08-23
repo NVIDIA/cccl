@@ -20,6 +20,7 @@ from ._rewrite_merge_sort import _MergeSortRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
 from ._rewrite_radix import _RadixRewrite
+from ._rewrite_run_length_decode import _RunLengthDecodeRewrite
 from ._rewrite_scan import _ScanRewrite
 from ._rewrite_shuffle import _ShuffleRewrite
 from ._rewrite_storage import _StorageRewrite
@@ -48,6 +49,7 @@ class CoopSinglePhaseRewrite(
     _LaunchRewrite,
     _RadixRewrite,
     _TopKRewrite,
+    _RunLengthDecodeRewrite,
     _GroupMetadataRewrite,
     _ScanRewrite,
     _AdjacentDifferenceRewrite,
@@ -500,6 +502,53 @@ class CoopSinglePhaseRewrite(
                 "end_bit",
             },
             "required_factory_kwargs": {"keys", "values", "threads_per_block"},
+        },
+        "_group_histogram": {
+            "namespace": "block",
+            "runtime_arg_counts": {2},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+                "algorithm",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+            },
+        },
+        "_group_run_length_decode": {
+            "namespace": "block",
+            "runtime_arg_counts": {5, 6},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "relative_offset_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+                "_static_decoded_window_offset",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+            },
         },
         "warp_load": {
             "namespace": "warp",

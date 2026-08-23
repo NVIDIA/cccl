@@ -13,6 +13,7 @@ from .._thread_data import ThreadData
 from ._group_adjacent_difference import _AdjacentDifferencePlanning
 from ._group_discontinuity import _DiscontinuityPlanning
 from ._group_exchange import _ExchangePlanning
+from ._group_histogram import _HistogramPlanning
 from ._group_load_store import _LoadStorePlanning
 from ._group_merge_sort import _MergeSortPlanning
 from ._group_planner_support import (
@@ -47,6 +48,7 @@ from ._group_planner_support import (
 )
 from ._group_radix import _RadixPlanning
 from ._group_reduce import _ReducePlanning
+from ._group_run_length_decode import _RunLengthDecodePlanning
 from ._group_scan import _ScanPlanning
 from ._group_shuffle import _ShufflePlanning
 from ._group_topk import _TopKPlanning
@@ -63,6 +65,8 @@ class _GroupCallPlanner(
     _MergeSortPlanning,
     _RadixPlanning,
     _TopKPlanning,
+    _HistogramPlanning,
+    _RunLengthDecodePlanning,
 ):
     """Coordinate semantic family lowering against one function IR."""
 
@@ -299,6 +303,11 @@ class _GroupCallPlanner(
                 False,
             ),
             "shuffle": ("mode", _portable_api._SHUFFLE_MODES, False),
+            "histogram": (
+                "algorithm",
+                _portable_api._HISTOGRAM_ALGORITHMS,
+                False,
+            ),
         }
         spec = selector_specs.get(operation)
         if spec is not None:
@@ -672,10 +681,13 @@ class _GroupCallPlanner(
                 seen=seen,
                 thread_data_only=thread_data_only,
             )
+        if thread_data_only and operation in {"histogram", "run_length_decode"}:
+            return True
         array_result_argument = {
             "adjacent_difference": "value",
             "discontinuity": "value",
             "exchange": "value",
+            "histogram": "samples",
             "load": "output",
             "radix_rank": "keys",
             "radix_sort_keys": "keys",
@@ -685,6 +697,7 @@ class _GroupCallPlanner(
             "exclusive_scan": "value",
             "inclusive_scan": "value",
             "merge_sort_keys": "keys",
+            "run_length_decode": "run_values",
             "shuffle": "value",
             "topk_max_keys": "keys",
             "topk_min_keys": "keys",
@@ -979,6 +992,24 @@ class _GroupCallPlanner(
                 return int(extent)
             return None
         operation = _group_operation_name(function)
+        if operation == "histogram":
+            bound = self._bind(function, definition)
+            try:
+                extent = self._constant(bound.arguments["bins_per_thread"])
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and not isinstance(extent, bool):
+                return int(extent)
+            return None
+        if operation == "run_length_decode":
+            bound = self._bind(function, definition)
+            try:
+                extent = self._constant(bound.arguments["decoded_items_per_thread"])
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and not isinstance(extent, bool):
+                return int(extent)
+            return None
         shape_argument = {
             "adjacent_difference": "value",
             "discontinuity": "value",
@@ -1086,6 +1117,105 @@ class _GroupCallPlanner(
             ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
         )
         return payload
+
+    def _thread_data_payload(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        items_per_thread: Any,
+        dtype: Any,
+    ) -> ir.Var:
+        """Emit an explicitly typed ThreadData marker for a fresh result."""
+
+        result = self._new_var(scope, loc, f"{stem}_payload")
+        proxy = ir.Assign(ir.Const(None, loc), result, loc)
+        statements.extend(
+            self._rewritten_call(
+                proxy,
+                factory=ThreadData,
+                args=[items_per_thread, dtype],
+                kwargs={},
+            )
+        )
+        return result
+
+    def _emit_factory_call(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        factory: Any,
+        args: list[Any],
+        kwargs: dict[str, Any],
+    ) -> ir.Var:
+        """Emit one planner-private provider call."""
+
+        result = self._new_var(scope, loc, stem)
+        proxy = ir.Assign(ir.Const(None, loc), result, loc)
+        statements.extend(
+            self._rewritten_call(
+                proxy,
+                factory=factory,
+                args=args,
+                kwargs=kwargs,
+            )
+        )
+        return result
+
+    def _emit_shared_array(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        items: Any,
+        dtype: Any,
+    ) -> ir.Var:
+        """Emit a statically sized compiler-owned shared array."""
+
+        from numba_cuda_mlir import cuda as cuda_module
+
+        module_var = self._new_var(scope, loc, f"{stem}_cuda")
+        shared_var = self._new_var(scope, loc, f"{stem}_shared")
+        array_var = self._new_var(scope, loc, f"{stem}_array")
+        statements.append(
+            ir.Assign(ir.Global(module_var.name, cuda_module, loc), module_var, loc)
+        )
+        statements.append(
+            ir.Assign(ir.Expr.getattr(module_var, "shared", loc), shared_var, loc)
+        )
+        statements.append(
+            ir.Assign(ir.Expr.getattr(shared_var, "array", loc), array_var, loc)
+        )
+        items_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_items",
+            value=items,
+        )
+        dtype_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_dtype",
+            value=dtype,
+        )
+        result = self._new_var(scope, loc, f"{stem}_result")
+        statements.append(
+            ir.Assign(
+                ir.Expr.call(array_var, [items_var, dtype_var], (), loc),
+                result,
+                loc,
+            )
+        )
+        return result
 
     def _boxed_group_operand(
         self,
@@ -1233,6 +1363,9 @@ class _GroupCallPlanner(
         bound.arguments.setdefault("warp_time_slicing", False)
         bound.arguments.setdefault("blocked_to_striped", False)
         bound.arguments.setdefault("exclusive_digit_prefix", None)
+        bound.arguments.setdefault("relative_offsets", None)
+        bound.arguments.setdefault("total_decoded_size", None)
+        bound.arguments.setdefault("decoded_offset_dtype", None)
         if is_common_root:
             self._validate_common_arguments(operation, bound)
         normalized_scan_op = None
@@ -1332,6 +1465,13 @@ class _GroupCallPlanner(
                 bound=bound,
                 is_common_root=is_common_root,
             )
+        elif operation == "histogram":
+            replacement = self._lower_histogram(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
         elif operation in {
             "topk_max_keys",
             "topk_max_pairs",
@@ -1341,6 +1481,13 @@ class _GroupCallPlanner(
             replacement = self._lower_topk(
                 inst,
                 operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "run_length_decode":
+            replacement = self._lower_run_length_decode(
+                inst,
                 group=group,
                 bound=bound,
                 is_common_root=is_common_root,

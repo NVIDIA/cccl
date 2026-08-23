@@ -1288,6 +1288,12 @@ class _ProvenanceRewrite:
                 return None
         if name in {
             "dtype",
+            "item_dtype",
+            "counter_dtype",
+            "run_length_dtype",
+            "decoded_offset_dtype",
+            "total_decoded_size_dtype",
+            "relative_offset_dtype",
         }:
             dtype = self._resolve_dtype_ref(value_ref)
             if dtype is not None:

@@ -11,6 +11,9 @@ from ._dataclass import (
     gpu_dataclass_argument_handler as gpu_dataclass_argument_handler,
 )
 from ._enums import (
+    BlockHistogramAlgorithm as BlockHistogramAlgorithm,
+)
+from ._enums import (
     BlockLoadAlgorithm as BlockLoadAlgorithm,
 )
 from ._enums import (
@@ -33,6 +36,9 @@ from ._group_discontinuity import (
 )
 from ._group_exchange import (
     exchange as exchange,
+)
+from ._group_histogram import (
+    histogram as histogram,
 )
 from ._group_load_store import (
     load as load,
@@ -60,6 +66,9 @@ from ._group_reduce import (
 )
 from ._group_reduce import (
     sum as sum,
+)
+from ._group_run_length_decode import (
+    run_length_decode as run_length_decode,
 )
 from ._group_scan import (
     exclusive_scan as exclusive_scan,
@@ -132,6 +141,7 @@ from ._thread_group import (
 )
 
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -150,6 +160,7 @@ __all__ = [
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -160,6 +171,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
     "shuffle",

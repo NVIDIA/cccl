@@ -327,6 +327,11 @@ class _ArgumentRewrite:
                 seen_factory_kwargs=seen_factory_kwargs,
                 factory_kwargs=factory_kwargs,
             )
+        elif op_name == "_group_run_length_decode":
+            self._finalize_group_run_length_decode_factory_kwargs(
+                runtime_args=runtime_args,
+                factory_kwargs=factory_kwargs,
+            )
         missing = required_factory_kwargs - seen_factory_kwargs
         if missing:
             if "threads_per_block" in missing:
