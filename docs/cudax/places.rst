@@ -438,7 +438,7 @@ with a CUDASTF context, it can *borrow* the context's
 .. code:: cpp
 
     cuda::experimental::stf::context ctx;
-    auto places = places_from_devices({0}); // or any explicit vector of places
+    std::vector<exec_place> places{exec_place::device(0)};
     place_group group{places, ctx.async_resources()};
 
 .. _places-memory-allocation:

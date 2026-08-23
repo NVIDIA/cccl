@@ -88,9 +88,11 @@
 namespace cuda::experimental::places
 {
 // ============================================================================
-// Free helpers: build vectors of exec_place for the common layouts
+// reserved: place-list builders backing the ctors and factories
 // ============================================================================
 
+namespace reserved
+{
 /// @brief Device ordinals of every visible CUDA device.
 inline ::std::vector<int> all_device_ids()
 {
@@ -138,7 +140,7 @@ inline ::std::vector<exec_place> places_from_locality_domains(::std::vector<int>
 {
   if (device_ids.empty())
   {
-    device_ids = all_device_ids();
+    device_ids = reserved::all_device_ids();
   }
 
   ::std::vector<::std::shared_ptr<exec_place>> devices;
@@ -151,8 +153,6 @@ inline ::std::vector<exec_place> places_from_locality_domains(::std::vector<int>
   return ::std::vector<exec_place>(partition.begin(), partition.end());
 }
 
-namespace reserved
-{
 // Detects handle types exposing `get_place_resources() -> exec_place_resources&`
 // (e.g. the STF `async_resources_handle`), without this header depending on them.
 template <typename Handle, typename = void>
@@ -208,7 +208,7 @@ public:
   /// @brief Create a group from an `exec_place` grid (or a scalar place),
   /// flattened to one place per grid entry.
   explicit place_group(const exec_place& grid)
-      : place_group(places_from_grid(grid))
+      : place_group(reserved::places_from_grid(grid))
   {}
 
   /**
@@ -256,9 +256,9 @@ public:
   {
     if (device_ids.empty())
     {
-      device_ids = all_device_ids();
+      device_ids = reserved::all_device_ids();
     }
-    return place_group(places_from_devices(device_ids));
+    return place_group(reserved::places_from_devices(device_ids));
   }
 
   /**
@@ -270,7 +270,7 @@ public:
    */
   static place_group by_locality_domains(::std::vector<int> device_ids = {})
   {
-    return place_group(places_from_locality_domains(mv(device_ids)));
+    return place_group(reserved::places_from_locality_domains(mv(device_ids)));
   }
 
   // ==========================================================================
@@ -510,7 +510,7 @@ private:
 UNITTEST("place_group construction and factories")
 {
   // From an explicit vector of places
-  place_group g1(places_from_devices({0}));
+  place_group g1(::std::vector<exec_place>{exec_place::device(0)});
   EXPECT(g1.size() == 1UL);
   EXPECT(g1.owns_resources());
 
@@ -523,8 +523,8 @@ UNITTEST("place_group construction and factories")
   EXPECT(g3.size() == 1UL);
 
   // by_devices covers every visible device
-  const auto ndevs = all_device_ids().size();
-  auto g4          = place_group::by_devices();
+  const size_t ndevs = static_cast<size_t>(cuda_try<cudaGetDeviceCount>());
+  auto g4            = place_group::by_devices();
   EXPECT(g4.size() == ndevs);
 
   auto g5 = place_group::by_devices({0});
@@ -533,9 +533,9 @@ UNITTEST("place_group construction and factories")
   // by_locality_domains covers every domain of every device (>= one place
   // per device even without domain support)
   size_t total_domains = 0;
-  for (int d : all_device_ids())
+  for (size_t d = 0; d < ndevs; d++)
   {
-    total_domains += locality_domain_count(d);
+    total_domains += locality_domain_count(static_cast<int>(d));
   }
   auto g6 = place_group::by_locality_domains();
   EXPECT(g6.size() == total_domains);
@@ -582,8 +582,8 @@ UNITTEST("place_group per-place stream pools")
 
   // Two groups over the same places are distinct resource scopes: they own
   // distinct pools, hence distinct streams
-  place_group a(places_from_devices({0}));
-  place_group b(places_from_devices({0}));
+  place_group a(exec_place::device(0));
+  place_group b(exec_place::device(0));
   EXPECT(a.owns_resources());
   EXPECT(b.owns_resources());
   EXPECT(a.get_stream(0, 0) != b.get_stream(0, 0));
@@ -621,7 +621,7 @@ UNITTEST("place_group borrows STF async_resources_handle pools")
   using ::cuda::experimental::stf::async_resources_handle;
 
   async_resources_handle handle;
-  auto places = places_from_devices({0});
+  ::std::vector<exec_place> places{exec_place::device(0)};
 
   // Borrowing group: draws its pools from the handle's registry
   place_group borrowed(places, handle);
@@ -653,7 +653,7 @@ UNITTEST("place_group borrows STF async_resources_handle pools")
 
 UNITTEST("place_group move semantics")
 {
-  place_group g(places_from_devices({0}));
+  place_group g(exec_place::device(0));
   cudaStream_t s = g.get_stream(0);
 
   place_group moved(mv(g));
