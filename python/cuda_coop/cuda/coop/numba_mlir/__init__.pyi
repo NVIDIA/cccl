@@ -33,15 +33,20 @@ from .._typing import ThreadDataLike as _ThreadDataLike
 from .._typing import ThreadGroupKind as _ThreadGroupKind
 from .._typing import ThreadLevel as _ThreadLevel
 from .._typing import _CompilerScalarLike as _CompilerScalarLike
+from .._typing import _IntegerValue as _IntegerValue
 from .._typing import _NonSumScanOperator as _NonSumScanOperator
 from .._typing import _PortableIntegerKey as _PortableIntegerKey
+from .._typing import _PortableNumericScalar as _PortableNumericScalar
 from .._typing import _ScalarValue as _ScalarValue
 from .._typing import _SumScanOperator as _SumScanOperator
 from .._typing import _SynchronizableGroupKind as _SynchronizableGroupKind
+from .._typing import _TraceInteger as _TraceInteger
 from .._typing import _ValidItems as _ValidItems
 
 _ItemT = TypeVar("_ItemT")
 _ScalarT = TypeVar("_ScalarT", bound=_ScalarValue)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_RadixValueT = TypeVar("_RadixValueT", bound=_PortableNumericScalar)
 _OpT = TypeVar("_OpT")
 _DataclassT = TypeVar("_DataclassT")
 _GroupKindT_co = TypeVar(
@@ -1047,6 +1052,96 @@ def exchange(
     """Rearrange a fixed-size per-thread tile within a group."""
 
 @overload
+def radix_sort_keys(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> _ThreadDataLike[_IntegerKeyT]:
+    """Return a fresh radix-sorted block payload."""
+
+@overload
+def radix_sort_keys(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> _IntegerKeyT:
+    """Return one fresh radix-sorted scalar key per block thread."""
+
+@overload
+def radix_sort_pairs(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    values: _ThreadDataLike[_RadixValueT],
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> tuple[_ThreadDataLike[_IntegerKeyT], _ThreadDataLike[_RadixValueT]]:
+    """Return fresh radix-sorted key/value payloads."""
+
+@overload
+def radix_sort_pairs(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    values: _RadixValueT,
+    /,
+    *,
+    begin_bit: _IntegerValue = 0,
+    end_bit: _IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorage | None = None,
+    blocked_to_striped: bool = False,
+) -> tuple[_IntegerKeyT, _RadixValueT]:
+    """Return one fresh radix-sorted scalar pair per block thread."""
+
+@overload
+def radix_rank(
+    group: _BlockGroup,
+    keys: _ThreadDataLike[_IntegerKeyT],
+    /,
+    *,
+    begin_bit: _TraceInteger = 0,
+    end_bit: _TraceInteger | None = None,
+    radix_bits: _TraceInteger | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: _ThreadDataLike[int]
+    | _ThreadDataLike[_NumpyInt32]
+    | None = None,
+) -> _ThreadDataLike[int]:
+    """Return fresh signed 32-bit ranks for one radix digit."""
+
+@overload
+def radix_rank(
+    group: _BlockGroup,
+    keys: _IntegerKeyT,
+    /,
+    *,
+    begin_bit: _TraceInteger = 0,
+    end_bit: _TraceInteger | None = None,
+    radix_bits: _TraceInteger | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: _ThreadDataLike[int]
+    | _ThreadDataLike[_NumpyInt32]
+    | None = None,
+) -> int:
+    """Return one signed 32-bit radix rank per block thread."""
+
+@overload
 def shuffle(
     group: ThreadGroup[Literal["block"]],
     value: _ThreadDataLike[_ItemT],
@@ -1110,6 +1205,9 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shared",

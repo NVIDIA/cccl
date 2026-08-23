@@ -30,6 +30,9 @@ _PUBLIC_EXPORTS = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shared",
@@ -50,7 +53,7 @@ def test_public_exports_cover_the_incremental_primitive_families():
         _PUBLIC_EXPORTS
     )
 
-    for name in ("radix_sort_keys", "histogram", "topk_max_keys"):
+    for name in ("histogram", "topk_max_keys"):
         assert not hasattr(coop, name)
 
     assert "_block" not in coop.__all__

@@ -10,6 +10,15 @@ from ._block_load_store import load as load
 from ._block_load_store import store as store
 from ._block_merge_sort import merge_sort_keys as merge_sort_keys
 from ._block_merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._block_radix_rank import radix_rank as radix_rank
+from ._block_radix_sort import radix_sort_keys as radix_sort_keys
+from ._block_radix_sort import (
+    radix_sort_keys_descending as radix_sort_keys_descending,
+)
+from ._block_radix_sort import radix_sort_pairs as radix_sort_pairs
+from ._block_radix_sort import (
+    radix_sort_pairs_descending as radix_sort_pairs_descending,
+)
 from ._block_reduce import block_reduce_builtin as block_reduce_builtin
 from ._block_reduce import reduce as reduce
 from ._block_reduce import sum as sum

@@ -26,6 +26,7 @@ from numba_cuda_mlir.numba_cuda.typing.typeof import typeof as _numba_typeof
 from numba_cuda_mlir.numbair_transforms import ir
 
 from cuda.coop._core import root_api as _common_root_api
+from cuda.coop._core.block import normalize_radix_order, resolve_static_radix_end_bit
 
 from ._common import normalize_dim_param, normalize_dtype_param
 from ._types import (
@@ -246,9 +247,17 @@ class CoopSinglePhaseRewrite(Rewrite):
     _CUDA_ROOT_MODULES = frozenset({"cuda", "numba_cuda_mlir.cuda"})
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
         {
+            "_common_radix_rank",
+            "_common_radix_sort_keys",
+            "_common_radix_sort_pairs",
             "load",
             "merge_sort_keys",
             "merge_sort_pairs",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
             "scan",
             "store",
             "warp_load",
@@ -641,17 +650,118 @@ class CoopSinglePhaseRewrite(Rewrite):
                 "compare_op",
             },
         },
+        "radix_rank": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3},
+            "runtime_factory_kwargs": ("exclusive_digit_prefix",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "begin_bit",
+                "end_bit",
+                "descending",
+                "exclusive_digit_prefix",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "begin_bit",
+                "end_bit",
+            },
+        },
+        "radix_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_keys_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
+        "radix_sort_pairs_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
     }
-    _BLOCK_OPS = frozenset(
-        {
-            "exchange",
-            "load",
-            "merge_sort_keys",
-            "merge_sort_pairs",
-            "scan",
-            "shuffle",
-            "store",
+    for _private_name, _public_name in {
+        "_common_radix_rank": "radix_rank",
+        "_common_radix_sort_keys": "radix_sort_keys",
+        "_common_radix_sort_pairs": "radix_sort_pairs",
+    }.items():
+        _public_spec = _OP_SPECS[_public_name]
+        _OP_SPECS[_private_name] = {
+            **_public_spec,
+            "allowed_factory_kwargs": set(_public_spec["allowed_factory_kwargs"]),
+            "required_factory_kwargs": set(_public_spec["required_factory_kwargs"]),
         }
+        if _private_name in {"_common_radix_sort_keys", "_common_radix_sort_pairs"}:
+            _OP_SPECS[_private_name]["allowed_factory_kwargs"].add("descending")
+    del _private_name, _public_name, _public_spec
+
+    _BLOCK_OPS = frozenset(
+        name for name, spec in _OP_SPECS.items() if spec["namespace"] == "block"
     )
     _WARP_OPS = frozenset(
         {
@@ -941,9 +1051,9 @@ class CoopSinglePhaseRewrite(Rewrite):
             raise CoopSinglePhaseRewriteError(
                 "typed group payload array-kind must be a compile-time bool"
             )
-        from ._group_rewrites import _PAYLOAD_DTYPE_LIKE
+        from ._group_rewrites import _PAYLOAD_DTYPE_INT32, _PAYLOAD_DTYPE_LIKE
 
-        if dtype_policy != _PAYLOAD_DTYPE_LIKE:
+        if dtype_policy not in {_PAYLOAD_DTYPE_INT32, _PAYLOAD_DTYPE_LIKE}:
             raise CoopSinglePhaseRewriteError(
                 f"unknown typed group payload dtype policy {dtype_policy!r}"
             )
@@ -969,9 +1079,12 @@ class CoopSinglePhaseRewrite(Rewrite):
             )
         else:
             items_per_thread = 1
-        dtype = prototype_spec.dtype if prototype_spec is not None else None
-        if dtype is None:
-            dtype = self._resolve_var_dtype(prototype)
+        if dtype_policy == _PAYLOAD_DTYPE_INT32:
+            dtype = _numba_types.int32
+        else:
+            dtype = prototype_spec.dtype if prototype_spec is not None else None
+            if dtype is None:
+                dtype = self._resolve_var_dtype(prototype)
         return _ThreadDataSpec(
             items_per_thread=items_per_thread,
             dtype=dtype,
@@ -2137,6 +2250,7 @@ class CoopSinglePhaseRewrite(Rewrite):
         factory_kwargs: dict[str, object] = {}
         runtime_temp_storage = getitem_temp_storage
         runtime_factory_kwargs = tuple(spec.get("runtime_factory_kwargs", ()))
+        runtime_only_kwargs = tuple(spec.get("runtime_only_kwargs", ()))
         runtime_factory_kw_prerequisites = dict(
             spec.get("runtime_factory_kw_prerequisites", {})
         )
@@ -2145,6 +2259,8 @@ class CoopSinglePhaseRewrite(Rewrite):
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
         runtime_factory_control_vars: dict[str, ir.Var] = {}
+        seen_runtime_only_kwargs: set[str] = set()
+        runtime_only_kw_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
@@ -2160,6 +2276,14 @@ class CoopSinglePhaseRewrite(Rewrite):
                 value_var = runtime_args[base_runtime_arg_count + index]
                 if isinstance(value_var, ir.Var):
                     runtime_factory_control_vars[name] = value_var
+        if runtime_only_kwargs:
+            if extra_runtime_arg_count > len(runtime_only_kwargs):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement '{op_name}' received too many positional "
+                    "runtime arguments"
+                )
+            for name in runtime_only_kwargs[:extra_runtime_arg_count]:
+                seen_runtime_only_kwargs.add(name)
         for name, value_var in call.kws:
             if name == "temp_storage" and op_name in self._TEMP_STORAGE_RUNTIME_KW_OPS:
                 if runtime_temp_storage is not None:
@@ -2236,9 +2360,25 @@ class CoopSinglePhaseRewrite(Rewrite):
                     )
                 runtime_factory_kw_vars[name] = value_var
                 continue
+            if name in runtime_only_kwargs:
+                if name in seen_runtime_only_kwargs or name in runtime_only_kw_vars:
+                    raise CoopSinglePhaseRewriteError(
+                        f"Duplicate coop movement '{op_name}' runtime "
+                        f"argument '{name}'."
+                    )
+                if not isinstance(value_var, ir.Var):
+                    raise CoopSinglePhaseRewriteError(
+                        f"coop runtime argument '{name}' must be a variable."
+                    )
+                runtime_only_kw_vars[name] = value_var
+                continue
             if name not in allowed_factory_kwargs:
                 allowed = ", ".join(
-                    sorted(set(allowed_factory_kwargs) | set(runtime_factory_kwargs))
+                    sorted(
+                        set(allowed_factory_kwargs)
+                        | set(runtime_factory_kwargs)
+                        | set(runtime_only_kwargs)
+                    )
                 )
                 raise CoopSinglePhaseRewriteError(
                     f"Unsupported coop movement '{op_name}' factory keyword '{name}'. Allowed keywords are: {allowed}."
@@ -2274,6 +2414,22 @@ class CoopSinglePhaseRewrite(Rewrite):
             seen_factory_kwargs.add(name)
             seen_runtime_factory_kwargs.add(name)
             runtime_factory_control_vars[name] = value_var
+        for name in runtime_only_kwargs:
+            value_var = runtime_only_kw_vars.get(name)
+            if value_var is None:
+                continue
+            prerequisite = runtime_factory_kw_prerequisites.get(name)
+            if (
+                prerequisite is not None
+                and prerequisite not in seen_runtime_only_kwargs
+                and prerequisite not in runtime_only_kw_vars
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement '{op_name}' runtime argument '{name}' "
+                    f"requires '{prerequisite}'."
+                )
+            runtime_args.append(value_var)
+            seen_runtime_only_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
         self._validate_integer_runtime_controls(
@@ -2288,12 +2444,29 @@ class CoopSinglePhaseRewrite(Rewrite):
             seen_factory_kwargs,
             factory_kwargs,
         )
-        runtime_arg_constant_replacements = self._validate_merge_sort_runtime_controls(
+        merge_sort_replacements = self._validate_merge_sort_runtime_controls(
             op_name=op_name,
             runtime_args=runtime_args,
             control_vars=runtime_factory_control_vars,
             factory_kwargs=factory_kwargs,
         )
+        radix_sort_replacements = self._radix_sort_runtime_constant_replacements(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            runtime_only_kw_vars=runtime_only_kw_vars,
+            factory_kwargs=factory_kwargs,
+        )
+        runtime_arg_constant_replacements = (
+            *merge_sort_replacements,
+            *radix_sort_replacements,
+        )
+        if op_name in {"radix_rank", "_common_radix_rank"}:
+            self._finalize_radix_rank_factory_kwargs(
+                op_name=op_name,
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
         if op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
                 runtime_arg_count=len(runtime_args),
@@ -2334,6 +2507,175 @@ class CoopSinglePhaseRewrite(Rewrite):
             tuple(factory_kw_value_vars),
             runtime_arg_constant_replacements,
         )
+
+    def _finalize_radix_rank_factory_kwargs(
+        self,
+        *,
+        op_name: str,
+        runtime_arg_count: int,
+        seen_factory_kwargs: set[str],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        if runtime_arg_count not in {2, 3}:
+            raise CoopSinglePhaseRewriteError(
+                "coop single-phase 'radix_rank' runtime argument count must "
+                "be one of {2, 3}."
+            )
+        scope_name = (
+            "cuda.coop" if op_name == "_common_radix_rank" else "cuda.coop.numba_mlir"
+        )
+
+        def static_index(name: str, value: object) -> int:
+            if isinstance(value, (bool, np.bool_)):
+                raise CoopSinglePhaseRewriteError(
+                    f"{scope_name}.radix_rank {name} must be an integer"
+                )
+            try:
+                return operator.index(value)
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(
+                    f"{scope_name}.radix_rank {name} must be an integer"
+                ) from exc
+
+        begin_bit = static_index("begin_bit", factory_kwargs.get("begin_bit", 0))
+        dtype = factory_kwargs.get("dtype")
+        bitwidth = getattr(dtype, "bitwidth", None)
+        if bitwidth is not None:
+            bitwidth = int(bitwidth)
+        explicit_end_bit = factory_kwargs.get("end_bit")
+        if explicit_end_bit is not None:
+            explicit_end_bit = static_index("end_bit", explicit_end_bit)
+        try:
+            end_bit = resolve_static_radix_end_bit(
+                begin_bit=begin_bit,
+                end_bit=explicit_end_bit,
+                bit_width=bitwidth,
+                default_radix_bits=4,
+                clamp_default=False,
+            )
+        except ValueError as exc:
+            raise CoopSinglePhaseRewriteError(f"{scope_name}.radix_rank {exc}") from exc
+        if end_bit - begin_bit > 8:
+            raise CoopSinglePhaseRewriteError(
+                f"{scope_name}.radix_rank bit width must be <= 8"
+            )
+        factory_kwargs["begin_bit"] = begin_bit
+        factory_kwargs["end_bit"] = end_bit
+        seen_factory_kwargs.update({"begin_bit", "end_bit"})
+        if "descending" in seen_factory_kwargs:
+            try:
+                factory_kwargs["descending"] = normalize_radix_order(
+                    factory_kwargs["descending"]
+                ).descending
+            except ValueError as exc:
+                raise CoopSinglePhaseRewriteError(
+                    f"{scope_name}.radix_rank descending must be a bool"
+                ) from exc
+
+    def _radix_sort_runtime_constant_replacements(
+        self,
+        *,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        runtime_only_kw_vars: dict[str, ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> tuple[tuple[int, object], ...]:
+        radix_sort_operations = {
+            "_common_radix_sort_keys",
+            "_common_radix_sort_pairs",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
+        }
+        if op_name not in radix_sort_operations:
+            return ()
+        begin_var = runtime_only_kw_vars.get("begin_bit")
+        end_var = runtime_only_kw_vars.get("end_bit")
+        if begin_var is None and end_var is None:
+            return ()
+        if begin_var is None or end_var is None:
+            return ()
+
+        common_root = op_name.startswith("_common_")
+        public_operation = (
+            "radix_sort_pairs" if "pairs" in op_name else "radix_sort_keys"
+        )
+        scope_name = "cuda.coop" if common_root else "cuda.coop.numba_mlir"
+        prefix = f"{scope_name}.{public_operation}"
+
+        def static_bound(name: str, value_ref: ir.Var) -> int | None:
+            value = self._resolve_factory_kwarg_value(name, value_ref)
+            if value is _UNRESOLVED:
+                from numba_cuda_mlir import types as numba_mlir_types
+
+                value_type = self._resolve_var_numba_type(value_ref)
+                if value_type is None:
+                    value_type = self._resolve_var_dtype(value_ref)
+                if isinstance(value_type, numba_mlir_types.Boolean) or not isinstance(
+                    value_type, numba_mlir_types.Integer
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        f"{prefix} {name} must have an integer dtype"
+                    )
+                return None
+            if value is None:
+                return None
+            if isinstance(value, (bool, np.bool_)):
+                raise CoopSinglePhaseRewriteError(f"{prefix} {name} must be an integer")
+            try:
+                return operator.index(value)
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(
+                    f"{prefix} {name} must be an integer"
+                ) from exc
+
+        static_begin = static_bound("begin_bit", begin_var)
+        dtype = factory_kwargs.get("dtype", factory_kwargs.get("key_dtype"))
+        bit_width = getattr(dtype, "bitwidth", None)
+        if bit_width is not None:
+            bit_width = int(bit_width)
+        static_end = static_bound("end_bit", end_var)
+        replacements: tuple[tuple[int, object], ...] = ()
+        end_value = self._resolve_factory_kwarg_value("end_bit", end_var)
+        if end_value is None:
+            if bit_width is None:
+                raise CoopSinglePhaseRewriteError(
+                    f"{prefix} end_bit must be provided when the key dtype "
+                    "bit width cannot be inferred"
+                )
+            static_end = bit_width
+            end_index = next(
+                index
+                for index, argument in enumerate(runtime_args)
+                if argument is end_var or argument.name == end_var.name
+            )
+            replacements = ((end_index, static_end),)
+        if static_begin is not None:
+            if static_begin < 0:
+                raise CoopSinglePhaseRewriteError(
+                    f"{prefix} begin_bit must be non-negative"
+                )
+            if bit_width is not None and static_begin >= bit_width:
+                raise CoopSinglePhaseRewriteError(
+                    f"{prefix} begin_bit must be < {bit_width}"
+                )
+        if static_end is not None:
+            if static_end < 1:
+                raise CoopSinglePhaseRewriteError(f"{prefix} end_bit must be positive")
+            if bit_width is not None and static_end > bit_width:
+                raise CoopSinglePhaseRewriteError(
+                    f"{prefix} end_bit must be <= {bit_width}"
+                )
+        if (
+            static_begin is not None
+            and static_end is not None
+            and static_end <= static_begin
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"{prefix} end_bit must be greater than begin_bit"
+            )
+        return replacements
 
     def _validate_integer_runtime_controls(
         self,
@@ -2787,9 +3129,45 @@ class CoopSinglePhaseRewrite(Rewrite):
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        common_operation = {
+            "_common_radix_rank": "radix_rank",
+            "_common_radix_sort_keys": "radix_sort_keys",
+            "_common_radix_sort_pairs": "radix_sort_pairs",
+        }.get(op_name)
+        op_name = {
+            "_common_radix_rank": "radix_rank",
+            "_common_radix_sort_keys": "radix_sort_keys",
+            "_common_radix_sort_pairs": "radix_sort_pairs",
+        }.get(op_name, op_name)
 
         def factory_value(name: str):
             return factory_kwargs.get(name)
+
+        def validate_integer_key_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._common import _validate_common_integer_key_dtype
+
+            try:
+                return _validate_common_integer_key_dtype(
+                    dtype, operation=common_operation or op_name
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        def validate_numeric_value_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._common import _validate_common_numeric_dtype
+
+            try:
+                return _validate_common_numeric_dtype(
+                    dtype,
+                    operation=common_operation or op_name,
+                    parameter="value",
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
 
         def factory_kwarg_matches(name: str, actual, expected) -> bool:
             if name in {"dtype", "keys", "values"}:
@@ -2977,6 +3355,124 @@ class CoopSinglePhaseRewrite(Rewrite):
             infer_kwarg("dtype", inferred_dtype)
             if inferred_dtype is not None and payload_var is not None:
                 self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            return
+        if op_name in {"radix_sort_keys", "radix_sort_keys_descending"}:
+            keys_var, keys_spec = candidate(0)
+            if keys_spec is None:
+                return
+            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+        if op_name in {"radix_sort_pairs", "radix_sort_pairs_descending"}:
+            keys_var, keys_spec = candidate(0)
+            values_var, values_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "keys", keys_spec, "values", values_spec
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and values_spec is not None:
+                extent = values_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            value_dtype = values_spec.dtype if values_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._resolve_var_dtype(values_var)
+            if key_dtype is None:
+                key_dtype = factory_value("key_dtype")
+            if value_dtype is None:
+                value_dtype = factory_value("value_dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            value_dtype = validate_numeric_value_dtype(value_dtype)
+            infer_kwarg("key_dtype", key_dtype)
+            infer_kwarg("value_dtype", value_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if value_dtype is not None and values_var is not None:
+                self._record_inferred_thread_data_dtype(values_var, value_dtype)
+            return
+        if op_name == "radix_rank":
+            from numba_cuda_mlir import types as numba_mlir_types
+
+            def is_int32_dtype(dtype) -> bool:
+                if dtype == numba_mlir_types.int32:
+                    return True
+                try:
+                    return np.dtype(dtype) == np.dtype(np.int32)
+                except (TypeError, ValueError):
+                    return False
+
+            keys_var, keys_spec = candidate(0)
+            ranks_var, ranks_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "keys", keys_spec, "ranks", ranks_spec
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and ranks_spec is not None:
+                extent = ranks_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if ranks_spec is not None and ranks_var is not None:
+                if ranks_spec.dtype is not None and not is_int32_dtype(
+                    ranks_spec.dtype
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop single-phase 'radix_rank' requires ranks dtype int32."
+                    )
+                self._record_inferred_thread_data_dtype(
+                    ranks_var, numba_mlir_types.int32
+                )
+            if factory_kwargs.get("exclusive_digit_prefix"):
+                prefix_var, prefix_spec = candidate(2)
+                if prefix_spec is None or prefix_var is None:
+                    raise CoopSinglePhaseRewriteError(
+                        "radix_rank exclusive_digit_prefix must be a local array"
+                    )
+                if prefix_spec.dtype is not None and not is_int32_dtype(
+                    prefix_spec.dtype
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "radix_rank exclusive_digit_prefix dtype must be int32"
+                    )
+                self._record_inferred_thread_data_dtype(
+                    prefix_var, numba_mlir_types.int32
+                )
+                threads = factory_kwargs.get("threads_per_block")
+                begin = factory_kwargs.get("begin_bit")
+                end = factory_kwargs.get("end_bit")
+                if threads is not None and begin is not None and end is not None:
+                    block_dim = normalize_dim_param(threads)
+                    block_threads = block_dim.x * block_dim.y * block_dim.z
+                    expected = max(
+                        1,
+                        ((1 << (int(end) - int(begin))) + block_threads - 1)
+                        // block_threads,
+                    )
+                    if (
+                        prefix_spec.items_per_thread is not None
+                        and prefix_spec.items_per_thread != expected
+                    ):
+                        raise CoopSinglePhaseRewriteError(
+                            "radix_rank exclusive_digit_prefix must contain "
+                            f"{expected} items per thread"
+                        )
             return
         if op_name in {"exchange", "warp_exchange"}:
             input_var, input_spec = candidate(0)
