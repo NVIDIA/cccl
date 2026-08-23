@@ -87,7 +87,7 @@ public:
   /// of a `data_place` satisfies.
   [[nodiscard]] static constexpr bool is_valid_alignment(::std::size_t alignment) noexcept
   {
-    return alignment <= ::cuda::mr::default_cuda_malloc_alignment
+    return alignment != 0 && alignment <= ::cuda::mr::default_cuda_malloc_alignment
         && ::cuda::mr::default_cuda_malloc_alignment % alignment == 0;
   }
 
