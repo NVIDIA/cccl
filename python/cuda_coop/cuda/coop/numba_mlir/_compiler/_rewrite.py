@@ -17,6 +17,7 @@ from ._rewrite_launch import _LaunchRewrite
 from ._rewrite_merge_sort import _MergeSortRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
+from ._rewrite_radix import _RadixRewrite
 from ._rewrite_scan import _ScanRewrite
 from ._rewrite_shuffle import _ShuffleRewrite
 from ._rewrite_storage import _StorageRewrite
@@ -42,6 +43,7 @@ class CoopSinglePhaseRewrite(
     _MergeSortRewrite,
     _ArgumentRewrite,
     _LaunchRewrite,
+    _RadixRewrite,
     _GroupMetadataRewrite,
     _ScanRewrite,
     _ShuffleRewrite,
@@ -55,9 +57,17 @@ class CoopSinglePhaseRewrite(
 
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
         {
+            "_common_radix_rank",
+            "_common_radix_sort_keys",
+            "_common_radix_sort_pairs",
             "load",
             "merge_sort_keys",
             "merge_sort_pairs",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
             "scan",
             "store",
             "warp_load",
@@ -453,7 +463,116 @@ class CoopSinglePhaseRewrite(
                 "compare_op",
             },
         },
+        "radix_rank": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3},
+            "runtime_factory_kwargs": ("exclusive_digit_prefix",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "begin_bit",
+                "end_bit",
+                "descending",
+                "exclusive_digit_prefix",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "begin_bit",
+                "end_bit",
+            },
+        },
+        "radix_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_keys_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
+        "radix_sort_pairs_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
     }
+    for _private_name, _public_name in {
+        "_common_radix_rank": "radix_rank",
+        "_common_radix_sort_keys": "radix_sort_keys",
+        "_common_radix_sort_pairs": "radix_sort_pairs",
+    }.items():
+        _public_spec = _OP_SPECS[_public_name]
+        _OP_SPECS[_private_name] = {
+            **_public_spec,
+            "allowed_factory_kwargs": set(_public_spec["allowed_factory_kwargs"]),
+            "required_factory_kwargs": set(_public_spec["required_factory_kwargs"]),
+        }
+        if _private_name in {"_common_radix_sort_keys", "_common_radix_sort_pairs"}:
+            _OP_SPECS[_private_name]["allowed_factory_kwargs"].add("descending")
+    del _private_name, _public_name, _public_spec
+
     for _spec in _OP_SPECS.values():
         if (
             _spec["namespace"] == "block"

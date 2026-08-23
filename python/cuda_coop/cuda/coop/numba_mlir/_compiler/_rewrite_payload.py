@@ -14,6 +14,7 @@ from ._rewrite_support import (
     _ThreadDataSpec,
     ir,
     normalize_dtype_param,
+    np,
 )
 
 
@@ -26,8 +27,45 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        common_operation = {
+            "_common_radix_rank": "radix_rank",
+            "_common_radix_sort_keys": "radix_sort_keys",
+            "_common_radix_sort_pairs": "radix_sort_pairs",
+        }.get(op_name)
+        op_name = {
+            "_common_radix_rank": "radix_rank",
+            "_common_radix_sort_keys": "radix_sort_keys",
+            "_common_radix_sort_pairs": "radix_sort_pairs",
+        }.get(op_name, op_name)
+
         def factory_value(name: str):
             return factory_kwargs.get(name)
+
+        def validate_integer_key_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._parameters import _validate_common_integer_key_dtype
+
+            try:
+                return _validate_common_integer_key_dtype(
+                    dtype, operation=common_operation or op_name
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        def validate_numeric_value_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._parameters import _validate_common_numeric_dtype
+
+            try:
+                return _validate_common_numeric_dtype(
+                    dtype,
+                    operation=common_operation or op_name,
+                    parameter="value",
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
 
         def factory_kwarg_matches(name: str, actual, expected) -> bool:
             if name in {
@@ -219,6 +257,105 @@ class _PayloadRewrite:
             infer_kwarg("dtype", inferred_dtype)
             if inferred_dtype is not None and payload_var is not None:
                 self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            return
+        if op_name in {"radix_sort_keys", "radix_sort_keys_descending"}:
+            keys_var, keys_spec = candidate(0)
+            if keys_spec is None:
+                return
+            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+        if op_name in {"radix_sort_pairs", "radix_sort_pairs_descending"}:
+            keys_var, keys_spec = candidate(0)
+            values_var, values_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "keys", keys_spec, "values", values_spec
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and values_spec is not None:
+                extent = values_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            value_dtype = values_spec.dtype if values_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._resolve_var_dtype(values_var)
+            if key_dtype is None:
+                key_dtype = factory_value("key_dtype")
+            if value_dtype is None:
+                value_dtype = factory_value("value_dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            value_dtype = validate_numeric_value_dtype(value_dtype)
+            infer_kwarg("key_dtype", key_dtype)
+            infer_kwarg("value_dtype", value_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if value_dtype is not None and values_var is not None:
+                self._record_inferred_thread_data_dtype(values_var, value_dtype)
+            return
+        if op_name == "radix_rank":
+            from numba_cuda_mlir import types as numba_mlir_types
+
+            def is_int32_dtype(dtype) -> bool:
+                if dtype == numba_mlir_types.int32:
+                    return True
+                try:
+                    return np.dtype(dtype) == np.dtype(np.int32)
+                except (TypeError, ValueError):
+                    return False
+
+            keys_var, keys_spec = candidate(0)
+            ranks_var, ranks_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "keys", keys_spec, "ranks", ranks_spec
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and ranks_spec is not None:
+                extent = ranks_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if ranks_spec is not None and ranks_var is not None:
+                if ranks_spec.dtype is not None and not is_int32_dtype(
+                    ranks_spec.dtype
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop single-phase 'radix_rank' requires ranks dtype int32."
+                    )
+                self._record_inferred_thread_data_dtype(
+                    ranks_var, numba_mlir_types.int32
+                )
+            if factory_kwargs.get("exclusive_digit_prefix"):
+                prefix_var, prefix_spec = candidate(2)
+                if prefix_spec is None or prefix_var is None:
+                    raise CoopSinglePhaseRewriteError(
+                        "radix_rank exclusive_digit_prefix must be a local array"
+                    )
+                if prefix_spec.dtype is not None and not is_int32_dtype(
+                    prefix_spec.dtype
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "radix_rank exclusive_digit_prefix dtype must be int32"
+                    )
+                self._record_inferred_thread_data_dtype(
+                    prefix_var, numba_mlir_types.int32
+                )
             return
         if op_name in {"exchange", "warp_exchange"}:
             input_var, input_spec = candidate(0)

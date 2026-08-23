@@ -11,7 +11,6 @@ import math
 import operator
 from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass
-from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -442,11 +441,16 @@ def as_valid_items_arg(value: Any, *, scope: str) -> Any:
 
 
 def _static_int_value(value: Any) -> int | None:
-    if isinstance(value, bool):
+    if isinstance(value, (bool, np.bool_)):
         raise TypeError("radix bit bounds must be int-like scalars")
-    if isinstance(value, Integral):
-        return int(value)
-    return None
+    try:
+        return int(operator.index(value))
+    except TypeError:
+        from cutlass.base_dsl.typing import Boolean, Integer
+
+        if isinstance(value, Boolean) or not isinstance(value, Integer):
+            raise TypeError("radix bit bounds must be int-like scalars") from None
+        return None
 
 
 def validate_radix_bit_range(
@@ -464,6 +468,8 @@ def validate_radix_bit_range(
         raise ValueError("begin_bit must be non-negative")
     if static_begin_bit is not None and static_begin_bit >= width_bits:
         raise ValueError(f"begin_bit must be < {width_bits}")
+    if static_end_bit is not None and static_end_bit < 1:
+        raise ValueError("end_bit must be positive")
     if (
         static_begin_bit is not None
         and static_end_bit is not None

@@ -27,6 +27,14 @@ from ._merge_sort import merge_sort_keys as merge_sort_keys
 from ._merge_sort import merge_sort_pairs as merge_sort_pairs
 from ._merge_sort import warp_merge_sort_keys as warp_merge_sort_keys
 from ._merge_sort import warp_merge_sort_pairs as warp_merge_sort_pairs
+from ._radix import _common_radix_rank as _common_radix_rank
+from ._radix import _common_radix_sort_keys as _common_radix_sort_keys
+from ._radix import _common_radix_sort_pairs as _common_radix_sort_pairs
+from ._radix import radix_rank as radix_rank
+from ._radix import radix_sort_keys as radix_sort_keys
+from ._radix import radix_sort_keys_descending as radix_sort_keys_descending
+from ._radix import radix_sort_pairs as radix_sort_pairs
+from ._radix import radix_sort_pairs_descending as radix_sort_pairs_descending
 from ._reduce import block_reduce_builtin as block_reduce_builtin
 from ._reduce import group_reduce as group_reduce
 from ._reduce import reduce as reduce
@@ -59,11 +67,19 @@ _register(
     load,
     merge_sort_keys,
     merge_sort_pairs,
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_keys_descending,
+    radix_sort_pairs,
+    radix_sort_pairs_descending,
     reduce,
     scan,
     shuffle,
     store,
     sum,
+    _common_radix_rank,
+    _common_radix_sort_keys,
+    _common_radix_sort_pairs,
 )
 _register(
     "group",

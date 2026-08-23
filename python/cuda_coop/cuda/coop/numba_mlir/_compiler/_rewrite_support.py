@@ -35,6 +35,11 @@ from numba_cuda_mlir.numba_cuda.typing.typeof import typeof as _numba_typeof
 from numba_cuda_mlir.numbair_transforms import ir
 
 from cuda.coop._core import api as _portable_api
+from cuda.coop._core.block import (
+    block_radix_rank_bins_per_thread,
+    normalize_radix_order,
+    resolve_static_radix_end_bit,
+)
 
 from .. import _lowering as _lowering  # noqa: F401 - registers factories
 from .._types import (

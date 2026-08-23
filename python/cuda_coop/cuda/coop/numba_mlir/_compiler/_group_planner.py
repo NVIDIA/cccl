@@ -43,6 +43,7 @@ from ._group_planner_support import (
     resolve_thread_group,
     types,
 )
+from ._group_radix import _RadixPlanning
 from ._group_reduce import _ReducePlanning
 from ._group_scan import _ScanPlanning
 from ._group_shuffle import _ShufflePlanning
@@ -55,6 +56,7 @@ class _GroupCallPlanner(
     _ExchangePlanning,
     _ShufflePlanning,
     _MergeSortPlanning,
+    _RadixPlanning,
 ):
     """Coordinate semantic family lowering against one function IR."""
 
@@ -519,6 +521,7 @@ class _GroupCallPlanner(
         operation = _group_operation_name(function)
         pair_arguments = {
             "merge_sort_pairs": ("keys", "values"),
+            "radix_sort_pairs": ("keys", "values"),
         }.get(operation)
         if pair_arguments is None:
             return False
@@ -613,6 +616,8 @@ class _GroupCallPlanner(
         array_result_argument = {
             "exchange": "value",
             "load": "output",
+            "radix_rank": "keys",
+            "radix_sort_keys": "keys",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
@@ -804,6 +809,7 @@ class _GroupCallPlanner(
         operation = _group_operation_name(function)
         tuple_arguments = {
             "merge_sort_pairs": ("keys", "values"),
+            "radix_sort_pairs": ("keys", "values"),
         }.get(operation)
         if tuple_arguments is None:
             return None
@@ -892,6 +898,9 @@ class _GroupCallPlanner(
         shape_argument = {
             "exchange": "value",
             "load": "output",
+            "radix_rank": "keys",
+            "radix_sort_keys": "keys",
+            "radix_sort_pairs": "keys",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
@@ -1130,6 +1139,8 @@ class _GroupCallPlanner(
         bound.arguments.setdefault("ranks", None)
         bound.arguments.setdefault("valid_flags", None)
         bound.arguments.setdefault("warp_time_slicing", False)
+        bound.arguments.setdefault("blocked_to_striped", False)
+        bound.arguments.setdefault("exclusive_digit_prefix", None)
         if is_common_root:
             self._validate_common_arguments(operation, bound)
         normalized_scan_op = None
@@ -1197,6 +1208,18 @@ class _GroupCallPlanner(
             )
         elif operation in {"merge_sort_keys", "merge_sort_pairs"}:
             replacement = self._lower_merge_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "radix_rank":
+            replacement = self._lower_radix_rank(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation in {"radix_sort_keys", "radix_sort_pairs"}:
+            replacement = self._lower_radix_sort(
                 inst,
                 operation=operation,
                 group=group,

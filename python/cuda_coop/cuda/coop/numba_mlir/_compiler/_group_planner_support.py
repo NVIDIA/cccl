@@ -16,6 +16,7 @@ identity based.
 from __future__ import annotations
 
 import inspect
+import operator
 from itertools import count
 from numbers import Integral
 from typing import Any
@@ -45,6 +46,7 @@ from .. import _thread_group as _thread_groups
 from .._group_exchange import exchange
 from .._group_load_store import load, store
 from .._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from .._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from .._group_reduce import reduce, sum
 from .._group_scan import (
     exclusive_scan,
@@ -58,6 +60,7 @@ from .._scan_op import ScanOp
 from ._operations import group_operation_name
 
 _NAME_COUNTER = count()
+_PAYLOAD_DTYPE_INT32 = "int32"
 _PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
@@ -94,6 +97,9 @@ _QUALIFIED_OPERATIONS = (
     "shuffle",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
 )
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
@@ -106,6 +112,9 @@ _ROOT_OPERATIONS = {
         load,
         merge_sort_keys,
         merge_sort_pairs,
+        radix_rank,
+        radix_sort_keys,
+        radix_sort_pairs,
         reduce,
         scan,
         shuffle,
@@ -118,6 +127,9 @@ _ROOT_OPERATIONS.update(
         getattr(_portable_api, name): name
         for name in (
             "load",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_pairs",
             "store",
             "reduce",
             "sum",
@@ -157,6 +169,21 @@ def _builtin_less(lhs: Any, rhs: Any) -> bool:
 
 def _builtin_greater(lhs: Any, rhs: Any) -> bool:
     return lhs > rhs
+
+
+def _static_index(scope_name: str, operation: str, name: str, value: Any) -> int:
+    if isinstance(value, (bool, np.bool_)):
+        raise TypeError(f"{scope_name}.{operation} {name} must be an integer")
+    try:
+        return operator.index(value)
+    except TypeError as exc:
+        raise TypeError(f"{scope_name}.{operation} {name} must be an integer") from exc
+
+
+def _static_bool(scope_name: str, operation: str, name: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{scope_name}.{operation} {name} must be a compile-time bool")
+    return value
 
 
 def _group_operation_name(function: Any) -> str | None:

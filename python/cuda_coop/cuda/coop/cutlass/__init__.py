@@ -17,6 +17,7 @@ from ._compiler._runtime import (
 from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from ._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from ._group_reduce import reduce, sum
 from ._group_scan import (
     exclusive_scan,
@@ -63,6 +64,9 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

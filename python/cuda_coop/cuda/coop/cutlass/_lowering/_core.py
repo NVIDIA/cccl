@@ -86,13 +86,14 @@ class CutlassArrayInputTransform:
 
 @dataclasses.dataclass(frozen=True)
 class CutlassRuntimeIntRange:
-    """Inclusive guard, clamp, or modulo policy for a runtime ``int``."""
+    """Inclusive and optional relational policy for a runtime ``int``."""
 
     logical_name: str
     minimum: int
     maximum: int
     clamp: bool = False
     modulus: int | None = None
+    less_than_parameter: str | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -110,6 +111,23 @@ class CutlassRuntimeIntRange:
             raise ValueError("CUTLASS runtime range minimum exceeds maximum")
         if not isinstance(self.clamp, bool):
             raise TypeError("CUTLASS runtime range clamp must be a bool")
+        if self.less_than_parameter is not None:
+            if (
+                not self.less_than_parameter
+                or self.less_than_parameter[0].isdigit()
+                or not self.less_than_parameter.replace("_", "a").isalnum()
+            ):
+                raise ValueError(
+                    "CUTLASS runtime range relation requires a C identifier"
+                )
+            if self.less_than_parameter == self.logical_name:
+                raise ValueError(
+                    "CUTLASS runtime range relation requires distinct parameters"
+                )
+            if self.clamp or self.modulus is not None:
+                raise ValueError(
+                    "CUTLASS runtime range relations cannot clamp or normalize"
+                )
         if self.modulus is not None:
             if (
                 not isinstance(self.modulus, int)
@@ -647,6 +665,30 @@ class CutlassCoreAdapter(CoreBackendAdapter):
                 != "int"
             ):
                 raise TypeError("CUTLASS runtime int ranges require int parameters")
+            relation_name = runtime_range.less_than_parameter
+            if relation_name is not None:
+                relation_descriptor = method_by_name.get(relation_name)
+                if not isinstance(relation_descriptor, (Reference, Value)) or getattr(
+                    relation_descriptor,
+                    "is_output",
+                    False,
+                ):
+                    raise ValueError(
+                        "CUTLASS runtime int range relations must name input "
+                        "scalar parameters"
+                    )
+                if (
+                    self.cpp_type(
+                        self._resolved_dtype(
+                            relation_descriptor.dtype,
+                            specialization,
+                        )
+                    )
+                    != "int"
+                ):
+                    raise TypeError(
+                        "CUTLASS runtime int range relations require int parameters"
+                    )
         for output_name, input_name in output_initializers:
             if output_name not in method_by_name or input_name not in method_by_name:
                 raise ValueError(
@@ -999,6 +1041,16 @@ def _render_runtime_int_ranges(artifact: CutlassCoreArtifact) -> list[str]:
                 (
                     f"  if ({name} < {runtime_range.minimum} || "
                     f"{name} > {runtime_range.maximum}) {{",
+                    '    asm volatile("trap;");',
+                    "  }",
+                )
+            )
+    for runtime_range in artifact.runtime_int_ranges:
+        relation_name = runtime_range.less_than_parameter
+        if relation_name is not None:
+            lines.extend(
+                (
+                    f"  if ({runtime_range.logical_name} >= {relation_name}) {{",
                     '    asm volatile("trap;");',
                     "  }",
                 )

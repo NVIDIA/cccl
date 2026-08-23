@@ -21,6 +21,7 @@ from ._rewrite_support import (
     _dtype_values_match,
     _normalize_temp_storage_alignment,
     _numba_typeof,
+    _numba_types,
     _phi_incoming_values,
     _portable_api,
     _ResolvedCallTarget,
@@ -283,9 +284,12 @@ class _ProvenanceRewrite:
             raise CoopSinglePhaseRewriteError(
                 "typed group payload array-kind must be a compile-time bool"
             )
-        from ._group_planner_support import _PAYLOAD_DTYPE_LIKE
+        from ._group_planner_support import (
+            _PAYLOAD_DTYPE_INT32,
+            _PAYLOAD_DTYPE_LIKE,
+        )
 
-        if dtype_policy != _PAYLOAD_DTYPE_LIKE:
+        if dtype_policy not in {_PAYLOAD_DTYPE_INT32, _PAYLOAD_DTYPE_LIKE}:
             raise CoopSinglePhaseRewriteError(
                 f"unknown typed group payload dtype policy {dtype_policy!r}"
             )
@@ -311,9 +315,12 @@ class _ProvenanceRewrite:
             )
         else:
             items_per_thread = 1
-        dtype = prototype_spec.dtype if prototype_spec is not None else None
-        if dtype is None:
-            dtype = self._resolve_var_dtype(prototype)
+        if dtype_policy == _PAYLOAD_DTYPE_INT32:
+            dtype = _numba_types.int32
+        else:
+            dtype = prototype_spec.dtype if prototype_spec is not None else None
+            if dtype is None:
+                dtype = self._resolve_var_dtype(prototype)
         return _ThreadDataSpec(
             items_per_thread=items_per_thread,
             dtype=dtype,

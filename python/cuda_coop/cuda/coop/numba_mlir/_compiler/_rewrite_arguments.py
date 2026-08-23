@@ -47,6 +47,7 @@ class _ArgumentRewrite:
         factory_kwargs: dict[str, object] = {}
         runtime_temp_storage = getitem_temp_storage
         runtime_factory_kwargs = tuple(spec.get("runtime_factory_kwargs", ()))
+        runtime_only_kwargs = tuple(spec.get("runtime_only_kwargs", ()))
         runtime_factory_kw_prerequisites = dict(
             spec.get("runtime_factory_kw_prerequisites", {})
         )
@@ -55,6 +56,8 @@ class _ArgumentRewrite:
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
         runtime_factory_control_vars: dict[str, ir.Var] = {}
+        seen_runtime_only_kwargs: set[str] = set()
+        runtime_only_kw_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
@@ -70,6 +73,14 @@ class _ArgumentRewrite:
                 value_var = runtime_args[base_runtime_arg_count + index]
                 if isinstance(value_var, ir.Var):
                     runtime_factory_control_vars[name] = value_var
+        if runtime_only_kwargs:
+            if extra_runtime_arg_count > len(runtime_only_kwargs):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement '{op_name}' received too many positional "
+                    "runtime arguments"
+                )
+            for name in runtime_only_kwargs[:extra_runtime_arg_count]:
+                seen_runtime_only_kwargs.add(name)
         for name, value_var in call.kws:
             if name == "temp_storage" and op_name in self._TEMP_STORAGE_RUNTIME_KW_OPS:
                 if runtime_temp_storage is not None:
@@ -146,9 +157,25 @@ class _ArgumentRewrite:
                     )
                 runtime_factory_kw_vars[name] = value_var
                 continue
+            if name in runtime_only_kwargs:
+                if name in seen_runtime_only_kwargs or name in runtime_only_kw_vars:
+                    raise CoopSinglePhaseRewriteError(
+                        f"Duplicate coop movement '{op_name}' runtime "
+                        f"argument '{name}'."
+                    )
+                if not isinstance(value_var, ir.Var):
+                    raise CoopSinglePhaseRewriteError(
+                        f"coop runtime argument '{name}' must be a variable."
+                    )
+                runtime_only_kw_vars[name] = value_var
+                continue
             if name not in allowed_factory_kwargs:
                 allowed = ", ".join(
-                    sorted(set(allowed_factory_kwargs) | set(runtime_factory_kwargs))
+                    sorted(
+                        set(allowed_factory_kwargs)
+                        | set(runtime_factory_kwargs)
+                        | set(runtime_only_kwargs)
+                    )
                 )
                 raise CoopSinglePhaseRewriteError(
                     f"Unsupported coop movement '{op_name}' factory keyword '{name}'. Allowed keywords are: {allowed}."
@@ -185,6 +212,22 @@ class _ArgumentRewrite:
             seen_factory_kwargs.add(name)
             seen_runtime_factory_kwargs.add(name)
             runtime_factory_control_vars[name] = value_var
+        for name in runtime_only_kwargs:
+            value_var = runtime_only_kw_vars.get(name)
+            if value_var is None:
+                continue
+            prerequisite = runtime_factory_kw_prerequisites.get(name)
+            if (
+                prerequisite is not None
+                and prerequisite not in seen_runtime_only_kwargs
+                and prerequisite not in runtime_only_kw_vars
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement '{op_name}' runtime argument '{name}' "
+                    f"requires '{prerequisite}'."
+                )
+            runtime_args.append(value_var)
+            seen_runtime_only_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
         self._validate_integer_runtime_controls(
@@ -210,15 +253,37 @@ class _ArgumentRewrite:
             seen_factory_kwargs=seen_factory_kwargs,
             factory_kwargs=factory_kwargs,
         )
-        runtime_arg_constant_replacements = self._validate_merge_sort_runtime_controls(
+        merge_sort_replacements = self._validate_merge_sort_runtime_controls(
             op_name=op_name,
             runtime_args=runtime_args,
             control_vars=runtime_factory_control_vars,
             factory_kwargs=factory_kwargs,
         )
+        radix_sort_replacements = self._radix_sort_runtime_constant_replacements(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            runtime_only_kw_vars=runtime_only_kw_vars,
+            factory_kwargs=factory_kwargs,
+        )
+        runtime_arg_constant_replacements = (
+            *merge_sort_replacements,
+            *radix_sort_replacements,
+        )
         if op_name == "scan":
             self._finalize_scan_factory_kwargs(
                 runtime_arg_count=runtime_arg_count,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name in {"radix_rank", "_common_radix_rank"}:
+            self._finalize_radix_rank_factory_kwargs(
+                op_name=op_name,
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+            self._validate_radix_rank_exclusive_digit_prefix_extent(
+                op_name=op_name,
+                control_vars=runtime_factory_control_vars,
                 factory_kwargs=factory_kwargs,
             )
         if op_name == "shuffle":
@@ -279,51 +344,6 @@ class _ArgumentRewrite:
             tuple(factory_kw_value_vars),
             runtime_arg_constant_replacements,
         )
-
-    def _validate_integer_runtime_controls(
-        self,
-        *,
-        op_name: str,
-        runtime_args: list[ir.Var],
-        factory_kwargs: dict[str, object],
-    ) -> None:
-        """Reject bool and noninteger partial-tile controls before codegen."""
-
-        parameter = None
-        index = None
-        if op_name in {"reduce", "sum", "block_reduce_builtin"} and factory_kwargs.get(
-            "num_valid"
-        ):
-            parameter, index = "valid_items", 1
-        elif op_name in {
-            "warp_reduce",
-            "warp_sum",
-            "warp_reduce_builtin",
-        } and factory_kwargs.get("valid_items"):
-            parameter, index = "valid_items", 1
-        elif op_name in {"warp_exclusive_scan", "warp_inclusive_scan"} and (
-            factory_kwargs.get("valid_items")
-        ):
-            parameter, index = "valid_items", 1
-        if parameter is None or index is None or index >= len(runtime_args):
-            return
-        value = runtime_args[index]
-        if not isinstance(value, ir.Var):
-            raise CoopSinglePhaseRewriteError(
-                f"coop single-phase '{op_name}' {parameter} must be an integer"
-            )
-        from numba_cuda_mlir import types as numba_mlir_types
-
-        value_type = self._resolve_var_numba_type(value)
-        if value_type is None:
-            value_type = self._resolve_var_dtype(value)
-        if isinstance(value_type, numba_mlir_types.Boolean) or not isinstance(
-            value_type, numba_mlir_types.Integer
-        ):
-            raise CoopSinglePhaseRewriteError(
-                f"coop single-phase '{op_name}' {parameter} must be an "
-                "integer, not bool or a noninteger scalar"
-            )
 
 
 __all__ = ["_ArgumentRewrite"]
