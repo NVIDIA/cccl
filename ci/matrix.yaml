@@ -370,7 +370,10 @@ workflows:
 
     # cuda.coop wheels and compiler-backed lanes
     - {jobs: ['test'], project: 'cuda_coop_contracts', ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_numba_mlir_qualification'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_numba_mlir_cluster_qualification'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test_py_coop_cutlass_cluster_qualification'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test_py_coop_cutlass_final_link_qualification'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'rtxpro6000', cxx: 'gcc13'}
 
@@ -498,7 +501,10 @@ workflows:
 
     # cuda.coop wheels and compiler-backed lanes
     - {jobs: ['test'], project: 'cuda_coop_contracts', ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_numba_mlir_qualification'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_numba_mlir_cluster_qualification'], project: 'cuda_coop_numba_mlir', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test_py_coop_cutlass_cluster_qualification'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'h100', cxx: 'gcc13'}
     - {jobs: ['test_py_coop_cutlass_final_link_qualification'], project: 'cuda_coop_cutlass', ctk: '13.X', py_version: '3.12', gpu: 'rtxpro6000', cxx: 'gcc13'}
 
@@ -699,8 +705,11 @@ jobs:
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
   build_py_coop_wheel: { name: "Build cuda-coop", gpu: false, invoke: { prefix: 'build_cuda_coop'} }
   test_py_coop_contracts: { name: "Test cuda.coop contracts", gpu: false, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage contracts'} }
+  test_py_coop_numba_mlir: { name: "Test cuda.coop Numba-MLIR", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage numba-mlir'} }
   test_py_coop_cutlass: { name: "Test cuda.coop CUTLASS", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage cutlass'} }
   test_py_coop_cutlass_host: { name: "Test cuda.coop CUTLASS host", gpu: false, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage cutlass-host'} }
+  test_py_coop_numba_mlir_qualification: { name: "Qualify cuda.coop Numba-MLIR", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage numba-mlir-qualification'} }
+  test_py_coop_numba_mlir_cluster_qualification: { name: "Qualify cuda.coop Numba-MLIR clusters", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage numba-mlir-cluster-qualification'} }
   test_py_coop_cutlass_cluster_qualification: { name: "Qualify cuda.coop CUTLASS clusters", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage cutlass-cluster-qualification'} }
   test_py_coop_cutlass_final_link_qualification: { name: "Qualify cuda.coop CUTLASS final link", gpu: true, needs: 'build_py_coop_wheel', invoke: { prefix: 'test_cuda_coop', args: '-stage cutlass-final-link-qualification'} }
 
@@ -766,6 +775,11 @@ projects:
     job_map:
       build: ['build_py_coop_wheel']
       test: ['test_py_coop_contracts']
+  cuda_coop_numba_mlir:
+    name: "cuda.coop Numba-MLIR"
+    job_map:
+      build: ['build_py_coop_wheel']
+      test: ['test_py_coop_numba_mlir']
   cuda_coop_cutlass:
     name: "cuda.coop CUTLASS"
     job_map:

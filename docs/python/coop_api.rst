@@ -25,3 +25,12 @@ surface.
 import it validates the installed ``nvidia-cutlass-dsl`` runtime, registers a
 compiler trace context, and becomes the common-root fallback backend. See
 :doc:`coop_cutlass`.
+
+.. py:module:: cuda.coop.numba_mlir
+
+``cuda.coop.numba_mlir`` activates the Numba-CUDA-MLIR backend explicitly. On
+import it verifies the installed ``numba-cuda-mlir`` compiler hooks and
+transactionally registers the cooperative whole-function rewrites. Beyond the
+portable operations it adds scoped ``_block``/``_warp`` factory surfaces,
+``gpu_dataclass`` temp-storage traits, shared-memory ``TempStorage`` planning,
+and runtime-free algorithm enums. See :doc:`coop_numba_mlir`.

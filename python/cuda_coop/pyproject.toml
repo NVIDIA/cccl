@@ -56,6 +56,18 @@ cutlass-cu13 = [
   "cuda-coop[cu13]",
   "nvidia-cutlass-dsl>=4.8,<5",
 ]
+numba-cuda-mlir = [
+  "cuda-coop[cu13]",
+  "numba-cuda-mlir[cu13]>=0.5.0",
+]
+numba-cuda-mlir-cu12 = [
+  "cuda-coop[cu12]",
+  "numba-cuda-mlir[cu12]>=0.5.0",
+]
+numba-cuda-mlir-cu13 = [
+  "cuda-coop[cu13]",
+  "numba-cuda-mlir[cu13]>=0.5.0",
+]
 test = [
   "pytest",
   "pytest-cov",

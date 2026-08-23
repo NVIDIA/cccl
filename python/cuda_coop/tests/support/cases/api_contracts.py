@@ -559,7 +559,7 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
     # Backend evidence becomes required as each backend commit lands its
     # implementation and test lanes.
     "cutlass": frozenset({"load", "store"}),
-    "numba_mlir": frozenset(),
+    "numba_mlir": frozenset({"load", "store"}),
 }
 
 COMMON_PROFILE_ROLE_METADATA = {

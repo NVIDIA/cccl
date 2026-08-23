@@ -57,6 +57,7 @@ backend-qualified. The Python `int` dtype spelling maps to `int32`.
 Backend-qualified packages remain available for backend-specific extensions:
 
 - `cuda.coop.cutlass`
+- `cuda.coop.numba_mlir`
 
 ### Typing and editor completion
 
@@ -81,26 +82,41 @@ same identity limitation and expose supported literal spellings in their
 stubs. Numba-CUDA-MLIR group-first calls do the same; its qualified root accepts
 custom callbacks where the backend supports them.
 
-Qualified backend imports provide the activation fallback used when
-automatic probing is disabled: each backend import validates its runtime
-and registers its compiler hooks before serving the portable root API.
+```python
+import cuda.coop.cutlass as coop
+# or
+import cuda.coop.numba_mlir as coop
+```
+
+CUTLASS and Numba-CUDA-MLIR qualified imports provide the activation fallback
+used when automatic probing is disabled. A CUTLASS import validates that its
+runtime is importable and installs the qualified root fallback, while
+Numba-CUDA-MLIR validates and registers its planner and rewrite hooks
+transactionally. The automatic root probe additionally checks the concrete
+CUTLASS compiler features required by generated providers.
 
 Python's standard warning controls can filter registration diagnostics. For
 example, `PYTHONWARNINGS='ignore:cuda.coop automatic DSL registration'`
 suppresses only these warnings; disabling auto-registration is preferable when
 an application intentionally manages compiler activation itself.
 
-The wheel contains the common API plus the CUTLASS adapter and stubs.
-Extras add compiler dependencies.
+The wheel contains the common API plus the CUTLASS and Numba-CUDA-MLIR
+adapters and stubs. Extras add compiler dependencies.
 The plain `cuda-coop` does not install a compiler. `cu12` and `cu13` add
 toolkit dependencies. The `cutlass` and `cutlass-cu13` extras select CUDA 13
 and `nvidia-cutlass-dsl>=4.8,<5`; `cutlass-cu12` selects the same compiler
-range with CUDA 12 dependencies.
+range with CUDA 12 dependencies. The `numba-cuda-mlir` and
+`numba-cuda-mlir-cu13` extras select CUDA 13 and
+`numba-cuda-mlir[cu13]>=0.5.0`; `numba-cuda-mlir-cu12` selects the CUDA 12
+variant. The explicit spellings `cutlass-cu12`, `cutlass-cu13`,
+`numba-cuda-mlir-cu12`, and `numba-cuda-mlir-cu13` remain available.
 
 ## Initial Boundaries
 
 - `cuda.coop.cutlass` is the shared CUTLASS cooperative-primitive surface and
   is common-v1 conforming.
+- `cuda.coop.numba_mlir` is the qualified cooperative-primitive frontend for
+  `numba-cuda-mlir` kernels and is common-v1 conforming.
   It combines the CuTe provider implementation and Prims array adapter behind
   one public root API.
 
@@ -115,7 +131,8 @@ python/cuda_coop/
 │       ├── __init__.py
 │       ├── _headers/
 │       ├── _core/
-│       └── cutlass/
+│       ├── cutlass/
+│       └── numba_mlir/
 └── tests/
     ├── contracts/
     ├── backends/
@@ -183,6 +200,73 @@ Reinstall a wheel instead of editing its installed headers in place. Use a
 clean Git or custom header root while developing header changes.
 
 
+## Numba-CUDA-MLIR Backend
+
+The portable group-first spelling next to `numba_cuda_mlir.cuda` is:
+
+```python
+from numba_cuda_mlir import cuda
+from cuda import coop
+```
+
+The bare root capability-checks an installed Numba-CUDA-MLIR runtime and
+registers its planner and rewrite before compilation. The qualified import does
+the same explicitly when automatic registration is disabled. Its
+whole-function planner recognizes common-root object identities and lowers them
+through the normal Numba-CUDA-MLIR providers. Use
+`import cuda.coop.numba_mlir as coop` for backend-specific operations and
+Numba-CUDA-MLIR-specific editor completion.
+
+A portable kernel body is:
+
+```python
+@cuda.jit
+def kernel(source, destination):
+    block = coop.this_block()
+    items = coop.ThreadData(1)
+    coop.load(block, source, items)
+    coop.store(block, destination, items)
+```
+
+The qualified package shares CUTLASS's thread hierarchy vocabulary:
+`ThreadHierarchy`, `ThreadGroup`, `this_thread`, `this_warp`, `this_block`,
+`this_cluster`, and `this_grid`. It also exports the common-v1 root
+operations as they land on the portable contract, with the same positional
+and keyword order.
+
+`rank`, `count`, `rank_as`, `count_as`, `sync`, `sync_aligned`, and
+`is_member` lower when the configured launch provides their required facts.
+Static `group_by` mappings partition threads within a warp or complete warps
+within a block.
+
+The unqualified root contains the broad common-v1 group-first profile. The
+qualified Numba-CUDA-MLIR surface additionally exposes backend algorithm
+enums through the same group-first interface:
+
+- Root Load and Store lower complete physical blocks and warps through the
+  established public CUB implementations.
+- Grid rank and count use exact configured launch dimensions. Grid sync is
+  rejected because the current launcher cannot request a verified cooperative
+  launch.
+
+Group planning runs after device-function inlining. It detects group markers
+before promoting exact launch facts into the current compiler state, so typing
+and lowering continue in the same attempt without replaying planners merely to
+activate launch facts. Generated CUDAX and CUB providers attach as real
+LTO-IR, and their device overloads are forced inline so the final cubin does
+not retain provider call frames.
+
+This experimental path requires the whole-function planner and configured
+launch contracts proposed in upstream `numba-cuda-mlir`
+[#202](https://github.com/NVIDIA/numba-cuda-mlir/pull/202) and
+[#203](https://github.com/NVIDIA/numba-cuda-mlir/pull/203). The complete
+validated source stack also includes
+[#238](https://github.com/NVIDIA/numba-cuda-mlir/pull/238) for planner
+dynamic-shared-memory minima and
+[#239](https://github.com/NVIDIA/numba-cuda-mlir/pull/239) for scalar-literal
+specialization retry. Until releases contain those contracts, use a compatible
+source build.
+
 ## Local Validation
 
 From the repository root:
@@ -192,3 +276,8 @@ python -m pytest -q -p no:cacheprovider python/cuda_coop/tests
 python -m ruff check python/cuda_coop
 python -m compileall -q python/cuda_coop/cuda/coop
 ```
+
+The Numba-CUDA-MLIR corpus lives under `tests/backends/numba_mlir`. Pure host
+checks, compiler checks, representative GPU runtime coverage, and broad stress
+matrices have separate directories. Use the focused layers during iteration
+and reserve `stress` for scheduled or final qualification.

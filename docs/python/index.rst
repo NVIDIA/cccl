@@ -12,7 +12,7 @@ abstractions for CUDA Python developers.
   custom parallel algorithms, without writing CUDA kernels directly.
 
 * :doc:`cuda.coop <coop>` — Cooperative group primitives for authoring portable
-  GPU algorithms, with an initial backend for CUTLASS DSL kernels.
+  GPU algorithms, with backends for CUTLASS DSL and Numba-CUDA-MLIR kernels.
 
 * :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
   logical data and tasks with read/write annotations; STF orchestrates execution
@@ -39,6 +39,7 @@ Who is this for?
    compute/index
    coop
    coop_cutlass
+   coop_numba_mlir
    stf
    resources
    api_reference
