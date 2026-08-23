@@ -1,0 +1,180 @@
+name: SASS Diff
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      id:
+        description: "Stable SASS comparison config id."
+        required: true
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' additional args."
+        required: true
+        type: string
+      preset:
+        description: "CMake preset passed to ci/sass/sass_diff.sh."
+        required: true
+        type: string
+      archs:
+        description: "CMAKE_CUDA_ARCHITECTURES, for example '70;80;90'."
+        required: true
+        type: string
+      target_filters_json:
+        description: "JSON array of regexes matched against the build targets."
+        required: true
+        type: string
+      base_ref:
+        description: "Baseline ref. Normally the PR merge base."
+        required: true
+        type: string
+      artifact_retention_days:
+        description: "Artifact retention in days."
+        required: false
+        default: 14
+        type: number
+
+jobs:
+  run:
+    name: "SASS diff: ${{ inputs.id }}"
+    # No GPU is necessary: the benchmarks are compiled and disassembled, not
+    # run. A CPU runner is enough and is much cheaper.
+    runs-on: linux-amd64-cpu32m
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      # Every step reads and writes this one directory, so it is defined once
+      # here instead of being recomputed per step.
+      ARTIFACT_ROOT: sass-artifacts/${{ inputs.id }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          # The comparison adds a worktree for the base ref, so the full
+          # history is necessary.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+
+      - name: Prepare AWS config for devcontainer
+        run: |
+          # `defaults.run.shell` sets `-u`, so an unset credential stops the job
+          # here. Without it the file would hold an empty value, the build would
+          # run with no access to the sccache bucket, and every compile would
+          # miss while the job still reported success.
+          #
+          # The devcontainer mounts this path to /home/coder/.aws.
+          aws_dir="${{ github.workspace }}/.aws"
+          mkdir -p "${aws_dir}"
+          cat > "${aws_dir}/config" <<EOF
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+          cat > "${aws_dir}/credentials" <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID}
+          aws_session_token=${AWS_SESSION_TOKEN}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+          EOF
+          chmod 0600 "${aws_dir}/credentials"
+          chmod 0664 "${aws_dir}/config"
+
+      # A SASS change is a result, not a fault. Thus it does not fail this job. The result
+      # is in result/report.json, and the comment artifact holds a copy for
+      # `sass-results`. That job posts the result but does not fail on a change.
+      - name: Compare SASS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          ARCHS: ${{ inputs.archs }}
+          BASE_REF: ${{ inputs.base_ref }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          PRESET: ${{ inputs.preset }}
+          TARGET_FILTERS_JSON: ${{ inputs.target_filters_json }}
+        run: |
+          mkdir -p "${ARTIFACT_ROOT}"
+
+          .devcontainer/launch.sh \
+            -d ${LAUNCH_ARGS} \
+            --env "AWS_ROLE_ARN=" \
+            --env "AWS_REGION=${AWS_REGION}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+            --env "CCCL_BUILD_INFIX=sass-${{ inputs.id }}" \
+            --env "SCCACHE_REGION=${AWS_REGION}" \
+            --volume "${GITHUB_WORKSPACE}/${ARTIFACT_ROOT}:/sass-artifacts" \
+            -- ./ci/sass/sass_diff.sh \
+            "${BASE_REF}" \
+            HEAD \
+            -preset "${PRESET}" \
+            -arch "${ARCHS}" \
+            -output-dir /sass-artifacts \
+            -target-filters-json "${TARGET_FILTERS_JSON}"
+
+      # Before the comment is rendered, because the download URL of this artifact is what
+      # the comment links to.
+      #
+      # The disassembly itself is not uploaded, `sass_diff.sh` writes four complete copies
+      # of it, under base/, test/, result/base/ and result/test/. Over 82 benchmark
+      # targets and six architectures that reaches several GB per run, while the files
+      # below are a few MB. To read the SASS itself, run `ci/sass/sass_diff.sh` and open
+      # the local artifact directory, which keeps every file.
+      - name: Upload the SASS dumps
+        id: dumps
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sass-${{ inputs.id }}-dumps
+          path: |
+            ${{ env.ARTIFACT_ROOT }}/result/diff
+            ${{ env.ARTIFACT_ROOT }}/result/report.json
+            ${{ env.ARTIFACT_ROOT }}/result/meta.json
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      # This step renders the comment. It comes after the upload, because the comment
+      # links to the artifact, and that URL exists only after the upload.
+      - name: Report the SASS summary
+        env:
+          ARTIFACTS_URL: ${{ steps.dumps.outputs.artifact-url }}
+        run: |
+          summary="${ARTIFACT_ROOT}/result/summary.md"
+          python3 ci/sass/render_report.py \
+            --report "${ARTIFACT_ROOT}/result/report.json" \
+            --meta "${ARTIFACT_ROOT}/result/meta.json" \
+            --output "${summary}" \
+            --artifacts-url "${ARTIFACTS_URL}"
+
+          if [[ ! -s "${summary}" ]]; then
+            echo "::error::${summary} is missing or empty after a successful comparison."
+            exit 1
+          fi
+          cat "${summary}" >> "${GITHUB_STEP_SUMMARY}"
+
+      # `sass-results` downloads this artifact with the `sass-*-comment` pattern. It holds
+      # the comment and the report that tells `sass-results` what to do with it. It stays
+      # separate from the dumps, which are large and which no job reads.
+      - name: Upload the SASS comment
+        uses: actions/upload-artifact@v4
+        with:
+          name: sass-${{ inputs.id }}-comment
+          path: |
+            ${{ env.ARTIFACT_ROOT }}/result/summary.md
+            ${{ env.ARTIFACT_ROOT }}/result/report.json
+          # The step before this one proved summary.md is there.
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}

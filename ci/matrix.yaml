@@ -41,6 +41,20 @@ compile_time:
           top: 15
           threshold: 0.2
 
+# Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
+# the author to run the benchmarks when the generated code changed.
+#
+# We should almost always run this on latest CTK and compiler since that compiles the most
+# amount of arches.
+sass:
+  pull_request:
+    - id: cub-benchmarks
+      ctk: '13.X'
+      cxx: 'gcc13'
+      preset: cub-benchmark
+      archs: all-major-cccl
+      target_filters: ["^cub\\.bench\\."]
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -464,6 +478,10 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13'}
+    # Free-threaded (3.14t): minimal (numba-free) tests gate the cp314t wheel;
+    # the full test extras cannot resolve on free-threaded Python (numba-cuda
+    # has no cp314t wheels).
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
 
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.

@@ -166,6 +166,7 @@ readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+export CCCL_BUILD_INFIX
 
 mkdir -p ../build
 # Absolute path to cccl/build
