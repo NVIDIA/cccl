@@ -97,6 +97,10 @@ class _GroupMetadataRewrite:
                 "exchange": frozenset({"exchange"}),
                 "warp_exchange": frozenset({"exchange"}),
                 "shuffle": frozenset({"shuffle"}),
+                "merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
+                "warp_merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "warp_merge_sort_pairs": frozenset({"merge_sort_pairs"}),
             }
             if common_root_operation not in operation_families.get(
                 op_name, frozenset()
@@ -104,9 +108,33 @@ class _GroupMetadataRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "_common_root_operation does not match the rewritten group operation"
                 )
-            from ._parameters import _validate_common_numeric_dtype
+            from ._parameters import (
+                _validate_common_integer_key_dtype,
+                _validate_common_numeric_dtype,
+            )
 
-            if op_name in {"load", "warp_load", "store", "warp_store"}:
+            if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("dtype"),
+                        operation=common_root_operation,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("keys"),
+                        operation=common_root_operation,
+                    )
+                    _validate_common_numeric_dtype(
+                        factory_kwargs.get("values"),
+                        operation=common_root_operation,
+                        parameter="values",
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"load", "warp_load", "store", "warp_store"}:
                 operand_names = (
                     ("source", "output")
                     if op_name in {"load", "warp_load"}

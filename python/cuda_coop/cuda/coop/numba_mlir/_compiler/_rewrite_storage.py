@@ -424,6 +424,7 @@ class _StorageRewrite:
                         runtime_temp_storage_var,
                         factory_kwargs,
                         factory_kw_value_vars,
+                        runtime_arg_constant_replacements,
                     ) = self._validate_and_split_args(
                         op_name, call, target.getitem_temp_storage
                     )
@@ -446,6 +447,7 @@ class _StorageRewrite:
                         factory_kwargs=factory_kwargs,
                         factory_kw_value_vars=factory_kw_value_vars,
                         loc=inst.loc,
+                        runtime_arg_constant_replacements=runtime_arg_constant_replacements,
                         physical_warp_tile_origin=physical_warp_tile_origin,
                         preserve_root_store_payload=preserve_root_store_payload,
                         root_store_scalar=root_store_scalar,

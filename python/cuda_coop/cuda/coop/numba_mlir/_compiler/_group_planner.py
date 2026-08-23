@@ -12,6 +12,7 @@ live in the adjacent semantic group mixins.
 from .._thread_data import ThreadData
 from ._group_exchange import _ExchangePlanning
 from ._group_load_store import _LoadStorePlanning
+from ._group_merge_sort import _MergeSortPlanning
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
@@ -53,6 +54,7 @@ class _GroupCallPlanner(
     _ScanPlanning,
     _ExchangePlanning,
     _ShufflePlanning,
+    _MergeSortPlanning,
 ):
     """Coordinate semantic family lowering against one function IR."""
 
@@ -513,7 +515,23 @@ class _GroupCallPlanner(
             )
         if definition.op != "call":
             return False
-        return False
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        pair_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+        }.get(operation)
+        if pair_arguments is None:
+            return False
+        if index < 0:
+            index += len(pair_arguments)
+        if not 0 <= index < len(pair_arguments):
+            return False
+        bound = self._bind(function, definition)
+        return self._is_array_value(
+            bound.arguments[pair_arguments[index]],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -600,6 +618,7 @@ class _GroupCallPlanner(
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
             "shuffle": "value",
         }.get(operation)
         if array_result_argument is None:
@@ -781,7 +800,22 @@ class _GroupCallPlanner(
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
-        return None
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        tuple_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+        }.get(operation)
+        if tuple_arguments is None:
+            return None
+        if index < 0:
+            index += len(tuple_arguments)
+        if not 0 <= index < len(tuple_arguments):
+            return None
+        bound = self._bind(function, definition)
+        return self._array_extent(
+            bound.arguments[tuple_arguments[index]],
+            seen=set(seen),
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -863,6 +897,8 @@ class _GroupCallPlanner(
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
+            "merge_sort_pairs": "keys",
             "shuffle": "value",
         }.get(operation)
         if shape_argument is None:
@@ -1028,6 +1064,8 @@ class _GroupCallPlanner(
             name = {
                 "exchange": "warp_exchange",
                 "load": "warp_load",
+                "merge_sort_keys": "warp_merge_sort_keys",
+                "merge_sort_pairs": "warp_merge_sort_pairs",
                 "store": "warp_store",
                 "sum": "warp_sum",
                 "exclusive_sum": "warp_exclusive_sum",
@@ -1156,6 +1194,14 @@ class _GroupCallPlanner(
         elif operation == "shuffle":
             replacement = self._lower_shuffle(
                 inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation in {"merge_sort_keys", "merge_sort_pairs"}:
+            replacement = self._lower_merge_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
             )
         else:
             raise AssertionError(f"unhandled cuda.coop operation {operation!r}")

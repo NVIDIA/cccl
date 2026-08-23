@@ -18,6 +18,7 @@ from ._rewrite_support import (
     _align_up,
     _cuda_module,
     _default_temp_storage_alignment,
+    _dtype_values_match,
     _normalize_temp_storage_alignment,
     _numba_typeof,
     _phi_incoming_values,
@@ -1148,6 +1149,28 @@ class _ProvenanceRewrite:
                     self._collect_thread_data_write_roots(source, seen=set(seen))
                 )
         return roots
+
+    def _infer_thread_data_dtype_from_provenance_writes(self, value: ir.Var):
+        """Infer dtype from writes without re-entering marker spec resolution."""
+        inferred = None
+        roots = self._collect_thread_data_write_roots(value)
+        for root_name in sorted(roots):
+            root = roots[root_name]
+            spec = self._resolve_thread_data_spec(root)
+            root_dtype = spec.dtype if spec is not None else None
+            if root_dtype is None:
+                root_dtype = self._resolve_var_dtype(root)
+            if root_dtype is None:
+                root_dtype = self._infer_thread_data_dtype_from_writes(root)
+            if root_dtype is None:
+                continue
+            if inferred is not None and not _dtype_values_match(inferred, root_dtype):
+                raise CoopSinglePhaseRewriteError(
+                    "Inconsistent inferred dtype across coop.ThreadData "
+                    "payload provenance."
+                )
+            inferred = root_dtype
+        return inferred
 
     def _resolve_var_dtype(self, value: ir.Var, seen: set[str] | None = None):
         if seen is None:

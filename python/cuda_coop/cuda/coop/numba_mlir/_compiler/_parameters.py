@@ -17,6 +17,7 @@ import numpy as np
 from numba_cuda_mlir import types as numba_mlir_types
 
 from cuda.coop._core.dtype_policy import (
+    validate_portable_integer_key_dtype_name,
     validate_portable_numeric_dtype_name,
 )
 
@@ -172,6 +173,23 @@ def _validate_common_numeric_dtype(
 
     dtype, dtype_name = _normalize_common_dtype(dtype)
     validate_portable_numeric_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+    )
+    return dtype
+
+
+def _validate_common_integer_key_dtype(
+    dtype,
+    *,
+    operation: str,
+    parameter: str = "keys",
+):
+    """Return one normalized dtype from the portable integer-key profile."""
+
+    dtype, dtype_name = _normalize_common_dtype(dtype)
+    validate_portable_integer_key_dtype_name(
         dtype_name,
         operation=operation,
         parameter=parameter,

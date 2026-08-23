@@ -24,6 +24,7 @@ class _ArgumentRewrite:
         ir.Var | None,
         dict[str, object],
         tuple[ir.Var, ...],
+        tuple[tuple[int, object], ...],
     ]:
         spec = self._OP_SPECS[op_name]
         if call.vararg is not None or call.varkwarg is not None:
@@ -53,6 +54,7 @@ class _ArgumentRewrite:
         extra_runtime_arg_count = runtime_arg_count - base_runtime_arg_count
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
+        runtime_factory_control_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
@@ -66,6 +68,8 @@ class _ArgumentRewrite:
                 seen_factory_kwargs.add(name)
                 seen_runtime_factory_kwargs.add(name)
                 value_var = runtime_args[base_runtime_arg_count + index]
+                if isinstance(value_var, ir.Var):
+                    runtime_factory_control_vars[name] = value_var
         for name, value_var in call.kws:
             if name == "temp_storage" and op_name in self._TEMP_STORAGE_RUNTIME_KW_OPS:
                 if runtime_temp_storage is not None:
@@ -180,6 +184,7 @@ class _ArgumentRewrite:
             factory_kwargs[name] = True
             seen_factory_kwargs.add(name)
             seen_runtime_factory_kwargs.add(name)
+            runtime_factory_control_vars[name] = value_var
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
         self._validate_integer_runtime_controls(
@@ -203,6 +208,12 @@ class _ArgumentRewrite:
             op_name=op_name,
             allowed_factory_kwargs=allowed_factory_kwargs,
             seen_factory_kwargs=seen_factory_kwargs,
+            factory_kwargs=factory_kwargs,
+        )
+        runtime_arg_constant_replacements = self._validate_merge_sort_runtime_controls(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            control_vars=runtime_factory_control_vars,
             factory_kwargs=factory_kwargs,
         )
         if op_name == "scan":
@@ -266,6 +277,7 @@ class _ArgumentRewrite:
             runtime_temp_storage,
             factory_kwargs,
             tuple(factory_kw_value_vars),
+            runtime_arg_constant_replacements,
         )
 
     def _validate_integer_runtime_controls(

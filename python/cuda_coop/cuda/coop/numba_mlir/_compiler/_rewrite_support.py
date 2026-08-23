@@ -22,6 +22,7 @@ from itertools import count
 
 import numpy as np
 from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir import types as _numba_types
 from numba_cuda_mlir.extending import (
     WholeFunctionPlanner,
     register_planner,
@@ -174,6 +175,7 @@ class _RewriteMatch:
     factory_kwargs: dict[str, object]
     factory_kw_value_vars: tuple[ir.Var, ...]
     loc: ir.Loc
+    runtime_arg_constant_replacements: tuple[tuple[int, object], ...] = ()
     physical_warp_tile_origin: bool = False
     preserve_root_store_payload: bool = False
     root_store_scalar: bool = False

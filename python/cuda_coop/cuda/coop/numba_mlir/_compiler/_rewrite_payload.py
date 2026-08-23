@@ -30,7 +30,11 @@ class _PayloadRewrite:
             return factory_kwargs.get(name)
 
         def factory_kwarg_matches(name: str, actual, expected) -> bool:
-            if name == "dtype":
+            if name in {
+                "dtype",
+                "keys",
+                "values",
+            }:
                 try:
                     actual = normalize_dtype_param(actual)
                     expected = normalize_dtype_param(expected)
@@ -314,6 +318,63 @@ class _PayloadRewrite:
                     self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
                 if output_var is not None:
                     self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
+            return
+        if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+            keys_var, keys_spec = candidate(0)
+            if keys_spec is None:
+                return
+            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._infer_thread_data_dtype_from_provenance_writes(
+                    keys_var
+                )
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+        if op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
+            keys_var, keys_spec = candidate(0)
+            values_var, values_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name,
+                "keys",
+                keys_spec,
+                "values",
+                values_spec,
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and values_spec is not None:
+                extent = values_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            value_dtype = values_spec.dtype if values_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._resolve_var_dtype(values_var)
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._infer_thread_data_dtype_from_provenance_writes(
+                    keys_var
+                )
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._infer_thread_data_dtype_from_provenance_writes(
+                    values_var
+                )
+            if key_dtype is None:
+                key_dtype = factory_value("keys")
+            if value_dtype is None:
+                value_dtype = factory_value("values")
+            infer_kwarg("keys", key_dtype)
+            infer_kwarg("values", value_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if value_dtype is not None and values_var is not None:
+                self._record_inferred_thread_data_dtype(values_var, value_dtype)
             return
         if op_name == "shuffle":
             if len(runtime_args) == 1:

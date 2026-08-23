@@ -36,6 +36,8 @@ def test_cutlass_foundation_exports_current_public_surface():
             "inclusive_scan",
             "inclusive_sum",
             "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
             "reduce",
             "scan",
             "shuffle",

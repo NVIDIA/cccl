@@ -44,6 +44,7 @@ from cuda.coop._core import api as _portable_api
 from .. import _thread_group as _thread_groups
 from .._group_exchange import exchange
 from .._group_load_store import load, store
+from .._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from .._group_reduce import reduce, sum
 from .._group_scan import (
     exclusive_scan,
@@ -91,6 +92,8 @@ _QUALIFIED_OPERATIONS = (
     "inclusive_scan",
     "exchange",
     "shuffle",
+    "merge_sort_keys",
+    "merge_sort_pairs",
 )
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
@@ -101,6 +104,8 @@ _ROOT_OPERATIONS = {
         inclusive_scan,
         inclusive_sum,
         load,
+        merge_sort_keys,
+        merge_sort_pairs,
         reduce,
         scan,
         shuffle,
@@ -123,6 +128,8 @@ _ROOT_OPERATIONS.update(
             "inclusive_scan",
             "exchange",
             "shuffle",
+            "merge_sort_keys",
+            "merge_sort_pairs",
         )
     }
 )
@@ -142,6 +149,14 @@ _GROUP_METHODS = frozenset(
 
 class GroupRewriteError(Exception):
     """A group-first call was recognized but could not be lowered safely."""
+
+
+def _builtin_less(lhs: Any, rhs: Any) -> bool:
+    return lhs < rhs
+
+
+def _builtin_greater(lhs: Any, rhs: Any) -> bool:
+    return lhs > rhs
 
 
 def _group_operation_name(function: Any) -> str | None:

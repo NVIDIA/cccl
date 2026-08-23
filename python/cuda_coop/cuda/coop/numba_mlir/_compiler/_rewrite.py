@@ -14,6 +14,7 @@ from ._rewrite_exchange import _ExchangeRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
 from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
+from ._rewrite_merge_sort import _MergeSortRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
 from ._rewrite_scan import _ScanRewrite
@@ -38,6 +39,7 @@ from ._rewrite_support import (
 @register_rewrite("before-inference")
 class CoopSinglePhaseRewrite(
     _ProvenanceRewrite,
+    _MergeSortRewrite,
     _ArgumentRewrite,
     _LaunchRewrite,
     _GroupMetadataRewrite,
@@ -54,6 +56,8 @@ class CoopSinglePhaseRewrite(
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
         {
             "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
             "scan",
             "store",
             "warp_load",
@@ -315,6 +319,46 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
         },
+        "merge_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "compare_op"},
+        },
+        "merge_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "compare_op",
+            },
+        },
         "warp_load": {
             "namespace": "warp",
             "runtime_arg_counts": {2, 3, 4},
@@ -367,6 +411,48 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"dtype"},
         },
+        "warp_merge_sort_keys": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "items_per_thread", "compare_op"},
+        },
+        "warp_merge_sort_pairs": {
+            "namespace": "warp",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+            },
+        },
     }
     for _spec in _OP_SPECS.values():
         if (
@@ -387,6 +473,8 @@ class CoopSinglePhaseRewrite(
             "warp_inclusive_scan",
             "warp_inclusive_sum",
             "warp_load",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
             "warp_store",
         }
     )
@@ -467,6 +555,7 @@ class CoopSinglePhaseRewrite(
                     runtime_temp_storage_var,
                     factory_kwargs,
                     factory_kw_value_vars,
+                    runtime_arg_constant_replacements,
                 ) = self._validate_and_split_args(
                     op_name, call, target.getitem_temp_storage
                 )
@@ -491,6 +580,7 @@ class CoopSinglePhaseRewrite(
                 factory_kwargs=factory_kwargs,
                 factory_kw_value_vars=factory_kw_value_vars,
                 loc=inst.loc,
+                runtime_arg_constant_replacements=runtime_arg_constant_replacements,
                 physical_warp_tile_origin=physical_warp_tile_origin,
                 preserve_root_store_payload=preserve_root_store_payload,
                 root_store_scalar=root_store_scalar,
@@ -825,6 +915,16 @@ class CoopSinglePhaseRewrite(
                 continue
             assert match is not None
             rewritten_runtime_args = list(match.runtime_args)
+            for argument_index, value in match.runtime_arg_constant_replacements:
+                replacement_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_runtime_constant_{next(_GLOBAL_NAME_COUNTER)}__",
+                    match.loc,
+                )
+                new_block.append(
+                    ir.Assign(ir.Const(value, match.loc), replacement_var, match.loc)
+                )
+                rewritten_runtime_args[argument_index] = replacement_var
             if match.preserve_root_store_payload:
                 if len(rewritten_runtime_args) < 2:
                     raise CoopSinglePhaseRewriteError(

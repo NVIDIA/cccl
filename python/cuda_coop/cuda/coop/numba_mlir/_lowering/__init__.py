@@ -23,6 +23,10 @@ from ._load_store import load as load
 from ._load_store import store as store
 from ._load_store import warp_load as warp_load
 from ._load_store import warp_store as warp_store
+from ._merge_sort import merge_sort_keys as merge_sort_keys
+from ._merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._merge_sort import warp_merge_sort_keys as warp_merge_sort_keys
+from ._merge_sort import warp_merge_sort_pairs as warp_merge_sort_pairs
 from ._reduce import block_reduce_builtin as block_reduce_builtin
 from ._reduce import group_reduce as group_reduce
 from ._reduce import reduce as reduce
@@ -53,6 +57,8 @@ _register(
     block_reduce_builtin,
     exchange,
     load,
+    merge_sort_keys,
+    merge_sort_pairs,
     reduce,
     scan,
     shuffle,
@@ -71,6 +77,8 @@ _register(
     warp_inclusive_scan,
     warp_inclusive_sum,
     warp_load,
+    warp_merge_sort_keys,
+    warp_merge_sort_pairs,
     warp_reduce,
     warp_reduce_builtin,
     warp_store,

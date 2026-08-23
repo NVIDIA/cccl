@@ -7,6 +7,8 @@
 from ._group_exchange import exchange as exchange
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_merge_sort import merge_sort_keys as merge_sort_keys
+from ._group_merge_sort import merge_sort_pairs as merge_sort_pairs
 from ._group_reduce import reduce as reduce
 from ._group_reduce import sum as sum
 from ._group_scan import exclusive_scan as exclusive_scan
@@ -44,6 +46,8 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

@@ -34,6 +34,12 @@ from ._group_load_store import (
 from ._group_load_store import (
     store as store,
 )
+from ._group_merge_sort import (
+    merge_sort_keys as merge_sort_keys,
+)
+from ._group_merge_sort import (
+    merge_sort_pairs as merge_sort_pairs,
+)
 from ._group_reduce import (
     reduce as reduce,
 )
@@ -119,6 +125,8 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shared",
