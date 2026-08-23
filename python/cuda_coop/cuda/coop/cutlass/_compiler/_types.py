@@ -291,6 +291,8 @@ TYPE_SPECS: dict[type, TypeSpec] = {
 
 SCAN_REDUCE_TYPES = frozenset(TYPE_SPECS.keys())
 
+INTEGER_VALUE_TYPES = frozenset({Uint8, Int32, Uint32, Int64, Uint64})
+
 RADIX_KEY_TYPES = frozenset({Int32, Uint32, Int64, Uint64})
 
 ALL_PROVIDER_TYPES = frozenset(TYPE_SPECS.keys())
@@ -378,7 +380,7 @@ def validate_scan_reduce_op_for_type(
     feature: str,
     namespace: str = "block",
 ) -> None:
-    if op.startswith("bit_") and value_type not in RADIX_KEY_TYPES:
+    if op.startswith("bit_") and value_type not in INTEGER_VALUE_TYPES:
         operation = "reductions" if feature == "reduce" else "operations"
         raise TypeError(
             f"{root_scope}.{namespace}.{feature} bitwise {operation} require "

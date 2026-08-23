@@ -23,6 +23,18 @@ from ._load_store import load as load
 from ._load_store import store as store
 from ._load_store import warp_load as warp_load
 from ._load_store import warp_store as warp_store
+from ._reduce import block_reduce_builtin as block_reduce_builtin
+from ._reduce import group_reduce as group_reduce
+from ._reduce import reduce as reduce
+from ._reduce import sum as sum
+from ._reduce import warp_reduce as warp_reduce
+from ._reduce import warp_reduce_builtin as warp_reduce_builtin
+from ._reduce import warp_sum as warp_sum
+from ._scan import scan as scan
+from ._scan import warp_exclusive_scan as warp_exclusive_scan
+from ._scan import warp_exclusive_sum as warp_exclusive_sum
+from ._scan import warp_inclusive_scan as warp_inclusive_scan
+from ._scan import warp_inclusive_sum as warp_inclusive_sum
 from ._shuffle import BlockShuffleType as BlockShuffleType
 from ._shuffle import shuffle as shuffle
 
@@ -38,16 +50,31 @@ def _register(namespace: str, *factories: Callable[..., Any]) -> None:
 
 _register(
     "block",
+    block_reduce_builtin,
     exchange,
     load,
+    reduce,
+    scan,
     shuffle,
     store,
+    sum,
+)
+_register(
+    "group",
+    group_reduce,
 )
 _register(
     "warp",
     warp_exchange,
+    warp_exclusive_scan,
+    warp_exclusive_sum,
+    warp_inclusive_scan,
+    warp_inclusive_sum,
     warp_load,
+    warp_reduce,
+    warp_reduce_builtin,
     warp_store,
+    warp_sum,
 )
 
 __all__: tuple[str, ...] = ()

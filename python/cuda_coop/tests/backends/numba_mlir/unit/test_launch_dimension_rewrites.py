@@ -16,8 +16,8 @@ from cuda.coop.numba_mlir._compiler._rewrite import (
     CoopSinglePhaseRewriteError,
     CoopWholeFunctionPlanner,
 )
-from cuda.coop.numba_mlir._lowering._load_store import load as block_load
-from cuda.coop.numba_mlir._lowering._shuffle import shuffle as block_shuffle
+from cuda.coop.numba_mlir._lowering._reduce import reduce as block_reduce
+from cuda.coop.numba_mlir._lowering._reduce import sum as block_sum
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
@@ -94,7 +94,7 @@ def test_dim_alias_is_limited_to_block_factories_with_block_dimensions():
 
 def test_dim_alias_is_rewritten_to_threads_per_block():
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32, dim=64)
+        return block_sum(value, dtype=types.int32, dim=64)
 
     state = _state(
         kernel,
@@ -116,7 +116,7 @@ def test_dim_alias_is_rewritten_to_threads_per_block():
 
 def test_explicit_dimension_accepts_an_equivalent_exact_launch_shape():
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32, threads_per_block=64)
+        return block_sum(value, dtype=types.int32, threads_per_block=64)
 
     state = _state(
         kernel,
@@ -137,7 +137,7 @@ def test_explicit_dimension_accepts_an_equivalent_exact_launch_shape():
 
 def test_explicit_dimension_is_not_reconciled_with_launch_bounds():
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32, threads_per_block=64)
+        return block_sum(value, dtype=types.int32, threads_per_block=64)
 
     state = _state(kernel, targetoptions={"launch_bounds": 128})
     rewrite = CoopSinglePhaseRewrite(state)
@@ -153,7 +153,7 @@ def test_explicit_dimension_is_not_reconciled_with_launch_bounds():
 
 def test_dim_alias_rejects_explicit_threads_per_block():
     def kernel(value):
-        return block_shuffle(
+        return block_sum(
             value,
             dtype=types.int32,
             threads_per_block=32,
@@ -177,7 +177,7 @@ def test_dim_alias_rejects_explicit_threads_per_block():
 
 def test_explicit_dimension_rejects_an_exact_launch_mismatch():
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32, threads_per_block=32)
+        return block_sum(value, dtype=types.int32, threads_per_block=32)
 
     state = _state(
         kernel,
@@ -188,7 +188,7 @@ def test_explicit_dimension_rejects_an_exact_launch_mismatch():
     with pytest.raises(
         CoopSinglePhaseRewriteError,
         match=(
-            r"factory 'shuffle' received threads_per_block=32, but the exact kernel "
+            r"factory 'sum' received threads_per_block=32, but the exact kernel "
             r"launch block is \(64, 1, 1\)"
         ),
     ):
@@ -208,7 +208,7 @@ def test_deferred_rewrite_leaves_helper_constructor_ir_intact():
         storage = coop.TempStorage(64)
         items[0] = value
         storage[0] = 0
-        return block_shuffle(items, dtype=types.int32)
+        return block_sum(items, dtype=types.int32)
 
     state = _state(device_function, targetoptions={"device": True})
     before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}
@@ -230,7 +230,7 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite as rewrites
 
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32)
+        return block_sum(value, dtype=types.int32)
 
     class _FakeInvocable:
         def __call__(self, value):
@@ -313,7 +313,7 @@ def test_kernel_planner_reports_an_unresolved_launch_after_retry(
     from cuda.coop.numba_mlir._compiler import _rewrite as rewrites
 
     def kernel(value):
-        return block_shuffle(value, dtype=types.int32)
+        return block_sum(value, dtype=types.int32)
 
     state = _state(kernel, targetoptions=targetoptions)
     requests = []
@@ -332,7 +332,7 @@ def test_kernel_planner_reports_an_unresolved_launch_after_retry(
         CoopWholeFunctionPlanner(state).run()
 
     message = str(exc_info.value)
-    assert "coop operation 'shuffle'" in message
+    assert "coop operation 'sum'" in message
     assert "could not infer an exact positive threads_per_block" in message
     for detail in expected_details:
         assert detail in message
@@ -345,7 +345,7 @@ def test_kernel_planner_retains_other_missing_keywords_after_retry(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite as rewrites
 
     def kernel(value):
-        return block_load(value, value)
+        return block_reduce(value, dtype=types.int32)
 
     state = _state(kernel, targetoptions={})
     requests = []
@@ -360,7 +360,7 @@ def test_kernel_planner_retains_other_missing_keywords_after_retry(monkeypatch):
 
     message = str(exc_info.value)
     assert "could not infer an exact positive threads_per_block" in message
-    assert "Also missing required factory keywords: dtype." in message
+    assert "Also missing required factory keywords: binary_op." in message
     assert requests == [state]
 
 
@@ -368,7 +368,7 @@ def test_device_planner_defers_without_requesting_a_launch(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite as rewrites
 
     def device_function(value):
-        return block_shuffle(value, dtype=types.int32)
+        return block_sum(value, dtype=types.int32)
 
     state = _state(device_function, targetoptions={"device": True})
     before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}

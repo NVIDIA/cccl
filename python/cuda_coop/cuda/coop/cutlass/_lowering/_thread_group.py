@@ -149,6 +149,7 @@ def _register_renderer() -> None:
         render=_render_cudax_group,
         include_lines=(
             "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
+            "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP",
             "#include <cuda/barrier>",
             "#include <cuda/devices>",
             "#include <cuda/hierarchy>",

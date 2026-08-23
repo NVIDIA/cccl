@@ -44,7 +44,16 @@ from cuda.coop._core import api as _portable_api
 from .. import _thread_group as _thread_groups
 from .._group_exchange import exchange
 from .._group_load_store import load, store
+from .._group_reduce import reduce, sum
+from .._group_scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+    scan,
+)
 from .._group_shuffle import shuffle
+from .._scan_op import ScanOp
 from ._operations import group_operation_name
 
 _NAME_COUNTER = count()
@@ -73,6 +82,13 @@ _PORTABLE_GROUP_CONSTRUCTORS = frozenset(
 _QUALIFIED_OPERATIONS = (
     "load",
     "store",
+    "reduce",
+    "sum",
+    "scan",
+    "exclusive_sum",
+    "inclusive_sum",
+    "exclusive_scan",
+    "inclusive_scan",
     "exchange",
     "shuffle",
 )
@@ -80,9 +96,16 @@ _ROOT_OPERATIONS = {
     function: group_operation_name(function)
     for function in (
         exchange,
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
         load,
+        reduce,
+        scan,
         shuffle,
         store,
+        sum,
     )
 }
 _ROOT_OPERATIONS.update(
@@ -91,6 +114,13 @@ _ROOT_OPERATIONS.update(
         for name in (
             "load",
             "store",
+            "reduce",
+            "sum",
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
             "exchange",
             "shuffle",
         )

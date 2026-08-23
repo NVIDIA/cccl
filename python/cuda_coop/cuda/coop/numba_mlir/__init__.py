@@ -22,13 +22,21 @@ from ._thread_group import (
 
 _GROUP_OPERATION_MODULES = {
     "exchange": "_group_exchange",
+    "exclusive_scan": "_group_scan",
+    "exclusive_sum": "_group_scan",
+    "inclusive_scan": "_group_scan",
+    "inclusive_sum": "_group_scan",
     "load": "_group_load_store",
+    "reduce": "_group_reduce",
+    "scan": "_group_scan",
     "shuffle": "_group_shuffle",
     "store": "_group_load_store",
+    "sum": "_group_reduce",
 }
 
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -39,13 +47,20 @@ __all__ = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -76,6 +91,7 @@ def __getattr__(name):
         return value
     if name in {
         "BlockLoadAlgorithm",
+        "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",

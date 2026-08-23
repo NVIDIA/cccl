@@ -16,6 +16,7 @@ from cuda.coop.numba_mlir._compiler import _activation
 
 _PUBLIC_EXPORTS = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -26,13 +27,20 @@ _PUBLIC_EXPORTS = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -47,14 +55,13 @@ def test_public_exports_cover_the_incremental_primitive_families():
         _PUBLIC_EXPORTS
     )
 
-    for name in ("reduce", "scan"):
-        assert not hasattr(coop, name)
-
     assert "_block" not in coop.__all__
     assert "_warp" not in coop.__all__
 
     loaded = set(sys.modules)
     assert "cuda.coop.numba_mlir._group_load_store" in loaded
+    assert "cuda.coop.numba_mlir._group_reduce" in loaded
+    assert "cuda.coop.numba_mlir._group_scan" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
 
@@ -62,29 +69,29 @@ def test_public_exports_cover_the_incremental_primitive_families():
 def test_group_markers_use_exact_callable_identity():
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
-    assert group_operation_name(coop.load) == "load"
+    assert group_operation_name(coop.reduce) == "reduce"
 
-    def load(*args, **kwargs):
+    def reduce(*args, **kwargs):
         del args, kwargs
 
-    load.__module__ = coop.load.__module__
-    load.__name__ = coop.load.__name__
-    load.__cuda_coop_backend_member__ = "load"
-    assert group_operation_name(load) is None
+    reduce.__module__ = coop.reduce.__module__
+    reduce.__name__ = coop.reduce.__name__
+    reduce.__cuda_coop_backend_member__ = "reduce"
+    assert group_operation_name(reduce) is None
 
 
 def test_lowering_factories_use_exact_callable_identity():
     from cuda.coop.numba_mlir import _lowering
     from cuda.coop.numba_mlir._compiler._operations import factory_operation
 
-    assert factory_operation(_lowering.load) is not None
+    assert factory_operation(_lowering.scan) is not None
 
-    def load(*args, **kwargs):
+    def scan(*args, **kwargs):
         del args, kwargs
 
-    load.__module__ = _lowering.load.__module__
-    load.__name__ = _lowering.load.__name__
-    assert factory_operation(load) is None
+    scan.__module__ = _lowering.scan.__module__
+    scan.__name__ = _lowering.scan.__name__
+    assert factory_operation(scan) is None
 
 
 def test_compiler_hooks_are_registered_exactly_once_and_idempotently():

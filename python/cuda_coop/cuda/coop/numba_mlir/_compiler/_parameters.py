@@ -22,6 +22,20 @@ from cuda.coop._core.dtype_policy import (
 
 dim3 = namedtuple("dim3", ("x", "y", "z"))
 
+CUB_BLOCK_REDUCE_ALGOS = {
+    "raking_commutative_only": (
+        "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY"
+    ),
+    "raking": "::cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING",
+    "warp_reductions": ("::cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS"),
+}
+
+CUB_BLOCK_SCAN_ALGOS = {
+    "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+    "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
+    "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
+}
+
 
 def normalize_dim_param(dim) -> dim3:
     """Normalize a positive one-, two-, or three-dimensional extent."""
@@ -163,3 +177,37 @@ def _validate_common_numeric_dtype(
         parameter=parameter,
     )
     return dtype
+
+
+def _scalar_cpp_literal(value):
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        if np.isnan(value):
+            return "NAN"
+        if np.isposinf(value):
+            return "INFINITY"
+        if np.isneginf(value):
+            return "-INFINITY"
+        return repr(value)
+    raise ValueError(
+        f"Unsupported scalar literal type for compile-time binding: {type(value)}"
+    )
+
+
+def make_typed_cpp_literal(value, dtype):
+    """Render a compiler scalar as a C++ literal of exactly ``dtype``."""
+
+    dtype = normalize_dtype_param(dtype)
+    from .._types import numba_type_to_cpp
+
+    cpp_type = numba_type_to_cpp(dtype)
+    if cpp_type == "storage_t":
+        raise ValueError(
+            "Compile-time scalar literal binding does not support user-defined dtypes"
+        )
+    return f"static_cast<{cpp_type}>({_scalar_cpp_literal(value)})"

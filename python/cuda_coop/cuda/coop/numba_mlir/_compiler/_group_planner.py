@@ -25,6 +25,7 @@ from ._group_planner_support import (
     Integral,
     LaunchFactOrigin,
     LaunchFacts,
+    ScanOp,
     ThreadGroup,
     ThreadHierarchy,
     WholeFunctionPlanner,
@@ -41,11 +42,15 @@ from ._group_planner_support import (
     resolve_thread_group,
     types,
 )
+from ._group_reduce import _ReducePlanning
+from ._group_scan import _ScanPlanning
 from ._group_shuffle import _ShufflePlanning
 
 
 class _GroupCallPlanner(
     _LoadStorePlanning,
+    _ReducePlanning,
+    _ScanPlanning,
     _ExchangePlanning,
     _ShufflePlanning,
 ):
@@ -199,20 +204,6 @@ class _GroupCallPlanner(
         bound.apply_defaults()
         return bound
 
-    @staticmethod
-    def _reject_extra_root_arguments(
-        operation: str, bound: inspect.BoundArguments
-    ) -> None:
-        if bound.arguments.get("args"):
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} accepts no extra positional arguments"
-            )
-        if bound.arguments.get("kwargs"):
-            names = ", ".join(sorted(bound.arguments["kwargs"]))
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
-            )
-
     def _validate_common_selector(
         self,
         operation: str,
@@ -251,6 +242,41 @@ class _GroupCallPlanner(
                 _portable_api._LOAD_STORE_ALGORITHMS,
                 False,
             ),
+            "reduce": (
+                "algorithm",
+                _portable_api._REDUCE_ALGORITHMS,
+                True,
+            ),
+            "sum": (
+                "algorithm",
+                _portable_api._REDUCE_ALGORITHMS,
+                True,
+            ),
+            "scan": (
+                "algorithm",
+                _portable_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "exclusive_sum": (
+                "algorithm",
+                _portable_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "inclusive_sum": (
+                "algorithm",
+                _portable_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "exclusive_scan": (
+                "algorithm",
+                _portable_api._SCAN_ALGORITHMS,
+                True,
+            ),
+            "inclusive_scan": (
+                "algorithm",
+                _portable_api._SCAN_ALGORITHMS,
+                True,
+            ),
             "exchange": ("mode", _portable_api._EXCHANGE_MODES, False),
             "shuffle": ("mode", _portable_api._SHUFFLE_MODES, False),
         }
@@ -264,6 +290,35 @@ class _GroupCallPlanner(
                 allowed,
                 allow_none=allow_none,
             )
+        if operation == "scan":
+            bound.arguments["mode"] = self._validate_common_selector(
+                operation,
+                "mode",
+                bound.arguments["mode"],
+                _portable_api._SCAN_MODES,
+            )
+        if operation == "reduce":
+            from .._lowering._reduce import _normalize_reduce_operation
+
+            try:
+                _normalize_reduce_operation(
+                    self._constant(bound.arguments["binary_op"])
+                )
+            except NotImplementedError as exc:
+                raise ValueError(
+                    "cuda.coop.reduce binary_op accepts built-in operators only; "
+                    "use cuda.coop.numba_mlir for backend-specific behavior"
+                ) from exc
+        if operation in {"scan", "exclusive_scan", "inclusive_scan"}:
+            scan_op = bound.arguments.get("scan_op")
+            if not self._is_none(scan_op):
+                normalized_scan_op = ScanOp(self._constant(scan_op))
+                if normalized_scan_op.is_callable:
+                    raise ValueError(
+                        f"cuda.coop.{operation} scan_op accepts built-in "
+                        "operators only; use cuda.coop.numba_mlir for "
+                        "backend-specific callbacks"
+                    )
 
     def _hierarchy(self, value: Any) -> ThreadHierarchy | None:
         if isinstance(value, ThreadHierarchy):
@@ -540,6 +595,11 @@ class _GroupCallPlanner(
         array_result_argument = {
             "exchange": "value",
             "load": "output",
+            "scan": "value",
+            "exclusive_sum": "value",
+            "inclusive_sum": "value",
+            "exclusive_scan": "value",
+            "inclusive_scan": "value",
             "shuffle": "value",
         }.get(operation)
         if array_result_argument is None:
@@ -798,6 +858,11 @@ class _GroupCallPlanner(
         shape_argument = {
             "exchange": "value",
             "load": "output",
+            "scan": "value",
+            "exclusive_sum": "value",
+            "inclusive_sum": "value",
+            "exclusive_scan": "value",
+            "inclusive_scan": "value",
             "shuffle": "value",
         }.get(operation)
         if shape_argument is None:
@@ -964,6 +1029,11 @@ class _GroupCallPlanner(
                 "exchange": "warp_exchange",
                 "load": "warp_load",
                 "store": "warp_store",
+                "sum": "warp_sum",
+                "exclusive_sum": "warp_exclusive_sum",
+                "inclusive_sum": "warp_inclusive_sum",
+                "exclusive_scan": "warp_exclusive_scan",
+                "inclusive_scan": "warp_inclusive_scan",
             }[operation]
             threads_in_warp = _cub_warp_width(group)
             return (
@@ -992,16 +1062,87 @@ class _GroupCallPlanner(
         if is_common_root:
             _portable_api._validate_portable_operation_group(operation, group)
         group = self._resolve_group(group, feature=operation)
+        if operation == "sum":
+            bound.arguments["binary_op"] = None
+        elif operation in {
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }:
+            bound.arguments["mode"] = (
+                "exclusive" if operation.startswith("exclusive") else "inclusive"
+            )
+            if operation.endswith("_sum"):
+                bound.arguments["scan_op"] = None
+                bound.arguments["initial_value"] = None
+            elif operation == "exclusive_scan":
+                bound.arguments.setdefault("scan_op", None)
+                bound.arguments.setdefault("initial_value", None)
+            else:
+                bound.arguments.setdefault("scan_op", None)
+                bound.arguments["initial_value"] = None
         bound.arguments.setdefault("block_prefix", None)
         bound.arguments.setdefault("block_suffix", None)
         bound.arguments.setdefault("valid_items", None)
+        bound.arguments.setdefault("aggregate_output", None)
+        bound.arguments.setdefault("prefix_state", None)
+        bound.arguments.setdefault("prefix_op", None)
+        bound.arguments.setdefault("block_prefix_callback_op", None)
         bound.arguments.setdefault("ranks", None)
         bound.arguments.setdefault("valid_flags", None)
         bound.arguments.setdefault("warp_time_slicing", False)
         if is_common_root:
             self._validate_common_arguments(operation, bound)
+        normalized_scan_op = None
+        if operation in {"scan", "exclusive_scan", "inclusive_scan"}:
+            scan_op = bound.arguments.get("scan_op")
+            if not self._is_none(scan_op):
+                normalized_scan_op = ScanOp(self._constant(scan_op))
+                if (
+                    self._constant(bound.arguments["mode"]) == "exclusive"
+                    and not normalized_scan_op.is_sum
+                    and self._is_none(bound.arguments["initial_value"])
+                    and self._is_none(bound.arguments["prefix_op"])
+                    and self._is_none(bound.arguments["block_prefix_callback_op"])
+                ):
+                    raise ValueError(
+                        "cuda.coop.numba_mlir.scan requires initial_value for "
+                        "non-default exclusive scans"
+                    )
+        if (
+            is_common_root
+            and normalized_scan_op is not None
+            and normalized_scan_op.is_callable
+        ):
+            raise ValueError(
+                "cuda.coop scan operations accept built-in operators only; "
+                "use cuda.coop.numba_mlir for a custom scan callback"
+            )
         if operation in {"load", "store"}:
             replacement = self._lower_load_store(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {"reduce", "sum"}:
+            replacement = self._lower_reduce(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {
+            "scan",
+            "exclusive_sum",
+            "inclusive_sum",
+            "exclusive_scan",
+            "inclusive_scan",
+        }:
+            replacement = self._lower_scan(
                 inst,
                 operation=operation,
                 group=group,

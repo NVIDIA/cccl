@@ -4,6 +4,7 @@
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 from numba_cuda_mlir.errors import ForceLiteralArg
 from numba_cuda_mlir.numba_cuda import types
@@ -18,7 +19,38 @@ from cuda.coop.numba_mlir._compiler._group_planner import (
     _GroupCallPlanner,
     has_group_markers,
 )
+from cuda.coop.numba_mlir._lowering import _reduce as _reduce_lowering
 from cuda.coop.numba_mlir._lowering import _thread_group as _thread_group_lowering
+
+
+@pytest.mark.parametrize(
+    ("binary_op", "expected"),
+    [
+        (np.add, "sum"),
+        (np.multiply, "multiplies"),
+        (np.minimum, "min"),
+        (np.maximum, "max"),
+        (np.bitwise_and, "bit_and"),
+        (np.bitwise_or, "bit_or"),
+        (np.bitwise_xor, "bit_xor"),
+    ],
+)
+def test_group_reduce_recognizes_numpy_ufuncs_by_exact_identity(
+    binary_op,
+    expected,
+):
+    assert _reduce_lowering._normalize_reduce_operation(binary_op) == expected
+
+
+def test_group_reduce_rejects_a_spoofed_numpy_ufunc():
+    def add(lhs, rhs):
+        return lhs + rhs
+
+    add.__module__ = np.add.__module__
+    add.__name__ = np.add.__name__
+
+    with pytest.raises(NotImplementedError, match="currently supports"):
+        _reduce_lowering._normalize_reduce_operation(add)
 
 
 def _state(function, args=()):
@@ -138,7 +170,7 @@ def test_mapped_parent_queries_render_the_parent_group():
     assert _thread_group_lowering._query_expr(mapped, "count", "warp") == (
         "group.count(group_parent)"
     )
-    assert "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP" not in (
+    assert "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP" in (
         _thread_group_lowering._INCLUDE_LINES
     )
 
@@ -151,6 +183,100 @@ def test_current_physical_group_rendering_uses_implicit_hierarchy(kind):
         f"  ::cuda::experimental::this_{kind} "
         "group{::cuda::experimental::implicit_hierarchy()};"
     ]
+
+
+def test_thread_group_lowering_caches_include_exact_compile_context(monkeypatch):
+    context = [
+        _nvrtc.CompileContext(
+            nvrtc_path="/toolkit/lib/libnvrtc.so.13",
+            nvrtc_version=_nvrtc.version(13, 2),
+            include_dirs=("/toolkit/include",),
+            header_identity="headers-a",
+        )
+    ]
+    created = []
+
+    class FakeInvocable:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            created.append(self)
+
+    monkeypatch.setattr(_thread_group_lowering, "_current_cc", lambda: 90)
+    monkeypatch.setattr(_reduce_lowering, "_current_cc", lambda: 90)
+    monkeypatch.setattr(
+        _thread_group_lowering._nvrtc,
+        "resolve_compile_context",
+        lambda: context[0],
+    )
+    monkeypatch.setattr(_thread_group_lowering, "_RawCAbiInvocable", FakeInvocable)
+    monkeypatch.setattr(_reduce_lowering, "_RawCAbiInvocable", FakeInvocable)
+    monkeypatch.setattr(_thread_group_lowering, "_GROUP_METHOD_INVOCABLE_CACHE", {})
+    monkeypatch.setattr(_reduce_lowering, "_GROUP_REDUCE_INVOCABLE_CACHE", {})
+    group = resolve_thread_group(
+        coop.this_block(),
+        LaunchFacts(exact_block_dim=64),
+    ).require_supported()
+
+    try:
+        method_a = _thread_group_lowering.make_group_method_invocable(
+            group=group,
+            operation="count",
+        )
+        assert (
+            _thread_group_lowering.make_group_method_invocable(
+                group=group,
+                operation="count",
+            )
+            is method_a
+        )
+        reduce_a = _reduce_lowering.make_group_reduce_invocable(
+            group=group,
+            dtype=types.int32,
+            items_per_thread=1,
+            operation="sum",
+            broadcast=True,
+        )
+        assert (
+            _reduce_lowering.make_group_reduce_invocable(
+                group=group,
+                dtype=types.int32,
+                items_per_thread=1,
+                operation="sum",
+                broadcast=True,
+            )
+            is reduce_a
+        )
+
+        context[0] = _nvrtc.CompileContext(
+            nvrtc_path="/toolkit/lib/libnvrtc.so.13",
+            nvrtc_version=_nvrtc.version(13, 2),
+            include_dirs=("/toolkit/include",),
+            header_identity="headers-b",
+        )
+        method_b = _thread_group_lowering.make_group_method_invocable(
+            group=group,
+            operation="count",
+        )
+        reduce_b = _reduce_lowering.make_group_reduce_invocable(
+            group=group,
+            dtype=types.int32,
+            items_per_thread=1,
+            operation="sum",
+            broadcast=True,
+        )
+
+        assert method_b is not method_a
+        assert reduce_b is not reduce_a
+        assert len(created) == 4
+        assert created[0].kwargs["compile_context"].header_identity == "headers-a"
+        assert created[2].kwargs["compile_context"].header_identity == "headers-b"
+        assert created[0].kwargs["symbol"] != created[2].kwargs["symbol"]
+        assert created[1].kwargs["symbol"] != created[3].kwargs["symbol"]
+        assert created[0].kwargs["symbol"] in created[0].kwargs["source"]
+        assert created[2].kwargs["symbol"] in created[2].kwargs["source"]
+    finally:
+        _thread_group_lowering._GROUP_METHOD_INVOCABLE_CACHE.clear()
+        _reduce_lowering._GROUP_REDUCE_INVOCABLE_CACHE.clear()
 
 
 def test_descriptor_values_cannot_escape_to_runtime():

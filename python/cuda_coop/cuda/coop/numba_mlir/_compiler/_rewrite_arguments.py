@@ -94,6 +94,24 @@ class _ArgumentRewrite:
                     )
                 runtime_offset_var = value_var
                 continue
+            if name == "block_aggregate" and op_name == "scan":
+                value = self._resolve_factory_kwarg_value(name, value_var)
+                if value is None:
+                    continue
+                if "block_aggregate" in seen_factory_kwargs:
+                    raise CoopSinglePhaseRewriteError(
+                        "Duplicate coop single-phase 'scan' runtime argument "
+                        "'block_aggregate'."
+                    )
+                if value is not _UNRESOLVED or not isinstance(value_var, ir.Var):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop single-phase 'scan' block_aggregate must be a "
+                        "runtime array variable."
+                    )
+                runtime_args.append(value_var)
+                factory_kwargs["block_aggregate"] = True
+                seen_factory_kwargs.add("block_aggregate")
+                continue
             if name in {"block_prefix", "block_suffix"} and op_name == "shuffle":
                 value = self._resolve_factory_kwarg_value(name, value_var)
                 if value is None:
@@ -164,6 +182,11 @@ class _ArgumentRewrite:
             seen_runtime_factory_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
+        self._validate_integer_runtime_controls(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            factory_kwargs=factory_kwargs,
+        )
         self._infer_factory_kwargs_from_thread_data(
             op_name,
             runtime_args,
@@ -182,6 +205,11 @@ class _ArgumentRewrite:
             seen_factory_kwargs=seen_factory_kwargs,
             factory_kwargs=factory_kwargs,
         )
+        if op_name == "scan":
+            self._finalize_scan_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                factory_kwargs=factory_kwargs,
+            )
         if op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
                 runtime_arg_count=len(runtime_args),
@@ -239,6 +267,51 @@ class _ArgumentRewrite:
             factory_kwargs,
             tuple(factory_kw_value_vars),
         )
+
+    def _validate_integer_runtime_controls(
+        self,
+        *,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        """Reject bool and noninteger partial-tile controls before codegen."""
+
+        parameter = None
+        index = None
+        if op_name in {"reduce", "sum", "block_reduce_builtin"} and factory_kwargs.get(
+            "num_valid"
+        ):
+            parameter, index = "valid_items", 1
+        elif op_name in {
+            "warp_reduce",
+            "warp_sum",
+            "warp_reduce_builtin",
+        } and factory_kwargs.get("valid_items"):
+            parameter, index = "valid_items", 1
+        elif op_name in {"warp_exclusive_scan", "warp_inclusive_scan"} and (
+            factory_kwargs.get("valid_items")
+        ):
+            parameter, index = "valid_items", 1
+        if parameter is None or index is None or index >= len(runtime_args):
+            return
+        value = runtime_args[index]
+        if not isinstance(value, ir.Var):
+            raise CoopSinglePhaseRewriteError(
+                f"coop single-phase '{op_name}' {parameter} must be an integer"
+            )
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        value_type = self._resolve_var_numba_type(value)
+        if value_type is None:
+            value_type = self._resolve_var_dtype(value)
+        if isinstance(value_type, numba_mlir_types.Boolean) or not isinstance(
+            value_type, numba_mlir_types.Integer
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"coop single-phase '{op_name}' {parameter} must be an "
+                "integer, not bool or a noninteger scalar"
+            )
 
 
 __all__ = ["_ArgumentRewrite"]

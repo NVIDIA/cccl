@@ -16,6 +16,7 @@ from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
+from ._rewrite_scan import _ScanRewrite
 from ._rewrite_shuffle import _ShuffleRewrite
 from ._rewrite_storage import _StorageRewrite
 from ._rewrite_support import (
@@ -40,6 +41,7 @@ class CoopSinglePhaseRewrite(
     _ArgumentRewrite,
     _LaunchRewrite,
     _GroupMetadataRewrite,
+    _ScanRewrite,
     _ShuffleRewrite,
     _ExchangeRewrite,
     _PayloadRewrite,
@@ -52,12 +54,201 @@ class CoopSinglePhaseRewrite(
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
         {
             "load",
+            "scan",
             "store",
             "warp_load",
             "warp_store",
         }
     )
     _OP_SPECS = {
+        "group_reduce": {
+            "namespace": "group",
+            "runtime_arg_counts": {1},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "group",
+                "binary_op",
+                "items_per_thread",
+                "broadcast",
+                "methods",
+                "_compile_context",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "group"},
+        },
+        "block_reduce_builtin": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+            },
+        },
+        "reduce": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "binary_op",
+            },
+        },
+        "sum": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("num_valid",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "algorithm",
+                "num_valid",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "scan": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "mode",
+                "scan_op",
+                "initial_value",
+                "block_prefix_callback_op",
+                "prefix_op",
+                "block_aggregate",
+                "algorithm",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "warp_reduce_builtin": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "binary_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "binary_op"},
+        },
+        "warp_reduce": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "binary_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "binary_op"},
+        },
+        "warp_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("valid_items",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_exclusive_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("warp_aggregate",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "warp_aggregate",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_inclusive_sum": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2},
+            "runtime_factory_kwargs": ("warp_aggregate",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_in_warp",
+                "threads_per_block",
+                "warp_aggregate",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
+        "warp_exclusive_scan": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2, 3},
+            "runtime_factory_kwargs": ("valid_items", "warp_aggregate"),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "scan_op",
+                "initial_value",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "warp_aggregate",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "scan_op"},
+        },
+        "warp_inclusive_scan": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 2, 3},
+            "runtime_factory_kwargs": ("valid_items", "warp_aggregate"),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "scan_op",
+                "initial_value",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "warp_aggregate",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "scan_op"},
+        },
         "load": {
             "namespace": "block",
             "runtime_arg_counts": {2, 3, 4},
@@ -191,6 +382,10 @@ class CoopSinglePhaseRewrite(
     _WARP_OPS = frozenset(
         {
             "warp_exchange",
+            "warp_exclusive_scan",
+            "warp_exclusive_sum",
+            "warp_inclusive_scan",
+            "warp_inclusive_sum",
             "warp_load",
             "warp_store",
         }

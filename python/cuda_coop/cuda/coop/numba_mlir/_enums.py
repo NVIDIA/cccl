@@ -66,8 +66,17 @@ class WarpStoreAlgorithm(_LoadStoreAlgorithm):
     TRANSPOSE = 3
 
 
+class BlockScanAlgorithm(_LoadStoreAlgorithm):
+    """CUB ``BlockScan`` algorithm choices."""
+
+    RAKING = 0
+    RAKING_MEMOIZE = 1
+    WARP_SCANS = 2
+
+
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",

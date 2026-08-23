@@ -54,6 +54,7 @@ def test_generic_finalizer_uses_registered_group_renderer():
     source = _provider_finalizer._render_bundle_source([request])
 
     assert f"void {request.symbol_name}()" in source
+    assert "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP" in source
     assert (
         "::cuda::experimental::this_block "
         "group{::cuda::experimental::implicit_hierarchy()};"

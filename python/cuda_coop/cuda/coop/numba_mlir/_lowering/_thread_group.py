@@ -42,11 +42,15 @@ _LEVEL_ORDER = {
 }
 _INCLUDE_LINES = (
     "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
+    "#define _CUDAX_DISABLE_COOPERATIVE_GROUPS_INTEROP",
     "#include <cuda/barrier>",
     "#include <cuda/devices>",
+    "#include <cuda/functional>",
     "#include <cuda/hierarchy>",
     "#include <cuda/std/cstdint>",
+    "#include <cuda/std/functional>",
     "#include <cuda/std/type_traits>",
+    "#include <cuda/experimental/coop.cuh>",
     "#include <cuda/experimental/group.cuh>",
 )
 _GROUP_METHOD_INVOCABLE_CACHE: dict[tuple[Any, ...], "_RawCAbiInvocable"] = {}

@@ -10,6 +10,7 @@ ordering remain in the rewrite orchestrator.
 
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
+    _dtype_values_match,
     _ThreadDataSpec,
     ir,
     normalize_dtype_param,
@@ -63,6 +64,130 @@ class _PayloadRewrite:
                     f"coop movement {op_name!r} could not infer the static extent of a typed group payload"
                 )
             return (value, spec)
+
+        if op_name in {
+            "group_reduce",
+            "block_reduce_builtin",
+            "reduce",
+            "sum",
+            "warp_reduce_builtin",
+            "warp_reduce",
+            "warp_sum",
+        }:
+            payload_var, payload_spec = candidate(0)
+            if payload_spec is not None:
+                infer_kwarg("items_per_thread", payload_spec.items_per_thread)
+            inferred_dtype = payload_spec.dtype if payload_spec is not None else None
+            if inferred_dtype is None and payload_var is not None:
+                inferred_dtype = self._resolve_var_dtype(payload_var)
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+            if inferred_dtype is not None and payload_var is not None:
+                self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            return
+
+        if op_name == "scan":
+            input_var, input_spec = candidate(0)
+            output_var, output_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name, "input", input_spec, "output", output_spec
+            )
+            input_dtype = input_spec.dtype if input_spec is not None else None
+            output_dtype = output_spec.dtype if output_spec is not None else None
+            if input_dtype is None and input_var is not None:
+                input_dtype = self._resolve_var_dtype(input_var)
+            if output_dtype is None and output_var is not None:
+                output_dtype = self._resolve_var_dtype(output_var)
+            if (
+                input_dtype is not None
+                and output_dtype is not None
+                and not _dtype_values_match(input_dtype, output_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop scan requires input/output arrays to have matching dtype."
+                )
+            inferred_dtype = input_dtype
+            if inferred_dtype is None:
+                inferred_dtype = output_dtype
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            extent = input_spec.items_per_thread if input_spec is not None else None
+            if extent is None and output_spec is not None:
+                extent = output_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            infer_kwarg("dtype", inferred_dtype)
+            for payload_var in (input_var, output_var):
+                if inferred_dtype is not None and payload_var is not None:
+                    self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+            if factory_kwargs.get("block_aggregate"):
+                aggregate_var, aggregate_spec = candidate(2)
+                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan block_aggregate must be a one-item "
+                        "ThreadData or local array."
+                    )
+                aggregate_dtype = aggregate_spec.dtype
+                if aggregate_dtype is None and aggregate_var is not None:
+                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
+                if (
+                    inferred_dtype is not None
+                    and aggregate_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan block_aggregate dtype must match the input dtype."
+                    )
+                if aggregate_var is not None and inferred_dtype is not None:
+                    self._record_inferred_thread_data_dtype(
+                        aggregate_var, inferred_dtype
+                    )
+            return
+
+        if op_name in {
+            "warp_exclusive_sum",
+            "warp_inclusive_sum",
+            "warp_exclusive_scan",
+            "warp_inclusive_scan",
+        }:
+            value_var, value_spec = candidate(0)
+            inferred_dtype = value_spec.dtype if value_spec is not None else None
+            if inferred_dtype is None and value_var is not None:
+                inferred_dtype = self._resolve_var_dtype(value_var)
+            if inferred_dtype is None:
+                inferred_dtype = factory_value("dtype")
+            infer_kwarg("dtype", inferred_dtype)
+            aggregate_index = None
+            if factory_kwargs.get("warp_aggregate"):
+                aggregate_index = (
+                    2
+                    if factory_kwargs.get("valid_items")
+                    and op_name in {"warp_exclusive_scan", "warp_inclusive_scan"}
+                    else 1
+                )
+            if aggregate_index is not None:
+                aggregate_var, aggregate_spec = candidate(aggregate_index)
+                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan warp_aggregate must be a one-item "
+                        "ThreadData or local array."
+                    )
+                aggregate_dtype = aggregate_spec.dtype
+                if aggregate_dtype is None and aggregate_var is not None:
+                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
+                if (
+                    inferred_dtype is not None
+                    and aggregate_dtype is not None
+                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
+                ):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop scan warp_aggregate dtype must match the input dtype."
+                    )
+                if aggregate_var is not None and inferred_dtype is not None:
+                    self._record_inferred_thread_data_dtype(
+                        aggregate_var, inferred_dtype
+                    )
+            return
 
         if op_name in {"load", "store", "warp_load", "warp_store"}:
             payload_var, payload_spec = candidate(1)

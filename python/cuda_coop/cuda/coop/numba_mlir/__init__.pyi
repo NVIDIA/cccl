@@ -14,6 +14,9 @@ from ._enums import (
     BlockLoadAlgorithm as BlockLoadAlgorithm,
 )
 from ._enums import (
+    BlockScanAlgorithm as BlockScanAlgorithm,
+)
+from ._enums import (
     BlockStoreAlgorithm as BlockStoreAlgorithm,
 )
 from ._enums import (
@@ -30,6 +33,27 @@ from ._group_load_store import (
 )
 from ._group_load_store import (
     store as store,
+)
+from ._group_reduce import (
+    reduce as reduce,
+)
+from ._group_reduce import (
+    sum as sum,
+)
+from ._group_scan import (
+    exclusive_scan as exclusive_scan,
+)
+from ._group_scan import (
+    exclusive_sum as exclusive_sum,
+)
+from ._group_scan import (
+    inclusive_scan as inclusive_scan,
+)
+from ._group_scan import (
+    inclusive_sum as inclusive_sum,
+)
+from ._group_scan import (
+    scan as scan,
 )
 from ._group_shuffle import (
     shuffle as shuffle,
@@ -76,6 +100,7 @@ from ._thread_group import (
 
 __all__ = [
     "BlockLoadAlgorithm",
+    "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
     "Hierarchy",
     "StatefulFunction",
@@ -86,13 +111,20 @@ __all__ = [
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
+    "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
