@@ -64,6 +64,7 @@
 
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/machine.cuh>
+#include <cuda/experimental/__places/place_memory_resource.cuh>
 #include <cuda/experimental/__places/place_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -76,9 +77,10 @@
 #endif
 
 #include <atomic>
-#include <cstdio>
+#include <cstddef>
 #include <memory>
 #include <mutex>
+#include <tuple>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -147,152 +149,6 @@ inline ::std::vector<exec_place> places_from_locality_domains(::std::vector<int>
   }
   place_partition partition(devices, place_partition_scope::locality_domain);
   return ::std::vector<exec_place>(partition.begin(), partition.end());
-}
-
-// ============================================================================
-// place_memory_resource: per-place memory resource over data_place
-// ============================================================================
-
-/**
- * @brief A memory resource that allocates from a `data_place`, modeling the
- * `cuda::mr` resource concepts.
- *
- * This makes any place (device, host, managed, green-context, locality
- * domain) usable wherever CCCL expects a memory resource — in particular in
- * the environments accepted by CUB's single-call device algorithms, so that
- * algorithm temporaries land on the same place as the data they serve.
- *
- * Stream-ordered places allocate/deallocate on the provided stream; other
- * places fall back to their immediate allocation path.
- */
-class place_memory_resource
-{
-public:
-  /// @brief Construct a memory resource allocating from @p place.
-  explicit place_memory_resource(data_place place)
-      : place_(mv(place))
-      , is_stream_ordered_(place_.allocation_is_stream_ordered())
-  {}
-
-  /// @brief The underlying data place.
-  const data_place& place() const
-  {
-    return place_;
-  }
-
-  /// @brief Whether allocations are stream-ordered on this place.
-  bool is_stream_ordered() const
-  {
-    return is_stream_ordered_;
-  }
-
-  /// @brief Stream-ordered allocation (models the `cuda::mr` resource concept).
-  [[nodiscard]] void*
-  allocate(::cuda::stream_ref stream, ::std::size_t bytes, ::std::size_t /*alignment*/ = alignof(::std::max_align_t))
-  {
-    if (bytes == 0)
-    {
-      return nullptr;
-    }
-    cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
-    return place_.allocate(static_cast<::std::ptrdiff_t>(bytes), cuda_stream);
-  }
-
-  /// @brief Stream-ordered deallocation (models the `cuda::mr` resource concept).
-  void deallocate(::cuda::stream_ref stream,
-                  void* ptr,
-                  ::std::size_t bytes,
-                  ::std::size_t /*alignment*/ = alignof(::std::max_align_t)) noexcept
-  {
-    if (ptr == nullptr)
-    {
-      return;
-    }
-    cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
-    // Deallocation is noexcept by the convention of the cuda::mr resources
-    // (their bodies never throw); a deallocation failure is not recoverable,
-    // so report it rather than terminate through the noexcept boundary.
-    try
-    {
-      place_.deallocate(ptr, bytes, cuda_stream);
-    }
-    catch (const ::std::exception& e)
-    {
-      ::fprintf(stderr, "place_memory_resource::deallocate failed: %s\n", e.what());
-    }
-  }
-
-  /// @brief Synchronous allocation (models the `cuda::mr` synchronous resource concept).
-  [[nodiscard]] void* allocate_sync(::std::size_t bytes, ::std::size_t /*alignment*/ = alignof(::std::max_align_t))
-  {
-    if (bytes == 0)
-    {
-      return nullptr;
-    }
-    return place_.allocate(static_cast<::std::ptrdiff_t>(bytes), nullptr);
-  }
-
-  /// @brief Synchronous deallocation (models the `cuda::mr` synchronous resource concept).
-  void
-  deallocate_sync(void* ptr, ::std::size_t bytes, ::std::size_t /*alignment*/ = alignof(::std::max_align_t)) noexcept
-  {
-    if (ptr == nullptr)
-    {
-      return;
-    }
-    try
-    {
-      place_.deallocate(ptr, bytes, nullptr);
-    }
-    catch (const ::std::exception& e)
-    {
-      ::fprintf(stderr, "place_memory_resource::deallocate_sync failed: %s\n", e.what());
-    }
-  }
-
-  /// @brief Two resources are equal when they allocate from the same place.
-  friend bool operator==(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
-  {
-    return lhs.place_ == rhs.place_;
-  }
-
-  friend bool operator!=(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
-
-private:
-  data_place place_;
-  bool is_stream_ordered_;
-};
-
-// ============================================================================
-// Stream utilities
-// ============================================================================
-
-/**
- * @brief Make @p wait_stream wait for the work currently enqueued on
- * @p signal_stream, using a short-lived CUDA event.
- *
- * A no-op when both streams are the same.
- */
-inline void make_stream_wait_for(cudaStream_t wait_stream, cudaStream_t signal_stream)
-{
-  if (wait_stream == signal_stream)
-  {
-    return;
-  }
-
-  cudaEvent_t event = nullptr;
-  cuda_safe_call(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-  // Destroy the event on every path; surface the first failure afterwards.
-  cudaError_t status = cudaEventRecord(event, signal_stream);
-  if (status == cudaSuccess)
-  {
-    status = cudaStreamWaitEvent(wait_stream, event, 0);
-  }
-  cuda_safe_call(cudaEventDestroy(event));
-  cuda_safe_call(status);
 }
 
 namespace detail
@@ -421,23 +277,23 @@ public:
   // Places
   // ==========================================================================
 
-  const ::std::vector<exec_place>& places() const
+  [[nodiscard]] const ::std::vector<exec_place>& places() const noexcept
   {
     return places_;
   }
 
-  size_t size() const
+  [[nodiscard]] size_t size() const noexcept
   {
     return places_.size();
   }
 
-  const exec_place& place(size_t idx) const
+  [[nodiscard]] const exec_place& place(size_t idx) const
   {
     _CCCL_ASSERT(idx < places_.size(), "place_group: place index out of range");
     return places_[idx];
   }
 
-  const exec_place& operator[](size_t idx) const
+  [[nodiscard]] const exec_place& operator[](size_t idx) const
   {
     return place(idx);
   }
@@ -451,7 +307,7 @@ public:
   // are created lazily, on first use of each (place, color) slot.
 
   /// @brief Number of stream colors available per place.
-  size_t num_stream_colors() const
+  [[nodiscard]] size_t num_stream_colors() const noexcept
   {
     return exec_place_default_pool_size;
   }
@@ -480,7 +336,7 @@ public:
    *
    * Use to spread independent operations over the per-place pools.
    */
-  size_t next_stream_color()
+  [[nodiscard]] size_t next_stream_color() noexcept
   {
     return stream_color_counter_.fetch_add(1, ::std::memory_order_relaxed) % exec_place_default_pool_size;
   }
@@ -504,12 +360,20 @@ public:
   }
 
   /// @brief Synchronize every stream created so far, on every place.
+  ///
+  /// Lazy by design: places whose pools were never touched are skipped, so
+  /// synchronizing does not create streams.
   void sync()
   {
-    for (const auto& p : places_)
+    ::std::lock_guard<::std::mutex> lock(mutex_);
+    for (size_t i = 0; i < places_.size(); i++)
     {
-      exec_place_scope scope(p);
-      for (cudaStream_t s : get_or_create_streams(p))
+      if (i >= stream_cache_.size() || stream_cache_[i].empty())
+      {
+        continue;
+      }
+      exec_place_scope scope(places_[i]);
+      for (cudaStream_t s : stream_cache_[i])
       {
         cuda_safe_call(cudaStreamSynchronize(s));
       }
@@ -540,8 +404,8 @@ public:
    */
   static auto env(const data_place& dplace, cudaStream_t stream)
   {
-    auto stream_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{stream}};
-    auto mr_prop     = ::cuda::std::execution::prop{::cuda::mr::get_memory_resource, place_memory_resource(dplace)};
+    const auto stream_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{stream}};
+    const auto mr_prop = ::cuda::std::execution::prop{::cuda::mr::get_memory_resource, place_memory_resource(dplace)};
     return ::cuda::std::execution::env{stream_prop, mr_prop};
   }
 
@@ -562,14 +426,14 @@ public:
   // ==========================================================================
 
   /// @brief The stream-pool registry this group draws from (owned or borrowed).
-  exec_place_resources& resources()
+  [[nodiscard]] exec_place_resources& resources() noexcept
   {
     return *resources_;
   }
 
   /// @brief True when the group owns its stream-pool registry; false when it
   /// borrows one (e.g. from an STF `async_resources_handle`).
-  bool owns_resources() const
+  [[nodiscard]] bool owns_resources() const noexcept
   {
     return owned_resources_ != nullptr;
   }
@@ -703,10 +567,10 @@ UNITTEST("place_group per-place stream pools")
   for (size_t i = 0; i < group.size(); i++)
   {
     exec_place_scope scope(group.place(i));
-    const size_t n = 1024 * sizeof(int);
-    auto dplace    = group.place(i).affine_data_place();
-    cudaStream_t s = group.get_stream(i);
-    void* ptr      = dplace.allocate(n, s);
+    constexpr size_t n = 1024 * sizeof(int);
+    auto dplace        = group.place(i).affine_data_place();
+    cudaStream_t s     = group.get_stream(i);
+    void* ptr          = dplace.allocate(n, s);
     cuda_safe_call(cudaMemsetAsync(ptr, 0xab, n, s));
     cuda_safe_call(cudaStreamSynchronize(s));
     dplace.deallocate(ptr, n, s);

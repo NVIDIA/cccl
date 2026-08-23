@@ -14,6 +14,7 @@ set(
   places_unittested_headers
   cuda/experimental/__places/cute_partition.cuh
   cuda/experimental/__places/place_group.cuh
+  cuda/experimental/__places/place_memory_resource.cuh
   cuda/experimental/__places/places.cuh
   cuda/experimental/__places/exec/cuda_context.cuh
   cuda/experimental/__places/exec/green_context.cuh
