@@ -1027,6 +1027,267 @@ def exchange(
     """
 
 @overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["left"] = "left",
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return left Numba differences for ``value`` across ``group``.
+
+    ``direction`` is left, ``valid_items`` may limit the tile,
+    ``tile_predecessor_item`` supplies its boundary,
+    ``tile_successor_item`` stays ``None``, ``temp_storage`` supplies scratch,
+    and ``difference_op`` supplies optional subtraction.
+    """
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return right Numba differences for ``value`` across ``group``.
+
+    ``direction`` is right, ``valid_items`` may limit the tile, both
+    ``tile_predecessor_item`` and ``tile_successor_item`` stay ``None``,
+    ``temp_storage`` supplies scratch, and ``difference_op`` supplies optional
+    subtraction.
+    """
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ItemT,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+) -> _ThreadDataLike[_ItemT]:
+    """Return full-tile right Numba differences for ``value`` across ``group``.
+
+    ``direction`` is right, ``valid_items`` and ``tile_predecessor_item`` stay
+    ``None``, ``tile_successor_item`` supplies the boundary, ``temp_storage``
+    supplies scratch, and ``difference_op`` supplies optional subtraction.
+    """
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["left"] = "left",
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return one left Numba difference for scalar ``value`` across ``group``.
+
+    ``direction`` is left, ``valid_items`` may limit the tile,
+    ``tile_predecessor_item`` supplies its boundary,
+    ``tile_successor_item`` stays ``None``, ``temp_storage`` supplies scratch,
+    and ``difference_op`` supplies optional subtraction.
+    """
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: _ValidItems | None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return one right Numba difference for scalar ``value`` across ``group``.
+
+    ``direction`` is right, ``valid_items`` may limit the tile, both
+    ``tile_predecessor_item`` and ``tile_successor_item`` stay ``None``,
+    ``temp_storage`` supplies scratch, and ``difference_op`` supplies optional
+    subtraction.
+    """
+
+@overload
+def adjacent_difference(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    direction: Literal["right"],
+    valid_items: None = None,
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ScalarT,
+    temp_storage: TempStorage | None = None,
+    difference_op: Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+) -> _ScalarT:
+    """Return a full-tile right Numba difference for ``value`` across ``group``.
+
+    ``direction`` is right, ``valid_items`` and ``tile_predecessor_item`` stay
+    ``None``, ``tile_successor_item`` supplies the boundary, ``temp_storage``
+    supplies scratch, and ``difference_op`` supplies optional subtraction.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["heads"] = "heads",
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> _ThreadDataLike[int]:
+    """Return one Numba signed 32-bit head-flag payload.
+
+    ``group`` must be a complete physical block and ``value`` must be a
+    fixed-size per-thread payload. ``mode`` is ``"heads"`` and the result
+    preserves the payload shape without mutating ``value``.
+    ``tile_predecessor_item`` supplies a same-typed head boundary;
+    ``tile_successor_item`` stays ``None``. ``temp_storage`` supplies optional
+    caller-owned scratch. Without a boundary, the first head is set.
+    ``flag_op`` may be a value-level Numba-CUDA-MLIR device predicate over two
+    payload elements.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["tails"],
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ItemT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> _ThreadDataLike[int]:
+    """Return one Numba signed 32-bit tail-flag payload.
+
+    ``group`` must be a complete physical block and ``value`` must be a
+    fixed-size per-thread payload. ``mode`` is ``"tails"`` and the result
+    preserves the payload shape without mutating ``value``.
+    ``tile_predecessor_item`` stays ``None``; ``tile_successor_item`` supplies
+    a same-typed tail boundary. ``temp_storage`` supplies optional caller-owned
+    scratch. Without a boundary, the final tail is set. ``flag_op`` may be a
+    value-level Numba-CUDA-MLIR device predicate over two payload elements.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["heads_and_tails"],
+    tile_predecessor_item: _ItemT | None = None,
+    tile_successor_item: _ItemT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
+) -> tuple[_ThreadDataLike[int], _ThreadDataLike[int]]:
+    """Return Numba signed 32-bit head and tail flag payloads.
+
+    ``group`` must be a complete physical block, ``value`` must be a fixed-size
+    per-thread payload, and ``mode`` must be ``"heads_and_tails"``. The two
+    results preserve the payload shape without mutating ``value``.
+    ``tile_predecessor_item`` and ``tile_successor_item`` supply same-typed head
+    and tail boundaries. ``temp_storage`` supplies optional caller-owned
+    scratch. Without external boundaries, the first head and final tail are
+    set. ``flag_op`` may be a value-level Numba-CUDA-MLIR device predicate over
+    two payload elements.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["heads"] = "heads",
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> int:
+    """Return one Numba signed 32-bit scalar head flag.
+
+    ``group`` must be a complete physical block and ``value`` supplies one
+    scalar per thread. ``mode`` is ``"heads"``. ``tile_predecessor_item``
+    supplies a same-typed head boundary and ``tile_successor_item`` stays
+    ``None``. ``temp_storage`` supplies optional caller-owned scratch.
+    ``flag_op`` may be a value-level Numba-CUDA-MLIR device predicate over two
+    values of the scalar type.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["tails"],
+    tile_predecessor_item: None = None,
+    tile_successor_item: _ScalarT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> int:
+    """Return one Numba signed 32-bit scalar tail flag.
+
+    ``group`` must be a complete physical block and ``value`` supplies one
+    scalar per thread. ``mode`` is ``"tails"``. ``tile_predecessor_item`` stays
+    ``None`` and ``tile_successor_item`` supplies a same-typed tail boundary.
+    ``temp_storage`` supplies optional caller-owned scratch. ``flag_op`` may be
+    a value-level Numba-CUDA-MLIR device predicate over two values of the scalar
+    type.
+    """
+
+@overload
+def discontinuity(
+    group: _BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    mode: Literal["heads_and_tails"],
+    tile_predecessor_item: _ScalarT | None = None,
+    tile_successor_item: _ScalarT | None = None,
+    temp_storage: TempStorage | None = None,
+    flag_op: Callable[[_ScalarT, _ScalarT], object] | None = None,
+) -> tuple[int, int]:
+    """Return Numba signed 32-bit scalar head and tail flags.
+
+    ``group`` must be a complete physical block, ``value`` supplies one scalar
+    per thread, and ``mode`` must be ``"heads_and_tails"``.
+    ``tile_predecessor_item`` and ``tile_successor_item`` supply same-typed head
+    and tail boundaries, while ``temp_storage`` supplies optional caller-owned
+    scratch. ``flag_op`` may be a value-level Numba-CUDA-MLIR device predicate
+    over two values of the scalar type.
+    """
+
+@overload
 def shuffle(
     group: _BlockGroup,
     value: _PayloadT,
@@ -1080,6 +1341,8 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

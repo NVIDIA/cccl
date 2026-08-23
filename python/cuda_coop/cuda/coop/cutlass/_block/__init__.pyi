@@ -8,8 +8,23 @@ from .. import Payload as _Payload
 from .. import TempStorage as TempStorage
 from .. import ThreadData as _ThreadData
 from .._dsl._launch import CutlassLaunchMetadata as _CutlassLaunchMetadata
+from .._dsl.block import BlockAdjacentDifferenceType as BlockAdjacentDifferenceType
+from .._dsl.block import BlockDiscontinuityType as BlockDiscontinuityType
 from .._dsl.block import BlockExchangeType as BlockExchangeType
 from .._dsl.block import BlockShuffleType as BlockShuffleType
+from .._dsl.block import adjacent_difference as adjacent_difference
+from .._dsl.block import (
+    adjacent_difference_subtract_left as adjacent_difference_subtract_left,
+)
+from .._dsl.block import (
+    adjacent_difference_subtract_right as adjacent_difference_subtract_right,
+)
+from .._dsl.block import discontinuity as discontinuity
+from .._dsl.block import discontinuity_flag_heads as discontinuity_flag_heads
+from .._dsl.block import (
+    discontinuity_flag_heads_and_tails as discontinuity_flag_heads_and_tails,
+)
+from .._dsl.block import discontinuity_flag_tails as discontinuity_flag_tails
 from .._dsl.block import exchange as exchange
 from .._dsl.block import exchange_blocked_to_striped as exchange_blocked_to_striped
 from .._dsl.block import (
@@ -278,6 +293,29 @@ def make_store(
     deferred-call defaults. ``dtype=`` and ``offset=`` can stay on canonical CUB.
     """
 
+def make_adjacent_difference(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    difference_op: object = None,
+    *,
+    dim: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block adjacent-difference specialization."""
+
+def make_discontinuity(
+    dtype: object,
+    threads_per_block: object = None,
+    items_per_thread: int = 1,
+    flag_op: object = None,
+    *,
+    dim: object = None,
+    flag_dtype: object = None,
+    **kwargs: object,
+) -> _DeferredValue:
+    """Build a deferred block discontinuity specialization."""
+
 def make_exchange(
     dtype: object,
     threads_per_block: object = None,
@@ -420,9 +458,18 @@ def make_radix_sort_pairs_descending(
     """Build a deferred descending block radix-pair-sort specialization."""
 
 __all__ = [
+    "BlockAdjacentDifferenceType",
+    "BlockDiscontinuityType",
     "BlockExchangeType",
     "BlockShuffleType",
     "TempStorage",
+    "adjacent_difference",
+    "adjacent_difference_subtract_left",
+    "adjacent_difference_subtract_right",
+    "discontinuity",
+    "discontinuity_flag_heads",
+    "discontinuity_flag_heads_and_tails",
+    "discontinuity_flag_tails",
     "exchange",
     "exchange_blocked_to_striped",
     "exchange_blocked_to_warp_striped",
@@ -437,6 +484,8 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_adjacent_difference",
+    "make_discontinuity",
     "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",

@@ -571,6 +571,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "inclusive_scan",
             "exchange",
             "shuffle",
+            "adjacent_difference",
+            "discontinuity",
         }
     ),
     "numba_mlir": frozenset(
@@ -586,6 +588,8 @@ _COMMON_PROFILE_REQUIRED_OPERATIONS_BY_ROLE = {
             "inclusive_scan",
             "exchange",
             "shuffle",
+            "adjacent_difference",
+            "discontinuity",
         }
     ),
 }

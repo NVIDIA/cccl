@@ -566,6 +566,19 @@ class _RunLengthInvocable(Protocol):
     ) -> _Invocable:
         """Build a generated fused decode callable."""
 
+class BlockAdjacentDifferenceType(IntEnum):
+    """Direction used by block adjacent difference."""
+
+    SubtractLeft = 1
+    SubtractRight = 2
+
+class BlockDiscontinuityType(IntEnum):
+    """Output layout used by block discontinuity."""
+
+    HEADS = 1
+    TAILS = 2
+    HEADS_AND_TAILS = 3
+
 class BlockExchangeType(IntEnum):
     """CUB block-exchange data movement pattern."""
 
@@ -1507,6 +1520,185 @@ def make_exchange(
     """Build a generated block-exchange callable."""
 
 @overload
+def adjacent_difference(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    /,
+    *,
+    block_adjacent_difference_type: BlockAdjacentDifferenceType = BlockAdjacentDifferenceType.SubtractLeft,
+    difference_op: Callable[[_T, _T], _T] | None = None,
+    valid_items: object = None,
+    tile_predecessor_item: _T | None = None,
+    tile_successor_item: _T | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write qualified adjacent differences to ``output``."""
+
+@overload
+def adjacent_difference(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    first_runtime_operand: object,
+    /,
+    *,
+    block_adjacent_difference_type: BlockAdjacentDifferenceType = BlockAdjacentDifferenceType.SubtractLeft,
+    difference_op: Callable[[_T, _T], _T] | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write adjacent differences with one configured runtime operand."""
+
+@overload
+def adjacent_difference(
+    value: ThreadDataLike[_T],
+    output: ThreadDataLike[_T],
+    first_runtime_operand: object,
+    second_runtime_operand: object,
+    /,
+    *,
+    block_adjacent_difference_type: BlockAdjacentDifferenceType = BlockAdjacentDifferenceType.SubtractLeft,
+    difference_op: Callable[[_T, _T], _T] | None = None,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write adjacent differences with two configured runtime operands."""
+
+@overload
+def adjacent_difference(
+    block_adjacent_difference_type: BlockAdjacentDifferenceType
+    | object = BlockAdjacentDifferenceType.SubtractLeft,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    difference_op: object = None,
+    methods: _Methods | None = None,
+    valid_items: object = None,
+    tile_predecessor_item: object = None,
+    tile_successor_item: object = None,
+    dim: _Dim | None = None,
+) -> _AdjacentDifferenceInvocable[Any]:
+    """Build an adjacent-difference callable outside compilation."""
+
+def make_adjacent_difference(
+    block_adjacent_difference_type: BlockAdjacentDifferenceType
+    | object = BlockAdjacentDifferenceType.SubtractLeft,
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    difference_op: object = None,
+    methods: _Methods | None = None,
+    valid_items: object = None,
+    tile_predecessor_item: object = None,
+    tile_successor_item: object = None,
+    dim: _Dim | None = None,
+) -> _AdjacentDifferenceInvocable[Any]:
+    """Build a generated adjacent-difference callable."""
+
+@overload
+def discontinuity(
+    value: ThreadDataLike[_T],
+    flags: object,
+    tail_flags: object = None,
+    /,
+    *,
+    flag_op: Callable[[_T, _T], object] | None = None,
+    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
+    tile_predecessor_item: _T | None = None,
+    tile_successor_item: _T | None = None,
+    dtype: object = None,
+    flag_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write qualified discontinuity flags to one or two outputs."""
+
+@overload
+def discontinuity(
+    value: ThreadDataLike[_T],
+    flags: object,
+    third: object,
+    fourth: object,
+    /,
+    *,
+    flag_op: Callable[[_T, _T], object] | None = None,
+    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
+    dtype: object = None,
+    flag_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write discontinuity flags with four runtime operands."""
+
+@overload
+def discontinuity(
+    value: ThreadDataLike[_T],
+    head_flags: object,
+    tail_flags: object,
+    tile_predecessor_item: object,
+    tile_successor_item: object,
+    /,
+    *,
+    flag_op: Callable[[_T, _T], object] | None = None,
+    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS_AND_TAILS,
+    dtype: object = None,
+    flag_dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    methods: _Methods | None = None,
+    dim: _Dim | None = None,
+    temp_storage: TempStorage | None = None,
+) -> None:
+    """Write head and tail flags with both tile boundary items."""
+
+@overload
+def discontinuity(
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    flag_op: object = None,
+    flag_dtype: object = None,
+    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
+    methods: _Methods | None = None,
+    tile_predecessor_item: object = None,
+    tile_successor_item: object = None,
+    dim: _Dim | None = None,
+) -> _DiscontinuityInvocable[Any]:
+    """Build a discontinuity callable outside compilation."""
+
+def make_discontinuity(
+    dtype: object = None,
+    threads_per_block: _Dim | None = None,
+    items_per_thread: int = 1,
+    flag_op: object = None,
+    flag_dtype: object = None,
+    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
+    methods: _Methods | None = None,
+    tile_predecessor_item: object = None,
+    tile_successor_item: object = None,
+    dim: _Dim | None = None,
+) -> _DiscontinuityInvocable[Any]:
+    """Build a generated block-discontinuity callable."""
+
+@overload
 def shuffle(
     value: object,
     output: object = None,
@@ -1571,17 +1763,23 @@ def make_shuffle(
     """Build a generated block-shuffle callable."""
 
 __all__ = [
+    "BlockAdjacentDifferenceType",
+    "BlockDiscontinuityType",
     "BlockExchangeType",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockShuffleType",
     "BlockStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "make_adjacent_difference",
+    "make_discontinuity",
     "make_exchange",
     "make_exclusive_scan",
     "make_exclusive_sum",

@@ -49,6 +49,8 @@ from .._launch import (
 )
 from .._load_store import validate_payload_selector as _validate_payload_selector
 from .._scope import BLOCK_SCOPE as _SCOPE
+from ._difference import adjacent_difference
+from ._discontinuity import discontinuity
 from ._exchange import BlockExchangeType, exchange
 from ._load_store import load, store
 from ._reduce import reduce, sum
@@ -594,6 +596,60 @@ def make_inclusive_scan(
         bound,
         overridable_kwargs=_SCAN_OUTPUT_OVERRIDABLE_KWARGS,
     )
+
+
+def make_adjacent_difference(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    difference_op: Any = None,
+    *,
+    dim: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block adjacent-difference callable.
+
+    The callable binds CTA metadata and forwards each value to
+    :func:`adjacent_difference`.
+    """
+    del dtype, items_per_thread
+    _reject_methods("make_adjacent_difference", kwargs)
+    bound = _block_kwargs(
+        "make_adjacent_difference",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "difference_op", difference_op)
+    return _make_factory("make_adjacent_difference", adjacent_difference, bound)
+
+
+def make_discontinuity(
+    dtype: Any,
+    threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    flag_op: Any = None,
+    *,
+    dim: Any = None,
+    flag_dtype: Any = None,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Return a deferred block discontinuity callable.
+
+    The callable binds CTA metadata and forwards each value to
+    :func:`discontinuity`.
+    """
+    del dtype, items_per_thread
+    _reject_if_supplied("make_discontinuity", "flag_dtype", flag_dtype)
+    _reject_methods("make_discontinuity", kwargs)
+    bound = _block_kwargs(
+        "make_discontinuity",
+        threads_per_block=threads_per_block,
+        dim=dim,
+        kwargs=kwargs,
+    )
+    _bind_if_not_none(bound, "flag_op", flag_op)
+    return _make_factory("make_discontinuity", discontinuity, bound)
 
 
 def make_shuffle(

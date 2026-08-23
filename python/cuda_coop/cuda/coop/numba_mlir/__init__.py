@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ._group_ops import (
+    adjacent_difference,
+    discontinuity,
     exchange,
     exclusive_scan,
     exclusive_sum,
@@ -285,6 +287,8 @@ __all__ = [
     "ThreadData",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

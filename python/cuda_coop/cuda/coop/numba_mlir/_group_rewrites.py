@@ -58,6 +58,8 @@ _ROOT_OPERATIONS = {
         "exclusive_scan",
         "inclusive_scan",
         "exchange",
+        "adjacent_difference",
+        "discontinuity",
         "shuffle",
     )
 }
@@ -2133,6 +2135,284 @@ class _GroupCallPlanner:
         statements.append(ir.Assign(result_payload, inst.target, loc))
         return statements
 
+    def _lower_adjacent_difference(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        operation = "adjacent_difference"
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.adjacent_difference currently lowers "
+                "only complete physical block groups"
+            )
+        difference_op = (
+            _builtin_subtract
+            if self._is_none(bound.arguments.get("difference_op"))
+            else bound.arguments["difference_op"]
+        )
+
+        from cuda.coop._core.block import BlockAdjacentDifferenceDirection
+
+        from ._block import BlockAdjacentDifferenceType
+
+        try:
+            direction = BlockAdjacentDifferenceDirection(
+                self._constant(bound.arguments["direction"])
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "cuda.coop.numba_mlir.adjacent_difference direction must be "
+                "'left' or 'right'"
+            ) from exc
+        adjacent_type = {
+            BlockAdjacentDifferenceDirection.LEFT: (
+                BlockAdjacentDifferenceType.SubtractLeft
+            ),
+            BlockAdjacentDifferenceDirection.RIGHT: (
+                BlockAdjacentDifferenceType.SubtractRight
+            ),
+        }[direction]
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        value = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_value",
+            value=bound.arguments["value"],
+        )
+        if is_common_root and not self._thread_data_operand_state(
+            operation,
+            "value",
+            value,
+        ):
+            raise TypeError(
+                "cuda.coop.adjacent_difference requires a fixed-size "
+                "ThreadData payload in common V1; use cuda.coop.numba_mlir "
+                "for backend-qualified scalar or local-array support"
+            )
+        input_payload, is_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=value,
+            scope=scope,
+            loc=loc,
+        )
+        result_payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_result",
+            prototype=value,
+            is_array=is_array,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        factory_kwargs.update(
+            {
+                "block_adjacent_difference_type": adjacent_type,
+                "difference_op": difference_op,
+            }
+        )
+        runtime_args = [input_payload, result_payload]
+        valid_items = bound.arguments["valid_items"]
+        predecessor = bound.arguments["tile_predecessor_item"]
+        successor = bound.arguments["tile_successor_item"]
+        if not self._is_none(valid_items):
+            runtime_args.append(valid_items)
+            factory_kwargs["valid_items"] = True
+        if not self._is_none(predecessor):
+            runtime_args.append(predecessor)
+            factory_kwargs["tile_predecessor_item"] = True
+        if not self._is_none(successor):
+            runtime_args.append(successor)
+            factory_kwargs["tile_successor_item"] = True
+        if not self._is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=result_payload,
+            common_profile_operation=(operation if is_common_root else None),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        result = self._result_value(
+            statements,
+            payload=result_payload,
+            is_array=is_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_result",
+        )
+        statements.append(ir.Assign(result, inst.target, loc))
+        return statements
+
+    def _lower_discontinuity(
+        self,
+        inst: ir.Assign,
+        *,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        operation = "discontinuity"
+        self._reject_extra_root_arguments(operation, bound)
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir.discontinuity currently lowers only "
+                "complete physical block groups"
+            )
+        flag_op = (
+            _builtin_not_equal
+            if self._is_none(bound.arguments.get("flag_op"))
+            else bound.arguments["flag_op"]
+        )
+
+        from cuda.coop._core.block import BlockDiscontinuityMode
+
+        from ._block import BlockDiscontinuityType
+
+        try:
+            mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "cuda.coop.numba_mlir.discontinuity mode must be "
+                "'heads', 'tails', or 'heads_and_tails'"
+            ) from exc
+        discontinuity_type = {
+            BlockDiscontinuityMode.HEADS: BlockDiscontinuityType.HEADS,
+            BlockDiscontinuityMode.TAILS: BlockDiscontinuityType.TAILS,
+            BlockDiscontinuityMode.HEADS_AND_TAILS: (
+                BlockDiscontinuityType.HEADS_AND_TAILS
+            ),
+        }[mode]
+
+        statements: list[Any] = []
+        scope = inst.target.scope
+        loc = inst.loc
+        value = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_value",
+            value=bound.arguments["value"],
+        )
+        if is_common_root and not self._thread_data_operand_state(
+            operation,
+            "value",
+            value,
+        ):
+            raise TypeError(
+                "cuda.coop.discontinuity requires a fixed-size ThreadData "
+                "payload in common V1; use cuda.coop.numba_mlir for "
+                "backend-qualified scalar or local-array support"
+            )
+        input_payload, is_array = self._boxed_group_operand(
+            statements,
+            operation=operation,
+            value=value,
+            scope=scope,
+            loc=loc,
+        )
+        head_payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_head_result",
+            prototype=value,
+            is_array=is_array,
+            dtype_policy=_PAYLOAD_DTYPE_INT32,
+        )
+        tail_payload = None
+        if mode is BlockDiscontinuityMode.HEADS_AND_TAILS:
+            tail_payload = self._typed_payload_like(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_tail_result",
+                prototype=value,
+                is_array=is_array,
+                dtype_policy=_PAYLOAD_DTYPE_INT32,
+            )
+
+        factory, factory_kwargs = self._scope_factory(group, operation)
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        factory_kwargs.update(
+            {
+                "block_discontinuity_type": discontinuity_type,
+                "flag_op": flag_op,
+                "flag_dtype": numba_mlir_types.int32,
+            }
+        )
+        runtime_args = [input_payload, head_payload]
+        return_payload: ir.Var | tuple[ir.Var, ...] = head_payload
+        if tail_payload is not None:
+            runtime_args.append(tail_payload)
+            return_payload = (head_payload, tail_payload)
+
+        predecessor = bound.arguments["tile_predecessor_item"]
+        successor = bound.arguments["tile_successor_item"]
+        if not self._is_none(predecessor):
+            runtime_args.append(predecessor)
+            factory_kwargs["tile_predecessor_item"] = True
+        if not self._is_none(successor):
+            runtime_args.append(successor)
+            factory_kwargs["tile_successor_item"] = True
+        if not self._is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+
+        call_statements = self._rewritten_call(
+            inst,
+            factory=factory,
+            args=runtime_args,
+            kwargs=factory_kwargs,
+            return_alias=return_payload,
+            common_profile_operation=(operation if is_common_root else None),
+        )
+        call_statements.pop()
+        statements.extend(call_statements)
+        head_result = self._result_value(
+            statements,
+            payload=head_payload,
+            is_array=is_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_head_result",
+        )
+        if tail_payload is None:
+            statements.append(ir.Assign(head_result, inst.target, loc))
+            return statements
+
+        tail_result = self._result_value(
+            statements,
+            payload=tail_payload,
+            is_array=is_array,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_tail_result",
+        )
+        statements.append(
+            ir.Assign(
+                ir.Expr.build_tuple([head_result, tail_result], loc),
+                inst.target,
+                loc,
+            )
+        )
+        return statements
+
     def _lower_shuffle(
         self,
         inst: ir.Assign,
@@ -2384,6 +2664,20 @@ class _GroupCallPlanner:
             )
         elif operation == "exchange":
             replacement = self._lower_exchange(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "adjacent_difference":
+            replacement = self._lower_adjacent_difference(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "discontinuity":
+            replacement = self._lower_discontinuity(
                 inst,
                 group=group,
                 bound=bound,

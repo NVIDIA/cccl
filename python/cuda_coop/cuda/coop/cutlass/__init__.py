@@ -11,6 +11,8 @@ from cuda.coop._core.root_api import (
 )
 
 from ._compiler import register_trace_context as _register_trace_context
+from ._group_adjacent_difference import adjacent_difference
+from ._group_discontinuity import discontinuity
 from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
@@ -56,6 +58,8 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
