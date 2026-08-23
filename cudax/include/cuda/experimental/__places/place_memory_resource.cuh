@@ -37,6 +37,7 @@
 #include <cuda/experimental/__places/places.cuh>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <stdexcept>
@@ -65,19 +66,19 @@ class place_memory_resource
 {
 public:
   /// @brief Construct a memory resource allocating from @p place.
-  explicit place_memory_resource(data_place place)
+  _CCCL_HOST_API explicit place_memory_resource(data_place place)
       : place_(mv(place))
       , is_stream_ordered_(place_.allocation_is_stream_ordered())
   {}
 
   /// @brief The underlying data place.
-  const data_place& place() const
+  [[nodiscard]] _CCCL_HOST_API const data_place& place() const noexcept
   {
     return place_;
   }
 
   /// @brief Whether allocations are stream-ordered on this place.
-  bool is_stream_ordered() const
+  [[nodiscard]] _CCCL_HOST_API bool is_stream_ordered() const noexcept
   {
     return is_stream_ordered_;
   }
@@ -85,39 +86,44 @@ public:
   /// @brief Alignments this resource can guarantee: at most (and dividing)
   /// `cuda::mr::default_cuda_malloc_alignment`, which every allocation path
   /// of a `data_place` satisfies.
-  [[nodiscard]] static constexpr bool is_valid_alignment(::std::size_t alignment) noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool is_valid_alignment(::std::size_t alignment) noexcept
   {
     return alignment != 0 && alignment <= ::cuda::mr::default_cuda_malloc_alignment
         && ::cuda::mr::default_cuda_malloc_alignment % alignment == 0;
   }
 
   /// @brief Stream-ordered allocation (models the `cuda::mr` resource concept).
-  [[nodiscard]] void*
+  [[nodiscard]] _CCCL_HOST_API void*
   allocate(::cuda::stream_ref stream, ::std::size_t bytes, ::std::size_t alignment = alignof(::std::max_align_t))
   {
     if (!is_valid_alignment(alignment))
     {
       _CCCL_THROW(::std::invalid_argument, "place_memory_resource: unsupported alignment");
     }
+    if (bytes > static_cast<::std::size_t>(PTRDIFF_MAX))
+    {
+      _CCCL_THROW(::std::invalid_argument, "place_memory_resource: allocation size exceeds PTRDIFF_MAX");
+    }
     if (bytes == 0)
     {
       return nullptr;
     }
-    cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
+    const cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
     return place_.allocate(static_cast<::std::ptrdiff_t>(bytes), cuda_stream);
   }
 
   /// @brief Stream-ordered deallocation (models the `cuda::mr` resource concept).
-  void deallocate(::cuda::stream_ref stream,
-                  void* ptr,
-                  ::std::size_t bytes,
-                  ::std::size_t /*alignment*/ = alignof(::std::max_align_t)) noexcept
+  _CCCL_HOST_API void deallocate(
+    ::cuda::stream_ref stream,
+    void* ptr,
+    ::std::size_t bytes,
+    ::std::size_t /*alignment*/ = alignof(::std::max_align_t)) noexcept
   {
     if (ptr == nullptr)
     {
       return;
     }
-    cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
+    const cudaStream_t cuda_stream = is_stream_ordered_ ? stream.get() : nullptr;
     // Deallocation is noexcept by the convention of the cuda::mr resources
     // (their bodies never throw); a deallocation failure is not recoverable,
     // so report it rather than terminate through the noexcept boundary.
@@ -133,11 +139,16 @@ public:
   }
 
   /// @brief Synchronous allocation (models the `cuda::mr` synchronous resource concept).
-  [[nodiscard]] void* allocate_sync(::std::size_t bytes, ::std::size_t alignment = alignof(::std::max_align_t))
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(::std::size_t bytes, ::std::size_t alignment = alignof(::std::max_align_t))
   {
     if (!is_valid_alignment(alignment))
     {
       _CCCL_THROW(::std::invalid_argument, "place_memory_resource: unsupported alignment");
+    }
+    if (bytes > static_cast<::std::size_t>(PTRDIFF_MAX))
+    {
+      _CCCL_THROW(::std::invalid_argument, "place_memory_resource: allocation size exceeds PTRDIFF_MAX");
     }
     if (bytes == 0)
     {
@@ -147,7 +158,7 @@ public:
   }
 
   /// @brief Synchronous deallocation (models the `cuda::mr` synchronous resource concept).
-  void
+  _CCCL_HOST_API void
   deallocate_sync(void* ptr, ::std::size_t bytes, ::std::size_t /*alignment*/ = alignof(::std::max_align_t)) noexcept
   {
     if (ptr == nullptr)
@@ -166,12 +177,14 @@ public:
   }
 
   /// @brief Two resources are equal when they allocate from the same place.
-  friend bool operator==(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_API friend bool
+  operator==(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
   {
     return lhs.place_ == rhs.place_;
   }
 
-  friend bool operator!=(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_API friend bool
+  operator!=(const place_memory_resource& lhs, const place_memory_resource& rhs) noexcept
   {
     return !(lhs == rhs);
   }

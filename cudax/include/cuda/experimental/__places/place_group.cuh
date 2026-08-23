@@ -491,7 +491,10 @@ private:
         break;
       }
     }
-    _CCCL_ASSERT(idx < places_.size(), "place_group: place does not belong to this group");
+    if (idx >= places_.size())
+    {
+      _CCCL_THROW(::std::invalid_argument, "place_group: place does not belong to this group");
+    }
 
     ::std::lock_guard<::std::mutex> lock(mutex_);
     auto& cache = stream_cache_[idx];
@@ -621,6 +624,49 @@ UNITTEST("place_group per-place memory resources")
   void* h      = host_mr.allocate_sync(64);
   EXPECT(h != nullptr);
   host_mr.deallocate_sync(h, 64);
+
+  // Contract refusals: zero / unsupported alignment, oversize, foreign place
+  EXPECT(!place_memory_resource::is_valid_alignment(0));
+  bool threw = false;
+  try
+  {
+    ::std::ignore = mr.allocate_sync(64, 0);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  threw = false;
+  try
+  {
+    ::std::ignore = mr.allocate_sync(64, 2 * ::cuda::mr::default_cuda_malloc_alignment);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  threw = false;
+  try
+  {
+    ::std::ignore = mr.allocate_sync(static_cast<::std::size_t>(PTRDIFF_MAX) + 1);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  threw = false;
+  try
+  {
+    ::std::ignore = group.get_stream(exec_place::host(), 0); // not a member of this group
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
 };
 
 UNITTEST("place_group borrows STF async_resources_handle pools")
