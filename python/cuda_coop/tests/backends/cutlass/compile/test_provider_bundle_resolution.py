@@ -4,16 +4,22 @@
 
 from __future__ import annotations
 
+import multiprocessing
 import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 pytest.importorskip("cutlass")
 
+from cutlass.base_dsl.common import DSLRuntimeError
+
+from cuda.coop._headers import _toolkit
 from cuda.coop.cutlass._compiler import _bundle as provider_bundle
 from cuda.coop.cutlass._compiler import _bundle_contract as provider_contract
 from cuda.coop.cutlass._compiler import _cache as provider_cache
@@ -111,8 +117,114 @@ def _isolated_bundle_cache(monkeypatch, tmp_path):
         str(tmp_path / "provider-cache"),
     )
     provider_bundle.reset_compile_state()
+    with _toolkit._PRELOAD_LOCK:
+        _toolkit._EXACT_LIBRARY_HANDLES.clear()
     yield
     provider_bundle.reset_compile_state()
+    with _toolkit._PRELOAD_LOCK:
+        _toolkit._EXACT_LIBRARY_HANDLES.clear()
+
+
+def test_preload_toolkit_nvrtc_checks_lib64_and_ignores_unversioned_files(
+    monkeypatch,
+    tmp_path,
+):
+    include_dir = tmp_path / "toolkit" / "include"
+    lib64_dir = tmp_path / "toolkit" / "lib64"
+    include_dir.mkdir(parents=True)
+    lib64_dir.mkdir()
+    nvrtc = lib64_dir / "libnvrtc.so.13"
+    nvjitlink = lib64_dir / "libnvJitLink.so.13"
+    unversioned = lib64_dir / "libnvrtc.so"
+    for library in (nvrtc, nvjitlink, unversioned):
+        library.touch()
+    (include_dir / "cuda_runtime_api.h").write_text(
+        "#define CUDART_VERSION 13000\n",
+        encoding="utf-8",
+    )
+
+    loaded = []
+    monkeypatch.setattr(
+        "ctypes.CDLL",
+        lambda path, *, mode: loaded.append((path, mode)),
+    )
+    monkeypatch.setattr(
+        "cuda.pathfinder.load_nvidia_dynamic_lib",
+        lambda name: SimpleNamespace(
+            abs_path=str(nvrtc if name == "nvrtc" else nvjitlink)
+        ),
+    )
+    monkeypatch.setattr(_toolkit, "_nvjitlink_version", lambda path: (13, 0))
+    monkeypatch.setattr(provider_nvrtc, "get_version_tuple", lambda: (13, 0))
+
+    provider_nvrtc.preload_toolkit_nvrtc([str(include_dir)])
+
+    assert [Path(path).name for path, _ in loaded] == [
+        "libnvrtc.so.13",
+        "libnvJitLink.so.13",
+    ]
+    with _toolkit._PRELOAD_LOCK:
+        assert len(_toolkit._EXACT_LIBRARY_HANDLES) == 2
+
+
+def test_preload_toolkit_nvrtc_loads_split_library_directories(
+    monkeypatch,
+    tmp_path,
+):
+    first_include = tmp_path / "first" / "include"
+    second_include = tmp_path / "second" / "include"
+    first_lib = tmp_path / "first" / "lib"
+    second_lib = tmp_path / "second" / "lib"
+    for directory in (first_include, second_include, first_lib, second_lib):
+        directory.mkdir(parents=True)
+    for include_dir in (first_include, second_include):
+        (include_dir / "cuda_runtime_api.h").write_text(
+            "#define CUDART_VERSION 13000\n",
+            encoding="utf-8",
+        )
+    nvrtc = first_lib / "libnvrtc.so.13"
+    nvjitlink = second_lib / "libnvJitLink.so.13"
+    nvrtc.touch()
+    nvjitlink.touch()
+
+    loaded = []
+    monkeypatch.setattr(
+        "ctypes.CDLL",
+        lambda path, *, mode: loaded.append((path, mode)),
+    )
+    monkeypatch.setattr(
+        "cuda.pathfinder.load_nvidia_dynamic_lib",
+        lambda name: SimpleNamespace(
+            abs_path=str(nvrtc if name == "nvrtc" else nvjitlink)
+        ),
+    )
+    monkeypatch.setattr(_toolkit, "_nvjitlink_version", lambda path: (13, 0))
+    monkeypatch.setattr(provider_nvrtc, "get_version_tuple", lambda: (13, 0))
+
+    provider_nvrtc.preload_toolkit_nvrtc([str(first_include), str(second_include)])
+
+    assert [Path(path) for path, _ in loaded] == [nvrtc, nvjitlink]
+
+
+def test_preload_toolkit_nvrtc_requires_a_reported_version(monkeypatch):
+    monkeypatch.setattr(
+        provider_nvrtc,
+        "preload_toolkit_compiler_libraries",
+        lambda _include_dirs: SimpleNamespace(
+            nvrtc_path="/toolkit/libnvrtc.so",
+            toolkit_version=(13, 0),
+        ),
+    )
+    monkeypatch.setattr(provider_nvrtc, "get_version_tuple", lambda: None)
+
+    with pytest.raises(
+        DSLRuntimeError,
+        match="Failed aligning provider NVRTC",
+    ) as exc_info:
+        provider_nvrtc.preload_toolkit_nvrtc(("/toolkit/include",))
+
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert str(exc_info.value.__cause__) == "loaded NVRTC did not report its version"
 
 
 def test_resolution_routes_preserve_nvrtc_memory_and_disk_behavior(monkeypatch):
@@ -412,3 +524,171 @@ with provider_cache.artifact_lock(sys.argv[2], scope="test"):
     _, stderr = process.communicate(timeout=5)
     assert process.returncode == 0, stderr
     assert acquired_path.read_text(encoding="utf-8") == "acquired"
+
+
+def _forked_artifact_lock_worker(
+    artifact_path,
+    inherited_descriptor,
+    inherited_identity,
+    connection,
+):
+    try:
+        descriptor_stat = os.fstat(inherited_descriptor)
+    except OSError:
+        inherited_lock_descriptor = False
+    else:
+        inherited_lock_descriptor = (
+            descriptor_stat.st_dev,
+            descriptor_stat.st_ino,
+        ) == inherited_identity
+    connection.send(("inherited_lock_descriptor", inherited_lock_descriptor))
+    with provider_cache.artifact_lock(artifact_path, scope="test"):
+        connection.send(("acquired", True))
+    connection.close()
+
+
+def _fork_inside_artifact_lock_worker(artifact_path, connection):
+    report_read, report_write = os.pipe()
+    child_pid = None
+    descriptor = None
+    with provider_cache.artifact_lock(artifact_path, scope="test"):
+        with provider_cache._STATE_LOCK:
+            active_descriptors = tuple(provider_cache._ACTIVE_ARTIFACT_LOCK_FDS)
+        assert len(active_descriptors) == 1
+        descriptor = active_descriptors[0]
+        child_pid = os.fork()
+        if child_pid == 0:
+            os.close(report_read)
+            reused_read, reused_write = os.pipe()
+            if descriptor not in (reused_read, reused_write):
+                os.dup2(reused_read, descriptor)
+
+    assert child_pid is not None
+    assert descriptor is not None
+    if child_pid == 0:
+        try:
+            os.fstat(descriptor)
+        except OSError:
+            os.write(report_write, b"0")
+        else:
+            os.write(report_write, b"1")
+        os._exit(0)
+
+    os.close(report_write)
+    descriptor_survived = os.read(report_read, 1) == b"1"
+    _, child_status = os.waitpid(child_pid, 0)
+    connection.send(
+        {
+            "child_exitcode": os.waitstatus_to_exitcode(child_status),
+            "descriptor_survived": descriptor_survived,
+        }
+    )
+    connection.close()
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "fork"),
+    reason="test requires POSIX fork state reset",
+)
+@pytest.mark.filterwarnings(
+    "ignore:This process .* is multi-threaded, use of fork.*:DeprecationWarning"
+)
+def test_artifact_lock_state_resets_after_fork(tmp_path):
+    artifact_path = str(tmp_path / "bundle.ltoir")
+    lock_held = threading.Event()
+    release_lock = threading.Event()
+
+    def hold_artifact_lock():
+        with provider_cache.artifact_lock(artifact_path, scope="test"):
+            lock_held.set()
+            release_lock.wait()
+
+    holder = threading.Thread(target=hold_artifact_lock)
+    holder.start()
+    process = None
+    parent_connection = None
+    child_connection = None
+    try:
+        assert lock_held.wait(timeout=5)
+        with provider_cache._STATE_LOCK:
+            inherited_descriptors = tuple(provider_cache._ACTIVE_ARTIFACT_LOCK_FDS)
+        assert len(inherited_descriptors) == 1
+        inherited_descriptor = inherited_descriptors[0]
+        descriptor_stat = os.fstat(inherited_descriptor)
+        inherited_identity = (
+            descriptor_stat.st_dev,
+            descriptor_stat.st_ino,
+        )
+        context = multiprocessing.get_context("fork")
+        parent_connection, child_connection = context.Pipe(duplex=False)
+        process = context.Process(
+            target=_forked_artifact_lock_worker,
+            args=(
+                artifact_path,
+                inherited_descriptor,
+                inherited_identity,
+                child_connection,
+            ),
+        )
+        process.start()
+        assert parent_connection.poll(5)
+        assert parent_connection.recv() == (
+            "inherited_lock_descriptor",
+            False,
+        )
+        assert not parent_connection.poll(0.2)
+        release_lock.set()
+        assert parent_connection.poll(5)
+        assert parent_connection.recv() == ("acquired", True)
+        process.join(timeout=5)
+    finally:
+        release_lock.set()
+        holder.join(timeout=5)
+        if process is not None and process.is_alive():
+            process.terminate()
+        if process is not None:
+            process.join(timeout=5)
+        if parent_connection is not None:
+            parent_connection.close()
+        if child_connection is not None:
+            child_connection.close()
+
+    assert not holder.is_alive()
+    assert process is not None
+    assert not process.is_alive()
+    assert process.exitcode == 0
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "fork"),
+    reason="test requires POSIX fork state reset",
+)
+@pytest.mark.filterwarnings(
+    "ignore:This process .* is multi-threaded, use of fork.*:DeprecationWarning"
+)
+def test_artifact_lock_context_ignores_stale_child_descriptor(tmp_path):
+    artifact_path = str(tmp_path / "bundle.ltoir")
+    context = multiprocessing.get_context("fork")
+    parent_connection, child_connection = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_fork_inside_artifact_lock_worker,
+        args=(artifact_path, child_connection),
+    )
+    process.start()
+    try:
+        assert parent_connection.poll(10)
+        result = parent_connection.recv()
+        process.join(timeout=5)
+    finally:
+        if process.is_alive():
+            process.terminate()
+        process.join(timeout=5)
+        parent_connection.close()
+        child_connection.close()
+
+    assert not process.is_alive()
+    assert process.exitcode == 0
+    assert result == {
+        "child_exitcode": 0,
+        "descriptor_survived": True,
+    }

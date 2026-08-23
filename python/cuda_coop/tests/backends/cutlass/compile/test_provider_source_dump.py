@@ -51,6 +51,8 @@ def test_provider_source_dump_survives_compile_cache_hit(tmp_path, monkeypatch):
         _provider_cache._CachedBundle(
             path=str(cached_artifact),
             layouts_by_expression={},
+            artifact_size=len(b"cached"),
+            artifact_sha256=hashlib.sha256(b"cached").hexdigest(),
         )
     )
 

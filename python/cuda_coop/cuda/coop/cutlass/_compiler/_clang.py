@@ -120,6 +120,8 @@ def compile_bundle(
         layouts_by_expression={},
         producer_compiler="clang++",
         producer_compiler_version=clang_version,
+        artifact_size=len(artifact_blob),
+        artifact_sha256=hashlib.sha256(artifact_blob).hexdigest(),
     )
     write_binary_atomic(output_path, artifact_blob, scope=scope)
     _write_bundle_metadata(

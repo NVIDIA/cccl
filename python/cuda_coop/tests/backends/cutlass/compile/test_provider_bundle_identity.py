@@ -6,10 +6,11 @@ from __future__ import annotations
 
 import hashlib
 import itertools
+import json
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -191,7 +192,7 @@ print(hashlib.sha256(source.encode()).hexdigest())
     assert len(set(digests)) == 1
 
 
-def test_bundle_cache_identity_is_schema_and_compiler_versioned():
+def test_bundle_cache_identity_uses_the_full_canonical_contract():
     source_hash = hashlib.sha256(b"source").hexdigest()
     compiler_options = provider_contract.bundle_compiler_options(
         "ltoir",
@@ -221,11 +222,75 @@ def test_bundle_cache_identity_is_schema_and_compiler_versioned():
     assert (
         cache_identity.schema_version
         == provider_contract.BUNDLE_CACHE_SCHEMA_VERSION
-        == 2
+        == 3
     )
-    assert cache_identity.cache_key == (
-        f"v2:{source_hash}:ltoir:compute_100a:sm_100a:13.0:0123456789abcdef"
+    expected_payload = {
+        "bundle": asdict(identity),
+        "include_key": "0123456789abcdef",
+        "producer_compiler_version": "13.0",
+        "schema_version": 3,
+    }
+    expected_digest = hashlib.sha256(
+        json.dumps(
+            expected_payload,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    assert cache_identity.contract_digest == expected_digest
+    assert cache_identity.cache_key == f"v3:{expected_digest}"
+    assert cache_identity.artifact_stem == f"bundle_v3_{expected_digest}"
+
+
+def test_bundle_cache_contract_has_no_identity_field_collisions():
+    identity = provider_contract.make_bundle_identity(
+        source_hash=hashlib.sha256(b"source").hexdigest(),
+        bundle_format="ltoir",
+        bundle_arch="compute_100a",
+        bundle_sm_arch="sm_100a",
+        compiler_options=("--std=c++17", "-dlto"),
+        layout_expressions=("layout-expression",),
     )
-    assert cache_identity.artifact_stem == (
-        f"bundle_v2_{source_hash}_compute_100a_sm_100a_13_0_0123456789abcdef"
+    bundle_variants = (
+        identity,
+        replace(
+            identity,
+            provider_abi_version=identity.provider_abi_version + 1,
+        ),
+        replace(
+            identity,
+            source_hash=hashlib.sha256(b"different-source").hexdigest(),
+        ),
+        replace(identity, bundle_format="bc"),
+        replace(identity, bundle_arch="compute_90"),
+        replace(identity, bundle_sm_arch="sm_90"),
+        replace(
+            identity,
+            compiler_options=(*identity.compiler_options, "--fmad=false"),
+        ),
+        replace(
+            identity,
+            layout_expressions=("different-layout-expression",),
+        ),
+    )
+    cache_identities = tuple(
+        provider_contract.make_bundle_cache_identity(
+            bundle,
+            include_key="headers-a",
+            producer_compiler_version="13.0",
+        )
+        for bundle in bundle_variants
+    )
+    cache_identities += (
+        replace(cache_identities[0], include_key="headers-b"),
+        replace(cache_identities[0], producer_compiler_version="13_0"),
+        replace(cache_identities[0], schema_version=4),
+    )
+
+    assert len({item.contract_digest for item in cache_identities}) == len(
+        cache_identities
+    )
+    assert len({item.cache_key for item in cache_identities}) == len(cache_identities)
+    assert len({item.artifact_stem for item in cache_identities}) == len(
+        cache_identities
     )

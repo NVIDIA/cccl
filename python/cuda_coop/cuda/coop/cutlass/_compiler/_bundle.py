@@ -25,9 +25,14 @@ from cutlass.base_dsl.common import DSLRuntimeError
 
 from cuda.coop._headers import HeaderResolutionError, resolve_include_paths
 
+# NVRTC imports PCH before cache so their fork-reset hooks retain the original
+# registration order.
+# isort: off
+from . import _nvrtc as _nvrtc_support
 from . import _cache as _cache_support
 from . import _clang as _clang_support
-from . import _nvrtc as _nvrtc_support
+
+# isort: on
 from ._bundle_contract import (
     RESOLUTION_ROUTE_CLANG,
     RESOLUTION_ROUTE_DISK,
@@ -344,6 +349,9 @@ def _compile_bundle_source(
         provider_dir=provider_dir,
     )
     _finish_phase(phase_timings_ns, "header_resolution", phase_started_ns)
+    if bundle_format == "ltoir":
+        _nvrtc_support.preload_toolkit_nvrtc(include_dirs)
+
     phase_started_ns = time.perf_counter_ns()
     include_identity = include_dirs_identity(include_dirs)
     include_key = include_identity.digest
@@ -356,13 +364,19 @@ def _compile_bundle_source(
     clangxx: str | None = None
     clang_version: str | None = None
     if bundle_format == "ltoir":
-        nvrtc_version = _nvrtc_support.get_version()
+        nvrtc_version_tuple = _nvrtc_support.get_version_tuple()
+        nvrtc_version = (
+            None
+            if nvrtc_version_tuple is None
+            else f"{nvrtc_version_tuple[0]}.{nvrtc_version_tuple[1]}"
+        )
         cache_compiler_version = (
             nvrtc_version
             if nvrtc_version is not None
             else _UNKNOWN_COMPILER_PROCESS_TOKEN
         )
     else:
+        nvrtc_version_tuple = None
         nvrtc_version = None
         clangxx, clang_version, cache_compiler_version = (
             _clang_support.resolve_clang_compiler(which)
@@ -464,6 +478,11 @@ def _compile_bundle_source(
                 include_dirs=include_dirs,
                 prepared_probes=prepared_probes,
                 nvrtc_version=nvrtc_version,
+                nvrtc_version_tuple=nvrtc_version_tuple,
+                bundle_arch=bundle_arch,
+                bundle_sm_arch=bundle_sm_arch,
+                header_identity=include_identity.digest,
+                phase_timings_ns=phase_timings_ns,
                 scope=scope,
             )
             route = RESOLUTION_ROUTE_NVRTC

@@ -12,7 +12,7 @@ import json
 import os
 import re
 from collections.abc import Hashable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from cutlass.base_dsl.common import DSLRuntimeError
@@ -32,7 +32,7 @@ else:
 
 NVVM_VERSION_OPT = b"-nvvm-version=nvvm-latest"
 
-BUNDLE_CACHE_SCHEMA_VERSION = 2
+BUNDLE_CACHE_SCHEMA_VERSION = 3
 
 PROVIDER_BUNDLE_ABI_VERSION = 1
 
@@ -95,26 +95,28 @@ class BundleCacheIdentity:
     producer_compiler_version: str
 
     @property
+    def contract_digest(self) -> str:
+        payload = {
+            "bundle": asdict(self.bundle),
+            "include_key": self.include_key,
+            "producer_compiler_version": self.producer_compiler_version,
+            "schema_version": self.schema_version,
+        }
+        return hashlib.sha256(
+            json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+
+    @property
     def cache_key(self) -> str:
-        return (
-            f"v{self.schema_version}:{self.bundle.source_hash}:"
-            f"{self.bundle.bundle_format}:"
-            f"{self.bundle.bundle_arch}:{self.bundle.bundle_sm_arch}:"
-            f"{self.producer_compiler_version}:{self.include_key}"
-        )
+        return f"v{self.schema_version}:{self.contract_digest}"
 
     @property
     def artifact_stem(self) -> str:
-        compiler_version = re.sub(
-            r"[^A-Za-z0-9_-]+",
-            "_",
-            self.producer_compiler_version,
-        )
-        return (
-            f"bundle_v{self.schema_version}_{self.bundle.source_hash}_"
-            f"{self.bundle.bundle_arch}_{self.bundle.bundle_sm_arch}_"
-            f"{compiler_version}_{self.include_key}"
-        )
+        return f"bundle_v{self.schema_version}_{self.contract_digest}"
 
 
 @dataclass(frozen=True)

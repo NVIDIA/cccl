@@ -242,6 +242,27 @@ def test_artifact_hash_mismatch_is_recompiled(monkeypatch):
     assert [call[0] for call in fake_nvrtc.calls].count("compile") == 2
 
 
+def test_in_memory_artifact_hash_mismatch_is_recompiled(monkeypatch):
+    fake_nvrtc = _FakeNvrtc()
+    monkeypatch.setattr(provider_nvrtc, "cuda_nvrtc", fake_nvrtc)
+    first = provider_bundle.compile_bundle_source_with_layouts(
+        'extern "C" {}',
+        layout_probes=_layout_probes(),
+        **_compile_kwargs(),
+    )
+    Path(first.path).write_bytes(fake_nvrtc.blob[::-1])
+
+    second = provider_bundle.compile_bundle_source_with_layouts(
+        'extern "C" {}',
+        layout_probes=_layout_probes(),
+        **_compile_kwargs(),
+    )
+
+    assert second == first
+    assert provider_bundle.get_nvrtc_compile_program_counter() == 2
+    assert [call[0] for call in fake_nvrtc.calls].count("compile") == 2
+
+
 def test_existing_bundle_api_still_returns_a_path(monkeypatch):
     fake_nvrtc = _FakeNvrtc()
     monkeypatch.setattr(provider_nvrtc, "cuda_nvrtc", fake_nvrtc)

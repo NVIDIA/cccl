@@ -74,6 +74,7 @@ def test_cutlass_foundation_exports_current_public_surface():
         )
         assert "cuda.coop.cutlass._compiler._bundle" not in sys.modules
         assert "cuda.coop.cutlass._compiler._finalize" not in sys.modules
+        assert "cuda.coop.cutlass._compiler._pch" not in sys.modules
 
         dsl = _cuda_coop_test_dsl.CuTeDSL._get_dsl()
         assert len(dsl.trace_context_factories) == 1

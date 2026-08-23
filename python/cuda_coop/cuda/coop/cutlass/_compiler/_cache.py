@@ -39,6 +39,7 @@ _MANAGED_BUNDLE_PATHS: set[str] = set()
 _COMPILE_COUNTER = 0
 _STATE_LOCK = threading.RLock()
 _ARTIFACT_LOCKS: dict[str, threading.RLock] = {}
+_ACTIVE_ARTIFACT_LOCK_FDS: set[int] = set()
 
 
 @dataclass(frozen=True)
@@ -48,12 +49,52 @@ class _CachedBundle:
     producer_compiler: str | None = None
     producer_compiler_version: str | None = None
     producer_toolkit_version: str | None = None
+    artifact_size: int | None = None
+    artifact_sha256: str | None = None
+
+
+def _acquire_state_lock_before_fork() -> None:
+    _STATE_LOCK.acquire()
+
+
+def _release_state_lock_after_fork() -> None:
+    _STATE_LOCK.release()
+
+
+def _reset_locks_after_fork() -> None:
+    global _ACTIVE_ARTIFACT_LOCK_FDS, _ARTIFACT_LOCKS, _STATE_LOCK
+    for descriptor in _ACTIVE_ARTIFACT_LOCK_FDS:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+    _ACTIVE_ARTIFACT_LOCK_FDS = set()
+    _STATE_LOCK = threading.RLock()
+    _ARTIFACT_LOCKS = {}
+
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(
+        before=_acquire_state_lock_before_fork,
+        after_in_parent=_release_state_lock_after_fork,
+        after_in_child=_reset_locks_after_fork,
+    )
 
 
 def _local_artifact_lock(path: str) -> threading.RLock:
     real_path = os.path.realpath(path)
     with _STATE_LOCK:
         return _ARTIFACT_LOCKS.setdefault(real_path, threading.RLock())
+
+
+def _close_artifact_lock_descriptor(descriptor: int) -> None:
+    with _STATE_LOCK:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        finally:
+            _ACTIVE_ARTIFACT_LOCK_FDS.discard(descriptor)
 
 
 @contextmanager
@@ -66,9 +107,13 @@ def artifact_lock(path: str, *, scope: str):
         flags = os.O_CREAT | os.O_RDWR
         flags |= getattr(os, "O_CLOEXEC", 0)
         flags |= getattr(os, "O_NOFOLLOW", 0)
+        descriptor_owner_pid = os.getpid()
+        descriptor: int | None = None
         try:
-            fd = os.open(lock_path, flags, 0o600)
-            lock_stat = os.fstat(fd)
+            with _STATE_LOCK:
+                descriptor = os.open(lock_path, flags, 0o600)
+                _ACTIVE_ARTIFACT_LOCK_FDS.add(descriptor)
+            lock_stat = os.fstat(descriptor)
             if not stat.S_ISREG(lock_stat.st_mode):
                 raise OSError("provider artifact lock is not a regular file")
             getuid = getattr(os, "getuid", None)
@@ -76,37 +121,44 @@ def artifact_lock(path: str, *, scope: str):
                 raise OSError("provider artifact lock is not owned by this user")
             if os.name == "nt":
                 if lock_stat.st_size == 0:
-                    os.write(fd, b"\0")
-                os.lseek(fd, 0, os.SEEK_SET)
-                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                    os.write(descriptor, b"\0")
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
             else:
-                fcntl.flock(fd, fcntl.LOCK_EX)
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
         except OSError as exc:
-            if "fd" in locals():
-                os.close(fd)
+            if descriptor is not None and os.getpid() == descriptor_owner_pid:
+                _close_artifact_lock_descriptor(descriptor)
             raise DSLRuntimeError(
                 f"Failed locking {scope} provider cache artifact.",
                 cause=exc,
             ) from exc
+        assert descriptor is not None
         try:
             yield
         finally:
-            try:
-                if os.name == "nt":
-                    os.lseek(fd, 0, os.SEEK_SET)
-                    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-                else:
-                    fcntl.flock(fd, fcntl.LOCK_UN)
-            except OSError:
-                pass
-            os.close(fd)
+            if os.getpid() == descriptor_owner_pid:
+                try:
+                    if os.name == "nt":
+                        os.lseek(descriptor, 0, os.SEEK_SET)
+                        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+                    else:
+                        fcntl.flock(descriptor, fcntl.LOCK_UN)
+                except OSError:
+                    pass
+                _close_artifact_lock_descriptor(descriptor)
 
 
 def memory_cached_bundle(cache_key: str) -> _CachedBundle | None:
     with _STATE_LOCK:
         cached = _SOURCE_CACHE.get(cache_key)
-    if cached is not None and os.path.exists(cached.path):
+    if cached is None:
+        return None
+    if _cached_artifact_is_valid(cached):
         return cached
+    with _STATE_LOCK:
+        if _SOURCE_CACHE.get(cache_key) is cached:
+            _SOURCE_CACHE.pop(cache_key, None)
     return None
 
 
@@ -228,6 +280,25 @@ def _optional_metadata_string(value: Any) -> str | None:
     raise ValueError("invalid provider producer metadata")
 
 
+def _cached_artifact_is_valid(cached: _CachedBundle) -> bool:
+    if cached.artifact_size is None or cached.artifact_sha256 is None:
+        return False
+    try:
+        output_stat = os.lstat(cached.path)
+        if (
+            not stat.S_ISREG(output_stat.st_mode)
+            or output_stat.st_size != cached.artifact_size
+        ):
+            return False
+        artifact_digest = hashlib.sha256()
+        with open(cached.path, "rb") as artifact_file:
+            while chunk := artifact_file.read(1024 * 1024):
+                artifact_digest.update(chunk)
+    except OSError:
+        return False
+    return artifact_digest.hexdigest() == cached.artifact_sha256
+
+
 def _load_bundle_metadata(
     output_path: str,
     expressions: tuple[str, ...],
@@ -302,6 +373,8 @@ def _load_bundle_metadata(
             producer_toolkit_version=_optional_metadata_string(
                 producer.get("toolkit_version")
             ),
+            artifact_size=artifact_size,
+            artifact_sha256=artifact_sha256,
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
         return None
