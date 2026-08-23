@@ -56,6 +56,12 @@ from .._group_scan import (
     scan,
 )
 from .._group_shuffle import shuffle
+from .._group_topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from .._scan_op import ScanOp
 from ._operations import group_operation_name
 
@@ -100,6 +106,10 @@ _QUALIFIED_OPERATIONS = (
     "radix_rank",
     "radix_sort_keys",
     "radix_sort_pairs",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 )
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
@@ -120,6 +130,10 @@ _ROOT_OPERATIONS = {
         shuffle,
         store,
         sum,
+        topk_max_keys,
+        topk_max_pairs,
+        topk_min_keys,
+        topk_min_pairs,
     )
 }
 _ROOT_OPERATIONS.update(
@@ -142,6 +156,10 @@ _ROOT_OPERATIONS.update(
             "shuffle",
             "merge_sort_keys",
             "merge_sort_pairs",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
         )
     }
 )

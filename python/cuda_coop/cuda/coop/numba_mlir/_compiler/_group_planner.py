@@ -47,6 +47,7 @@ from ._group_radix import _RadixPlanning
 from ._group_reduce import _ReducePlanning
 from ._group_scan import _ScanPlanning
 from ._group_shuffle import _ShufflePlanning
+from ._group_topk import _TopKPlanning
 
 
 class _GroupCallPlanner(
@@ -57,6 +58,7 @@ class _GroupCallPlanner(
     _ShufflePlanning,
     _MergeSortPlanning,
     _RadixPlanning,
+    _TopKPlanning,
 ):
     """Coordinate semantic family lowering against one function IR."""
 
@@ -522,6 +524,8 @@ class _GroupCallPlanner(
         pair_arguments = {
             "merge_sort_pairs": ("keys", "values"),
             "radix_sort_pairs": ("keys", "values"),
+            "topk_max_pairs": ("keys", "values"),
+            "topk_min_pairs": ("keys", "values"),
         }.get(operation)
         if pair_arguments is None:
             return False
@@ -625,6 +629,8 @@ class _GroupCallPlanner(
             "inclusive_scan": "value",
             "merge_sort_keys": "keys",
             "shuffle": "value",
+            "topk_max_keys": "keys",
+            "topk_min_keys": "keys",
         }.get(operation)
         if array_result_argument is None:
             return False
@@ -810,6 +816,8 @@ class _GroupCallPlanner(
         tuple_arguments = {
             "merge_sort_pairs": ("keys", "values"),
             "radix_sort_pairs": ("keys", "values"),
+            "topk_max_pairs": ("keys", "values"),
+            "topk_min_pairs": ("keys", "values"),
         }.get(operation)
         if tuple_arguments is None:
             return None
@@ -909,6 +917,10 @@ class _GroupCallPlanner(
             "merge_sort_keys": "keys",
             "merge_sort_pairs": "keys",
             "shuffle": "value",
+            "topk_max_keys": "keys",
+            "topk_max_pairs": "keys",
+            "topk_min_keys": "keys",
+            "topk_min_pairs": "keys",
         }.get(operation)
         if shape_argument is None:
             return None
@@ -1220,6 +1232,19 @@ class _GroupCallPlanner(
             )
         elif operation in {"radix_sort_keys", "radix_sort_pairs"}:
             replacement = self._lower_radix_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+        }:
+            replacement = self._lower_topk(
                 inst,
                 operation=operation,
                 group=group,

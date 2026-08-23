@@ -27,6 +27,12 @@ from ._group_scan import (
     scan,
 )
 from ._group_shuffle import shuffle
+from ._group_topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from ._thread_data import (
     ThreadData,
     ThreadDataLoadSource,
@@ -77,6 +83,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 

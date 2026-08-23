@@ -73,6 +73,18 @@ from ._group_scan import (
 from ._group_shuffle import (
     shuffle as shuffle,
 )
+from ._group_topk import (
+    topk_max_keys as topk_max_keys,
+)
+from ._group_topk import (
+    topk_max_pairs as topk_max_pairs,
+)
+from ._group_topk import (
+    topk_min_keys as topk_min_keys,
+)
+from ._group_topk import (
+    topk_min_pairs as topk_min_pairs,
+)
 from ._stateful_function import (
     StatefulFunction as StatefulFunction,
 )
@@ -150,4 +162,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

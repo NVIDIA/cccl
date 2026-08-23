@@ -51,6 +51,10 @@ def test_cutlass_foundation_exports_current_public_surface():
             "this_grid",
             "this_thread",
             "this_warp",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
         ]
         assert coop.__all__ == expected
         assert sorted(name for name in dir(coop) if not name.startswith("_")) == expected

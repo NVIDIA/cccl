@@ -286,6 +286,11 @@ class _ArgumentRewrite:
                 control_vars=runtime_factory_control_vars,
                 factory_kwargs=factory_kwargs,
             )
+        self._validate_topk_runtime_controls(
+            op_name=op_name,
+            runtime_args=runtime_args,
+            factory_kwargs=factory_kwargs,
+        )
         if op_name == "shuffle":
             self._finalize_shuffle_factory_kwargs(
                 runtime_arg_count=len(runtime_args),

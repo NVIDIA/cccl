@@ -37,6 +37,10 @@ _GROUP_OPERATION_MODULES = {
     "shuffle": "_group_shuffle",
     "store": "_group_load_store",
     "sum": "_group_reduce",
+    "topk_max_keys": "_group_topk",
+    "topk_max_pairs": "_group_topk",
+    "topk_min_keys": "_group_topk",
+    "topk_min_pairs": "_group_topk",
 }
 
 __all__ = [
@@ -76,6 +80,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 

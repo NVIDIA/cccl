@@ -38,6 +38,23 @@ class _PayloadRewrite:
             "_common_radix_sort_pairs": "radix_sort_pairs",
         }.get(op_name, op_name)
 
+        common_topk_operation = {
+            "_common_topk_max_keys": "topk_max_keys",
+            "_common_topk_max_pairs": "topk_max_pairs",
+            "_common_topk_min_keys": "topk_min_keys",
+            "_common_topk_min_pairs": "topk_min_pairs",
+        }.get(op_name)
+        op_name = {
+            "_common_topk_max_keys": "topk_max_keys",
+            "_common_topk_max_pairs": "topk_max_pairs",
+            "_common_topk_min_keys": "topk_min_keys",
+            "_common_topk_min_pairs": "topk_min_pairs",
+            "_qualified_group_topk_max_keys": "topk_max_keys",
+            "_qualified_group_topk_max_pairs": "topk_max_pairs",
+            "_qualified_group_topk_min_keys": "topk_min_keys",
+            "_qualified_group_topk_min_pairs": "topk_min_pairs",
+        }.get(op_name, op_name)
+
         def factory_value(name: str):
             return factory_kwargs.get(name)
 
@@ -106,6 +123,82 @@ class _PayloadRewrite:
                     f"coop movement {op_name!r} could not infer the static extent of a typed group payload"
                 )
             return (value, spec)
+
+        def validate_common_key_dtype(dtype):
+            if common_topk_operation is None or dtype is None:
+                return dtype
+            from ._parameters import _validate_common_integer_key_dtype
+
+            try:
+                return _validate_common_integer_key_dtype(
+                    dtype,
+                    operation=common_topk_operation,
+                )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        def validate_common_value_dtype(dtype):
+            if common_topk_operation is None or dtype is None:
+                return dtype
+            from ._parameters import _validate_common_numeric_dtype
+
+            try:
+                return _validate_common_numeric_dtype(
+                    dtype,
+                    operation=common_topk_operation,
+                    parameter="value",
+                )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        if op_name in {"topk_max_keys", "topk_min_keys"}:
+            key_var, key_spec = candidate(0)
+            if key_spec is not None:
+                infer_kwarg("items_per_thread", key_spec.items_per_thread)
+            key_dtype = key_spec.dtype if key_spec is not None else None
+            if key_dtype is None and key_var is not None:
+                key_dtype = self._resolve_var_dtype(key_var)
+            if key_dtype is None:
+                key_dtype = factory_value("dtype")
+            key_dtype = validate_common_key_dtype(key_dtype)
+            infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and key_var is not None:
+                self._record_inferred_thread_data_dtype(key_var, key_dtype)
+            return
+
+        if op_name in {"topk_max_pairs", "topk_min_pairs"}:
+            key_var, key_spec = candidate(0)
+            value_var, value_spec = candidate(1)
+            self._require_matching_items_per_thread(
+                op_name,
+                "key",
+                key_spec,
+                "value",
+                value_spec,
+            )
+            extent = key_spec.items_per_thread if key_spec is not None else None
+            if extent is None and value_spec is not None:
+                extent = value_spec.items_per_thread
+            infer_kwarg("items_per_thread", extent)
+            key_dtype = key_spec.dtype if key_spec is not None else None
+            value_dtype = value_spec.dtype if value_spec is not None else None
+            if key_dtype is None and key_var is not None:
+                key_dtype = self._resolve_var_dtype(key_var)
+            if value_dtype is None and value_var is not None:
+                value_dtype = self._resolve_var_dtype(value_var)
+            if key_dtype is None:
+                key_dtype = factory_value("keys")
+            if value_dtype is None:
+                value_dtype = factory_value("values")
+            key_dtype = validate_common_key_dtype(key_dtype)
+            value_dtype = validate_common_value_dtype(value_dtype)
+            infer_kwarg("keys", key_dtype)
+            infer_kwarg("values", value_dtype)
+            if key_dtype is not None and key_var is not None:
+                self._record_inferred_thread_data_dtype(key_var, key_dtype)
+            if value_dtype is not None and value_var is not None:
+                self._record_inferred_thread_data_dtype(value_var, value_dtype)
+            return
 
         if op_name in {
             "group_reduce",

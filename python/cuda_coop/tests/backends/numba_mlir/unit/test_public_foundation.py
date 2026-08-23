@@ -51,6 +51,10 @@ _PUBLIC_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 

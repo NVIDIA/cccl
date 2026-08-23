@@ -35,6 +35,7 @@ from ._rewrite_support import (
     register_rewrite,
     require_launch_config,
 )
+from ._rewrite_topk import _TopKRewrite
 
 
 @register_rewrite("before-inference")
@@ -44,6 +45,7 @@ class CoopSinglePhaseRewrite(
     _ArgumentRewrite,
     _LaunchRewrite,
     _RadixRewrite,
+    _TopKRewrite,
     _GroupMetadataRewrite,
     _ScanRewrite,
     _ShuffleRewrite,
@@ -70,6 +72,18 @@ class CoopSinglePhaseRewrite(
             "radix_sort_pairs_descending",
             "scan",
             "store",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+            "_common_topk_max_keys",
+            "_common_topk_max_pairs",
+            "_common_topk_min_keys",
+            "_common_topk_min_pairs",
+            "_qualified_group_topk_max_keys",
+            "_qualified_group_topk_max_pairs",
+            "_qualified_group_topk_min_keys",
+            "_qualified_group_topk_min_pairs",
             "warp_load",
             "warp_store",
         }
@@ -369,6 +383,80 @@ class CoopSinglePhaseRewrite(
                 "compare_op",
             },
         },
+        "topk_max_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "topk_min_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "topk_max_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {3, 4, 5, 6},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"keys", "values", "threads_per_block"},
+        },
+        "topk_min_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {3, 4, 5, 6},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"keys", "values", "threads_per_block"},
+        },
         "warp_load": {
             "namespace": "warp",
             "runtime_arg_counts": {2, 3, 4},
@@ -562,6 +650,14 @@ class CoopSinglePhaseRewrite(
         "_common_radix_rank": "radix_rank",
         "_common_radix_sort_keys": "radix_sort_keys",
         "_common_radix_sort_pairs": "radix_sort_pairs",
+        "_common_topk_max_keys": "topk_max_keys",
+        "_common_topk_max_pairs": "topk_max_pairs",
+        "_common_topk_min_keys": "topk_min_keys",
+        "_common_topk_min_pairs": "topk_min_pairs",
+        "_qualified_group_topk_max_keys": "topk_max_keys",
+        "_qualified_group_topk_max_pairs": "topk_max_pairs",
+        "_qualified_group_topk_min_keys": "topk_min_keys",
+        "_qualified_group_topk_min_pairs": "topk_min_pairs",
     }.items():
         _public_spec = _OP_SPECS[_public_name]
         _OP_SPECS[_private_name] = {
@@ -571,6 +667,10 @@ class CoopSinglePhaseRewrite(
         }
         if _private_name in {"_common_radix_sort_keys", "_common_radix_sort_pairs"}:
             _OP_SPECS[_private_name]["allowed_factory_kwargs"].add("descending")
+        if "topk_" in _private_name:
+            _OP_SPECS[_private_name]["runtime_factory_kw_prerequisites"] = {
+                "end_bit": "begin_bit"
+            }
     del _private_name, _public_name, _public_spec
 
     for _spec in _OP_SPECS.values():

@@ -49,6 +49,26 @@ from ._scan import warp_inclusive_scan as warp_inclusive_scan
 from ._scan import warp_inclusive_sum as warp_inclusive_sum
 from ._shuffle import BlockShuffleType as BlockShuffleType
 from ._shuffle import shuffle as shuffle
+from ._topk import _common_topk_max_keys as _common_topk_max_keys
+from ._topk import _common_topk_max_pairs as _common_topk_max_pairs
+from ._topk import _common_topk_min_keys as _common_topk_min_keys
+from ._topk import _common_topk_min_pairs as _common_topk_min_pairs
+from ._topk import (
+    _qualified_group_topk_max_keys as _qualified_group_topk_max_keys,
+)
+from ._topk import (
+    _qualified_group_topk_max_pairs as _qualified_group_topk_max_pairs,
+)
+from ._topk import (
+    _qualified_group_topk_min_keys as _qualified_group_topk_min_keys,
+)
+from ._topk import (
+    _qualified_group_topk_min_pairs as _qualified_group_topk_min_pairs,
+)
+from ._topk import topk_max_keys as topk_max_keys
+from ._topk import topk_max_pairs as topk_max_pairs
+from ._topk import topk_min_keys as topk_min_keys
+from ._topk import topk_min_pairs as topk_min_pairs
 
 
 def _register(namespace: str, *factories: Callable[..., Any]) -> None:
@@ -77,9 +97,21 @@ _register(
     shuffle,
     store,
     sum,
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
     _common_radix_rank,
     _common_radix_sort_keys,
     _common_radix_sort_pairs,
+    _common_topk_max_keys,
+    _common_topk_max_pairs,
+    _common_topk_min_keys,
+    _common_topk_min_pairs,
+    _qualified_group_topk_max_keys,
+    _qualified_group_topk_max_pairs,
+    _qualified_group_topk_min_keys,
+    _qualified_group_topk_min_pairs,
 )
 _register(
     "group",
