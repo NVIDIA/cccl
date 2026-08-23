@@ -11,12 +11,11 @@ are then recognized during compilation and replaced with compiled CUB
 collectives linked as LTO-IR. Importing :mod:`cuda.coop.numba_mlir` activates
 the same integration explicitly.
 
-The first primitives on the portable contract are block and warp load/store
-with partial-tile controls; the following commits grow the same rewrite stack
-to the full portable operation set. The backend additionally supports
-``gpu_dataclass`` temp-storage traits, explicit shared-memory ``TempStorage``
-planning with automatic synchronization, and scoped ``_block``/``_warp``
-two-phase factories.
+All portable operation families are served at block scope, plus the
+warp-scoped load/store, reduce, scan, exchange, and merge sort forms. The
+backend additionally supports ``gpu_dataclass`` temp-storage traits, explicit
+shared-memory ``TempStorage`` planning with automatic synchronization, and
+scoped ``_block``/``_warp`` two-phase factories.
 
 Installation
 ------------
@@ -32,24 +31,24 @@ time. A ``numba-cuda-mlir`` release without those hooks is reported through a
 ``CudaCoopAutoRegistrationWarning`` naming the missing capability, and the
 portable root API stays importable.
 
-Block load and store
---------------------
+Block sum
+---------
 
-A complete CUDA thread block loads a tile from global memory into per-thread
-registers and stores it back:
+This executable example reduces one value per thread across a CUDA thread
+block:
 
-.. code-block:: python
+.. literalinclude:: ../../python/cuda_coop/examples/numba_mlir/block_sum.py
+   :language: python
+   :caption: Block-wide sum through the Numba-CUDA-MLIR backend.
 
-   import numpy as np
-   from numba_cuda_mlir import cuda
+Run it from the repository root or an installed wheel:
 
-   import cuda.coop.numba_mlir as coop
+.. code-block:: bash
 
-   @cuda.jit
-   def copy_kernel(values_in, values_out):
-       block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
-       loaded = coop.load(block, values_in, items)
-       coop.store(block, values_out, loaded)
+   python -m examples.numba_mlir.block_sum
 
-See :doc:`coop_api` for the API reference.
+Further executable examples under ``python/cuda_coop/examples/numba_mlir``
+cover load/scan/store pipelines, shared temp storage, radix sort pairs,
+partial-tile top-k, group hierarchies, and the portable root API.
+
+See :doc:`coop_api` for the complete API.

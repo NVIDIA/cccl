@@ -433,6 +433,260 @@ Reinstall a wheel instead of editing its installed headers in place. Use a
 clean Git or custom header root while developing header changes.
 
 
+## CUTLASS Examples And Benchmarks
+
+Source-tree CUTLASS examples are under `examples/cutlass/`. CuTe examples use
+`cute_` module names, standalone Prims array-path examples use `prims_` module
+names, and mixed CuTe plus Prims array-path examples use `mixed_` module names.
+They import cleanly without CUTLASS installed. Running them requires the
+CUTLASS Python DSL, torch, CUDA, and a supported toolchain:
+
+```bash
+# From the CCCL repository root, the editable package resolves headers from
+# the surrounding source checkout. The CUTLASS extra installs the declared
+# compatible compiler range.
+cd python/cuda_coop
+pip install -e ".[cutlass,test]"
+```
+
+For a wheel installation, run `pip install 'cuda-coop[cutlass]'`; the wheel
+already contains the matching CCCL headers. The current CUTLASS DSL support
+targets CPython 3.12 and CUDA 13.
+
+The qualified CUTLASS slice is Linux and CUDA 13 only. The `cutlass` and
+`cutlass-cu13` extras select the declared compatible CUTLASS DSL range. The
+root probe validates the concrete launch-fact, trace-finalization, and GPU
+link-library capabilities required by generated providers. An explicit
+`import cuda.coop.cutlass` validates the runtime and supplies the activation
+fallback. Do not install multiple CUTLASS DSL distributions together because
+they own the same `cutlass` import packages.
+
+Repository CI may still inject an exact compiler constraint through
+`CUDA_COOP_CUTLASS_REQUIREMENTS_FILE`; that is a qualification override, not a
+second runtime dependency mechanism. The full CUTLASS conformance stage also
+requires
+`CUDA_COOP_NUMBA_MLIR_REQUIREMENTS_FILE` so its mixed-backend activation batch
+can compile both public frontends in both orders and concurrently.
+
+The base distribution has no compiler dependency, and missing optional runtimes
+remain silent and cheap to probe. By default the common root imports each
+installed candidate far enough to validate and register it; the environment
+opt-out retains a cold root. Importing `cuda.coop.cutlass` explicitly performs
+an importability check and fallback activation without loading provider
+compilation machinery or `torch`. The automatic root probe additionally checks
+the concrete compiler features used by generated providers. The Prims array
+path uses the `cutlass.Array`, `cutlass.make_array_view`, dtype, and
+`cutlass.cute.arch` APIs supplied by the compatible CUTLASS DSL.
+
+### GEMM/MMA Plus TopK
+
+Row-wise TopK composes naturally with column-tiled GEMM: each output-tile CTA
+keeps the best `K` `(score, column)` pairs for each row, then a second CTA per
+row selects the final `K` from `column_tiles * K` candidates. This is exact:
+an item outside a tile's local TopK cannot appear in the global TopK. CUB
+BlockTopK does not sort its selected prefix, so consumers should treat the
+returned pairs as an unordered set unless they add a final sort.
+
+`examples/cutlass/cute_mma_topk.py` specializes the epilogue callback of
+CUTLASS's stock Ampere `TensorOpGemm` sample. The MMA result is already a
+register `TensorSSA`, so `cuda.coop.cutlass` consumes it directly and performs
+tile-wide Top8 selection in the same kernel.
+
+`examples/cutlass/cute_mma_topk_sm100.py` demonstrates the corresponding
+SM100/SM103 flow with CUTLASS's Blackwell
+`DenseGemmKernel` sample:
+`tcgen05.mma -> TMEM -> tcgen05.ld -> RMEM -> cuda.coop BlockTopK`. The GEMM
+kernel owns the layout-aware TMEM-to-RMEM transfer. In the default mode,
+`ThreadData.load(source)` asks its producer-owned accumulator source to issue
+the selected copy and returns the register values. The `post_t2r` control
+performs the same copy before the callback and adapts its register `TensorSSA`.
+A bare TMEM tensor does not carry the copy atom, output partition, 1CTA/2CTA
+mode, or pipeline lifetime needed to perform that transfer safely, so
+`cuda.coop` does not infer it.
+
+The Blackwell example uses one 128 x 32 x 64 GEMM tile, 128 threads, 1CTA MMA, a
+1 x 1 cluster, and one TMA-store epilogue tile. The TMA path matters here:
+CUTLASS releases its mainloop shared-memory partition before T2R, while
+BlockTopK still needs shared scratch. The TMA epilogue keeps the post-release
+shared-memory budget large enough for C staging and that scratch, and making the
+output exactly one epilogue tile means the callback sees all GEMM values at
+once. It supports SM100 and SM103 GPUs. Use the matching native architecture
+with `--compile-only` and the CuTe dry-run environment when only compiler
+validation is needed:
+
+```bash
+CUTE_DSL_ARCH=sm_103a CUTE_DSL_DRYRUN=1 \
+  python -m examples.cutlass.cute_mma_topk_sm100 --compile-only
+```
+
+The stock `DenseGemmKernel` emits the `setsmemsize` early-release
+instruction. Run this example with a CUTLASS DSL build that preserves that
+instruction's PTX extension descriptor through external LTO linking and
+exposes the producer-owned accumulator source.
+
+### GEMM/MMA Plus Amax
+
+`examples/cutlass/cute_mma_amax_sm100.py` uses the same SM100/SM103 source
+boundary for a cooperative absolute-maximum reduction. Each thread reduces its
+32 register values, then
+`coop.reduce(coop.this_block(), ..., binary_op="max")` combines the
+per-thread results. The sample broadcasts the tile statistic through the
+normal dense output so it needs no side-output ABI. Quantization code would
+usually store one statistic per tensor or tile.
+
+The `tmem_loader` and `post_t2r` modes keep the reduction body fixed and change
+only who triggers CUTLASS's producer-selected LDTM:
+
+```bash
+python -m examples.cutlass.cute_mma_amax_sm100
+python -m examples.cutlass.cute_mma_amax_sm100 --mode post_t2r
+```
+
+The complete example and benchmark command list is:
+
+```bash
+cd python/cuda_coop
+python -m examples.cutlass.cute_kmeans_assign_gemm_argmin
+python -m examples.cutlass.cute_kmeans_assign_topk
+python -m examples.cutlass.cute_legacy_reduce_compare
+python -m examples.cutlass.cute_mma_amax_sm100
+python -m examples.cutlass.cute_mma_topk
+python -m examples.cutlass.cute_mma_topk_sm100
+python -m examples.cutlass.cute_run_length_decode_window
+python -m examples.cutlass.cute_scheduler_prefix
+python -m examples.cutlass.cute_sort_register_fragment
+python -m examples.cutlass.cute_sort_and_segment
+python -m examples.cutlass.cute_sort_and_segment_thread_data
+python -m examples.cutlass.cute_thread_group_descriptor_reduce
+python -m examples.cutlass.cute_thread_group_query
+python -m examples.cutlass.cute_thread_group_reduce
+python -m examples.cutlass.cute_thread_hierarchy_reduce
+python -m examples.cutlass.cute_topk_score_window
+python -m examples.cutlass.cute_warp_merge_sort
+python -m examples.cutlass.cute_warp_prefix_reduce
+python -m examples.cutlass.mixed_payload_factory_sort_topk
+python -m examples.cutlass.mixed_payload_sort_topk
+python -m examples.cutlass.mixed_tensor_vector_scan
+python -m examples.cutlass.portable_root_sum
+python -m examples.cutlass.prims_vector_block_exchange
+python -m examples.cutlass.prims_vector_block_prefix_segment
+python -m examples.cutlass.prims_vector_histogram_run_length
+python -m examples.cutlass.prims_vector_pair_sort_topk
+python -m examples.cutlass.prims_vector_rank_merge
+python -m examples.cutlass.prims_vector_sort_topk
+python -m examples.cutlass.prims_vector_warp_merge_sort
+python -m examples.cutlass.prims_vector_warp_prefix
+python -m benchmarks.cute.bench --measure-iters 16
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_feature_split_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_feature_split_score_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_feature_split_top1_score_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_feature_split_top1_score_warp_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_topk_wide_batched --timer cupti
+python -m benchmarks.cute.bench --scenario cute_kmeans_assign_gemm_argmin --timer cupti
+python -m benchmarks.cute.bench --scenario cute_legacy_reduce_compare --timer cupti
+python -m benchmarks.cute.bench --scenario cute_sort_and_segment_thread_data --timer cupti
+python -m benchmarks.cute.bench --scenario cute_thread_group_descriptor_reduce --timer cupti
+python -m benchmarks.cute.bench --scenario cute_thread_group_query --timer cupti
+python -m benchmarks.cute.bench --scenario cute_thread_group_reduce --timer cupti
+python -m benchmarks.cute.bench --scenario cute_thread_hierarchy_reduce --timer cupti
+python -m benchmarks.cute.bench --scenario kmeans_assign_torch_gemm_argmin_reference --timer cupti
+python -m benchmarks.cute.bench --scenario kmeans_assign_cute_gemm_coop_argmin_reference --timer cupti
+python -m benchmarks.cute.bench --scenario mixed_payload_factory_sort_topk --timer cupti
+python -m benchmarks.cute.bench --scenario mixed_payload_sort_topk --timer cupti
+python -m benchmarks.cute.bench --scenario mixed_tensor_vector_scan --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_block_exchange --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_block_prefix_segment --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_histogram_run_length --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_pair_sort_topk --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_rank_merge --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_sort_topk --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_warp_merge_sort --timer cupti
+python -m benchmarks.cute.bench --scenario prims_vector_warp_prefix --timer cupti
+```
+
+The benchmark harness prepares tensors and CuTe wrappers once, validates each
+scenario outside the timed region, and reports launch-step timings. Use
+`--timer cupti` when comparing steady GPU kernel activity with external kernel
+claims; the default wall timer is intentionally runner-inclusive, and CUPTI
+timing is collected in a separate benchmark loop. No-argument benchmark runs
+use the CuTe/default scenario set; the mixed and Prims array-path scenarios are
+available as explicit `--scenario` choices.
+The feature-split fused k-means assignment scenarios narrow their TopK radix spans for the
+generated D=128 int32 benchmark values: exact squared distances fit in 16 bits,
+and shifted assignment scores fit in 12 bits.
+`cute_kmeans_assign_topk_feature_split_top1_score_batched` uses the same
+score-only fused distance tile with `k=1`, matching the top-1 assignment step
+used by k-means.
+`cute_kmeans_assign_topk_feature_split_top1_score_warp_batched` keeps the same
+score computation but replaces CUB BlockTopK with hierarchical warp-min
+reductions for the assignment-shaped top-1 case.
+The feature-split scratch allocation reserves 32 KiB per CTA: 4 KiB for
+exchange compaction plus the inferred CUB BlockTopK pair-tile scratch.
+`cute_kmeans_assign_gemm_argmin` is the example-facing tensor-core bridge: it
+uses the stock SM120 Blackwell GeForce CuTe GEMM sample for the fp16
+dot-product tile, then runs a group-first warp minimum row-min
+kernel over the materialized score rows to select the nearest centroid. It is
+still a two-kernel composition; the fused target is to move the same coop
+routing stage into a GEMM epilogue.
+`kmeans_assign_torch_gemm_argmin_reference` is not a CuTe fused kernel; it is a
+preallocated PyTorch tensor-core GEMM plus row-argmin reference that keeps the
+same assignment shape and shows the fused CuTe target range. When requested
+with `--timer cupti`, this scenario reports a custom CUDA-event time for the
+full multi-kernel sequence.
+`kmeans_assign_cute_gemm_coop_argmin_reference` swaps the PyTorch GEMM for the
+SM120 Blackwell GeForce CuTe GEMM sample and replaces PyTorch score correction
+plus argmin with a group-first score-preserving warp-minimum kernel
+over the materialized cross-term tile. The row-min stage groups eight query
+rows per CTA, with one 32-lane warp per row and eight centroids scanned by each
+lane before the warp winner is stored.
+`cute_kmeans_assign_gemm_argmin`, `cute_kmeans_assign_topk`,
+`cute_kmeans_assign_topk_batched`,
+`cute_kmeans_assign_topk_feature_split_batched`,
+`cute_kmeans_assign_topk_feature_split_score_batched`,
+`cute_kmeans_assign_topk_feature_split_top1_score_batched`,
+`cute_kmeans_assign_topk_feature_split_top1_score_warp_batched`,
+`cute_kmeans_assign_topk_wide_batched`, `cute_run_length_decode_window`,
+`kmeans_assign_cute_gemm_coop_argmin_reference`, `cute_scheduler_prefix`,
+`cute_sort_register_fragment`, `cute_sort_and_segment`,
+`cute_sort_and_segment_thread_data`, `cute_topk_score_window`,
+`cute_warp_merge_sort`, `cute_warp_prefix_reduce`,
+`mixed_payload_sort_topk`, `mixed_tensor_vector_scan`,
+`prims_vector_block_exchange`,
+`prims_vector_block_prefix_segment`, `prims_vector_histogram_run_length`,
+`prims_vector_pair_sort_topk`, `prims_vector_rank_merge`,
+`prims_vector_sort_topk`, `prims_vector_warp_merge_sort`, and
+`prims_vector_warp_prefix` use explicit block or physical-warp groups so the
+examples, benchmark harness, and final-cubin LTOIR proof cover the public
+CUTLASS single-phase path. CUTLASS dtype classes such as `cutlass.Int32`
+describe values; they do not select a route.
+
+`cute_sort_and_segment` demonstrates the block sort, discontinuity, and scan
+chain with one register item per thread. `cute_sort_and_segment_thread_data`
+extends that chain to two items carried by `coop.ThreadData`, and
+`cute_sort_register_fragment` adapts a CuTe register-memory fragment before
+calling the qualified group-first ordering primitives.
+
+The `prims_vector_*` examples cover block and warp ordering, exchange,
+prefix, segmentation, histogram, run-length, and merge-sort operations. Their
+memory boundaries use the Prims array path and their collectives consume
+`ThreadData`. `prims_vector_pair_sort_topk` demonstrates the CUTLASS
+group-first CUB pipeline with explicit `ThreadData` outputs and qualified
+launch controls.
+
+`mixed_payload_sort_topk` runs the Prims array and CuTe register-fragment paths
+in one kernel. `mixed_tensor_vector_scan` is a qualified CUTLASS group-first
+Load/Scan/Store example with two `ThreadData` payloads; it does not select the
+Prims array path.
+
+Focused host and GPU tests cover direct and compiler-planned block/warp load/store
+routing, public `cutlass.Array` detection, explicit `Payload.PRIMS`,
+Prims-specific memory controls, CuTe tensor defaulting, runtime valid counts,
+and representative final-cubin LTO-IR inlining. The runtime matrix contains one
+node for each behavior-distinct route.
+
+
 ## Numba-CUDA-MLIR Backend
 
 The portable group-first spelling next to `numba_cuda_mlir.cuda` is:
