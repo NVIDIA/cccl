@@ -151,7 +151,7 @@ inline ::std::vector<exec_place> places_from_locality_domains(::std::vector<int>
   return ::std::vector<exec_place>(partition.begin(), partition.end());
 }
 
-namespace detail
+namespace reserved
 {
 // Detects handle types exposing `get_place_resources() -> exec_place_resources&`
 // (e.g. the STF `async_resources_handle`), without this header depending on them.
@@ -164,7 +164,7 @@ inline constexpr bool has_place_resources<
   ::cuda::std::enable_if_t<
     ::cuda::std::is_same_v<decltype(::cuda::std::declval<Handle&>().get_place_resources()), exec_place_resources&>>> =
   true;
-} // namespace detail
+} // namespace reserved
 
 // ============================================================================
 // place_group
@@ -234,7 +234,7 @@ public:
    * the borrowed pools remain valid for the lifetime of the group and there
    * is a single pool owner when a `place_group` coexists with an STF context.
    */
-  template <typename ResourceHandle, typename = ::cuda::std::enable_if_t<detail::has_place_resources<ResourceHandle>>>
+  template <typename ResourceHandle, typename = ::cuda::std::enable_if_t<reserved::has_place_resources<ResourceHandle>>>
   place_group(::std::vector<exec_place> places, ResourceHandle handle)
       : places_(mv(places))
   {
@@ -438,7 +438,8 @@ public:
     return owned_resources_ != nullptr;
   }
 
-  // Move-only: the group is a resource scope. Moving requires exclusive
+  // Non-copyable and not move-assignable; move-CONSTRUCTIBLE so factories
+  // and ownership transfer work. Moving requires exclusive
   // access to the source: no concurrent lazy stream creation (get_stream)
   // may run on `other` during the move.
   place_group(place_group&& other) noexcept
