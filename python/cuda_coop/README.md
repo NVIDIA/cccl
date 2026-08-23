@@ -433,6 +433,15 @@ Reinstall a wheel instead of editing its installed headers in place. Use a
 clean Git or custom header root while developing header changes.
 
 
+NVRTC 12.8 and newer uses automatic precompiled headers by default. Set
+`CUDA_COOP_CUTLASS_PROVIDER_PCH=off` for a rollback or measurement baseline.
+The PCH pool is private to one process: NVRTC PCH files embed process-specific
+heap state and are not portable or reusable after the NVRTC library unloads.
+PCH therefore amortizes multiple compatible, uncached provider bundles in one
+process; it does not eliminate the first-ever compile. If a PCH-enabled compile
+fails, the provider disables that compatibility domain and retries once without
+PCH. A failed PCH creation reported after a successful compile disables later
+
 ## CUTLASS Examples And Benchmarks
 
 Source-tree CUTLASS examples are under `examples/cutlass/`. CuTe examples use

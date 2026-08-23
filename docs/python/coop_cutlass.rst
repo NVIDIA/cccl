@@ -66,6 +66,7 @@ package README lists the full inventory with run commands.
 Use :mod:`cuda.coop.cutlass` directly when a kernel should be explicitly tied
 to CUTLASS. Its exports have the same signatures and behavior as the
 automatically activated portable root API, and add deferred ``make_*``
-factories.
+factories plus the :mod:`cuda.coop.cutlass.aot` provider-pack surface for
+cold-start control.
 
 See :doc:`coop_api` for the complete API.

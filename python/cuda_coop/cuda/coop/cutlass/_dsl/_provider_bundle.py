@@ -37,6 +37,8 @@ from cuda.coop._headers._identity import (
     include_dirs_identity as resolve_include_dirs_identity,
 )
 
+from . import _provider_pch
+
 if os.name == "nt":
     import msvcrt
 else:
@@ -1332,6 +1334,7 @@ def _compile_nvrtc_bundle(
     include_dirs: list[str],
     prepared_probes: _PreparedLayoutProbes,
     nvrtc_version: str | None,
+    nvrtc_version_tuple: tuple[int, int] | None,
     bundle_arch: str,
     bundle_sm_arch: str,
     header_identity: str,
@@ -1346,65 +1349,121 @@ def _compile_nvrtc_bundle(
     encoded_expressions = tuple(
         expression.encode("utf-8") for expression in prepared_probes.expressions
     )
+    pch_session: _provider_pch.PCHSession | None = None
     program = None
     try:
-        program = _create_nvrtc_program(
-            source_bytes,
-            encoded_expressions,
-            scope=scope,
-        )
-        err, compile_duration_ns = _compile_nvrtc_program(program, base_options)
-        _add_phase_duration(
-            phase_timings_ns,
-            "nvrtc_compile",
-            compile_duration_ns,
-        )
-        if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            program_log = get_nvrtc_program_log(program)
-            raise DSLRuntimeError(
-                f"Failed compiling {scope} provider shim to LTO-IR.",
-                cause=RuntimeError(program_log),
+        with _provider_pch.pch_session(
+            nvrtc_version=nvrtc_version_tuple,
+            bundle_arch=bundle_arch,
+            bundle_sm_arch=bundle_sm_arch,
+            compiler_options=compiler_options,
+            include_dirs=tuple(include_dirs),
+            header_identity=header_identity,
+            preamble_identity=_provider_pch.provider_preamble_identity(source),
+        ) as pch_session:
+            program = _create_nvrtc_program(
+                source_bytes,
+                encoded_expressions,
+                scope=scope,
             )
-        layouts_by_expression = {}
-        for expression, encoded_expression in zip(
-            prepared_probes.expressions,
-            encoded_expressions,
-        ):
-            err, lowered_name = cuda_nvrtc.nvrtcGetLoweredName(
-                program,
-                encoded_expression,
-            )
-            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-                raise DSLRuntimeError(
-                    f"Failed retrieving an NVRTC layout probe for {scope} "
-                    "provider bundle."
-                )
-            layouts_by_expression[expression] = _decode_layout_probe_name(
-                lowered_name,
-                symbol=prepared_probes.symbol,
-                expression=expression,
-            )
-
-        phase_started_ns = time.perf_counter_ns()
-        try:
-            err, blob_size = cuda_nvrtc.nvrtcGetLTOIRSize(program)
-            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-                raise DSLRuntimeError(
-                    f"Failed querying NVRTC LTO-IR size for {scope} provider shim."
-                )
-            artifact_blob = bytearray(blob_size)
-            err = cuda_nvrtc.nvrtcGetLTOIR(program, artifact_blob)[0]
-            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
-                raise DSLRuntimeError(
-                    f"Failed retrieving NVRTC LTO-IR for {scope} provider shim."
-                )
-        finally:
-            _finish_phase(
+            options = [*base_options, *pch_session.options]
+            err, compile_duration_ns = _compile_nvrtc_program(program, options)
+            _add_phase_duration(
                 phase_timings_ns,
-                "lto_retrieval",
-                phase_started_ns,
+                "nvrtc_compile",
+                compile_duration_ns,
             )
+            pch_fallback_log = ""
+            used_pch = pch_session.enabled
+            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS and pch_session.enabled:
+                pch_fallback_log = get_nvrtc_program_log(program)
+                pch_session.disable_after_failure(compile_duration_ns)
+                cuda_nvrtc.nvrtcDestroyProgram(program)
+                program = None
+                program = _create_nvrtc_program(
+                    source_bytes,
+                    encoded_expressions,
+                    scope=scope,
+                )
+                err, retry_duration_ns = _compile_nvrtc_program(
+                    program,
+                    base_options,
+                )
+                _add_phase_duration(
+                    phase_timings_ns,
+                    "nvrtc_compile",
+                    retry_duration_ns,
+                )
+                pch_session.phase_timings_ns["pch_fallback"] += retry_duration_ns
+                used_pch = False
+            if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                program_log = get_nvrtc_program_log(program)
+                if pch_fallback_log:
+                    program_log = (
+                        "PCH-enabled compilation failed:\n"
+                        f"{pch_fallback_log}\n"
+                        "Retry without PCH failed:\n"
+                        f"{program_log}"
+                    )
+                raise DSLRuntimeError(
+                    f"Failed compiling {scope} provider shim to LTO-IR.",
+                    cause=RuntimeError(program_log),
+                )
+            if used_pch:
+                pch_session.record_success(
+                    cuda_nvrtc,
+                    program,
+                    compile_duration_ns=compile_duration_ns,
+                    program_log=get_nvrtc_program_log(program),
+                )
+            layouts_by_expression = {}
+            for expression, encoded_expression in zip(
+                prepared_probes.expressions,
+                encoded_expressions,
+            ):
+                err, lowered_name = cuda_nvrtc.nvrtcGetLoweredName(
+                    program,
+                    encoded_expression,
+                )
+                if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                    raise DSLRuntimeError(
+                        f"Failed retrieving an NVRTC layout probe for {scope} "
+                        "provider bundle."
+                    )
+                layouts_by_expression[expression] = _decode_layout_probe_name(
+                    lowered_name,
+                    symbol=prepared_probes.symbol,
+                    expression=expression,
+                )
+
+            phase_started_ns = time.perf_counter_ns()
+            try:
+                err, blob_size = cuda_nvrtc.nvrtcGetLTOIRSize(program)
+                if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                    raise DSLRuntimeError(
+                        f"Failed querying NVRTC LTO-IR size for {scope} provider shim."
+                    )
+                artifact_blob = bytearray(blob_size)
+                err = cuda_nvrtc.nvrtcGetLTOIR(program, artifact_blob)[0]
+                if err != cuda_nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                    raise DSLRuntimeError(
+                        f"Failed retrieving NVRTC LTO-IR for {scope} provider shim."
+                    )
+            finally:
+                _finish_phase(
+                    phase_timings_ns,
+                    "lto_retrieval",
+                    phase_started_ns,
+                )
+    except _provider_pch.PCHConfigurationError as exc:
+        raise DSLRuntimeError(
+            f"Invalid {scope} provider PCH configuration.",
+            cause=exc,
+        ) from exc
     finally:
+        if pch_session is not None:
+            for phase, duration_ns in pch_session.phase_timings_ns.items():
+                phase_timings_ns[phase] = phase_timings_ns.get(phase, 0) + duration_ns
         if program is not None:
             cuda_nvrtc.nvrtcDestroyProgram(program)
 
@@ -1669,6 +1728,7 @@ def _compile_bundle_source(
                 include_dirs=include_dirs,
                 prepared_probes=prepared_probes,
                 nvrtc_version=nvrtc_version,
+                nvrtc_version_tuple=nvrtc_version_tuple,
                 bundle_arch=bundle_arch,
                 bundle_sm_arch=bundle_sm_arch,
                 header_identity=include_identity.digest,
