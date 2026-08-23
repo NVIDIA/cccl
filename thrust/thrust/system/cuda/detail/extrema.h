@@ -76,14 +76,14 @@ template <class Derived, class ItemsIt, class BinaryPred>
 ::cuda::std::pair<ItemsIt, ItemsIt> CUB_RUNTIME_FUNCTION
 cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
 {
-  cudaStream_t stream      = cuda_cub::stream(policy);
   using offset_t           = thrust::detail::it_difference_t<ItemsIt>;
   const offset_t num_items = ::cuda::std::distance(first, last);
-
   if (num_items == 0)
   {
     return {first, first};
   }
+
+  cudaStream_t stream = cuda_cub::stream(policy);
 
   // TODO(bgruber): with CCCL 4.0 switch to cub::DeviceReduce::ArgMinLastMax to conform to the C++ standard
   ::cuda::std::size_t tmp_size = 0;
@@ -124,7 +124,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
 
   offset_t host_indices[2];
   cuda_cub::throw_on_error(
-    ::cudaMemcpyAsync(host_indices, min_index, 2 * sizeof(offset_t), cudaMemcpyDeviceToHost, stream),
+    ::cudaMemcpyAsync(host_indices, min_index, 2 * sizeof(offset_t), ::cudaMemcpyDeviceToHost, stream),
     "minmax_element failed to copy indices to host");
   cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "minmax_element failed to synchronize");
   return {first + host_indices[0], first + host_indices[1]};
