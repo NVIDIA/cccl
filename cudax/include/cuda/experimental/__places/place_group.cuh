@@ -17,7 +17,7 @@
  * A grid of places names WHERE things can run; a `place_group` owns WHAT IT
  * TAKES to run there. The distinction is deliberate:
  *
- *  - A grid (or a `::std::vector<exec_place>`) is a pure value: copyable,
+ *  - A grid (or a `std::vector<exec_place>`) is a pure value: copyable,
  *    transient, derivable from `place_partition`, with no lifetime of its
  *    own.
  *  - A `place_group` is a resource scope: lazily created per-place stream
