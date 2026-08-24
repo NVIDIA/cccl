@@ -347,6 +347,18 @@ void TestCountingIteratorStaticStrideDistance()
 }
 DECLARE_UNITTEST(TestCountingIteratorStaticStrideDistance);
 
+void TestCountingIteratorPointerStrideDistance()
+{
+  int arr[10];
+
+  auto first = thrust::make_counting_iterator(arr, 3);
+  auto last  = thrust::make_counting_iterator(arr + 9, 3);
+
+  ASSERT_EQUAL(last - first, 3);
+  ASSERT_EQUAL((first + (last - first)) == last, true);
+}
+DECLARE_UNITTEST(TestCountingIteratorPointerStrideDistance);
+
 void TestCountingIteratorPointer()
 {
   int arr[11];

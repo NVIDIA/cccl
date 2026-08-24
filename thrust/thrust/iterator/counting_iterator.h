@@ -299,6 +299,7 @@ private:
         {
           return 0;
         }
+        _CCCL_ASSERT(static_cast<difference_type>(stride()) != 0, "Stride must be nonzero");
         _CCCL_ASSERT(dist % static_cast<difference_type>(stride()) == 0,
                      "Underlying iterator difference must be divisible by the stride");
         return dist / static_cast<difference_type>(stride());
@@ -311,12 +312,26 @@ private:
       {
         return dist;
       }
+      else if constexpr (::cuda::std::is_integral_v<decltype(dist)>)
+      {
+        // a pointer counter with a stride has an integral distance that must
+        // satisfy the same contract as an integral counter
+        if (dist == 0)
+        {
+          return 0;
+        }
+        _CCCL_ASSERT(static_cast<decltype(dist)>(stride()) != 0, "Stride must be nonzero");
+        _CCCL_ASSERT(dist % static_cast<decltype(dist)>(stride()) == 0,
+                     "Underlying iterator difference must be divisible by the stride");
+        return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
+      }
       else
       {
         if (dist == 0)
         {
           return 0;
         }
+        _CCCL_ASSERT(static_cast<decltype(dist)>(stride()) != 0, "Stride must be nonzero");
         return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
       }
     }
