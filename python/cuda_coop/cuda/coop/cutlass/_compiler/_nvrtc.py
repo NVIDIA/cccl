@@ -11,6 +11,7 @@ artifact production. Bundle orchestration decides when this backend runs.
 from __future__ import annotations
 
 import hashlib
+import os
 import time
 from collections.abc import Iterable
 from typing import Any
@@ -104,7 +105,9 @@ def preload_toolkit_nvrtc(include_dirs: Iterable[str]) -> None:
 
 
 def include_options(include_dirs: list[str]) -> list[bytes]:
-    return [f"-I{path}".encode() for path in include_dirs]
+    """Encode NVRTC include options with the platform filesystem codec."""
+
+    return [os.fsencode(f"-I{path}") for path in include_dirs]
 
 
 def _create_program(

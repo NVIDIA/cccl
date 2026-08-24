@@ -109,6 +109,12 @@ def _dump_source(cpp, cc, code):
     return destination
 
 
+def _include_options(include_dirs: tuple[str, ...]) -> list[bytes]:
+    """Encode NVRTC include options with the platform filesystem codec."""
+
+    return [os.fsencode(f"--include-path={path}") for path in include_dirs]
+
+
 # cpp is the C++ source code
 # cc = 800 for Ampere, 900 Hopper, etc
 # rdc is true or false
@@ -130,9 +136,7 @@ def compile_impl(
     check_in("rdc", rdc, [True, False])
     check_in("code", code, ["lto", "ptx"])
 
-    opts = [b"--std=c++17"]
-    for path in include_dirs:
-        opts += [f"--include-path={path}".encode("ascii")]
+    opts = [b"--std=c++17", *_include_options(include_dirs)]
     opts += [f"--gpu-architecture=compute_{cc}".encode("ascii")]
     if rdc:
         opts += [b"--relocatable-device-code=true"]

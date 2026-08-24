@@ -23,6 +23,7 @@ classifiers = [
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
 ]
 requires-python = ">=3.10"
 dependencies = [

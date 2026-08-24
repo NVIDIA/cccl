@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -10,6 +11,14 @@ import pytest
 from cuda.bindings import nvrtc
 from cuda.coop._headers._toolkit import ToolkitCompilerLibraries
 from cuda.coop.numba_mlir._compiler import _nvrtc
+
+
+def test_include_options_use_filesystem_encoding():
+    include_dir = "/tmp/cuda-coop-π/include"
+
+    assert _nvrtc._include_options((include_dir,)) == [
+        os.fsencode(f"--include-path={include_dir}")
+    ]
 
 
 def test_compile_cache_inputs_include_resolved_header_identity(monkeypatch):

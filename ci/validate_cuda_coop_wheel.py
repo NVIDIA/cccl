@@ -2,19 +2,85 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Validate that a ``cuda-coop`` wheel contains the supported public layout.
+
+The wheel is checked independently of imports so packaging regressions are
+caught even when the source checkout would otherwise satisfy those imports.
+"""
+
 from __future__ import annotations
 
 import sys
 import zipfile
 from pathlib import PurePosixPath
 
+_PRIMITIVE_FAMILIES = {
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
+    "histogram",
+    "load_store",
+    "merge_sort",
+    "radix",
+    "reduce",
+    "run_length_decode",
+    "scan",
+    "shuffle",
+    "topk",
+}
+
+_PORTABLE_API_LEAVES = _PRIMITIVE_FAMILIES | {
+    "temp_storage",
+    "thread_data",
+    "thread_group",
+}
+
+_REQUIRED_STUBS = {
+    "cuda/coop/__init__.pyi",
+    "cuda/coop/_typing.pyi",
+    "cuda/coop/_core/api/__init__.pyi",
+    *{f"cuda/coop/_core/api/{family}.pyi" for family in _PORTABLE_API_LEAVES},
+    "cuda/coop/cutlass/__init__.pyi",
+    "cuda/coop/cutlass/_temp_storage.pyi",
+    "cuda/coop/cutlass/_thread_data.pyi",
+    "cuda/coop/cutlass/_thread_group.pyi",
+    "cuda/coop/cutlass/_typing.pyi",
+    "cuda/coop/cutlass/aot.pyi",
+    *{f"cuda/coop/cutlass/_group_{family}.pyi" for family in _PRIMITIVE_FAMILIES},
+    "cuda/coop/numba_mlir/__init__.pyi",
+    "cuda/coop/numba_mlir/_dataclass.pyi",
+    "cuda/coop/numba_mlir/_enums.pyi",
+    "cuda/coop/numba_mlir/_stateful_function.pyi",
+    "cuda/coop/numba_mlir/_temp_storage.pyi",
+    "cuda/coop/numba_mlir/_thread_data.pyi",
+    "cuda/coop/numba_mlir/_thread_group.pyi",
+    *{f"cuda/coop/numba_mlir/_group_{family}.pyi" for family in _PRIMITIVE_FAMILIES},
+}
+
+_OBSOLETE_LAYOUT_COMPONENTS = {"_block", "_dsl", "_internal", "_warp"}
+
+
+def _reject_obsolete_layouts(names: set[str]) -> None:
+    obsolete_members = sorted(
+        name
+        for name in names
+        if name.startswith("cuda/coop/")
+        and not name.startswith("cuda/coop/_headers/include/")
+        and _OBSOLETE_LAYOUT_COMPONENTS.intersection(PurePosixPath(name).parts)
+    )
+    if obsolete_members:
+        raise SystemExit(
+            f"cuda-coop wheel contains obsolete package layouts: {obsolete_members}"
+        )
+
 
 def validate(wheel: str) -> None:
     with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
 
-    required = {
-        "cuda/coop/__init__.pyi",
+    _reject_obsolete_layouts(names)
+
+    required = _REQUIRED_STUBS | {
         "cuda/coop/py.typed",
         "cuda/coop/_headers/cccl-bundle-provenance.json",
         "cuda/coop/_headers/include/cub/version.cuh",

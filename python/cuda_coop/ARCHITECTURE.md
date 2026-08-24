@@ -5,7 +5,7 @@ responsibility. The directory layout follows primitive semantics so a developer
 looking for `scan`, for example, follows the same path through the portable
 core, CUTLASS, and Numba-CUDA-MLIR.
 
-## Scope
+## Scope and release gates
 
 The initial alpha provides the group-first primitive families documented in
 the package README, a backend-neutral contract, and installed-wheel adapters
@@ -13,6 +13,15 @@ for CUTLASS Python DSL and Numba-CUDA-MLIR. Backend-qualified controls may
 differ when the compilers or underlying CCCL providers differ. Device-wide
 algorithms, a hidden workspace for grid collectives, and artificial parity for
 backend-only controls are outside this release.
+
+The base wheel is release-ready only after portable contracts, strict typing,
+header provenance, and installed-wheel checks pass on Linux and Windows. A
+backend additionally needs a publicly resolvable dependency plus its host,
+GPU-runtime, and final-link lanes. Numba-CUDA-MLIR currently satisfies that
+dependency precondition at version 0.5. The CUTLASS backend remains a
+pre-release integration until `nvidia-cutlass-dsl>=4.8` is public and its three
+prepared lanes are enabled and pass. Alpha API changes still require matching
+runtime declarations, stubs, documentation, and compatibility tests.
 
 ## Compilation pipeline
 
@@ -132,5 +141,9 @@ Add a family as a vertical slice rather than to a catch-all dispatcher:
    `runtime` for launched GPU semantics.
 6. Update portable re-exports, installed-wheel typing coverage, examples, or
    public documentation when the public surface changes.
+7. Before advertising the family for a backend, require a public dependency
+   and passing installed-wheel host, GPU-runtime, and final-link evidence for
+   that backend.
+
 Backend-specific compiler tests should remain backend-specific. Matching
 semantic filenames help navigation; empty mirror modules or tests do not.

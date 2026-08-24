@@ -34,14 +34,14 @@ while [[ $# -gt 0 ]]; do
       fi
       shift
       ;;
-    -py-version | -ctk-mode)
+    -py-version | -ctk-mode | -std | -arch | -cuda | -cmake-options)
       if [[ $# -lt 2 || -z "$2" ]]; then
         echo "Error: $1 requires a value" >&2
         exit 1
       fi
       shift 2
       ;;
-    -py-version=* | -ctk-mode=*)
+    -py-version=* | -ctk-mode=* | -std=* | -arch=* | -cuda=* | -cmake-options=*)
       shift
       ;;
     *)
@@ -172,6 +172,9 @@ PY
       backends/numba_mlir/unit/ \
       backends/numba_mlir/compile/ \
       backends/numba_mlir/runtime/
+    python -I "$repo_root/python/cuda_coop/examples/numba_mlir/common_block_scan.py"
+    python -I \
+      "$repo_root/python/cuda_coop/examples/numba_mlir/qualified_histogram_decode.py"
     ;;
   cutlass-host)
     python - <<'PY'
@@ -200,11 +203,18 @@ print(f"nvidia-cutlass-dsl={importlib.metadata.version('nvidia-cutlass-dsl')}")
 PY
     if [[ "$stage" == "cutlass-gpu" ]]; then
       python -m pytest -v backends/cutlass/runtime/
+      python -I "$repo_root/python/cuda_coop/examples/cutlass/common_block_scan.py"
+      python -I \
+        "$repo_root/python/cuda_coop/examples/cutlass/qualified_radix_topk.py"
     else
       unset CUDA_COOP_CUTLASS_PROVIDER_CCCL_ROOT
+      unset CUDA_COOP_CCCL_ROOT
+      export CUDA_COOP_CUTLASS_FINAL_LINK_TEST=1
       python -m pytest -v \
         backends/cutlass/runtime/test_group_hierarchy.py::test_local_physical_and_exhaustive_mapped_groups_runtime \
-        backends/cutlass/runtime/test_group_hierarchy.py::test_non_exhaustive_mapped_group_membership_runtime
+        backends/cutlass/runtime/test_group_hierarchy.py::test_non_exhaustive_mapped_group_membership_runtime \
+        backends/cutlass/runtime/test_reduce_scan.py::test_reduce_scan_group_routes_match_independent_oracles \
+        backends/cutlass/runtime/test_data_movement.py::test_block_and_warp_data_movement_match_independent_oracles
     fi
     ;;
   *)

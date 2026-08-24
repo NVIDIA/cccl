@@ -40,8 +40,12 @@ python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 ```
 
 Use `numba-cuda-mlir-cu12` with a CUDA 12 environment. The `cutlass` extra
-selects the supported CUDA 13 CUTLASS Python DSL stack. See
-[`pyproject.toml`](pyproject.toml) for the current dependency bounds.
+requires `nvidia-cutlass-dsl>=4.8` and CUDA 13. Until that DSL release is
+available from the public package index, the CUTLASS backend is a pre-release
+integration: the public install command cannot resolve, and its host, GPU, and
+final-link CI lanes remain disabled. CUTLASS release support starts only after
+that dependency is public and those lanes are enabled and pass. See
+[`pyproject.toml`](pyproject.toml) for the dependency bounds.
 
 ## Portable and qualified imports
 

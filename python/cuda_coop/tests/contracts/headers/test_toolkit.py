@@ -48,6 +48,32 @@ def _write_cuda_header(include_dir: Path, encoded_version: int) -> None:
     )
 
 
+def _library_path(directory: Path, kind: str, major: int) -> Path:
+    """Return the platform spelling used by the preload implementation."""
+
+    return directory / _toolkit._library_names(kind, major)[0]
+
+
+@pytest.mark.parametrize(
+    ("os_name", "kind", "expected"),
+    (
+        ("posix", "nvrtc", ("libnvrtc.so.13",)),
+        ("posix", "nvJitLink", ("libnvJitLink.so.13",)),
+        ("nt", "nvrtc", ("nvrtc64_130_0.dll",)),
+        ("nt", "nvJitLink", ("nvJitLink_130_0.dll",)),
+    ),
+)
+def test_library_names_match_platform_spelling(
+    monkeypatch,
+    os_name,
+    kind,
+    expected,
+):
+    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name=os_name))
+
+    assert _toolkit._library_names(kind, 13) == expected
+
+
 def test_preload_reuses_exact_nvjitlink_handle(monkeypatch, tmp_path):
     first_include = tmp_path / "first" / "include"
     second_include = tmp_path / "second" / "include"
@@ -58,9 +84,9 @@ def test_preload_reuses_exact_nvjitlink_handle(monkeypatch, tmp_path):
     first_lib.mkdir()
     second_lib.mkdir()
 
-    nvrtc = first_lib / "libnvrtc.so.13"
-    nvjitlink = second_lib / "libnvJitLink.so.13"
-    ignored = first_lib / "libnvrtc.so.12"
+    nvrtc = _library_path(first_lib, "nvrtc", 13)
+    nvjitlink = _library_path(second_lib, "nvJitLink", 13)
+    ignored = _library_path(first_lib, "nvrtc", 12)
     for library in (nvrtc, nvjitlink, ignored):
         library.touch()
 
@@ -99,9 +125,9 @@ def test_preload_accepts_compatible_newer_nvjitlink_fallback(
     lib_dir = tmp_path / "toolkit" / "lib"
     _write_cuda_header(include_dir, 13000)
     lib_dir.mkdir()
-    (lib_dir / "libnvrtc.so.13").touch()
+    _library_path(lib_dir, "nvrtc", 13).touch()
 
-    fallback_nvjitlink = tmp_path / "fallback" / "libnvJitLink.so.13"
+    fallback_nvjitlink = _library_path(tmp_path / "fallback", "nvJitLink", 13)
     monkeypatch.setattr(
         _toolkit.ctypes,
         "CDLL",
@@ -112,7 +138,9 @@ def test_preload_accepts_compatible_newer_nvjitlink_fallback(
         "load_nvidia_dynamic_lib",
         lambda name: SimpleNamespace(
             abs_path=str(
-                lib_dir / "libnvrtc.so.13" if name == "nvrtc" else fallback_nvjitlink
+                _library_path(lib_dir, "nvrtc", 13)
+                if name == "nvrtc"
+                else fallback_nvjitlink
             )
         ),
     )
@@ -129,8 +157,10 @@ def test_preload_rejects_version_mismatched_nvjitlink_fallback(
 ):
     include_dir = tmp_path / "toolkit" / "include"
     _write_cuda_header(include_dir, 13020)
-    fallback_nvrtc = tmp_path / "fallback" / "libnvrtc.so.13"
-    fallback_nvjitlink = tmp_path / "fallback" / f"libnvJitLink.so.{actual_version[0]}"
+    fallback_nvrtc = _library_path(tmp_path / "fallback", "nvrtc", 13)
+    fallback_nvjitlink = _library_path(
+        tmp_path / "fallback", "nvJitLink", actual_version[0]
+    )
 
     monkeypatch.setattr(
         cuda.pathfinder,
@@ -162,9 +192,9 @@ def test_preload_tries_all_exact_toolkit_candidates(monkeypatch, tmp_path):
     _write_cuda_header(include_dir, 13000)
     lib_dir.mkdir()
     lib64_dir.mkdir()
-    nvrtc = lib_dir / "libnvrtc.so.13"
-    first_nvjitlink = lib_dir / "libnvJitLink.so.13"
-    second_nvjitlink = lib64_dir / "libnvJitLink.so.13"
+    nvrtc = _library_path(lib_dir, "nvrtc", 13)
+    first_nvjitlink = _library_path(lib_dir, "nvJitLink", 13)
+    second_nvjitlink = _library_path(lib64_dir, "nvJitLink", 13)
     for library in (nvrtc, first_nvjitlink, second_nvjitlink):
         library.touch()
 
@@ -207,10 +237,10 @@ def test_preload_reports_all_exact_toolkit_library_load_failures(
     _write_cuda_header(include_dir, 13000)
     lib_dir.mkdir()
     lib64_dir.mkdir()
-    (lib_dir / "libnvrtc.so.13").touch()
+    _library_path(lib_dir, "nvrtc", 13).touch()
     candidates = (
-        lib_dir / "libnvJitLink.so.13",
-        lib64_dir / "libnvJitLink.so.13",
+        _library_path(lib_dir, "nvJitLink", 13),
+        _library_path(lib64_dir, "nvJitLink", 13),
     )
     for candidate in candidates:
         candidate.touch()

@@ -46,6 +46,16 @@ qualified backend explicitly:
 The base import succeeds when neither compiler is installed. Cooperative
 operations still require a compatible compilation context.
 
+Backend availability
+--------------------
+
+The Numba-CUDA-MLIR backend uses the public 0.5 runtime. The CUTLASS backend
+requires ``nvidia-cutlass-dsl>=4.8`` and CUDA 13. Until that DSL release is
+available from the public package index, the CUTLASS integration is
+pre-release: its public extra cannot resolve and its prepared host, GPU, and
+final-link CI lanes remain disabled. CUTLASS release support begins only after
+the dependency is public and all three lanes are enabled and pass.
+
 Groups, payloads, and scratch
 -----------------------------
 

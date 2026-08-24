@@ -39,6 +39,10 @@ def test_launcher_reports_missing_cutlass_extra_without_traceback() -> None:
         import importlib.abc
         import sys
 
+        # Exercise the optional-dependency diagnostic independently of the
+        # earlier, separately tested platform gate.
+        sys.platform = "linux"
+
         class BlockCutlass(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path=None, target=None):
                 if fullname == "cutlass" or fullname.startswith("cutlass."):

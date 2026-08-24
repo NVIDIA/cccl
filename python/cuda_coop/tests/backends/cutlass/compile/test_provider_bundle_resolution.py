@@ -26,6 +26,14 @@ from cuda.coop.cutlass._compiler import _cache as provider_cache
 from cuda.coop.cutlass._compiler import _nvrtc as provider_nvrtc
 
 
+def test_include_options_use_filesystem_encoding():
+    include_dir = "/tmp/cuda-coop-\udcff/include"
+
+    assert provider_nvrtc.include_options([include_dir]) == [
+        os.fsencode(f"-I{include_dir}")
+    ]
+
+
 class _NvrtcResult:
     NVRTC_SUCCESS = 0
 
