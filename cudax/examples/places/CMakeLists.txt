@@ -1,4 +1,8 @@
-set(places_example_sources thrust_device_data_place_allocator.cu)
+set(
+  places_example_sources
+  thrust_device_data_place_allocator.cu
+  sharded_reduce.cu
+)
 
 ## cudax_add_places_example
 #

@@ -269,6 +269,8 @@ endif()
 if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # Places tests are handled separately:
   add_subdirectory(places)
+  # Sharded containers/algorithms build on the places layer:
+  add_subdirectory(sharded)
 endif()
 
 # FIXME: Enable MSVC
