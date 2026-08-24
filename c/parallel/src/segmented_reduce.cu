@@ -145,8 +145,10 @@ try
   const auto [input_iterator_name, input_iterator_src] =
     get_specialization<segmented_reduce_input_iterator_tag>(template_id<input_iterator_traits>(), input_it);
 
-  const auto [output_iterator_name, output_iterator_src] =
-    get_specialization<segmented_reduce_output_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
+  // Specialize the output iterator on its own value type (not accum_t) so the final
+  // store converts the accumulator to the output type instead of reinterpreting bytes.
+  const auto [output_iterator_name, output_iterator_src] = get_specialization<segmented_reduce_output_iterator_tag>(
+    template_id<output_iterator_traits>(), output_it, output_it.value_type);
 
   const auto [start_offset_iterator_name, start_offset_iterator_src] =
     get_specialization<segmented_reduce_start_offset_iterator_tag>(

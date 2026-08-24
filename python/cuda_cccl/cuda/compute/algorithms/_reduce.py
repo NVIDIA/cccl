@@ -162,6 +162,11 @@ def make_reduce_into(
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    the accumulated result is converted to the dtype of ``d_out`` on the final
+    store.
+
     Example:
         Below, ``make_reduce_into`` is used to create a reduction object that can be reused.
 
@@ -196,8 +201,10 @@ def make_reduce_into(
 
     # Validate d_in and d_out if they are device arrays (iterators may not expose
     # dtype reliably here). Additionally, only require equality of dtypes for
-    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
-    # is acceptable
+    # struct objects; mixed scalar dtypes are acceptable: input elements are
+    # loaded in their own dtype and each is converted to the accumulator dtype
+    # (h_init's dtype) before accumulation; the accumulated result is converted
+    # to d_out's dtype on the final store.
     if isinstance(h_init, _Struct):
         for arr, name in ((d_in, "input"), (d_out, "output")):
             if isinstance(arr, IteratorBase):
@@ -237,6 +244,11 @@ def reduce_into(
     Performs device-wide reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    the accumulated result is converted to the dtype of ``d_out`` on the final
+    store.
 
     Example:
         Below, ``reduce_into`` is used to compute the sum of a sequence of integers.

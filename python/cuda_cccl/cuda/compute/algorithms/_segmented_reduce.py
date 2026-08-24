@@ -180,6 +180,11 @@ def make_segmented_reduce(
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    each segment's accumulated result is converted to the dtype of ``d_out`` on
+    the final store.
+
     Example:
         Below, ``make_segmented_reduce`` is used to create a segmented reduction object that can be reused.
 
@@ -234,6 +239,11 @@ def segmented_reduce(
     Performs device-wide segmented reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Mixed scalar dtypes are supported: input elements are loaded in their own
+    dtype and each is converted to the dtype of ``h_init`` before accumulation;
+    each segment's accumulated result is converted to the dtype of ``d_out`` on
+    the final store.
 
     Example:
         Below, ``segmented_reduce`` is used to compute the minimum value of segments in a sequence of integers.
