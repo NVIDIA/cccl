@@ -30,9 +30,9 @@ function(cudax_add_header_test label definitions)
       "cuda/experimental/places.cuh"
       "cuda/experimental/__places/*"
       # Sharded headers are compiled separately (they build on places); this
-      # also covers __sharded/sparse.cuh (opt-in vendor header, #errors
-      # without the cuSPARSE headers, compiled separately when
-      # cudax_ENABLE_CUSPARSE is set):
+      # also covers __sharded/sparse.cuh, the opt-in cuSPARSE-backed header
+      # (its own #error guard only checks header availability, which the
+      # CUDA toolkit always provides, so it needs no extra gating here):
       "cuda/experimental/sharded.cuh"
       "cuda/experimental/__sharded/*"
       # STF headers are compiled separately:
@@ -86,10 +86,6 @@ function(cudax_add_header_test label definitions)
       GLOBS #
         "cuda/experimental/sharded.cuh"
         "cuda/experimental/__sharded/*.cuh"
-      EXCLUDES
-        # Opt-in vendor header: #errors without the cuSPARSE headers,
-        # compiled separately below when cudax_ENABLE_CUSPARSE is set:
-        "cuda/experimental/__sharded/sparse.cuh"
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
     target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
@@ -99,29 +95,6 @@ function(cudax_add_header_test label definitions)
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
     )
-
-    if (cudax_ENABLE_CUSPARSE)
-      ##########################################
-      # Sharded sparse (opt-in vendor header)  #
-      set(headertest_target cudax.headers.${label}.sharded_sparse)
-      cccl_generate_header_tests(
-        ${headertest_target}
-        cudax/include
-        GLOBS #
-          "cuda/experimental/__sharded/sparse.cuh"
-        HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
-      )
-      target_link_libraries(
-        ${headertest_target}
-        PUBLIC cudax.compiler_interface
-      )
-      target_compile_options(
-        ${headertest_target}
-        PRIVATE
-          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
-      )
-    endif()
   endif()
 
   # FIXME: Enable MSVC
