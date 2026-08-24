@@ -14,6 +14,7 @@
           },
           "evidence": {
             "type": "array",
+            "maxItems": 3,
             "items": {
               "type": "string"
             }
@@ -26,8 +27,10 @@
           },
           "job_ids": {
             "type": "array",
+            "minItems": 1,
             "items": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1
             }
           }
         },

@@ -1,0 +1,104 @@
+name: Test Slack failure analysis thread
+
+on:
+  push:
+    branches:
+      - codex/nightly-ai-slack-links
+    paths:
+      - .github/actions/ci-failure-analysis/**
+      - .github/actions/ci-failure-analysis-render/**
+      - .github/workflows/ci-workflow-nightly.yml
+      - .github/workflows/slack-thread-test.yml
+      - ci/util/ci_failure_analysis/**
+      - ci/util/publish_slack_notification.py
+
+permissions: {}
+
+jobs:
+  analyze-failures:
+    name: Analyze nightly failures
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7'
+      }}
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      slack_thread: ${{ steps.render-slack.outputs.content }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Analyze failures
+        id: analyze
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: 32327889834
+
+      - name: Render GitHub failure analysis
+        id: render-github
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github
+
+      - name: Add failure analysis to workflow summary
+        env:
+          GITHUB_REPORT: ${{ steps.render-github.outputs.content }}
+        run: |
+          test -n "${GITHUB_REPORT}"
+          printf '%s\n' "${GITHUB_REPORT}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Render Slack failure analysis
+        id: render-slack
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: slack
+
+  publish-failure-notification:
+    name: Post test failure notification to Slack
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        vars.SLACK_CHANNEL_CI_TEST == 'C0BR58S4VJ7' &&
+        needs.analyze-failures.result == 'success'
+      }}
+    needs: analyze-failures
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_notification.py
+          sparse-checkout-cone-mode: false
+
+      - name: Post test failure notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_CI_TEST }}
+          SLACK_PARENT_TEXT: |-
+            :test_tube: TEST — Workflow 'nightly' has failed:
+
+            :large_red_square: Finished in 4h 51m: Pass: 81%/1164 | Total: 48d 19h | Max: 4h 05m | Hits: 23%/5305298
+
+            Details: https://github.com/NVIDIA/cccl/actions/runs/32327889834
+          SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          test -n "${SLACK_PARENT_TEXT}"
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_notification.py

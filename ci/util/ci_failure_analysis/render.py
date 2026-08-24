@@ -49,6 +49,8 @@ def validate_schema(value, schema, location="$"):
         raise ValidationError(f"{location}: expected {expected_type}")
     if "enum" in schema and value not in schema["enum"]:
         raise ValidationError(f"{location}: value is not one of {schema['enum']}")
+    if "minimum" in schema and value < schema["minimum"]:
+        raise ValidationError(f"{location}: expected at least {schema['minimum']}")
 
     if expected_type == "object":
         properties = schema.get("properties", {})
@@ -67,6 +69,10 @@ def validate_schema(value, schema, location="$"):
         if len(value) < schema.get("minItems", 0):
             raise ValidationError(
                 f"{location}: expected at least {schema['minItems']} items"
+            )
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            raise ValidationError(
+                f"{location}: expected at most {schema['maxItems']} items"
             )
         for index, item in enumerate(value):
             validate_schema(item, schema["items"], f"{location}[{index}]")
@@ -103,8 +109,6 @@ def validate_group_job_references(analysis, jobs):
     for group_index, group in enumerate(analysis["groups"]):
         location = f"$.groups[{group_index}]"
         job_ids = group["job_ids"]
-        if not job_ids:
-            raise ValidationError(f"{location}.job_ids must not be empty")
         if len(job_ids) != len(set(job_ids)):
             raise ValidationError(f"{location}.job_ids contains duplicates")
         for job_id in job_ids:
