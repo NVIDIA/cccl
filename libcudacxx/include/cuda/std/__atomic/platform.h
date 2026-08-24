@@ -60,8 +60,6 @@
 #  define LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE  2
 #endif
 
-#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(size) (size <= 8)
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -81,7 +79,7 @@ struct __atomic_is_always_lock_free
 {
   enum
   {
-    __value = sizeof(_Tp) <= 8
+    __value = sizeof(_Tp) <= 8 && (sizeof(_Tp) & (sizeof(_Tp) - 1)) == 0
   };
 };
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)

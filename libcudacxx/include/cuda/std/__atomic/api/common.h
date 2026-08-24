@@ -33,7 +33,7 @@
 #define _LIBCUDACXX_ATOMIC_COMMON_IMPL(_CONST, _VOLATILE)                                                           \
   _CCCL_HOST_DEVICE_API inline bool is_lock_free() const _VOLATILE noexcept                                         \
   {                                                                                                                 \
-    return _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(sizeof(_Tp));                                                            \
+    return _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);                                                     \
   }                                                                                                                 \
   _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                                          \
   _CCCL_HOST_DEVICE_API inline void store(remove_cv_t<_Tp> __d, memory_order __m = memory_order_seq_cst)            \
