@@ -486,6 +486,12 @@ def test_three_way_partition_with_cpp_predicates():
     )
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason="CUB's HistogramEven bins bfloat16 samples incorrectly, so "
+    "make_histogram_even rejects bfloat16; "
+    "see https://github.com/NVIDIA/cccl/issues/10940",
+)
 def test_histogram_even():
     num_samples = 1000
     num_bins = 8
