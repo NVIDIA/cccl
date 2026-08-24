@@ -83,6 +83,7 @@ CUB_NAMESPACE_BEGIN
  * and sets a maximum of 6,291,455 cached bytes per device
  *
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use cuda::device_memory_pool or "
                                "cuda::device_default_memory_pool instead.") CachingDeviceAllocator
 {
@@ -901,5 +902,6 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     }
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_END
