@@ -28,6 +28,7 @@
 
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/adjacent_difference.cuh>
+#include <cuda/experimental/__sharded/communicator.cuh>
 #include <cuda/experimental/__sharded/copy_if.cuh>
 #include <cuda/experimental/__sharded/count.cuh>
 #include <cuda/experimental/__sharded/fill.cuh>

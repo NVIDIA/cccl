@@ -65,6 +65,15 @@ namespace cuda::experimental::places
 class place_memory_resource
 {
 public:
+  /// @brief Default property set for containers created from this resource.
+  ///
+  /// Every `data_place` hands out device-accessible memory (device and
+  /// locality-domain allocations, managed memory, and pinned host memory),
+  /// so `device_accessible` is the honest common denominator. This is what
+  /// lets a `place_memory_resource` travel through an environment into
+  /// `cuda::buffer`-based algorithm temporaries.
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
+
   /// @brief Construct a memory resource allocating from @p place.
   _CCCL_HOST_API explicit place_memory_resource(data_place place)
       : place_(mv(place))
@@ -175,6 +184,9 @@ public:
       _CCCL_ASSERT(false, "place_memory_resource::deallocate_sync failed");
     }
   }
+
+  /// @brief The resource's memory is device accessible (see `default_queries`).
+  friend constexpr void get_property(const place_memory_resource&, ::cuda::mr::device_accessible) noexcept {}
 
   /// @brief Two resources are equal when they allocate from the same place.
   [[nodiscard]] _CCCL_HOST_API friend bool

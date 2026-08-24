@@ -117,6 +117,7 @@ for. These algorithms therefore throw ``std::invalid_argument`` on contiguous
 (``allocate_contiguous``) arrays, leaving them untouched. Read-only
 algorithms (``count`` / ``count_if``, ``histogram_even``, ``reduce`` et al.)
 remain available on every sharded array, contiguous ones included.
+
 CUDA graph capture
 ------------------
 
@@ -200,3 +201,32 @@ pointer can be released outside the graph with ``cudaFreeAsync``, which
 re-arms the launch. The shipped contract stays simple — allocate outside
 capture; capture computation only — and the test suite pins both the
 recorded-allocation semantics and the failure shape of violations.
+
+The places communicator and the MGMN bridge
+-------------------------------------------
+
+``places_communicator`` is a places-backed model of the ``__multi_gpu``
+communicator concept: each place of a ``place_group`` becomes one rank
+(rank = place index), and the MGMN range algorithms
+(``cuda::experimental::reduce``, ``inclusive_scan``, ``sort``, ...) run over
+it unmodified. Because the places of one process share a virtual address
+space, the communicator verbs lower to device-to-device copies, and
+``all_reduce`` to a single fold kernel that combines every rank's partial in
+fixed rank order — bit-identical results run to run for a fixed place list.
+A second variant, ``basic_places_communicator``, omits ``all_reduce`` so the
+algorithms' gather-plus-local-combine path stays exercised too.
+
+``bind_engine(group, data)`` is the two-tier seam: the container tier
+manufactures what an MGMN engine consumes — one communicator, environment
+(stream + per-place memory resource), iterator and size per shard:
+
+.. code-block:: cpp
+
+   auto b = bind_engine(group, data);
+   cuda::experimental::reduce(
+     cuda::experimental::broadcasted, b.comms, b.envs, b.shard_data, b.shard_sizes, outs);
+
+Engine temporaries are drawn from each rank's environment, so scratch is
+placed where the rank's work runs. Code written against the communicator
+surface is portable across rungs: the same call runs over in-process places
+here and over multi-process ranks with an NCCL-backed communicator.
