@@ -24,7 +24,14 @@
 template <typename T>
 TEST_FUNC constexpr void test_value(T value, int expected_digits)
 {
-  const int expected_len = value < 0 ? expected_digits + 1 : expected_digits;
+  int expected_len = expected_digits;
+  if constexpr (cuda::std::is_signed_v<T>)
+  {
+    if (value < 0)
+    {
+      ++expected_len;
+    }
+  }
 
   char raw[256] = {};
   char* buf     = raw + 1;
