@@ -12,6 +12,7 @@
 // undercounted by one, writing one byte before the output buffer while
 // reporting success
 
+#include <cuda/std/cassert>
 #include <cuda/std/charconv>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -44,11 +45,7 @@ TEST_FUNC constexpr bool test_value(T value, int expected_digits)
 
   T parsed{};
   auto pr = cuda::std::from_chars(buf, res.ptr, parsed);
-  if (pr.ec != cuda::std::errc{} || parsed != value)
-  {
-    return false;
-  }
-  return true;
+  return !(pr.ec != cuda::std::errc{} || parsed != value);
 }
 
 template <typename T>
@@ -64,7 +61,7 @@ TEST_FUNC constexpr bool test_powers_of_ten()
     }
     if constexpr (cuda::std::is_signed_v<T>)
     {
-      if (!test_value(T{-1} * power, digits + 1))
+      if (!test_value(T{-1} * power, digits))
       {
         return false;
       }
@@ -78,7 +75,7 @@ TEST_FUNC constexpr bool test_powers_of_ten()
   }
   if constexpr (cuda::std::is_signed_v<T>)
   {
-    return test_value(T{-1} * power, digits + 1);
+    return test_value(T{-1} * power, digits);
   }
   return true;
 }
@@ -105,10 +102,26 @@ TEST_FUNC constexpr bool test()
   return ok;
 }
 
+// to_chars is not constexpr for signed types, so constant evaluation covers
+// the unsigned set only.
+TEST_FUNC constexpr bool test_constexpr()
+{
+  bool ok = true;
+  ok = ok && test_powers_of_ten<cuda::std::uint8_t>();
+  ok = ok && test_powers_of_ten<cuda::std::uint16_t>();
+  ok = ok && test_powers_of_ten<cuda::std::uint32_t>();
+  ok = ok && test_powers_of_ten<cuda::std::uint64_t>();
+#if _CCCL_HAS_INT128()
+  ok = ok && test_powers_of_ten<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+
+  return ok;
+}
+
 int main(int, char**)
 {
-  test();
-  static_assert(test());
+  assert(test());
+  static_assert(test_constexpr());
 
   return 0;
 }

@@ -104,9 +104,7 @@ template <int _Base, class _Tp>
     return ::cuda::ceil_div(__num_bits_v<_Tp> - ::cuda::std::countl_zero(static_cast<_Tp>(__v | 1)), __base_ilog2);
   }
   else if constexpr (_Base == 10)
-  {
-    // the number of digits of __v is ilog10(__v) + 1; ceil_ilog10(__v) counts the digits of
-    // __v - 1 and undercounts exact powers of ten
+  { // the number of digits of __v is ilog10(__v) + 1
     return (__v > 1) ? ::cuda::ilog10(__v) + 1 : 1;
   }
   else
