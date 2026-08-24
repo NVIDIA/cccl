@@ -37,6 +37,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -212,7 +213,10 @@ public:
   _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, StrideHolder stride)
       : super_t(x)
       , StrideHolder(stride)
-  {}
+  {
+    // a zero stride is rejected; use cuda::constant_iterator for a fixed value
+    _CCCL_ASSERT(static_cast<decltype(stride.value)>(stride.value) != 0, "counting_iterator stride must be nonzero");
+  }
 
   //! \cond
 
@@ -299,7 +303,6 @@ private:
         {
           return 0;
         }
-        _CCCL_ASSERT(static_cast<difference_type>(stride()) != 0, "Stride must be nonzero");
         _CCCL_ASSERT(dist % static_cast<difference_type>(stride()) == 0,
                      "Underlying iterator difference must be divisible by the stride");
         return dist / static_cast<difference_type>(stride());
@@ -320,7 +323,6 @@ private:
         {
           return 0;
         }
-        _CCCL_ASSERT(static_cast<decltype(dist)>(stride()) != 0, "Stride must be nonzero");
         _CCCL_ASSERT(dist % static_cast<decltype(dist)>(stride()) == 0,
                      "Underlying iterator difference must be divisible by the stride");
         return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
@@ -331,8 +333,8 @@ private:
         {
           return 0;
         }
-        _CCCL_ASSERT(static_cast<decltype(dist)>(stride()) != 0, "Stride must be nonzero");
-        return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
+        // imprecisions in the floating point domain make truncation unreliable, so round to the nearest position
+        return static_cast<difference_type>(::cuda::std::round(dist / static_cast<decltype(dist)>(stride())));
       }
     }
   }
@@ -367,6 +369,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 template <auto Stride, typename Incrementable>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
 {
+  static_assert(Stride != decltype(Stride){}, "counting_iterator stride must be nonzero");
   return counting_iterator<Incrementable,
                            use_default,
                            random_access_traversal_tag,
