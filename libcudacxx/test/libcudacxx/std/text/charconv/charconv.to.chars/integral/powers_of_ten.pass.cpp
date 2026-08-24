@@ -38,6 +38,7 @@ TEST_FUNC constexpr void test_value(T value, int expected_digits)
   // a buffer one character short of the exact width must fail without writing
   auto narrow = cuda::std::to_chars(buf, buf + expected_len - 1, value);
   assert(narrow.ec == cuda::std::errc::value_too_large);
+  assert(raw[0] == '#');
 
   T parsed{};
   auto pr = cuda::std::from_chars(buf, res.ptr, parsed);
