@@ -83,10 +83,10 @@ TEST_FUNC constexpr bool test_powers_of_ten()
 TEST_FUNC constexpr bool test()
 {
   bool ok = true;
-  ok = ok && test_powers_of_ten<cuda::std::int8_t>();
-  ok = ok && test_powers_of_ten<cuda::std::int16_t>();
-  ok = ok && test_powers_of_ten<cuda::std::int32_t>();
-  ok = ok && test_powers_of_ten<cuda::std::int64_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::int8_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::int16_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::int32_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::int64_t>();
 #if _CCCL_HAS_INT128()
   ok = ok && test_powers_of_ten<__int128_t>();
 #endif // _CCCL_HAS_INT128()
@@ -107,10 +107,10 @@ TEST_FUNC constexpr bool test()
 TEST_FUNC constexpr bool test_constexpr()
 {
   bool ok = true;
-  ok = ok && test_powers_of_ten<cuda::std::uint8_t>();
-  ok = ok && test_powers_of_ten<cuda::std::uint16_t>();
-  ok = ok && test_powers_of_ten<cuda::std::uint32_t>();
-  ok = ok && test_powers_of_ten<cuda::std::uint64_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::uint8_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::uint16_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::uint32_t>();
+  ok      = ok && test_powers_of_ten<cuda::std::uint64_t>();
 #if _CCCL_HAS_INT128()
   ok = ok && test_powers_of_ten<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
