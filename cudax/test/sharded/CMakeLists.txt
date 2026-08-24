@@ -13,6 +13,9 @@ set(
   graph_capture/must_not_capture.cu
   graph_capture/graph_owned_memory.cu
   graph_capture/contiguous_capture.cu
+  communicator/concepts.cu
+  communicator/verbs.cu
+  communicator/bridge.cu
 )
 
 cccl_get_cudatoolkit()
