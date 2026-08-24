@@ -29,12 +29,12 @@ function(cudax_add_header_test label definitions)
       # Places headers are compiled separately:
       "cuda/experimental/places.cuh"
       "cuda/experimental/__places/*"
-      # Sharded headers are compiled separately (they build on places):
+      # Sharded headers are compiled separately (they build on places); this
+      # also covers __sharded/sparse.cuh (opt-in vendor header, #errors
+      # without the cuSPARSE headers, compiled separately when
+      # cudax_ENABLE_CUSPARSE is set):
       "cuda/experimental/sharded.cuh"
       "cuda/experimental/__sharded/*"
-      # Opt-in vendor header: #errors without the cuSPARSE headers, compiled
-      # separately when cudax_ENABLE_CUSPARSE is set:
-      "cuda/experimental/sharded_sparse.cuh"
       # STF headers are compiled separately:
       "cuda/experimental/stf.cuh"
       "cuda/experimental/__stf/*"
@@ -86,6 +86,10 @@ function(cudax_add_header_test label definitions)
       GLOBS #
         "cuda/experimental/sharded.cuh"
         "cuda/experimental/__sharded/*.cuh"
+      EXCLUDES
+        # Opt-in vendor header: #errors without the cuSPARSE headers,
+        # compiled separately below when cudax_ENABLE_CUSPARSE is set:
+        "cuda/experimental/__sharded/sparse.cuh"
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
     target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
@@ -104,7 +108,7 @@ function(cudax_add_header_test label definitions)
         ${headertest_target}
         cudax/include
         GLOBS #
-          "cuda/experimental/sharded_sparse.cuh"
+          "cuda/experimental/__sharded/sparse.cuh"
         HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
       )
       target_link_libraries(

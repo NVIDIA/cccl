@@ -44,7 +44,7 @@ function(cudax_add_sharded_test target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
-# Tests of the opt-in cuSPARSE-backed sparse products (sharded_sparse.cuh);
+# Tests of the opt-in cuSPARSE-backed sparse products (__sharded/sparse.cuh);
 # these link against cuSPARSE and are gated like the STF mathlib tests.
 set(
   sharded_sparse_test_sources

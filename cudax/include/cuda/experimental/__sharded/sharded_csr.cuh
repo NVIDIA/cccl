@@ -26,7 +26,7 @@
  * consumes it without any library changes — that is the point: the container
  * carries the placement so that CLOSED libraries, which only understand
  * pointers and a stream, can be run placement-localized. The vendor calls
- * themselves live in the opt-in `<cuda/experimental/sharded_sparse.cuh>`
+ * themselves live in the opt-in `<cuda/experimental/__sharded/sparse.cuh>`
  * header; this container never includes vendor headers. Per-(shard, op)
  * library state — handles, descriptors, plans, workspaces — is owned by the
  * container through the type-erased `lib_state()` slots, so plans are built
@@ -356,7 +356,7 @@ public:
    * Under SM confinement a split finishes at max(shard time), so the split
    * must balance *time*, not nnz. Given the per-shard times measured with the
    * CURRENT boundaries (e.g. `spmv_shard_times` / `spmm_shard_times` from
-   * `<cuda/experimental/sharded_sparse.cuh>`), this models each current shard
+   * `<cuda/experimental/__sharded/sparse.cuh>`), this models each current shard
    * as a constant nnz-throughput region (rate_d = nnz_d / ms_d), predicts the
    * time of any row range as the rate-weighted nnz it overlaps, and places
    * new boundaries so every new shard's predicted time is total/num_shards.
@@ -581,7 +581,7 @@ public:
    * @brief Type-erased per-operation library state owned by the container.
    *
    * Vendor-call layers (e.g. the sparse products in
-   * `<cuda/experimental/sharded_sparse.cuh>`) stash their MATRIX-BOUND
+   * `<cuda/experimental/__sharded/sparse.cuh>`) stash their MATRIX-BOUND
    * library state — descriptors, plans, workspaces — here, keyed by
    * operation, so it is created once, reused across calls, and destroyed with
    * the matrix whose addresses it describes. PLACE-BOUND state (e.g. a

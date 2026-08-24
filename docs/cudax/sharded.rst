@@ -218,13 +218,13 @@ device-to-device into the shards' places, so nothing aliases the caller's
 arrays and they may be freed once it returns.
 
 The cuSPARSE-backed products live in the separate opt-in header
-``<cuda/experimental/sharded_sparse.cuh>``, which requires the cuSPARSE
+``<cuda/experimental/__sharded/sparse.cuh>``, which requires the cuSPARSE
 development headers (it ``#error``\ s otherwise, like
 ``<cuda/experimental/cufile.cuh>``) and linking against cuSPARSE:
 
 .. code-block:: cpp
 
-   #include <cuda/experimental/sharded_sparse.cuh>
+   #include <cuda/experimental/__sharded/sparse.cuh>
 
    auto group = place_group::by_locality_domains();
    sharded_csr<double> A(group, rows, cols, h_offsets, h_colinds, h_values);

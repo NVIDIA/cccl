@@ -44,8 +44,8 @@
  * `sharded_csr::make_row_partitioned`.
  */
 
-#ifndef __CUDAX_SHARDED_SPARSE_CUH
-#define __CUDAX_SHARDED_SPARSE_CUH
+#ifndef __CUDAX__SHARDED_SPARSE_CUH
+#define __CUDAX__SHARDED_SPARSE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -58,7 +58,7 @@
 #endif // no system header
 
 #if !__has_include(<cusparse.h>)
-#  error "<cuda/experimental/sharded_sparse.cuh> requires the cuSPARSE headers (cusparse.h) to be installed"
+#  error "<cuda/experimental/__sharded/sparse.cuh> requires the cuSPARSE headers (cusparse.h) to be installed"
 #endif // !__has_include(<cusparse.h>)
 
 #include <cuda/std/__exception/exception_macros.h>
@@ -764,4 +764,4 @@ template <typename _Tp>
 }
 } // namespace cuda::experimental::sharded
 
-#endif // __CUDAX_SHARDED_SPARSE_CUH
+#endif // __CUDAX__SHARDED_SPARSE_CUH

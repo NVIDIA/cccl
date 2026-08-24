@@ -23,7 +23,7 @@
  */
 
 #include <cuda/experimental/sharded.cuh>
-#include <cuda/experimental/sharded_sparse.cuh>
+#include <cuda/experimental/__sharded/sparse.cuh>
 
 #include <cmath>
 #include <cstdint>

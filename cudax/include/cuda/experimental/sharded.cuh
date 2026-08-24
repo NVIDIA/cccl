@@ -24,7 +24,7 @@
  * VMM backing of `sharded_array<T>::allocate_contiguous`).
  *
  * The vendor-backed sparse products over `sharded_csr` (cuSPARSE spmv/spmm)
- * live in the separate opt-in header `<cuda/experimental/sharded_sparse.cuh>`,
+ * live in the separate opt-in header `<cuda/experimental/__sharded/sparse.cuh>`,
  * which requires the cuSPARSE headers; the `sharded_csr` container itself is
  * vendor-free and included here.
  */
