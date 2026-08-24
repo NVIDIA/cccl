@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
@@ -60,8 +61,8 @@ __do_group_view_mapping(const _Unit& __unit, const _Group& __group) noexcept
     return _MappingResult{
       __group_mapping_result.group_count(),
       __group_mapping_result.group_rank(),
-      ::cuda::experimental::__count_query_group<unsigned, _Unit>(__group),
-      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__group),
+      ::cuda::experimental::__count_query_group<::cuda::std::uint32_t, _Unit>(__group),
+      ::cuda::experimental::__rank_query_group<::cuda::std::uint32_t, _Unit>(__group),
       __group_mapping_result.lane_mask()};
   }
 }
@@ -91,7 +92,6 @@ public:
   using level_type            = typename _Group::level_type;
   using hierarchy_type        = typename _Group::hierarchy_type;
   using __mapping_result_type = _MappingResult;
-  using synchronizer_type     = typename _Group::synchronizer_type;
 
   group_view() = delete;
 

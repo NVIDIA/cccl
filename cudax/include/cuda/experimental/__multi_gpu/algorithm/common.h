@@ -100,14 +100,15 @@ template <class _Tp, class _Resource, class _Env>
   }
 }
 
-template <class _InputRangeOfIters, class _RangeOfOutputIt, class _EnvRange>
+template <class _InputRangeOfIters, class _OutputRangeOfIters, class _EnvRange>
 struct __in_range_out_it_properties
 {
   using __input_iter_type _CCCL_NODEBUG =
     ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRangeOfIters>>;
   using __input_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__input_iter_type>;
-  using __output_type _CCCL_NODEBUG =
-    ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_RangeOfOutputIt>>;
+  using __output_iter_type _CCCL_NODEBUG =
+    ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_OutputRangeOfIters>>;
+  using __output_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__output_iter_type>;
 
   using __env_type _CCCL_NODEBUG = ::cuda::std::ranges::range_value_t<_EnvRange>;
 

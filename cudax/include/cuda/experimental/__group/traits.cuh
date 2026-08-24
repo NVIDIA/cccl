@@ -32,12 +32,6 @@
 
 namespace cuda::experimental
 {
-template <class _Synchronizer, class _Unit, class _ParentGroup, class _MappingResult>
-using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer>().make_instance(
-  ::cuda::std::declval<const _Unit&>(),
-  ::cuda::std::declval<const _ParentGroup&>(),
-  ::cuda::std::declval<const _MappingResult&>()));
-
 template <class _Tp, class = void>
 inline constexpr bool __is_spannable = false;
 template <class _Tp>

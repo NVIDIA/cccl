@@ -19,16 +19,13 @@ Starting from scratch:
 
     git clone https://github.com/NVIDIA/cccl.git
     cd cccl
-    mkdir build
-    cd build
-    cmake .. --preset=benchmark
+    cmake -S . -B build/benchmark --preset=benchmark
+    cd build/benchmark
 
-You clone the repository, create a build directory and configure the build with CMake.
-The preset `benchmark` takes care of everything.
+You clone the repository, and configure the build with CMake. The preset `benchmark` takes
+care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
-
-We use Ninja as CMake generator in this guide, but you can use any other generator you prefer.
 
 You can then proceed to build the benchmarks.
 
@@ -36,7 +33,7 @@ You can list the available cmake build targets with, if you intend to only build
 
 .. code-block:: bash
 
-    ninja -t targets | grep '\.bench\.'
+    cmake --build . --target help | grep '\.bench\.'
     cub.bench.adjacent_difference.subtract_left.base: phony
     cub.bench.copy.memcpy.base: phony
     ...
@@ -47,7 +44,7 @@ We also provide a target to build all benchmarks:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
+    cmake --build . --target cub.all.benches
 
 
 .. _cub-benchmarking-running:
@@ -186,7 +183,7 @@ For example, inside a build directory you can run:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
+    cmake --build . --target cub.all.benches
     benchmarks=$(ls bin | grep cub.bench); n=$(echo $benchmarks | wc -w); i=1; \
     for b in $benchmarks; do \
       echo "=== Running $b ($i/$n) ==="; \
@@ -209,7 +206,7 @@ Furthermore, the tuning scripts require some additional python dependencies, whi
 
 .. code-block:: bash
 
-    ninja clean
+    cmake --build . --target clean
     pip install --user fpzip pandas scipy
 
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
@@ -221,7 +218,7 @@ We can then run the full benchmark suite from the build directory with:
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -244,7 +241,7 @@ It's also possible to benchmark a subset of algorithms and workloads, by running
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -363,7 +360,7 @@ before viewing the report using `ncu-ui`:
 
 .. code-block:: bash
 
-    scp <remote hostname>:<cccl repo directory>/build/base.ncu-rep .
+    scp <remote hostname>:<cccl repo directory>/build/benchmark/base.ncu-rep .
     ncu-ui base.ncu-rep
 
 The version of `ncu-ui` needs to be at least as high as the version of `ncu` used to create the report.

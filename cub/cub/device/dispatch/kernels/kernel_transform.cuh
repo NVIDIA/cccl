@@ -362,7 +362,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
 //
 // For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/device-callable-apis.html#memcpy-async
+// https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#asynchronous-data-copies
 //
 // We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
