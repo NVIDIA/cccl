@@ -27,8 +27,13 @@
 #include <c2h/generators.h>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-constexpr int nwarps_in_group = 3;
-constexpr int warp_size       = 32;
+inline constexpr int nwarps_in_group     = 3;
+inline constexpr int warp_size           = 32;
+inline constexpr int multi_group_count   = 2;
+inline constexpr int multi_group_nwarps  = multi_group_count * nwarps_in_group + 1;
+inline constexpr int multi_group_size    = multi_group_nwarps * warp_size;
+inline constexpr int multi_group_repeats = 16;
+inline constexpr int threads_in_group    = nwarps_in_group * warp_size;
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -81,6 +86,75 @@ struct ReduceKernel
       {
         *d_out = result.value();
       }
+    }
+  }
+};
+
+template <bool Broadcasted, class Group, class Block>
+__device__ void run_multi_group_reductions(const Group& group, const Block& block, int group_rank, int* d_out)
+{
+  const int thread_rank = cuda::gpu_thread.rank_as<int>(block);
+  constexpr int stride  = Broadcasted ? multi_group_size : multi_group_count;
+
+  for (int repeat = 0; repeat < multi_group_repeats; ++repeat)
+  {
+    int thread_data[1] = {repeat + group_rank + 1};
+    if constexpr (Broadcasted)
+    {
+      const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, cuda::std::plus<>{});
+      d_out[repeat * stride + thread_rank] = result;
+    }
+    else
+    {
+      const auto result = cudax::coop::reduce(group, thread_data, cuda::std::plus<>{});
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
+      if (result.has_value())
+      {
+        d_out[repeat * stride + group_rank] = *result;
+      }
+    }
+  }
+}
+
+template <bool Broadcasted, bool Nested, bool Viewed>
+struct MultiGroupReduceKernel
+{
+  static_assert(!Viewed || Nested, "a group view requires a nested group");
+
+  template <class Config>
+  __device__ void operator()(Config config, int* d_out)
+  {
+    cudax::this_block block{config};
+
+    using Barriers = cuda::barrier<cuda::thread_scope_block>[multi_group_count];
+    __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
+    auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+    cudax::group parent{
+      cuda::warp, block, cudax::group_by<nwarps_in_group, false>{}, cudax::barrier_synchronizer{barriers}};
+
+    if (!cuda::gpu_thread.is_part_of(parent))
+    {
+      return;
+    }
+
+    const int group_rank = parent.template rank_as<int>(block);
+    if constexpr (Nested)
+    {
+      cudax::virtual_group group{cuda::warp, parent, cudax::identity_mapping{}};
+      if constexpr (Viewed)
+      {
+        cudax::group_view view{group};
+        run_multi_group_reductions<Broadcasted>(view, block, group_rank, d_out);
+      }
+      else
+      {
+        run_multi_group_reductions<Broadcasted>(group, block, group_rank, d_out);
+      }
+    }
+    else
+    {
+      run_multi_group_reductions<Broadcasted>(parent, block, group_rank, d_out);
     }
   }
 };
@@ -156,8 +230,57 @@ void run_reduce_kernel(
   stream.sync();
 }
 
-constexpr int max_size  = 4;
-constexpr int num_seeds = 10;
+template <bool Broadcasted, bool Nested, bool DynamicExtents, bool Viewed = false>
+void run_multi_group_reduce_kernel(cuda::stream_ref stream)
+{
+  constexpr int stride      = Broadcasted ? multi_group_size : multi_group_count;
+  constexpr int output_size = multi_group_repeats * stride;
+  c2h::device_vector<int> d_out(output_size, -1);
+  const auto out_ptr = thrust::raw_pointer_cast(d_out.data());
+
+  if constexpr (DynamicExtents)
+  {
+    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(multi_group_size));
+    cuda::launch(stream, config, MultiGroupReduceKernel<Broadcasted, Nested, Viewed>{}, out_ptr);
+  }
+  else
+  {
+    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<multi_group_size>());
+    cuda::launch(stream, config, MultiGroupReduceKernel<Broadcasted, Nested, Viewed>{}, out_ptr);
+  }
+  stream.sync();
+
+  const c2h::host_vector<int> h_out = d_out;
+  for (int repeat = 0; repeat < multi_group_repeats; ++repeat)
+  {
+    for (int group_rank = 0; group_rank < multi_group_count; ++group_rank)
+    {
+      const int expected = threads_in_group * (repeat + group_rank + 1);
+      if constexpr (Broadcasted)
+      {
+        for (int rank = 0; rank < threads_in_group; ++rank)
+        {
+          REQUIRE(h_out[repeat * stride + group_rank * threads_in_group + rank] == expected);
+        }
+      }
+      else
+      {
+        REQUIRE(h_out[repeat * stride + group_rank] == expected);
+      }
+    }
+
+    if constexpr (Broadcasted)
+    {
+      for (int rank = multi_group_count * threads_in_group; rank < multi_group_size; ++rank)
+      {
+        REQUIRE(h_out[repeat * stride + rank] == -1);
+      }
+    }
+  }
+}
+
+inline constexpr int max_size  = 4;
+inline constexpr int num_seeds = 10;
 
 /***********************************************************************************************************************
  * Test cases
@@ -231,4 +354,28 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
     verify_results(c2h::host_vector<value_t>(nwarps_in_group * warp_size, reference_result),
                    c2h::host_vector<value_t>(d_out));
   }
+}
+
+C2H_TEST("reduce/warps_within_block isolates scratch with static extents", "[reduce][warps_within_block]")
+{
+  cuda::stream stream{cuda::devices[0]};
+
+  run_multi_group_reduce_kernel<false, false, false>(stream);
+  run_multi_group_reduce_kernel<true, false, false>(stream);
+  run_multi_group_reduce_kernel<false, true, false>(stream);
+  run_multi_group_reduce_kernel<true, true, false>(stream);
+  run_multi_group_reduce_kernel<false, true, false, true>(stream);
+  run_multi_group_reduce_kernel<true, true, false, true>(stream);
+}
+
+C2H_TEST("reduce/warps_within_block isolates scratch with dynamic extents", "[reduce][warps_within_block]")
+{
+  cuda::stream stream{cuda::devices[0]};
+
+  run_multi_group_reduce_kernel<false, false, true>(stream);
+  run_multi_group_reduce_kernel<true, false, true>(stream);
+  run_multi_group_reduce_kernel<false, true, true>(stream);
+  run_multi_group_reduce_kernel<true, true, true>(stream);
+  run_multi_group_reduce_kernel<false, true, true, true>(stream);
+  run_multi_group_reduce_kernel<true, true, true, true>(stream);
 }

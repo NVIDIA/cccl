@@ -23,6 +23,7 @@
 
 #include <cub/block/block_reduce.cuh>
 #include <cub/thread/thread_reduce.cuh>
+#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -37,6 +38,7 @@
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__coop/shuffle_down.cuh>
+#include <cuda/experimental/__group/queries.cuh>
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/group.cuh>
 
@@ -129,15 +131,20 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   const auto __result = _BlockReduce{__scratch.__block_reduce_}.Reduce(__thread_data, __red_fn);
   if constexpr (_Broadcasted)
   {
+    // Wait until all threads are done using the aliased CUB storage.
+    __group.sync_aligned();
     if (gpu_thread.is_root_rank(__group))
     {
       __scratch.__bcast_ = __result;
     }
     __group.sync_aligned();
-    return __scratch.__bcast_;
+    const auto __broadcast_result = __scratch.__bcast_;
+    __group.sync_aligned();
+    return __broadcast_result;
   }
   else
   {
+    __group.sync_aligned();
     return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
@@ -230,6 +237,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
     }
     else
     {
+      __group.sync_aligned();
       return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
     }
   }
@@ -299,6 +307,7 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   }
   else
   {
+    __group.sync_aligned();
     return __result;
   }
 }
@@ -343,6 +352,8 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
   ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
+  using _MappingResult = typename _Group::__mapping_result_type;
+
   // Runtime-known references can't be used in constant expressions, so we create a view that can be used in a constant
   // expression.
   const group_view __group_view{__group};
@@ -350,28 +361,45 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   constexpr auto __nwarps_in_group = warp.static_count(__group_view);
   static_assert(__nwarps_in_group != ::cuda::std::dynamic_extent,
                 "cuda::coop::reduce requires the group to have statically known size");
+  static_assert(_MappingResult::is_always_contiguous(),
+                "cuda::coop::reduce requires the group mapping to be contiguous");
+
+  using _BlockExts = decltype(gpu_thread.extents(block, __group.hierarchy()));
+
+  // CUDA thread blocks contain at most 1024 threads (32 warps). Prefer a smaller
+  // bound when all block extents are known at compile time.
+  constexpr auto __nthreads_in_block =
+    (_BlockExts::rank_dynamic() == 0)
+      ? _BlockExts::static_extent(0) * _BlockExts::static_extent(1) * _BlockExts::static_extent(2)
+      : ::cuda::std::size_t{1024};
+  constexpr auto __nwarps_in_block = ::cuda::ceil_div(__nthreads_in_block, ::cuda::std::size_t{32});
 
   using _WarpReduce = ::cub::WarpReduce<_Tp>;
-  struct _AdditionalScratch
+  struct _Scratch
   {
-    _Tp __partials_[__nwarps_in_group];
-    _Tp __bcast_;
-  };
-
-  union _Scratch
-  {
-    typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_group];
-    _AdditionalScratch __additional_;
+    typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_block];
+    alignas(_Tp)::cub::Uninitialized<_Tp[__nwarps_in_block]> __values_;
   };
   __shared__ _Scratch __scratch;
 
-  const auto __partial = _WarpReduce{__scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
-  __group.sync_aligned();
-
   this_warp __warp{__group.hierarchy()};
+  const auto __warp_rank_in_block = __warp.rank(block);
+  const auto __warp_rank_in_group = warp.rank(__group);
+  // This relies on contiguous mappings assigning unit ranks in ascending
+  // physical-warp order, so every warp derives the same first physical rank.
+  const auto __first_warp_rank = __warp_rank_in_block - __warp_rank_in_group;
+  _CCCL_ASSERT(__warp_rank_in_block < __nwarps_in_block, "invalid physical warp rank");
+  _CCCL_ASSERT(__first_warp_rank + __nwarps_in_group <= __nwarps_in_block, "invalid physical warp range");
+
+  // Physical-warp slots remain unique when independent mappings reuse group
+  // ranks or overlap in time.
+  auto& __values = __scratch.__values_.Alias();
+
+  const auto __partial = _WarpReduce{__scratch.__warp_reduce_[__warp_rank_in_block]}.Reduce(__thread_data, __red_fn);
+
   if (gpu_thread.is_root_rank(__warp))
   {
-    __scratch.__additional_.__partials_[warp.rank(__group)] = __partial;
+    __values[__warp_rank_in_block] = __partial;
   }
   __group.sync_aligned();
 
@@ -379,22 +407,25 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   if (warp.is_root_rank(__group))
   {
     const auto __value = (gpu_thread.rank(__warp) < __nwarps_in_group)
-                         ? __scratch.__additional_.__partials_[gpu_thread.rank(__warp)]
+                         ? __values[__first_warp_rank + gpu_thread.rank(__warp)]
                          : ::cuda::identity_element<_RedFn, _Tp>();
-    __result           = _WarpReduce{__scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
+    __result           = _WarpReduce{__scratch.__warp_reduce_[__first_warp_rank]}.Reduce(__value, __red_fn);
   }
 
   if constexpr (_Broadcasted)
   {
     if (gpu_thread.is_root_rank(__group))
     {
-      __scratch.__additional_.__bcast_ = __result;
+      __values[__first_warp_rank] = __result;
     }
     __group.sync_aligned();
-    return __scratch.__additional_.__bcast_;
+    const auto __broadcast_result = __values[__first_warp_rank];
+    __group.sync_aligned();
+    return __broadcast_result;
   }
   else
   {
+    __group.sync_aligned();
     return (gpu_thread.is_root_rank(__group)) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
