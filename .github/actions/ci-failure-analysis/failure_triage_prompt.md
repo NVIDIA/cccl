@@ -44,7 +44,10 @@ Return only one JSON object matching the supplied schema, with no Markdown or co
 
 For each group:
 
-- `title`: succinct, specific failure mechanism; never a generic workflow or job name.
+- `title`: summarize the failure using the most stable, distinguishing terms supported
+  by the evidence. Prefer the affected component or operation followed by the observed
+  failure. Include platform or toolchain details only when they distinguish the group.
+  Avoid job names, remediation, and unverified causes.
 - `evidence`: up to three decisive log lines, copied verbatim except for ANSI escapes.
   Put the single most decisive failure line first, followed only by essential context.
 - `explanation`: one or two sentences explaining the mechanism; if uncertain, say what
