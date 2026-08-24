@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CCCL_ARCH_H
-#define __CCCL_ARCH_H
+#ifndef __CCCL_HOST_ARCH_H
+#define __CCCL_HOST_ARCH_H
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/preprocessor.h>
@@ -24,22 +24,37 @@
 // Determine the host architecture
 
 // Arm 64-bit
+
 #if (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) /*emulation*/)
-#  define _CCCL_HOST_ARCH_ARM64_() 1
+#  define _CCCL_HOST_ARCH_ARM64() 1
 #else
-#  define _CCCL_HOST_ARCH_ARM64_() 0
+#  define _CCCL_HOST_ARCH_ARM64() 0
 #endif
+
+#if _CCCL_HOST_ARCH_ARM64() && __ARM_FEATURE_SVE2_BITPERM == 1
+#  define _CCCL_HOST_ARCH_ARM64_FEAT_SVE2_BITPERM() 1
+#else // ^^^ has SVE2 bit permutations ^^^ / vvv no SVE2 bit permutations vvv
+#  define _CCCL_HOST_ARCH_ARM64_FEAT_SVE2_BITPERM() 0
+#endif // ^^^ no SVE2 bit permutations ^^^
 
 // X86 64-bit
 
 // _M_X64 is defined even if we are compiling in Arm64 emulation mode
 #if (defined(_M_X64) && !defined(_M_ARM64EC)) || defined(__amd64__) || defined(__x86_64__)
-#  define _CCCL_HOST_ARCH_X86_64_() 1
+#  define _CCCL_HOST_ARCH_X86_64() 1
 #else
-#  define _CCCL_HOST_ARCH_X86_64_() 0
+#  define _CCCL_HOST_ARCH_X86_64() 0
 #endif
 
-#define _CCCL_HOST_ARCH(...) _CCCL_HOST_ARCH_##__VA_ARGS__##_()
+// gnu-like compilers define __BMI2__, msvc enables BMI2 when __AVX2__ is defined.
+#if _CCCL_HOST_ARCH_X86_64() && (defined(__BMI2__) || (defined(__AVX2__) && _CCCL_COMPILER(MSVC)))
+#  define _CCCL_HOST_ARCH_X86_64_FEAT_BMI2() 1
+#else // ^^^ has BMI2 ^^^ / vvv no BMI2 vvv
+#  define _CCCL_HOST_ARCH_X86_64_FEAT_BMI2() 0
+#endif // ^^^ no BMI2 ^^^
+
+#define _CCCL_HOST_ARCH(_ARCH)             _CCCL_HOST_ARCH_##_ARCH()
+#define _CCCL_HOST_ARCH_FEAT(_ARCH, _FEAT) _CCCL_HOST_ARCH_##_ARCH##_FEAT_##_FEAT()
 
 //! @def CCCL_HOST_ARCH(ARCH) /* implementation defined */
 //!
@@ -81,7 +96,7 @@
 #ifdef _CCCL_DOXYGEN_INVOKED
 #  define CCCL_HOST_ARCH(ARCH) /* implementation defined */
 #else
-#  define CCCL_HOST_ARCH(__arch__) _CCCL_HOST_ARCH_##__arch__##_()
+#  define CCCL_HOST_ARCH(_ARCH) _CCCL_HOST_ARCH_##_ARCH()
 #endif
 
 // Note: the public API is single-arg to constrain the API and allow for future expansion. The
@@ -125,4 +140,4 @@ _CCCL_WARNING("failed to determine the endianness of the host architecture, defa
 
 #define _CCCL_ENDIAN(_NAME) (_CCCL_ENDIAN_NATIVE() == _CCCL_ENDIAN_##_NAME())
 
-#endif // __CCCL_ARCH_H
+#endif // __CCCL_HOST_ARCH_H
