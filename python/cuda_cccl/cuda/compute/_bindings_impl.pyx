@@ -77,6 +77,7 @@ cdef extern from "cccl/c/types.h":
         FLOAT64 "CCCL_FLOAT64"
         STORAGE "CCCL_STORAGE"
         BOOLEAN "CCCL_BOOLEAN"
+        BFLOAT16 "CCCL_BFLOAT16"
 
     cpdef enum cccl_op_kind_t:
        STATELESS "CCCL_STATELESS"

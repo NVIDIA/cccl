@@ -512,6 +512,34 @@ C2H_TEST("Reduce works with floating point types", "[reduce]", floating_point_ty
   REQUIRE_APPROX_EQ(std::vector<T>{output}, std::vector<T>{expected});
 }
 
+#if _CCCL_HAS_NVBF16()
+struct Reduce_BFloat16_Fixture_Tag;
+C2H_TEST("Reduce works with bfloat16", "[reduce]")
+{
+  using T = __nv_bfloat16;
+
+  // Keep the total below 256: bfloat16 has only 8 significand bits, so larger
+  // running sums round differently between the host's sequential accumulation
+  // and the device's tree reduction order.
+  const std::size_t num_items = GENERATE(10, 42, 200);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Reduce_BFloat16_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(float{output} == float{expected});
+}
+#endif // _CCCL_HAS_NVBF16()
+
 struct Reduce_CppSourceWithEx_Fixture_Tag;
 C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
 {
