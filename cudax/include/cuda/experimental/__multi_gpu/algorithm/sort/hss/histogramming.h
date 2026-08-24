@@ -31,12 +31,12 @@
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__algorithm/sample.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tie.h>
@@ -78,11 +78,13 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[out] __samples The span the drawn sample keys are written into.
 //! @param[out] __samples_size Receives the number of keys actually drawn.
+//! @param[out] __index_scratch Scratch for one interval's sorted sample indices; must be at
+//!                             least as large as `__samples`.
 //
-// TODO(jfaibussowit):
-//
-// Parallelize with multiple threads (but not too many!). __brackets is O(p-1), so in
-// practice at the absolute max a few thousand if you are running on the worlds
+// A single thread suffices here: the local keys are sorted, so drawing k samples from an
+// interval is k index draws (Floyd's algorithm) rather than a per-key sweep, and the total work
+// is O(total samples drawn) — small by construction of the sampling probability. __brackets is
+// O(p-1), so in practice at the absolute max a few thousand if you are running on the worlds
 // largest supercomputers.
 template <class _Config, class _Tp, class _BinaryOp>
 _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
@@ -94,7 +96,8 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   const ::cuda::std::span<const _Splitter<_Tp>> __I_j,
   _BinaryOp __cmp,
   const ::cuda::std::span<_Tp> __samples,
-  ::cuda::std::size_t* const __samples_size)
+  ::cuda::std::size_t* const __samples_size,
+  const ::cuda::std::span<::cuda::std::uint64_t> __index_scratch)
 {
   if (cuda::gpu_thread.rank(cuda::grid, __config) != 0)
   {
@@ -117,13 +120,66 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
 
     _CCCL_ASSERT(__first <= __last, "Inputs are not sorted for binary search");
 
-    const auto __num_samples       = ::cuda::std::ceil(static_cast<double>(__last - __first) * __prob);
+    const auto __len               = static_cast<::cuda::std::uint64_t>(__last - __first);
+    const auto __num_samples       = ::cuda::std::ceil(static_cast<double>(__len) * __prob);
     const auto __remaining_samples = __samples.end() - __samples_it;
     const auto __n                 = ::cuda::std::min(
-      static_cast<::cuda::std::uint64_t>(__num_samples), static_cast<::cuda::std::uint64_t>(__remaining_samples));
+      ::cuda::std::min(
+        static_cast<::cuda::std::uint64_t>(__num_samples), static_cast<::cuda::std::uint64_t>(__remaining_samples)),
+      __len);
 
-    __samples_it = ::cuda::std::sample(__first, __last, __samples_it, __n, __gen);
-    __begin      = __last;
+    _CCCL_ASSERT(__n <= __index_scratch.size(), "Index scratch is smaller than the sample slot");
+
+    if (__n == __len)
+    {
+      // Sampling the whole interval: every key is selected, in order
+      for (::cuda::std::uint64_t __i = 0; __i < __n; ++__i)
+      {
+        *__samples_it++ = __first[__i];
+      }
+    }
+    else if (__n != 0)
+    {
+      // The interval is a sorted sub-range of the (locally sorted) keys, so drawing __n keys
+      // uniformly without replacement in population order reduces to drawing __n distinct
+      // indices, kept sorted, and reading the keys at those indices: O(samples) draws rather
+      // than one draw per interval element.
+      //
+      // Floyd's sampling algorithm: iteration __j inserts either a fresh draw __t <= __j, or
+      // __j itself when __t was already drawn. Every index stored so far is < __j, so __j
+      // always appends, and a fresh __t is placed by binary search + shift (the index count is
+      // small, so the quadratic shift is negligible). The resulting index set is uniform over
+      // all __n-subsets of the interval.
+      auto* const __idx             = __index_scratch.data();
+      ::cuda::std::uint64_t __count = 0;
+
+      for (::cuda::std::uint64_t __j = __len - __n; __j < __len; ++__j)
+      {
+        const auto __t = ::cuda::std::uniform_int_distribution<::cuda::std::uint64_t>{0, __j}(__gen);
+        auto* __pos    = ::cuda::std::lower_bound(__idx, __idx + __count, __t);
+
+        if (__pos != __idx + __count && *__pos == __t)
+        {
+          __idx[__count] = __j;
+        }
+        else
+        {
+          for (auto* __q = __idx + __count; __q != __pos; --__q)
+          {
+            *__q = *(__q - 1);
+          }
+          *__pos = __t;
+        }
+        ++__count;
+      }
+
+      for (::cuda::std::uint64_t __i = 0; __i < __n; ++__i)
+      {
+        *__samples_it++ = __first[__idx[__i]];
+      }
+    }
+
+    __begin = __last;
   }
 
   *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
@@ -158,12 +214,18 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
   for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
        (void) ++__idx, (void) ++__comm_it, (void) ++__input_it, (void) ++__num_items_it)
   {
-    const auto __rank   = __comm_it->rank();
-    auto& __all_samples = __scratch[__idx].__all_samples;
+    const auto __rank      = __comm_it->rank();
+    auto& __all_samples    = __scratch[__idx].__all_samples;
+    auto& __sample_indices = __scratch[__idx].__sample_indices;
+    const auto __slot_size = __cap_displs[__rank + 1] - __cap_displs[__rank];
 
     // Sized to hold every rank's slot at full capacity. The slots are ragged once the kernels
     // run, so the gather that follows sends only the true counts.
     __all_samples.resize_discard(__all_samples.stream(), __cap_displs.back(), ::cuda::no_init);
+
+    // The kernel's index scratch only ever holds one interval's draws, so this rank's own slot
+    // capacity bounds it.
+    __sample_indices.resize_discard(__sample_indices.stream(), __slot_size, ::cuda::no_init);
 
     // 0x129381294235245ULL chosen randomly, by random dice roll
     const auto __seed =
@@ -186,9 +248,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
       __cmp,
       // Each rank samples directly into its own slot of `__all_samples` so that we can
       // allgather them in place later
-      __all_samples.subspan(__cap_displs[__rank], __cap_displs[__rank + 1] - __cap_displs[__rank]),
+      __all_samples.subspan(__cap_displs[__rank], __slot_size),
       // Likewise, write to our rank slot for an inplace allgather
-      __scratch[__idx].__samples_size.data() + __rank);
+      __scratch[__idx].__samples_size.data() + __rank,
+      ::cuda::std::span<::cuda::std::uint64_t>{__sample_indices.data(), __sample_indices.size()});
   }
 }
 
@@ -275,7 +338,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
       /*__all_samples=*/
       __resizable_buffer_type<_Tp>{__stream, __resource, __buffer_env},
       /*__samples_size=*/
-      __resizable_buffer_type<::cuda::std::size_t>{__stream, __resource, __comm_size, ::cuda::no_init, __buffer_env}});
+      __resizable_buffer_type<::cuda::std::size_t>{__stream, __resource, __comm_size, ::cuda::no_init, __buffer_env},
+      /*__sample_indices=*/
+      __resizable_buffer_type<::cuda::std::uint64_t>{__stream, __resource, __buffer_env}});
 
     __local_hist_results.emplace_back(__per_comm_histogramming_result_type{
       /*__splitters=*/

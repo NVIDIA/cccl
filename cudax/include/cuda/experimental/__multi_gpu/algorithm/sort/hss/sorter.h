@@ -79,6 +79,9 @@ struct _PerCommSamplingScratch
   // __samples_size[rank] gives the filled length of that rank's slot. Written on the device by
   // the sampling kernel, then all-gathered.
   _Buffer<::cuda::std::size_t> __samples_size;
+  // Scratch for the sampling kernel: the sorted indices drawn within one splitter interval.
+  // Sized to this rank's own sample slot, which bounds any single interval's sample count.
+  _Buffer<::cuda::std::uint64_t> __sample_indices;
 };
 
 template <template <class> class _Buffer>
