@@ -26,6 +26,7 @@ from .._serialization import (
     VALUE,
     Serializable,
 )
+from .._utils import get_init_kind
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
@@ -38,7 +39,6 @@ from ..typing import (
     Operator,
     _Struct,
 )
-from ._scan import get_init_kind
 
 
 class _Reduce(Serializable):
@@ -313,8 +313,9 @@ def reduce_into(
             the initial value ``h_init`` (or of the input items when ``h_init``
             is None).
         h_init: Initial value for the reduction, or None for no initial value.
-            Without an initial value, ``d_out`` is left unmodified when
-            ``num_items`` is zero.
+            With None, the result is the reduction of just the input elements
+            (equivalent to having the first element of ``d_in`` be the initial
+            value). If ``num_items`` is also zero, ``d_out`` is unmodified.
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
