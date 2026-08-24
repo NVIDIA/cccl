@@ -74,7 +74,7 @@ struct [[maybe_unused]] __ensure_current_context
 
 #    if _CCCL_CTK_AT_LEAST(12, 5)
   _CCCL_HOST_API explicit __ensure_current_context(__logical_device_ref __device)
-      : __ensure_current_context{::cuda::__driver::__ctxFromGreenCtx(__device.green_context())}
+      : __ensure_current_context{__device.context()}
   {}
 #    endif // _CCCL_CTK_AT_LEAST(12, 5)
 
