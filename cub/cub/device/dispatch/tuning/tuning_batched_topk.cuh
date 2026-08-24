@@ -311,6 +311,536 @@ struct cluster_topk_policy
 
 static_assert(is_valid_cluster_policy(make_cluster_policy()));
 
+// Tuned cluster sub-policies for SM 100 pairs (key + index) requests under a deterministic result-set requirement,
+// measured on B200 (EVO search over `cub.bench.segmented_topk.variable.indexed.cluster` with F32 keys and I32
+// indices, deterministic gpu-to-gpu + prefer-larger-index). Buckets are keyed by the request's statically-known
+// upper bounds on segment size and k; bounds outside the measured grid fall back to the default policy. Grid
+// diagonal cells (k == max segment size) are intentionally not encoded: the benchmark there only exercises the
+// select-all copy fast path (every segment has exactly k elements), leaving the selection-path knobs unmeasured.
+// Such requests keep the default policy -- the selection-tuned buckets below measurably regress the copy fast path
+// (verified on B200), so they must not inherit them. The launch-geometry caps stay at the default 0 (= unrestricted);
+// they are deliberately not auto-tuned.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
+  -> cluster_topk_policy
+{
+  // A k bound that reaches the segment-size bound admits copy-fast-path-dominated workloads (k >= segment size
+  // selects the whole segment), for which the selection-tuned buckets below are pessimal.
+  if (max_k >= static_max_segment_size)
+  {
+    return make_cluster_policy();
+  }
+
+  if (static_max_segment_size <= 1024)
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/352,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/27 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/13,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/6,
+        /*tie_break_items_per_thread=*/8,
+        /*copy_items_per_thread=*/9,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 2 * 1024) // 2048
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/352,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/30 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/14,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/12,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/14,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/352,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/31 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/6,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/4,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/4,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 4 * 1024) // 4096
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/416,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/2,
+        /*chunk_bytes=*/15 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/9,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/3,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/14,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/2,
+        /*chunk_bytes=*/16 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/7,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/2,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/24,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/27 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/10,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/9,
+        /*histogram_items_per_thread=*/2,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/12,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 8 * 1024) // 8192
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/28 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/3,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/9,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/14,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/30 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/9,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/9,
+        /*histogram_items_per_thread=*/9,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/4,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/12 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/4,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/4,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/13,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 16 * 1024) // 16384
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/352,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/11 * 1024,
+        /*load_align_bytes=*/64,
+        /*pipeline_stages=*/6,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/13,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/4,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/352,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/4,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/5,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/20,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/256,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/9 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/11,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/20,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 32 * 1024) // 32768
+  {
+    // No dedicated 32Ki/512 bucket: the tuned candidates for that shape regress 7-9% at high
+    // segment counts, so k <= 512 shares the 32Ki/1024 config.
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/256,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/8 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/5,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/4,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/17,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/384,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/9 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/11,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/3,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/16,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 64 * 1024) // 65536
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/256,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/9,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/5,
+        /*tie_break_items_per_thread=*/5,
+        /*copy_items_per_thread=*/8,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/288,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/11 * 1024,
+        /*load_align_bytes=*/64,
+        /*pipeline_stages=*/12,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/7,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/3,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/320,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/3,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/16,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/8,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 128 * 1024) // 131072
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/320,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/10,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/6,
+        /*copy_items_per_thread=*/4,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/384,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/4,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/5,
+        /*tie_break_items_per_thread=*/2,
+        /*copy_items_per_thread=*/5,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/10 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/13,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/9,
+        /*histogram_items_per_thread=*/5,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/15,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 256 * 1024) // 262144
+  {
+    if (max_k <= 512)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/416,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/13 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/14,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/8,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 1024)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/256,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/13 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/7,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/9,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/6,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/384,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/8 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/9,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/3,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 512 * 1024) // 524288
+  {
+    if (max_k <= 1024)
+    {
+      return make_cluster_policy();
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/512,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/16 * 1024,
+        /*load_align_bytes=*/64,
+        /*pipeline_stages=*/15,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/6,
+        /*copy_items_per_thread=*/22,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  if (static_max_segment_size <= 1024 * 1024) // 1048576
+  {
+    if (max_k <= 1024)
+    {
+      return make_cluster_policy();
+    }
+    if (max_k <= 2048)
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/608,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/18 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/11,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/5,
+        /*tie_break_items_per_thread=*/4,
+        /*copy_items_per_thread=*/13,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    return make_cluster_policy();
+  }
+  // Sizes above 1Mi keep the default policy.
+  return make_cluster_policy();
+}
+
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(524288, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1048576, 2048)));
+
 // -----------------------------------------------------------------------------
 // Backend selection
 // -----------------------------------------------------------------------------
