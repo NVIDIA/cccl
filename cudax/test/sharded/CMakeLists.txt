@@ -3,6 +3,7 @@ set(
   include_only.cu
   containers/sharded_array.cu
   containers/contiguous.cu
+  containers/stream_ordered_lifecycle.cu
   containers/fork_join.cu
   algorithms/elementwise.cu
   algorithms/reduce_scan.cu
@@ -13,6 +14,7 @@ set(
   graph_capture/must_not_capture.cu
   graph_capture/graph_owned_memory.cu
   graph_capture/contiguous_capture.cu
+  sparse/sharded_csr.cu
 )
 
 cccl_get_cudatoolkit()
@@ -42,6 +44,22 @@ function(cudax_add_sharded_test target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+# Tests of the opt-in cuSPARSE-backed sparse products (__sharded/sparse.cuh);
+# these link against cuSPARSE and are gated like the STF mathlib tests.
+set(
+  sharded_sparse_test_sources
+  sparse/spmv_spmm.cu
+  sparse/rebalance.cu
+  sparse/handle_lifecycle.cu
+)
+
 foreach (source IN LISTS sharded_test_sources)
   cudax_add_sharded_test(test_target "${source}")
 endforeach()
+
+if (cudax_ENABLE_CUSPARSE)
+  foreach (source IN LISTS sharded_sparse_test_sources)
+    cudax_add_sharded_test(test_target "${source}")
+    target_link_libraries(${test_target} PRIVATE CUDA::cusparse)
+  endforeach()
+endif()

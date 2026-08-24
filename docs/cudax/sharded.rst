@@ -200,3 +200,74 @@ pointer can be released outside the graph with ``cudaFreeAsync``, which
 re-arms the launch. The shipped contract stays simple — allocate outside
 capture; capture computation only — and the test suite pins both the
 recorded-allocation semantics and the failure shape of violations.
+
+sharded_csr and the sparse products: a closed library as the engine
+-------------------------------------------------------------------
+
+``sharded_csr<T>`` is a row-partitioned CSR sparse matrix: one shard per
+place of a ``place_group``, each shard a self-contained CSR operator for a
+contiguous row range (nnz slice plus offsets rebased to zero), stored in its
+place's memory. Because every shard is a complete CSR matrix, a CLOSED
+library that only understands pointers and a stream can consume it with one
+ordinary call per shard — the container carries the placement, the library
+never changes. The container is vendor-free and ships in the umbrella header.
+``sharded_csr::from_device`` ingests a CSR whose arrays already live on the
+device; per the ``from_*`` naming rule it builds owned storage — offsets are
+rebased into container-owned shards and colinds/values are copied
+device-to-device into the shards' places, so nothing aliases the caller's
+arrays and they may be freed once it returns.
+
+The cuSPARSE-backed products live in the separate opt-in header
+``<cuda/experimental/__sharded/sparse.cuh>``, which requires the cuSPARSE
+development headers (it ``#error``\ s otherwise, like
+``<cuda/experimental/cufile.cuh>``) and linking against cuSPARSE:
+
+.. code-block:: cpp
+
+   #include <cuda/experimental/__sharded/sparse.cuh>
+
+   auto group = place_group::by_locality_domains();
+   sharded_csr<double> A(group, rows, cols, h_offsets, h_colinds, h_values);
+   auto y = A.make_row_partitioned();          // disjoint row blocks, no combine
+   spmv(group, A, d_x, y, alpha, beta);        // one confined call per shard
+   auto C = A.make_row_partitioned(n_cols, /* contiguous */ true);
+   spmm(group, A, d_B, C, n_cols);             // C readable as ONE array
+
+Each call runs one cuSPARSE call per shard on the shard's place stream
+(``cusparseSetStream``). Per-(shard, operation) library state — handle,
+descriptors, workspace, preprocessed plan — is created lazily on the first
+call into the container's type-erased ``lib_state()`` slots, built once
+against the shard's fixed addresses, and reused for the matrix's lifetime;
+subsequent calls only rebind the dense pointers when they change. The row
+partition makes the output row blocks disjoint, so there is never a combine
+step, and outputs compose with ``allocate_contiguous`` backings unchanged.
+
+Dense operands (``x``, ``B``) are plain device pointers readable from every
+place. Which per-place COPIES of a re-read operand should exist — and when a
+write makes them stale — is a coherence question that belongs to the binding
+tier: an STF ``logical_data`` can materialize and cache a per-place instance
+and hand its pointer to these calls; the container deliberately does not
+absorb that role.
+
+Measured rebalance
+~~~~~~~~~~~~~~~~~~
+
+An nnz-balanced row split (the default) is not a TIME-balanced split: with
+each shard confined to its place's SMs, a call finishes at max(shard time),
+and skewed row-length distributions make the default split pay the full
+skew. ``spmv_shard_times`` / ``spmm_shard_times`` measure each shard solo
+through the exact call path of the products, and
+``sharded_csr::time_balanced_boundaries`` converts one measurement into a
+time-equalizing split via a piecewise-rate model:
+
+.. code-block:: cpp
+
+   auto times = spmm_shard_times(group, A, d_B, C, n_cols);
+   auto bounds = sharded_csr<double>::time_balanced_boundaries(
+     rows, h_offsets, A.interior_boundaries(), times);
+   sharded_csr<double> A2(group, rows, cols, h_offsets, h_colinds, h_values, bounds);
+
+One calibration round is amortized over every subsequent call on the rebuilt
+matrix — the natural fit for iterative consumers that reuse one operator
+across many products. Rates shift as rows change shards, so repeat the round
+(keeping the best measured split) when the skew is extreme.

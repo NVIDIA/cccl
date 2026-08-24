@@ -22,6 +22,11 @@
  * Built on the standalone places layer (`cuda/experimental/places.cuh`), in
  * particular `place_group` (execution resources) and `localized_array` (the
  * VMM backing of `sharded_array<T>::allocate_contiguous`).
+ *
+ * The vendor-backed sparse products over `sharded_csr` (cuSPARSE spmv/spmm)
+ * live in the separate opt-in header `<cuda/experimental/__sharded/sparse.cuh>`,
+ * which requires the cuSPARSE headers; the `sharded_csr` container itself is
+ * vendor-free and included here.
  */
 
 #pragma once
@@ -36,5 +41,6 @@
 #include <cuda/experimental/__sharded/scan.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/sharded_csr.cuh>
 #include <cuda/experimental/__sharded/transform.cuh>
 #include <cuda/experimental/__sharded/unique.cuh>
