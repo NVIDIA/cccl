@@ -26,8 +26,10 @@
 #include <c2h/generators.h>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-constexpr int cluster_size = 2;
-constexpr int block_size   = 128;
+inline constexpr int cluster_size    = 2;
+inline constexpr int block_size      = 128;
+inline constexpr int reuse_grid_size = 2;
+inline constexpr int reuse_repeats   = 16;
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -66,6 +68,26 @@ struct ReduceKernel
       if (cuda::gpu_thread.is_root_rank(grid))
       {
         *d_out = result.value();
+      }
+    }
+  }
+};
+
+struct RepeatedReduceKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config, int* d_out)
+  {
+    cudax::this_grid grid{config};
+
+    for (int repeat = 0; repeat < reuse_repeats; ++repeat)
+    {
+      int thread_data[1] = {repeat + 1};
+      const auto result  = cudax::coop::reduce(grid, thread_data, cuda::std::plus<>{});
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(grid));
+      if (result.has_value())
+      {
+        d_out[repeat] = *result;
       }
     }
   }
@@ -143,8 +165,28 @@ void run_reduce_kernel(
   stream.sync();
 }
 
-constexpr int max_size  = 4;
-constexpr int num_seeds = 10;
+void run_repeated_reduce_kernel(cuda::stream_ref stream)
+{
+  c2h::device_vector<int> d_out(reuse_repeats, -1);
+  const auto out_ptr = thrust::raw_pointer_cast(d_out.data());
+  const auto config  = cuda::make_config(
+    cuda::grid_dims<reuse_grid_size>(),
+    cuda::cluster_dims<cluster_size>(),
+    cuda::block_dims<block_size>(),
+    cuda::cooperative_launch{});
+  cuda::launch(stream, config, RepeatedReduceKernel{}, out_ptr);
+  stream.sync();
+
+  const c2h::host_vector<int> h_out = d_out;
+  for (int repeat = 0; repeat < reuse_repeats; ++repeat)
+  {
+    const int expected = reuse_grid_size * cluster_size * block_size * (repeat + 1);
+    REQUIRE(h_out[repeat] == expected);
+  }
+}
+
+inline constexpr int max_size  = 4;
+inline constexpr int num_seeds = 10;
 
 /***********************************************************************************************************************
  * Test cases
@@ -249,4 +291,16 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
     verify_results(c2h::host_vector<value_t>(grid_size_t::value * cluster_size * block_size, reference_result),
                    c2h::host_vector<value_t>(d_out));
   }
+}
+
+C2H_TEST("reduce/this_grid can reuse scratch", "[reduce][this_grid]")
+{
+  const auto device = cuda::devices[0];
+  if (cuda::device_attributes::compute_capability_major(device) < 9)
+  {
+    return;
+  }
+
+  cuda::stream stream{device};
+  run_repeated_reduce_kernel(stream);
 }
