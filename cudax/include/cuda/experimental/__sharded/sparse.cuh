@@ -331,9 +331,47 @@ struct spmm_shard_plan
   void* workspace        = nullptr;
   size_t workspace_bytes = 0;
   data_place wplace;
-  const _Tp* bound_B = nullptr;
-  _Tp* bound_C       = nullptr;
-  bool built         = false;
+  const _Tp* bound_B          = nullptr;
+  _Tp* bound_C                = nullptr;
+  ::std::int64_t bound_n_cols = 0;
+  bool built                  = false;
+
+  /// @brief Destroy the descriptors and workspace built for the current
+  /// shape, leaving the plan as if freshly default-constructed. Used both by
+  /// the destructor and by `run()` when a call's `n_cols` no longer matches
+  /// what the plan was built for -- the dense-matrix descriptors' dimensions
+  /// cannot be updated in place the way their VALUES can (`SetValues`
+  /// rebinds a pointer, not a shape), so a shape change tears down and
+  /// rebuilds rather than reusing the existing descriptors.
+  void destroy_resources()
+  {
+    if (mB)
+    {
+      cusparseDestroyDnMat(mB);
+      mB = nullptr;
+    }
+    if (mC)
+    {
+      cusparseDestroyDnMat(mC);
+      mC = nullptr;
+    }
+    if (mat)
+    {
+      cusparseDestroySpMat(mat);
+      mat = nullptr;
+    }
+    if (workspace)
+    {
+      const size_t wbytes = workspace_bytes == 0 ? 16 : workspace_bytes;
+      _CCCL_TRY
+      {
+        wplace.deallocate(workspace, wbytes, nullptr);
+      }
+      _CCCL_CATCH_ALL {}
+      workspace = nullptr;
+    }
+    built = false;
+  }
 
   void build(cusparseHandle_t handle,
              const csr_shard<_Tp>& sh,
@@ -415,9 +453,10 @@ struct spmm_shard_plan
       cusparse_safe_call(cusparseDestroyDnMat(mC_scratch));
       wplace.deallocate(C_scratch, scratch_elems * sizeof(_Tp), stream);
     }
-    bound_B = B;
-    bound_C = C;
-    built   = true;
+    bound_B      = B;
+    bound_C      = C;
+    bound_n_cols = n_cols;
+    built        = true;
   }
 
   void run(cusparseHandle_t handle,
@@ -430,6 +469,13 @@ struct spmm_shard_plan
            _Tp beta,
            cudaStream_t stream)
   {
+    if (built && n_cols != bound_n_cols)
+    {
+      // The dense-operand width changed: mB/mC's dimensions are baked into
+      // the descriptors at creation, so this cannot be rebound like a
+      // pointer -- tear down and rebuild for the new shape.
+      destroy_resources();
+    }
     if (!built)
     {
       build(handle, sh, cols, n_cols, B, C, stream);
@@ -467,27 +513,7 @@ struct spmm_shard_plan
 
   ~spmm_shard_plan()
   {
-    if (mB)
-    {
-      cusparseDestroyDnMat(mB);
-    }
-    if (mC)
-    {
-      cusparseDestroyDnMat(mC);
-    }
-    if (mat)
-    {
-      cusparseDestroySpMat(mat);
-    }
-    if (workspace)
-    {
-      const size_t wbytes = workspace_bytes == 0 ? 16 : workspace_bytes;
-      _CCCL_TRY
-      {
-        wplace.deallocate(workspace, wbytes, nullptr);
-      }
-      _CCCL_CATCH_ALL {}
-    }
+    destroy_resources();
   }
 };
 
@@ -562,9 +588,9 @@ spmv_state<_Tp>& get_spmv_state(sharded_csr<_Tp>& A)
 }
 
 template <typename _Tp>
-spmm_state<_Tp>& get_spmm_state(sharded_csr<_Tp>& A, ::std::int64_t n_cols)
+spmm_state<_Tp>& get_spmm_state(sharded_csr<_Tp>& A)
 {
-  return A.template lib_state<spmm_state<_Tp>>("cusparse_spmm:" + ::std::to_string(n_cols), [&] {
+  return A.template lib_state<spmm_state<_Tp>>("cusparse_spmm", [&] {
     auto* s = new spmm_state<_Tp>();
     s->plans.resize(A.num_shards());
     return s;
@@ -671,7 +697,7 @@ void spmm(place_group& group,
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::spmm: matrix was not partitioned over this group's places");
   }
-  auto& st          = reserved::get_spmm_state(A, n_cols);
+  auto& st          = reserved::get_spmm_state(A);
   const auto shards = reserved::matched_output_shards(A, C, n_cols, "sharded::spmm");
   for (const auto& [i, C_ptr] : shards)
   {
@@ -746,7 +772,7 @@ template <typename _Tp>
     _CCCL_THROW(::std::invalid_argument,
                 "sharded::spmm_shard_times: matrix was not partitioned over this group's places");
   }
-  auto& st          = reserved::get_spmm_state(A, n_cols);
+  auto& st          = reserved::get_spmm_state(A);
   const auto shards = reserved::matched_output_shards(A, C, n_cols, "sharded::spmm_shard_times");
   ::std::vector<double> ms(A.num_shards(), 0.0);
   for (const auto& pair : shards)
