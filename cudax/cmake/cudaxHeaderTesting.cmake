@@ -29,10 +29,7 @@ function(cudax_add_header_test label definitions)
       # Places headers are compiled separately:
       "cuda/experimental/places.cuh"
       "cuda/experimental/__places/*"
-      # Sharded headers are compiled separately (they build on places); this
-      # also covers __sharded/sparse.cuh, the opt-in cuSPARSE-backed header
-      # (its own #error guard only checks header availability, which the
-      # CUDA toolkit always provides, so it needs no extra gating here):
+      # Sharded headers are compiled separately (they build on places):
       "cuda/experimental/sharded.cuh"
       "cuda/experimental/__sharded/*"
       # STF headers are compiled separately:
