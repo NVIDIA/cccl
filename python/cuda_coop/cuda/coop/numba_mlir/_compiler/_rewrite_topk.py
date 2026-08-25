@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""TopK runtime-control validation.
+"""TopK payload inference and runtime-control validation.
 
 This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.

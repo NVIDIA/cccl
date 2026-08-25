@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Discontinuity factory and runtime-argument finalization.
+"""Discontinuity payload inference and factory/runtime finalization.
 
 This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.

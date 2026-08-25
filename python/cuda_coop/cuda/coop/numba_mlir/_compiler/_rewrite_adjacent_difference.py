@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Adjacent-difference factory finalization.
+"""Adjacent-difference payload inference and factory finalization.
 
 This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.

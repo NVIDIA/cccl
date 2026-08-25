@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Merge Sort provider lowering for Numba-CUDA-MLIR.
 
 This module owns block and warp provider materialization. Callable hashing, sentinel validation, and fresh-result rewriting are compiler concerns.

@@ -174,9 +174,9 @@ in the portable semantics:
      - Plans before type inference and materializes providers after inference.
 
 For a stateless Numba block-scan prefix, pass a device callable that maps the
-block aggregate to the prefix. To carry a running prefix across block tiles,
-pair the callback with its state dtype and pass a one-item ``ThreadData`` as
-the third positional argument:
+block aggregate to the prefix. For a stateful prefix, pair the callback with
+its state dtype and pass a one-item ``ThreadData`` as the third positional
+argument:
 
 .. code-block:: python
 
@@ -191,12 +191,18 @@ the third positional argument:
 
    running_prefix = coop.StatefulFunction(RunningPrefix, types.int32)
 
-   # Inside a kernel; every block member reaches the call.
+   # Inside a kernel; every block member reaches each scan call.
    prefix_state = coop.ThreadData(1, dtype=types.int32)
    prefix_state[0] = 0
+
+   items = coop.ThreadData(1, dtype=types.int32)
+   items[0] = 1
    scanned = coop.exclusive_sum(
        coop.this_block(), items, prefix_state, prefix_op=running_prefix
    )
+
+Reuse ``prefix_state`` without reinitializing it in later block-tile scan calls
+to carry the running prefix forward.
 
 ``block_prefix_callback_op`` remains an accepted compatibility spelling for
 ``prefix_op``. Warp scans intentionally do not accept either callback form.

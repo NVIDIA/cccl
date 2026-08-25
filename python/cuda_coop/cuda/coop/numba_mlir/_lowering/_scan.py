@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Scan provider lowering for Numba-CUDA-MLIR.
 
 This module owns block and warp scan materialization, including block prefix callbacks and StatefulFunction descriptors. It does not infer launch dimensions.

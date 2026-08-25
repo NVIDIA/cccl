@@ -11,15 +11,8 @@ compiler markers, so the installed ``.pyi`` declarations remain authoritative
 for overloads and result types.
 
 .. automodule:: cuda.coop
-   :members: Hierarchy, TempStorage, TempStorageLike, ThreadData,
-             ThreadDataLike, ThreadGroup, ThreadHierarchy,
-             adjacent_difference, discontinuity, exchange, exclusive_scan,
-             exclusive_sum, histogram, inclusive_scan, inclusive_sum, load,
-             merge_sort_keys, merge_sort_pairs, radix_rank, radix_sort_keys,
-             radix_sort_pairs, reduce, run_length_decode, scan, shuffle,
-             store, sum, this_block, this_cluster, this_grid, this_thread,
-             this_warp, topk_max_keys, topk_max_pairs, topk_min_keys,
-             topk_min_pairs
+   :members:
+   :exclude-members: __version__
    :imported-members:
    :no-undoc-members:
    :no-special-members:

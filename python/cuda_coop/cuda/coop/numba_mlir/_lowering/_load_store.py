@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Load and store provider lowering for Numba-CUDA-MLIR.
 
 This module owns both block and warp provider construction for the movement family. Group planning selects a route here after resolving hierarchy, dtype, and launch facts.

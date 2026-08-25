@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Exchange provider lowering for Numba-CUDA-MLIR.
 
 Block and warp exchange routes live together so hierarchy selection does not leak into package navigation. The planner still owns payload-shape analysis.
