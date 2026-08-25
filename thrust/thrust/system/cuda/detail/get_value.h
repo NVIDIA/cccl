@@ -28,7 +28,8 @@ namespace cuda_cub
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer> get_value(execution_policy<DerivedPolicy>& exec, Pointer ptr)
 {
-  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // Because of https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#cuda-arch
+  // point 2., if a call from a __host__
   // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
   // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
   // NV_IF_TARGET switch. See also NVBug 881631.

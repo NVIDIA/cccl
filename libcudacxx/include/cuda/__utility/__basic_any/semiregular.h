@@ -180,7 +180,17 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
+    auto const& __self  = ::cuda::__basic_any_from(__lhs);
     auto const& __other = ::cuda::__basic_any_from(__rhs);
+    if (!__self.has_value())
+    {
+      return !__other.has_value();
+    }
+    if (!__other.has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_ILeft>>;
     return ::cuda::__virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
   }
@@ -210,6 +220,11 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
+    if (!::cuda::__basic_any_from(__lhs).has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), ::cuda::std::addressof(__rhs));
   }
@@ -220,6 +235,11 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
+    if (!::cuda::__basic_any_from(__rhs).has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), ::cuda::std::addressof(__lhs));
   }

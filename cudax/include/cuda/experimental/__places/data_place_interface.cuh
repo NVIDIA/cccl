@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -30,6 +31,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
@@ -77,7 +79,7 @@ public:
    */
   enum ord : int
   {
-    invalid     = ::std::numeric_limits<int>::min(),
+    invalid     = ::cuda::std::numeric_limits<int>::min(),
     composite   = -5,
     device_auto = -4,
     affine      = -3,
@@ -253,7 +255,7 @@ public:
    */
   virtual const partition_fn_t& get_partitioner() const
   {
-    throw ::std::logic_error("get_partitioner() called on non-composite data_place");
+    _CCCL_THROW(::std::logic_error, "get_partitioner() called on non-composite data_place");
   }
 };
 } // end namespace cuda::experimental::places

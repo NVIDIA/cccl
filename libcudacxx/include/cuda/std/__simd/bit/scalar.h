@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/bit_reverse.h>
+#include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
@@ -70,7 +70,7 @@ struct __simd_bit_reverse_generator
   template <typename _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Idx) const noexcept
   {
-    return ::cuda::bit_reverse(__v_[_Idx::value]);
+    return ::cuda::std::bit_reverse(__v_[_Idx::value]);
   }
 };
 

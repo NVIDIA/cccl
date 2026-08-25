@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -116,35 +117,35 @@ UNITTEST("with_location")
   };
 
   // Move-only wrapper (independent of whether T is copyable).
-  static_assert(!::std::is_copy_constructible_v<with_location<widget>>);
-  static_assert(!::std::is_copy_assignable_v<with_location<widget>>);
-  static_assert(::std::is_move_constructible_v<with_location<widget>>);
-  static_assert(!::std::is_move_assignable_v<with_location<widget>>);
-  static_assert(!::std::is_default_constructible_v<with_location<widget>>);
+  static_assert(!::cuda::std::is_copy_constructible_v<with_location<widget>>);
+  static_assert(!::cuda::std::is_copy_assignable_v<with_location<widget>>);
+  static_assert(::cuda::std::is_move_constructible_v<with_location<widget>>);
+  static_assert(!::cuda::std::is_move_assignable_v<with_location<widget>>);
+  static_assert(!::cuda::std::is_default_constructible_v<with_location<widget>>);
 
   // Value T: takes lvalues (copy) or rvalues (move).
-  static_assert(::std::is_constructible_v<with_location<widget>, widget>);
-  static_assert(::std::is_constructible_v<with_location<widget>, widget&>);
-  static_assert(::std::is_constructible_v<with_location<widget>, const widget&>);
-  static_assert(::std::is_constructible_v<with_location<widget>, widget&&>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget>, widget>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget>, widget&>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget>, const widget&>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget>, widget&&>);
 
   // Lvalue-reference T: binds only to lvalues.
-  static_assert(::std::is_constructible_v<with_location<widget&>, widget&>);
-  static_assert(!::std::is_constructible_v<with_location<widget&>, widget>);
-  static_assert(!::std::is_constructible_v<with_location<widget&>, widget&&>);
-  static_assert(::std::is_move_constructible_v<with_location<widget&>>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget&>, widget&>);
+  static_assert(!::cuda::std::is_constructible_v<with_location<widget&>, widget>);
+  static_assert(!::cuda::std::is_constructible_v<with_location<widget&>, widget&&>);
+  static_assert(::cuda::std::is_move_constructible_v<with_location<widget&>>);
 
   // Rvalue-reference T: binds only to rvalues.
-  static_assert(::std::is_constructible_v<with_location<widget&&>, widget>);
-  static_assert(::std::is_constructible_v<with_location<widget&&>, widget&&>);
-  static_assert(!::std::is_constructible_v<with_location<widget&&>, widget&>);
-  static_assert(!::std::is_constructible_v<with_location<widget&&>, const widget&>);
-  static_assert(::std::is_move_constructible_v<with_location<widget&&>>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget&&>, widget>);
+  static_assert(::cuda::std::is_constructible_v<with_location<widget&&>, widget&&>);
+  static_assert(!::cuda::std::is_constructible_v<with_location<widget&&>, widget&>);
+  static_assert(!::cuda::std::is_constructible_v<with_location<widget&&>, const widget&>);
+  static_assert(::cuda::std::is_move_constructible_v<with_location<widget&&>>);
 
   {
     const auto loc = ::cuda::std::source_location::current();
     auto wl        = with_location{widget{1}, loc};
-    static_assert(::std::is_same_v<decltype(wl), with_location<widget>>);
+    static_assert(::cuda::std::is_same_v<decltype(wl), with_location<widget>>);
     EXPECT(wl.loc.line() == loc.line());
   }
   auto consume_value = [](with_location<widget> w) {
