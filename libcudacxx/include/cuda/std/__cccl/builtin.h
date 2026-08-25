@@ -67,10 +67,10 @@
 // https://bugs.llvm.org/show_bug.cgi?id=44517
 #define _CCCL_CHECK_BUILTIN(__x) (_CCCL_HAS_BUILTIN(__##__x) || _CCCL_HAS_KEYWORD(__##__x) || _CCCL_HAS_FEATURE(__x))
 
-// NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_lvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(...) __add_lvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_lvalue_reference)
+// libstdc++ conflicts with some of the builtins. Ensure that we do not use them if affected libstdc++ is present.
+#define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(_VERSION)                                      \
+  (_CCCL_HOST_STD_LIB(LIBSTDCXX, <, _VERSION) || defined(_GLIBCXX_DO_NOT_USE_BUILTIN_TRAITS)) \
+    && !_CCCL_CUDA_COMPILER(CLANG)
 
 // NVCC has issues with function pointers
 #if _CCCL_HAS_BUILTIN(__add_pointer) && _CCCL_CUDA_COMPILER(CLANG)
