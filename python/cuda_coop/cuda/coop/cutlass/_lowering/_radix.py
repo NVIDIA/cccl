@@ -34,9 +34,7 @@ from cuda.coop._core.block import (
 from .._compiler import _state as _provider_state
 from .._compiler import _storage as _provider_storage
 from .._compiler import _types as _provider_types
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import RADIX_KEY_TYPES as _RADIX_KEY_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, RADIX_KEY_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -241,12 +239,12 @@ def _sort_symbol(
     participation = plan.participation
     if participation is None or participation.exact_block_dim is None:
         raise ValueError("BlockRadixSort symbols require exact block dimensions")
-    payload = "keys" if value_type is None else f"pairs_{_TYPE_SPECS[value_type].token}"
+    payload = "keys" if value_type is None else f"pairs_{TYPE_SPECS[value_type].token}"
     order = "desc" if descending else "asc"
     name = (
         f"cuda_coop_cutlass_radix_sort_{payload}_"
         f"{_block_dim_token(participation.exact_block_dim)}_"
-        f"{_TYPE_SPECS[key_type].token}_{order}"
+        f"{TYPE_SPECS[key_type].token}_{order}"
     )
     if items_per_thread > 1:
         name += f"_x{items_per_thread}"
@@ -270,7 +268,7 @@ def _rank_symbol(
     name = (
         "cuda_coop_cutlass_radix_rank_"
         f"{_block_dim_token(participation.exact_block_dim)}_"
-        f"{_TYPE_SPECS[input_type].token}_{order}_b{begin_bit}_{end_bit}"
+        f"{TYPE_SPECS[input_type].token}_{order}_b{begin_bit}_{end_bit}"
     )
     if items_per_thread > 1:
         name += f"_x{items_per_thread}"
@@ -299,14 +297,14 @@ def _make_sort_request(
         items_per_thread=items_per_thread,
         operand_kind=operand_kind,
         descending=descending,
-        key_bit_width=_TYPE_SPECS[key_type].width_bits,
+        key_bit_width=TYPE_SPECS[key_type].width_bits,
         source=source,
     ).require_supported()
     if not isinstance(plan.implementation, AlgorithmSpec):
         raise TypeError("BlockRadixSort plan requires an AlgorithmSpec")
     if external_scratch:
         plan = with_caller_owned_core_temp_storage(plan)
-    key_bit_width = _TYPE_SPECS[key_type].width_bits
+    key_bit_width = TYPE_SPECS[key_type].width_bits
     return CutlassCoreAdapter().materialize(
         plan.implementation,
         plan=plan,
@@ -354,7 +352,7 @@ def _make_rank_request(
         operand_kind=operand_kind,
         begin_bit=begin_bit,
         end_bit=end_bit,
-        key_bit_width=_TYPE_SPECS[input_type].width_bits,
+        key_bit_width=TYPE_SPECS[input_type].width_bits,
         descending=descending,
         exclusive_digit_prefix_items_per_thread=prefix_items,
         source=source,
@@ -497,7 +495,7 @@ def provider_radix_sort_keys(
 ) -> Any:
     key_type, key_values, operand_kind, key_data = _operand(
         keys,
-        allowed=_RADIX_KEY_TYPES,
+        allowed=RADIX_KEY_TYPES,
         feature="radix_sort_keys",
     )
     resolved_end = _provider_types.validate_radix_bit_range(
@@ -591,12 +589,12 @@ def provider_radix_sort_pairs(
         )
     key_type, key_values, operand_kind, key_data = _operand(
         keys,
-        allowed=_RADIX_KEY_TYPES,
+        allowed=RADIX_KEY_TYPES,
         feature="radix_sort_pairs",
     )
     value_type, value_values, value_kind, value_data = _operand(
         values,
-        allowed=_ALL_PROVIDER_TYPES,
+        allowed=ALL_PROVIDER_TYPES,
         feature="radix_sort_pairs",
     )
     if operand_kind is not value_kind:
@@ -705,7 +703,7 @@ def provider_radix_rank(
 ) -> Any:
     key_type, key_values, operand_kind, key_data = _operand(
         keys,
-        allowed=_RADIX_KEY_TYPES,
+        allowed=RADIX_KEY_TYPES,
         feature="radix_rank",
     )
     resolved_end = _provider_types.validate_radix_bit_range(

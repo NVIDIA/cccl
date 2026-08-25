@@ -31,9 +31,7 @@ from cuda.coop._core.block import BlockExchangeMode, make_block_exchange_semanti
 from .._compiler import _rendering as _provider_rendering
 from .._compiler import _state as _provider_state
 from .._compiler import _types as _provider_types
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import RADIX_KEY_TYPES as _RADIX_KEY_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, RADIX_KEY_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -45,9 +43,9 @@ from ._symbols import block_dim_token as _block_dim_token
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
 _ROOT_MODES = frozenset(BlockExchangeMode)
-_RANK_TYPES = _RADIX_KEY_TYPES
+_RANK_TYPES = RADIX_KEY_TYPES
 _SIGNED_RANK_TYPES = frozenset({Int32, Int64})
-_VALID_FLAG_TYPES = _RADIX_KEY_TYPES
+_VALID_FLAG_TYPES = RADIX_KEY_TYPES
 
 
 def _normalize_exchange_mode(mode: Any) -> str:
@@ -99,7 +97,7 @@ def _render_template_argument(
     if name == "T":
         if value is not request.value_type:
             raise ValueError("CUB Exchange template dtype does not match its request")
-        return _TYPE_SPECS[value].cpp_type
+        return TYPE_SPECS[value].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
@@ -269,15 +267,15 @@ class _CubExchangeRequest:
         ]
         suffixes = []
         if self.rank_type is not None:
-            suffixes.append(f"rank_{_TYPE_SPECS[self.rank_type].token}")
+            suffixes.append(f"rank_{TYPE_SPECS[self.rank_type].token}")
         if self.valid_flag_type is not None:
-            suffixes.append(f"flag_{_TYPE_SPECS[self.valid_flag_type].token}")
+            suffixes.append(f"flag_{TYPE_SPECS[self.valid_flag_type].token}")
         suffix = f"_{'_'.join(suffixes)}" if suffixes else ""
         return (
             "cuda_coop_cutlass_cub_exchange_"
             f"{self.group_kind}_{_block_dim_token(self.block_dim)}_"
             f"{self.implementation.method_name.lower()}_"
-            f"{_TYPE_SPECS[self.value_type].token}_x{self.items_per_thread}"
+            f"{TYPE_SPECS[self.value_type].token}_x{self.items_per_thread}"
             f"{suffix}_{signature}"
         )
 
@@ -298,7 +296,7 @@ def _warp_instances(request: _CubExchangeRequest) -> tuple[int, int]:
 def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     request.__post_init__()
     implementation = request.implementation
-    spec = _TYPE_SPECS[request.value_type]
+    spec = TYPE_SPECS[request.value_type]
     template_arguments = ", ".join(
         _render_template_argument(request, name, value)
         for name, value in implementation.ordered_template_arguments
@@ -321,14 +319,14 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     ]
     rank_spec = None
     if request.rank_type is not None:
-        rank_spec = _TYPE_SPECS[request.rank_type]
+        rank_spec = TYPE_SPECS[request.rank_type]
         params.extend(
             f"{rank_spec.cpp_type} rank{index}"
             for index in range(request.items_per_thread)
         )
     flag_spec = None
     if request.valid_flag_type is not None:
-        flag_spec = _TYPE_SPECS[request.valid_flag_type]
+        flag_spec = TYPE_SPECS[request.valid_flag_type]
         params.extend(
             f"{flag_spec.cpp_type} valid{index}"
             for index in range(request.items_per_thread)
@@ -438,7 +436,7 @@ def _resolve_exchange_operands(
 ]:
     value_type, values = _provider_types.resolve_thread_data_value_type(
         value,
-        allowed=_ALL_PROVIDER_TYPES,
+        allowed=ALL_PROVIDER_TYPES,
         feature="exchange",
         scope=_ROOT_SCOPE,
         resolve_type=_resolve_type,

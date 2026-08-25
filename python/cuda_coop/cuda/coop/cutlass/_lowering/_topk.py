@@ -30,8 +30,7 @@ from .._compiler import _state as _provider_state
 from .._compiler import _storage as _provider_storage
 from .._compiler import _types as _provider_types
 from .._compiler._call_context import get_active_single_phase_context
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._temp_storage import _topk_cub_temp_storage_requirement
 from .._thread_data import ThreadData
 from .._value_metadata import (
@@ -40,8 +39,8 @@ from .._value_metadata import (
 )
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
-_TOPK_KEY_TYPES = _ALL_PROVIDER_TYPES
-_TOPK_VALUE_TYPES = _ALL_PROVIDER_TYPES
+_TOPK_KEY_TYPES = ALL_PROVIDER_TYPES
+_TOPK_VALUE_TYPES = ALL_PROVIDER_TYPES
 _resolve_topk_type = _provider_state.make_provider_type_resolver(
     scope=_ROOT_SCOPE,
     root_scope=_ROOT_SCOPE,
@@ -94,7 +93,7 @@ def _validate_controls(
         tile_size if num_valid is None else _static_index(num_valid, name="valid_items")
     )
     static_begin = _static_index(begin_bit, name="begin_bit")
-    width_bits = _TYPE_SPECS[key_type].width_bits
+    width_bits = TYPE_SPECS[key_type].width_bits
     resolved_end = width_bits if end_bit is None else end_bit
     static_end = _static_index(resolved_end, name="end_bit")
 
@@ -173,13 +172,13 @@ class _CubTopKRequest:
         value_token = (
             "keys"
             if self.value_type is None
-            else f"pairs_{_TYPE_SPECS[self.value_type].token}"
+            else f"pairs_{TYPE_SPECS[self.value_type].token}"
         )
         storage_token = "external" if self.external_scratch else "internal"
         return (
             "cuda_coop_cutlass_cub_topk_"
             f"{self.core_spec.selection.value}_{value_token}_"
-            f"{_TYPE_SPECS[self.key_type].token}_"
+            f"{TYPE_SPECS[self.key_type].token}_"
             f"b{self.block_threads}_x{self.items_per_thread}_"
             f"{storage_token}_{signature}"
         )
@@ -187,8 +186,8 @@ class _CubTopKRequest:
 
 def _render_cub_topk(request: _CubTopKRequest) -> list[str]:
     request.__post_init__()
-    key_spec = _TYPE_SPECS[request.key_type]
-    value_spec = None if request.value_type is None else _TYPE_SPECS[request.value_type]
+    key_spec = TYPE_SPECS[request.key_type]
+    value_spec = None if request.value_type is None else TYPE_SPECS[request.value_type]
     key_params = [
         f"{key_spec.cpp_type} key{index}" for index in range(request.items_per_thread)
     ]

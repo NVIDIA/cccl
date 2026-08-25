@@ -19,7 +19,7 @@ from . import _state as _provider_state
 from . import _storage as _provider_storage
 from . import _target as _provider_target_support
 from . import _types as _provider_types
-from ._types import ROOT_SCOPE as _ROOT_SCOPE
+from ._types import ROOT_SCOPE
 
 _PROVIDER_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -45,7 +45,7 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
         paths = [path for path in str(option.value).split(",") if path]
     except (AttributeError, ImportError, TypeError) as exc:
         raise DSLRuntimeError(
-            f"{_ROOT_SCOPE} provider requires a CUTLASS DSL with mutable "
+            f"{ROOT_SCOPE} provider requires a CUTLASS DSL with mutable "
             "link-library compile options.",
             cause=exc,
         ) from exc
@@ -63,26 +63,26 @@ def _configured_gpu_arch() -> str:
 
 def _resolve_nvrtc_arch() -> str:
     return _provider_target_support.resolve_nvrtc_arch(
-        _ROOT_SCOPE,
+        ROOT_SCOPE,
         _configured_gpu_arch,
     )
 
 
 def _resolve_nvrtc_sm_arch() -> str:
     return _provider_target_support.resolve_nvrtc_sm_arch(
-        _ROOT_SCOPE,
+        ROOT_SCOPE,
         _configured_gpu_arch,
     )
 
 
 def _select_bundle_format() -> str:
-    return _provider_target_support.select_bundle_format(_ROOT_SCOPE)
+    return _provider_target_support.select_bundle_format(ROOT_SCOPE)
 
 
 def _compile_bundle_source(source: str, symbols: tuple[str, ...]) -> str:
     return _provider_bundle_support.compile_bundle_source(
         source,
-        scope=_ROOT_SCOPE,
+        scope=ROOT_SCOPE,
         provider_dir=_PROVIDER_DIR,
         registered_headers=_provider_rendering.registered_bundle_headers,
         select_bundle_format=_select_bundle_format,
@@ -108,7 +108,7 @@ def _compile_bundle_source_with_layouts(
             )
             for key, probe in probes.items()
         ),
-        scope=_ROOT_SCOPE,
+        scope=ROOT_SCOPE,
         provider_dir=_PROVIDER_DIR,
         registered_headers=_provider_rendering.registered_bundle_headers,
         select_bundle_format=_select_bundle_format,
@@ -127,7 +127,7 @@ def _reject_unregistered_request(request: Any) -> list[str]:
 def _render_bundle_source(requests: list[Any]) -> str:
     return _provider_rendering.render_bundle_source(
         requests,
-        scope=_ROOT_SCOPE,
+        scope=ROOT_SCOPE,
         render_local_request=_reject_unregistered_request,
     )
 
@@ -178,7 +178,7 @@ def _trace_finalize_hook(dsl: Any, module: Any, function_name: str) -> None:
 
 _provider_state.register_bundle_finalizer(
     _trace_finalize_hook,
-    scope=_ROOT_SCOPE,
+    scope=ROOT_SCOPE,
 )
 
 __all__: tuple[str, ...] = ()

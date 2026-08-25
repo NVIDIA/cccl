@@ -33,7 +33,7 @@ from cuda.coop._core.block import (
 from .._compiler import _rendering as _provider_rendering
 from .._compiler import _state as _provider_state
 from .._compiler import _types as _provider_types
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -197,8 +197,8 @@ def _symbol_name(
         "cuda_coop_cutlass_cub_histogram_"
         f"{_block_dim_token(participation.exact_block_dim)}_"
         f"{primitive.algorithm.value}_"
-        f"{_TYPE_SPECS[sample_type].token}_x{primitive.items_per_thread}_"
-        f"count_{_TYPE_SPECS[counter_type].token}_"
+        f"{TYPE_SPECS[sample_type].token}_x{primitive.items_per_thread}_"
+        f"count_{TYPE_SPECS[counter_type].token}_"
         f"bins{primitive.bins}_out{operation.bins_per_thread}"
     )
 
@@ -282,7 +282,7 @@ def render_histogram_artifact(artifact: CutlassHistogramArtifact) -> list[str]:
     counter_cpp = adapter.cpp_type(artifact.counter_type)
     internal_counter_cpp = (
         "unsigned long long"
-        if _TYPE_SPECS[artifact.counter_type].width_bits == 64
+        if TYPE_SPECS[artifact.counter_type].width_bits == 64
         else "unsigned int"
     )
     sample_parameters = ", ".join(

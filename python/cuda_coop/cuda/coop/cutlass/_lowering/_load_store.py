@@ -38,8 +38,7 @@ from .._compiler import _state as _provider_state
 from .._compiler import _storage as _provider_storage
 from .._compiler import _types as _provider_types
 from .._compiler._call_context import get_active_single_phase_context
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._prims import is_cutlass_array_operand
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
@@ -310,7 +309,7 @@ class _CubLoadStoreRequest:
             f"{self.operation_kind.value}_{self.plan.resolved_group.kind}_"
             f"{_block_dim_token(self.block_dim)}_"
             f"{self.operation.algorithm.value}_"
-            f"{_TYPE_SPECS[self.value_type].token}_"
+            f"{TYPE_SPECS[self.value_type].token}_"
             f"x{self.operation.items_per_thread}_{signature}"
         )
         if self.external_scratch:
@@ -348,7 +347,7 @@ def _render_template_argument(
     if name == "T":
         if value is not request.value_type:
             raise ValueError("group load/store template dtype does not match request")
-        return _TYPE_SPECS[value].cpp_type
+        return TYPE_SPECS[value].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
@@ -360,7 +359,7 @@ def _cpp_oob_literal(request: _CubLoadStoreRequest) -> str:
     value = getattr(request.operation.oob_default.value, "value", None)
     if value is None:
         value = request.operation.oob_default.value
-    cpp_type = _TYPE_SPECS[request.value_type].cpp_type
+    cpp_type = TYPE_SPECS[request.value_type].cpp_type
     if isinstance(value, bool):
         literal = "true" if value else "false"
     elif isinstance(value, Integral):
@@ -403,7 +402,7 @@ def _render_cub_load_store(request: _CubLoadStoreRequest) -> list[str]:
     request.__post_init__()
     operation = request.operation
     implementation = request.implementation
-    spec = _TYPE_SPECS[request.value_type]
+    spec = TYPE_SPECS[request.value_type]
     template_arguments = ", ".join(
         _render_template_argument(request, name, value)
         for name, value in implementation.ordered_template_arguments
@@ -698,7 +697,7 @@ def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
         )
     return _resolve_type(
         dtype,
-        allowed=_ALL_PROVIDER_TYPES,
+        allowed=ALL_PROVIDER_TYPES,
         feature=primitive_name,
     )
 
@@ -717,7 +716,7 @@ def _validate_static_oob_default(value: Any, value_type: type) -> None:
     try:
         actual_type = _resolve_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="load",
         )
     except (TypeError, NotImplementedError) as exc:
@@ -966,7 +965,7 @@ def provider_load(
     if output.dtype is not None:
         output_type = _resolve_type(
             output.dtype,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="load",
         )
         if output_type is not value_type:
@@ -1067,7 +1066,7 @@ def provider_store(
     if isinstance(value, ThreadData):
         value_type, values = _provider_types.resolve_thread_data_value_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="store",
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_type,
@@ -1076,7 +1075,7 @@ def provider_store(
     else:
         value_type = _resolve_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="store",
         )
         values = (value,)

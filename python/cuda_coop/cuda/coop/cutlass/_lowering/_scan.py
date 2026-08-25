@@ -42,8 +42,7 @@ from .._compiler import _state as _provider_state
 from .._compiler import _storage as _provider_storage
 from .._compiler import _types as _provider_types
 from .._compiler._call_context import get_active_single_phase_context
-from .._compiler._types import SCAN_REDUCE_TYPES as _SCAN_REDUCE_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import SCAN_REDUCE_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -401,7 +400,7 @@ class _CubScanRequest:
             "cuda_coop_cutlass_cub_scan_"
             f"{self.group.symbol_suffix}_"
             f"{implementation.method_name.lower()}_{self.op}_"
-            f"{_TYPE_SPECS[self.value_type].token}_{value_kind}_"
+            f"{TYPE_SPECS[self.value_type].token}_{value_kind}_"
             f"{self._algorithm_suffix}_{initial}_{aggregate}_{valid_items}_"
             f"{signature}"
         )
@@ -446,7 +445,7 @@ def _render_cub_template_argument(
     if name == "T":
         if value is not request.value_type:
             raise ValueError("CUB scan template dtype does not match its request")
-        return _TYPE_SPECS[request.value_type].cpp_type
+        return TYPE_SPECS[request.value_type].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
@@ -490,7 +489,7 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
     )
     implementation = request.plan.implementation
     assert isinstance(implementation, AlgorithmSpec)
-    spec = _TYPE_SPECS[request.value_type]
+    spec = TYPE_SPECS[request.value_type]
     template_arguments = ", ".join(
         _render_cub_template_argument(request, name, value)
         for name, value in implementation.ordered_template_arguments
@@ -1016,7 +1015,7 @@ def provider_scan(
     if isinstance(value, ThreadData):
         value_type, values = _provider_types.resolve_thread_data_value_type(
             value,
-            allowed=_SCAN_REDUCE_TYPES,
+            allowed=SCAN_REDUCE_TYPES,
             feature="scan",
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_type,
@@ -1029,7 +1028,7 @@ def provider_scan(
 
     value_type = _resolve_type(
         value,
-        allowed=_SCAN_REDUCE_TYPES,
+        allowed=SCAN_REDUCE_TYPES,
         feature="scan",
     )
     return materialize(

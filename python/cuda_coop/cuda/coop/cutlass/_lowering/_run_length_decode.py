@@ -32,7 +32,7 @@ from cuda.coop._core.block import (
 from .._compiler import _rendering as _provider_rendering
 from .._compiler import _state as _provider_state
 from .._compiler import _types as _provider_types
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -216,7 +216,7 @@ def _symbol_name(*, plan: Any, value_type: type, length_type: type) -> str:
     return (
         "cuda_coop_cutlass_cub_run_length_decode_"
         f"{_block_dim_token(participation.exact_block_dim)}_"
-        f"v{_TYPE_SPECS[value_type].token}_l{_TYPE_SPECS[length_type].token}_"
+        f"v{TYPE_SPECS[value_type].token}_l{TYPE_SPECS[length_type].token}_"
         f"r{primitive.runs_per_thread}_x{primitive.decoded_items_per_thread}"
         f"{offsets}"
     )
@@ -480,7 +480,7 @@ def _as_decoded_window_offset(value: Any, *, length_type: type) -> Any:
             )
     literal = value if isinstance(value, Integral) else getattr(value, "value", None)
     if isinstance(literal, Integral) and not isinstance(literal, bool):
-        width = _TYPE_SPECS[length_type].width_bits
+        width = TYPE_SPECS[length_type].width_bits
         value_bits = width - 1 if length_type in {Int32, Int64} else width
         if int(literal) >= 1 << value_bits:
             raise ValueError(

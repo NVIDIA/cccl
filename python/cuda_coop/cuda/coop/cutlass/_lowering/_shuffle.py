@@ -26,8 +26,7 @@ from cuda.coop._core.block import BlockShuffleMode, make_block_shuffle_semantics
 
 from .._compiler import _state as _provider_state
 from .._compiler import _types as _provider_types
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -184,7 +183,7 @@ def _symbol_name(*, plan: Any, value_type: type) -> str:
     name = (
         f"cuda_coop_cutlass_shuffle_"
         f"{_block_dim_token(participation.exact_block_dim)}_"
-        f"{primitive.mode.value}_{_TYPE_SPECS[value_type].token}"
+        f"{primitive.mode.value}_{TYPE_SPECS[value_type].token}"
     )
     if primitive.items_per_thread is not None:
         name += f"_x{primitive.items_per_thread}"
@@ -317,7 +316,7 @@ def provider_shuffle(
     if is_thread_data:
         value_type, values = _provider_types.resolve_thread_data_value_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="shuffle",
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_type,
@@ -327,7 +326,7 @@ def provider_shuffle(
     else:
         value_type = _resolve_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="shuffle",
         )
         items_per_thread = None

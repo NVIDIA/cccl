@@ -213,15 +213,15 @@ def _is_register_fragment(value: Any) -> bool:
 def _is_register_memory_space(memspace: Any) -> bool:
     register_spaces = []
     try:
-        from cutlass import AddressSpace as _AddressSpace
+        from cutlass import AddressSpace as CutlassAddressSpace
 
-        register_spaces.append(_AddressSpace.rmem)
+        register_spaces.append(CutlassAddressSpace.rmem)
     except Exception:
         pass
     try:
-        from cutlass._mlir.dialects.cute import AddressSpace as _CuteAddressSpace
+        from cutlass._mlir.dialects.cute import AddressSpace as CuteAddressSpace
 
-        register_spaces.append(_CuteAddressSpace.rmem)
+        register_spaces.append(CuteAddressSpace.rmem)
     except Exception:
         pass
 
@@ -379,10 +379,10 @@ def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
     if dtype is None:
         raise TypeError(f"{source} requires dtype when ThreadData.dtype is not set")
     try:
-        from cutlass.base_dsl.typing import Numeric as _Numeric
+        from cutlass.base_dsl.typing import Numeric
     except Exception as exc:
         raise TypeError(f"{source} requires a CUTLASS Numeric dtype") from exc
-    if not isinstance(dtype, type) or not issubclass(dtype, _Numeric):
+    if not isinstance(dtype, type) or not issubclass(dtype, Numeric):
         raise TypeError(f"{source} dtype must be a CUTLASS Numeric type")
     return dtype
 
@@ -768,10 +768,10 @@ class ThreadData:
         )
         values = self.values(source)
 
-        from cutlass import Vector as _Vector
+        from cutlass import Vector
         from cutlass import cute as _cute
 
-        vector = _Vector.from_elements(values, dtype)
+        vector = Vector.from_elements(values, dtype)
         return _cute.TensorSSA(vector, shape, dtype)
 
     def to_register_tensor(

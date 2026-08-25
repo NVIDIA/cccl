@@ -38,8 +38,7 @@ from cuda.coop._core.block import BlockReduceAlgorithm
 from .._compiler import _rendering as _provider_rendering
 from .._compiler import _state as _provider_state
 from .._compiler import _types as _provider_types
-from .._compiler._types import SCAN_REDUCE_TYPES as _SCAN_REDUCE_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import SCAN_REDUCE_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import (
     ThreadGroup,
@@ -258,7 +257,7 @@ class _CudaxReduceRequest:
         return (
             "cuda_coop_cutlass_cudax_reduce_"
             f"{self._block_suffix}_{self.op}_"
-            f"{_TYPE_SPECS[self.value_type].token}{self._arity_suffix}"
+            f"{TYPE_SPECS[self.value_type].token}{self._arity_suffix}"
             f"{self._result_mode_suffix}"
         )
 
@@ -307,7 +306,7 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
             "cudax reduce runtime ABI does not match the shared lowering plan"
         )
 
-    spec = _TYPE_SPECS[request.value_type]
+    spec = TYPE_SPECS[request.value_type]
     params = [f"{spec.cpp_type} item{idx}" for idx in range(request.items_per_thread)]
     values = ", ".join(f"item{idx}" for idx in range(request.items_per_thread))
     lines = [
@@ -436,7 +435,7 @@ class _CubReduceRequest:
         return (
             "cuda_coop_cutlass_cub_reduce_"
             f"{self.group.symbol_suffix}_{self.op}_"
-            f"{_TYPE_SPECS[self.value_type].token}{arity}_"
+            f"{TYPE_SPECS[self.value_type].token}{arity}_"
             f"{self.algorithm_suffix}_{self.valid_items_suffix}_{signature}"
         )
 
@@ -449,7 +448,7 @@ def _render_cub_template_argument(
     if name == "T":
         if value is not request.value_type:
             raise ValueError("CUB reduce template dtype does not match its request")
-        return _TYPE_SPECS[request.value_type].cpp_type
+        return TYPE_SPECS[request.value_type].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
@@ -460,7 +459,7 @@ def _render_cub_template_argument(
 def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     implementation = request.plan.implementation
     assert isinstance(implementation, AlgorithmSpec)
-    spec = _TYPE_SPECS[request.value_type]
+    spec = TYPE_SPECS[request.value_type]
     template_arguments = ", ".join(
         _render_cub_template_argument(request, name, value)
         for name, value in implementation.ordered_template_arguments
@@ -688,7 +687,7 @@ def provider_reduce(
     if isinstance(value, ThreadData):
         value_type, values = _provider_types.resolve_thread_data_value_type(
             value,
-            allowed=_SCAN_REDUCE_TYPES,
+            allowed=SCAN_REDUCE_TYPES,
             feature="reduce",
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_type,
@@ -702,7 +701,7 @@ def provider_reduce(
 
     value_type = _resolve_type(
         value,
-        allowed=_SCAN_REDUCE_TYPES,
+        allowed=SCAN_REDUCE_TYPES,
         feature="reduce",
     )
     _validate_op_for_type(op, value_type)

@@ -29,8 +29,7 @@ from cuda.coop._core.block import make_block_merge_sort_semantics
 from .._compiler import _state as _provider_state
 from .._compiler import _storage as _provider_storage
 from .._compiler import _types as _provider_types
-from .._compiler._types import ALL_PROVIDER_TYPES as _ALL_PROVIDER_TYPES
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._thread_data import ThreadData
 from .._thread_group import ThreadGroup
 from .._value_metadata import (
@@ -152,9 +151,9 @@ def _symbol_name(
         group_token = f"warp_{block_token}_w{plan.resolved_group.static_size}"
     payload = "pairs" if primitive.has_values else "keys"
     order = "descending" if descending else "ascending"
-    type_token = f"k{_TYPE_SPECS[key_type].token}"
+    type_token = f"k{TYPE_SPECS[key_type].token}"
     if value_type is not None:
-        type_token += f"_v{_TYPE_SPECS[value_type].token}"
+        type_token += f"_v{TYPE_SPECS[value_type].token}"
     tile = "partial" if primitive.has_partial_tile else "full"
     return (
         f"cuda_coop_cutlass_cub_merge_sort_{group_token}_{payload}_{order}_"
@@ -238,7 +237,7 @@ def _coerce_oob_default(value: Any, key_type: type) -> Any:
     try:
         actual_type = _resolve_merge_sort_type(
             value,
-            allowed=_ALL_PROVIDER_TYPES,
+            allowed=ALL_PROVIDER_TYPES,
             feature="merge_sort oob_default",
         )
     except (TypeError, NotImplementedError) as exc:
@@ -372,7 +371,7 @@ def _resolve_inputs(
     tuple[Any, ...] | None,
     ThreadData | None,
 ]:
-    allowed_key_types = _ALL_PROVIDER_TYPES
+    allowed_key_types = ALL_PROVIDER_TYPES
     if group.kind != "block" and not isinstance(keys, ThreadData):
         raise TypeError(f"{_ROOT_SCOPE}.merge_sort warp keys must be ThreadData")
 
@@ -390,7 +389,7 @@ def _resolve_inputs(
             key=keys,
             value=values,
             allowed_key_types=allowed_key_types,
-            allowed_value_types=_ALL_PROVIDER_TYPES,
+            allowed_value_types=ALL_PROVIDER_TYPES,
             feature="merge_sort_pairs",
             scope=_ROOT_SCOPE,
             resolve_type=_resolve_merge_sort_type,
@@ -423,7 +422,7 @@ def _resolve_inputs(
         return key_type, (keys,), None, None, None, None
     value_type = _resolve_merge_sort_type(
         values,
-        allowed=_ALL_PROVIDER_TYPES,
+        allowed=ALL_PROVIDER_TYPES,
         feature="merge_sort_pairs",
     )
     return key_type, (keys,), None, value_type, (values,), None

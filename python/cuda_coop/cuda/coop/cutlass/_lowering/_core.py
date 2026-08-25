@@ -42,7 +42,7 @@ from cuda.coop._core import (
 )
 
 from .._compiler import _rendering as _provider_rendering
-from .._compiler._types import TYPE_SPECS as _TYPE_SPECS
+from .._compiler._types import TYPE_SPECS
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
 
@@ -313,8 +313,8 @@ class CutlassCoreAdapter(CoreBackendAdapter):
 
     def cpp_type(self, dtype: Any) -> str:
         dtype = self.normalize_dtype(dtype)
-        if dtype in _TYPE_SPECS:
-            return _TYPE_SPECS[dtype].cpp_type
+        if dtype in TYPE_SPECS:
+            return TYPE_SPECS[dtype].cpp_type
         try:
             return self._BUILTIN_CPP_TYPES[dtype]
         except KeyError as exc:
