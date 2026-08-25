@@ -29,6 +29,11 @@ $wheelPath = Get-CudaCcclWheel
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
 Invoke-Checked { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl test extra"
 
+# Enable faulthandler through the environment rather than -X so that every child
+# process inherits it, including xdist workers. These lanes intermittently die
+# without a Python traceback, and the native dump is the only evidence of why.
+$env:PYTHONFAULTHANDLER = "1"
+
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"

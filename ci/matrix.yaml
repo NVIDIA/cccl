@@ -65,6 +65,13 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # Diagnostic draft: run only the Windows Python lanes that produce the
+    # intermittent native crashes, all of which concentrate on CTK 12.0.
+    # Reset this list to empty (do not delete the key) before merging.
+    - {jobs: ['test'], project: 'python', ctk: '12.0', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test'], project: 'python', ctk: '12.0', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022', py_ctk_mode: 'sysctk'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '12.0', py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '12.0', py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022', py_ctk_mode: 'sysctk'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

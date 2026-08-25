@@ -13,6 +13,7 @@ compute directory to ensure they execute without errors.
 import importlib
 import importlib.util
 import inspect
+import signal
 import sys
 import traceback
 from pathlib import Path
@@ -67,6 +68,56 @@ def discover_examples():
     return sorted(examples)
 
 
+# Windows reports a crash as a structured exception code in the exit status.
+# These are the ones a native crash in CUDA or interpreter teardown produces.
+_WINDOWS_EXIT_CODES = {
+    0xC0000005: "STATUS_ACCESS_VIOLATION",
+    0xC000001D: "STATUS_ILLEGAL_INSTRUCTION",
+    0xC0000094: "STATUS_INTEGER_DIVIDE_BY_ZERO",
+    0xC00000FD: "STATUS_STACK_OVERFLOW",
+    0xC0000374: "STATUS_HEAP_CORRUPTION",
+    0xC0000409: "STATUS_STACK_BUFFER_OVERRUN",
+    0xC0000420: "STATUS_ASSERTION_FAILURE",
+}
+
+
+def _describe_exit_code(returncode):
+    """Render an exit status together with its platform-specific meaning."""
+    if sys.platform == "win32":
+        # Python surfaces the DWORD as either a large positive or a negative int.
+        unsigned = returncode & 0xFFFFFFFF
+        name = _WINDOWS_EXIT_CODES.get(unsigned)
+        if name:
+            return f"{returncode} (0x{unsigned:08X} {name})"
+        return f"{returncode} (0x{unsigned:08X})"
+
+    if returncode < 0:
+        try:
+            name = signal.Signals(-returncode).name
+        except ValueError:
+            name = "unknown signal"
+        return f"{returncode} (killed by {name})"
+
+    return str(returncode)
+
+
+def _format_subprocess_failure(command, result):
+    """Describe a failed example subprocess in full.
+
+    A process that dies during teardown writes nothing to stderr, so reporting
+    stderr alone leaves the failure unexplained. Include the exit status and
+    stdout so the log records how far the example got and how it died.
+    """
+    return "\n".join(
+        [
+            f"Module execution failed: {' '.join(command)}",
+            f"  exit code: {_describe_exit_code(result.returncode)}",
+            f"  stdout:\n{result.stdout or '<empty>'}",
+            f"  stderr:\n{result.stderr or '<empty>'}",
+        ]
+    )
+
+
 def run_example_module(module_name, display_name):
     """Run all example functions from a module."""
     try:
@@ -115,15 +166,18 @@ def run_example_module(module_name, display_name):
 
                 module_file = module.__file__
                 if module_file:
-                    # Run the module as a script
+                    # -X faulthandler dumps a native traceback when the child
+                    # dies on a fatal signal or Windows exception. Such a death
+                    # is otherwise silent: it writes nothing to stderr.
+                    command = [sys.executable, "-X", "faulthandler", module_file]
                     result = subprocess.run(
-                        [sys.executable, module_file],
+                        command,
                         capture_output=True,
                         text=True,
                         cwd=os.path.dirname(module_file),
                     )
                     if result.returncode != 0:
-                        raise Exception(f"Module execution failed: {result.stderr}")
+                        raise Exception(_format_subprocess_failure(command, result))
                     print(f"  Output: {result.stdout.strip()}")
 
         print(f"✓ {display_name} examples passed")

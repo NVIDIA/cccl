@@ -209,6 +209,41 @@ function configure_and_build_preset {
     build_preset $BUILD_NAME $PRESET
 }
 
+# A process killed by a structured exception exits with an NTSTATUS code, which
+# PowerShell surfaces as a large negative number. These are the codes a native
+# crash produces; naming them is the difference between "exit code -1073740791"
+# and knowing the process died of heap corruption.
+$script:NtStatusNames = @{
+    "C0000005" = "STATUS_ACCESS_VIOLATION"
+    "C000001D" = "STATUS_ILLEGAL_INSTRUCTION"
+    "C0000094" = "STATUS_INTEGER_DIVIDE_BY_ZERO"
+    "C00000FD" = "STATUS_STACK_OVERFLOW"
+    "C0000374" = "STATUS_HEAP_CORRUPTION"
+    "C0000409" = "STATUS_STACK_BUFFER_OVERRUN"
+    "C0000420" = "STATUS_ASSERTION_FAILURE"
+}
+
+function Format-ExitCode {
+    <#
+    .SYNOPSIS
+        Renders an exit code, naming it when it is a Windows NTSTATUS crash code.
+    .EXAMPLE
+        Format-ExitCode -1073740791   # -> "-1073740791 (0xC0000409 STATUS_STACK_BUFFER_OVERRUN)"
+    #>
+    # [int64] so both the negative and the raw unsigned spelling of a code bind.
+    param([Parameter(Mandatory, Position = 0)][int64]$Code)
+
+    $unsigned = $Code -band 0xFFFFFFFFL
+    $hex = "{0:X8}" -f $unsigned
+    $name = $script:NtStatusNames[$hex]
+
+    if ($name) { return "$Code (0x$hex $name)" }
+    # Suffix the literal: PowerShell parses 0xC0000000 as a negative [int], which
+    # would make this comparison true for every ordinary exit code.
+    if ($unsigned -ge 0xC0000000L) { return "$Code (0x$hex)" }
+    return "$Code"
+}
+
 function Invoke-Checked {
     <#
     .SYNOPSIS
@@ -225,9 +260,9 @@ function Invoke-Checked {
     )
     & $ScriptBlock
     if ($LASTEXITCODE -ne 0) {
-        throw "$ErrorMessage (exit code $LASTEXITCODE)"
+        throw "$ErrorMessage (exit code $(Format-ExitCode $LASTEXITCODE))"
     }
 }
 
-Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked
+Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked, Format-ExitCode
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION

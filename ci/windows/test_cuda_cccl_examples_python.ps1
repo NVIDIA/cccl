@@ -31,6 +31,11 @@ Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benc
 # CuPy is required by the cuda.compute examples and is not part of the test extras
 Invoke-Checked { & $python -m pip install "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
 
+# Enable faulthandler through the environment rather than -X so that every child
+# process inherits it, including xdist workers. These lanes intermittently die
+# without a Python traceback, and the native dump is the only evidence of why.
+$env:PYTHONFAULTHANDLER = "1"
+
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     Invoke-Checked { & $python -m pytest -n 6 test_examples.py } "examples tests failed"
