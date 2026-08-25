@@ -30,10 +30,6 @@
 
 namespace
 {
-using sort_test_util::abs_less;
-using sort_test_util::make_value;
-using sort_test_util::sort_types;
-
 // Run the whole world's sort through the range overload and check the result against a host-side
 // `cuda::std::sort` of the same elements. Every test in this file differs only in how the inputs
 // are shaped, so all of them funnel through here.
@@ -128,7 +124,7 @@ MULTI_GPU_TEST("sort documentation example", c2h::type_list<int>)
   REQUIRE_THAT(inputs[1], Equals(expected_rank_1));
 }
 
-MULTI_GPU_TEST("sort, random inputs", sort_types)
+MULTI_GPU_TEST("sort, random inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -144,7 +140,7 @@ MULTI_GPU_TEST("sort, random inputs", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, uneven rank sizes", sort_types)
+MULTI_GPU_TEST("sort, uneven rank sizes", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -160,7 +156,7 @@ MULTI_GPU_TEST("sort, uneven rank sizes", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, inputs with some empty ranks", sort_types)
+MULTI_GPU_TEST("sort, inputs with some empty ranks", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -176,7 +172,7 @@ MULTI_GPU_TEST("sort, inputs with some empty ranks", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, no communicators", sort_types)
+MULTI_GPU_TEST("sort, no communicators", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -186,7 +182,7 @@ MULTI_GPU_TEST("sort, no communicators", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, all ranks empty", sort_types)
+MULTI_GPU_TEST("sort, all ranks empty", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -196,7 +192,7 @@ MULTI_GPU_TEST("sort, all ranks empty", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, a single global item", sort_types)
+MULTI_GPU_TEST("sort, a single global item", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -205,13 +201,13 @@ MULTI_GPU_TEST("sort, a single global item", sort_types)
 
   if (!input.empty())
   {
-    input[0].push_back(make_value<T>(1, 1));
+    input[0].push_back(sort_test_util::make_value<T>(1, 1));
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, one item per rank", sort_types)
+MULTI_GPU_TEST("sort, one item per rank", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -221,18 +217,18 @@ MULTI_GPU_TEST("sort, one item per rank", sort_types)
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     const auto key = static_cast<cuda::std::int64_t>(input.size() - rank);
-    input[rank].push_back(make_value<T>(key, key));
+    input[rank].push_back(sort_test_util::make_value<T>(key, key));
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, all equal inputs", sort_types)
+MULTI_GPU_TEST("sort, all equal inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms       = this->communicators();
-  const auto value = make_value<T>(1, 1);
+  const auto value = sort_test_util::make_value<T>(1, 1);
   std::vector<std::vector<T>> input(comms.size());
 
   for (auto& local : input)
@@ -243,7 +239,7 @@ MULTI_GPU_TEST("sort, all equal inputs", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, inputs with many equal keys", sort_types)
+MULTI_GPU_TEST("sort, inputs with many equal keys", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -264,20 +260,20 @@ MULTI_GPU_TEST("sort, inputs with many equal keys", sort_types)
     auto key_b = dist(rng);
 
     std::generate(local.begin(), local.end(), [&] {
-      return make_value<T>(dist(rng), dist(rng));
+      return sort_test_util::make_value<T>(dist(rng), dist(rng));
     });
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
       const auto key = item % 2 ? key_a : key_b;
-      local[item]    = make_value<T>(key, key);
+      local[item]    = sort_test_util::make_value<T>(key, key);
     }
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, presorted inputs", sort_types)
+MULTI_GPU_TEST("sort, presorted inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -302,7 +298,7 @@ MULTI_GPU_TEST("sort, presorted inputs", sort_types)
       {
         const auto key = static_cast<cuda::std::int64_t>((rank * local.size()) + item);
 
-        local[item] = make_value<T>(key, key);
+        local[item] = sort_test_util::make_value<T>(key, key);
       }
       REQUIRE(std::is_sorted(local.begin(), local.end(), cmp));
     }
@@ -322,7 +318,7 @@ MULTI_GPU_TEST("sort, presorted inputs", sort_types)
       {
         const auto key = static_cast<cuda::std::int64_t>((input.size() * local.size()) - item);
 
-        local[item] = make_value<T>(key, key);
+        local[item] = sort_test_util::make_value<T>(key, key);
       }
       REQUIRE(std::is_sorted(local.begin(), local.end(), cmp));
     }
@@ -331,7 +327,7 @@ MULTI_GPU_TEST("sort, presorted inputs", sort_types)
   }
 }
 
-MULTI_GPU_TEST("sort, reverse-sorted inputs", sort_types)
+MULTI_GPU_TEST("sort, reverse-sorted inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -346,14 +342,14 @@ MULTI_GPU_TEST("sort, reverse-sorted inputs", sort_types)
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
       const auto key = static_cast<cuda::std::int64_t>(input.size() * local.size() - (rank * local.size() + item));
-      local[item]    = make_value<T>(key, key);
+      local[item]    = sort_test_util::make_value<T>(key, key);
     }
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort, skewed rank sizes", sort_types)
+MULTI_GPU_TEST("sort, skewed rank sizes", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -386,5 +382,5 @@ MULTI_GPU_TEST("sort, nonstandard comparator", )
     }
   }
 
-  check_sort_case(comms, input, abs_less<int>{});
+  check_sort_case(comms, input, sort_test_util::abs_less<int>{});
 }
