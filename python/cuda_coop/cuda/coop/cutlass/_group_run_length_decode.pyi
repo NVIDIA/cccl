@@ -10,26 +10,27 @@ from typing import Any, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _PortableRunLength as _PortableRunLength
-from .._typing import _PortableRunValue as _PortableRunValue
-from .._typing import _TraceInteger as _TraceInteger
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassRunTensor as _CutlassRunTensor
-from ._thread_group import _BlockGroup as _BlockGroup
+from .._typing import (
+    IntegerValue,
+    PortableRunLength,
+    PortableRunValue,
+    TraceInteger,
+)
+from ._thread_data import CutlassRunTensor, ThreadData
+from ._thread_group import BlockGroup
 
-_RunValueT = TypeVar("_RunValueT", bound=_PortableRunValue)
-_RunLengthT = TypeVar("_RunLengthT", bound=_PortableRunLength)
+_RunValueT = TypeVar("_RunValueT", bound=PortableRunValue)
+_RunLengthT = TypeVar("_RunLengthT", bound=PortableRunLength)
 
 @overload
 def run_length_decode(
-    group: _BlockGroup,
+    group: BlockGroup,
     run_values: ThreadData[_RunValueT],
-    run_lengths: ThreadData[_RunLengthT] | _CutlassRunTensor,
+    run_lengths: ThreadData[_RunLengthT] | CutlassRunTensor,
     /,
     *,
-    decoded_items_per_thread: _TraceInteger,
-    decoded_window_offset: _IntegerValue = 0,
+    decoded_items_per_thread: TraceInteger,
+    decoded_window_offset: IntegerValue = 0,
     relative_offsets: ThreadData[_RunLengthT] | None = None,
     total_decoded_size: ThreadData[_RunLengthT] | None = None,
     decoded_offset_dtype: object = None,
@@ -54,13 +55,13 @@ def run_length_decode(
 
 @overload
 def run_length_decode(
-    group: _BlockGroup,
-    run_values: _CutlassRunTensor,
-    run_lengths: ThreadData[_RunLengthT] | _CutlassRunTensor,
+    group: BlockGroup,
+    run_values: CutlassRunTensor,
+    run_lengths: ThreadData[_RunLengthT] | CutlassRunTensor,
     /,
     *,
-    decoded_items_per_thread: _TraceInteger,
-    decoded_window_offset: _IntegerValue = 0,
+    decoded_items_per_thread: TraceInteger,
+    decoded_window_offset: IntegerValue = 0,
     relative_offsets: ThreadData[_RunLengthT] | None = None,
     total_decoded_size: ThreadData[_RunLengthT] | None = None,
     decoded_offset_dtype: object = None,
@@ -86,13 +87,13 @@ def run_length_decode(
 
 @overload
 def run_length_decode(
-    group: _BlockGroup,
+    group: BlockGroup,
     run_values: _RunValueT,
     run_lengths: _RunLengthT,
     /,
     *,
-    decoded_items_per_thread: _TraceInteger,
-    decoded_window_offset: _IntegerValue = 0,
+    decoded_items_per_thread: TraceInteger,
+    decoded_window_offset: IntegerValue = 0,
     relative_offsets: ThreadData[_RunLengthT] | None = None,
     total_decoded_size: ThreadData[_RunLengthT] | None = None,
     decoded_offset_dtype: object = None,

@@ -7,15 +7,7 @@
 from collections.abc import Callable
 from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
-from numpy import float32 as _NumpyFloat32
-from numpy import float64 as _NumpyFloat64
-from numpy import int32 as _NumpyInt32
-from numpy import int64 as _NumpyInt64
-from numpy import integer as _NumpyInteger
-from numpy import number as _NumpyNumber
-from numpy import uint8 as _NumpyUint8
-from numpy import uint32 as _NumpyUint32
-from numpy import uint64 as _NumpyUint64
+import numpy as np
 
 ItemT = TypeVar("ItemT")
 
@@ -36,7 +28,7 @@ ThreadGroupKind: TypeAlias = Literal[
     "threads_within_warp",
     "warps_within_block",
 ]
-_SynchronizableGroupKind: TypeAlias = Literal[
+SynchronizableGroupKind: TypeAlias = Literal[
     "thread",
     "warp",
     "block",
@@ -44,7 +36,7 @@ _SynchronizableGroupKind: TypeAlias = Literal[
     "threads_within_warp",
     "warps_within_block",
 ]
-_BlockLoadStoreAlgorithm: TypeAlias = Literal[
+BlockLoadStoreAlgorithm: TypeAlias = Literal[
     "direct",
     "striped",
     "vectorize",
@@ -52,13 +44,13 @@ _BlockLoadStoreAlgorithm: TypeAlias = Literal[
     "warp_transpose",
     "warp_transpose_timesliced",
 ]
-_WarpLoadStoreAlgorithm: TypeAlias = Literal[
+WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "direct",
     "striped",
     "vectorize",
     "transpose",
 ]
-LoadStoreAlgorithm: TypeAlias = _BlockLoadStoreAlgorithm
+LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm
 ReduceAlgorithm: TypeAlias = Literal[
     "raking_commutative_only",
     "raking",
@@ -85,8 +77,8 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
-_SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
-_NonSumScanOperator: TypeAlias = Literal[
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
     "*",
     "mul",
     "multiply",
@@ -102,7 +94,7 @@ _NonSumScanOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
-ScanOperator: TypeAlias = _SumScanOperator | _NonSumScanOperator
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
@@ -116,7 +108,7 @@ HistogramAlgorithm: TypeAlias = Literal["atomic", "sort"]
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 BinaryFunction: TypeAlias = Callable[[ItemT, ItemT], ItemT]
 
-class _CompilerScalarLike(Protocol):
+class CompilerScalarLike(Protocol):
     """Backend-optional structural view of one compiler numeric scalar."""
 
     width: int
@@ -127,35 +119,33 @@ class _CompilerScalarLike(Protocol):
     def ir_value(self) -> object:
         """Return this scalar's compiler IR value."""
 
-class _CompilerIntegerLike(_CompilerScalarLike, Protocol):
+class CompilerIntegerLike(CompilerScalarLike, Protocol):
     """Compiler scalar carrying the signedness metadata of an integer."""
 
     signed: bool
 
-_PortableNumericScalar: TypeAlias = (
+PortableNumericScalar: TypeAlias = (
     int
     | float
-    | _NumpyUint8
-    | _NumpyInt32
-    | _NumpyUint32
-    | _NumpyInt64
-    | _NumpyUint64
-    | _NumpyFloat32
-    | _NumpyFloat64
-    | _CompilerScalarLike
+    | np.uint8
+    | np.int32
+    | np.uint32
+    | np.int64
+    | np.uint64
+    | np.float32
+    | np.float64
+    | CompilerScalarLike
 )
-_ScalarValue: TypeAlias = (
-    bool | int | float | complex | _NumpyNumber | _CompilerScalarLike
+ScalarValue: TypeAlias = bool | int | float | complex | np.number | CompilerScalarLike
+IntegerValue: TypeAlias = int | np.integer[Any] | CompilerIntegerLike
+TraceInteger: TypeAlias = int | np.integer[Any]
+PortableIntegerKey: TypeAlias = (
+    int | np.int32 | np.uint32 | np.int64 | np.uint64 | CompilerIntegerLike
 )
-_IntegerValue: TypeAlias = int | _NumpyInteger[Any] | _CompilerIntegerLike
-_TraceInteger: TypeAlias = int | _NumpyInteger[Any]
-_PortableIntegerKey: TypeAlias = (
-    int | _NumpyInt32 | _NumpyUint32 | _NumpyInt64 | _NumpyUint64 | _CompilerIntegerLike
-)
-_PortableIntegerValue: TypeAlias = _PortableIntegerKey | _NumpyUint8
-_PortableRunValue: TypeAlias = _PortableIntegerValue
-_PortableRunLength: TypeAlias = _PortableIntegerKey
-_ValidItems: TypeAlias = _IntegerValue
+PortableIntegerValue: TypeAlias = PortableIntegerKey | np.uint8
+PortableRunValue: TypeAlias = PortableIntegerValue
+PortableRunLength: TypeAlias = PortableIntegerKey
+ValidItems: TypeAlias = IntegerValue
 
 class ThreadDataLike(Protocol[ItemT]):
     """Portable mutable, indexable per-thread payload contract.
@@ -178,7 +168,7 @@ class ThreadDataLike(Protocol[ItemT]):
     def __setitem__(self, index: int, value: ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class _PortableThreadDataLike(Protocol):
+class PortableThreadDataLike(Protocol):
     """Thread payload whose readable item type is in the portable closure."""
 
     items_per_thread: int
@@ -187,7 +177,7 @@ class _PortableThreadDataLike(Protocol):
     def __len__(self) -> int:
         """Return the number of items owned by this thread."""
 
-    def __getitem__(self, index: int, /) -> _PortableNumericScalar:
+    def __getitem__(self, index: int, /) -> PortableNumericScalar:
         """Return one portable numeric register value."""
 
 class TempStorageLike(Protocol):

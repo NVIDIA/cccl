@@ -8,29 +8,25 @@ from __future__ import annotations
 
 from typing import Any, overload
 
-from numpy import int32 as _NumpyInt32
+import numpy as np
 from typing_extensions import TypeVar
 
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _PortableIntegerKey as _PortableIntegerKey
-from .._typing import _TraceInteger as _TraceInteger
+from .._typing import IntegerValue, PortableIntegerKey, TraceInteger
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._typing import _CutlassPairValueT as _CutlassPairValueT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup
+from ._typing import CutlassPairValueT
 
-_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=PortableIntegerKey)
 
 @overload
 def radix_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_IntegerKeyT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[_IntegerKeyT]:
@@ -48,12 +44,12 @@ def radix_sort_keys(
 
 @overload
 def radix_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
 ) -> _IntegerKeyT:
@@ -68,12 +64,12 @@ def radix_sort_keys(
 
 @overload
 def radix_sort_keys(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]:
@@ -90,16 +86,16 @@ def radix_sort_keys(
 
 @overload
 def radix_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_IntegerKeyT],
-    values: ThreadData[_CutlassPairValueT],
+    values: ThreadData[CutlassPairValueT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
-) -> tuple[ThreadData[_IntegerKeyT], ThreadData[_CutlassPairValueT]]:
+) -> tuple[ThreadData[_IntegerKeyT], ThreadData[CutlassPairValueT]]:
     """Return CUTLASS-qualified radix-sorted block key/value payloads.
 
     ``group`` must be a complete physical block. ``keys`` and ``values`` are
@@ -111,16 +107,16 @@ def radix_sort_pairs(
 
 @overload
 def radix_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
-    values: _CutlassPairValueT,
+    values: CutlassPairValueT,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
-) -> tuple[_IntegerKeyT, _CutlassPairValueT]:
+) -> tuple[_IntegerKeyT, CutlassPairValueT]:
     """Return one radix-sorted CUTLASS key/value pair per block member.
 
     ``group`` must be a complete physical block. ``keys`` and ``values`` are
@@ -132,13 +128,13 @@ def radix_sort_pairs(
 
 @overload
 def radix_sort_pairs(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]:
@@ -154,15 +150,15 @@ def radix_sort_pairs(
 
 @overload
 def radix_rank(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_IntegerKeyT],
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: ThreadData[int] | ThreadData[_NumpyInt32] | None = None,
+    exclusive_digit_prefix: ThreadData[int] | ThreadData[np.int32] | None = None,
 ) -> ThreadData[int]:
     """Return signed 32-bit ranks for a CUTLASS ``ThreadData`` key payload.
 
@@ -175,15 +171,15 @@ def radix_rank(
 
 @overload
 def radix_rank(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: ThreadData[int] | ThreadData[_NumpyInt32] | None = None,
+    exclusive_digit_prefix: ThreadData[int] | ThreadData[np.int32] | None = None,
 ) -> int:
     """Return one signed 32-bit rank for a CUTLASS scalar integer key.
 
@@ -193,15 +189,15 @@ def radix_rank(
 
 @overload
 def radix_rank(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: ThreadData[int] | ThreadData[_NumpyInt32] | None = None,
+    exclusive_digit_prefix: ThreadData[int] | ThreadData[np.int32] | None = None,
 ) -> ThreadData[int]:
     """Return signed 32-bit ranks for a CUTLASS register tensor.
 

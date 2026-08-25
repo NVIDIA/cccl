@@ -6,37 +6,33 @@
 
 from typing import Any, overload
 
-from numpy import int32 as _NumpyInt32
-from numpy import int64 as _NumpyInt64
-from numpy import uint32 as _NumpyUint32
-from numpy import uint64 as _NumpyUint64
+import numpy as np
 from typing_extensions import TypeVar
 
-from .._typing import HistogramAlgorithm as _HistogramAlgorithm
-from .._typing import ThreadDataLike as _ThreadDataLike
+from .._typing import HistogramAlgorithm, ThreadDataLike
 from ._enums import BlockHistogramAlgorithm
-from ._thread_group import _BlockGroup
+from ._thread_group import BlockGroup
 
 _CounterT = TypeVar(
     "_CounterT",
     int,
-    _NumpyInt32,
-    _NumpyUint32,
-    _NumpyInt64,
-    _NumpyUint64,
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
 )
 
 @overload
 def histogram(
-    group: _BlockGroup,
-    samples: _ThreadDataLike[Any],
+    group: BlockGroup,
+    samples: ThreadDataLike[Any],
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: type[_CounterT],
-    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
-) -> _ThreadDataLike[_CounterT]:
+    algorithm: HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> ThreadDataLike[_CounterT]:
     """Return striped counters typed by a portable dtype class.
 
     The complete block leaves the fixed-size ``samples`` payload unchanged.
@@ -46,26 +42,26 @@ def histogram(
 
 @overload
 def histogram(
-    group: _BlockGroup,
-    samples: _ThreadDataLike[Any],
+    group: BlockGroup,
+    samples: ThreadDataLike[Any],
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: None = None,
-    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
-) -> _ThreadDataLike[int]:
+    algorithm: HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> ThreadDataLike[int]:
     """Return default signed-integer striped counters."""
 
 @overload
 def histogram(
-    group: _BlockGroup,
-    samples: _ThreadDataLike[Any],
+    group: BlockGroup,
+    samples: ThreadDataLike[Any],
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: object,
-    algorithm: _HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
-) -> _ThreadDataLike[Any]:
+    algorithm: HistogramAlgorithm | BlockHistogramAlgorithm = "atomic",
+) -> ThreadDataLike[Any]:
     """Return counters using a Numba-CUDA-MLIR dtype token."""

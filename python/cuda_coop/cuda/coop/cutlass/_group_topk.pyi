@@ -10,28 +10,25 @@ from typing import Any, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _ValidItems as _ValidItems
+from .._typing import IntegerValue, ValidItems
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._typing import _CutlassOrderedItem as _CutlassOrderedItem
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup
+from ._typing import CutlassOrderedItem
 
-_CutlassTopKKeyT = TypeVar("_CutlassTopKKeyT", bound=_CutlassOrderedItem)
-_CutlassTopKValueT = TypeVar("_CutlassTopKValueT", bound=_CutlassOrderedItem)
+_CutlassTopKKeyT = TypeVar("_CutlassTopKKeyT", bound=CutlassOrderedItem)
+_CutlassTopKValueT = TypeVar("_CutlassTopKValueT", bound=CutlassOrderedItem)
 
 @overload
 def topk_max_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_CutlassTopKKeyT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[_CutlassTopKKeyT]:
     """Select the largest keys from a CUTLASS ``ThreadData`` block tile.
@@ -49,14 +46,14 @@ def topk_max_keys(
 
 @overload
 def topk_max_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _CutlassTopKKeyT,
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> _CutlassTopKKeyT:
     """Select the largest key from one scalar per CUTLASS block member.
@@ -69,14 +66,14 @@ def topk_max_keys(
 
 @overload
 def topk_max_keys(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    k: _IntegerValue,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]:
     """Select the largest keys from a CUTLASS register tensor.
@@ -90,14 +87,14 @@ def topk_max_keys(
 
 @overload
 def topk_min_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_CutlassTopKKeyT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[_CutlassTopKKeyT]:
     """Select the smallest keys from a CUTLASS ``ThreadData`` block tile.
@@ -115,14 +112,14 @@ def topk_min_keys(
 
 @overload
 def topk_min_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _CutlassTopKKeyT,
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> _CutlassTopKKeyT:
     """Select the smallest key from one scalar per CUTLASS block member.
@@ -135,14 +132,14 @@ def topk_min_keys(
 
 @overload
 def topk_min_keys(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    k: _IntegerValue,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> ThreadData[Any]:
     """Select the smallest keys from a CUTLASS register tensor.
@@ -156,15 +153,15 @@ def topk_min_keys(
 
 @overload
 def topk_max_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_CutlassTopKKeyT],
     values: ThreadData[_CutlassTopKValueT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_CutlassTopKKeyT], ThreadData[_CutlassTopKValueT]]:
     """Select largest-key CUTLASS ``ThreadData`` pairs without mutation.
@@ -180,15 +177,15 @@ def topk_max_pairs(
 
 @overload
 def topk_max_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _CutlassTopKKeyT,
     values: _CutlassTopKValueT,
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[_CutlassTopKKeyT, _CutlassTopKValueT]:
     """Select largest-key pairs from one scalar pair per block member.
@@ -202,15 +199,15 @@ def topk_max_pairs(
 
 @overload
 def topk_max_pairs(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
-    k: _IntegerValue,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]:
     """Select largest-key pairs from CUTLASS register tensors.
@@ -224,15 +221,15 @@ def topk_max_pairs(
 
 @overload
 def topk_min_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_CutlassTopKKeyT],
     values: ThreadData[_CutlassTopKValueT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[_CutlassTopKKeyT], ThreadData[_CutlassTopKValueT]]:
     """Select smallest-key CUTLASS ``ThreadData`` pairs without mutation.
@@ -248,15 +245,15 @@ def topk_min_pairs(
 
 @overload
 def topk_min_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _CutlassTopKKeyT,
     values: _CutlassTopKValueT,
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[_CutlassTopKKeyT, _CutlassTopKValueT]:
     """Select smallest-key pairs from one scalar pair per block member.
@@ -270,15 +267,15 @@ def topk_min_pairs(
 
 @overload
 def topk_min_pairs(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
-    k: _IntegerValue,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]:
     """Select smallest-key pairs from CUTLASS register tensors.

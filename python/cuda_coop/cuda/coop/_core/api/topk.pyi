@@ -6,27 +6,29 @@
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _IntegerValue as _IntegerValue
-from cuda.coop._typing import _PortableIntegerKey as _PortableIntegerKey
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _ValidItems as _ValidItems
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableIntegerKey,
+    PortableNumericScalar,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+)
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
-_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=PortableIntegerKey)
 
 def topk_max_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_IntegerKeyT]:
     """Return the largest keys in an unordered, shape-preserving prefix.
@@ -45,14 +47,14 @@ def topk_max_keys(
     """
 
 def topk_min_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_IntegerKeyT]:
     """Return the smallest keys in an unordered, shape-preserving prefix.
@@ -71,15 +73,15 @@ def topk_min_keys(
     """
 
 def topk_max_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     values: ThreadDataLike[_PortableNumericT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[
     ThreadDataLike[_IntegerKeyT],
@@ -93,15 +95,15 @@ def topk_max_pairs(
     """
 
 def topk_min_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     values: ThreadDataLike[_PortableNumericT],
-    k: _IntegerValue,
+    k: IntegerValue,
     /,
     *,
-    valid_items: _ValidItems | None = None,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    valid_items: ValidItems | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[
     ThreadDataLike[_IntegerKeyT],

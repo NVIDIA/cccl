@@ -8,12 +8,11 @@ from typing import TypeAlias
 
 from typing_extensions import TypeVar
 
-from .._typing import _PortableIntegerKey as _PortableIntegerKey
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
+from .._typing import PortableNumericScalar
 
-_ScalarT = TypeVar("_ScalarT", bound=_PortableNumericScalar)
-_CutlassNumericT = TypeVar("_CutlassNumericT", bound=_PortableNumericScalar)
-_ScalarValueT = TypeVar("_ScalarValueT", bound=_PortableNumericScalar)
+ScalarT = TypeVar("ScalarT", bound=PortableNumericScalar)
+CutlassNumericT = TypeVar("CutlassNumericT", bound=PortableNumericScalar)
+ScalarValueT = TypeVar("ScalarValueT", bound=PortableNumericScalar)
 
-_CutlassOrderedItem: TypeAlias = _PortableNumericScalar
-_CutlassPairValueT = TypeVar("_CutlassPairValueT", bound=_CutlassOrderedItem)
+CutlassOrderedItem: TypeAlias = PortableNumericScalar
+CutlassPairValueT = TypeVar("CutlassPairValueT", bound=CutlassOrderedItem)

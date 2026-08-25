@@ -5,12 +5,12 @@
 """Typing contract for portable explicit temporary storage."""
 
 from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import TempStorageSharing as _TempStorageSharing
+from cuda.coop._typing import TempStorageSharing
 
 def TempStorage(
     size_in_bytes: int | None = None,
     alignment: int | None = None,
     auto_sync: bool | None = None,
-    sharing: _TempStorageSharing = "shared",
+    sharing: TempStorageSharing = "shared",
 ) -> TempStorageLike:
     """Construct the selected backend's explicit scratch descriptor."""

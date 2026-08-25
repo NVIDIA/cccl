@@ -6,53 +6,44 @@
 
 from typing import TypeAlias, overload
 
-from numpy import bool_ as _NumpyBool
-from numpy import float16 as _NumpyFloat16
-from numpy import float32 as _NumpyFloat32
-from numpy import float64 as _NumpyFloat64
-from numpy import int8 as _NumpyInt8
-from numpy import int16 as _NumpyInt16
-from numpy import int32 as _NumpyInt32
-from numpy import int64 as _NumpyInt64
-from numpy import uint8 as _NumpyUint8
-from numpy import uint16 as _NumpyUint16
-from numpy import uint32 as _NumpyUint32
-from numpy import uint64 as _NumpyUint64
+import numpy as np
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
-from .._typing import _CompilerScalarLike as _CompilerScalarLike
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _PortableRunLength as _PortableRunLength
-from .._typing import _PortableRunValue as _PortableRunValue
-from .._typing import _TraceInteger as _TraceInteger
-from ._thread_group import _BlockGroup
+from .._typing import (
+    CompilerScalarLike,
+    IntegerValue,
+    PortableRunLength,
+    PortableRunValue,
+    ThreadDataLike,
+    TraceInteger,
+)
+from ._thread_group import BlockGroup
 
-_RunValueT = TypeVar("_RunValueT", bound=_PortableRunValue)
+_RunValueT = TypeVar("_RunValueT", bound=PortableRunValue)
 
-_RunLengthT = TypeVar("_RunLengthT", bound=_PortableRunLength)
+_RunLengthT = TypeVar("_RunLengthT", bound=PortableRunLength)
 
 _NumbaRunValue: TypeAlias = (
     bool
     | int
     | float
-    | _NumpyBool
-    | _NumpyInt8
-    | _NumpyUint8
-    | _NumpyInt16
-    | _NumpyUint16
-    | _NumpyInt32
-    | _NumpyUint32
-    | _NumpyInt64
-    | _NumpyUint64
-    | _NumpyFloat16
-    | _NumpyFloat32
-    | _NumpyFloat64
-    | _CompilerScalarLike
+    | np.bool_
+    | np.int8
+    | np.uint8
+    | np.int16
+    | np.uint16
+    | np.int32
+    | np.uint32
+    | np.int64
+    | np.uint64
+    | np.float16
+    | np.float32
+    | np.float64
+    | CompilerScalarLike
 )
 
 _NumbaRunLength: TypeAlias = (
-    _PortableRunLength | _NumpyInt8 | _NumpyUint8 | _NumpyInt16 | _NumpyUint16
+    PortableRunLength | np.int8 | np.uint8 | np.int16 | np.uint16
 )
 
 _NumbaRunValueT = TypeVar("_NumbaRunValueT", bound=_NumbaRunValue)
@@ -61,17 +52,17 @@ _NumbaRunLengthT = TypeVar("_NumbaRunLengthT", bound=_NumbaRunLength)
 
 @overload
 def run_length_decode(
-    group: _BlockGroup,
-    run_values: _ThreadDataLike[_RunValueT],
-    run_lengths: _ThreadDataLike[_RunLengthT],
+    group: BlockGroup,
+    run_values: ThreadDataLike[_RunValueT],
+    run_lengths: ThreadDataLike[_RunLengthT],
     /,
     *,
-    decoded_items_per_thread: _TraceInteger,
-    decoded_window_offset: _IntegerValue = 0,
-    relative_offsets: _ThreadDataLike[_RunLengthT] | None = None,
-    total_decoded_size: _ThreadDataLike[_RunLengthT] | None = None,
+    decoded_items_per_thread: TraceInteger,
+    decoded_window_offset: IntegerValue = 0,
+    relative_offsets: ThreadDataLike[_RunLengthT] | None = None,
+    total_decoded_size: ThreadDataLike[_RunLengthT] | None = None,
     decoded_offset_dtype: object = None,
-) -> _ThreadDataLike[_RunValueT]:
+) -> ThreadDataLike[_RunValueT]:
     """Decode a blockwise window with optional side outputs.
 
     Inputs have matching fixed extents and use blocked run ownership. The
@@ -86,15 +77,15 @@ def run_length_decode(
 
 @overload
 def run_length_decode(
-    group: _BlockGroup,
-    run_values: _ThreadDataLike[_NumbaRunValueT],
-    run_lengths: _ThreadDataLike[_NumbaRunLengthT],
+    group: BlockGroup,
+    run_values: ThreadDataLike[_NumbaRunValueT],
+    run_lengths: ThreadDataLike[_NumbaRunLengthT],
     /,
     *,
-    decoded_items_per_thread: _TraceInteger,
-    decoded_window_offset: _IntegerValue = 0,
-    relative_offsets: _ThreadDataLike[_NumbaRunLengthT] | None = None,
-    total_decoded_size: _ThreadDataLike[_NumbaRunLengthT] | None = None,
+    decoded_items_per_thread: TraceInteger,
+    decoded_window_offset: IntegerValue = 0,
+    relative_offsets: ThreadDataLike[_NumbaRunLengthT] | None = None,
+    total_decoded_size: ThreadDataLike[_NumbaRunLengthT] | None = None,
     decoded_offset_dtype: object = None,
-) -> _ThreadDataLike[_NumbaRunValueT]:
+) -> ThreadDataLike[_NumbaRunValueT]:
     """Decode using the broader Numba-CUDA-MLIR scalar dtype surface."""

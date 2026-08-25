@@ -6,20 +6,18 @@
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import ExchangeMode as _ExchangeMode
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
+from cuda.coop._typing import ExchangeMode, PortableNumericScalar, ThreadDataLike
 
-from .thread_group import _MemoryGroup
+from .thread_group import MemoryGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 def exchange(
-    group: _MemoryGroup,
+    group: MemoryGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    mode: _ExchangeMode = "striped_to_blocked",
+    mode: ExchangeMode = "striped_to_blocked",
 ) -> ThreadDataLike[_PortableNumericT]:
     """Return a layout-rearranged ``ThreadData`` payload without mutation.
 

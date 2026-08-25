@@ -4,7 +4,7 @@
 
 """Explicit scratch-storage configuration for cooperative primitives."""
 
-from .._typing import TempStorageSharing as _TempStorageSharing
+from .._typing import TempStorageSharing
 
 class TempStorage:
     """Explicit opaque byte scratch for planned shared-memory operations."""
@@ -12,14 +12,14 @@ class TempStorage:
     size_in_bytes: int | None
     alignment: int | None
     auto_sync: bool
-    sharing: _TempStorageSharing
+    sharing: TempStorageSharing
 
     def __init__(
         self,
         size_in_bytes: int | None = None,
         alignment: int | None = None,
         auto_sync: bool | None = None,
-        sharing: _TempStorageSharing = "shared",
+        sharing: TempStorageSharing = "shared",
     ) -> None:
         """Configure scratch size, alignment, synchronization, and sharing."""
 

@@ -10,16 +10,14 @@ from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
-from .._typing import ThreadGroupKind as _ThreadGroupKind
-from .._typing import ThreadLevel as _ThreadLevel
-from .._typing import _CompilerIntegerLike as _CompilerIntegerLike
-from ._typing import _ScalarT as _ScalarT
+from .._typing import CompilerIntegerLike, ThreadGroupKind, ThreadLevel
+from ._typing import ScalarT
 
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
-    bound=_ThreadGroupKind,
+    bound=ThreadGroupKind,
     covariant=True,
-    default=_ThreadGroupKind,
+    default=ThreadGroupKind,
 )
 
 Hierarchy = ThreadHierarchy
@@ -30,30 +28,26 @@ class ThreadGroup(
 ):
     """Common CUDA group descriptor with CUTLASS lowering methods."""
 
-    def rank(self, level: _ThreadLevel = "thread") -> _CompilerIntegerLike:
+    def rank(self, level: ThreadLevel = "thread") -> CompilerIntegerLike:
         """Return this group's rank as a CUTLASS ``Int32`` scalar."""
 
-    def count(self, level: _ThreadLevel = "thread") -> _CompilerIntegerLike:
+    def count(self, level: ThreadLevel = "thread") -> CompilerIntegerLike:
         """Return this group's count as a CUTLASS ``Int32`` scalar."""
 
     @overload
-    def rank_as(
-        self, dtype: type[_ScalarT], level: _ThreadLevel = "thread"
-    ) -> _ScalarT:
+    def rank_as(self, dtype: type[ScalarT], level: ThreadLevel = "thread") -> ScalarT:
         """Convert rank to a portable or structural CUTLASS numeric dtype."""
 
     @overload
-    def rank_as(self, dtype: None = None, level: _ThreadLevel = "thread") -> Any:
+    def rank_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external CUTLASS dtype token."""
 
     @overload
-    def count_as(
-        self, dtype: type[_ScalarT], level: _ThreadLevel = "thread"
-    ) -> _ScalarT:
+    def count_as(self, dtype: type[ScalarT], level: ThreadLevel = "thread") -> ScalarT:
         """Convert count to a portable or structural CUTLASS numeric dtype."""
 
     @overload
-    def count_as(self, dtype: None = None, level: _ThreadLevel = "thread") -> Any:
+    def count_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external CUTLASS dtype token."""
 
     def sync(self) -> None:
@@ -86,12 +80,12 @@ class ThreadGroup(
     ) -> ThreadGroup[Literal["warps_within_block"]]:
         """Partition a block into groups of physical warps."""
 
-    def is_member(self) -> _CompilerIntegerLike:
+    def is_member(self) -> CompilerIntegerLike:
         """Return a CUTLASS ``Uint8`` membership flag for the current thread."""
 
-_MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
-_MergeSortWarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
-_ReductionGroup: TypeAlias = ThreadGroup[
+MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
+MergeSortWarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
+ReductionGroup: TypeAlias = ThreadGroup[
     Literal[
         "thread",
         "warp",
@@ -101,8 +95,8 @@ _ReductionGroup: TypeAlias = ThreadGroup[
         "cluster",
     ]
 ]
-_BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
-_WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
+BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
+WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
 
 def this_thread() -> ThreadGroup[Literal["thread"]]:
     """Describe the current thread."""

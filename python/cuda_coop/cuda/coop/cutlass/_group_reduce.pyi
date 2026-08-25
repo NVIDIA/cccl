@@ -8,68 +8,61 @@ from __future__ import annotations
 
 from typing import Any, Literal, overload
 
-from .._typing import ReduceAlgorithm as _ReduceAlgorithm
-from .._typing import ReduceOperator as _ReduceOperator
-from .._typing import _ValidItems as _ValidItems
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._thread_group import _ReductionGroup as _ReductionGroup
-from ._thread_group import _WarpGroup as _WarpGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
-from ._typing import _ScalarValueT as _ScalarValueT
+from .._typing import ReduceAlgorithm, ReduceOperator, ValidItems
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup, ReductionGroup, WarpGroup
+from ._typing import CutlassNumericT, ScalarValueT
 
 @overload
 def reduce(
-    group: _ReductionGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: ReductionGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
-) -> _CutlassNumericT:
+) -> CutlassNumericT:
     """Reduce a full-group register payload and preserve its element type."""
 
 @overload
 def reduce(
-    group: _ReductionGroup,
-    value: _ScalarValueT,
+    group: ReductionGroup,
+    value: ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Reduce full-group CUTLASS scalars while preserving their static type."""
 
 @overload
 def reduce(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
-) -> _CutlassNumericT:
+    algorithm: ReduceAlgorithm,
+) -> CutlassNumericT:
     """Reduce a register payload with an explicit CUB block algorithm."""
 
 @overload
 def reduce(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
-    algorithm: _ReduceAlgorithm | None = None,
-) -> _ScalarValueT:
+    valid_items: ValidItems,
+    algorithm: ReduceAlgorithm | None = None,
+) -> ScalarValueT:
     """Reduce a scalar through direct CUB BlockReduce at the block root.
 
     ``valid_items`` accepts Python, NumPy, and structural compiler integers.
@@ -77,28 +70,28 @@ def reduce(
 
 @overload
 def reduce(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
-) -> _ScalarValueT:
+    algorithm: ReduceAlgorithm,
+) -> ScalarValueT:
     """Reduce a scalar with an explicit direct CUB BlockReduce algorithm."""
 
 @overload
 def reduce(
-    group: _WarpGroup,
-    value: _ScalarValueT,
+    group: WarpGroup,
+    value: ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     algorithm: None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Reduce a valid scalar prefix through direct CUB WarpReduce.
 
     ``valid_items`` accepts Python, NumPy, and structural compiler integers.
@@ -106,11 +99,11 @@ def reduce(
 
 @overload
 def reduce(
-    group: _ReductionGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: ReductionGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
@@ -119,50 +112,50 @@ def reduce(
 
 @overload
 def sum(
-    group: _ReductionGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: ReductionGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
-) -> _CutlassNumericT:
+) -> CutlassNumericT:
     """Sum a full-group register payload and preserve its element type."""
 
 @overload
 def sum(
-    group: _ReductionGroup,
-    value: _ScalarValueT,
+    group: ReductionGroup,
+    value: ScalarValueT,
     /,
     *,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Sum full-group CUTLASS scalars while preserving their static type."""
 
 @overload
 def sum(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
-) -> _CutlassNumericT:
+    algorithm: ReduceAlgorithm,
+) -> CutlassNumericT:
     """Sum a register payload with an explicit CUB block algorithm."""
 
 @overload
 def sum(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
-    algorithm: _ReduceAlgorithm | None = None,
-) -> _ScalarValueT:
+    valid_items: ValidItems,
+    algorithm: ReduceAlgorithm | None = None,
+) -> ScalarValueT:
     """Sum a scalar through direct CUB BlockReduce at the block root.
 
     ``valid_items`` accepts Python, NumPy, and structural compiler integers.
@@ -170,26 +163,26 @@ def sum(
 
 @overload
 def sum(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
-) -> _ScalarValueT:
+    algorithm: ReduceAlgorithm,
+) -> ScalarValueT:
     """Sum a scalar with an explicit direct CUB BlockReduce algorithm."""
 
 @overload
 def sum(
-    group: _WarpGroup,
-    value: _ScalarValueT,
+    group: WarpGroup,
+    value: ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     algorithm: None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Sum a valid scalar prefix through direct CUB WarpReduce.
 
     ``valid_items`` accepts Python, NumPy, and structural compiler integers.
@@ -197,8 +190,8 @@ def sum(
 
 @overload
 def sum(
-    group: _ReductionGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: ReductionGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     broadcast: bool = True,

@@ -8,26 +8,28 @@ from typing import overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import HistogramAlgorithm as _HistogramAlgorithm
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableIntegerKey as _PortableIntegerKey
-from cuda.coop._typing import _PortableIntegerValue as _PortableIntegerValue
+from cuda.coop._typing import (
+    HistogramAlgorithm,
+    PortableIntegerKey,
+    PortableIntegerValue,
+    ThreadDataLike,
+)
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_CounterT = TypeVar("_CounterT", bound=_PortableIntegerKey)
-_HistogramSampleT = TypeVar("_HistogramSampleT", bound=_PortableIntegerValue)
+_CounterT = TypeVar("_CounterT", bound=PortableIntegerKey)
+_HistogramSampleT = TypeVar("_HistogramSampleT", bound=PortableIntegerValue)
 
 @overload
 def histogram(
-    group: _BlockGroup,
+    group: BlockGroup,
     samples: ThreadDataLike[_HistogramSampleT],
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: type[_CounterT],
-    algorithm: _HistogramAlgorithm = "atomic",
+    algorithm: HistogramAlgorithm = "atomic",
 ) -> ThreadDataLike[_CounterT]:
     """Return striped counters typed by a portable dtype class.
 
@@ -39,14 +41,14 @@ def histogram(
 
 @overload
 def histogram(
-    group: _BlockGroup,
+    group: BlockGroup,
     samples: ThreadDataLike[_HistogramSampleT],
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: None = None,
-    algorithm: _HistogramAlgorithm = "atomic",
+    algorithm: HistogramAlgorithm = "atomic",
 ) -> ThreadDataLike[int]:
     """Return default signed-integer striped counters.
 

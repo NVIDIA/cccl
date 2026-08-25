@@ -6,43 +6,45 @@
 
 from typing import overload
 
-from numpy import int32 as _NumpyInt32
+import numpy as np
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _PortableIntegerKey as _PortableIntegerKey
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
-from .._typing import _TraceInteger as _TraceInteger
+from .._typing import (
+    IntegerValue,
+    PortableIntegerKey,
+    PortableNumericScalar,
+    ThreadDataLike,
+    TraceInteger,
+)
 from ._temp_storage import TempStorage
-from ._thread_group import _BlockGroup
+from ._thread_group import BlockGroup
 
-_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=PortableIntegerKey)
 
-_RadixValueT = TypeVar("_RadixValueT", bound=_PortableNumericScalar)
+_RadixValueT = TypeVar("_RadixValueT", bound=PortableNumericScalar)
 
 @overload
 def radix_sort_keys(
-    group: _BlockGroup,
-    keys: _ThreadDataLike[_IntegerKeyT],
+    group: BlockGroup,
+    keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
-) -> _ThreadDataLike[_IntegerKeyT]:
+) -> ThreadDataLike[_IntegerKeyT]:
     """Return a fresh radix-sorted block payload."""
 
 @overload
 def radix_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
@@ -51,28 +53,28 @@ def radix_sort_keys(
 
 @overload
 def radix_sort_pairs(
-    group: _BlockGroup,
-    keys: _ThreadDataLike[_IntegerKeyT],
-    values: _ThreadDataLike[_RadixValueT],
+    group: BlockGroup,
+    keys: ThreadDataLike[_IntegerKeyT],
+    values: ThreadDataLike[_RadixValueT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
-) -> tuple[_ThreadDataLike[_IntegerKeyT], _ThreadDataLike[_RadixValueT]]:
+) -> tuple[ThreadDataLike[_IntegerKeyT], ThreadDataLike[_RadixValueT]]:
     """Return fresh radix-sorted key/value payloads."""
 
 @overload
 def radix_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
     values: _RadixValueT,
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorage | None = None,
     blocked_to_striped: bool = False,
@@ -81,32 +83,32 @@ def radix_sort_pairs(
 
 @overload
 def radix_rank(
-    group: _BlockGroup,
-    keys: _ThreadDataLike[_IntegerKeyT],
+    group: BlockGroup,
+    keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: _ThreadDataLike[int]
-    | _ThreadDataLike[_NumpyInt32]
+    exclusive_digit_prefix: ThreadDataLike[int]
+    | ThreadDataLike[np.int32]
     | None = None,
-) -> _ThreadDataLike[int]:
+) -> ThreadDataLike[int]:
     """Return fresh signed 32-bit ranks for one radix digit."""
 
 @overload
 def radix_rank(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _IntegerKeyT,
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: _ThreadDataLike[int]
-    | _ThreadDataLike[_NumpyInt32]
+    exclusive_digit_prefix: ThreadDataLike[int]
+    | ThreadDataLike[np.int32]
     | None = None,
 ) -> int:
     """Return one signed 32-bit radix rank per block thread."""

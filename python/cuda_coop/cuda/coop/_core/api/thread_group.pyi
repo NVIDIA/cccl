@@ -8,18 +8,20 @@ from typing import Any, Generic, Literal, TypeAlias, overload
 
 from typing_extensions import Self, TypeVar
 
-from cuda.coop._typing import ThreadGroupKind as _ThreadGroupKind
-from cuda.coop._typing import ThreadLevel as _ThreadLevel
-from cuda.coop._typing import _IntegerValue as _IntegerValue
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _SynchronizableGroupKind as _SynchronizableGroupKind
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableNumericScalar,
+    SynchronizableGroupKind,
+    ThreadGroupKind,
+    ThreadLevel,
+)
 
-_ItemT = TypeVar("_ItemT", bound=_PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
-    bound=_ThreadGroupKind,
+    bound=ThreadGroupKind,
     covariant=True,
-    default=_ThreadGroupKind,
+    default=ThreadGroupKind,
 )
 
 class ThreadHierarchy:
@@ -71,7 +73,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def is_static(self) -> bool:
         """Return whether dimensions needed by this group are static."""
 
-    def rank(self, level: _ThreadLevel = "thread") -> _IntegerValue:
+    def rank(self, level: ThreadLevel = "thread") -> IntegerValue:
         """Return this group's rank relative to another hierarchy level.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -81,7 +83,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
 
-    def count(self, level: _ThreadLevel = "thread") -> _IntegerValue:
+    def count(self, level: ThreadLevel = "thread") -> IntegerValue:
         """Return this group's count relative to another hierarchy level.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -92,7 +94,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         """
 
     @overload
-    def rank_as(self, dtype: type[_ItemT], level: _ThreadLevel = "thread") -> _ItemT:
+    def rank_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
         """Return rank converted to a dtype.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -102,7 +104,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
     @overload
-    def rank_as(self, dtype: None = None, level: _ThreadLevel = "thread") -> Any:
+    def rank_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external compiler dtype token.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -113,7 +115,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         """
 
     @overload
-    def count_as(self, dtype: type[_ItemT], level: _ThreadLevel = "thread") -> _ItemT:
+    def count_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
         """Return count converted to a dtype.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -123,7 +125,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
     @overload
-    def count_as(self, dtype: None = None, level: _ThreadLevel = "thread") -> Any:
+    def count_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external compiler dtype token.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -133,7 +135,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
 
-    def sync(self: ThreadGroup[_SynchronizableGroupKind]) -> None:
+    def sync(self: ThreadGroup[SynchronizableGroupKind]) -> None:
         """Synchronize the group's members.
 
         Grid synchronization is unavailable through the portable API.
@@ -145,7 +147,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
 
-    def sync_aligned(self: ThreadGroup[_SynchronizableGroupKind]) -> None:
+    def sync_aligned(self: ThreadGroup[SynchronizableGroupKind]) -> None:
         """Synchronize an aligned group.
 
         Grid synchronization is unavailable through the portable API.
@@ -173,7 +175,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         exhaustive: bool = True,
     ) -> ThreadGroup[Literal["warps_within_block"]]:
         """Partition a block into groups of physical warps."""
-    def is_member(self) -> _IntegerValue:
+    def is_member(self) -> IntegerValue:
         """Return whether the current thread belongs to this group.
 
         Outside compilation, raises ``CoopCompilerContextRequiredError`` with
@@ -183,12 +185,12 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         cuda.coop.numba_mlir``.
         """
 
-_MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
-_ReductionGroup: TypeAlias = ThreadGroup[
+MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
+ReductionGroup: TypeAlias = ThreadGroup[
     Literal["thread", "warp", "threads_within_warp", "block", "cluster"]
 ]
-_BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
-_WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
+BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
+WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
 
 def this_thread() -> ThreadGroup[Literal["thread"]]:
     """Describe the current thread."""

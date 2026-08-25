@@ -6,23 +6,20 @@
 
 from typing import Any, Generic, Literal, TypeAlias, overload
 
-from numpy import int32 as _NumpyInt32
-from numpy import uint8 as _NumpyUint8
+import numpy as np
 from typing_extensions import TypeVar
 
 from .. import ThreadGroup as _CommonThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
-from .._typing import ThreadGroupKind as _ThreadGroupKind
-from .._typing import ThreadLevel as _ThreadLevel
-from .._typing import _SynchronizableGroupKind as _SynchronizableGroupKind
+from .._typing import SynchronizableGroupKind, ThreadGroupKind, ThreadLevel
 
 _ItemT = TypeVar("_ItemT")
 
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
-    bound=_ThreadGroupKind,
+    bound=ThreadGroupKind,
     covariant=True,
-    default=_ThreadGroupKind,
+    default=ThreadGroupKind,
 )
 
 Hierarchy = ThreadHierarchy
@@ -33,36 +30,36 @@ class ThreadGroup(
 ):
     """Compile-time CUDA group descriptor for Numba-CUDA-MLIR."""
 
-    def rank(self, level: _ThreadLevel = "thread") -> _NumpyInt32:
+    def rank(self, level: ThreadLevel = "thread") -> np.int32:
         """Return this group's rank as a NumPy-compatible ``int32`` scalar."""
 
-    def count(self, level: _ThreadLevel = "thread") -> _NumpyInt32:
+    def count(self, level: ThreadLevel = "thread") -> np.int32:
         """Return this group's count as a NumPy-compatible ``int32`` scalar."""
 
     @overload
-    def rank_as(self, dtype: type[_ItemT], level: _ThreadLevel = "thread") -> _ItemT:
+    def rank_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
         """Return the group rank converted to an ordinary scalar dtype."""
 
     @overload
-    def rank_as(self, dtype: object = None, level: _ThreadLevel = "thread") -> Any:
+    def rank_as(self, dtype: object = None, level: ThreadLevel = "thread") -> Any:
         """Return the group rank converted to a compiler dtype token."""
 
     @overload
     def count_as(
         self,
         dtype: type[_ItemT],
-        level: _ThreadLevel = "thread",
+        level: ThreadLevel = "thread",
     ) -> _ItemT:
         """Return the group count converted to an ordinary scalar dtype."""
 
     @overload
-    def count_as(self, dtype: object = None, level: _ThreadLevel = "thread") -> Any:
+    def count_as(self, dtype: object = None, level: ThreadLevel = "thread") -> Any:
         """Return the group count converted to a compiler dtype token."""
 
-    def sync(self: ThreadGroup[_SynchronizableGroupKind]) -> None:
+    def sync(self: ThreadGroup[SynchronizableGroupKind]) -> None:
         """Synchronize participating members; grid groups are unsupported."""
 
-    def sync_aligned(self: ThreadGroup[_SynchronizableGroupKind]) -> None:
+    def sync_aligned(self: ThreadGroup[SynchronizableGroupKind]) -> None:
         """Synchronize a converged non-grid group."""
 
     @overload
@@ -83,10 +80,10 @@ class ThreadGroup(
     ) -> ThreadGroup[Literal["warps_within_block"]]:
         """Partition a block into groups of physical warps."""
 
-    def is_member(self) -> _NumpyUint8:
+    def is_member(self) -> np.uint8:
         """Return a NumPy-compatible ``uint8`` membership flag."""
 
-_ReductionGroup: TypeAlias = ThreadGroup[
+ReductionGroup: TypeAlias = ThreadGroup[
     Literal[
         "thread",
         "warp",
@@ -97,9 +94,9 @@ _ReductionGroup: TypeAlias = ThreadGroup[
     ]
 ]
 
-_BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
+BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
 
-_WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
+WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
 
 def this_thread() -> ThreadGroup[Literal["thread"]]:
     """Describe the current thread."""
@@ -120,9 +117,6 @@ __all__ = [
     "Hierarchy",
     "ThreadGroup",
     "ThreadHierarchy",
-    "_BlockGroup",
-    "_ReductionGroup",
-    "_WarpGroup",
     "this_block",
     "this_cluster",
     "this_grid",

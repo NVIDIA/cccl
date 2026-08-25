@@ -8,24 +8,26 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import ReduceAlgorithm as _ReduceAlgorithm
-from cuda.coop._typing import ReduceOperator as _ReduceOperator
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _ValidItems as _ValidItems
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    ReduceAlgorithm,
+    ReduceOperator,
+    ThreadDataLike,
+    ValidItems,
+)
 
-from .thread_group import _BlockGroup, _ReductionGroup, _WarpGroup
+from .thread_group import BlockGroup, ReductionGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=_PortableNumericScalar)
-_ScalarValueT = TypeVar("_ScalarValueT", bound=_PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ScalarValueT = TypeVar("_ScalarValueT", bound=PortableNumericScalar)
 
 @overload
 def reduce(
-    group: _ReductionGroup,
+    group: ReductionGroup,
     value: ThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
@@ -34,11 +36,11 @@ def reduce(
 
 @overload
 def reduce(
-    group: _ReductionGroup,
+    group: ReductionGroup,
     value: _ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
@@ -47,14 +49,14 @@ def reduce(
 
 @overload
 def reduce(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
-    algorithm: _ReduceAlgorithm | None = None,
+    valid_items: ValidItems,
+    algorithm: ReduceAlgorithm | None = None,
 ) -> _ScalarValueT:
     """Reduce a scalar through direct CUB BlockReduce at the block root.
 
@@ -63,26 +65,26 @@ def reduce(
 
 @overload
 def reduce(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
+    algorithm: ReduceAlgorithm,
 ) -> _ScalarValueT:
     """Reduce a scalar with an explicit direct CUB BlockReduce algorithm."""
 
 @overload
 def reduce(
-    group: _WarpGroup,
+    group: WarpGroup,
     value: _ScalarValueT,
     /,
     *,
-    binary_op: _ReduceOperator | None = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     algorithm: None = None,
 ) -> _ScalarValueT:
     """Reduce a valid scalar prefix through direct CUB WarpReduce.
@@ -92,7 +94,7 @@ def reduce(
 
 @overload
 def sum(
-    group: _ReductionGroup,
+    group: ReductionGroup,
     value: ThreadDataLike[_ItemT],
     /,
     *,
@@ -104,7 +106,7 @@ def sum(
 
 @overload
 def sum(
-    group: _ReductionGroup,
+    group: ReductionGroup,
     value: _ScalarValueT,
     /,
     *,
@@ -116,13 +118,13 @@ def sum(
 
 @overload
 def sum(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
-    algorithm: _ReduceAlgorithm | None = None,
+    valid_items: ValidItems,
+    algorithm: ReduceAlgorithm | None = None,
 ) -> _ScalarValueT:
     """Sum a scalar through direct CUB BlockReduce at the block root.
 
@@ -131,24 +133,24 @@ def sum(
 
 @overload
 def sum(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: _ReduceAlgorithm,
+    algorithm: ReduceAlgorithm,
 ) -> _ScalarValueT:
     """Sum a scalar with an explicit direct CUB BlockReduce algorithm."""
 
 @overload
 def sum(
-    group: _WarpGroup,
+    group: WarpGroup,
     value: _ScalarValueT,
     /,
     *,
     broadcast: Literal[False],
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     algorithm: None = None,
 ) -> _ScalarValueT:
     """Sum a valid scalar prefix through direct CUB WarpReduce.

@@ -8,79 +8,77 @@ from __future__ import annotations
 
 from typing import Any, Literal, overload
 
-from .._typing import ScanAlgorithm as _ScanAlgorithm
-from .._typing import ScanOperator as _ScanOperator
-from .._typing import _NonSumScanOperator as _NonSumScanOperator
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
-from .._typing import _SumScanOperator as _SumScanOperator
-from .._typing import _ValidItems as _ValidItems
+from .._typing import (
+    NonSumScanOperator,
+    PortableNumericScalar,
+    ScanAlgorithm,
+    ScanOperator,
+    SumScanOperator,
+    ValidItems,
+)
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._thread_group import _WarpGroup as _WarpGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
-from ._typing import _ScalarT as _ScalarT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup, WarpGroup
+from ._typing import CutlassNumericT, ScalarT
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-exclusive sums without mutating the input payload."""
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return non-sum block prefixes from a required initial value."""
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _ScanOperator | None = None,
+    scan_op: ScanOperator | None = None,
     initial_value: None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-inclusive prefixes without mutating the input payload."""
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -99,14 +97,14 @@ def scan(
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -125,14 +123,14 @@ def scan(
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _ScanOperator | None = None,
+    scan_op: ScanOperator | None = None,
     initial_value: None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -151,120 +149,120 @@ def scan(
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Block-exclusive sum a CUTLASS scalar from an optional initial value."""
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Block-exclusive scan a CUTLASS scalar with a non-sum initial value."""
 
 @overload
 def scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _ScanOperator | None = None,
+    scan_op: ScanOperator | None = None,
     initial_value: None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Block-inclusive scan a portable or structural CUTLASS scalar."""
 
 @overload
 def scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Warp-group-exclusive sum a scalar from an optional initial value."""
 
 @overload
 def scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Warp-group-exclusive scan with a required non-sum initial value."""
 
 @overload
 def scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _ScanOperator | None = None,
+    scan_op: ScanOperator | None = None,
     initial_value: None = None,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Warp-group-inclusive scan a scalar without an initial value."""
 
 @overload
 def exclusive_sum(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-exclusive sums with the input payload shape."""
 
 @overload
 def exclusive_sum(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -280,50 +278,50 @@ def exclusive_sum(
 
 @overload
 def exclusive_sum(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through block-exclusive sum."""
 
 @overload
 def exclusive_sum(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through physical- or logical-warp exclusive sum."""
 
 @overload
 def inclusive_sum(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-inclusive sums with the input payload shape."""
 
 @overload
 def inclusive_sum(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -339,69 +337,69 @@ def inclusive_sum(
 
 @overload
 def inclusive_sum(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
-    algorithm: _ScanAlgorithm | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through block-inclusive sum."""
 
 @overload
 def inclusive_sum(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through physical- or logical-warp inclusive sum."""
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-exclusive sums with the input payload shape."""
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return non-sum block prefixes from a required initial value."""
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -418,13 +416,13 @@ def exclusive_scan(
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -442,86 +440,86 @@ def exclusive_scan(
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Block-exclusive sum a scalar from an optional initial value."""
 
 @overload
 def exclusive_scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Block-exclusive scan a scalar with a required non-sum initial value."""
 
 @overload
 def exclusive_scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _SumScanOperator | None = None,
-    initial_value: _PortableNumericScalar | None = None,
+    scan_op: SumScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Warp-group-exclusive sum a scalar from an optional initial value."""
 
 @overload
 def exclusive_scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _NonSumScanOperator,
-    initial_value: _PortableNumericScalar,
+    scan_op: NonSumScanOperator,
+    initial_value: PortableNumericScalar,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Warp-group-exclusive scan with a required non-sum initial value."""
 
 @overload
 def inclusive_scan(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
-    scan_op: _ScanOperator | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: ScanOperator | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return block-inclusive prefixes with the input payload shape."""
 
 @overload
 def inclusive_scan(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    scan_op: _ScanOperator | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: ScanOperator | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
@@ -538,30 +536,30 @@ def inclusive_scan(
 
 @overload
 def inclusive_scan(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _ScanOperator | None = None,
-    algorithm: _ScanAlgorithm | None = None,
+    scan_op: ScanOperator | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorage | None = None,
     valid_items: None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through block-inclusive Scan."""
 
 @overload
 def inclusive_scan(
-    group: _WarpGroup,
-    value: _ScalarT,
+    group: WarpGroup,
+    value: ScalarT,
     /,
     *,
-    scan_op: _ScanOperator | None = None,
+    scan_op: ScanOperator | None = None,
     algorithm: None = None,
     temp_storage: None = None,
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     aggregate_output: ThreadData | None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Preserve a scalar type through physical- or logical-warp inclusive Scan."""
 
 __all__ = [

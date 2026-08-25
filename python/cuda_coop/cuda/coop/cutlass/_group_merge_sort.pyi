@@ -10,18 +10,14 @@ from typing import Any, Literal, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import _ValidItems as _ValidItems
+from .._typing import ValidItems
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._thread_group import _MergeSortWarpGroup as _MergeSortWarpGroup
-from ._typing import _CutlassOrderedItem as _CutlassOrderedItem
-from ._typing import _CutlassPairValueT as _CutlassPairValueT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup, MergeSortWarpGroup
+from ._typing import CutlassOrderedItem, CutlassPairValueT
 
-_BlockMergeSortKeyT = TypeVar("_BlockMergeSortKeyT", bound=_CutlassOrderedItem)
-_WarpMergeSortKeyT = TypeVar("_WarpMergeSortKeyT", bound=_CutlassOrderedItem)
+_BlockMergeSortKeyT = TypeVar("_BlockMergeSortKeyT", bound=CutlassOrderedItem)
+_WarpMergeSortKeyT = TypeVar("_WarpMergeSortKeyT", bound=CutlassOrderedItem)
 _CompareOperator: TypeAlias = Literal[
     "<",
     "lt",
@@ -37,8 +33,8 @@ _CompareOperator: TypeAlias = Literal[
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
@@ -57,13 +53,13 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
-    oob_default: _CutlassOrderedItem,
+    valid_items: ValidItems,
+    oob_default: CutlassOrderedItem,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
 ) -> ThreadData[Any]:
@@ -78,8 +74,8 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _MergeSortWarpGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: MergeSortWarpGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
@@ -97,13 +93,13 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _MergeSortWarpGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: MergeSortWarpGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
-    oob_default: _CutlassOrderedItem,
+    valid_items: ValidItems,
+    oob_default: CutlassOrderedItem,
     temp_storage: None = None,
     compare_op: _CompareOperator | None = None,
 ) -> ThreadData[Any]:
@@ -117,7 +113,7 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_BlockMergeSortKeyT],
     /,
     *,
@@ -136,12 +132,12 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_BlockMergeSortKeyT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _BlockMergeSortKeyT,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
@@ -157,7 +153,7 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _MergeSortWarpGroup,
+    group: MergeSortWarpGroup,
     keys: ThreadData[_WarpMergeSortKeyT],
     /,
     *,
@@ -175,12 +171,12 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _MergeSortWarpGroup,
+    group: MergeSortWarpGroup,
     keys: ThreadData[_WarpMergeSortKeyT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _WarpMergeSortKeyT,
     temp_storage: None = None,
     compare_op: _CompareOperator | None = None,
@@ -194,7 +190,7 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _BlockMergeSortKeyT,
     /,
     *,
@@ -208,12 +204,12 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _BlockMergeSortKeyT,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _BlockMergeSortKeyT,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
@@ -227,9 +223,9 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_BlockMergeSortKeyT],
-    values: ThreadData[_CutlassPairValueT],
+    values: ThreadData[CutlassPairValueT],
     /,
     *,
     descending: bool = False,
@@ -237,22 +233,22 @@ def merge_sort_pairs(
     oob_default: None = None,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[ThreadData[_BlockMergeSortKeyT], ThreadData[_CutlassPairValueT]]:
+) -> tuple[ThreadData[_BlockMergeSortKeyT], ThreadData[CutlassPairValueT]]:
     """Return fully merge-sorted CUTLASS block key/value payloads."""
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadData[_BlockMergeSortKeyT],
-    values: ThreadData[_CutlassPairValueT],
+    values: ThreadData[CutlassPairValueT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _BlockMergeSortKeyT,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[ThreadData[_BlockMergeSortKeyT], ThreadData[_CutlassPairValueT]]:
+) -> tuple[ThreadData[_BlockMergeSortKeyT], ThreadData[CutlassPairValueT]]:
     """Return partial-tile sorted CUTLASS block key/value payloads.
 
     For a partial tile, provide ``valid_items`` and ``oob_default`` together;
@@ -262,9 +258,9 @@ def merge_sort_pairs(
 
 @overload
 def merge_sort_pairs(
-    group: _MergeSortWarpGroup,
+    group: MergeSortWarpGroup,
     keys: ThreadData[_WarpMergeSortKeyT],
-    values: ThreadData[_CutlassPairValueT],
+    values: ThreadData[CutlassPairValueT],
     /,
     *,
     descending: bool = False,
@@ -272,29 +268,29 @@ def merge_sort_pairs(
     oob_default: None = None,
     temp_storage: None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[ThreadData[_WarpMergeSortKeyT], ThreadData[_CutlassPairValueT]]:
+) -> tuple[ThreadData[_WarpMergeSortKeyT], ThreadData[CutlassPairValueT]]:
     """Return fully merge-sorted CUTLASS warp key/value payloads."""
 
 @overload
 def merge_sort_pairs(
-    group: _MergeSortWarpGroup,
+    group: MergeSortWarpGroup,
     keys: ThreadData[_WarpMergeSortKeyT],
-    values: ThreadData[_CutlassPairValueT],
+    values: ThreadData[CutlassPairValueT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _WarpMergeSortKeyT,
     temp_storage: None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[ThreadData[_WarpMergeSortKeyT], ThreadData[_CutlassPairValueT]]:
+) -> tuple[ThreadData[_WarpMergeSortKeyT], ThreadData[CutlassPairValueT]]:
     """Return partial-tile sorted CUTLASS warp key/value payloads."""
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _BlockMergeSortKeyT,
-    values: _CutlassPairValueT,
+    values: CutlassPairValueT,
     /,
     *,
     descending: bool = False,
@@ -302,29 +298,29 @@ def merge_sort_pairs(
     oob_default: None = None,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[_BlockMergeSortKeyT, _CutlassPairValueT]:
+) -> tuple[_BlockMergeSortKeyT, CutlassPairValueT]:
     """Return one fully merge-sorted CUTLASS block key/value pair per thread."""
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: _BlockMergeSortKeyT,
-    values: _CutlassPairValueT,
+    values: CutlassPairValueT,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _BlockMergeSortKeyT,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
-) -> tuple[_BlockMergeSortKeyT, _CutlassPairValueT]:
+) -> tuple[_BlockMergeSortKeyT, CutlassPairValueT]:
     """Return one partial-tile sorted CUTLASS block pair per thread."""
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
@@ -337,14 +333,14 @@ def merge_sort_pairs(
 
 @overload
 def merge_sort_pairs(
-    group: _BlockGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
-    oob_default: _CutlassOrderedItem,
+    valid_items: ValidItems,
+    oob_default: CutlassOrderedItem,
     temp_storage: TempStorage | None = None,
     compare_op: _CompareOperator | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]:
@@ -352,9 +348,9 @@ def merge_sort_pairs(
 
 @overload
 def merge_sort_pairs(
-    group: _MergeSortWarpGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: MergeSortWarpGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
@@ -367,14 +363,14 @@ def merge_sort_pairs(
 
 @overload
 def merge_sort_pairs(
-    group: _MergeSortWarpGroup,
-    keys: _CutlassTensorSample | _CutlassTensorSSASample,
-    values: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: MergeSortWarpGroup,
+    keys: CutlassTensorSample | CutlassTensorSSASample,
+    values: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
-    oob_default: _CutlassOrderedItem,
+    valid_items: ValidItems,
+    oob_default: CutlassOrderedItem,
     temp_storage: None = None,
     compare_op: _CompareOperator | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]:

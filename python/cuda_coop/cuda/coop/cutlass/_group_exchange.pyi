@@ -8,12 +8,9 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypeAlias, overload
 
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._thread_group import _WarpGroup as _WarpGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup, WarpGroup
+from ._typing import CutlassNumericT
 
 _BlockExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
@@ -33,15 +30,15 @@ _WarpExchangeMode: TypeAlias = Literal[
 
 @overload
 def exchange(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: _BlockExchangeMode = "striped_to_blocked",
     ranks: ThreadData | None = None,
     valid_flags: ThreadData | None = None,
     warp_time_slicing: bool = False,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return a layout-rearranged ``ThreadData`` payload without mutation.
 
     The overload set accepts complete blocks, physical warps, and logical warps.
@@ -57,15 +54,15 @@ def exchange(
 
 @overload
 def exchange(
-    group: _WarpGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: WarpGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: _WarpExchangeMode = "striped_to_blocked",
     ranks: ThreadData | None = None,
     valid_flags: None = None,
     warp_time_slicing: Literal[False] = False,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Exchange a ``ThreadData`` payload across a physical or logical warp.
 
     Warp groups support blocked-to-striped, striped-to-blocked, and
@@ -75,8 +72,8 @@ def exchange(
 
 @overload
 def exchange(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: _BlockExchangeMode = "striped_to_blocked",
@@ -96,8 +93,8 @@ def exchange(
 
 @overload
 def exchange(
-    group: _WarpGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: WarpGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: _WarpExchangeMode = "striped_to_blocked",

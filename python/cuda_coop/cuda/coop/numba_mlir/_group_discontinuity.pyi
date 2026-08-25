@@ -9,19 +9,18 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
-from .._typing import _ScalarValue as _ScalarValue
+from .._typing import ScalarValue, ThreadDataLike
 from ._temp_storage import TempStorage
-from ._thread_group import _BlockGroup
+from ._thread_group import BlockGroup
 
 _ItemT = TypeVar("_ItemT")
 
-_ScalarT = TypeVar("_ScalarT", bound=_ScalarValue)
+_ScalarT = TypeVar("_ScalarT", bound=ScalarValue)
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ThreadDataLike[_ItemT],
+    group: BlockGroup,
+    value: ThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["heads"] = "heads",
@@ -29,13 +28,13 @@ def discontinuity(
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
-) -> _ThreadDataLike[int]:
+) -> ThreadDataLike[int]:
     """Return fresh signed 32-bit head flags."""
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ThreadDataLike[_ItemT],
+    group: BlockGroup,
+    value: ThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["tails"],
@@ -43,13 +42,13 @@ def discontinuity(
     tile_successor_item: _ItemT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
-) -> _ThreadDataLike[int]:
+) -> ThreadDataLike[int]:
     """Return fresh signed 32-bit tail flags."""
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ThreadDataLike[_ItemT],
+    group: BlockGroup,
+    value: ThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["heads_and_tails"],
@@ -57,12 +56,12 @@ def discontinuity(
     tile_successor_item: _ItemT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: Callable[[_ItemT, _ItemT], object] | None = None,
-) -> tuple[_ThreadDataLike[int], _ThreadDataLike[int]]:
+) -> tuple[ThreadDataLike[int], ThreadDataLike[int]]:
     """Return fresh signed 32-bit head and tail flag payloads."""
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarT,
     /,
     *,
@@ -76,7 +75,7 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarT,
     /,
     *,
@@ -90,7 +89,7 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: _ScalarT,
     /,
     *,

@@ -8,10 +8,10 @@ from typing import Any, overload
 
 from typing_extensions import TypeVar
 
+from cuda.coop._typing import PortableNumericScalar
 from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 @overload
 def ThreadData(

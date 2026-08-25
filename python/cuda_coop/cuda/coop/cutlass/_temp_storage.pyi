@@ -4,22 +4,22 @@
 
 """Typing declarations for explicit CUTLASS temporary storage."""
 
-from .._typing import TempStorageSharing as _TempStorageSharing
+from .._typing import TempStorageSharing
 
 class TempStorage:
     """Explicit CUTLASS shared-memory scratch planner."""
 
     size_in_bytes: int | None
     alignment: int | None
-    auto_sync: bool | None
-    sharing: _TempStorageSharing
+    auto_sync: bool
+    sharing: TempStorageSharing
 
     def __init__(
         self,
         size_in_bytes: int | None = None,
         alignment: int | None = None,
         auto_sync: bool | None = None,
-        sharing: _TempStorageSharing = "shared",
+        sharing: TempStorageSharing = "shared",
     ) -> None:
         """Configure scratch capacity, alignment, synchronization, and sharing."""
 

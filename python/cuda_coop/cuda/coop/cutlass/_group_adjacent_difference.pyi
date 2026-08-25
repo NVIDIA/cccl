@@ -8,31 +8,27 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypeAlias, overload
 
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
-from .._typing import _ValidItems as _ValidItems
+from .._typing import PortableNumericScalar, ValidItems
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
-from ._typing import _ScalarValueT as _ScalarValueT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup
+from ._typing import CutlassNumericT, ScalarValueT
 
 _DifferenceOperator: TypeAlias = Literal["-", "sub", "subtract"]
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     direction: Literal["left"] = "left",
-    valid_items: _ValidItems | None = None,
-    tile_predecessor_item: _CutlassNumericT | None = None,
+    valid_items: ValidItems | None = None,
+    tile_predecessor_item: CutlassNumericT | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return left differences for CUTLASS ``value`` across ``group``.
 
     ``direction`` is left, ``valid_items`` may limit the tile,
@@ -43,17 +39,17 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     direction: Literal["right"],
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     tile_predecessor_item: None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return right differences for CUTLASS ``value`` across ``group``.
 
     ``direction`` is right, ``valid_items`` may limit the tile, both
@@ -64,17 +60,17 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     direction: Literal["right"],
     valid_items: None = None,
     tile_predecessor_item: None = None,
-    tile_successor_item: _CutlassNumericT,
+    tile_successor_item: CutlassNumericT,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return full-tile right differences for CUTLASS ``value`` across ``group``.
 
     ``direction`` is right, ``valid_items`` and ``tile_predecessor_item`` stay
@@ -84,13 +80,13 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     direction: Literal["left"] = "left",
-    valid_items: _ValidItems | None = None,
-    tile_predecessor_item: _PortableNumericScalar | None = None,
+    valid_items: ValidItems | None = None,
+    tile_predecessor_item: PortableNumericScalar | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
@@ -105,12 +101,12 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     direction: Literal["right"],
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     tile_predecessor_item: None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
@@ -126,14 +122,14 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     direction: Literal["right"],
     valid_items: None = None,
     tile_predecessor_item: None = None,
-    tile_successor_item: _PortableNumericScalar,
+    tile_successor_item: PortableNumericScalar,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
 ) -> ThreadData[Any]:
@@ -146,17 +142,17 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     direction: Literal["left"] = "left",
-    valid_items: _ValidItems | None = None,
-    tile_predecessor_item: _ScalarValueT | None = None,
+    valid_items: ValidItems | None = None,
+    tile_predecessor_item: ScalarValueT | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Return one left scalar difference for ``value`` across ``group``.
 
     ``direction`` is left, ``valid_items`` may limit the tile,
@@ -167,17 +163,17 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     direction: Literal["right"],
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     tile_predecessor_item: None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Return one right scalar difference for ``value`` across ``group``.
 
     ``direction`` is right, ``valid_items`` may limit the tile, both
@@ -188,17 +184,17 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     direction: Literal["right"],
     valid_items: None = None,
     tile_predecessor_item: None = None,
-    tile_successor_item: _ScalarValueT,
+    tile_successor_item: ScalarValueT,
     temp_storage: TempStorage | None = None,
     difference_op: _DifferenceOperator | None = None,
-) -> _ScalarValueT:
+) -> ScalarValueT:
     """Return a full-tile right scalar difference for ``value`` across ``group``.
 
     ``direction`` is right, ``valid_items`` and ``tile_predecessor_item`` stay

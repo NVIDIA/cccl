@@ -8,17 +8,15 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
+from cuda.coop._typing import PortableNumericScalar, TempStorageLike, ThreadDataLike
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,
@@ -42,7 +40,7 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,

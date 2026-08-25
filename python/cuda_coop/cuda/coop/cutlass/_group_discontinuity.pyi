@@ -8,25 +8,22 @@ from __future__ import annotations
 
 from typing import Literal, TypeAlias, overload
 
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
+from .._typing import PortableNumericScalar
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
-from ._typing import _ScalarValueT as _ScalarValueT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup
+from ._typing import CutlassNumericT, ScalarValueT
 
 _FlagOperator: TypeAlias = Literal["!=", "ne", "not_equal"]
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["heads"] = "heads",
-    tile_predecessor_item: _CutlassNumericT | None = None,
+    tile_predecessor_item: CutlassNumericT | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
@@ -43,13 +40,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["tails"],
     tile_predecessor_item: None = None,
-    tile_successor_item: _CutlassNumericT | None = None,
+    tile_successor_item: CutlassNumericT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> ThreadData[int]:
@@ -65,13 +62,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["heads_and_tails"],
-    tile_predecessor_item: _CutlassNumericT | None = None,
-    tile_successor_item: _CutlassNumericT | None = None,
+    tile_predecessor_item: CutlassNumericT | None = None,
+    tile_successor_item: CutlassNumericT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> tuple[ThreadData[int], ThreadData[int]]:
@@ -87,12 +84,12 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["heads"] = "heads",
-    tile_predecessor_item: _PortableNumericScalar | None = None,
+    tile_predecessor_item: PortableNumericScalar | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
@@ -108,13 +105,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["tails"],
     tile_predecessor_item: None = None,
-    tile_successor_item: _PortableNumericScalar | None = None,
+    tile_successor_item: PortableNumericScalar | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> ThreadData[int]:
@@ -129,13 +126,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["heads_and_tails"],
-    tile_predecessor_item: _PortableNumericScalar | None = None,
-    tile_successor_item: _PortableNumericScalar | None = None,
+    tile_predecessor_item: PortableNumericScalar | None = None,
+    tile_successor_item: PortableNumericScalar | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> tuple[ThreadData[int], ThreadData[int]]:
@@ -150,12 +147,12 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     mode: Literal["heads"] = "heads",
-    tile_predecessor_item: _ScalarValueT | None = None,
+    tile_predecessor_item: ScalarValueT | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
@@ -171,13 +168,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     mode: Literal["tails"],
     tile_predecessor_item: None = None,
-    tile_successor_item: _ScalarValueT | None = None,
+    tile_successor_item: ScalarValueT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> int:
@@ -192,13 +189,13 @@ def discontinuity(
 
 @overload
 def discontinuity(
-    group: _BlockGroup,
-    value: _ScalarValueT,
+    group: BlockGroup,
+    value: ScalarValueT,
     /,
     *,
     mode: Literal["heads_and_tails"],
-    tile_predecessor_item: _ScalarValueT | None = None,
-    tile_successor_item: _ScalarValueT | None = None,
+    tile_predecessor_item: ScalarValueT | None = None,
+    tile_successor_item: ScalarValueT | None = None,
     temp_storage: TempStorage | None = None,
     flag_op: _FlagOperator | None = None,
 ) -> tuple[int, int]:

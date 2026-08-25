@@ -8,7 +8,7 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
+from .._typing import ThreadDataLike
 from ._thread_group import ThreadGroup
 
 _ItemT = TypeVar("_ItemT")
@@ -16,14 +16,14 @@ _ItemT = TypeVar("_ItemT")
 @overload
 def shuffle(
     group: ThreadGroup[Literal["block"]],
-    value: _ThreadDataLike[_ItemT],
+    value: ThreadDataLike[_ItemT],
     /,
     *,
     mode: str = "down",
     distance: int = 1,
     block_prefix: None = None,
     block_suffix: None = None,
-) -> _ThreadDataLike[_ItemT]:
+) -> ThreadDataLike[_ItemT]:
     """Shuffle a tile without exposing private boundary outputs."""
 
 @overload

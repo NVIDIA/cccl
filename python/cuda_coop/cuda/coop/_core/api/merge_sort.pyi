@@ -8,20 +8,22 @@ from typing import overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableIntegerKey as _PortableIntegerKey
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _ValidItems as _ValidItems
+from cuda.coop._typing import (
+    PortableIntegerKey,
+    PortableNumericScalar,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+)
 
-from .thread_group import _MemoryGroup
+from .thread_group import MemoryGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
-_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=PortableIntegerKey)
 
 @overload
 def merge_sort_keys(
-    group: _MemoryGroup,
+    group: MemoryGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
@@ -40,12 +42,12 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_keys(
-    group: _MemoryGroup,
+    group: MemoryGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _IntegerKeyT | int,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_IntegerKeyT]:
@@ -63,7 +65,7 @@ def merge_sort_keys(
 
 @overload
 def merge_sort_pairs(
-    group: _MemoryGroup,
+    group: MemoryGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     values: ThreadDataLike[_PortableNumericT],
     /,
@@ -85,13 +87,13 @@ def merge_sort_pairs(
 
 @overload
 def merge_sort_pairs(
-    group: _MemoryGroup,
+    group: MemoryGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     values: ThreadDataLike[_PortableNumericT],
     /,
     *,
     descending: bool = False,
-    valid_items: _ValidItems,
+    valid_items: ValidItems,
     oob_default: _IntegerKeyT | int,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[

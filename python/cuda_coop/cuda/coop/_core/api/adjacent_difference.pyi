@@ -8,23 +8,25 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _ValidItems as _ValidItems
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+)
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,
     direction: Literal["left"] = "left",
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     tile_predecessor_item: _PortableNumericT | None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorageLike | None = None,
@@ -39,12 +41,12 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,
     direction: Literal["right"],
-    valid_items: _ValidItems | None = None,
+    valid_items: ValidItems | None = None,
     tile_predecessor_item: None = None,
     tile_successor_item: None = None,
     temp_storage: TempStorageLike | None = None,
@@ -58,7 +60,7 @@ def adjacent_difference(
 
 @overload
 def adjacent_difference(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,

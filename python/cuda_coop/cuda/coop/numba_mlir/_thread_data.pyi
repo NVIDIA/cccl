@@ -8,7 +8,7 @@ from typing import Any, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
+from .._typing import ThreadDataLike
 
 _ItemT = TypeVar("_ItemT")
 
@@ -49,7 +49,7 @@ def ThreadData(
     *,
     alignas: int = 8,
     alignment: int | None = None,
-) -> _ThreadDataLike[_ItemT]:
+) -> ThreadDataLike[_ItemT]:
     """Construct typed thread-local storage."""
 
 @overload
@@ -59,7 +59,7 @@ def ThreadData(
     *,
     alignas: int = 8,
     alignment: int | None = None,
-) -> _ThreadDataLike[Any]:
+) -> ThreadDataLike[Any]:
     """Construct storage using a compiler dtype token or inferred dtype."""
 
 __all__ = ["ThreadData", "local", "shared"]

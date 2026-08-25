@@ -8,114 +8,113 @@ from __future__ import annotations
 
 from typing import overload
 
-from .._typing import _BlockLoadStoreAlgorithm as _BlockLoadStoreAlgorithm
-from .._typing import _IntegerValue as _IntegerValue
-from .._typing import _PortableNumericScalar as _PortableNumericScalar
-from .._typing import _PortableThreadDataLike as _PortableThreadDataLike
-from .._typing import _ValidItems as _ValidItems
-from .._typing import _WarpLoadStoreAlgorithm as _WarpLoadStoreAlgorithm
+from .._typing import (
+    BlockLoadStoreAlgorithm,
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ValidItems,
+    WarpLoadStoreAlgorithm,
+)
 from ._temp_storage import TempStorage
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._thread_group import _WarpGroup as _WarpGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup, WarpGroup
+from ._typing import CutlassNumericT
 
 @overload
 def load(
-    group: _BlockGroup,
+    group: BlockGroup,
     source: object,
-    output: ThreadData[_CutlassNumericT],
+    output: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
     oob_default: None = None,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Populate and return ``output`` with a block tile."""
 
 @overload
 def load(
-    group: _BlockGroup,
+    group: BlockGroup,
     source: object,
-    output: ThreadData[_CutlassNumericT],
+    output: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems,
-    oob_default: _CutlassNumericT,
-    offset: _IntegerValue | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CutlassNumericT,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Populate a partial block tile and fill invalid items."""
 
 @overload
 def load(
-    group: _WarpGroup,
+    group: WarpGroup,
     source: object,
-    output: ThreadData[_CutlassNumericT],
+    output: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
     oob_default: None = None,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Populate and return ``output`` with a physical- or logical-warp tile."""
 
 @overload
 def load(
-    group: _WarpGroup,
+    group: WarpGroup,
     source: object,
-    output: ThreadData[_CutlassNumericT],
+    output: ThreadData[CutlassNumericT],
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems,
-    oob_default: _CutlassNumericT,
-    offset: _IntegerValue | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CutlassNumericT,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Populate a partial physical- or logical-warp tile and fill invalid items."""
 
 @overload
 def store(
-    group: _BlockGroup,
+    group: BlockGroup,
     destination: object,
     value: (
-        _PortableNumericScalar
-        | _PortableThreadDataLike
-        | _CutlassTensorSample
-        | _CutlassTensorSSASample
+        PortableNumericScalar
+        | PortableThreadDataLike
+        | CutlassTensorSample
+        | CutlassTensorSSASample
     ),
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
-    offset: _IntegerValue | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> None:
     """Store a scalar or register payload across a block through CUB."""
 
 @overload
 def store(
-    group: _WarpGroup,
+    group: WarpGroup,
     destination: object,
     value: (
-        _PortableNumericScalar
-        | _PortableThreadDataLike
-        | _CutlassTensorSample
-        | _CutlassTensorSSASample
+        PortableNumericScalar
+        | PortableThreadDataLike
+        | CutlassTensorSample
+        | CutlassTensorSSASample
     ),
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
-    offset: _IntegerValue | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None:
     """Store a scalar or register payload across a physical or logical warp."""

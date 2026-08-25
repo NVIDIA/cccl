@@ -8,20 +8,22 @@ from typing import Literal
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import PortableShuffleMode as _PortableShuffleMode
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    PortableShuffleMode,
+    ThreadDataLike,
+)
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 def shuffle(
-    group: _BlockGroup,
+    group: BlockGroup,
     value: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    mode: _PortableShuffleMode = "down",
+    mode: PortableShuffleMode = "down",
     distance: Literal[1] = 1,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Return a unit-shifted block payload without mutating ``value``.

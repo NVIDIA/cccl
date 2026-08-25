@@ -6,25 +6,27 @@
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _IntegerValue as _IntegerValue
-from cuda.coop._typing import _PortableIntegerKey as _PortableIntegerKey
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _TraceInteger as _TraceInteger
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableIntegerKey,
+    PortableNumericScalar,
+    TempStorageLike,
+    ThreadDataLike,
+    TraceInteger,
+)
 
-from .thread_group import _BlockGroup
+from .thread_group import BlockGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
-_IntegerKeyT = TypeVar("_IntegerKeyT", bound=_PortableIntegerKey)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_IntegerKeyT = TypeVar("_IntegerKeyT", bound=PortableIntegerKey)
 
 def radix_sort_keys(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_IntegerKeyT]:
@@ -41,13 +43,13 @@ def radix_sort_keys(
     """
 
 def radix_sort_pairs(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     values: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    begin_bit: _IntegerValue = 0,
-    end_bit: _IntegerValue | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[
@@ -61,13 +63,13 @@ def radix_sort_pairs(
     """
 
 def radix_rank(
-    group: _BlockGroup,
+    group: BlockGroup,
     keys: ThreadDataLike[_IntegerKeyT],
     /,
     *,
-    begin_bit: _TraceInteger = 0,
-    end_bit: _TraceInteger | None = None,
-    radix_bits: _TraceInteger | None = None,
+    begin_bit: TraceInteger = 0,
+    end_bit: TraceInteger | None = None,
+    radix_bits: TraceInteger | None = None,
     descending: bool = False,
 ) -> ThreadDataLike[int]:
     """Return shape-preserving signed 32-bit ranks for one radix digit.

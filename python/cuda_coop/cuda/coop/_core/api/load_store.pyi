@@ -8,103 +8,105 @@ from typing import overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import TempStorageLike as TempStorageLike
-from cuda.coop._typing import ThreadDataLike as ThreadDataLike
-from cuda.coop._typing import _BlockLoadStoreAlgorithm as _BlockLoadStoreAlgorithm
-from cuda.coop._typing import _IntegerValue as _IntegerValue
-from cuda.coop._typing import _PortableNumericScalar as _PortableNumericScalar
-from cuda.coop._typing import _PortableThreadDataLike as _PortableThreadDataLike
-from cuda.coop._typing import _ValidItems as _ValidItems
-from cuda.coop._typing import _WarpLoadStoreAlgorithm as _WarpLoadStoreAlgorithm
+from cuda.coop._typing import (
+    BlockLoadStoreAlgorithm,
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+    WarpLoadStoreAlgorithm,
+)
 
-from .thread_group import _BlockGroup, _WarpGroup
+from .thread_group import BlockGroup, WarpGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=_PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 @overload
 def load(
-    group: _BlockGroup,
+    group: BlockGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
     oob_default: None = None,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate and return ``output`` with one cooperative block tile."""
 
 @overload
 def load(
-    group: _BlockGroup,
+    group: BlockGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
     oob_default: _PortableNumericT,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate a partial block tile and fill invalid items."""
 
 @overload
 def load(
-    group: _WarpGroup,
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
     oob_default: None = None,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate and return ``output`` with a physical- or logical-warp tile."""
 
 @overload
 def load(
-    group: _WarpGroup,
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
     oob_default: _PortableNumericT,
-    offset: _IntegerValue | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Populate a partial physical- or logical-warp tile and fill invalid items."""
 
 @overload
 def store(
-    group: _BlockGroup,
+    group: BlockGroup,
     destination: object,
-    value: _PortableNumericScalar | _PortableThreadDataLike,
+    value: PortableNumericScalar | PortableThreadDataLike,
     /,
     *,
-    algorithm: _BlockLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
-    offset: _IntegerValue | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
     """Store one scalar or per-thread payload cooperatively across a block."""
 
 @overload
 def store(
-    group: _WarpGroup,
+    group: WarpGroup,
     destination: object,
-    value: _PortableNumericScalar | _PortableThreadDataLike,
+    value: PortableNumericScalar | PortableThreadDataLike,
     /,
     *,
-    algorithm: _WarpLoadStoreAlgorithm = "direct",
-    valid_items: _ValidItems | None = None,
-    offset: _IntegerValue | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None:
     """Store one scalar or per-thread payload across a physical or logical warp."""

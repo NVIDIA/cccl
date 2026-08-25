@@ -8,24 +8,21 @@ from __future__ import annotations
 
 from typing import Any, Literal, overload
 
-from ._thread_data import ThreadData
-from ._thread_data import _CutlassTensorSample as _CutlassTensorSample
-from ._thread_data import _CutlassTensorSSASample as _CutlassTensorSSASample
-from ._thread_group import _BlockGroup as _BlockGroup
-from ._typing import _CutlassNumericT as _CutlassNumericT
-from ._typing import _ScalarT as _ScalarT
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_group import BlockGroup
+from ._typing import CutlassNumericT, ScalarT
 
 @overload
 def shuffle(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["down"] = "down",
     distance: Literal[1] = 1,
-    block_prefix: ThreadData[_CutlassNumericT] | None = None,
+    block_prefix: ThreadData[CutlassNumericT] | None = None,
     block_suffix: None = None,
-) -> ThreadData[_CutlassNumericT]:
+) -> ThreadData[CutlassNumericT]:
     """Return a downward unit shift with an optional CUTLASS prefix output.
 
     ``group`` must be a complete physical block and ``value`` a fixed-size
@@ -37,15 +34,15 @@ def shuffle(
 
 @overload
 def shuffle(
-    group: _BlockGroup,
-    value: ThreadData[_CutlassNumericT],
+    group: BlockGroup,
+    value: ThreadData[CutlassNumericT],
     /,
     *,
     mode: Literal["up"],
     distance: Literal[1] = 1,
     block_prefix: None = None,
-    block_suffix: ThreadData[_CutlassNumericT] | None = None,
-) -> ThreadData[_CutlassNumericT]:
+    block_suffix: ThreadData[CutlassNumericT] | None = None,
+) -> ThreadData[CutlassNumericT]:
     """Return an upward unit shift with an optional CUTLASS suffix output.
 
     ``group`` must be a complete physical block and ``value`` a fixed-size
@@ -57,8 +54,8 @@ def shuffle(
 
 @overload
 def shuffle(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["down"] = "down",
@@ -76,8 +73,8 @@ def shuffle(
 
 @overload
 def shuffle(
-    group: _BlockGroup,
-    value: _CutlassTensorSample | _CutlassTensorSSASample,
+    group: BlockGroup,
+    value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["up"],
@@ -95,15 +92,15 @@ def shuffle(
 
 @overload
 def shuffle(
-    group: _BlockGroup,
-    value: _ScalarT,
+    group: BlockGroup,
+    value: ScalarT,
     /,
     *,
     mode: Literal["offset", "rotate"],
     distance: int = 1,
     block_prefix: None = None,
     block_suffix: None = None,
-) -> _ScalarT:
+) -> ScalarT:
     """Return one CUTLASS scalar selected by Offset or Rotate.
 
     ``group`` must be a complete physical block and ``value`` one scalar.

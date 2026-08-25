@@ -8,7 +8,7 @@ from typing import Any, Literal, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
+from .._typing import ThreadDataLike
 from ._enums import (
     BlockLoadAlgorithm,
     BlockStoreAlgorithm,
@@ -24,7 +24,7 @@ _ItemT = TypeVar("_ItemT")
 def load(
     group: ThreadGroup[Literal["block"]],
     source: Any,
-    output: _ThreadDataLike[_ItemT],
+    output: ThreadDataLike[_ItemT],
     /,
     *,
     algorithm: str | int | BlockLoadAlgorithm = "direct",
@@ -32,14 +32,14 @@ def load(
     oob_default: Any = None,
     offset: Any = None,
     temp_storage: TempStorage | None = None,
-) -> _ThreadDataLike[_ItemT]:
+) -> ThreadDataLike[_ItemT]:
     """Load a per-thread tile through a block group."""
 
 @overload
 def load(
     group: ThreadGroup[Literal["warp", "threads_within_warp"]],
     source: Any,
-    output: _ThreadDataLike[_ItemT],
+    output: ThreadDataLike[_ItemT],
     /,
     *,
     algorithm: str | int | WarpLoadAlgorithm = "direct",
@@ -47,7 +47,7 @@ def load(
     oob_default: Any = None,
     offset: Any = None,
     temp_storage: None = None,
-) -> _ThreadDataLike[_ItemT]:
+) -> ThreadDataLike[_ItemT]:
     """Load a per-thread tile through a physical or logical warp."""
 
 @overload

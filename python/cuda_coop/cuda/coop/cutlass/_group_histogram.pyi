@@ -10,32 +10,30 @@ from typing import overload
 
 from typing_extensions import TypeVar
 
-from .._typing import HistogramAlgorithm as _HistogramAlgorithm
-from .._typing import _PortableIntegerKey as _PortableIntegerKey
-from .._typing import _PortableIntegerValue as _PortableIntegerValue
-from ._thread_data import ThreadData
+from .._typing import HistogramAlgorithm, PortableIntegerKey, PortableIntegerValue
 from ._thread_data import (
-    _CutlassHistogramOpaqueSamples as _CutlassHistogramOpaqueSamples,
+    CutlassHistogramOpaqueSamples,
+    ThreadData,
 )
-from ._thread_group import _BlockGroup as _BlockGroup
+from ._thread_group import BlockGroup
 
-_CounterT = TypeVar("_CounterT", bound=_PortableIntegerKey)
-_HistogramSampleT = TypeVar("_HistogramSampleT", bound=_PortableIntegerValue)
+_CounterT = TypeVar("_CounterT", bound=PortableIntegerKey)
+_HistogramSampleT = TypeVar("_HistogramSampleT", bound=PortableIntegerValue)
 
 @overload
 def histogram(
-    group: _BlockGroup,
+    group: BlockGroup,
     samples: (
         ThreadData[_HistogramSampleT]
         | _HistogramSampleT
-        | _CutlassHistogramOpaqueSamples
+        | CutlassHistogramOpaqueSamples
     ),
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: type[_CounterT],
-    algorithm: _HistogramAlgorithm = "atomic",
+    algorithm: HistogramAlgorithm = "atomic",
 ) -> ThreadData[_CounterT]:
     """Histogram a CUTLASS register payload with a typed counter dtype.
 
@@ -49,18 +47,18 @@ def histogram(
 
 @overload
 def histogram(
-    group: _BlockGroup,
+    group: BlockGroup,
     samples: (
         ThreadData[_HistogramSampleT]
         | _HistogramSampleT
-        | _CutlassHistogramOpaqueSamples
+        | CutlassHistogramOpaqueSamples
     ),
     /,
     *,
     bins: int,
     bins_per_thread: int = 1,
     counter_dtype: None = None,
-    algorithm: _HistogramAlgorithm = "atomic",
+    algorithm: HistogramAlgorithm = "atomic",
 ) -> ThreadData[int]:
     """Histogram a CUTLASS register payload into signed-integer counters.
 

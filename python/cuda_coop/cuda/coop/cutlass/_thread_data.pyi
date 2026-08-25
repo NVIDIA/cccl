@@ -7,16 +7,10 @@
 from collections.abc import Callable, Iterator
 from typing import Any, Generic, Protocol, TypeAlias, overload
 
-from numpy import float32 as _NumpyFloat32
-from numpy import float64 as _NumpyFloat64
-from numpy import int32 as _NumpyInt32
-from numpy import int64 as _NumpyInt64
-from numpy import uint8 as _NumpyUint8
-from numpy import uint32 as _NumpyUint32
-from numpy import uint64 as _NumpyUint64
+import numpy as np
 from typing_extensions import TypeVar
 
-from .._typing import ThreadDataLike as _ThreadDataLike
+from .._typing import ThreadDataLike
 
 _ItemT = TypeVar("_ItemT", default=Any)
 _SourceT_co = TypeVar("_SourceT_co", covariant=True)
@@ -24,13 +18,13 @@ _ValueT = TypeVar("_ValueT")
 _OrdinaryNumericScalar: TypeAlias = (
     int
     | float
-    | _NumpyUint8
-    | _NumpyInt32
-    | _NumpyUint32
-    | _NumpyInt64
-    | _NumpyUint64
-    | _NumpyFloat32
-    | _NumpyFloat64
+    | np.uint8
+    | np.int32
+    | np.uint32
+    | np.int64
+    | np.uint64
+    | np.float32
+    | np.float64
 )
 _DtypeT = TypeVar("_DtypeT", bound=_OrdinaryNumericScalar)
 
@@ -39,7 +33,7 @@ class _CutlassNumericDtype(Protocol):
 
     width: int
 
-class _CutlassTensorSample(Protocol):
+class CutlassTensorSample(Protocol):
     """Structural view of one CUTLASS register-memory Tensor."""
 
     @property
@@ -51,7 +45,7 @@ class _CutlassTensorSample(Protocol):
     def load(self) -> object:
         """Load this register-memory tensor as an immutable value."""
 
-class _CutlassTensorSSASample(Protocol):
+class CutlassTensorSSASample(Protocol):
     """Structural view of one CUTLASS immutable register TensorSSA."""
 
     @property
@@ -155,7 +149,7 @@ class ThreadDataSource(
 ):
     """Producer supporting both register loading and tensor reconstruction."""
 
-class ThreadData(_ThreadDataLike[_ItemT], Generic[_ItemT]):
+class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
     """Generic CUTLASS per-thread register payload.
 
     Python, NumPy, compiler, and user-defined register values preserve their
@@ -538,10 +532,8 @@ class ThreadData(_ThreadDataLike[_ItemT], Generic[_ItemT]):
     def __setitem__(self, index: int, value: _ItemT, /) -> None:
         """Replace one register value."""
 
-_CutlassHistogramOpaqueSamples: TypeAlias = (
-    _CutlassTensorSample | _CutlassTensorSSASample
-)
-_CutlassRunTensor: TypeAlias = _CutlassTensorSample | _CutlassTensorSSASample
+CutlassHistogramOpaqueSamples: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
+CutlassRunTensor: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 
 __all__ = [
     "ThreadData",
