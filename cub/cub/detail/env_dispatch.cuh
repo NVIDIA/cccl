@@ -14,7 +14,9 @@
 
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/util_runs_on.cuh>
 
+#include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
@@ -74,6 +76,21 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, const Algori
   return (error != cudaSuccess) ? error : deallocate_error;
 }
 //! @endcond
+
+template <typename EnvT, typename AlgorithmCallable>
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env(const EnvT& env, experimental::__get_runs_on_t, const AlgorithmCallable& algorithm_callable)
+{
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, experimental::__get_runs_on_t>,
+                "runs_on should be used inside guarantee to have an effect.");
+  auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
+  auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::runs_on{}, guarantees);
+
+  return detail::dispatch_with_env(
+    env, [&](auto&& tuning, void* d_temp_storage, size_t& temp_storage_bytes, ::cudaStream_t stream) {
+      return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream, runs_on);
+    });
+}
 
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION cudaError_t

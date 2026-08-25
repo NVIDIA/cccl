@@ -26,6 +26,7 @@
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_runs_on.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -1305,6 +1306,8 @@ struct dispatch_impl
   DecomposerT decomposer;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
+  ::cuda::compute_capability cc;
+  const experimental::runs_on* runs_on;
 
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -1566,6 +1569,10 @@ struct dispatch_impl
     {
       return error;
     }
+    if (const auto& __max_sm_count_ = runs_on->description().__max_sm_count_; __max_sm_count_.has_value())
+    {
+      sm_count = ::cuda::std::min(sm_count, static_cast<int>(*__max_sm_count_));
+    }
 
     // Init regular and alternate-digit kernel configurations
     pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
@@ -1753,11 +1760,6 @@ struct dispatch_impl
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4]; // NOLINT(misc-const-correctness)
 
-    ::cuda::compute_capability cc{};
-    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
-    {
-      return error;
-    }
     constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
     const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
@@ -1774,6 +1776,11 @@ struct dispatch_impl
     if (const auto error = CubDebug(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device)))
     {
       return error;
+    }
+
+    if (const auto& __max_sm_count_ = runs_on->description().__max_sm_count_; __max_sm_count_.has_value())
+    {
+      num_sms = ::cuda::std::min(num_sms, static_cast<int>(*__max_sm_count_));
     }
 
     const int histo_block_threads = policy.histogram.threads_per_block;
@@ -2029,16 +2036,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool can_overwrite_source_buffer,
   cudaStream_t stream,
+  const experimental::runs_on& runs_on,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
-  {
-    return error;
-  }
+  const auto cc = runs_on.compute_capability(launcher_factory);
 
   detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
@@ -2054,7 +2058,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     stream,
     decomposer,
     kernel_source,
-    launcher_factory};
+    launcher_factory,
+    cc,
+    &runs_on};
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);
