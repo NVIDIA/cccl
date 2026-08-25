@@ -27,10 +27,7 @@ function(cccl_c_parallel_v2_add_freestanding_test target_name_var source)
     set(test_libs cccl.c.parallel.v2.hostjit_lib)
   endif()
 
-  target_link_libraries(
-    ${target_name}
-    PRIVATE ${test_libs} CUDA::cudart
-  )
+  target_link_libraries(${target_name} PRIVATE ${test_libs} CUDA::cudart)
 endfunction()
 
 file(
@@ -45,9 +42,10 @@ set(freestanding_libnvcc_only_srcs test_libnvcc_artifact_unload.cpp)
 # These measure free device memory before and after an unload, which is a property of
 # the whole device: another test allocating beside them moves the reading, and the
 # module they are watching for is 16 MiB against a slack of one. So they run alone.
-set(freestanding_serial_srcs
-    test_hostjit_unload.cpp
-    test_libnvcc_artifact_unload.cpp
+set(
+  freestanding_serial_srcs
+  test_hostjit_unload.cpp
+  test_libnvcc_artifact_unload.cpp
 )
 
 foreach (freestanding_src IN LISTS freestanding_srcs)
