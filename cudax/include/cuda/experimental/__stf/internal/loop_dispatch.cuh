@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -78,11 +80,11 @@ inline void loop_dispatch(
 
   size_t place_cnt = partition.size();
 
-  size_t nthreads = ::std::min(place_cnt, cnt);
+  const size_t nthreads = ::cuda::std::min(place_cnt, cnt);
 
   int head = -1;
 
-  if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
+  if constexpr (::cuda::std::is_same_v<::cuda::std::remove_reference_t<context_t>, stackable_ctx>)
   {
     // Ensure the calling thread has a context head so workers can use the same level (root if never set).
     if (!ctx.has_head_set())
@@ -102,7 +104,7 @@ inline void loop_dispatch(
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
       // TODO we should have a prologue and epilogue (per place)
-      if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
+      if constexpr (::cuda::std::is_same_v<::cuda::std::remove_reference_t<context_t>, stackable_ctx>)
       {
         ctx.set_head_offset(head);
       }

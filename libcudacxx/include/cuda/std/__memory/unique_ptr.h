@@ -487,6 +487,7 @@ public:
     return __t;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Pp, enable_if_t<_CheckArrayPointerConversion<_Pp>::value, int> = 0>
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void reset(_Pp __p) noexcept
   {
@@ -498,6 +499,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void reset(nullptr_t = nullptr) noexcept
   {
     pointer __tmp  = __ptr_.first();

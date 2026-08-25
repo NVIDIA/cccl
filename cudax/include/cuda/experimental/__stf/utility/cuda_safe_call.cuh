@@ -21,6 +21,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -137,7 +139,7 @@ public:
     cudaGetDevice(&dev);
 
 #if __has_include(<cusolverDn.h>)
-    if constexpr (::std::is_same_v<T, cusolverStatus_t>)
+    if constexpr (::cuda::std::is_same_v<T, cusolverStatus_t>)
     {
       format("%s(%u) [device %d] CUSOLVER error in call %s: %s.",
              loc.file_name(),
@@ -149,7 +151,7 @@ public:
     else
 #endif // __has_include(<cusolverDn.h>)
 #if __has_include(<cublas_v2.h>)
-      if constexpr (::std::is_same_v<T, cublasStatus_t>)
+      if constexpr (::cuda::std::is_same_v<T, cublasStatus_t>)
     {
       format("%s(%u) [device %d] CUBLAS error in %s: %s.",
              loc.file_name(),
@@ -160,7 +162,7 @@ public:
     }
     else
 #endif // __has_include(<cublas_v2.h>)
-      if constexpr (::std::is_same_v<T, cudaOccError>)
+      if constexpr (::cuda::std::is_same_v<T, cudaOccError>)
       {
         format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
                loc.file_name(),
@@ -169,7 +171,7 @@ public:
                loc.function_name(),
                cudaGetErrorString(cudaErrorInvalidConfiguration));
       }
-      else if constexpr (::std::is_same_v<T, CUresult>)
+      else if constexpr (::cuda::std::is_same_v<T, CUresult>)
       {
         const char* error_string = nullptr;
         cuGetErrorString(status, &error_string);
@@ -185,7 +187,7 @@ public:
       }
       else
       {
-        static_assert(::std::is_same_v<T, cudaError_t>, "Error: not a CUDA status.");
+        static_assert(::cuda::std::is_same_v<T, cudaError_t>, "Error: not a CUDA status.");
         format("%s(%u) [device %d] CUDA error in %s: %s (%s).",
                loc.file_name(),
                loc.line(),
@@ -215,7 +217,7 @@ private:
     // Pedantically reserve one extra character for the terminating `\0`.
     msg.resize(needed + 1);
     // This will write `needed` bytes plus a `\0` at the end.
-    ::std::snprintf(&msg[0], msg.capacity(), fmt, ::std::forward<Ps>(ps)...);
+    ::std::snprintf(&msg[0], msg.capacity(), fmt, ::cuda::std::forward<Ps>(ps)...);
     // The terminating `\0` is not part of the string's length.
     msg.resize(needed);
   }
@@ -290,14 +292,14 @@ inline constexpr bool dependent_false = false;
 UNITTEST("first_last_param")
 {
   extern int test1(int);
-  static_assert(::std::is_same_v<reserved::first_param<test1>, int>);
-  static_assert(::std::is_same_v<reserved::last_param<test1>, int>);
+  static_assert(::cuda::std::is_same_v<reserved::first_param<test1>, int>);
+  static_assert(::cuda::std::is_same_v<reserved::last_param<test1>, int>);
   extern int test2(double, int);
-  static_assert(::std::is_same_v<reserved::first_param<test2>, double>);
-  static_assert(::std::is_same_v<reserved::last_param<test2>, int>);
+  static_assert(::cuda::std::is_same_v<reserved::first_param<test2>, double>);
+  static_assert(::cuda::std::is_same_v<reserved::last_param<test2>, int>);
   extern int test3(int&&);
-  static_assert(::std::is_same_v<reserved::first_param<test3>, int&&>);
-  static_assert(::std::is_same_v<reserved::last_param<test3>, int&&>);
+  static_assert(::cuda::std::is_same_v<reserved::first_param<test3>, int&&>);
+  static_assert(::cuda::std::is_same_v<reserved::last_param<test3>, int&&>);
 };
 #endif // UNITTESTED_FILE
 
@@ -358,11 +360,8 @@ void cuda_try(Status status, const ::cuda::std::source_location loc = ::cuda::st
 {
   if (status)
   {
-#if _CCCL_HAS_EXCEPTIONS()
-    throw cuda_exception(status, loc);
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    ::cuda::std::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
+    // _CCCL_THROW itself terminates (with a report) when exceptions are disabled.
+    _CCCL_THROW(cuda_exception, status, loc);
   }
 }
 
@@ -447,17 +446,17 @@ UNITTEST("cuda_try1")
 template <auto fun, typename... Ps>
 auto cuda_try(Ps&&... ps)
 {
-  constexpr bool direct_form = ::std::is_invocable_v<decltype(fun), Ps...>;
+  constexpr bool direct_form = ::cuda::std::is_invocable_v<decltype(fun), Ps...>;
 
   constexpr bool first_output_form =
-    ::std::is_pointer_v<reserved::first_param<fun>>
-    && !::std::is_const_v<::std::remove_pointer_t<reserved::first_param<fun>>>
-    && ::std::is_invocable_v<decltype(fun), ::std::remove_pointer_t<reserved::first_param<fun>>*, Ps...>;
+    ::cuda::std::is_pointer_v<reserved::first_param<fun>>
+    && !::cuda::std::is_const_v<::cuda::std::remove_pointer_t<reserved::first_param<fun>>>
+    && ::cuda::std::is_invocable_v<decltype(fun), ::cuda::std::remove_pointer_t<reserved::first_param<fun>>*, Ps...>;
 
   constexpr bool last_output_form =
-    ::std::is_pointer_v<reserved::last_param<fun>>
-    && !::std::is_const_v<::std::remove_pointer_t<reserved::last_param<fun>>>
-    && ::std::is_invocable_v<decltype(fun), Ps..., ::std::remove_pointer_t<reserved::last_param<fun>>*>;
+    ::cuda::std::is_pointer_v<reserved::last_param<fun>>
+    && !::cuda::std::is_const_v<::cuda::std::remove_pointer_t<reserved::last_param<fun>>>
+    && ::cuda::std::is_invocable_v<decltype(fun), Ps..., ::cuda::std::remove_pointer_t<reserved::last_param<fun>>*>;
 
   // When no user args are supplied, the first- and last-output forms produce the same call
   // `fun(&result)`, so they are not ambiguous. Otherwise, both matching is a real ambiguity.
@@ -467,18 +466,18 @@ auto cuda_try(Ps&&... ps)
 
   if constexpr (direct_form)
   {
-    cuda_try(fun(::std::forward<Ps>(ps)...));
+    cuda_try(fun(::cuda::std::forward<Ps>(ps)...));
   }
   else if constexpr (first_output_form)
   {
-    ::std::remove_pointer_t<reserved::first_param<fun>> result{};
-    cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
+    ::cuda::std::remove_pointer_t<reserved::first_param<fun>> result{};
+    cuda_try(fun(&result, ::cuda::std::forward<Ps>(ps)...));
     return result;
   }
   else if constexpr (last_output_form)
   {
-    ::std::remove_pointer_t<reserved::last_param<fun>> result{};
-    cuda_try(fun(::std::forward<Ps>(ps)..., &result));
+    ::cuda::std::remove_pointer_t<reserved::last_param<fun>> result{};
+    cuda_try(fun(::cuda::std::forward<Ps>(ps)..., &result));
     return result;
   }
   else
@@ -516,7 +515,7 @@ UNITTEST("cuda_try2")
 #  define OVERLOADS_UNUSED(f)           \
     ba7b8453f262e429575e23dcb2192b33(   \
       a2bce6d11e8033f5c8d9c9442849656c, \
-      f(::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
+      f(::cuda::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
 // Unused, keep for later
 #  define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a)                   \
     [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { \
@@ -528,21 +527,21 @@ UNITTEST("cuda_try2")
     a838e9c10e0ded64dff84e7b679d2342( \
       (fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, fef8664203d67fe27b0434c87ce346fb)
 // Unused, keep for later
-#  define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                   \
-    [&](auto&&... a) {                                                             \
-      if constexpr (::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
-      {                                                                            \
-        ::cuda::experimental::stf::cuda_try(f(::std::forward<decltype(a)>(a)...)); \
-      }                                                                            \
-      else                                                                         \
-      {                                                                            \
-        ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
-        if (auto status = f(&result, ::std::forward<decltype(a)>(a)...))           \
-        {                                                                          \
-          throw ::cuda::experimental::stf::cuda_exception(status);                 \
-        }                                                                          \
-        return result;                                                             \
-      }                                                                            \
+#  define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                         \
+    [&](auto&&... a) {                                                                   \
+      if constexpr (::cuda::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
+      {                                                                                  \
+        ::cuda::experimental::stf::cuda_try(f(::cuda::std::forward<decltype(a)>(a)...)); \
+      }                                                                                  \
+      else                                                                               \
+      {                                                                                  \
+        ::cuda::std::remove_pointer_t<reserved::first_param<f>> result;                  \
+        if (auto status = f(&result, ::cuda::std::forward<decltype(a)>(a)...))           \
+        {                                                                                \
+          _CCCL_THROW(::cuda::experimental::stf::cuda_exception, status);                \
+        }                                                                                \
+        return result;                                                                   \
+      }                                                                                  \
     } CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES
 // Unused, keep for later
 #  define CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES_UNUSED(...) (__VA_ARGS__)

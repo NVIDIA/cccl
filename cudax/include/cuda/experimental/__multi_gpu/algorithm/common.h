@@ -71,7 +71,7 @@ using __resource_type_for _CCCL_NODEBUG =
   ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
     ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
 
-template <typename _Env>
+template <class _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)
 {
   if constexpr (::cuda::__buffer_compatible_env<_Env>)
@@ -100,14 +100,15 @@ template <class _Tp, class _Resource, class _Env>
   }
 }
 
-template <class _InputRangeOfIters, class _RangeOfOutputIt, class _EnvRange>
+template <class _InputRangeOfIters, class _OutputRangeOfIters, class _EnvRange>
 struct __in_range_out_it_properties
 {
   using __input_iter_type _CCCL_NODEBUG =
     ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRangeOfIters>>;
   using __input_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__input_iter_type>;
-  using __output_type _CCCL_NODEBUG =
-    ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_RangeOfOutputIt>>;
+  using __output_iter_type _CCCL_NODEBUG =
+    ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_OutputRangeOfIters>>;
+  using __output_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__output_iter_type>;
 
   using __env_type _CCCL_NODEBUG = ::cuda::std::ranges::range_value_t<_EnvRange>;
 

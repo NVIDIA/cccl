@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -48,7 +49,7 @@ public:
   /// @brief Alias for the shape type
   using typename base::shape_t;
 
-  using mutable_value_type = typename ::std::remove_const<T>::type;
+  using mutable_value_type = typename ::cuda::std::remove_const<T>::type;
 
   /**
    * @brief Constructor from slice

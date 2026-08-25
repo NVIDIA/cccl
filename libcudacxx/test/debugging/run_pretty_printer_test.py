@@ -36,6 +36,16 @@ _TEMPLATE_PATTERN = re.compile(r">\s+>")
 _NONZERO_HEX_PATTERN = re.compile(r"\b0x(?!0+\b)[0-9a-fA-F]+\b")
 _STREAM_UNIQUE_ID_PATTERN = re.compile(r"(?<=unique_id=)\d+")
 _NUMERIC_LITERAL_PATTERN = re.compile(r"\b(\d+)[uUlL]*(?![\w.])")
+# Backing-memory granularity varies by driver and device, so only zero versus
+# nonzero is portable for these fields.
+_NONZERO_RESERVED_MEM_PATTERN = re.compile(
+    r"(?<=reserved_mem_)(current|high)( = )(?!0\b)\d+"
+)
+# A scenario prints this when it cannot run on the current driver or device.
+_SKIP_PATTERN = re.compile(
+    r"^\s*LIBCUDACXX_PRETTY_PRINTER_SKIP:\s*(?P<reason>.+)$", re.MULTILINE
+)
+_SKIP_RETURN_CODE = 77
 
 
 class HarnessError(RuntimeError):
@@ -44,6 +54,10 @@ class HarnessError(RuntimeError):
 
 class DebuggerError(RuntimeError):
     """Report a debugger launch, timeout, or exit failure."""
+
+
+class DebuggerTimeoutError(DebuggerError):
+    """Report a debugger run that exceeded the per-attempt timeout."""
 
 
 class Debugger(StrEnum):
@@ -529,6 +543,7 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
         line = _NONZERO_HEX_PATTERN.sub("<address>", line)
         line = _STREAM_UNIQUE_ID_PATTERN.sub("<id>", line)
         line = _NUMERIC_LITERAL_PATTERN.sub(r"\1", line)
+        line = _NONZERO_RESERVED_MEM_PATTERN.sub(r"\1\2<nonzero>", line)
         normalized_lines.append(line)
     return "\n".join(normalized_lines) + "\n"
 
@@ -569,6 +584,33 @@ def compare_expected(
     )
 
 
+def _nonnegative_int(value: str) -> int:
+    """Parse a command-line argument that must be a nonnegative integer.
+
+    Parameters
+    ----------
+    value : str
+        Raw command-line value.
+
+    Returns
+    -------
+    int
+        Parsed nonnegative integer.
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the value is not an integer, or if it is negative.
+    """
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError(f"{value!r} must not be negative")
+    return parsed
+
+
 def _parse_arguments(arguments: Sequence[str] | None) -> argparse.Namespace:
     """Parse debugger configuration and ordered case definitions.
 
@@ -590,6 +632,12 @@ def _parse_arguments(arguments: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--expected", type=Path, required=True)
     parser.add_argument("--output-log", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=90.0)
+    parser.add_argument(
+        "--retries",
+        type=_nonnegative_int,
+        default=0,
+        help="Number of extra attempts after a timeout. Zero means one attempt.",
+    )
     parser.add_argument("--update-expected", action="store_true")
     parser.add_argument(
         "--case",
@@ -650,8 +698,10 @@ def _run_debugger(
 
     Raises
     ------
+    DebuggerTimeoutError
+        If the debugger exceeds the per-attempt timeout.
     DebuggerError
-        If the debugger cannot launch, times out, or exits with a nonzero status.
+        If the debugger cannot launch or exits with a nonzero status.
     OSError
         If the transcript cannot be written.
     """
@@ -666,7 +716,7 @@ def _run_debugger(
     except subprocess.TimeoutExpired as error:
         if isinstance(error.stdout, str):
             args.output_log.write_text(error.stdout)
-        raise DebuggerError(
+        raise DebuggerTimeoutError(
             f"{debugger.kind} timed out after {args.timeout:g} seconds"
         ) from error
     except OSError as error:
@@ -678,6 +728,52 @@ def _run_debugger(
             f"{debugger.kind} exited with status {completed.returncode}"
         )
     return completed.stdout
+
+
+def _run_debugger_with_retries(
+    args: argparse.Namespace, debugger: DebuggerAdapter, command_file: Path
+) -> str:
+    """Run the debugger and retry only the attempts that time out.
+
+    A timeout usually comes from a loaded machine and not from the pretty
+    printer, so a repeated attempt is worth more than an immediate failure.
+    Every other failure is deterministic and fails on the first attempt.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed runner arguments.
+    debugger : DebuggerAdapter
+        Configured debugger adapter.
+    command_file : Path
+        Generated debugger command-file path.
+
+    Returns
+    -------
+    str
+        Complete combined debugger output.
+
+    Raises
+    ------
+    DebuggerError
+        If every attempt times out, or if any attempt fails for another reason.
+    OSError
+        If the transcript cannot be written.
+    """
+    attempts = args.retries + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            return _run_debugger(args, debugger, command_file)
+        except DebuggerTimeoutError as error:
+            if attempt == attempts:
+                raise DebuggerTimeoutError(
+                    f"{error} on all {attempts} attempts"
+                ) from error
+            print(
+                f"warning: {error} on attempt {attempt} of {attempts}; retrying",
+                file=sys.stderr,
+            )
+    raise AssertionError("unreachable")
 
 
 def _match_output(
@@ -759,7 +855,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
     Returns
     -------
     int
-        Zero on success and one for handled debugger or matching failures.
+        Zero on success, 77 when the scenario reports itself unsupported, and
+        one for handled debugger or matching failures.
 
     Raises
     ------
@@ -777,10 +874,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
     command_file.write_text(commands)
 
     try:
-        transcript = _run_debugger(args, debugger, command_file)
+        transcript = _run_debugger_with_retries(args, debugger, command_file)
     except DebuggerError as error:
         _report_error(args, debugger, command_file, error)
         return 1
+
+    skipped = _SKIP_PATTERN.search(transcript)
+    if skipped:
+        scenario = args.expected.parent.name
+        print(f"skipping {scenario}: {skipped.group('reason').strip()}")
+        return _SKIP_RETURN_CODE
 
     try:
         _match_output(args, debugger, args.cases, transcript)

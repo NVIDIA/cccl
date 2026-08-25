@@ -16,6 +16,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -318,7 +321,7 @@ public:
     if constexpr (sizeof...(Ts) == 1)
     {
       using First = ::std::tuple_element_t<0, ::std::tuple<Ts...>>;
-      if constexpr (!::std::is_lvalue_reference_v<First>)
+      if constexpr (!::cuda::std::is_lvalue_reference_v<First>)
       {
         if (payload.empty())
         {
@@ -335,7 +338,7 @@ public:
     // Attempt to find enough capacity in one of the added events
     each_in_pack(
       [&](auto&& event) {
-        if constexpr (!::std::is_lvalue_reference_v<decltype(event)>)
+        if constexpr (!::cuda::std::is_lvalue_reference_v<decltype(event)>)
         {
           if (event.payload.capacity() >= new_size && payload.capacity() < new_size)
           {
@@ -345,16 +348,16 @@ public:
           }
         }
       },
-      ::std::forward<Ts>(events)...);
+      ::cuda::std::forward<Ts>(events)...);
 
     if (payload.capacity() < new_size)
     {
-      payload.reserve(::std::max(payload.capacity() * 2, new_size));
+      payload.reserve(::cuda::std::max(payload.capacity() * 2, new_size));
     }
 
     each_in_pack(
       [&](auto&& event) {
-        if constexpr (::std::is_lvalue_reference_v<decltype(event)>)
+        if constexpr (::cuda::std::is_lvalue_reference_v<decltype(event)>)
         {
           // Simply append copies of elements
           payload.insert(payload.end(), event.begin(), event.end());
@@ -366,7 +369,7 @@ public:
                          ::std::make_move_iterator(event.payload.end()));
         }
       },
-      ::std::forward<Ts>(events)...);
+      ::cuda::std::forward<Ts>(events)...);
 
     assert(payload.size() == new_size);
     optimized = payload.size() <= 1;
@@ -375,7 +378,7 @@ public:
   template <typename T>
   event_list& operator+=(T&& rhs)
   {
-    merge(::std::forward<T>(rhs));
+    merge(::cuda::std::forward<T>(rhs));
     return *this;
   }
 
@@ -443,7 +446,7 @@ public:
     int res = 0;
     for (const auto& e : payload)
     {
-      res = ::std::max(res, int(e->unique_prereq_id));
+      res = ::cuda::std::max(res, int(e->unique_prereq_id));
     }
     return res;
   }

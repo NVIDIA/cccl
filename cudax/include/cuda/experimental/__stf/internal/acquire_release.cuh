@@ -26,6 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 
 #include <algorithm>
@@ -137,14 +139,16 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
       {
         if (mode != access_mode::read)
         {
-          throw ::std::invalid_argument(
+          _CCCL_THROW(
+            ::std::invalid_argument,
             "replicated data places only support read access (another dependency on the same logical data upgrades "
             "the merged access mode)");
         }
         if (!(it->get_dplace() == gdp))
         {
-          throw ::std::invalid_argument("conflicting data places for merged dependencies on the same logical data (one "
-                                        "of them is replicated)");
+          _CCCL_THROW(::std::invalid_argument,
+                      "conflicting data places for merged dependencies on the same logical data (one "
+                      "of them is replicated)");
         }
       }
       if (g == it)

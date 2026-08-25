@@ -41,19 +41,29 @@ gh api --paginate --slurp \
               or .conclusion == "startup_failure"
               or .conclusion == "action_required"
             ))
+          | map({id, name, conclusion})
         end
     ' \
     > "${output_dir}/jobs.json"
 
 mapfile -t failed_job_ids < <(jq -r '.[].id' "${output_dir}/jobs.json")
 
+collected_log_count=0
 for job_id in "${failed_job_ids[@]}"; do
   log_path="${output_dir}/job-${job_id}.log"
-  if ! gh api "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
+  if ! gh api --allow-escape-sequences \
+    "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
     echo "::warning::Unable to collect logs for job ${job_id}; continuing with job metadata."
     rm -f "${log_path}"
   elif [[ ! -s "${log_path}" ]]; then
     echo "::warning::GitHub returned an empty log for job ${job_id}; continuing with job metadata."
     rm -f "${log_path}"
+  else
+    collected_log_count=$((collected_log_count + 1))
   fi
 done
+
+if [[ "${#failed_job_ids[@]}" -gt 0 && "${collected_log_count}" -eq 0 ]]; then
+  echo "::error::Unable to collect logs for any failed workflow jobs."
+  exit 1
+fi

@@ -724,6 +724,86 @@ lets later concurrent calls proceed without locking. Empty calls bypass the gate
 because they return before CUB initializes the static. This covers transform and
 binary search; other platforms keep thread-safe statics and need no gate.
 
+Precompiled headers (v2 HostJIT only)
+-------------------------------------
+
+Parsing the CUB / libcudacxx / Thrust bundle dominates a HostJIT build. The v2
+backend caches that parse as a pair of precompiled headers on disk — one device,
+one host. ``cuda.compute`` enables them for every build. A single pair
+serves all algorithms, because nothing per-algorithm or per-operator
+reaches the compiler's argument list: the user's operator is linked as bitcode
+*after* the frontend runs, and the entry-point name only drives post-compile
+LLVM passes.
+
+The cache is populated lazily: the first build that needs an entry generates it.
+Generating an entry happens once per (install, architecture, flag-set) — in practice
+about once per ``cuda.compute`` version on a given machine.
+
+The cache is keyed by a hash of the compiler arguments, not by architecture
+alone. This matters because a source-tree build and an installed wheel differ in
+their include paths and must not share an entry — clang validates a PCH against
+the command line it was built with, and a mismatch is an error, not a silent
+fallback. Header *contents* are not hashed, so an in-place CCCL upgrade leaves a
+stale entry behind; clang's size/mtime validation rejects it and the compile is
+retried once without a PCH, discarding the offending file. A PCH can therefore
+never fail a build, only fail to speed one up.
+
+Concurrency has three layers. Generation writes through a temp file and an
+atomic rename, so concurrent generators can never produce a torn entry. On top
+of that, generation is guarded by a lock (a directory, since ``create_directory``
+is an atomic test-and-set on both POSIX and Windows) so that N processes
+starting against a cold cache do not each spend seconds producing the same
+file. The lock is non-blocking by design: a process that cannot take it builds
+without a PCH rather than stalling behind the holder, which costs exactly what
+the build would have cost with PCH disabled. A lock left behind by a killed process is treated
+as abandoned after ten minutes, and swept along with any orphaned temp files
+when the cache directory is next resolved.
+
+Within a process, PCH generation runs its own ``CompilerInstance`` and so falls
+under the same thread-safety assumption as the compile stages generally (only
+the link stage is serialized — see *Backend-specific notes*).
+
+Inspecting and clearing the cache::
+
+    import cuda.compute as cc
+
+    cc.pch_cache_dir()     # -> Path, or None if there is no cache
+    cc.clear_pch_cache()   # -> number of files removed
+
+Both return ``None`` / ``0`` on the v1 backend, which has no PCH cache.
+
+``cuda/compute/_pch.py`` owns the cache: which directory to use, whether the
+feature is on, and when to prune. The backend generates and loads entries at the
+location it is given, so a build writes only where that module points it.
+
+Clearing only costs the time to regenerate. Reach for it to reclaim disk, or to
+force regeneration after changing something the cache key does not cover —
+notably an in-place CCCL header upgrade, which is otherwise detected only when
+clang rejects the stale entry and the build retries without it.
+
+Environment variables:
+
+``CCCL_ENABLE_PCH``
+  ``0`` disables precompiled headers. Builds then run exactly as they would
+  with no cache available.
+
+``CCCL_PCH_CACHE_DIR``
+  Cache location, used verbatim. When unset, the default differs by platform.
+  On Linux: ``$XDG_CACHE_HOME/cccl/hostjit_pch``, then
+  ``~/.cache/cccl/hostjit_pch``, then a uid-scoped directory under the system
+  temp directory. On Windows: ``%LOCALAPPDATA%\cccl\hostjit_pch``, then a
+  directory under the system temp directory — ``XDG_CACHE_HOME`` and ``HOME``
+  are not consulted there. Set this in CI, or in tests, to avoid touching the
+  shared user cache. The first writable candidate wins; if none is writable,
+  precompiled headers are simply off.
+
+``CCCL_PCH_CACHE_MAXSIZE``
+  Cache size cap, in bytes or with a ``K``/``M``/``G`` suffix. Default 1 GiB;
+  ``0`` disables eviction. Modelled on ``CUDA_CACHE_MAXSIZE``, whose 256 MiB
+  default is too small here — CUDA caches cubins of a few kilobytes, whereas a
+  single PCH is tens of megabytes. Applied after a build; entries carry the
+  mtime of their last use, so eviction is least-recently-used.
+
 Clearing caches
 +++++++++++++++
 

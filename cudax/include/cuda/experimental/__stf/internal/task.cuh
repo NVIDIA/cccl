@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -30,6 +32,8 @@
  * This is a generic class of "tasks" that are synchronized according to
  * accesses on "data" depending on in/out dependencies
  */
+
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // task has-a task_dep_vector_untyped
@@ -242,7 +246,8 @@ public:
     const data_place& dp = d.get_dplace();
     if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
     {
-      throw ::std::invalid_argument(
+      _CCCL_THROW(
+        ::std::invalid_argument,
         "replicated data places only support read access (mutate the data at another place; the next replicated "
         "read re-broadcasts)");
     }
@@ -257,7 +262,7 @@ public:
     pimpl->deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)
     {
-      add_deps(::std::forward<Pack>(pack)...);
+      add_deps(::cuda::std::forward<Pack>(pack)...);
     }
   }
 
@@ -336,7 +341,7 @@ public:
   template <typename T>
   void merge_event_list(T&& tail)
   {
-    pimpl->done_prereqs.merge(::std::forward<T>(tail));
+    pimpl->done_prereqs.merge(::cuda::std::forward<T>(tail));
   }
 
   /**
@@ -465,7 +470,7 @@ void dep_allocate(
   Data& d,
   access_mode mode,
   const data_place& dplace,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs)
 {
@@ -731,7 +736,7 @@ private:
   reserved::per_data_instance_msi_state state;
 
   // This stores the last task which used this instance with a relaxed coherence mode (redux)
-  ::std::optional<task> last_task_relaxed;
+  ::cuda::std::optional<task> last_task_relaxed;
 
   // This generic pointer can be used to store some information in the
   // allocator which is passed to the deallocation routine.
