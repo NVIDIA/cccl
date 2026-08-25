@@ -5,7 +5,7 @@ cuda::std::expected<int, parse_error> = {value = 42}
 cuda::std::expected<int, parse_error> = {error = {code = 7}}
 =============== expected.error end ===============
 =============== expected.void_value begin ===============
-cuda::std::expected<void, parse_error>
+cuda::std::expected<void, parse_error> = {value = void}
 =============== expected.void_value end ===============
 =============== expected.void_error begin ===============
 cuda::std::expected<void, parse_error> = {error = {code = 9}}

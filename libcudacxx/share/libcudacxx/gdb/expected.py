@@ -14,12 +14,13 @@ import cccl_common
 import gdb
 import gdb.printing
 
-_EXPECTED_NAME = "cuda::std::expected"
-
 
 def _is_cuda_expected(value_type: gdb.Type) -> bool:
     value_type = cccl_common.canonical_type(value_type)
-    return cccl_common.template_name(cccl_common.public_type_name(value_type)) == _EXPECTED_NAME
+    return (
+        cccl_common.template_name(cccl_common.public_type_name(value_type))
+        == "cuda::std::expected"
+    )
 
 
 class ExpectedPrinter:
@@ -32,14 +33,14 @@ class ExpectedPrinter:
         self.type_name = cccl_common.public_type_name(self.type)
         self.has_val = bool(self.value["__has_val_"])
 
-    def children(self) -> Iterator[tuple[str, gdb.Value]]:
+    def children(self) -> Iterator[tuple[str, gdb.Value | str]]:
         union = self.value["__union_"]
         if self.has_val:
-            # expected<void, E> carries no value member in the engaged state.
             try:
                 yield "value", union["__val_"]
             except gdb.error:
-                pass
+                # expected<void, E> has no __val_ in the engaged state.
+                yield "value", "void"
         else:
             yield "error", union["__unex_"]
 

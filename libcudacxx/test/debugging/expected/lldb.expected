@@ -7,7 +7,7 @@
 }
 =============== expected.error end ===============
 =============== expected.void_value begin ===============
-(const cuda::std::expected<void, parse_error> &) <address> (value = "void")
+(const cuda::std::expected<void, parse_error> &) <address> (value = void)
 =============== expected.void_value end ===============
 =============== expected.void_error begin ===============
 (const cuda::std::expected<void, parse_error> &) <address>: {

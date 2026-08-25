@@ -45,13 +45,15 @@ class ExpectedSyntheticProvider:
             child = union.GetChildMemberWithName("__val_")
             self.name = "value"
             if not child.IsValid():
-                # expected<void, E>, engaged: no __val_ member exists to show,
-                # but a synthesized "void" child still gets LLDB's usual
-                # single child "(name = ...)" summary, instead of nothing.
-                child = self.value.CreateValueFromExpression(self.name, '"void"')
+                # expected<void, E> has no __val_; synthesize a value of a private enum type whose summary (below) is the bare word "void".
+                child = self.value.CreateValueFromExpression(
+                    self.name,
+                    "({ enum __cccl_expected_void_e { __cccl_expected_void_val }; __cccl_expected_void_val; })",
+                )
         else:
             child = union.GetChildMemberWithName("__unex_")
             self.name = "error"
+        # Clone renames the raw member (__val_/__unex_) to self.name for display.
         self.child = child.Clone(self.name) if child.IsValid() else lldb.SBValue()
         return self.child.IsValid()
 
@@ -78,4 +80,8 @@ def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     debugger.HandleCommand(
         f"type synthetic add --category {category} --python-class {module}.ExpectedSyntheticProvider "
         f"--recognizer-function {module}.is_cuda_expected"
+    )
+    # Backs the void-engaged child synthesized in ExpectedSyntheticProvider.update().
+    debugger.HandleCommand(
+        f"type summary add --category {category} --summary-string void __cccl_expected_void_e"
     )
