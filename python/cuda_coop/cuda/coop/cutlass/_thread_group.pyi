@@ -8,7 +8,7 @@ from typing import Any, Generic, Literal, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .. import ThreadGroup as _CommonThreadGroup
+from .. import ThreadGroup as PortableThreadGroup
 from .. import ThreadHierarchy as ThreadHierarchy
 from .._typing import CompilerIntegerLike, ThreadGroupKind, ThreadLevel
 from ._typing import ScalarT
@@ -23,7 +23,7 @@ _GroupKindT_co = TypeVar(
 Hierarchy = ThreadHierarchy
 
 class ThreadGroup(
-    _CommonThreadGroup[_GroupKindT_co],
+    PortableThreadGroup[_GroupKindT_co],
     Generic[_GroupKindT_co],
 ):
     """Common CUDA group descriptor with CUTLASS lowering methods."""

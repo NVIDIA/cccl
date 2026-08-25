@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from cuda.coop._core import ThreadGroup as _CoreThreadGroup
+from cuda.coop._core import ThreadGroup as PortableThreadGroup
 from cuda.coop._core import ThreadHierarchy, make_thread_group, normalize_thread_level
 
 _ROOT_SCOPE = __name__.rsplit(".", 1)[0]
@@ -30,7 +30,7 @@ def _thread_group_method_marker(
     )
 
 
-class ThreadGroup(_CoreThreadGroup):
+class ThreadGroup(PortableThreadGroup):
     """Compile-time CUDA group descriptor for the Numba-CUDA-MLIR frontend."""
 
     def rank(self, level: str = "thread") -> Any:

@@ -22,13 +22,13 @@ from cuda.coop._core import (
     render_hierarchy_decl,
     resolve_thread_group,
 )
-from cuda.coop._core import ThreadGroup as _CoreThreadGroup
+from cuda.coop._core import ThreadGroup as PortableThreadGroup
 
 _ROOT_SCOPE = __name__.rsplit(".", 1)[0]
 Hierarchy = ThreadHierarchy
 
 
-class ThreadGroup(_CoreThreadGroup):
+class ThreadGroup(PortableThreadGroup):
     """Shared group descriptor with CUTLASS provider operations attached."""
 
     def rank(self, level: str = "thread") -> Any:

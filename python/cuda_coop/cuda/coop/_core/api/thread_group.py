@@ -14,11 +14,11 @@ from __future__ import annotations
 from typing import Any
 
 from ..thread_group import Hierarchy, ThreadGroup, ThreadHierarchy
-from ..thread_group import this_block as _core_this_block
-from ..thread_group import this_cluster as _core_this_cluster
-from ..thread_group import this_grid as _core_this_grid
-from ..thread_group import this_thread as _core_this_thread
-from ..thread_group import this_warp as _core_this_warp
+from ..thread_group import this_block as core_this_block
+from ..thread_group import this_cluster as core_this_cluster
+from ..thread_group import this_grid as core_this_grid
+from ..thread_group import this_thread as core_this_thread
+from ..thread_group import this_warp as core_this_warp
 from ._dispatch import _backend_member, _backend_module_name
 
 
@@ -36,31 +36,31 @@ def _group_constructor(
 def this_thread() -> ThreadGroup:
     """Describe the current thread."""
 
-    return _group_constructor("this_thread", _core_this_thread)
+    return _group_constructor("this_thread", core_this_thread)
 
 
 def this_warp() -> ThreadGroup:
     """Describe the current physical warp."""
 
-    return _group_constructor("this_warp", _core_this_warp)
+    return _group_constructor("this_warp", core_this_warp)
 
 
 def this_block() -> ThreadGroup:
     """Describe the current CTA."""
 
-    return _group_constructor("this_block", _core_this_block)
+    return _group_constructor("this_block", core_this_block)
 
 
 def this_cluster() -> ThreadGroup:
     """Describe the current cluster."""
 
-    return _group_constructor("this_cluster", _core_this_cluster)
+    return _group_constructor("this_cluster", core_this_cluster)
 
 
 def this_grid() -> ThreadGroup:
     """Describe the current grid."""
 
-    group = _group_constructor("this_grid", _core_this_grid)
+    group = _group_constructor("this_grid", core_this_grid)
     if _backend_module_name() is not None and isinstance(group, ThreadGroup):
         assert group.hierarchy is not None
         return group.with_hierarchy(group.hierarchy, source="common_root")
