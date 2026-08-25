@@ -49,6 +49,10 @@ namespace cuda::experimental::stf
  * (e.g. `cudaGraphAddMemAllocNode`). This allocator should generally not be used
  * directly, but used within an allocator with a more advanced strategy
  * (caching, heap allocation, ...)
+ *
+ * @note This allocator does not lock the context graph itself. Allocation and
+ * deallocation from graph tasks happen while the caller holds `graph_mutex`;
+ * any new caller that mutates the graph must preserve that invariant.
  */
 class uncached_graph_allocator : public block_allocator_interface
 {

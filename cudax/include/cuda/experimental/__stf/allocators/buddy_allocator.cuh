@@ -311,12 +311,18 @@ public:
   event_list deinit(backend_ctx_untyped& ctx) override
   {
     // deinit runs at context finalize, when submitters are expected to be
-    // quiesced; the lock is cheap insurance and keeps the map consistent if a
-    // stray allocation is still in flight.
-    const ::std::lock_guard<::std::mutex> guard(mtx);
+    // quiesced. Swap the map out under the lock so a stray in-flight
+    // allocation fails loudly instead of touching a place being torn down,
+    // and so the buffer deallocations run outside the lock -- same janitor
+    // idiom as block_data_pool_set::deinit_pools.
+    decltype(map) janitor;
+    {
+      const ::std::lock_guard<::std::mutex> guard(mtx);
+      map.swap(janitor);
+    }
     event_list result;
     // For every place in the map
-    for (auto& [memory_node, pp] : map)
+    for (auto& [memory_node, pp] : janitor)
     {
       event_list local_prereqs;
 
