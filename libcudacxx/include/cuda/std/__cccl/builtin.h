@@ -68,9 +68,8 @@
 #define _CCCL_CHECK_BUILTIN(__x) (_CCCL_HAS_BUILTIN(__##__x) || _CCCL_HAS_KEYWORD(__##__x) || _CCCL_HAS_FEATURE(__x))
 
 // libstdc++ conflicts with some of the builtins. Ensure that we do not use them if affected libstdc++ is present.
-#define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(_VERSION)                                      \
-  (_CCCL_HOST_STD_LIB(LIBSTDCXX, <, _VERSION) || defined(_GLIBCXX_DO_NOT_USE_BUILTIN_TRAITS)) \
-    && !_CCCL_CUDA_COMPILER(CLANG)
+#define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) \
+  (_CCCL_HOST_STD_LIB(LIBSTDCXX, <, __VA_ARGS__) && !_CCCL_CUDA_COMPILER(CLANG))
 
 // TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
 #if 0 // _CCCL_CHECK_BUILTIN(array_rank)
