@@ -46,7 +46,7 @@ cuda::__logical_device make_logical_device(cuda::device_ref device)
 }
 } // namespace
 
-C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]")
+C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]", )
 {
   SECTION("A ref is a copyable value type")
   {
@@ -195,6 +195,87 @@ C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]")
     STATIC_REQUIRE(ref.green_context() == nullptr);
     STATIC_REQUIRE(ref == same);
   }
+}
+
+C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]", )
+{
+  SECTION("A ref with no green context is not localized")
+  {
+    // A null handle must not reach the driver, so this holds even on a machine with no GPU.
+    const cuda::__logical_device_ref ref{cuda::device_ref{0}, nullptr};
+    const auto result = ref.locality_domain();
+
+    REQUIRE_FALSE(result.localized);
+    // A non-localized ref covers the whole device, which is reported as domain 0.
+    REQUIRE(result.domain_id == 0);
+  }
+
+  if (test::cuda_driver_version() < 12050)
+  {
+    SUCCEED("Driver is too old for green context tests");
+    return;
+  }
+
+  SECTION("A whole-device green context is not localized")
+  {
+    // `__greenCtxCreate` with a null descriptor covers the full device, so the driver reports no
+    // locality domain id for it.
+    auto ldev         = ::make_logical_device(cuda::devices[0]);
+    const auto result = ldev.locality_domain();
+
+    REQUIRE_FALSE(result.localized);
+    REQUIRE(result.domain_id == 0);
+  }
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  SECTION("Every cached domain reports its own index")
+  {
+    // `__locality_domains()` splits the device by ascending locality domain id, so the position in
+    // the span is the id the driver must report back.
+    for (auto dev : cuda::devices)
+    {
+      auto domains = dev.__locality_domains();
+
+      for (cuda::std::size_t i = 0; i < domains.size(); ++i)
+      {
+        const auto result = domains[i].locality_domain();
+
+        // Every cached domain comes from a split by locality domain id, so it is always localized.
+        REQUIRE(result.localized);
+        REQUIRE(result.domain_id == i);
+      }
+    }
+  }
+
+  SECTION("Repeated queries return the same id")
+  {
+    // The id is re-read from the driver on every call, so the accessor must hold no state.
+    for (auto dev : cuda::devices)
+    {
+      for (auto& domain : dev.__locality_domains())
+      {
+        const auto first  = domain.locality_domain();
+        const auto second = domain.locality_domain();
+
+        REQUIRE(first.domain_id == second.domain_id);
+        REQUIRE(first.localized == second.localized);
+      }
+    }
+  }
+
+  SECTION("Reading the id leaves the driver stack empty")
+  {
+    test::empty_driver_stack();
+    for (auto dev : cuda::devices)
+    {
+      for (auto& domain : dev.__locality_domains())
+      {
+        static_cast<void>(domain.locality_domain());
+      }
+    }
+    REQUIRE(test::count_driver_stack() == 0);
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
 }
 
 C2H_CCCLRT_TEST("logical_device_ref comparison", "[device][logical_device]")

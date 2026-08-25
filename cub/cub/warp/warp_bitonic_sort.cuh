@@ -14,12 +14,15 @@
 #endif // no system header
 
 #include <cub/util_arch.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -39,6 +42,9 @@ namespace detail
 //!
 //!   WarpBitonicSort arranges items into ascending order using a comparison functor with less-than
 //!   semantics.
+//!
+//!   Sorting can also be performed by a "logical" warp of ``LogicalWarpThreads`` lanes, in which case each logical
+//!   warp sorts its own items independently of the other logical warps sharing the architectural warp.
 //!
 //! A Simple Example
 //! ++++++++++++++++
@@ -78,11 +84,11 @@ namespace detail
 //!        WarpBitonicSortT{temp_storage[warp_id]}.Sort(thread_keys, CustomLess());
 //!    }
 //!
-//! Suppose the set of input ``thread_keys`` across a warp of threads is
+//! Suppose the set of input ``thread_keys`` across a logical warp of threads is
 //! ``{ [0,63], [1,62], [2,61], ..., [31,32] }``.
 //! The corresponding output ``thread_keys`` in those threads will be
 //! ``{ [0,32], [1,33], [2,34], ..., [31,63] }``.
-//! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
+//! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across logical warp lanes.
 //!
 //! @endrst
 //!
@@ -93,7 +99,9 @@ namespace detail
 //!   The number of items per thread.
 //!
 //! @tparam LogicalWarpThreads
-//!   <b>[optional]</b> The number of threads per "logical" warp. Only architectural warp size is supported.
+//!   <b>[optional]</b> The number of threads per "logical" warp. Must be a power of two no greater than the
+//!   architectural warp size. A logical warp sorts ``ItemsPerThread * LogicalWarpThreads`` items independently of the
+//!   other logical warps sharing the same architectural warp.
 //!
 //! @tparam ValueT
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a keys-only sort).
@@ -104,8 +112,11 @@ class WarpBitonicSort
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
-  static_assert(LogicalWarpThreads == detail::warp_threads,
-                "Logical warp smaller than architectural warp size are not yet supported");
+  static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
+                "LogicalWarpThreads must not exceed the architectural warp size");
+  // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
+  // logical warp when its size is a power of two.
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
@@ -117,12 +128,12 @@ public:
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
-  //! @brief Sorts keys across a warp of threads using bitonic sorting network.
+  //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling logical warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -134,21 +145,25 @@ public:
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
 
-  //! @brief Sorts keys across a warp of threads using bitonic sorting network.
+  //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
-  //! - All threads in the calling warp must agree on the same value for `valid_items`.
+  //! - All threads in the calling logical warp must invoke this collective.
+  //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
-  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
+  //!   every key within the `valid_items` boundaries is ordered strictly before `oob_default`. If a key compares
+  //!   equivalent to `oob_default`, the sort may place an out-of-bound key within the `valid_items` boundaries and
+  //!   displace the equivalent key past them. This is observable whenever `compare_op` orders only part of the key's
+  //!   state, for example a struct compared by a single member. Use the `Sort(keys, compare_op, valid_items)` overload
+  //!   if keys may compare equivalent to `oob_default`.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
+  //! @param[in] valid_items Total number of valid items across the logical warp
   //! @param[in] oob_default Default value for out-of-bound items
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -157,7 +172,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * warp_threads + lane >= valid_items)
+      if (i * LogicalWarpThreads + lane >= valid_items)
       {
         keys[i] = oob_default;
       }
@@ -165,20 +180,20 @@ public:
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
 
-  //! @brief Sorts keys across a warp of threads using bitonic sorting network.
+  //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
-  //! - All threads in the calling warp must agree on the same value for `valid_items`.
+  //! - All threads in the calling logical warp must invoke this collective.
+  //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - Keys out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
+  //! @param[in] valid_items Total number of valid items across the logical warp
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items) const
   {
@@ -187,7 +202,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * warp_threads + lane >= valid_items)
+      if (i * LogicalWarpThreads + lane >= valid_items)
       {
         keys[i] = KeyT{};
       }
@@ -195,12 +210,12 @@ public:
     sort<CompareOp, false>(keys, nullptr, compare_op, valid_items);
   }
 
-  //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
+  //! @brief Sorts key-value pairs across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling logical warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -214,15 +229,18 @@ public:
     sort<CompareOp, false>(keys, values, compare_op);
   }
 
-  //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
+  //! @brief Sorts key-value pairs across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
-  //! - All threads in the calling warp must agree on the same value for `valid_items`.
+  //! - All threads in the calling logical warp must invoke this collective.
+  //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
-  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
+  //!   every key within the `valid_items` boundaries is ordered strictly before `oob_default`. If a key compares
+  //!   equivalent to `oob_default`, the sort may place an out-of-bound key, along with its default-constructed value,
+  //!   within the `valid_items` boundaries and displace the equivalent key past them. Use the
+  //!   `Sort(keys, values, compare_op, valid_items)` overload if keys may compare equivalent to `oob_default`.
   //! - Values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -230,7 +248,7 @@ public:
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
+  //! @param[in] valid_items Total number of valid items across the logical warp
   //! @param[in] oob_default Default value for out-of-bound keys
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -243,7 +261,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * warp_threads + lane >= valid_items)
+      if (i * LogicalWarpThreads + lane >= valid_items)
       {
         keys[i]   = oob_default;
         values[i] = ValueT{};
@@ -252,13 +270,13 @@ public:
     sort<CompareOp, false>(keys, values, compare_op);
   }
 
-  //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
+  //! @brief Sorts key-value pairs across a logical warp of threads using bitonic sorting network.
   //!
   //! @par
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
   //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
-  //! - All threads in the calling warp must invoke this collective.
-  //! - All threads in the calling warp must agree on the same value for `valid_items`.
+  //! - All threads in the calling logical warp must invoke this collective.
+  //! - All threads in the calling logical warp must agree on the same value for `valid_items`.
   //! - Keys and values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -266,7 +284,7 @@ public:
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
+  //! @param[in] valid_items Total number of valid items across the logical warp
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int valid_items) const
@@ -274,7 +292,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * warp_threads + lane >= valid_items)
+      if (i * LogicalWarpThreads + lane >= valid_items)
       {
         keys[i]   = KeyT{};
         values[i] = ValueT{};
@@ -287,10 +305,9 @@ private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
 
-  static constexpr int warp_threads = detail::warp_threads;
-  static constexpr bool keys_only   = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+  int lane = detail::logical_lane_id<LogicalWarpThreads>();
 
   static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
   static constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -306,7 +323,7 @@ private:
     merge<CompareOp, Reverse>(keys, values, compare_op);
   }
 
-  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
+  //! @brief Merges a bitonic sequence of key-value pairs across a logical warp of threads into a monotonic sequence.
   //!
   //! @tparam CompareOp Comparison functor type
   //! @tparam Reverse If true, results are in reverse order
@@ -350,14 +367,14 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    if (valid_items > first_half_len * warp_threads)
+    if (valid_items > first_half_len * LogicalWarpThreads)
     {
       SortFirstHalfT{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
       SortSecondHalfT{}.template sort<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * warp_threads);
+        valid_items - first_half_len * LogicalWarpThreads);
       merge<CompareOp, Reverse>(keys, values, compare_op, valid_items);
     }
     else
@@ -366,7 +383,7 @@ private:
     }
   }
 
-  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
+  //! @brief Merges a bitonic sequence of key-value pairs across a logical warp of threads into a monotonic sequence.
   //!
   //! @tparam CompareOp Comparison functor type
   //! @tparam Reverse If true, results are in reverse order
@@ -377,7 +394,7 @@ private:
   //!   (2) If `Reverse` is true: the sequence must be sorted first, then reverse-sorted
   //! @param[in,out] values Values to merge (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
+  //! @param[in] valid_items Total number of valid items across the logical warp
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
@@ -389,7 +406,7 @@ private:
       KeyT& other_key        = keys[other_i];
       const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
 
-      if (should_swap && other_i * warp_threads + lane < valid_items)
+      if (should_swap && other_i * LogicalWarpThreads + lane < valid_items)
       {
         using ::cuda::std::swap;
         swap(key, other_key);
@@ -400,14 +417,14 @@ private:
       }
     }
 
-    if (valid_items > first_half_len * warp_threads)
+    if (valid_items > first_half_len * LogicalWarpThreads)
     {
       SortFirstHalfT{}.template merge<CompareOp, Reverse>(keys, values, compare_op);
       SortSecondHalfT{}.template merge<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * warp_threads);
+        valid_items - first_half_len * LogicalWarpThreads);
     }
     else
     {
@@ -416,15 +433,18 @@ private:
   }
 };
 
-// When each thread holds a single item, the bitonic sort operates entirely across warp lanes
+// When each thread holds a single item, the bitonic sort operates entirely across logical warp lanes
 // using shuffle instructions.
 template <typename KeyT, int LogicalWarpThreads, typename ValueT>
 class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
-  static_assert(LogicalWarpThreads == detail::warp_threads,
-                "Logical warp smaller than architectural warp size are not yet supported");
+  static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
+                "LogicalWarpThreads must not exceed the architectural warp size");
+  // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
+  // logical warp when its size is a power of two.
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
@@ -497,49 +517,53 @@ private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
 
-  static constexpr int warp_threads            = detail::warp_threads;
-  static constexpr unsigned int full_warp_mask = 0xFFFFFFFFu;
-  static constexpr bool keys_only              = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+  // A logical warp of 2^n lanes is sorted by a network of n stages.
+  static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
+
+  int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    // Non-recursive implementation for 32 inputs consists of log2(32)=5 stages.
-    merge_stage<CompareOp, Reverse, true, 0>(keys, values, compare_op);
-    merge_stage<CompareOp, Reverse, true, 1>(keys, values, compare_op);
-    merge_stage<CompareOp, Reverse, true, 2>(keys, values, compare_op);
-    merge_stage<CompareOp, Reverse, true, 3>(keys, values, compare_op);
-    merge_stage<CompareOp, Reverse, true, 4>(keys, values, compare_op);
+    ::cuda::static_for<num_stages>([&](auto stage) {
+      merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op);
+    });
   }
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    merge_stage<CompareOp, Reverse, true, 4>(keys, values, compare_op);
+    // A single-lane logical warp holds a single item, so there is nothing to merge.
+    if constexpr (num_stages > 0)
+    {
+      merge_stage<CompareOp, Reverse, true, num_stages - 1>(keys, values, compare_op);
+    }
   }
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    merge_stage<CompareOp, Reverse, false, 0>(keys, values, compare_op, valid_items);
-    merge_stage<CompareOp, Reverse, false, 1>(keys, values, compare_op, valid_items);
-    merge_stage<CompareOp, Reverse, false, 2>(keys, values, compare_op, valid_items);
-    merge_stage<CompareOp, Reverse, false, 3>(keys, values, compare_op, valid_items);
-    merge_stage<CompareOp, Reverse, false, 4>(keys, values, compare_op, valid_items);
+    ::cuda::static_for<num_stages>([&](auto stage) {
+      merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items);
+    });
   }
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    merge_stage<CompareOp, Reverse, false, 4>(keys, values, compare_op, valid_items);
+    if constexpr (num_stages > 0)
+    {
+      merge_stage<CompareOp, Reverse, false, num_stages - 1>(keys, values, compare_op, valid_items);
+    }
   }
 
-  //! @brief Single stage of the bitonic sorting network operating across warp lanes via shuffles.
+  //! @brief Single stage of the bitonic sorting network operating across logical warp lanes via shuffles.
   //!
   //! @tparam Full If true, all items are valid (no boundary checks: ``valid_items`` is not used)
-  //! @tparam Stage Stage index (0-4 for a 32-thread warp)
+  //! @tparam Stage Stage index in ``[0, num_stages)``
   template <typename CompareOp, bool Reverse, bool Full, int Stage>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   merge_stage(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items = -1) const
@@ -547,14 +571,14 @@ private:
     // Each stage divides the inputs into groups and sorts within each group.
     // Sort direction of each group should be adjusted to maintain the bitonic property.
     unsigned int group_reverse = Reverse;
-    if constexpr (Stage == 4)
+    if constexpr (Stage == num_stages - 1)
     {
       // The last stage contains only one group, and the sort direction is just Reverse
     }
     else if constexpr (Full)
     {
       // Group size doubles while the number of groups halves with each stage: stage 0 sorts
-      // 16 groups of 2 elements, stage 1 sorts 8 groups of 4 elements, and so on.
+      // groups of 2 elements, stage 1 sorts groups of 4 elements, and so on.
       //
       // Group ID (starting from 0) is "lane >> (Stage + 1)".
       // Odd groups sort in reverse order, so "& 1".
@@ -564,12 +588,13 @@ private:
     {
       // To allow out-of-bound pairs to be safely skipped:
       //
-      // 1. Reverse direction on odd stages.
+      // 1. Reverse direction on every other stage. The parity is counted back from the last
+      //    stage, which must sort in the Reverse direction to produce the final result.
       //
       // 2. Reverse direction for groups whose ID has an odd number of set bits
       //    (i.e., groups 1, 2, 4, 7, etc.). Because group ID < 16 (at most 4 set
       //    bits), this means IDs with 1 or 3 set bits.
-      group_reverse ^= Stage & 1;
+      group_reverse ^= (num_stages - 1 - Stage) & 1;
       const int num_set_bits = ::cuda::std::popcount((static_cast<unsigned>(lane) >> (Stage + 1)));
       group_reverse ^= (num_set_bits == 1 || num_set_bits == 3);
     }
@@ -584,13 +609,13 @@ private:
       const bool has_larger_lane_id = lane & stride;
       const bool reverse            = group_reverse ^ has_larger_lane_id;
 
-      KeyT& key      = *keys;
-      KeyT other_key = ::cuda::device::warp_shuffle_xor(key, stride);
+      KeyT& key            = *keys;
+      const KeyT other_key = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(key, stride, member_mask);
 
       [[maybe_unused]] ValueT other_value;
       if constexpr (!keys_only)
       {
-        other_value = ::cuda::device::warp_shuffle_xor(*values, stride);
+        other_value = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(*values, stride, member_mask);
       }
 
       const bool key_precede_other = compare_op(key, other_key);

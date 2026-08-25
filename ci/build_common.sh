@@ -196,6 +196,7 @@ export PARALLEL_LEVEL
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+export CCCL_BUILD_INFIX
 
 # limit the number of concurrent link steps to avoid OOM'ing CI
 GLOBAL_CMAKE_OPTIONS+=(

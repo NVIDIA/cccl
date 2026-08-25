@@ -66,6 +66,11 @@ _NUMPY_DTYPE_TO_ENUM = {
     np.dtype("bool"): TypeEnum.BOOLEAN,
 }
 
+# bfloat16 has a numpy dtype only when the optional ml_dtypes package is
+# installed (types.bfloat16.dtype is None otherwise).
+if types.bfloat16.dtype is not None:
+    _NUMPY_DTYPE_TO_ENUM[types.bfloat16.dtype] = TypeEnum.BFLOAT16
+
 
 @functools.lru_cache(maxsize=256)
 def _type_info_from_dtype(dtype: np.dtype) -> TypeInfo:
@@ -146,6 +151,15 @@ def to_cccl_output_iter(array_or_iterator) -> Iterator:
     return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
+def _ndarray_to_byte_view(array: np.ndarray) -> memoryview:
+    try:
+        return array.data.cast("B")
+    except ValueError:
+        # NumPy extension dtypes (e.g. ml_dtypes.bfloat16) do not support the
+        # buffer protocol; reinterpret the same memory as raw bytes instead.
+        return array.reshape(-1).view(np.uint8).data
+
+
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
     from ._proxy import _PROXY_VALUE_DATA_ERROR, ProxyValue
 
@@ -155,8 +169,7 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
         raise RuntimeError(_PROXY_VALUE_DATA_ERROR)
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
-        data = array_or_struct.data.cast("B")
-        return data
+        return _ndarray_to_byte_view(array_or_struct)
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value_state(array_or_struct._data)
@@ -174,7 +187,7 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return Value(info, zero_bytes)
     if isinstance(array_or_struct, np.ndarray):
         info = _type_info_from_dtype(array_or_struct.dtype)
-        return Value(info, array_or_struct.data.cast("B"))
+        return Value(info, _ndarray_to_byte_view(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)

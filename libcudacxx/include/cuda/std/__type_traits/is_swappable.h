@@ -131,7 +131,7 @@ struct __swappable_with
   using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
   using __swap2 = decltype((__test_swap<_Up, _Tp>(0)));
 
-  static const bool value = _IsNotSame<__swap1, __nat>::value && _IsNotSame<__swap2, __nat>::value;
+  static constexpr bool value = !is_same_v<__swap1, __nat> && !is_same_v<__swap2, __nat>;
 };
 
 template <class _Tp, class _Up>

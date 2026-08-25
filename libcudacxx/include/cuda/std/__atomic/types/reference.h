@@ -22,12 +22,24 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/types/base.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_INT128()
+template <class _Tp>
+inline constexpr bool __atomic_ref_is_volatile_int128_v =
+  is_volatile_v<_Tp> && (is_same_v<remove_cv_t<_Tp>, __int128> || is_same_v<remove_cv_t<_Tp>, unsigned __int128>);
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+template <class _Tp>
+inline constexpr bool __atomic_ref_is_volatile_int128_v = false;
+#endif // !_CCCL_HAS_INT128()
 
 // Reference is compatible with __atomic_base_tag and uses the default dispatch
 template <typename _Tp>
