@@ -48,9 +48,9 @@ private:
 
 public:
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
-  template <
-    class _Up,
-    class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
+  template <class _Up,
+            class = enable_if_t<!is_same_v<remove_cvref_t<_Up>, reference_wrapper>,
+                                decltype(__fun(::cuda::std::declval<_Up>()))>>
   _CCCL_API constexpr reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);

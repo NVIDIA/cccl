@@ -52,10 +52,10 @@ template <class _Ty, bool _Nothrow = true>
 }
 
 template <class _Ty, class _Uy>
-_CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
+_CCCL_CONCEPT __same_as = ::cuda::std::is_same_v<_Ty, _Uy>;
 
 template <class _Ty, class _Uy>
-_CCCL_CONCEPT __not_same_as = !::cuda::std::_IsSame<_Ty, _Uy>::value;
+_CCCL_CONCEPT __not_same_as = !::cuda::std::is_same_v<_Ty, _Uy>;
 
 template <class _Ty, class... _Us>
 _CCCL_CONCEPT __one_of = (__same_as<_Ty, _Us> || ...);

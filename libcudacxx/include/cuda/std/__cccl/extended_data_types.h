@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/host_arch.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
@@ -35,6 +35,7 @@
 #define _CCCL_HAS_NVFP8()    0
 #define _CCCL_HAS_NVFP16()   0
 #define _CCCL_HAS_NVBF16()   0
+#define _CCCL_HAS_FLOAT64()  0
 #define _CCCL_HAS_FLOAT128() 0
 
 #if _CCCL_TILE_COMPILATION() // TODO(miscco): Fix access to extended floating point types
@@ -111,6 +112,23 @@ struct __nv_fp4x4_e2m1;
 #define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
 #define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
 #define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(12, 8))
+
+/***********************************************************************************************************************
+ * _Float64
+ **********************************************************************************************************************/
+
+// _Float64, the type behind C++23's std::float64_t, is a distinct type from double even where the
+// two are bit-identical, so code that accepts either has to name both. __STDCPP_FLOAT64_T__ guards
+// the _Float64 token and guarantees the type is present, which is why no compiler version table is
+// needed here; where _Float64 is merely an alias for double, the double spelling covers it anyway.
+//
+// nvcc does not support _Float64 in device code. A type that exists in one pass of a CUDA
+// compilation and not the other would give the two passes different overload sets, so this reports
+// false for nvcc in both passes rather than only in the device one.
+#if defined(__STDCPP_FLOAT64_T__) && __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_HAS_FLOAT64
+#  define _CCCL_HAS_FLOAT64() 1
+#endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
 
 /***********************************************************************************************************************
  * __float128

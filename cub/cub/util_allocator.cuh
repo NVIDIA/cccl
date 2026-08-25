@@ -30,9 +30,9 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__host_stdlib/mutex>
 
 #include <map>
-#include <mutex>
 #include <set>
 
 CUB_NAMESPACE_BEGIN
