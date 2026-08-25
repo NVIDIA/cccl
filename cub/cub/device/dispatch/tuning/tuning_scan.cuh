@@ -960,7 +960,7 @@ struct policy_selector
     {
       return get_sm120_fallback_lookahead_policy();
     }
-    if (cc >= ::cuda::compute_capability{10, 7})
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
       // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
       if (accum_is_primitive_or_trivially_copy_constructible)
