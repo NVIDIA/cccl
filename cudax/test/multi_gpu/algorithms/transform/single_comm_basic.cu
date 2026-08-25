@@ -31,9 +31,7 @@
 namespace
 {
 using transform_test_util::expected_for_rank;
-using transform_test_util::make_value;
 using transform_test_util::operators;
-using transform_test_util::value_types;
 
 // Drive the transform through the single-communicator overload, one thread per local rank. Unlike
 // `inclusive_scan`, `transform` posts no collective, so the per-rank calls need not rendezvous.

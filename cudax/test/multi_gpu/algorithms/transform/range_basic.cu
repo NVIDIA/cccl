@@ -23,6 +23,7 @@
 
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -31,9 +32,7 @@
 namespace
 {
 using transform_test_util::expected_for_rank;
-using transform_test_util::make_value;
 using transform_test_util::operators;
-using transform_test_util::value_types;
 
 // Run the whole world's transform through the range overload and check every rank against its own
 // reference. This boilerplate is identical for every test regardless of how the inputs are shaped.

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -132,7 +133,7 @@ MULTI_GPU_TEST("sort, random inputs", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (auto& local : input)
@@ -148,7 +149,7 @@ MULTI_GPU_TEST("sort, uneven rank sizes", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
@@ -164,7 +165,7 @@ MULTI_GPU_TEST("sort, inputs with some empty ranks", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
@@ -249,7 +250,7 @@ MULTI_GPU_TEST("sort, inputs with many equal keys", sort_types)
   auto comms = this->communicators();
   std::vector<std::vector<T>> input(comms.size());
 
-  auto rng = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng = make_rng(C2H_SEED(2));
 
   cuda::std::uniform_int_distribution<cuda::std::int64_t> dist{
     cuda::std::numeric_limits<cuda::std::int64_t>::lowest(), cuda::std::numeric_limits<cuda::std::int64_t>::max()};
@@ -357,7 +358,7 @@ MULTI_GPU_TEST("sort, skewed rank sizes", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)

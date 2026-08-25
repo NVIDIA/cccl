@@ -146,7 +146,7 @@ MULTI_GPU_TEST("sort single-comm, random inputs", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (auto& local : input)
@@ -162,7 +162,7 @@ MULTI_GPU_TEST("sort single-comm, uneven rank sizes", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
@@ -178,7 +178,7 @@ MULTI_GPU_TEST("sort single-comm, inputs with some empty ranks", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
@@ -316,7 +316,7 @@ MULTI_GPU_TEST("sort single-comm, skewed rank sizes", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
