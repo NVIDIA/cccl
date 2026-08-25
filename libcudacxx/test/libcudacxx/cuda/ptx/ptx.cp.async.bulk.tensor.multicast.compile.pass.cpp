@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: force-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>
@@ -18,7 +15,7 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-#include "generated/cp_async_bulk.h"
+#include "generated/cp_async_bulk_tensor_multicast.h"
 
 int main(int, char**)
 {

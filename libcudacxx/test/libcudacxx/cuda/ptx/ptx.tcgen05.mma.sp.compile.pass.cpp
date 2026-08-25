@@ -4,13 +4,9 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: force-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>
@@ -18,7 +14,7 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-#include "generated/cp_async_bulk.h"
+#include "generated/tcgen05_mma_sp.h"
 
 int main(int, char**)
 {
