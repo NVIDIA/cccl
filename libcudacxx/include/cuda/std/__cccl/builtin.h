@@ -253,10 +253,6 @@
 #  define _CCCL_BUILTIN_PREFETCH(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
-#if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
-
 #if _CCCL_CHECK_BUILTIN(has_nothrow_assign) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)

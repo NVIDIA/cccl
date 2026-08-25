@@ -31,6 +31,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if (_CCCL_CHECK_BUILTIN(decay) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15))
+#  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
+#endif // (_CCCL_CHECK_BUILTIN(decay) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15))
+
+#if _CCCL_CUDA_COMPILER(NVCC) // NVCC has issues with function pointers
+#  undef _CCCL_BUILTIN_DECAY
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
@@ -40,8 +48,13 @@ struct decay
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
 };
 
+#  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
+template <class _Tp>
+using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
+#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
 using decay_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+#  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
