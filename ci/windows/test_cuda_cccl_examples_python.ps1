@@ -31,16 +31,20 @@ Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benc
 # CuPy is required by the cuda.compute examples and is not part of the test extras
 Invoke-Checked { & $python -m pip install "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
 
-# Enable faulthandler through the environment rather than -X so that every child
-# process inherits it, including xdist workers. These lanes intermittently die
-# without a Python traceback, and the native dump is the only evidence of why.
+# A crashed xdist worker takes its stderr with it, so faulthandler output has to
+# go to a file rather than the console: tests/conftest.py writes one per worker
+# when CCCL_FAULTHANDLER_DIR is set, and the finally block below prints them.
 $env:PYTHONFAULTHANDLER = "1"
+$env:CCCL_FAULTHANDLER_DIR = Join-Path $repoRoot "faulthandler-dumps"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     Invoke-Checked { & $python -m pytest -n 6 test_examples.py } "examples tests failed"
 }
-finally { Pop-Location }
+finally {
+    Show-FaultHandlerDumps $env:CCCL_FAULTHANDLER_DIR
+    Pop-Location
+}
 
 # Smoke-test the host-overhead benchmark harness: run every benchmark case
 # exactly once (pass/fail only, no timing) so harness rot fails CI here instead

@@ -244,6 +244,33 @@ function Format-ExitCode {
     return "$Code"
 }
 
+function Show-FaultHandlerDumps {
+    <#
+    .SYNOPSIS
+        Prints per-worker faulthandler dumps written by tests/conftest.py.
+    .DESCRIPTION
+        A crashed pytest-xdist worker takes its stderr with it, so the native
+        traceback only survives in these files. Call this after a test run --
+        including when it failed, which is when the dumps actually exist.
+    #>
+    param([Parameter(Position = 0)][string]$Path)
+
+    if (-not $Path -or -not (Test-Path $Path)) { return }
+
+    $dumps = @(Get-ChildItem -Path $Path -Filter "faulthandler-*.log" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Length -gt 0 })
+    if ($dumps.Count -eq 0) {
+        Write-Host "No faulthandler dumps: no worker died of a fatal signal."
+        return
+    }
+
+    foreach ($dump in $dumps) {
+        Write-Host "::group::Native traceback from $($dump.Name)"
+        Get-Content $dump.FullName | ForEach-Object { Write-Host $_ }
+        Write-Host "::endgroup::"
+    }
+}
+
 function Invoke-Checked {
     <#
     .SYNOPSIS
@@ -264,5 +291,5 @@ function Invoke-Checked {
     }
 }
 
-Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked, Format-ExitCode
+Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked, Format-ExitCode, Show-FaultHandlerDumps
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION
