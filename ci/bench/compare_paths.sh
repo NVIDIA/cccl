@@ -302,18 +302,18 @@ select_targets() {
 select_runnable_targets() {
   local base_build_path="$1"
   local test_build_path="$2"
-  local -n selected_targets_ref="$3"
-  local -n selected_runnable_targets_ref="$4"
+  local -n selected_runnable_targets_ref="$3"
   local -a base_targets
   local -a test_targets
   local -a common_targets
+  shift 3
   local target=""
 
   mapfile -t base_targets < <(
-    list_runnable_benchmark_targets_for "${base_build_path}" "${selected_targets_ref[@]}"
+    list_runnable_benchmark_targets_for "${base_build_path}" "$@"
   )
   mapfile -t test_targets < <(
-    list_runnable_benchmark_targets_for "${test_build_path}" "${selected_targets_ref[@]}"
+    list_runnable_benchmark_targets_for "${test_build_path}" "$@"
   )
 
   mapfile -t common_targets < <(
@@ -1354,7 +1354,7 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
   fi
 
   select_targets "${base_build_dir}" "${test_build_dir}" selected_targets
-  select_runnable_targets "${base_build_dir}" "${test_build_dir}" selected_runnable_targets
+  select_runnable_targets "${base_build_dir}" "${test_build_dir}" selected_runnable_targets "${selected_targets[@]}"
 
   printf "%s\n" "${selected_targets[@]}" > "${artifact_dir}/meta/selected_targets.txt"
   printf "%s\n" "${selected_runnable_targets[@]}" > "${artifact_dir}/meta/selected_runnable_targets.txt"
