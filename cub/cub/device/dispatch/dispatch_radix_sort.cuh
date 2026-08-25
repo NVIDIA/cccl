@@ -29,8 +29,10 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__execution/runs_on.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -1375,6 +1377,8 @@ struct dispatch_impl
   DecomposerT decomposer;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
+  ::cuda::compute_capability cc;
+  ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee;
 
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -1674,6 +1678,10 @@ struct dispatch_impl
     {
       return error;
     }
+    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__has_max_sms())
+    {
+      sm_count = ::cuda::std::min(sm_count, static_cast<int>(runs_on_guarantee->description().__max_sms_));
+    }
 
     // Init regular and alternate-digit kernel configurations
     pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
@@ -1861,11 +1869,6 @@ struct dispatch_impl
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4]; // NOLINT(misc-const-correctness)
 
-    ::cuda::compute_capability cc{};
-    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
-    {
-      return error;
-    }
     constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
     const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
@@ -1882,6 +1885,11 @@ struct dispatch_impl
     if (const auto error = CubDebug(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device)))
     {
       return error;
+    }
+
+    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__has_max_sms())
+    {
+      num_sms = ::cuda::std::min(num_sms, static_cast<int>(runs_on_guarantee->description().__max_sms_));
     }
 
     const int histo_block_threads = policy.histogram.threads_per_block;
@@ -2169,13 +2177,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool can_overwrite_source_buffer,
   cudaStream_t stream,
+  ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  if (runs_on_guarantee.has_value())
+  {
+    cc = runs_on_guarantee->compute_capability();
+#ifdef CCCL_ENABLE_ASSERTIONS
+    ::cuda::compute_capability actual_cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(actual_cc)))
+    {
+      return error;
+    }
+    if (actual_cc != cc)
+    {
+      return CubDebug(cudaErrorInvalidDevice);
+    }
+#endif // CCCL_ENABLE_ASSERTIONS
+  }
+  else if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
@@ -2205,7 +2229,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     stream,
     decomposer,
     kernel_source,
-    launcher_factory};
+    launcher_factory,
+    cc,
+    runs_on_guarantee};
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);
