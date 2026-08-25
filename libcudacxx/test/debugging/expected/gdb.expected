@@ -10,3 +10,9 @@ cuda::std::expected<void, parse_error>
 =============== expected.void_error begin ===============
 cuda::std::expected<void, parse_error> = {error = {code = 9}}
 =============== expected.void_error end ===============
+=============== expected.update.before begin ===============
+cuda::std::expected<int, parse_error> = {value = 1}
+=============== expected.update.before end ===============
+=============== expected.update.after begin ===============
+cuda::std::expected<int, parse_error> = {value = 99}
+=============== expected.update.after end ===============

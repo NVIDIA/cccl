@@ -25,26 +25,30 @@ class ExpectedSyntheticProvider:
     """Expose the engaged value or the error of a cuda::std::expected as one child."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        # Captured before stripping the reference, so a caller's declared
+        # const/reference qualifiers stay visible the way LLDB's own default
+        # formatting would show them, instead of being silently dropped.
+        self.type_name = value.GetType().GetDisplayTypeName() or ""
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.name = "value"
+        self.has_val = False
         self.child = lldb.SBValue()
         self.update()
 
     def update(self) -> bool:
-        self.type_name = (
-            self.value.GetType()
-            .GetCanonicalType()
-            .GetUnqualifiedType()
-            .GetDisplayTypeName()
-            or ""
+        self.has_val = bool(
+            self.value.GetChildMemberWithName("__has_val_").GetValueAsUnsigned(0)
         )
-        has_val = self.value.GetChildMemberWithName("__has_val_").GetValueAsUnsigned(0)
         union = self.value.GetChildMemberWithName("__union_")
-        if has_val:
-            # expected<void, E> carries no value member in the engaged state.
+        if self.has_val:
             child = union.GetChildMemberWithName("__val_")
             self.name = "value"
+            if not child.IsValid():
+                # expected<void, E>, engaged: no __val_ member exists to show,
+                # but a synthesized "void" child still gets LLDB's usual
+                # single child "(name = ...)" summary, instead of nothing.
+                child = self.value.CreateValueFromExpression(self.name, '"void"')
         else:
             child = union.GetChildMemberWithName("__unex_")
             self.name = "error"

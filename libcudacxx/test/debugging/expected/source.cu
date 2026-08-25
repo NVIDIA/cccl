@@ -34,15 +34,29 @@ struct parse_error
   KEEP_FOR_DEBUGGER(result);
 }
 
+[[gnu::noinline]] void inspect_before_update(const cuda::std::expected<int, parse_error>& result)
+{
+  KEEP_FOR_DEBUGGER(result);
+}
+
+[[gnu::noinline]] void inspect_after_update(const cuda::std::expected<int, parse_error>& result)
+{
+  KEEP_FOR_DEBUGGER(result);
+}
+
 int main()
 {
   const cuda::std::expected<int, parse_error> value(42);
   const cuda::std::expected<int, parse_error> error(cuda::std::unexpect, parse_error{7});
   const cuda::std::expected<void, parse_error> void_value{};
   const cuda::std::expected<void, parse_error> void_error(cuda::std::unexpect, parse_error{9});
+  cuda::std::expected<int, parse_error> mutation(1);
 
   inspect_value(value);
   inspect_error(error);
   inspect_void_value(void_value);
   inspect_void_error(void_error);
+  inspect_before_update(mutation);
+  mutation.value() = 99;
+  inspect_after_update(mutation);
 }
