@@ -173,17 +173,38 @@ list_all_benchmark_targets() {
     | sort -u
 }
 
-list_runnable_benchmark_targets_for() {
+list_built_benchmark_binaries() {
   local build_path="$1"
-  shift
-  if [[ "$#" -eq 0 ]]; then
+  if [[ ! -d "${build_path}/bin" ]]; then
     return 0
   fi
-  {
-    printf "%s\n" "$@"
-    ninja -C "${build_path}" -t inputs "$@"
-  } | awk '/^bin\/.*\.bench\./ { sub(/^bin\//, ""); print }' \
+
+  find "${build_path}/bin" -maxdepth 1 -type f -executable -printf '%f\n' \
     | sort -u
+}
+
+normalize_benchmark_target() {
+  local target="$1"
+  target="${target#./}"
+  target="${target#bin/}"
+  target="${target##*/}"
+  printf "%s" "${target}"
+}
+
+target_was_requested_for_build() {
+  local target="$1"
+  shift
+  local build_target=""
+  local normalized_build_target=""
+
+  for build_target in "$@"; do
+    normalized_build_target="$(normalize_benchmark_target "${build_target}")"
+    if [[ "${target}" == "${normalized_build_target}" || "${target}" == "${normalized_build_target}".* ]]; then
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 target_matches_filters() {
@@ -309,12 +330,8 @@ select_runnable_targets() {
   shift 3
   local target=""
 
-  mapfile -t base_targets < <(
-    list_runnable_benchmark_targets_for "${base_build_path}" "$@"
-  )
-  mapfile -t test_targets < <(
-    list_runnable_benchmark_targets_for "${test_build_path}" "$@"
-  )
+  mapfile -t base_targets < <(list_built_benchmark_binaries "${base_build_path}")
+  mapfile -t test_targets < <(list_built_benchmark_binaries "${test_build_path}")
 
   mapfile -t common_targets < <(
     comm -12 \
@@ -325,7 +342,9 @@ select_runnable_targets() {
   selected_runnable_targets_ref=()
   for target in "${common_targets[@]}"; do
     [[ -n "${target}" ]] || continue
-    selected_runnable_targets_ref+=("${target}")
+    if target_was_requested_for_build "${target}" "$@"; then
+      selected_runnable_targets_ref+=("${target}")
+    fi
   done
 }
 
@@ -1355,10 +1374,8 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
   fi
 
   select_targets "${base_build_dir}" "${test_build_dir}" selected_targets
-  select_runnable_targets "${base_build_dir}" "${test_build_dir}" selected_runnable_targets "${selected_targets[@]}"
 
   printf "%s\n" "${selected_targets[@]}" > "${artifact_dir}/meta/selected_targets.txt"
-  printf "%s\n" "${selected_runnable_targets[@]}" > "${artifact_dir}/meta/selected_runnable_targets.txt"
 
   base_build_all_rc=0
   test_build_all_rc=0
@@ -1383,6 +1400,11 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     any_failures=1
   fi
 
+  if [[ "${base_build_all_rc}" -eq 0 && "${test_build_all_rc}" -eq 0 ]]; then
+    select_runnable_targets "${base_build_dir}" "${test_build_dir}" selected_runnable_targets "${selected_targets[@]}"
+  fi
+  printf "%s\n" "${selected_runnable_targets[@]}" > "${artifact_dir}/meta/selected_runnable_targets.txt"
+
   if [[ "${#selected_runnable_targets[@]}" -gt 0 ]]; then
     compare_script="$(resolve_compare_script "${test_build_dir}" || true)"
     if [[ -z "${compare_script}" ]]; then
@@ -1401,7 +1423,7 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     if [[ -n "${legacy_compare_script}" ]]; then
       legacy_compare_script_dir="$(dirname "${legacy_compare_script}")"
     fi
-  else
+  elif [[ "${base_build_all_rc}" -eq 0 && "${test_build_all_rc}" -eq 0 ]]; then
     echo "No runnable CUB benchmark targets matched the supplied filters." >&2
     any_failures=1
   fi
