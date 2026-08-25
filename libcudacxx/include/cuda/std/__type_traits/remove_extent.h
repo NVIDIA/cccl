@@ -24,6 +24,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_extent) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15)
+#  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_extent) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
