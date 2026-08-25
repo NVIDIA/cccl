@@ -27,6 +27,19 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_constructible
+    : public bool_constant<_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>)>
+{};
+
+template <class _Tp>
+inline constexpr bool is_nothrow_move_constructible_v =
+  _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>);
+
+#else // ^^^ Use builtin ^^^ / vvv No builtin
+
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 is_nothrow_move_constructible : public is_nothrow_constructible<_Tp, add_rvalue_reference_t<_Tp>>
@@ -34,6 +47,8 @@ is_nothrow_move_constructible : public is_nothrow_constructible<_Tp, add_rvalue_
 
 template <class _Tp>
 inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_move_constructible<_Tp>::value;
+
+#endif // No builtin
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

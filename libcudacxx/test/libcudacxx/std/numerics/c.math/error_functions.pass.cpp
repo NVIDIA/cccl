@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cmath>
 
@@ -25,7 +25,7 @@ TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possib
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-TEST_FUNC void test_erf(T val)
+TEST_HOST_DEVICE_FUNC void test_erf(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::erf(T{})), ret>);
@@ -75,7 +75,7 @@ TEST_FUNC void test_erf(T val)
 }
 
 template <typename T>
-TEST_FUNC void test_erfc(T val)
+TEST_HOST_DEVICE_FUNC void test_erfc(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::erfc(T{})), ret>);
@@ -130,13 +130,13 @@ TEST_FUNC void test_erfc(T val)
 }
 
 template <typename T>
-TEST_FUNC void test(const T val)
+TEST_HOST_DEVICE_FUNC void test(const T val)
 {
   test_erf<T>(val);
   test_erfc<T>(val);
 }
 
-TEST_FUNC void test(const float val)
+TEST_HOST_DEVICE_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

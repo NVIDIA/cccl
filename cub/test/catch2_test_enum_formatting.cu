@@ -10,7 +10,7 @@
 #  include <format>
 #endif // __cpp_lib_format >= 201907L
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 struct OStreamOperatorTester
 {
@@ -195,7 +195,7 @@ void do_test(const Tester& tester)
   }
 }
 
-C2H_TEST("Enum formatting", "")
+CUB_TEST("Enum formatting", "", CUB_SMALL)
 {
   do_test(OStreamOperatorTester{});
 #if __cpp_lib_format >= 201907L

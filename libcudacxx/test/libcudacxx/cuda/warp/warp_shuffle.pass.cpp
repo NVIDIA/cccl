@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/std/array>
 #include <cuda/std/cassert>

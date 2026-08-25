@@ -32,6 +32,7 @@ import threading
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from cuda.core import Device
 
 import cuda.compute
 from cuda.compute import (
@@ -42,7 +43,6 @@ from cuda.compute import (
     make_reduce_into,
     make_unary_transform,
 )
-from cuda.core import Device
 
 pytestmark = pytest.mark.no_verify_sass(
     reason="Concurrency tests intentionally run concurrent workers."

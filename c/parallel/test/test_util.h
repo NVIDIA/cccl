@@ -210,6 +210,12 @@ cccl_type_info get_type_info()
     info.type = cccl_type_enum::CCCL_FLOAT16;
   }
 #endif
+#if _CCCL_HAS_NVBF16()
+  else if constexpr (std::is_same_v<T, __nv_bfloat16>)
+  {
+    info.type = cccl_type_enum::CCCL_BFLOAT16;
+  }
+#endif
   else if constexpr (std::is_same_v<T, float>)
   {
     info.type = cccl_type_enum::CCCL_FLOAT32;
@@ -253,6 +259,10 @@ std::string type_enum_to_name(cccl_type_enum type)
 #if _CCCL_HAS_NVFP16()
     case cccl_type_enum::CCCL_FLOAT16:
       return "__half";
+#endif
+#if _CCCL_HAS_NVBF16()
+    case cccl_type_enum::CCCL_BFLOAT16:
+      return "__nv_bfloat16";
 #endif
     case cccl_type_enum::CCCL_FLOAT32:
       return "float";
@@ -327,6 +337,14 @@ inline std::string get_reduce_op(cccl_type_enum t)
              "  __half* a = reinterpret_cast<__half*>(a_void); "
              "  __half* b = reinterpret_cast<__half*>(b_void); "
              "  __half* out = reinterpret_cast<__half*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
+    case cccl_type_enum::CCCL_BFLOAT16:
+      return "#include <cuda_bf16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  __nv_bfloat16* a = reinterpret_cast<__nv_bfloat16*>(a_void); "
+             "  __nv_bfloat16* b = reinterpret_cast<__nv_bfloat16*>(b_void); "
+             "  __nv_bfloat16* out = reinterpret_cast<__nv_bfloat16*>(out_void); "
              "  *out = *a + *b; "
              "}";
     default:
@@ -676,6 +694,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
 {
   std::string less_op_src = std::format(
     "#include <cuda_fp16.h>\n"
+    "#include <cuda_bf16.h>\n"
     "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
     "  bool* out = reinterpret_cast<bool*>(out_void); "
@@ -685,6 +704,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
     compare_to);
   std::string greater_or_equal_op_src = std::format(
     "#include <cuda_fp16.h>\n"
+    "#include <cuda_bf16.h>\n"
     "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
     "  bool* out = reinterpret_cast<bool*>(out_void); "
@@ -1099,10 +1119,10 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
   std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src     = std::format(
     "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
-        "  auto* typed_state = static_cast<{1}*>(state);\n"
-        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
-        "  typed_state->value += offset_val;\n"
-        "}}",
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->value += offset_val;\n"
+    "}}",
     advance_fn_name,
     iterator_state_name);
 
@@ -1186,10 +1206,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_src     = std::format(
     "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
-        "  auto* typed_state = static_cast<{1}*>(state);\n"
-        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
-        "  typed_state->data -= offset_val;\n"
-        "}}",
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->data -= offset_val;\n"
+    "}}",
     advance_fn_name,
     iterator_state_name);
   std::string dereference_fn_src;

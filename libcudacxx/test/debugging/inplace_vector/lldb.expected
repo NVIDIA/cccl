@@ -1,0 +1,44 @@
+=============== inplace_vector.empty begin ===============
+(cuda::std::inplace_vector<int, 4>) <address> size=0, capacity=4
+=============== inplace_vector.empty end ===============
+=============== inplace_vector.partial begin ===============
+(cuda::std::inplace_vector<int, 5>) <address> size=3, capacity=5: {
+  [0] = -7
+  [1] = 0
+  [2] = 42
+}
+=============== inplace_vector.partial end ===============
+=============== inplace_vector.full begin ===============
+(cuda::std::inplace_vector<int, 3>) <address> size=3, capacity=3: {
+  [0] = 1
+  [1] = 2
+  [2] = 3
+}
+=============== inplace_vector.full end ===============
+=============== inplace_vector.zero_capacity begin ===============
+(cuda::std::inplace_vector<int, 0>) <address> size=0, capacity=0
+=============== inplace_vector.zero_capacity end ===============
+=============== inplace_vector.nested begin ===============
+(cuda::std::inplace_vector<cuda::std::inplace_vector<int, 2>, 3>) <address> size=2, capacity=3: {
+  [0] = size=2, capacity=2 {
+    [0] = 13
+    [1] = -5
+  }
+  [1] = size=1, capacity=2 {
+    [0] = 88
+  }
+}
+=============== inplace_vector.nested end ===============
+=============== inplace_vector.update.before begin ===============
+(cuda::std::inplace_vector<int, 4>) <address> size=2, capacity=4: {
+  [0] = 6
+  [1] = -91
+}
+=============== inplace_vector.update.before end ===============
+=============== inplace_vector.update.after begin ===============
+(cuda::std::inplace_vector<int, 4>) <address> size=3, capacity=4: {
+  [0] = 6
+  [1] = -91
+  [2] = 52
+}
+=============== inplace_vector.update.after end ===============

@@ -11,7 +11,7 @@
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
@@ -72,7 +72,7 @@ struct div_op
   }
 };
 
-C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", offset_types)
+CUB_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", CUB_LARGE, offset_types)
 try
 {
   using op_t     = cuda::std::plus<>;

@@ -15,7 +15,7 @@ Almost all of CUB's device-wide APIs come in two flavors:
 * the traditional two-phase style that requires calling the API twice and managing temporary storage explicitly,
 * and the newer single-phase style where temporary storage is obtained from a memory resource in the execution environment.
 
-Some APIs that do not require any temporary storage may have a traditional single-phase overload in addition to an newer environment one.
+Some APIs that do not require any temporary storage may also have a traditional single-phase form in addition to the newer environment-based one.
 
 .. _device-temp-storage:
 
@@ -54,7 +54,7 @@ Example pattern:
 Environment API (single phase)
 ++++++++++++++++++++++++++++++
 
-Environment-based overloads are available for all CUB device-wide algorithms.
+The environment-based API is available for all CUB device-wide algorithms.
 They remove the split of query/execute phase and manually obtaining the temporary storage.
 Instead, the temporary storage is automatically requested from a memory resource queried from the execution environment argument.
 The environment supports further properties like passing a stream or an execution requirement in addition to a memory resource.
@@ -80,6 +80,9 @@ Example pattern:
    :dedent:
    :start-after: example-begin env-overload-run
    :end-before: example-end env-overload-run
+
+Further information on CUB execution environments can be found in
+:ref:`Execution Environments <cub-environment>`.
 
 
 API overview

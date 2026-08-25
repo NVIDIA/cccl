@@ -15,9 +15,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirements", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirements", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-env-determinism
   auto op     = cuda::std::plus{};
@@ -40,7 +40,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed determinism", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed determinism", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-env-stream
   auto op     = cuda::std::plus{};
@@ -67,7 +67,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requirements", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requirements", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-env-determinism
   auto input  = thrust::device_vector<int>{0, 1, 2, 3};
@@ -88,7 +88,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requireme
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determinism", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determinism", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-env-stream
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
@@ -113,7 +113,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requirements", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requirements", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-sum-env-determinism
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};
@@ -134,7 +134,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requireme
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determinism", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determinism", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-sum-env-stream
   auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
@@ -159,7 +159,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-future-env
   auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -184,7 +184,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-future-env-stream
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};
@@ -211,7 +211,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-env
   auto op     = cuda::std::plus{};
@@ -231,7 +231,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]")
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-env-stream
   auto op     = cuda::std::plus{};
@@ -255,7 +255,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-init-env
   auto op     = cuda::std::plus{};
@@ -276,7 +276,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-future-init-env
   auto op     = cuda::std::plus{};
@@ -301,7 +301,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environ
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-init-env-stream
   auto op     = cuda::std::plus{};
@@ -326,7 +326,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
@@ -348,7 +348,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]")
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
@@ -371,7 +371,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]"
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts stream", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts stream", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-future-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
@@ -397,7 +397,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts strea
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-sum-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
@@ -419,7 +419,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]")
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
@@ -468,7 +468,7 @@ struct ScanPolicySelector
 };
 // example-end exclusive-sum-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum accepts a custom policy selector", "[scan][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSum accepts a custom policy selector", "[scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-tuning
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};

@@ -66,7 +66,12 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
     __env);
 }
 
-template <typename _Env>
+template <class _Env>
+using __resource_type_for _CCCL_NODEBUG =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
+    ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+
+template <class _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)
 {
   if constexpr (::cuda::__buffer_compatible_env<_Env>)
@@ -95,25 +100,29 @@ template <class _Tp, class _Resource, class _Env>
   }
 }
 
-template <class _InputRangeOfRanges, class _RangeOfOutputIt, class _EnvRange>
+template <class _InputRangeOfIters, class _OutputRangeOfIters, class _EnvRange>
 struct __in_range_out_it_properties
 {
-  using __input_type  = ::cuda::std::ranges::range_value_t<::cuda::std::ranges::range_reference_t<_InputRangeOfRanges>>;
-  using __output_type = ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_RangeOfOutputIt>>;
+  using __input_iter_type _CCCL_NODEBUG =
+    ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRangeOfIters>>;
+  using __input_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__input_iter_type>;
+  using __output_iter_type _CCCL_NODEBUG =
+    ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_OutputRangeOfIters>>;
+  using __output_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__output_iter_type>;
 
-  using __env_type = ::cuda::std::ranges::range_value_t<_EnvRange>;
+  using __env_type _CCCL_NODEBUG = ::cuda::std::ranges::range_value_t<_EnvRange>;
 
-  using __resource_type = ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
-    ::cuda::std::declval<__env_type>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__resource_type_for<__env_type>;
 
-  using __buffer_type = ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
+  using __buffer_type _CCCL_NODEBUG =
+    ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
 };
 
-template <class _RangeOfRanges>
-_CCCL_CONCEPT __range_of_sized_random_access_ranges = _CCCL_REQUIRES_EXPR((_RangeOfRanges), )(
-  requires(::cuda::std::ranges::forward_range<_RangeOfRanges>),
-  requires(::cuda::std::ranges::sized_range<_RangeOfRanges>),
-  requires(::cuda::std::ranges::random_access_range<::cuda::std::ranges::range_reference_t<_RangeOfRanges>>));
+template <class _RangeOfIters>
+_CCCL_CONCEPT __range_of_random_access_iterators = _CCCL_REQUIRES_EXPR((_RangeOfIters), )(
+  requires(::cuda::std::ranges::forward_range<_RangeOfIters>),
+  requires(::cuda::std::random_access_iterator<
+           ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_RangeOfIters>>>));
 
 template <class _RangeOfIters, class _Tp>
 _CCCL_CONCEPT __range_of_output_iters = _CCCL_REQUIRES_EXPR((_RangeOfIters, _Tp), )(

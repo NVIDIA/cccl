@@ -21,8 +21,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/type_traits/is_trivially_relocatable.h>
-
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
@@ -36,6 +34,7 @@
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_inval.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/data.h>
@@ -319,7 +318,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
-    static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
+    static_assert(::cuda::is_trivially_copyable_v<T>);
     static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
     constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()

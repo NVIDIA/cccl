@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cmath>
 
@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test(T val)
+TEST_HOST_DEVICE_FUNC void test(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::fdim(val, T())), ret>);
@@ -92,7 +92,7 @@ TEST_FUNC void test(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-TEST_FUNC bool test(float val)
+TEST_HOST_DEVICE_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);

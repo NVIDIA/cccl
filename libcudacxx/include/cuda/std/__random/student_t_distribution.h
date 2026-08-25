@@ -49,21 +49,23 @@ public:
   public:
     using distribution_type = student_t_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __n = result_type{1}) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(result_type __n = result_type{1}) noexcept
         : __n_{__n}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type n() const noexcept
     {
       return __n_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__n_ == __y.__n_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -78,25 +80,25 @@ public:
   // constructor and reset functions
   constexpr student_t_distribution() noexcept = default;
 
-  _CCCL_API constexpr explicit student_t_distribution(result_type __n) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit student_t_distribution(result_type __n) noexcept
       : __p_{param_type{__n}}
   {}
-  _CCCL_API constexpr explicit student_t_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit student_t_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept
   {
     __nd_.reset();
   }
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     gamma_distribution<result_type> __gd{__p.n() * result_type{.5}, result_type{2}};
@@ -104,36 +106,36 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type n() const noexcept
   {
     return __p_.n();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return -numeric_limits<result_type>::infinity();
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const student_t_distribution& __x, const student_t_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const student_t_distribution& __x, const student_t_distribution& __y) noexcept
   {
     return !(__x == __y);

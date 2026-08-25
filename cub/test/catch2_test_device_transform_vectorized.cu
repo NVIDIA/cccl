@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,8 +30,9 @@ struct cast_to
 
 // Narrowing widths (e.g. uint32 -> uint8) drive the multi-int4-load gather; widening (uint8 -> uint32) drives the
 // sub-16-byte load. Same-width is already covered by catch2_test_device_transform.cu's BabelStream add.
-C2H_TEST("DeviceTransform::Transform vectorized store narrowing to uint8",
+CUB_TEST("DeviceTransform::Transform vectorized store narrowing to uint8",
          "[device][transform]",
+         CUB_SMALL,
          c2h::type_list<std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using in_t               = c2h::get<0, TestType>;
@@ -52,8 +53,9 @@ C2H_TEST("DeviceTransform::Transform vectorized store narrowing to uint8",
   REQUIRE(reference_h == result);
 }
 
-C2H_TEST("DeviceTransform::Transform vectorized store widening from uint8",
+CUB_TEST("DeviceTransform::Transform vectorized store widening from uint8",
          "[device][transform]",
+         CUB_SMALL,
          c2h::type_list<std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using in_t               = std::uint8_t;
@@ -88,7 +90,7 @@ struct ublkcp_store_vec_size_2_selector
   }
 };
 
-C2H_TEST("DeviceTransform::Transform tunable narrower store_vec_size", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform tunable narrower store_vec_size", "[device][transform]", CUB_SMALL)
 {
   using in_t                         = std::uint32_t;
   using out_t                        = std::uint8_t;

@@ -33,7 +33,7 @@ class __dynamic_format_string
   basic_string_view<_CharT> __str_;
 
 public:
-  _CCCL_API constexpr __dynamic_format_string(basic_string_view<_CharT> __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __dynamic_format_string(basic_string_view<_CharT> __s) noexcept
       : __str_{__s}
   {}
 
@@ -42,18 +42,18 @@ public:
   __dynamic_format_string& operator=(const __dynamic_format_string&) = delete;
   __dynamic_format_string& operator=(__dynamic_format_string&&)      = delete;
 
-  [[nodiscard]] _CCCL_API constexpr basic_string_view<_CharT> __get() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_string_view<_CharT> __get() const noexcept
   {
     return __str_;
   }
 };
 
-[[nodiscard]] _CCCL_API inline __dynamic_format_string<char> dynamic_format(string_view __fmt) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __dynamic_format_string<char> dynamic_format(string_view __fmt) noexcept
 {
   return {__fmt};
 }
 #if _CCCL_HAS_WCHAR_T()
-[[nodiscard]] _CCCL_API inline __dynamic_format_string<wchar_t> dynamic_format(wstring_view __fmt) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __dynamic_format_string<wchar_t> dynamic_format(wstring_view __fmt) noexcept
 {
   return {__fmt};
 }

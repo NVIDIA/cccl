@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -32,7 +32,7 @@ struct TestSpecFieldsValues
   bool consume_all;
 };
 
-TEST_FUNC TestSpecFieldsValues make_test_spec_fields_values() noexcept
+TEST_HOST_DEVICE_FUNC TestSpecFieldsValues make_test_spec_fields_values() noexcept
 {
   TestSpecFieldsValues value{};
   value.sign                 = true;
@@ -47,7 +47,7 @@ TEST_FUNC TestSpecFieldsValues make_test_spec_fields_values() noexcept
   return value;
 }
 
-TEST_FUNC void verify_spec_fields(const cuda::std::__fmt_spec_fields& value) noexcept
+TEST_HOST_DEVICE_FUNC void verify_spec_fields(const cuda::std::__fmt_spec_fields& value) noexcept
 {
   const auto ref = make_test_spec_fields_values();
   assert(value.__sign_ == ref.sign);
@@ -61,7 +61,7 @@ TEST_FUNC void verify_spec_fields(const cuda::std::__fmt_spec_fields& value) noe
   assert(value.__consume_all_ == ref.consume_all);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_spec_fields) == 2);
 

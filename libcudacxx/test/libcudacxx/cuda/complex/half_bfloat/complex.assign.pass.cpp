@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// complex<__nv_bfloat16> is not available in tile mode
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-TEST_FUNC void test_assignment()
+TEST_HOST_DEVICE_FUNC void test_assignment()
 {
   cuda::std::complex<T> from_only_real{static_cast<T>(-1.0), static_cast<T>(1.0)};
   cuda::std::complex<T> from_only_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
@@ -38,7 +38,7 @@ TEST_FUNC void test_assignment()
   assert(from_real_imag.imag() == static_cast<T>(112.0));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_assignment<__half, float>();

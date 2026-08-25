@@ -10,7 +10,7 @@
 #include <cuda/cmath>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 enum struct test_mode
 {
@@ -201,7 +201,7 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-C2H_TEST("Block load to shared works", "[load][block]", types, items_per_thread, threads_in_block, modes)
+CUB_TEST("Block load to shared works", "[load][block]", CUB_SMALL, types, items_per_thread, threads_in_block, modes)
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
@@ -214,7 +214,12 @@ C2H_TEST("Block load to shared works", "[load][block]", types, items_per_thread,
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size)
+CUB_TEST("Block load to shared works with even vector types",
+         "[load][block]",
+         CUB_SMALL,
+         vec_types,
+         items_per_thread,
+         a_block_size)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -224,7 +229,7 @@ C2H_TEST("Block load to shared works with even vector types", "[load][block]", v
   test_block_load<params::items_per_thread, params::threads_in_block>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with custom types", "[load][block]", items_per_thread)
+CUB_TEST("Block load to shared works with custom types", "[load][block]", CUB_SMALL, items_per_thread)
 {
   using type                     = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
@@ -236,7 +241,8 @@ C2H_TEST("Block load to shared works with custom types", "[load][block]", items_
   test_block_load<items_per_thread, threads_in_block>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with dyn smem and internal TempStorage", "[load][block]", items_per_thread)
+CUB_TEST(
+  "Block load to shared works with dyn smem and internal TempStorage", "[load][block]", CUB_SMALL, items_per_thread)
 {
   using type                     = int;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
@@ -249,8 +255,9 @@ C2H_TEST("Block load to shared works with dyn smem and internal TempStorage", "[
 }
 
 #if IPT == 1
-C2H_TEST("Block load to shared works with const and non-const datatype and different alignment cases",
+CUB_TEST("Block load to shared works with const and non-const datatype and different alignment cases",
          "[load][block]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>)
 {
   using type           = int;

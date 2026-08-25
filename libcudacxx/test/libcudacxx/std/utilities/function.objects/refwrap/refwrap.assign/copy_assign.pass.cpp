@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -29,18 +29,18 @@ class functor1
 struct convertible_to_int_ref
 {
   int val = 0;
-  TEST_FUNC operator int&()
+  TEST_HOST_DEVICE_FUNC operator int&()
   {
     return val;
   }
-  TEST_FUNC operator int const&() const
+  TEST_HOST_DEVICE_FUNC operator int const&() const
   {
     return val;
   }
 };
 
 template <class T>
-TEST_FUNC void test(T& t)
+TEST_HOST_DEVICE_FUNC void test(T& t)
 {
   cuda::std::reference_wrapper<T> r(t);
   T t2 = t;
@@ -49,10 +49,10 @@ TEST_FUNC void test(T& t)
   assert(&r2.get() == &t);
 }
 
-TEST_FUNC void f() {}
-TEST_FUNC void g() {}
+TEST_HOST_DEVICE_FUNC void f() {}
+TEST_HOST_DEVICE_FUNC void g() {}
 
-TEST_FUNC void test_function()
+TEST_HOST_DEVICE_FUNC void TEST_HOST_DEVICE_FUNCtion()
 {
   cuda::std::reference_wrapper<void()> r(f);
   cuda::std::reference_wrapper<void()> r2(g);
@@ -64,7 +64,7 @@ int main(int, char**)
 {
   void (*fp)() = f;
   test(fp);
-  test_function();
+  TEST_HOST_DEVICE_FUNCtion();
   functor1 f1;
   test(f1);
   int i = 0;

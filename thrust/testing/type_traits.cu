@@ -1,3 +1,6 @@
+// Suppress deprecations for trivial relocation traits
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/counting_iterator.h>

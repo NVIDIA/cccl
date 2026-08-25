@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -25,7 +25,7 @@
 namespace simd = cuda::std::simd;
 
 template <typename Iter>
-TEST_FUNC void check_iterator_concepts()
+TEST_HOST_DEVICE_FUNC void check_iterator_concepts()
 {
   using Sentinel = cuda::std::default_sentinel_t;
 
@@ -40,7 +40,7 @@ TEST_FUNC void check_iterator_concepts()
   static_assert(cuda::std::sized_sentinel_for<Sentinel, Iter>);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = typename Vec::mask_type;

@@ -59,18 +59,19 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Bijection2 = _Bijection)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Bijection2>)
-  _CCCL_API constexpr random_bijection() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Bijection2>)
+  _CCCL_HOST_DEVICE_API constexpr random_bijection() noexcept(
+    ::cuda::std::is_nothrow_default_constructible_v<_Bijection2>)
       : __bijection_()
       , __num_elements_(0)
   {}
 
   template <class _RNG>
-  _CCCL_API constexpr random_bijection(_IndexType __num_elements, _RNG&& __gen) noexcept
+  _CCCL_HOST_DEVICE_API constexpr random_bijection(_IndexType __num_elements, _RNG&& __gen) noexcept
       : __bijection_(__num_elements, ::cuda::std::forward<_RNG>(__gen))
       , __num_elements_(__num_elements)
   {}
 
-  [[nodiscard]] _CCCL_API constexpr _IndexType operator()(_IndexType __n) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _IndexType operator()(_IndexType __n) const noexcept
   {
     // The initial index must be be in the range [0, __num_elemments]
     // If __n < __num_elements_ Iterating a __bijection_ like this will always terminate.
@@ -84,7 +85,7 @@ public:
     return __n;
   }
 
-  [[nodiscard]] _CCCL_API constexpr _IndexType size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _IndexType size() const noexcept
   {
     return __num_elements_;
   }

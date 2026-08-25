@@ -156,10 +156,6 @@
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
-#if _CCCL_TILE_COMPILATION() // nvbug6067464: __builtin_is_constant_evaluated is unsupported in tile mode
-#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-#endif // _CCCL_TILE_COMPILATION()
-
 #if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
 #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
     __builtin_is_corresponding_member(_MPtr1, _MPtr2)
@@ -179,6 +175,15 @@
 // #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+#  define _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF(...) __builtin_is_virtual_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+
+// nvcc < 13.3 doesn't implement __builtin_is_virtual_base_of
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
@@ -297,10 +302,6 @@
 #if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
-
-#if _CCCL_CHECK_BUILTIN(is_convertible_to) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_convertible_to)
 
 #if _CCCL_CHECK_BUILTIN(is_destructible) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/span>
@@ -99,6 +100,11 @@ struct __slot_storage_ref
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Value* data() const noexcept
   {
     return __data_;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool __is_packed_cas_aligned() const noexcept
+  {
+    return ::cuda::is_aligned(__data_, sizeof(_Value));
   }
 
   //! @brief Returns an iterator to the first slot.

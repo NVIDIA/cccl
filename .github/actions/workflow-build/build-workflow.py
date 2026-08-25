@@ -456,10 +456,13 @@ def generate_dispatch_job_name(matrix_job, job_type):
     py_str = (
         (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
     )
-
-    config_tag = (
-        f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    ctk_mode_str = (
+        (" ctk-" + str(matrix_job["py_ctk_mode"]))
+        if "py_ctk_mode" in matrix_job
+        else ""
     )
+
+    config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}{ctk_mode_str}"
 
     extra_info = (
         f":{cuda_compile_arch}{cmake_options}{extra_args}"
@@ -535,6 +538,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+    py_ctk_mode = matrix_job["py_ctk_mode"] if "py_ctk_mode" in matrix_job else ""
     extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
@@ -550,6 +554,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+    if py_ctk_mode:
+        command += f' -ctk-mode "{py_ctk_mode}"'
     if extra_args:
         command += f" {extra_args}"
 
@@ -646,6 +652,16 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
         producer_matrix_job["ctk"] = producer_ctk
     else:
         producer_matrix_job = matrix_job
+
+    # py_ctk_mode is a consumer-only tag: it selects the pip extra the test
+    # installs, but the wheel build ignores it. Drop it from the producer so the
+    # pinned/latest/sysctk variants of a given wheel share one build instead of
+    # each spawning an identical, redundant producer (the merge below dedupes
+    # producers by their name/command).
+    if "py_ctk_mode" in producer_matrix_job:
+        if producer_matrix_job is matrix_job:
+            producer_matrix_job = copy.deepcopy(matrix_job)
+        del producer_matrix_job["py_ctk_mode"]
 
     producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: return in loop statement is not supported
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 #include <cuda/devices>
 #include <cuda/std/cassert>

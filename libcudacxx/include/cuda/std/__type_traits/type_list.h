@@ -750,7 +750,7 @@ struct __type_concat_fn
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
-  using __next_cpo _CCCL_NODEBUG_ALIAS = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
+  using __next _CCCL_NODEBUG_ALIAS = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
 
   template <class... _Ts,
             class... _As,
@@ -773,7 +773,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
     __type_list_ptr<_Gs...>, // 7
     __type_list_ptr<_Hs...>, // 8
     _Tail*... __tail) // rest
-    -> decltype(__next_cpo::__fn(
+    -> decltype(__next::__fn(
       __type_list_ptr<_Ts..., _As..., _Bs..., _Cs..., _Ds..., _Es..., _Fs..., _Gs..., _Hs...>{nullptr},
       __tail...,
       __type_list_ptr<>{nullptr},

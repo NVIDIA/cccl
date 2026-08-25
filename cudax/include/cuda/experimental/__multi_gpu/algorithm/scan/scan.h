@@ -30,7 +30,6 @@
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
-#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/readable_traits.h>
@@ -69,16 +68,18 @@ template <__kind _Kind,
           class _Policy,
           class _CommRange,
           class _EnvRange,
-          class _InputRangeRange,
-          class _OutputItRange,
+          class _InputIterRange,
+          class _SizeTRange,
+          class _OutputIterRange,
           class _Tp,
           class _BinaryOp>
 _CCCL_HOST_API void __scan(
   const __result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRangeRange&& __range_of_inputs,
-  _OutputItRange&& __outputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
+  _OutputIterRange&& __output_iters,
   _Tp __init,
   _BinaryOp __op,
   _Tp __ident)
@@ -89,12 +90,9 @@ _CCCL_HOST_API void __scan(
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputRangeRange, _OutputItRange, _EnvRange>;
+    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
-  static_assert(::cuda::experimental::__indirectly_binary_reducible<
-                _BinaryOp,
-                _Tp,
-                ::cuda::std::ranges::iterator_t<::cuda::std::ranges::range_reference_t<_InputRangeRange>>>);
+  static_assert(::cuda::std::__indirectly_binary_reducible<_BinaryOp, _Tp, typename __properties::__input_iter_type>);
 
   // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
   // that get_stream_t is a normal CPO and normally callable.
@@ -111,20 +109,18 @@ _CCCL_HOST_API void __scan(
   _CCCL_NVTX_RANGE_SCOPE(
     _Kind == __kind::__exclusive ? "cuda::experimental::exclusive_scan" : "cuda::experimental::inclusive_scan");
 
-  using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputRangeRange, _OutputItRange, _EnvRange>;
-
   constexpr auto __ROOT_RANK = 0;
   auto __partials            = ::std::vector<typename __properties::__buffer_type>{};
 
   __partials.reserve(__num_local);
   // TODO(jfaibussowit): can just be ranges::zip | ranges::transform | ranges::to() (and then
   // we don't need to do the env, and buffer type deduction upfront)
-  for (auto&& [__comm, __env, __inputs] : ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_inputs))
+  for (auto&& [__comm, __env, __input_it, __num_items] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range))
   {
     __partials.emplace_back(
       ::cuda::experimental::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
-        __ROOT_RANK, __comm, __env, __inputs, __init, __op, __ident));
+        __ROOT_RANK, __comm, __env, __input_it, __num_items, __init, __op, __ident));
   }
 
   {
@@ -165,8 +161,8 @@ _CCCL_HOST_API void __scan(
   // rank 2: [21]
   //
   // Then later we can do the proper prefix scan using __prefix as the initializer for it.
-  for (auto&& [__comm, __env, __part, __inputs, __out] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __partials, __range_of_inputs, __outputs))
+  for (auto&& [__comm, __env, __part, __input_it, __num_items, __out] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __partials, __input_iters, __num_items_range, __output_iters))
   {
     auto __prefix = ::cuda::experimental::__detail::__make_safe_uninitialized_buffer<_Tp>(
       __part.stream(), __part.memory_resource(), /*__size=*/1, __env);
@@ -204,11 +200,11 @@ _CCCL_HOST_API void __scan(
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
-        ::cuda::std::ranges::begin(__inputs),
+        __input_it,
         __out,
         __op,
         /*__init=*/__future_type{__prefix.begin()},
-        ::cuda::std::ranges::size(__inputs),
+        __num_items,
         __env);
     }
     else
@@ -216,11 +212,11 @@ _CCCL_HOST_API void __scan(
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
         CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-        ::cuda::std::ranges::begin(__inputs),
+        __input_it,
         __out,
         __op,
         /*__init=*/::cuda::args::deferred{__prefix.begin()},
-        ::cuda::std::ranges::size(__inputs),
+        __num_items,
         __env);
     }
   }
@@ -236,17 +232,17 @@ _CCCL_HOST_API void __scan(
 //! `__init` with all preceding elements in the logical sequence. Empty input ranges contribute
 //! no elements.
 //!
-//! The communicators, environments, input ranges, and output iterators are iterated in
-//! lockstep. Each tuple describes one local communicator rank. This overload is intended for
-//! a thread or process that owns multiple local GPUs. For example, if each process owns two
-//! GPUs, each process can pass both local ranks in one call, as shown in the test below.
+//! The communicators, environments, input iterators, input sizes, and output iterators are
+//! iterated in lockstep. Each tuple describes one local communicator rank. This overload is
+//! intended for a thread or process that owns multiple local GPUs. For example, if each process
+//! owns two GPUs, each process can pass both local ranks in one call, as shown in the test below.
 //!
 //! @snippet exclusive_scan/range_basic.cu exclusive_scan
 //!
-//! All four outer ranges must have the same length. The algorithm caps lockstep iteration at
+//! All five outer ranges must have the same length. The algorithm caps lockstep iteration at
 //! the shortest range, but this must not be relied upon and may change at any time. Each
 //! output iterator must refer to writable device-accessible storage for at least as many
-//! values as the corresponding input range contains.
+//! values as the corresponding input size gives.
 //!
 //! Every communicator rank must participate in the collective call. `__init`, `__op`, and
 //! `__ident` must describe the same operation on every rank. `__op` must be associative, and
@@ -256,41 +252,37 @@ _CCCL_HOST_API void __scan(
 //! Each environment supplies the stream and optional memory resource for its local rank. The
 //! results are ready after the work enqueued on the corresponding streams completes.
 //!
-//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
-//! @tparam _CommRange The range of communicators. Each element must model the communicator
-//!         concept.
-//! @tparam _EnvRange The range of execution environments.
-//! @tparam _InputRangeRange The range whose elements are the per-communicator input ranges.
-//!         Each element must be a sized random-access range.
-//! @tparam _OutputItRange The range of output iterators, one per communicator.
-//! @tparam _Tp The scan value type. Deduced by default from the input element type.
-//! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
-//!
-//! @param[in] __policy The result policy object.
+//! @param[in] __policy The result policy object. Currently must be `cudax::distributed`.
 //! @param[in] __comms The range of communicators.
 //! @param[in] __envs The range of execution environments. Each environment must contain a
 //!                   stream.
-//! @param[in] __range_of_inputs The range of per-communicator input ranges to scan.
-//! @param[out] __outputs The range of output iterators receiving the per-communicator results.
+//! @param[in] __input_iters The range of per-communicator input iterators to scan.
+//! @param[in] __num_items_range A range of sizes per input iterator to scan.
+//! @param[out] __output_iters The range of output iterators receiving the per-communicator
+//!                            results.
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Policy,
-               class _CommRange,
-               class _EnvRange,
-               class _InputRangeRange,
-               class _OutputItRange,
-               class _Tp = ::cuda::std::ranges::range_value_t<::cuda::std::ranges::range_reference_t<_InputRangeRange>>,
-               class _BinaryOp = ::cuda::std::plus<>)
+_CCCL_TEMPLATE(
+  class _Policy,
+  class _CommRange,
+  class _EnvRange,
+  class _InputIterRange,
+  class _SizeTRange,
+  class _OutputIterRange,
+  class _Tp       = ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_InputIterRange>>,
+  class _BinaryOp = ::cuda::std::plus<>)
 _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::ranges::forward_range<_EnvRange> _CCCL_AND
-                 __detail::__range_of_sized_random_access_ranges<_InputRangeRange> _CCCL_AND
-                   __detail::__range_of_output_iters<_OutputItRange, _Tp>)
+                 __detail::__range_of_random_access_iterators<_InputIterRange>
+                   _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
+                     __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
   const __result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRangeRange&& __range_of_inputs,
-  _OutputItRange&& __outputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
+  _OutputIterRange&& __output_iters,
   _Tp __init     = {},
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
@@ -299,8 +291,9 @@ _CCCL_HOST_API void exclusive_scan(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
-    ::cuda::std::forward<_InputRangeRange>(__range_of_inputs),
-    ::cuda::std::forward<_OutputItRange>(__outputs),
+    ::cuda::std::forward<_InputIterRange>(__input_iters),
+    ::cuda::std::forward<_SizeTRange>(__num_items_range),
+    ::cuda::std::forward<_OutputIterRange>(__output_iters),
     ::cuda::std::move(__init),
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
@@ -310,56 +303,51 @@ _CCCL_HOST_API void exclusive_scan(
 //!
 //! Treats the input ranges from all communicator ranks as one logical sequence, with the
 //! ranges concatenated in ascending communicator rank order. Writes the portion of the
-//! exclusive scan corresponding to `__comm` to `__output`. The first output element in the
+//! exclusive scan corresponding to `__comm` to `__output_iter`. The first output element in the
 //! logical sequence is `__init`. Every other output element is the reduction of `__init` with
 //! all preceding elements in the logical sequence.
 //!
-//! This convenience overload forwards one communicator, environment, input range, and output
-//! iterator to the range-based overload. It is intended for a thread or process that owns one
-//! local GPU.
+//! This convenience overload forwards one communicator, environment, input iterator, input
+//! size, and output iterator to the range-based overload. It is intended for a thread or process
+//! that owns one local GPU.
 //!
 //! @snippet exclusive_scan/single_comm_basic.cu exclusive_scan_single_range
 //!
 //! Every communicator rank must participate in the collective call. `__init`, `__op`, and
 //! `__ident` must describe the same operation on every rank. `__op` must be associative, and
-//! `__ident` must be an identity element for `__op`. `__output` must refer to writable
-//! device-accessible storage for at least as many values as `__input` contains.
+//! `__ident` must be an identity element for `__op`. `__output_iter` must refer to writable
+//! device-accessible storage for at least `__num_items` values.
 //!
 //! The environment supplies the stream and optional memory resource for the local rank. The
 //! results are ready after the work enqueued on that stream completes.
 //!
-//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
-//! @tparam _Comm The communicator type. Must model the communicator concept.
-//! @tparam _Env The execution environment type. Supplies the stream and optional memory
-//!              resource.
-//! @tparam _InputRange The input range type. Must be a sized random-access range.
-//! @tparam _OutputIt The output iterator type.
-//! @tparam _Tp The scan value type. Deduced by default from the input element type.
-//! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
-//!
-//! @param[in] __policy The result policy object.
+//! @param[in] __policy The result policy object. Currently must be `cudax::distributed`.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
-//! @param[in] __input The input range to scan.
-//! @param[out] __output The output iterator receiving the local scan results.
+//! @param[in] __input_iter The input iterator to scan.
+//! @param[in] __num_items The number of items in `__input_iter` to scan.
+//! @param[out] __output_iter The output iterator receiving the local scan results.
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Policy,
-               class _Comm,
-               class _Env,
-               class _InputRange,
-               class _OutputIt,
-               class _Tp       = ::cuda::std::ranges::range_value_t<_InputRange>,
-               class _BinaryOp = ::cuda::std::plus<>)
-_CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
+_CCCL_TEMPLATE(
+  class _Policy,
+  class _Comm,
+  class _Env,
+  class _InputIt,
+  class _SizeT,
+  class _OutputIt,
+  class _Tp       = ::cuda::std::iter_value_t<_InputIt>,
+  class _BinaryOp = ::cuda::std::plus<>)
+_CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
   const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
-  _InputRange&& __input,
-  _OutputIt __output,
+  _InputIt __input_iter,
+  _SizeT __num_items,
+  _OutputIt __output_iter,
   _Tp __init     = {},
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
@@ -368,8 +356,9 @@ _CCCL_HOST_API void exclusive_scan(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-    ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
-    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::span<_InputIt, 1>{::cuda::std::addressof(__input_iter), 1},
+    ::cuda::std::span<_SizeT, 1>{::cuda::std::addressof(__num_items), 1},
+    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output_iter), 1},
     ::cuda::std::move(__init),
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
@@ -383,17 +372,17 @@ _CCCL_HOST_API void exclusive_scan(
 //! is the reduction of `__init` with all input elements through the corresponding position in
 //! the logical sequence. Empty input ranges contribute no elements.
 //!
-//! The communicators, environments, input ranges, and output iterators are iterated in
-//! lockstep. Each tuple describes one local communicator rank. This overload is intended for
-//! a thread or process that owns multiple local GPUs. For example, if each process owns two
-//! GPUs, each process can pass both local ranks in one call, as shown in the test below.
+//! The communicators, environments, input iterators, input sizes, and output iterators are
+//! iterated in lockstep. Each tuple describes one local communicator rank. This overload is
+//! intended for a thread or process that owns multiple local GPUs. For example, if each process
+//! owns two GPUs, each process can pass both local ranks in one call, as shown in the test below.
 //!
 //! @snippet inclusive_scan/range_basic.cu inclusive_scan
 //!
-//! All four outer ranges must have the same length. The algorithm caps lockstep iteration at
+//! All five outer ranges must have the same length. The algorithm caps lockstep iteration at
 //! the shortest range, but this must not be relied upon and may change at any time. Each
 //! output iterator must refer to writable device-accessible storage for at least as many
-//! values as the corresponding input range contains.
+//! values as the corresponding input size gives.
 //!
 //! Every communicator rank must participate in the collective call. `__init`, `__op`, and
 //! `__ident` must describe the same operation on every rank. `__op` must be associative, and
@@ -403,41 +392,37 @@ _CCCL_HOST_API void exclusive_scan(
 //! Each environment supplies the stream and optional memory resource for its local rank. The
 //! results are ready after the work enqueued on the corresponding streams completes.
 //!
-//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
-//! @tparam _CommRange The range of communicators. Each element must model the communicator
-//!         concept.
-//! @tparam _EnvRange The range of execution environments.
-//! @tparam _InputRangeRange The range whose elements are the per-communicator input ranges.
-//!         Each element must be a sized random-access range.
-//! @tparam _OutputItRange The range of output iterators, one per communicator.
-//! @tparam _Tp The scan value type. Deduced by default from the input element type.
-//! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
-//!
-//! @param[in] __policy The result policy object.
+//! @param[in] __policy The result policy object. Currently must be `cudax::distributed`.
 //! @param[in] __comms The range of communicators.
 //! @param[in] __envs The range of execution environments. Each environment must contain a
 //!                   stream.
-//! @param[in] __range_of_inputs The range of per-communicator input ranges to scan.
-//! @param[out] __outputs The range of output iterators receiving the per-communicator results.
+//! @param[in] __input_iters The range of per-communicator input iterators to scan.
+//! @param[in] __num_items_range A range of sizes per input iterator to scan.
+//! @param[out] __output_iters The range of output iterators receiving the per-communicator
+//!                            results.
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Policy,
-               class _CommRange,
-               class _EnvRange,
-               class _InputRangeRange,
-               class _OutputItRange,
-               class _Tp = ::cuda::std::ranges::range_value_t<::cuda::std::ranges::range_reference_t<_InputRangeRange>>,
-               class _BinaryOp = ::cuda::std::plus<>)
+_CCCL_TEMPLATE(
+  class _Policy,
+  class _CommRange,
+  class _EnvRange,
+  class _InputIterRange,
+  class _SizeTRange,
+  class _OutputIterRange,
+  class _Tp       = ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_InputIterRange>>,
+  class _BinaryOp = ::cuda::std::plus<>)
 _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::ranges::forward_range<_EnvRange> _CCCL_AND
-                 __detail::__range_of_sized_random_access_ranges<_InputRangeRange> _CCCL_AND
-                   __detail::__range_of_output_iters<_OutputItRange, _Tp>)
+                 __detail::__range_of_random_access_iterators<_InputIterRange>
+                   _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
+                     __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
   const __result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
-  _InputRangeRange&& __range_of_inputs,
-  _OutputItRange&& __outputs,
+  _InputIterRange&& __input_iters,
+  _SizeTRange&& __num_items_range,
+  _OutputIterRange&& __output_iters,
   _Tp __init     = {},
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
@@ -446,8 +431,9 @@ _CCCL_HOST_API void inclusive_scan(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
-    ::cuda::std::forward<_InputRangeRange>(__range_of_inputs),
-    ::cuda::std::forward<_OutputItRange>(__outputs),
+    ::cuda::std::forward<_InputIterRange>(__input_iters),
+    ::cuda::std::forward<_SizeTRange>(__num_items_range),
+    ::cuda::std::forward<_OutputIterRange>(__output_iters),
     ::cuda::std::move(__init),
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
@@ -457,56 +443,51 @@ _CCCL_HOST_API void inclusive_scan(
 //!
 //! Treats the input ranges from all communicator ranks as one logical sequence, with the
 //! ranges concatenated in ascending communicator rank order. Writes the portion of the
-//! inclusive scan corresponding to `__comm` to `__output`. Each output element is the reduction
-//! of `__init` with all input elements through the corresponding position in the logical
-//! sequence.
+//! inclusive scan corresponding to `__comm` to `__output_iter`. Each output element is the
+//! reduction of `__init` with all input elements through the corresponding position in the
+//! logical sequence.
 //!
-//! This convenience overload forwards one communicator, environment, input range, and output
-//! iterator to the range-based overload. It is intended for a thread or process that owns one
-//! local GPU.
+//! This convenience overload forwards one communicator, environment, input iterator, input
+//! size, and output iterator to the range-based overload. It is intended for a thread or process
+//! that owns one local GPU.
 //!
 //! @snippet inclusive_scan/single_comm_basic.cu inclusive_scan_single_range
 //!
 //! Every communicator rank must participate in the collective call. `__init`, `__op`, and
 //! `__ident` must describe the same operation on every rank. `__op` must be associative, and
-//! `__ident` must be an identity element for `__op`. `__output` must refer to writable
-//! device-accessible storage for at least as many values as `__input` contains.
+//! `__ident` must be an identity element for `__op`. `__output_iter` must refer to writable
+//! device-accessible storage for at least `__num_items` values.
 //!
 //! The environment supplies the stream and optional memory resource for the local rank. The
 //! results are ready after the work enqueued on that stream completes.
 //!
-//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
-//! @tparam _Comm The communicator type. Must model the communicator concept.
-//! @tparam _Env The execution environment type. Supplies the stream and optional memory
-//!              resource.
-//! @tparam _InputRange The input range type. Must be a sized random-access range.
-//! @tparam _OutputIt The output iterator type.
-//! @tparam _Tp The scan value type. Deduced by default from the input element type.
-//! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
-//!
-//! @param[in] __policy The result policy object.
+//! @param[in] __policy The result policy object. Currently must be `cudax::distributed`.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
-//! @param[in] __input The input range to scan.
-//! @param[out] __output The output iterator receiving the local scan results.
+//! @param[in] __input_iter The input iterator to scan.
+//! @param[in] __num_items The number of items in `__input_iter` to scan.
+//! @param[out] __output_iter The output iterator receiving the local scan results.
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Policy,
-               class _Comm,
-               class _Env,
-               class _InputRange,
-               class _OutputIt,
-               class _Tp       = ::cuda::std::ranges::range_value_t<_InputRange>,
-               class _BinaryOp = ::cuda::std::plus<>)
-_CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
+_CCCL_TEMPLATE(
+  class _Policy,
+  class _Comm,
+  class _Env,
+  class _InputIt,
+  class _SizeT,
+  class _OutputIt,
+  class _Tp       = ::cuda::std::iter_value_t<_InputIt>,
+  class _BinaryOp = ::cuda::std::plus<>)
+_CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
   const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
-  _InputRange&& __input,
-  _OutputIt __output,
+  _InputIt __input_iter,
+  _SizeT __num_items,
+  _OutputIt __output_iter,
   _Tp __init     = {},
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
@@ -515,8 +496,9 @@ _CCCL_HOST_API void inclusive_scan(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-    ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
-    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::span<_InputIt, 1>{::cuda::std::addressof(__input_iter), 1},
+    ::cuda::std::span<_SizeT, 1>{::cuda::std::addressof(__num_items), 1},
+    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output_iter), 1},
     ::cuda::std::move(__init),
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));

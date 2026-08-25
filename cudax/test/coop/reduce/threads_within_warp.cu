@@ -45,8 +45,8 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::group group{
-      cuda::gpu_thread, cudax::this_warp{config}, cudax::group_by<NThreadsInGroup, false>{}, cudax::lane_synchronizer{}};
+    cudax::this_warp warp{config};
+    cudax::group group{cuda::gpu_thread, warp, cudax::group_by<NThreadsInGroup, false>{}, cudax::lane_synchronizer{}};
 
     // All threads that are not part of the groups should exit early.
     if (!cuda::gpu_thread.is_part_of(group))
@@ -55,7 +55,7 @@ struct ReduceKernel
     }
 
     // We want to work only with one group, all other groups should exit early.
-    if (group.rank(cuda::warp) > 0)
+    if (group.rank(warp) > 0)
     {
       return;
     }

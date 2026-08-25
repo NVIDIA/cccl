@@ -142,11 +142,8 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __middle,
-    _InputIterator __last) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __middle, _InputIterator __last)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

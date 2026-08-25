@@ -42,10 +42,16 @@ struct TripleChevronFactory
   }
 
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
+    dim3 grid,
+    dim3 block,
+    ::cuda::std::size_t shared_mem,
+    ::cudaStream_t stream,
+    bool dependent_launch = false,
+    dim3 cluster_dim      = dim3{0, 0, 0}) const
   {
     __assert_pdl_allowed(dependent_launch);
-    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+      grid, block, shared_mem, stream, dependent_launch, cluster_dim);
   }
 
   template <class T = void>

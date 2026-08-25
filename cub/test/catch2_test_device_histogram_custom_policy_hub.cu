@@ -13,7 +13,7 @@
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -28,7 +28,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]")
+CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]", CUB_SMALL)
 {
   using sample_t                                     = cuda::std::uint8_t;
   using counter_t                                    = int;

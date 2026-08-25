@@ -12,12 +12,14 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -340,11 +342,28 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
   {
     cpp_places.push_back(*from_opaque_const(places[i]));
   }
-  exec_place grid = (grid_dims != nullptr)
-                    ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
-                    : make_grid(::std::move(cpp_places));
-  return to_opaque(stf_try_allocate([g = ::std::move(grid)]() mutable {
-    return new exec_place(::std::move(g));
+  const bool shaped = grid_dims != nullptr;
+  const dim4 dims   = shaped ? dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t) : dim4(count, 1, 1, 1);
+  return to_opaque(stf_try_allocate([cpp_places = ::std::move(cpp_places), dims, shaped]() mutable {
+    return new exec_place(shaped ? make_grid(::std::move(cpp_places), dims) : make_grid(::std::move(cpp_places)));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    const dim4 dims(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t);
+    return new exec_place(from_opaque_const(grid)->reshape(dims));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(from_opaque_const(grid)->collapse_axes(first_axis, last_axis));
   }));
 }
 
@@ -522,6 +541,102 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+uint32_t stf_locality_domain_count(int dev_id)
+{
+  try
+  {
+    return static_cast<uint32_t>(::cuda::experimental::places::locality_domain_count(dev_id));
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_locality_domain_count: %s\n", e.what());
+    return 0;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_locality_domain_count: unknown error\n");
+    return 0;
+  }
+}
+
+namespace
+{
+// C enum -> C++ enum, rejecting out-of-range values (throws, so the
+// stf_try_allocate wrappers below report NULL with detail on stderr).
+::cuda::experimental::places::locality_domain_sm_split stf_to_cpp_sm_split(stf_locality_domain_sm_split split)
+{
+  switch (split)
+  {
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL:
+      return ::cuda::experimental::places::locality_domain_sm_split::backfill;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED:
+      return ::cuda::experimental::places::locality_domain_sm_split::aligned;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_FINE:
+      return ::cuda::experimental::places::locality_domain_sm_split::fine;
+    default:
+      throw ::std::invalid_argument(
+        "invalid stf_locality_domain_sm_split value " + ::std::to_string(static_cast<int>(split)));
+  }
+}
+} // namespace
+
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id, stf_to_cpp_sm_split(split)));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id, stf_to_cpp_sm_split(split)));
+  }));
+}
+
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new data_place(data_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  auto* grid_ptr = from_opaque(grid);
+  return to_opaque(stf_try_allocate([grid_ptr] {
+    return new data_place(data_place::replicated(*grid_ptr));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated_deferred(void)
+{
+  return to_opaque(stf_try_allocate([] {
+    return new data_place(data_place::replicated());
+  }));
+}
+
+int stf_data_place_is_replicated(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  return from_opaque(h)->is_replicated() ? 1 : 0;
+}
+
 stf_get_executor_fn stf_partition_fn_blocked(int dim)
 {
   switch (dim)
@@ -615,8 +730,9 @@ void* stf_data_place_allocate_nd(
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
-  dim4 dims;
-  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  // The layouts are static_asserted identical above; bit_cast avoids the
+  // -Wclass-memaccess warning that memcpy onto the non-trivial dim4 triggers.
+  const dim4 dims = ::std::bit_cast<dim4>(*data_dims);
   try
   {
     return from_opaque(h)->allocate_nd(dims, elemsize, stream);
@@ -795,6 +911,10 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
       const auto dst_end   = dst_begin + copy_sz;
       _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
                    "stf_ctx_wait destination buffer must not overlap the logical data range");
+      // The range bounds are only consumed by the assertion, which compiles
+      // out in release builds.
+      (void) src_end;
+      (void) dst_end;
       ::std::memcpy(dst, data.data_handle(), copy_sz);
     };
 

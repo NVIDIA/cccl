@@ -30,6 +30,7 @@
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE
@@ -104,14 +105,43 @@ public:
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    void* result = nullptr;
-    cuda_try(cudaSetDevice(view_.devid));
+    void* result       = nullptr;
+    const int prev_dev = cuda_try<cudaGetDevice>();
+
+    if (prev_dev != view_.devid)
+    {
+      cuda_try(cudaSetDevice(view_.devid));
+    }
+
+    SCOPE(exit)
+    {
+      if (prev_dev != view_.devid)
+      {
+        cuda_try(cudaSetDevice(prev_dev));
+      }
+    };
+
     cuda_try(cudaMallocAsync(&result, static_cast<size_t>(size), stream));
     return result;
   }
 
   void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
   {
+    const int prev_dev = cuda_try<cudaGetDevice>();
+
+    if (prev_dev != view_.devid)
+    {
+      cuda_try(cudaSetDevice(view_.devid));
+    }
+
+    SCOPE(exit)
+    {
+      if (prev_dev != view_.devid)
+      {
+        cuda_try(cudaSetDevice(prev_dev));
+      }
+    };
+
     cuda_try(cudaFreeAsync(ptr, stream));
   }
 
@@ -661,6 +691,41 @@ UNITTEST("green context exec_place as std::map key")
   EXPECT(map.size() == 3);
   EXPECT(map[exec_place::device(0)] == 300);
   EXPECT(map[ep0] == 100); // Still 100
+};
+
+UNITTEST("green context data_place allocate/deallocate preserve the current device")
+{
+  // The leak is only observable when the place's device differs from the
+  // calling thread's current device, so this needs two GPUs.
+  const int ndevs = cuda_try<cudaGetDeviceCount>();
+  if (ndevs < 2)
+  {
+    return;
+  }
+
+  // Leave the device we entered with, not device 0, so later tests do not
+  // inherit changed state (the helper constructor itself switches devices).
+  const int entry_dev = cuda_try<cudaGetDevice>();
+  SCOPE(exit)
+  {
+    cuda_try(cudaSetDevice(entry_dev));
+  };
+
+  green_context_helper gc_helper(8, 0);
+  if (gc_helper.get_count() < 1)
+  {
+    return;
+  }
+
+  const auto dp = data_place::green_ctx(gc_helper.get_view(0));
+
+  cuda_try(cudaSetDevice(1));
+
+  void* const ptr = dp.allocate(1024 * 1024);
+  EXPECT(cuda_try<cudaGetDevice>() == 1);
+
+  dp.deallocate(ptr, 1024 * 1024);
+  EXPECT(cuda_try<cudaGetDevice>() == 1);
 };
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::places

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -30,6 +31,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
@@ -77,7 +79,7 @@ public:
    */
   enum ord : int
   {
-    invalid     = ::std::numeric_limits<int>::min(),
+    invalid     = ::cuda::std::numeric_limits<int>::min(),
     composite   = -5,
     device_auto = -4,
     affine      = -3,
@@ -133,6 +135,12 @@ public:
   /**
    * @brief Allocate memory at this place
    *
+   * This is a standalone entry point: callers are not required to activate
+   * this place or make any particular device current beforehand, so
+   * implementations must not assume the calling thread's current device (or
+   * context) matches this place. An implementation that needs to switch must
+   * restore the caller's current device before returning.
+   *
    * @param size Size of the allocation in bytes
    * @param stream CUDA stream for stream-ordered allocations
    * @return Pointer to allocated memory
@@ -152,6 +160,10 @@ public:
    * dim4::get_index() (the STF slice convention). Row-major callers should
    * present reversed extents (and a coordinate-reversing partitioner).
    *
+   * The standalone contract of allocate() applies here as well: the caller's
+   * current device is unspecified on entry and must be left unchanged on
+   * return.
+   *
    * @param data_dims Extents of the tensor
    * @param elemsize Size of one element in bytes
    * @param stream CUDA stream for stream-ordered allocations
@@ -164,6 +176,9 @@ public:
 
   /**
    * @brief Deallocate memory at this place
+   *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return.
    *
    * @param ptr Pointer to memory to deallocate
    * @param size Size of the allocation
@@ -181,6 +196,11 @@ public:
    *
    * Default implementation returns CUDA_ERROR_NOT_SUPPORTED.
    * Subclasses that support VMM should override this.
+   *
+   * Same standalone contract as allocate(): the caller's current device is
+   * unspecified on entry and must be left unchanged on return. Placement must
+   * come from the explicit allocation properties (CUmemAllocationProp), not
+   * from the current device.
    *
    * @param handle Output parameter for the allocation handle
    * @param size Size of the allocation in bytes
@@ -215,13 +235,27 @@ public:
     return false;
   }
 
+  //! Whether this is a replicated data place (one copy per grid member)
+  virtual bool is_replicated() const noexcept
+  {
+    return false;
+  }
+
+  //! Number of data instances a dependency at this place resolves to: 1 for
+  //! ordinary and composite places, one per grid member for a replicated
+  //! place (see data_place::member for the r-th instance's place)
+  virtual size_t instance_count() const
+  {
+    return 1;
+  }
+
   /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */
   virtual const partition_fn_t& get_partitioner() const
   {
-    throw ::std::logic_error("get_partitioner() called on non-composite data_place");
+    _CCCL_THROW(::std::logic_error, "get_partitioner() called on non-composite data_place");
   }
 };
 } // end namespace cuda::experimental::places

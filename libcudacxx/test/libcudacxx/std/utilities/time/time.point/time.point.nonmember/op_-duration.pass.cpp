@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: no clock in tile mode
+
 // <cuda/std/chrono>
 
 // time_point
@@ -22,7 +25,7 @@
 #include "test_macros.h"
 
 template <class D>
-TEST_FUNC void test2739() // LWG2739
+TEST_HOST_DEVICE_FUNC void test2739() // LWG2739
 {
   using TimePoint = cuda::std::chrono::time_point<cuda::std::chrono::system_clock>;
   using Dur       = cuda::std::chrono::duration<D>;
@@ -32,7 +35,7 @@ TEST_FUNC void test2739() // LWG2739
   assert(t1 < t0);
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   using Clock     = cuda::std::chrono::system_clock;
   using Duration1 = cuda::std::chrono::milliseconds;

@@ -42,6 +42,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -52,6 +55,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -66,6 +70,7 @@
 #include <cuda/experimental/__places/places.cuh>
 
 #include <algorithm>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -328,11 +333,11 @@ public:
   {
     if (place_leaves.size() > max_leaves || local_leaves.size() > max_leaves)
     {
-      throw ::std::invalid_argument("cute_partition: at most max_leaves leaves are supported per mode");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: at most max_leaves leaves are supported per mode");
     }
     if (place_leaves.size() != place_axes.size())
     {
-      throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: one grid axis is required per place leaf");
     }
     ::cuda::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
     ::cuda::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
@@ -373,6 +378,324 @@ public:
   _CCCL_HOST_DEVICE const dim4& grid_dims() const
   {
     return grid_dims_;
+  }
+
+  /**
+   * @brief Enumerate the certified constant-owner byte runs of the flat
+   * allocation, merged across adjacent equal-owner segments, in increasing
+   * byte order: calls `emit(byte_start, byte_len, owner)` per run; emit
+   * returns false to abort the walk early (the enumeration then also
+   * returns false).
+   *
+   * Returns false (without emitting) when the walk would exceed max_runs;
+   * see try_block_owners for the budget semantics. The certificate for
+   * one owner() evaluation per segment is the divisibility chain of the
+   * exact tiling's sorted leaf strides (owner constant on intervals of the
+   * padded space aligned to the smallest place-leaf stride).
+   */
+  template <typename F>
+  bool for_each_owner_byte_run(size_t elemsize, size_t max_runs, F&& emit) const
+  {
+    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
+    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
+
+    const size_t s = min_owner_run_elems();
+    if (s == 0)
+    {
+      // no place mode, or every place leaf has extent <= 1: single owner
+      return emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
+    }
+    const size_t nrows = t1 * t2 * t3;
+    if (nrows * (t0 / s + 2) > max_runs)
+    {
+      return false;
+    }
+
+    const size_t ps1 = padded_dims_.get(0);
+    const size_t ps2 = ps1 * padded_dims_.get(1);
+    const size_t ps3 = ps2 * padded_dims_.get(2);
+
+    // pending merged run
+    size_t run_start = 0, run_len = 0;
+    pos4 run_owner;
+    bool keep_going = true;
+    auto push       = [&](size_t start, size_t len, pos4 o) {
+      if (run_len > 0 && run_owner == o && run_start + run_len == start)
+      {
+        run_len += len;
+        return;
+      }
+      if (run_len > 0)
+      {
+        keep_going = emit(run_start, run_len, run_owner);
+      }
+      run_start = start;
+      run_len   = len;
+      run_owner = o;
+    };
+
+    size_t ind = 0; // linear element index in the allocation
+    for (size_t x3 = 0; keep_going && x3 < t3; x3++)
+    {
+      for (size_t x2 = 0; keep_going && x2 < t2; x2++)
+      {
+        for (size_t x1 = 0; keep_going && x1 < t1; x1++)
+        {
+          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
+          size_t x0                 = 0;
+          while (keep_going && x0 < t0)
+          {
+            const size_t pad_pos = row_pad_base + x0;
+            const size_t seg     = ::cuda::std::min(t0 - x0, s - (pad_pos % s));
+            push((ind + x0) * elemsize, seg * elemsize, owner(pos4(x0, x1, x2, x3))); // pos4 widens to ssize_t; dims
+                                                                                      // may exceed INT_MAX
+            x0 += seg;
+          }
+          ind += t0;
+        }
+      }
+    }
+    if (keep_going && run_len > 0)
+    {
+      keep_going = emit(run_start, run_len, run_owner);
+    }
+    return keep_going;
+  }
+
+  /**
+   * @brief Certified owner-run granularity in bytes: the smallest place-leaf
+   * stride times the element size.
+   *
+   * Ownership is constant on padded-linear intervals of this size (see
+   * try_block_owners), so it is the "smallest part" of the placement layout:
+   *  - >= the placement-block size: blocks straddle at most one ownership
+   *    boundary and the analytic plan is exact or near-exact;
+   *  - <  the placement-block size: NO block can be provably pure -- the
+   *    plan is all-straddles with closed-form misplacement, a signal that
+   *    identity storage is block-hostile for this spec (prefer a relayout);
+   *  - the analytic walk costs ~total_bytes / this many owner() calls,
+   *    which is what try_block_owners' max_runs guards.
+   *
+   * Returns 0 when there is no place mode (single-owner layouts).
+   */
+  size_t min_owner_run_bytes(size_t elemsize) const
+  {
+    return min_owner_run_elems() * elemsize;
+  }
+
+  //! The same granularity in ELEMENTS of the padded space (the walk's
+  //! native unit); 0 means no ownership boundary at all (single owner).
+  size_t min_owner_run_elems() const
+  {
+    // Leaves with extent <= 1 never change the owning coordinate (owner()
+    // skips them); including them would drag the minimum down -- extent-1
+    // leaves from unit grid axes carry stride 1 (or 0 from the expert
+    // constructor) and would falsely collapse the granularity to the element
+    // pitch (or trip a division by zero downstream).
+    size_t s = 0;
+    for (size_t k = 0; k < num_place_leaves_; k++)
+    {
+      if (place_leaves_[k].extent > 1)
+      {
+        const auto stride = static_cast<size_t>(place_leaves_[k].stride);
+        s                 = (s == 0) ? stride : ::cuda::std::min(s, stride);
+      }
+    }
+    return s;
+  }
+
+  /**
+   * @brief Analytic per-placement-block owners: divide the ownership layout
+   * by the placement-block layout, without sampling.
+   *
+   * Owners are derived with one owner() evaluation per provably-constant
+   * run. The certificate comes from the leaf algebra: in an exact tiling the
+   * sorted leaf strides form a divisibility chain, so every place-mode
+   * coordinate is constant on intervals of the padded linear space aligned
+   * to the smallest place-leaf stride. Blocks straddling an ownership
+   * boundary are assigned by exact byte majority and their error is
+   * accumulated in *misplaced_bytes (0 means the partition factors through
+   * placement blocks and the plan is exact).
+   *
+   * The linearization convention matches the composite allocation path
+   * (dimension 0 varies fastest, see dim4::index_to_pos).
+   *
+   * @param max_runs evaluation budget for the walk; 0 (the default)
+   *        self-scales to max(16 x nblocks, 1 << 16) -- a small constant of
+   *        owner() evaluations per placement block produced, so the budget
+   *        grows with the allocation instead of being an arbitrary constant.
+   *
+   * @return per-block owners, or nullopt when the run enumeration would
+   *         exceed max_runs (dense sub-block interleavings such as
+   *         element-cyclic): callers fall back to sampled majority.
+   */
+  ::cuda::std::optional<::std::vector<pos4>>
+  try_block_owners(size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = 0) const
+  {
+    _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
+    // the allocation always covers exactly the partition's true extents
+    // (composite allocation asserts this before reaching us)
+    const size_t total_elems = true_dims_.size();
+    const size_t total_bytes = total_elems * elemsize;
+    const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
+    if (max_runs == 0)
+    {
+      // Auto budget, proportional to the OUTPUT size rather than a fixed
+      // constant: 16 owner() evaluations per placement block produced keeps
+      // the walk within a small factor of what the sampled fallback would
+      // spend on the same allocation (localized_placement_default_probes per
+      // block), so accepting the analytic path is never a meaningful cost
+      // regression at any allocation size, while dense layouts (runs at
+      // element pitch, i.e. thousands of runs per block) are declined
+      // immediately. The floor keeps small allocations permissive: below it
+      // the walk costs microseconds either way, and declining fine-grained
+      // small cases would forfeit exact plans for no measurable saving.
+      max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+    }
+    if (misplaced_bytes)
+    {
+      *misplaced_bytes = 0;
+    }
+
+    ::std::vector<pos4> owners;
+    owners.reserve(nblocks);
+
+    // Streaming block census over the certified runs.
+    ::std::vector<::std::pair<pos4, size_t>> hist; // bytes per owner, current block
+    size_t cur_block = 0;
+
+    auto close_block = [&]() {
+      pos4 best;
+      size_t best_bytes = 0, sum = 0;
+      for (const auto& e : hist)
+      {
+        sum += e.second;
+        if (e.second > best_bytes)
+        {
+          best_bytes = e.second;
+          best       = e.first;
+        }
+      }
+      _CCCL_ASSERT(!hist.empty(), "empty placement block census");
+      owners.push_back(best);
+      if (misplaced_bytes)
+      {
+        *misplaced_bytes += sum - best_bytes;
+      }
+      hist.clear();
+    };
+
+    auto feed = [&](size_t byte_start, size_t byte_len, pos4 o) -> bool {
+      while (byte_len > 0)
+      {
+        const size_t block_end = (cur_block + 1) * block_size_bytes;
+        if (byte_start >= block_end)
+        {
+          close_block();
+          cur_block++;
+          continue;
+        }
+        const size_t chunk = ::cuda::std::min(byte_len, block_end - byte_start);
+        bool found         = false;
+        for (auto& e : hist)
+        {
+          if (e.first == o)
+          {
+            e.second += chunk;
+            found = true;
+            break;
+          }
+        }
+        if (!found)
+        {
+          hist.emplace_back(o, chunk);
+        }
+        byte_start += chunk;
+        byte_len -= chunk;
+      }
+      return true;
+    };
+
+    if (!for_each_owner_byte_run(elemsize, max_runs, feed))
+    {
+      return ::cuda::std::nullopt;
+    }
+    if (!hist.empty())
+    {
+      close_block();
+    }
+    _CCCL_ASSERT(owners.size() == nblocks, "placement block census incomplete");
+    return owners;
+  }
+
+  /**
+   * @brief Divide the ownership layout by the placement-block layout,
+   * returning the quotient DIRECTLY as maximal same-owner block runs.
+   *
+   * This is the exact tier's natural output: one run per (cuMemCreate,
+   * cuMemMap) pair, with no per-block materialization and no downstream
+   * merge -- the census/merge round-trip of the one-owner-per-block
+   * representation exists only for tiers whose primitive is per-block
+   * (sampling, straddle majority). Succeeds iff every internal ownership
+   * boundary is aligned to the block size (the strict quotient exists, so
+   * the plan is exact and misplacement is zero by construction); returns
+   * nullopt otherwise -- callers fall through to try_block_owners (census
+   * with closed-form majority) and then to sampling.
+   *
+   * NB the number of runs equals the number of physical allocations the
+   * caller will create: a block-aligned fine interleaving (e.g.
+   * block_cyclic at exactly the block size) is EXACT but yields one run
+   * per block -- the plan is honest about that cost rather than hiding it.
+   *
+   * SCOPE NOTE: this computes the EXTENSION of the quotient (its runs,
+   * enumerated by the certified walk with alignment verified a
+   * posteriori), not the quotient as a layout object. A symbolic, leaf-level
+   * quotient -- existence decided a priori by congruences on
+   * the place-leaf strides/offsets, construction by dividing the strides
+   * through, O(leaves) regardless of run count -- is possible future work;
+   * what stands in the way is that the allocation is the RESTRICTION of
+   * the padded-space layout to the true extents, and that restriction is
+   * not a pure layout operation (it is exactly what the row walk performs
+   * by hand). Until then the walk's cost is bounded by max_runs and
+   * calibrated against the sampled fallback, so the proxy is never a
+   * performance regression.
+   *
+   * @param max_runs walk budget, as in try_block_owners (0 = auto)
+   */
+  ::cuda::std::optional<::std::vector<block_run>>
+  try_block_runs(size_t block_size_bytes, size_t elemsize, size_t max_runs = 0) const
+  {
+    _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
+    const size_t total_bytes = true_dims_.size() * elemsize;
+    const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
+    if (max_runs == 0)
+    {
+      max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+    }
+
+    ::std::vector<block_run> runs;
+    bool aligned = true;
+    // the walk aborts on the first misaligned boundary: the remainder tier
+    // (try_block_owners) re-walks, so wasting the rest of this walk would
+    // double the cost of every remainder allocation for nothing
+    const bool completed = for_each_owner_byte_run(elemsize, max_runs, [&](size_t start, size_t len, pos4 o) -> bool {
+      if (start % block_size_bytes != 0)
+      {
+        aligned = false; // internal boundary inside a block: no strict quotient
+        return false;
+      }
+      const size_t first = start / block_size_bytes;
+      // the last run's tail may end mid-block; the block is still pure
+      const size_t count =
+        (::cuda::std::min(start + len, total_bytes) - start + block_size_bytes - 1) / block_size_bytes;
+      runs.push_back(block_run{o, first, count});
+      return true;
+    });
+    if (!completed || !aligned)
+    {
+      return ::cuda::std::nullopt;
+    }
+    return runs;
   }
 
   //! Leaves of the place mode (leaf 0 fastest)
@@ -469,7 +792,8 @@ public:
     {
       if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the task shape does not match the partition's extents");
       }
     }
 
@@ -510,7 +834,8 @@ public:
       const auto hi_bound = b.get_end(d);
       if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the box is not contained in the partition's extents");
       }
       lo[d] = static_cast<size_t>(lo_bound);
       hi[d] = static_cast<size_t>(hi_bound);
@@ -527,7 +852,7 @@ public:
   {
     if (place_index >= num_places())
     {
-      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+      _CCCL_THROW(::std::out_of_range, "cute_partition::place_offset: place index out of range");
     }
     size_t offset = 0;
     for (size_t k = 0; k < num_place_leaves_; k++)
@@ -624,8 +949,9 @@ private:
     {
       if (padded_dims_.get(d) != 1)
       {
-        throw ::std::invalid_argument("cute_partition::apply: the iteration rank does not match the partition's "
-                                      "extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the iteration rank does not match the partition's "
+                    "extents");
       }
     }
   }
@@ -639,7 +965,8 @@ private:
   {
     if (!(grid_dims == grid_dims_))
     {
-      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition::apply: the grid does not match the partition's grid extents");
     }
 
     // The dispatch loop linearizes places into .x
@@ -662,17 +989,17 @@ private:
       const int a = place_axes_[k];
       if (a < 0 || a > 3)
       {
-        throw ::std::invalid_argument("cute_partition: place axis out of range");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: place axis out of range");
       }
       if (place_leaves_[k].extent != grid_dims_.get(static_cast<size_t>(a)))
       {
-        throw ::std::invalid_argument("cute_partition: place leaf extent does not match its grid axis extent");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: place leaf extent does not match its grid axis extent");
       }
       for (size_t j = 0; j < k; j++)
       {
         if (place_axes_[j] == a)
         {
-          throw ::std::invalid_argument("cute_partition: grid axis bound to more than one place leaf");
+          _CCCL_THROW(::std::invalid_argument, "cute_partition: grid axis bound to more than one place leaf");
         }
       }
     }
@@ -683,17 +1010,17 @@ private:
     // replication is introduced.
     if (num_places() != grid_dims_.size())
     {
-      throw ::std::invalid_argument(
-        "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
-        "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
-        "tensor dimension.");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
+                  "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
+                  "tensor dimension.");
     }
 
     for (size_t d = 0; d < 4; d++)
     {
       if (true_dims_.get(d) < 1 || true_dims_.get(d) > padded_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition: true extents must be within [1, padded extents]");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: true extents must be within [1, padded extents]");
       }
     }
 
@@ -707,11 +1034,11 @@ private:
       const layout_leaf& l = (k < num_place_leaves_) ? place_leaves_[k] : local_leaves_[k - num_place_leaves_];
       if (l.stride < 0)
       {
-        throw ::std::invalid_argument("cute_partition: negative strides are not supported");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: negative strides are not supported");
       }
       if (l.extent == 0)
       {
-        throw ::std::invalid_argument("cute_partition: leaf extents must be at least 1");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: leaf extents must be at least 1");
       }
       if (l.extent > 1)
       {
@@ -728,14 +1055,15 @@ private:
     {
       if (static_cast<size_t>(all[k].stride) != expected_stride)
       {
-        throw ::std::invalid_argument("cute_partition: leaves do not tile the padded space exactly (layout must be "
-                                      "exact and bijective)");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition: leaves do not tile the padded space exactly (layout must be "
+                    "exact and bijective)");
       }
       expected_stride *= all[k].extent;
     }
     if (expected_stride != padded_dims_.size())
     {
-      throw ::std::invalid_argument("cute_partition: layout size does not match the padded extents");
+      _CCCL_THROW(::std::invalid_argument, "cute_partition: layout size does not match the padded extents");
     }
   }
 
@@ -867,7 +1195,8 @@ public:
     if (descriptor.place_leaves().size() != num_place_leaves || descriptor.place_axes().size() != num_place_leaves
         || descriptor.local_leaves().size() != num_local_leaves)
     {
-      throw ::std::invalid_argument("cute_partition: descriptor topology does not match the static partition type");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition: descriptor topology does not match the static partition type");
     }
 
     ::cuda::std::copy(descriptor.place_leaves().begin(), descriptor.place_leaves().end(), place_leaves_.begin());
@@ -878,7 +1207,7 @@ public:
     {
       if (padded_dims_.get(d) != 1)
       {
-        throw ::std::invalid_argument("cute_partition: rank does not match the partition extents");
+        _CCCL_THROW(::std::invalid_argument, "cute_partition: rank does not match the partition extents");
       }
     }
   }
@@ -966,7 +1295,8 @@ public:
     {
       if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the task shape does not match the partition's extents");
       }
       hi[d] = true_dims_.get(d);
     }
@@ -986,7 +1316,8 @@ public:
       const auto hi_bound = b.get_end(d);
       if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
-        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute_partition::apply: the box is not contained in the partition's extents");
       }
       lo[d] = static_cast<size_t>(lo_bound);
       hi[d] = static_cast<size_t>(hi_bound);
@@ -998,7 +1329,7 @@ public:
   {
     if (place_index >= num_places())
     {
-      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+      _CCCL_THROW(::std::out_of_range, "cute_partition::place_offset: place index out of range");
     }
 
     size_t offset = 0;
@@ -1099,7 +1430,8 @@ private:
   {
     if (!(grid_dims == grid_dims_))
     {
-      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute_partition::apply: the grid does not match the partition's grid extents");
     }
 
     const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
@@ -1140,7 +1472,7 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
 {
   if (spec.size() > 4)
   {
-    throw ::std::invalid_argument("make_partition: at most 4 dimensions are supported");
+    _CCCL_THROW(::std::invalid_argument, "make_partition: at most 4 dimensions are supported");
   }
   const size_t rank = spec.size();
 
@@ -1158,12 +1490,12 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
     const auto& e = spec[d];
     if (e.mesh_axis < 0 || e.mesh_axis > 3)
     {
-      throw ::std::invalid_argument("make_partition: mesh_axis out of range");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: mesh_axis out of range");
     }
     const size_t nplaces = grid_dims.get(static_cast<size_t>(e.mesh_axis));
     if (nplaces == 0)
     {
-      throw ::std::invalid_argument("make_partition: grid axis extents must be at least 1");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: grid axis extents must be at least 1");
     }
 
     switch (e.policy)
@@ -1177,7 +1509,7 @@ make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, d
       case dim_policy::block_cyclic: {
         if (e.block == 0)
         {
-          throw ::std::invalid_argument("make_partition: block_cyclic requires a block size");
+          _CCCL_THROW(::std::invalid_argument, "make_partition: block_cyclic requires a block size");
         }
         const size_t super  = e.block * nplaces;
         const size_t nsuper = (extent + super - 1) / super;
@@ -1296,7 +1628,7 @@ auto make_partition(dim4 true_dims, partition_spec<Specs...> spec, dim4 grid_dim
   {
     if (true_dims.get(d) != 1)
     {
-      throw ::std::invalid_argument("make_partition: the number of specs does not match the tensor rank");
+      _CCCL_THROW(::std::invalid_argument, "make_partition: the number of specs does not match the tensor rank");
     }
   }
 
@@ -1351,7 +1683,7 @@ template <typename Partition>
 {
   if (!(grid.get_dims() == partition.grid_dims()))
   {
-    throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+    _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
   }
 
   const dim4 data_dims = partition.true_dims();
@@ -1400,6 +1732,52 @@ template <typename Partition>
  * This place supports both shaped raw allocations
  * (allocate_nd(data_dims, elemsize)) and STF logical data.
  */
+
+/**
+ * @brief Owner provider for localized_array from a partition descriptor.
+ *
+ * Tries the analytic block plan first (exact owners, byte-true placement
+ * statistics: the sample counters then hold byte counts); falls back to the
+ * sampled majority vote for layouts denser than the placement blocks.
+ */
+inline auto make_partition_placement_provider(
+  const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
+{
+  return [partition, data_dims, total_size, elemsize](
+           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
+    // Budget the analytic walks against what the sampled fallback would
+    // spend anyway (probes owner() evaluations per block): when a walk fits
+    // this budget it is BOTH cheaper and exact, so choosing it can never be
+    // a performance regression. The floor keeps small allocations
+    // permissive.
+    const size_t budget = ::cuda::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
+
+    // Exact tier: the strict quotient exists -- runs come straight from the
+    // layout algebra, no per-block work at all.
+    if (auto runs = partition.try_block_runs(block_size_bytes, elemsize, budget))
+    {
+      stats.total_samples    = total_size * elemsize;
+      stats.matching_samples = stats.total_samples; // exact: zero misplacement
+      return mv(*runs);
+    }
+    // Census tier: straddling blocks resolved by exact byte majority with a
+    // closed-form misplaced count (byte-true accuracy in the stats).
+    size_t misplaced = 0;
+    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
+    {
+      stats.total_samples    = total_size * elemsize;
+      stats.matching_samples = stats.total_samples - misplaced;
+      return owners_to_block_runs(mv(*owners));
+    }
+    // Sampled tier: opaque-density fallback (element-pitch interleavings).
+    const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
+      return partition.owner(data_dims.index_to_pos(ind));
+    });
+    return owners_to_block_runs(compute_block_owners(
+      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats));
+  };
+}
+
 class data_place_cute_composite final : public data_place_interface
 {
 public:
@@ -1409,7 +1787,7 @@ public:
   {
     if (!(grid_.get_dims() == partition_.grid_dims()))
     {
-      throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+      _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
     }
   }
 
@@ -1435,7 +1813,7 @@ public:
 
   size_t hash() const override
   {
-    throw ::std::logic_error("hash() not supported for composite data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for composite data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -1458,9 +1836,9 @@ public:
 
   void* allocate(::cuda::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error(
-      "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
-      "partition's true extents or allocate through logical data");
+    _CCCL_THROW(::std::runtime_error,
+                "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
+                "partition's true extents or allocate through logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -1469,15 +1847,14 @@ public:
     // must be the ones the partition was built for.
     if (!(data_dims == partition_.true_dims()))
     {
-      throw ::std::invalid_argument("cute composite data_place: requested extents do not match the partition's true "
-                                    "extents");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cute composite data_place: requested extents do not match the partition's true "
+                  "extents");
     }
 
     auto arr = ::std::make_unique<localized_array>(
       grid_,
-      ::std::function<pos4(size_t)>([this, data_dims](size_t index) {
-        return partition_.owner(data_dims.index_to_pos(index));
-      }),
+      make_partition_placement_provider(partition_, data_dims, data_dims.size(), elemsize),
       data_dims.size(),
       elemsize,
       data_dims);
@@ -1719,6 +2096,181 @@ UNITTEST("cute_partition validation rejects inexact layouts")
     thrown = true;
   }
   EXPECT(thrown);
+};
+
+UNITTEST("min_owner_run_bytes reports the certified run granularity")
+{
+  // blocked: the smallest place-leaf stride is the chunk -> chunk * elemsize
+  const auto blocked_part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  EXPECT(blocked_part.min_owner_run_bytes(4) == 8 * 4);
+
+  // cyclic: ownership can change every element -> elemsize
+  const auto cyclic_part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::cyclic, 0, 0}}, dim4(2));
+  EXPECT(cyclic_part.min_owner_run_bytes(4) == 4);
+
+  // block_cyclic(b): ownership changes at block pitch -> b * elemsize
+  const auto bc_part = make_partition_descriptor(dim4(32), {dim_spec{dim_policy::block_cyclic, 0, 4}}, dim4(2));
+  EXPECT(bc_part.min_owner_run_bytes(2) == 4 * 2);
+
+  // no place mode (nothing distributed): 0 by convention
+  const auto whole_part = make_partition_descriptor(dim4(16), {dim_spec{}}, dim4(1));
+  EXPECT(whole_part.min_owner_run_bytes(4) == 0);
+
+  // consistency: a run granularity at or above the block size admits an
+  // analytic plan; far below it (with a tight budget) it declines
+  size_t mis           = 0;
+  const auto fine_plan = cyclic_part.try_block_owners(64, 4, &mis); // small case: still analyzable
+  EXPECT(fine_plan.has_value() == true);
+};
+
+UNITTEST("extent-1 place leaves carry no ownership boundary")
+{
+  // expert-form descriptor with a degenerate {extent 1, stride 0} place
+  // leaf: owner() ignores it, so the granularity and the walks must too
+  // (a raw minimum over strides would divide by zero downstream).
+  const dim4 dims(16);
+  const auto part = cute_partition_descriptor({{1, 0}}, /* axes */ {0}, /* local */ {{16, 1}}, dims, dims, dim4(1));
+  EXPECT(part.min_owner_run_bytes(4) == 0);
+  size_t misplaced  = ~size_t(0);
+  const auto owners = part.try_block_owners(8, 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  for (const auto& o : *owners)
+  {
+    EXPECT(o == pos4(0));
+  }
+  const auto runs = part.try_block_runs(8, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 1);
+};
+
+UNITTEST("try_block_runs: strict quotient emitted directly as runs")
+{
+  // 16 elements of 4 B blocked over 2 places, 8 B blocks: boundary at byte
+  // 32 = block 4 -> two runs, no per-block materialization.
+  const auto part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  const auto runs = part.try_block_runs(8, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 2);
+  EXPECT((*runs)[0].owner == pos4(0));
+  EXPECT((*runs)[0].first_block == 0);
+  EXPECT((*runs)[0].num_blocks == 4);
+  EXPECT((*runs)[1].owner == pos4(1));
+  EXPECT((*runs)[1].first_block == 4);
+  EXPECT((*runs)[1].num_blocks == 4);
+};
+
+UNITTEST("try_block_runs: declines when a boundary falls inside a block")
+{
+  // 13 one-byte elements blocked over 2: boundary at byte 7, blocks of 4 ->
+  // no strict quotient; the census tier (try_block_owners) handles it.
+  const auto part = make_partition_descriptor(dim4(13), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  EXPECT(!part.try_block_runs(4, 1).has_value());
+};
+
+UNITTEST("try_block_runs: single place covers the VM tail")
+{
+  // 10 elements of 4 B on one place, 16 B blocks: 40 B of payload round up
+  // to 3 blocks; the single run must cover the partial tail block too.
+  const auto part = make_partition_descriptor(dim4(10), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  const auto runs = part.try_block_runs(16, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 1);
+  EXPECT((*runs)[0].first_block == 0);
+  EXPECT((*runs)[0].num_blocks == 3);
+};
+
+UNITTEST("try_block_owners: exact plan when boundaries align")
+{
+  // 16 elements of 4 B blocked over 2 places, 8 B blocks: the ownership
+  // boundary (element 8 == byte 32) is block-aligned -> exact plan.
+  const auto part   = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced  = ~size_t(0);
+  const auto owners = part.try_block_owners(/* block */ 8, /* elemsize */ 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0); // factors through blocks: no placement error
+  EXPECT(owners->size() == 8);
+  for (size_t b = 0; b < 8; b++)
+  {
+    EXPECT((*owners)[b] == pos4(b < 4 ? 0 : 1));
+  }
+};
+
+UNITTEST("try_block_owners: straddling block goes to the byte majority")
+{
+  // 13 one-byte elements blocked over 2 places: chunk = ceil(13/2) = 7, so
+  // the boundary falls at byte 7. With 4 B blocks, block 1 (bytes 4..7)
+  // holds 3 bytes of place 0 and 1 byte of place 1 -> majority place 0,
+  // exactly 1 misplaced byte; every other block is pure.
+  const auto part   = make_partition_descriptor(dim4(13), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(4, 1, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 1);
+  EXPECT(owners->size() == 4);
+  EXPECT((*owners)[0] == pos4(0));
+  EXPECT((*owners)[1] == pos4(0)); // straddle: 3 bytes p0 vs 1 byte p1
+  EXPECT((*owners)[2] == pos4(1));
+  EXPECT((*owners)[3] == pos4(1)); // tail block (bytes 12..12), pure p1
+};
+
+UNITTEST("try_block_owners: dense element-cyclic declines (sampled fallback)")
+{
+  // Element-cyclic over 2 places interleaves owners at element pitch: far
+  // below any realistic block size, and the run enumeration would need one
+  // run per element -> the analytic plan must decline via max_runs.
+  const auto part  = make_partition_descriptor(dim4(1 << 20), {dim_spec{dim_policy::cyclic, 0, 0}}, dim4(2));
+  size_t misplaced = 0;
+  EXPECT(!part.try_block_owners(1 << 16, 4, &misplaced, /* max_runs */ 1 << 10).has_value());
+};
+
+UNITTEST("try_block_owners: coarse block_cyclic is analyzable and majority-correct")
+{
+  // block_cyclic(4) over 2 places, 4 B elements, 32 B blocks: each block
+  // holds two 16 B owner runs (4 elements each) -> every block is a 50/50
+  // straddle; majority tie-breaks deterministically and the misplaced count
+  // is exactly half the payload.
+  const auto part   = make_partition_descriptor(dim4(32), {dim_spec{dim_policy::block_cyclic, 0, 4}}, dim4(2));
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(32, 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(owners->size() == 4);
+  EXPECT(misplaced == 32 * 4 / 2);
+};
+
+UNITTEST("try_block_owners: single place is one exact run")
+{
+  const auto part = make_partition_descriptor(dim4(1000), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  // a unit grid axis contributes an extent-1 place leaf, which carries no
+  // ownership boundary: the certified granularity must report "no
+  // boundary" (0), not collapse to the leaf's stride
+  EXPECT(part.min_owner_run_bytes(4) == 0);
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(64, 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  for (const auto& o : *owners)
+  {
+    EXPECT(o == pos4(0));
+  }
+};
+
+UNITTEST("try_block_owners: 2-D expert-major rows stay exact")
+{
+  // (8 x 64) 4 B tensor, dimension 0 blocked over 2 places, rows of 256 B:
+  // with 256 B blocks each row IS a block -> exact, first half place 0.
+  // NB dimension 0 varies fastest in the linearization, so "expert-major"
+  // here means dim 1 indexes the expert row.
+  const auto part  = make_partition_descriptor(dim4(64, 8), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced = 0;
+  const auto owners = part.try_block_owners(256, 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  EXPECT(owners->size() == 8);
+  for (size_t b = 0; b < 8; b++)
+  {
+    EXPECT((*owners)[b] == pos4(b < 4 ? 0 : 1));
+  }
 };
 
 UNITTEST("make_partition rejects partitions that leave grid places unused")

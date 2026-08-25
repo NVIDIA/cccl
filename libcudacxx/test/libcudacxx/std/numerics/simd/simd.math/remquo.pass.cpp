@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.math], remquo
@@ -19,7 +22,7 @@
 #include "../simd_test_utils.h"
 
 template <typename T, int N>
-TEST_FUNC void test_non_scalar()
+TEST_HOST_DEVICE_FUNC void test_non_scalar()
 {
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
@@ -42,7 +45,7 @@ TEST_FUNC void test_non_scalar()
 }
 
 template <typename T, int N>
-TEST_FUNC void test_scalar()
+TEST_HOST_DEVICE_FUNC void test_scalar()
 {
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
@@ -65,7 +68,7 @@ TEST_FUNC void test_scalar()
 }
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_non_scalar<T, N>();
   test_scalar<T, N>();

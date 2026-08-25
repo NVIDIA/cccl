@@ -960,7 +960,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBoundSortedValues");
 
@@ -1200,7 +1200,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBoundSortedValues");
 

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -40,7 +40,7 @@
 struct identity_gen
 {
   template <typename I>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i) const
   {
     return i;
   }
@@ -49,7 +49,7 @@ struct identity_gen
 struct reverse_gen_two_args
 {
   template <typename I, typename S>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i, S size) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i, S size) const
   {
     return size - 1 - i;
   }
@@ -58,7 +58,7 @@ struct reverse_gen_two_args
 struct broadcast_lane0_gen
 {
   template <typename I>
-  TEST_FUNC constexpr ptrdiff_t operator()(I) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I) const
   {
     return 0;
   }
@@ -67,7 +67,7 @@ struct broadcast_lane0_gen
 struct repeat_modulo_gen
 {
   template <typename I, typename S>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i, S size) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i, S size) const
   {
     return i % size;
   }
@@ -79,7 +79,7 @@ struct repeat_modulo_gen
 struct zero_odd_lanes_gen
 {
   template <typename I>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i) const
   {
     return (i % 2 == 0) ? i : simd::zero_element;
   }
@@ -89,7 +89,7 @@ struct zero_odd_lanes_gen
 struct uninit_odd_lanes_gen
 {
   template <typename I>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i) const
   {
     const auto idx = static_cast<ptrdiff_t>(i);
     return (idx % 2 == 0) ? idx : simd::uninit_element;
@@ -100,7 +100,7 @@ struct uninit_odd_lanes_gen
 // basic_vec: default-N overload (N defaults to V::size())
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_vec_default_n()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_default_n()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
 
@@ -133,7 +133,7 @@ TEST_FUNC constexpr void test_vec_default_n()
 // basic_vec: explicit-N overload (size change)
 
 template <typename T>
-TEST_FUNC constexpr void test_vec_size_change()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_size_change()
 {
   using Src = simd::basic_vec<T, simd::fixed_size<4>>;
   Src src(iota_generator<T>{});
@@ -164,7 +164,7 @@ TEST_FUNC constexpr void test_vec_size_change()
 // sentinels (zero_element / uninit_element)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_vec_sentinels()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_sentinels()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec src(iota_generator<T>{});
@@ -189,7 +189,7 @@ TEST_FUNC constexpr void test_vec_sentinels()
 // basic_mask
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask src(is_even{});
@@ -234,7 +234,7 @@ TEST_FUNC constexpr void test_mask()
 //----------------------------------------------------------------------------------------------------------------------
 // Sentinel values
 
-TEST_FUNC constexpr void test_sentinels_properties()
+TEST_HOST_DEVICE_FUNC constexpr void test_sentinels_properties()
 {
   static_assert(simd::zero_element != simd::uninit_element);
   static_assert(simd::zero_element < 0);
@@ -250,13 +250,13 @@ TEST_FUNC constexpr void test_sentinels_properties()
 struct two_arg_non_integral_gen
 {
   template <typename I, typename S>
-  TEST_FUNC constexpr double operator()(I, S) const
+  TEST_HOST_DEVICE_FUNC constexpr double operator()(I, S) const
   {
     return 0.0;
   }
 
   template <typename I>
-  TEST_FUNC constexpr ptrdiff_t operator()(I i) const
+  TEST_HOST_DEVICE_FUNC constexpr ptrdiff_t operator()(I i) const
   {
     return i;
   }
@@ -274,7 +274,7 @@ struct has_static_permute<
     : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
 {
   using Vec = simd::basic_vec<int, simd::fixed_size<4>>;
   static_assert(!has_static_permute<Vec, two_arg_non_integral_gen>::value);
@@ -282,7 +282,7 @@ TEST_FUNC constexpr void test_constraints()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-TEST_FUNC constexpr void test_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
@@ -298,7 +298,7 @@ TEST_FUNC constexpr void test_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 
 // do not depend on types
-TEST_FUNC constexpr bool test_fixed_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_fixed_type()
 {
   test_sentinels_properties();
   test_constraints();
@@ -312,7 +312,7 @@ TEST_FUNC constexpr bool test_fixed_type()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_vec_default_n<T, N>();
   test_vec_sentinels<T, N>();

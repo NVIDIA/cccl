@@ -173,6 +173,28 @@ _CCCL_CONCEPT __has_all_gather = _CCCL_REQUIRES_EXPR(
 // ==========================================================================================
 
 template <class _Comm, class _Ptr = int*>
+_CCCL_CONCEPT __has_all_gather_v = _CCCL_REQUIRES_EXPR(
+  (_Comm, _Ptr),
+  _Comm& __comm,
+  _Ptr __sendbuff,
+  ::cuda::std::size_t __send_count,
+  _Ptr __recvbuff,
+  const ::cuda::std::size_t* __recv_counts,
+  const ::cuda::std::size_t* __displs,
+  ::cuda::stream_ref __stream)(
+  requires(__communicator<_Comm>),
+  _Same_as(void) __comm.all_gather_v(
+    ::cuda::std::declval<__group_guard_t<_Comm>&>(),
+    __sendbuff,
+    __send_count,
+    __recvbuff,
+    __recv_counts,
+    __displs,
+    __stream));
+
+// ==========================================================================================
+
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_broadcast = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,

@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -235,9 +237,12 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateHostMemory(args->second, args->first);
-      delete args;
+      // The CUDA runtime calls this back, so an exception must not leave it.
+      on_throw(::std::abort) << [vp] {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateHostMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -262,9 +267,11 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateManagedMemory(args->second, args->first);
-      delete args;
+      on_throw(::std::abort) << [vp] {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateManagedMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -290,9 +297,11 @@ inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-        deallocateHostMemory(args->second, args->first);
-        delete args;
+        on_throw(::std::abort) << [vp] {
+          auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+          deallocateHostMemory(args->second, args->first);
+          delete args;
+        };
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
@@ -1071,14 +1080,14 @@ private:
   {
     if constexpr (small_cap < 16)
     {
-      unroll<small_cap>(::std::forward<F>(f));
+      unroll<small_cap>(::cuda::std::forward<F>(f));
     }
     else
     {
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_same_v<result_t, void>)
         {
           f(i);
         }
@@ -1095,8 +1104,8 @@ private:
 
   union
   {
-    ::std::aligned_storage_t<sizeof(T), alignof(T)> small_[small_cap];
-    ::std::aligned_storage_t<sizeof(::std::vector<T>), alignof(::std::vector<T>)> big_;
+    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;
 };

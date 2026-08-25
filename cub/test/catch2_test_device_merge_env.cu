@@ -22,7 +22,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -42,7 +42,7 @@ using block_sizes =
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
@@ -57,7 +57,7 @@ TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][devi
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
@@ -87,7 +87,7 @@ TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][dev
 
 #endif
 
-C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
+CUB_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
@@ -115,7 +115,7 @@ C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
+CUB_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
@@ -151,7 +151,7 @@ C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
@@ -183,7 +183,7 @@ C2H_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]")
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
@@ -223,7 +223,7 @@ TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]")
+CUB_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
@@ -268,7 +268,7 @@ C2H_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]")
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
@@ -329,7 +329,7 @@ struct no_unroll_tuning
   }
 };
 
-TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
@@ -351,7 +351,7 @@ TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]"
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
@@ -383,7 +383,7 @@ TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test MergePolicy properties", "[merge][device]")
+CUB_TEST("Test MergePolicy properties", "[merge][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergePolicy>);

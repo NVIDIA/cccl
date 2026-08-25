@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device math function
 
 #include <cuda/std/algorithm.shuffle.h>
 #include <cuda/std/cassert>
@@ -21,22 +21,22 @@ struct urbg
   using result_type = unsigned;
   unsigned s        = 1;
 
-  TEST_FUNC static constexpr result_type min()
+  TEST_HOST_DEVICE_FUNC static constexpr result_type min()
   {
     return 0;
   }
-  TEST_FUNC static constexpr result_type max()
+  TEST_HOST_DEVICE_FUNC static constexpr result_type max()
   {
     return 0xFFFFFFFFu;
   }
-  TEST_FUNC result_type operator()()
+  TEST_HOST_DEVICE_FUNC result_type operator()()
   {
     s = s * 48271u % 2147483647u;
     return s;
   }
 };
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   int a[] = {1, 2, 3, 4};
   urbg g{};

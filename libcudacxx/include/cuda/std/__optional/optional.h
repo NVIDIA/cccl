@@ -56,22 +56,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Constraints
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
-using __opt_check_constructible_from_opt =
-  _Or<is_constructible<_Tp, _Opt&>,
-      is_constructible<_Tp, _Opt const&>,
-      is_constructible<_Tp, _Opt&&>,
-      is_constructible<_Tp, _Opt const&&>,
-      is_convertible<_Opt&, _Tp>,
-      is_convertible<_Opt const&, _Tp>,
-      is_convertible<_Opt&&, _Tp>,
-      is_convertible<_Opt const&&, _Tp>>;
+inline constexpr bool __opt_check_constructible_from_opt_v =
+  is_constructible_v<_Tp, _Opt&> || is_constructible_v<_Tp, _Opt const&> || is_constructible_v<_Tp, _Opt&&>
+  || is_constructible_v<_Tp, _Opt const&&> || is_convertible_v<_Opt&, _Tp> || is_convertible_v<_Opt const&, _Tp>
+  || is_convertible_v<_Opt&&, _Tp> || is_convertible_v<_Opt const&&, _Tp>;
 
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
-using __opt_check_assignable_from_opt =
-  _Or<is_assignable<_Tp&, _Opt&>,
-      is_assignable<_Tp&, _Opt const&>,
-      is_assignable<_Tp&, _Opt&&>,
-      is_assignable<_Tp&, _Opt const&&>>;
+inline constexpr bool __opt_check_assignable_from_opt_v =
+  is_assignable_v<_Tp&, _Opt&> || is_assignable_v<_Tp&, _Opt const&> || is_assignable_v<_Tp&, _Opt&&>
+  || is_assignable_v<_Tp&, _Opt const&&>;
 
 template <class _Tp, class _Up>
 inline constexpr bool __opt_is_implictly_constructible = is_constructible_v<_Tp, _Up> && is_convertible_v<_Up, _Tp>;
@@ -83,9 +76,10 @@ template <class _Tp, class _Up>
 inline constexpr bool __opt_is_constructible_from_U =
   !is_same_v<remove_cvref_t<_Up>, in_place_t> && !is_same_v<remove_cvref_t<_Up>, optional<_Tp>>;
 
+// concept to avoid MSVC to eagerly instantiate constructability checks
 template <class _Tp, class _Up>
-inline constexpr bool __opt_is_constructible_from_opt =
-  !is_same_v<_Up, _Tp> && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
+_CCCL_CONCEPT __opt_is_constructible_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
+  (requires(!is_same_v<_Up, _Tp>), requires(!__opt_check_constructible_from_opt_v<_Tp, _Up>));
 
 template <class _Tp, class _Up>
 inline constexpr bool __opt_is_assignable = is_constructible_v<_Tp, _Up> && is_assignable_v<_Tp&, _Up>;
@@ -94,10 +88,10 @@ template <class _Tp, class _Up>
 inline constexpr bool __opt_is_assignable_from_U =
   !is_same_v<remove_cvref_t<_Up>, optional<_Tp>> && (!is_same_v<remove_cvref_t<_Up>, _Tp> || !is_scalar_v<_Tp>);
 
+// concept to avoid MSVC to eagerly instantiate assignability checks
 template <class _Tp, class _Up>
-inline constexpr bool __opt_is_assignable_from_opt =
-  !is_same_v<_Up, _Tp> && !__opt_check_constructible_from_opt<_Tp, _Up>::value
-  && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
+_CCCL_CONCEPT __opt_is_assignable_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
+  (requires(__opt_is_constructible_from_opt<_Tp, _Up>), requires(!__opt_check_assignable_from_opt_v<_Tp, _Up>));
 
 template <class _Tp>
 class optional : private __optional_move_assign_base<_Tp>

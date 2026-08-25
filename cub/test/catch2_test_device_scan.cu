@@ -10,7 +10,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
@@ -68,7 +68,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
+CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;

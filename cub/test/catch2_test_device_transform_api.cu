@@ -8,7 +8,7 @@
 
 #include <cuda/iterator>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_many_many_api()
@@ -36,7 +36,7 @@ void test_transform_many_many_api()
   CHECK(result2 == expected2);
 }
 
-C2H_TEST("DeviceTransform::Transform many->many API example", "[device][device_transform]")
+CUB_TEST("DeviceTransform::Transform many->many API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_many_many_api();
 }
@@ -61,7 +61,7 @@ void test_transform_api()
   CHECK(result == expected);
 }
 
-C2H_TEST("DeviceTransform::Transform API example", "[device][device_transform]")
+CUB_TEST("DeviceTransform::Transform API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_api();
 }
@@ -85,7 +85,7 @@ void test_transform_if_api()
   CHECK(result == expected);
 }
 
-C2H_TEST("DeviceTransform::TransformIf API example", "[device][device_transform]")
+CUB_TEST("DeviceTransform::TransformIf API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_if_api();
 }
@@ -109,7 +109,7 @@ void test_transform_if_single_api()
   CHECK(result == expected);
 }
 
-C2H_TEST("DeviceTransform::TransformIf single-input API example", "[device][device_transform]")
+CUB_TEST("DeviceTransform::TransformIf single-input API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_if_single_api();
 }
@@ -138,7 +138,7 @@ void test_transform_stable_api()
   CHECK(result == expected);
 }
 
-C2H_TEST("DeviceTransform::TransformStableArgumentAddresses API example", "[device][device_transform]")
+CUB_TEST("DeviceTransform::TransformStableArgumentAddresses API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_stable_api();
 }
@@ -173,7 +173,7 @@ struct always_true_pred_t
   }
 };
 
-C2H_TEST("DeviceTransform::Transform legacy size-query is unambiguous", "[device_transform][device]")
+CUB_TEST("DeviceTransform::Transform legacy size-query is unambiguous", "[device_transform][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -185,7 +185,7 @@ C2H_TEST("DeviceTransform::Transform legacy size-query is unambiguous", "[device
           == cub::DeviceTransform::Transform(d_temp_storage, temp_storage_bytes, d_in, d_out, n, transform_noop_t{}));
 }
 
-C2H_TEST("DeviceTransform::Generate legacy size-query is unambiguous", "[device_transform][device]")
+CUB_TEST("DeviceTransform::Generate legacy size-query is unambiguous", "[device_transform][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -196,7 +196,7 @@ C2H_TEST("DeviceTransform::Generate legacy size-query is unambiguous", "[device_
     cudaSuccess == cub::DeviceTransform::Generate(d_temp_storage, temp_storage_bytes, d_out, n, generate_zero_t{}));
 }
 
-C2H_TEST("DeviceTransform::Fill legacy size-query is unambiguous", "[device_transform][device]")
+CUB_TEST("DeviceTransform::Fill legacy size-query is unambiguous", "[device_transform][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -207,7 +207,7 @@ C2H_TEST("DeviceTransform::Fill legacy size-query is unambiguous", "[device_tran
   REQUIRE(cudaSuccess == cub::DeviceTransform::Fill(d_temp_storage, temp_storage_bytes, d_out, n, value));
 }
 
-C2H_TEST("DeviceTransform::TransformIf legacy size-query is unambiguous", "[device_transform][device]")
+CUB_TEST("DeviceTransform::TransformIf legacy size-query is unambiguous", "[device_transform][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -220,8 +220,9 @@ C2H_TEST("DeviceTransform::TransformIf legacy size-query is unambiguous", "[devi
             d_temp_storage, temp_storage_bytes, d_in, d_out, n, always_true_pred_t{}, transform_noop_t{}));
 }
 
-C2H_TEST("DeviceTransform::TransformStableArgumentAddresses legacy size-query is unambiguous",
-         "[device_transform][device]")
+CUB_TEST("DeviceTransform::TransformStableArgumentAddresses legacy size-query is unambiguous",
+         "[device_transform][device]",
+         CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;

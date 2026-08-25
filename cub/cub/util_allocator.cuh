@@ -11,6 +11,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/util_allocator.cuh> is not supported when compiling with NVRTC, which supports device code only. You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,9 +30,9 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__host_stdlib/mutex>
 
 #include <map>
-#include <mutex>
 #include <set>
 
 CUB_NAMESPACE_BEGIN
