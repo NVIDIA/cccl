@@ -182,10 +182,8 @@ def _active_backend(feature: str) -> tuple[str, ModuleType]:
     module_name = _backend_module_name()
     if module_name is None:
         raise CoopCompilerContextRequiredError(
-            f"cuda.coop.{feature} requires a Python DSL compiler context "
-            "(compiler-owned activation) or a qualified backend import before "
-            "compilation; for example, import "
-            "cuda.coop.cutlass or cuda.coop.numba_mlir"
+            f"cuda.coop.{feature} requires compiler-owned activation or a "
+            "qualified backend import before compilation"
         )
     return module_name, import_module(module_name)
 
@@ -258,10 +256,8 @@ def _group_primitive_marker(
     if _backend_module_name() is None:
         del args, kwargs
         raise CoopCompilerContextRequiredError(
-            f"cuda.coop.{operation} requires a Python DSL compiler context "
-            "(compiler-owned activation) or a qualified backend import before "
-            "compilation; for example, import "
-            "cuda.coop.cutlass or cuda.coop.numba_mlir"
+            f"cuda.coop.{operation} requires compiler-owned activation or a "
+            "qualified backend import before compilation"
         )
     _validate_portable_operation_group(operation, args[0] if args else None)
     with _common_root_operation_scope(operation):

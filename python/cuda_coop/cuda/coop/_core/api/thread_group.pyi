@@ -76,63 +76,39 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def rank(self, level: ThreadLevel = "thread") -> IntegerValue:
         """Return this group's rank relative to another hierarchy level.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.rank requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     def count(self, level: ThreadLevel = "thread") -> IntegerValue:
         """Return this group's count relative to another hierarchy level.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.count requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     @overload
     def rank_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
         """Return rank converted to a dtype.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.rank_as requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
     @overload
     def rank_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external compiler dtype token.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.rank_as requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     @overload
     def count_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
         """Return count converted to a dtype.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.count_as requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
     @overload
     def count_as(self, dtype: None = None, level: ThreadLevel = "thread") -> Any:
         """Omit dtype or use an ``Any``-typed external compiler dtype token.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.count_as requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     def sync(self: ThreadGroup[SynchronizableGroupKind]) -> None:
@@ -140,11 +116,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
 
         Grid synchronization is unavailable through the portable API.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.sync requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     def sync_aligned(self: ThreadGroup[SynchronizableGroupKind]) -> None:
@@ -152,11 +124,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
 
         Grid synchronization is unavailable through the portable API.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.sync_aligned requires a Python DSL compiler
-        context (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
     @overload
@@ -178,11 +146,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def is_member(self) -> IntegerValue:
         """Return whether the current thread belongs to this group.
 
-        Outside compilation, raises ``CoopCompilerContextRequiredError`` with
-        ``cuda.coop.ThreadGroup.is_member requires a Python DSL compiler context
-        (compiler-owned activation) or a qualified backend import before
-        compilation; for example, import cuda.coop.cutlass or
-        cuda.coop.numba_mlir``.
+        Outside compilation, raises ``CoopCompilerContextRequiredError``.
         """
 
 MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]

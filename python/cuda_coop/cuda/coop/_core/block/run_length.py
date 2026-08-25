@@ -69,8 +69,8 @@ _CUB_TEMPLATE_PARAMETERS = (
 
 
 # BlockRunLengthDecode itself is a public CUB primitive. This driver does not
-# compensate for a hidden or missing CUB API: Numba-CUDA-MLIR invocables model
-# one member call, while CUB requires a stateful constructor followed by a
+# compensate for a hidden or missing CUB API: one-call invocables model a
+# single member call, while CUB requires a stateful constructor followed by a
 # RunLengthDecode call that reuses the same TempStorage. The driver preserves
 # that public lifecycle inside one generated call.
 BLOCK_RUN_LENGTH_DECODE_DRIVER = TypeDefinition(
@@ -229,9 +229,9 @@ def _decode_parameters(
             )
         )
     if window is BlockRunLengthDecodeWindow.EXPLICIT:
-        # Existing cooperative backends pass scalar method arguments through
-        # a wrapper reference. The generated call still forwards the lvalue to
-        # CUB's by-value DecodedOffsetT parameter.
+        # The generated ABI passes scalar method arguments through a wrapper
+        # reference, then forwards the lvalue to CUB's by-value DecodedOffsetT
+        # parameter.
         parameters.append(Reference(_DECODED_OFFSET_T, name="from_decoded_offset"))
     return tuple(parameters)
 

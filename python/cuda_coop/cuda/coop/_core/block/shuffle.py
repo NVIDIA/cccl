@@ -85,13 +85,13 @@ def _boundary_parameter(name: str) -> Pointer:
 class BlockShuffleSemantics:
     """Dimension-independent block-shuffle call contract.
 
-    The semantic contract also represents CuTe's extended multi-item
-    offset/rotate and arbitrary-distance up/down forms. The CUB specialization
-    builder below accepts only CUB's scalar Offset/Rotate and array Up/Down
-    method shapes. Scalar parameter graphs place distance before an optional
-    boundary output; array graphs preserve the CUB input/output/boundary order
-    and append distance only for extended non-CUB forms. CuTe consumes the
-    named semantic fields rather than lowering this tuple positionally.
+    The semantic contract also represents extended multi-item offset/rotate
+    and arbitrary-distance up/down forms. The CUB specialization builder below
+    accepts only CUB's scalar Offset/Rotate and array Up/Down method shapes.
+    Scalar parameter graphs place distance before an optional boundary output;
+    array graphs preserve the CUB input/output/boundary order and append
+    distance only for extended non-CUB forms. Provider implementations consume
+    the named semantic fields rather than lowering this tuple positionally.
     """
 
     dtype: Any

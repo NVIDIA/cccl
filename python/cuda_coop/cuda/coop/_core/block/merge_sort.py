@@ -45,8 +45,8 @@ _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 class BlockMergeSortSemantics:
     """Dimension-independent BlockMergeSort call contract.
 
-    CuTe implements this contract with a runtime-width shim, while compiler
-    backends add a static block shape through :func:`make_block_merge_sort_spec`.
+    Runtime-width planning uses this contract directly. When a static block
+    shape is known, :func:`make_block_merge_sort_spec` adds it.
     Runtime ``valid_items`` and ``oob_default`` payloads are intentionally not
     retained here. Their joint presence is recorded as the tile policy, which
     selects the CUB overload and participates in semantic identity.

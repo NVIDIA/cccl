@@ -91,8 +91,8 @@ class GroupRadixRankSemantics:
     """Block-radix-rank semantics attached to an explicit group.
 
     ``primitive.key_dtype`` is the unsigned bit-ordered type consumed by CUB.
-    ``input_dtype`` records the public key type before CUTLASS adapts signed
-    keys to that representation.
+    ``input_dtype`` records the public key type before signed keys are adapted
+    to that representation.
     """
 
     primitive: BlockRadixRankSemantics

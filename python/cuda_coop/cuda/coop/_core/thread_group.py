@@ -32,15 +32,13 @@ _CPP_LEVEL_EXPR = {
 
 
 class CoopCompilerContextRequiredError(RuntimeError):
-    """A compiler-facing cooperative value escaped its DSL compiler context."""
+    """A compiler-facing cooperative value escaped its compiler context."""
 
 
 def _compiler_method_marker(method: str) -> Any:
     raise CoopCompilerContextRequiredError(
-        f"cuda.coop.ThreadGroup.{method} requires a Python DSL compiler context "
-        "(compiler-owned activation) or a qualified backend import before "
-        "compilation; for example, import "
-        "cuda.coop.cutlass or cuda.coop.numba_mlir"
+        f"cuda.coop.ThreadGroup.{method} requires compiler-owned activation "
+        "or a qualified backend import before compilation"
     )
 
 

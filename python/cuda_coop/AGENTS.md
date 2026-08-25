@@ -10,4 +10,6 @@
   for local helpers and real name conflicts.
 - Keep runtime declarations, stubs, documentation, and consumer typing tests in
   sync. Runtime compiler markers should remain import-light.
-- Keep shared semantics in `_core`; backend modules must not import one another.
+- Keep `_core` semantics and their documentation backend-neutral. Name a DSL
+  there only in integration code that must know it; backends must not import
+  one another.
