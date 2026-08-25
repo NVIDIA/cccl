@@ -35,7 +35,7 @@
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // (_CCCL_CHECK_BUILTIN(decay) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15))
 
-#if _CCCL_CUDA_COMPILER(NVCC) // NVCC has issues with function pointers see nvbug6665129
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) // NVCC has issues with function pointers see nvbug6665129
 #  undef _CCCL_BUILTIN_DECAY
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
