@@ -1,12 +1,12 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402,F811
-
 """Scan provider lowering for Numba-CUDA-MLIR.
 
 This module owns block and warp scan materialization, including block prefix callbacks and StatefulFunction descriptors. It does not infer launch dimensions.
 """
+
+import operator
 
 from cuda.coop._core import (
     CxxFunction,
@@ -16,6 +16,7 @@ from cuda.coop._core import (
     StatefulOperator,
 )
 from cuda.coop._core.block import make_block_scan_spec
+from cuda.coop._core.warp import make_warp_scan_spec
 
 from .._compiler._parameters import (
     CUB_BLOCK_SCAN_ALGOS,
@@ -28,6 +29,18 @@ from .._scan_op import ScanOp
 from .._stateful_function import StatefulFunction
 from .._types import make_invocable_from_specialization, numba_type_to_wrapper
 from ._core import NumbaMlirCoreAdapter
+
+
+def _positive_int(value, *, name: str) -> int:
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be an integer")
+    try:
+        value = operator.index(value)
+    except TypeError as exc:
+        raise TypeError(f"{name} must be an integer") from exc
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
 
 
 def _scan_algorithm(algorithm) -> str:
@@ -153,29 +166,6 @@ def scan(
         extra_type_definitions=(numba_type_to_wrapper(dtype, methods=methods),),
     )
     return make_invocable_from_specialization(specialization)
-
-
-import operator
-
-from cuda.coop._core import CxxFunction, CxxOperator, Dependency, PythonOperator
-from cuda.coop._core.warp import make_warp_scan_spec
-
-from .._compiler._parameters import make_typed_cpp_literal, normalize_dtype_param
-from .._scan_op import ScanOp
-from .._types import make_invocable_from_specialization, numba_type_to_wrapper
-from ._core import NumbaMlirCoreAdapter
-
-
-def _positive_int(value, *, name: str) -> int:
-    if isinstance(value, bool):
-        raise TypeError(f"{name} must be an integer")
-    try:
-        value = operator.index(value)
-    except TypeError as exc:
-        raise TypeError(f"{name} must be an integer") from exc
-    if value <= 0:
-        raise ValueError(f"{name} must be a positive integer")
-    return value
 
 
 def _scan_operator(scan_op: ScanOp):

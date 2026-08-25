@@ -1,8 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402,F811
-
 """Exchange provider lowering for Numba-CUDA-MLIR.
 
 Block and warp exchange routes live together so hierarchy selection does not leak into package navigation. The planner still owns payload-shape analysis.
@@ -11,7 +9,10 @@ Block and warp exchange routes live together so hierarchy selection does not lea
 import operator
 from enum import IntEnum, auto
 
+from numba_cuda_mlir import types
+
 from cuda.coop._core.block import BlockExchangeMode, make_block_exchange_spec
+from cuda.coop._core.warp import make_warp_exchange_spec
 
 from .._compiler._parameters import (
     normalize_dim_param,
@@ -128,36 +129,12 @@ def exchange(
     return make_invocable_from_specialization(specialization)
 
 
-import operator
-from enum import IntEnum, auto
-
-from numba_cuda_mlir import types
-
-from cuda.coop._core.warp import make_warp_exchange_spec
-
-from .._compiler._parameters import normalize_dtype_param
-from .._types import make_invocable_from_specialization, numba_type_to_wrapper
-from ._core import NumbaMlirCoreAdapter
-
-
 class WarpExchangeType(IntEnum):
     """CUB warp-exchange data movement patterns."""
 
     StripedToBlocked = auto()
     BlockedToStriped = auto()
     ScatterToStriped = auto()
-
-
-def _positive_int(value, *, name: str) -> int:
-    if isinstance(value, bool):
-        raise TypeError(f"{name} must be an integer")
-    try:
-        value = operator.index(value)
-    except TypeError as exc:
-        raise TypeError(f"{name} must be an integer") from exc
-    if value <= 0:
-        raise ValueError(f"{name} must be a positive integer")
-    return value
 
 
 def _normalize_warp_exchange_type(value) -> WarpExchangeType:

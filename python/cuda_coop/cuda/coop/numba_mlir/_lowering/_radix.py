@@ -1,7 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402,F811
+# ruff: noqa: E402
 
 """Radix rank and sort provider lowering for Numba-CUDA-MLIR.
 
@@ -18,12 +18,15 @@ from .._compiler._activation import _require_runtime
 _require_runtime()
 
 from cuda.coop._core.block import (
+    BlockRadixSortBitPolicy,
     make_block_radix_rank_spec,
+    make_block_radix_sort_spec,
     resolve_static_radix_end_bit,
 )
 
 from .._compiler._parameters import (
     _validate_common_integer_key_dtype,
+    _validate_common_numeric_dtype,
     dim3,
     normalize_dim_param,
     normalize_dtype_param,
@@ -136,50 +139,6 @@ def _common_radix_rank(**kwargs):
         kwargs["dtype"], operation="radix_rank"
     )
     return radix_rank(**kwargs)
-
-
-import operator
-from typing import TYPE_CHECKING, Tuple, Union
-
-import numpy as np
-
-from .._compiler._activation import _require_runtime
-
-_require_runtime()
-
-from cuda.coop._core.block import (
-    BlockRadixSortBitPolicy,
-    make_block_radix_sort_spec,
-    resolve_static_radix_end_bit,
-)
-
-from .._compiler._parameters import (
-    _validate_common_integer_key_dtype,
-    _validate_common_numeric_dtype,
-    dim3,
-    normalize_dim_param,
-    normalize_dtype_param,
-)
-from .._types import make_invocable_from_specialization
-from ._core import NumbaMlirCoreAdapter
-
-if TYPE_CHECKING:
-    from numba_cuda_mlir import types
-
-
-def _static_index(name, value):
-    if isinstance(value, (bool, np.bool_)):
-        raise TypeError(f"{name} must be an integer")
-    try:
-        return operator.index(value)
-    except TypeError as exc:
-        raise TypeError(f"{name} must be an integer") from exc
-
-
-def _static_bool(name, value):
-    if not isinstance(value, bool):
-        raise TypeError(f"{name} must be a bool")
-    return value
 
 
 def _radix_sort(

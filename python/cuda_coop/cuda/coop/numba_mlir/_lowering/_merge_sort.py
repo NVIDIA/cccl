@@ -1,8 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402,F811
-
 """Merge Sort provider lowering for Numba-CUDA-MLIR.
 
 This module owns block and warp provider materialization. Callable hashing, sentinel validation, and fresh-result rewriting are compiler concerns.
@@ -12,6 +10,7 @@ import operator
 
 from cuda.coop._core import INT8, Dependency, PythonOperator
 from cuda.coop._core.block import make_block_merge_sort_spec
+from cuda.coop._core.warp import make_warp_merge_sort_spec
 
 from .._compiler._parameters import normalize_dim_param, normalize_dtype_param
 from .._types import (
@@ -141,34 +140,6 @@ def merge_sort_pairs(
         extra_type_definitions=(numba_type_to_wrapper(keys, methods=methods),),
     )
     return make_invocable_from_specialization(specialization)
-
-
-__all__: tuple[str, ...] = ()
-
-import operator
-
-from cuda.coop._core import INT8, Dependency, PythonOperator
-from cuda.coop._core.warp import make_warp_merge_sort_spec
-
-from .._compiler._parameters import normalize_dtype_param
-from .._types import (
-    make_invocable_from_specialization,
-    numba_type_to_cpp,
-    numba_type_to_wrapper,
-)
-from ._core import NumbaMlirCoreAdapter
-
-
-def _positive_int(value, *, name: str) -> int:
-    if isinstance(value, bool):
-        raise TypeError(f"{name} must be an integer")
-    try:
-        value = operator.index(value)
-    except TypeError as exc:
-        raise TypeError(f"{name} must be an integer") from exc
-    if value < 1:
-        raise ValueError(f"{name} must be a positive integer")
-    return value
 
 
 def _normalize_warp_args(dtype, items_per_thread, compare_op):

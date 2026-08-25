@@ -1,8 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402,F811
-
 """Reduction provider lowering for Numba-CUDA-MLIR.
 
 Block, warp, and CUDAX group reduction providers share this semantic module.
