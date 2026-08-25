@@ -30,10 +30,19 @@ def pytest_configure(config: pytest.Config) -> None:
     if not worker:
         return
 
-    path = Path(dump_dir) / f"faulthandler-{worker}-{os.getpid()}.log"
-    path.parent.mkdir(parents=True, exist_ok=True)
+    base = Path(dump_dir)
+    base.mkdir(parents=True, exist_ok=True)
 
     # Held open for the process lifetime: faulthandler writes to this descriptor
     # from a fatal-signal handler, long after any close() would have run.
-    _faulthandler_file = path.open("w")
+    _faulthandler_file = (base / f"faulthandler-{worker}-{os.getpid()}.log").open("w")
     faulthandler.enable(file=_faulthandler_file)
+
+    # Record that the redirect was installed. Without this, an absent traceback
+    # is ambiguous: it could mean this hook never ran, or that it ran and the
+    # crash bypassed the handler entirely (Windows __fastfail does not unwind
+    # through vectored exception handlers).
+    (base / f"fhinit-{worker}-{os.getpid()}.log").write_text(
+        f"worker={worker} pid={os.getpid()} pytest={pytest.__version__} "
+        f"enabled={faulthandler.is_enabled()}\n"
+    )

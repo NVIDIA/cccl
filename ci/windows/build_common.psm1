@@ -255,16 +255,32 @@ function Show-FaultHandlerDumps {
     #>
     param([Parameter(Position = 0)][string]$Path)
 
-    if (-not $Path -or -not (Test-Path $Path)) { return }
-
-    $dumps = @(Get-ChildItem -Path $Path -Filter "faulthandler-*.log" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Length -gt 0 })
-    if ($dumps.Count -eq 0) {
-        Write-Host "No faulthandler dumps: no worker died of a fatal signal."
+    if (-not $Path -or -not (Test-Path $Path)) {
+        Write-Host "faulthandler: no dump directory at '$Path' -- the conftest hook never ran."
         return
     }
 
+    # Report the redirect markers and every dump file, empty ones included. A
+    # missing traceback is otherwise ambiguous between "the hook never ran" and
+    # "the hook ran but the crash bypassed the handler".
+    $markers = @(Get-ChildItem -Path $Path -Filter "fhinit-*.log" -ErrorAction SilentlyContinue)
+    $dumps = @(Get-ChildItem -Path $Path -Filter "faulthandler-*.log" -ErrorAction SilentlyContinue)
+
+    Write-Host "faulthandler: $($markers.Count) worker(s) installed the redirect, $($dumps.Count) dump file(s) present."
+    foreach ($marker in $markers) {
+        Write-Host "  init: $((Get-Content $marker.FullName -Raw).Trim())"
+    }
     foreach ($dump in $dumps) {
+        Write-Host ("  dump: {0} ({1} bytes)" -f $dump.Name, $dump.Length)
+    }
+
+    $captured = @($dumps | Where-Object { $_.Length -gt 0 })
+    if ($captured.Count -eq 0) {
+        Write-Host "faulthandler: no traceback captured. If a worker died, the crash bypassed the handler (e.g. Windows __fastfail)."
+        return
+    }
+
+    foreach ($dump in $captured) {
         Write-Host "::group::Native traceback from $($dump.Name)"
         Get-Content $dump.FullName | ForEach-Object { Write-Host $_ }
         Write-Host "::endgroup::"
