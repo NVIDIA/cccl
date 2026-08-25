@@ -25,7 +25,7 @@ The calls inside the kernel are compile-time constructs. The active compiler
 lowers them to CCCL providers and accounts for any shared memory they need.
 
 Developers extending the package should start with
-[`ARCHITECTURE.md`](ARCHITECTURE.md). It describes the shared semantic layout,
+[the architecture guide][architecture]. It describes the shared semantic layout,
 the intentionally different compiler lifecycles, and the files and tests that
 belong to each primitive family.
 
@@ -40,12 +40,9 @@ python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 ```
 
 Use `numba-cuda-mlir-cu12` with a CUDA 12 environment. The `cutlass` extra
-requires `nvidia-cutlass-dsl>=4.8` and CUDA 13. Until that DSL release is
-available from the public package index, the CUTLASS backend is a pre-release
-integration: the public install command cannot resolve, and its host, GPU, and
-final-link CI lanes remain disabled. CUTLASS release support starts only after
-that dependency is public and those lanes are enabled and pass. See
-[`pyproject.toml`](pyproject.toml) for the dependency bounds.
+requires `nvidia-cutlass-dsl>=4.8` and CUDA 13, and cannot resolve from an
+index that does not yet carry that DSL release. See [the package
+metadata][package-metadata] for the dependency bounds.
 
 ## Portable and qualified imports
 
@@ -123,9 +120,9 @@ positions; the rest of the returned payload is undefined. Operations with a
 `valid_items` argument treat it as a uniform prefix length. Consult the shipped
 type declarations for the exact dtype, boundary, and result contracts:
 
-- [portable API](cuda/coop/__init__.pyi)
-- [CUTLASS API](cuda/coop/cutlass/__init__.pyi)
-- [Numba-CUDA-MLIR API](cuda/coop/numba_mlir/__init__.pyi)
+- [portable API][portable-stubs]
+- [CUTLASS API][cutlass-stubs]
+- [Numba-CUDA-MLIR API][numba-stubs]
 
 ## CUTLASS provider AOT packs
 
@@ -160,17 +157,28 @@ bump the provider ABI and invalidate older packs.
 
 ## Examples
 
-The [examples guide](examples/README.md) contains complete programs that
+The [examples guide][examples-guide] contains complete programs that
 validate their results:
 
 - portable block load, scan, and store with
-  [CUTLASS Python DSL](examples/cutlass/common_block_scan.py) and
-  [Numba-CUDA-MLIR](examples/numba_mlir/common_block_scan.py)
+  [CUTLASS Python DSL][cutlass-scan-example] and
+  [Numba-CUDA-MLIR][numba-scan-example]
 - qualified radix sort and TopK with
-  [CUTLASS Python DSL](examples/cutlass/qualified_radix_topk.py)
+  [CUTLASS Python DSL][cutlass-qualified-example]
 - qualified histogram and run-length decode with
-  [Numba-CUDA-MLIR](examples/numba_mlir/qualified_histogram_decode.py)
+  [Numba-CUDA-MLIR][numba-qualified-example]
 
 The package is an alpha API. The
 [CCCL documentation](https://nvidia.github.io/cccl/python.html) carries the
 release documentation as the public surface stabilizes.
+
+[architecture]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/ARCHITECTURE.md
+[package-metadata]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/pyproject.toml
+[portable-stubs]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/cuda/coop/__init__.pyi
+[cutlass-stubs]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/cuda/coop/cutlass/__init__.pyi
+[numba-stubs]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi
+[examples-guide]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/examples/README.md
+[cutlass-scan-example]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/examples/cutlass/common_block_scan.py
+[numba-scan-example]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/examples/numba_mlir/common_block_scan.py
+[cutlass-qualified-example]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/examples/cutlass/qualified_radix_topk.py
+[numba-qualified-example]: https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop/examples/numba_mlir/qualified_histogram_decode.py

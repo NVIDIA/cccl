@@ -8,6 +8,24 @@ kernel names the participating CUDA thread group, describes each thread's
 register values with :func:`~cuda.coop.ThreadData`, and passes both to a
 group-first collective.
 
+Installation
+------------
+
+Install the extra for the compiler and CUDA major version in the target
+environment:
+
+.. code-block:: console
+
+   python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
+   # Use numba-cuda-mlir-cu12 with CUDA 12.
+
+   python -m pip install "cuda-coop[cutlass]"
+
+The base ``cuda-coop`` distribution contains the portable API, type
+declarations, and CCCL headers. The Numba-CUDA-MLIR extra requires its public
+0.5 runtime. The CUTLASS extra requires ``nvidia-cutlass-dsl>=4.8`` and CUDA
+13; it cannot resolve from an index that does not yet carry that DSL release.
+
 Portable root API
 -----------------
 
@@ -45,16 +63,6 @@ qualified backend explicitly:
 
 The base import succeeds when neither compiler is installed. Cooperative
 operations still require a compatible compilation context.
-
-Backend availability
---------------------
-
-The Numba-CUDA-MLIR backend uses the public 0.5 runtime. The CUTLASS backend
-requires ``nvidia-cutlass-dsl>=4.8`` and CUDA 13. Until that DSL release is
-available from the public package index, the CUTLASS integration is
-pre-release: its public extra cannot resolve and its prepared host, GPU, and
-final-link CI lanes remain disabled. CUTLASS release support begins only after
-the dependency is public and all three lanes are enabled and pass.
 
 Groups, payloads, and scratch
 -----------------------------
@@ -139,6 +147,59 @@ total decoded stream size:
    :start-after: # docs: start numba-qualified-run-length-decode
    :end-before: # docs: end numba-qualified-run-length-decode
    :dedent: 4
+
+The backend differences are deliberate compiler integrations, not differences
+in the portable semantics:
+
+.. list-table:: Qualified backend differences
+   :header-rows: 1
+   :widths: 22 39 39
+
+   * - Concern
+     - CUTLASS Python DSL
+     - Numba-CUDA-MLIR
+   * - Register payloads
+     - Adapts CuTe register tensors and exposes source metadata protocols.
+     - Allocates compiler ``local``/``shared`` values and supports registered
+       GPU dataclasses.
+   * - Algorithm controls
+     - Uses portable algorithm tokens and trace-time CUTLASS values.
+     - Also exposes CUB block/warp algorithm enums and device callables.
+   * - Block-scan prefixes
+     - No qualified prefix-callback API.
+     - Accepts a stateless ``prefix_op`` or a ``StatefulFunction`` with an
+       explicit one-item running state. Callbacks are block-only.
+   * - Compilation
+     - Records providers while tracing and links them at trace finalization.
+     - Plans before type inference and materializes providers after inference.
+
+For a stateless Numba block-scan prefix, pass a device callable that maps the
+block aggregate to the prefix. To carry a running prefix across block tiles,
+pair the callback with its state dtype and pass a one-item ``ThreadData`` as
+the third positional argument:
+
+.. code-block:: python
+
+   from numba_cuda_mlir import types
+   import cuda.coop.numba_mlir as coop
+
+   class RunningPrefix:
+       def __call__(self_ptr, block_aggregate):
+           previous = self_ptr[0]
+           self_ptr[0] = previous + block_aggregate
+           return previous
+
+   running_prefix = coop.StatefulFunction(RunningPrefix, types.int32)
+
+   # Inside a kernel; every block member reaches the call.
+   prefix_state = coop.ThreadData(1, dtype=types.int32)
+   prefix_state[0] = 0
+   scanned = coop.exclusive_sum(
+       coop.this_block(), items, prefix_state, prefix_op=running_prefix
+   )
+
+``block_prefix_callback_op`` remains an accepted compatibility spelling for
+``prefix_op``. Warp scans intentionally do not accept either callback form.
 
 CUTLASS AOT packs
 -----------------
