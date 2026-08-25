@@ -5,6 +5,7 @@ description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 # - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
 #   `pr_number` is provided.
 # - Finish the relevant target jobs before invoking the action.
+# - Consume the runner-local `analysis_file` output before the job ends.
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
@@ -18,9 +19,9 @@ inputs:
     default: ""
 
 outputs:
-  markdown:
-    description: "Rendered Markdown failure analysis."
-    value: ${{ steps.export-analysis.outputs.markdown }}
+  analysis_file:
+    description: "Runner-local normalized analysis JSON file."
+    value: ${{ steps.assemble-analysis.outputs.analysis_file }}
 
 runs:
   using: "composite"
@@ -37,10 +38,12 @@ runs:
           "${RUN_ID}" \
           "${PR_NUMBER}"
 
-    - name: Configure agent permissions
+    - name: Prepare analysis environment
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        mkdir -p "${RUNNER_TEMP}/codex-home"
+        mkdir -p \
+          "${RUNNER_TEMP}/codex-home" \
+          "${RUNNER_TEMP}/ci-failure-analysis"
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
 
     - name: Investigate the workflow run
@@ -50,38 +53,41 @@ runs:
       with:
         openai-api-key: ${{ inputs.inference_api_key }}
         responses-api-endpoint: https://inference-api.nvidia.com/v1/responses
-        codex-version: 0.144.5
+        codex-version: 0.149.0
         codex-home: ${{ runner.temp }}/codex-home
         permission-profile: ci_triage
         safety-strategy: drop-sudo
         allow-bot-users: "copy-pr-bot[bot]"
+        # Scheduled workflows have no meaningful triggering user, so skip the actor check.
+        allow-users: ${{ github.event_name == 'schedule' && '*' || '' }}
         model: openai/openai/gpt-5.6-sol
-        effort: medium
-        codex-args: --strict-config --ignore-rules --ephemeral
-        output-file: ${{ runner.temp }}/agent-analysis.json
-        output-schema-file: ${{ github.action_path }}/output.schema.json
+        effort: high
+        codex-args: --strict-config --ephemeral
+        output-file: ${{ runner.temp }}/ci-failure-analysis/model-output.json
+        output-schema-file: ${{ github.action_path }}/../../../ci/util/ci_failure_analysis/model-output.schema.json
         prompt-file: ${{ github.action_path }}/failure_triage_prompt.md
 
-    - name: Validate and render failure analysis
+    - name: Assemble normalized analysis
+      id: assemble-analysis
+      env:
+        MODEL_OUTPUT_FILE: ${{ runner.temp }}/ci-failure-analysis/model-output.json
+        ANALYSIS_FILE: ${{ runner.temp }}/ci-failure-analysis/analysis.json
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        python3 "${GITHUB_ACTION_PATH}/render.py" \
-          --analysis "${RUNNER_TEMP}/agent-analysis.json" \
-          --schema "${GITHUB_ACTION_PATH}/output.schema.json" \
-          --jobs /tmp/ci-logs/jobs.json \
-          --repository "${GITHUB_REPOSITORY}" \
-          --run-id "$(jq -er '.id | tostring' /tmp/ci-logs/run.json)" \
-          --head-sha "$(jq -er '.head_sha' /tmp/ci-logs/run.json)" \
-          --output "${RUNNER_TEMP}/agent-summary.md"
-
-    - name: Export failure analysis
-      id: export-analysis
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        test -s "${RUNNER_TEMP}/agent-summary.md"
-        delimiter="EOF_$(openssl rand -hex 16)"
-        {
-          echo "markdown<<${delimiter}"
-          cat "${RUNNER_TEMP}/agent-summary.md"
-          printf '\n%s\n' "${delimiter}"
-        } >> "${GITHUB_OUTPUT}"
+        jq --null-input \
+          --slurpfile model_output "${MODEL_OUTPUT_FILE}" \
+          --slurpfile run /tmp/ci-logs/run.json \
+          --slurpfile jobs /tmp/ci-logs/jobs.json \
+          '{
+            run: {
+              id: $run[0].id,
+              number: $run[0].run_number
+            },
+            jobs: [
+              $jobs[0][] |
+              {id, name}
+            ],
+            groups: $model_output[0].groups
+          }' > "${ANALYSIS_FILE}"
+        test -s "${ANALYSIS_FILE}"
+        echo "analysis_file=${ANALYSIS_FILE}" >> "${GITHUB_OUTPUT}"

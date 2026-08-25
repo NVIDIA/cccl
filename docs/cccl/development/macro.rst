@@ -87,16 +87,32 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 
 ----
 
-Architecture Macros
+Host Architecture Macros
 -------------------
 
-The following macros are used to check the target architecture. They comply with the compiler supported by the CUDA toolkit. Compilers outside the CUDA toolkit may define such macros in a different way.
+The following macros are used to check the host architecture. They comply with the compiler supported by the CUDA toolkit. Compilers outside the CUDA toolkit may define such macros in a different way.
 
 +------------------------------+---------------------------------------------------+
 | ``_CCCL_HOST_ARCH(ARM64)``   |  ARM 64-bit, including MSVC emulation             |
 +------------------------------+---------------------------------------------------+
 | ``_CCCL_HOST_ARCH(X86_64)``  |  X86 64-bit. False on ARM 64-bit MSVC emulation   |
 +------------------------------+---------------------------------------------------+
+
+The following macros can be used to check a particular feature set of the the host architecture.
+
++--------------------------------------+---------------------------------------------------------------+
+| ``_CCCL_HOST_ARCH_FEAT(ARCH, FEAT)`` |  Host architecture is ``ARCH`` and provides feature ``FEAT``  |
++--------------------------------------+---------------------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HOST_ARCH_FEAT(X86_64, AVX2)
+    // use AVX2 features on x86_64 architecture
+    #else
+    // non-x86_64 architecture or x86_64 without AVX2 support
+    #endif
 
 ----
 

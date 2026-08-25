@@ -362,7 +362,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
 //
 // For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
+// https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#asynchronous-data-copies
 //
 // We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
@@ -371,10 +371,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // should align to 128 bytes instead of 16 on Hopper.
 //
 // However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
-// * According to the CUDA programming guide
-// (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses), "any address of a variable
-// residing in global memory or returned by one of the memory allocation routines from the driver or runtime API is
-// always aligned to at least 256 bytes."
+// * According to the CUDA Best Practices guide
+// (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#a-sequential-but-misaligned-access-pattern), "Memory
+// allocated through the CUDA Runtime API, such as via cudaMalloc(), is guaranteed to be aligned to at least 256 bytes."
 // * Memory protection is usually done on memory page level, which is even larger than 256 bytes for CUDA and 4KiB on
 // Intel x86 and 4KiB+ ARM. Front and tail padding thus never leaves the memory page of the input buffer.
 // * This should count for device memory, but also for device accessible memory living on the host.
@@ -786,7 +785,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
   {
-    // use one thread to setup the entire bulk copy
+    // use one thread to set up the entire bulk copy
     if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
@@ -835,8 +834,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      ptx::mbarrier_arrive_expect_tx(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+        ptx::scope_cta,
+        ptx::space_shared,
+        &bar,
+        total_copied);
 
       // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
       // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -884,8 +887,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
     if (elected)
     {
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      ptx::mbarrier_arrive_expect_tx(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+        ptx::scope_cta,
+        ptx::space_shared,
+        &bar,
+        total_copied);
     }
 
     // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH

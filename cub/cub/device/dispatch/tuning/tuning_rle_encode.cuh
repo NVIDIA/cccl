@@ -23,13 +23,19 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
+#include <cuda/std/cstdint>
+#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
@@ -68,10 +74,11 @@ struct RleLookbackPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The algorithm used by the run-length-encode policy.
+//! The algorithm used by the RLE-encode policy.
 enum class RleAlgorithm
 {
-  lookback
+  lookback,
+  lookahead
 };
 
 #if _CCCL_HOSTED()
@@ -83,6 +90,8 @@ namespace detail
   {
     case RleAlgorithm::lookback:
       return "RleAlgorithm::lookback";
+    case RleAlgorithm::lookahead:
+      return "RleAlgorithm::lookahead";
   }
   return "<unknown RleAlgorithm>";
 }
@@ -94,16 +103,136 @@ inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
 }
 #endif // _CCCL_HOSTED()
 
-//! The tuning policy for DeviceRunLengthEncode::Encode
+namespace detail::rle::encode
+{
+// in-tile run positions are staged as a signed 16-bit value; the tile-size cap keeps every position representable
+using position_t = ::cuda::std::int16_t;
+} // namespace detail::rle::encode
+
+//! The tuning policy for the lookahead implementation of DeviceRunLengthEncode::Encode
+struct RleLookaheadPolicy
+{
+  int items_per_thread; //!< Number of items each lane of a compute warp processes; a warp tile is
+                        //!< warp_threads * items_per_thread items
+  int compute_warps; //!< Number of compute warps; each processes one warp tile per pipeline generation
+  int key_ring_stages; //!< Depth of the key staging ring: how many pipeline generations can be in flight
+  // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
+  // so it can be SHALLOWER than the keys ring and this buys room for more key_ring_stages
+  int pos_ring_stages; //!< Depth of the run-positions ring; 2 * pos_ring_stages >= key_ring_stages must hold
+  int poll_items_per_thread; //!< Number of tile-state loads each poll-warp lane keeps in flight
+  int dense_poll_items_per_thread; //!< Loads per lane for the smaller poll window used in dense mode; the window is
+                                   //!< warp_threads * dense_poll_items_per_thread tile states
+  int dense_mode_runs_per_tile; //!< Average runs per tile in a folded window above which the poll switches to the
+                                //!< smaller dense-mode window
+  // when should compute warps stage?
+  int flag_staging_threshold; //!< Runs per warp tile below which the compute warp stages raw head flags and the
+                              //!< store warp decodes positions itself, instead of staging precomputed positions
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int warp_tile_size() const noexcept
+  {
+    return detail::warp_threads * items_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
+  {
+    return compute_warps * warp_tile_size();
+  }
+
+  // store buffers one key + one length per reg-buf round in registers
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int decode_items_per_thread() const noexcept
+  {
+    const int rounds_candidate = ::cuda::ceil_div(flag_staging_threshold - 1, detail::warp_threads);
+    return (::cuda::std::max) (rounds_candidate, 1);
+  }
+
+  // for each input tile, we need to store the keys and in-tile positions
+  // in-tile positions are staged as position_t: tile size is capped so they fit a signed 16-bit value
+  // each key slot carries slot_pad extra leading elements
+  // we overcopy one 16B chunk to the left, so that we get the last tiles boundary element
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_pad(int key_size) const noexcept
+  {
+    return detail::bulk_copy_min_align / key_size; // elements; 16 bytes = cp_async_bulk quantum
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_stride(int key_size, int key_align) const noexcept
+  {
+    return tile_size() + slot_pad(key_size)
+         + (key_align < detail::bulk_copy_min_align ? detail::bulk_copy_min_align / key_size : 0);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+  dyn_smem_bytes(int key_size, int key_align) const noexcept
+  {
+    return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
+         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t);
+  }
+
+  static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;
+
+  //!< the unstaged floor configuration keeps at most this many key generations in flight
+  static constexpr int floor_key_ring_cap = 4;
+  //!< one pos-ring stage may cover at most this many key generations: the parity bound
+  //!< pos_ring_stages * max_key_stages_per_pos_stage >= key_ring_stages must hold
+  static constexpr int max_key_stages_per_pos_stage = 2;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_key_ring_stages() const noexcept
+  {
+    return (::cuda::std::min) (key_ring_stages, int{floor_key_ring_cap});
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_pos_ring_stages() const noexcept
+  {
+    return ::cuda::ceil_div(floor_key_ring_stages(), max_key_stages_per_pos_stage);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t floor_dyn_smem_bytes() const noexcept
+  {
+    return static_cast<::cuda::std::size_t>(floor_pos_ring_stages()) * tile_size()
+         * sizeof(detail::rle::encode::position_t);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
+  {
+    return lhs.items_per_thread == rhs.items_per_thread && lhs.compute_warps == rhs.compute_warps
+        && lhs.key_ring_stages == rhs.key_ring_stages && lhs.pos_ring_stages == rhs.pos_ring_stages
+        && lhs.poll_items_per_thread == rhs.poll_items_per_thread
+        && lhs.dense_poll_items_per_thread == rhs.dense_poll_items_per_thread
+        && lhs.dense_mode_runs_per_tile == rhs.dense_mode_runs_per_tile
+        && lhs.flag_staging_threshold == rhs.flag_staging_threshold;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookaheadPolicy& p)
+  {
+    return os
+        << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
+        << ", .key_ring_stages = " << p.key_ring_stages << ", .pos_ring_stages = " << p.pos_ring_stages
+        << ", .poll_items_per_thread = " << p.poll_items_per_thread << ", .dense_poll_items_per_thread = "
+        << p.dense_poll_items_per_thread << ", .dense_mode_runs_per_tile = " << p.dense_mode_runs_per_tile
+        << ", .flag_staging_threshold = " << p.flag_staging_threshold << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for all algorithms in @ref DeviceRunLengthEncode
 struct RleEncodePolicy
 {
-  RleAlgorithm algorithm = RleAlgorithm::lookback; //!< The RLE-encode algorithm to use
-  RleLookbackPolicy lookback; //!< The lookback policy
+  RleAlgorithm algorithm; //!< The RLE-encode algorithm to use
+  RleLookbackPolicy lookback; //!< The lookback policy; must be valid even when algorithm is @p lookahead, because it
+                              //!< also drives the streaming fallback (device-side callers and non-viable types)
+  RleLookaheadPolicy lookahead; //!< The lookahead policy (used when algorithm is @p lookahead, otherwise ignored)
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
-    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -115,7 +244,8 @@ struct RleEncodePolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
   {
-    return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
+    return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
+              << ", .lookahead = " << p.lookahead << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -418,6 +548,13 @@ struct policy_selector
   bool length_is_primitive;
   bool length_is_trivially_copyable;
   bool key_is_primitive;
+  int key_align;
+  bool key_is_trivially_copyable;
+  bool input_contiguous;
+  bool unique_out_contiguous;
+  bool lengths_out_contiguous;
+  bool num_runs_out_contiguous;
+  bool input_matches_unique_type;
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleLookbackPolicy
   {
@@ -596,9 +733,75 @@ struct policy_selector
     return __make_default_policy(LOAD_LDG);
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookahead_policy(::cuda::compute_capability cc) const
+    -> ::cuda::std::optional<RleLookaheadPolicy>
+  {
+    if (cc < ::cuda::compute_capability{10, 0} || cc >= ::cuda::compute_capability{11, 0})
+    {
+      return ::cuda::std::nullopt;
+    }
+    if (detail::bulk_copy_min_align % key_size != 0)
+    {
+      return ::cuda::std::nullopt;
+    }
+    // each lane holds target_key_bytes_per_lane of keys per generation, so the key slot stays the same
+    // byte size across key widths; the warp cap binds for 1B and 2B keys
+    constexpr int target_key_bytes_per_lane = 128;
+    const int items_per_thread  = (::cuda::std::min) (int{detail::warp_threads}, target_key_bytes_per_lane / key_size);
+    constexpr int compute_warps = 8;
+    constexpr int key_ring_stages             = 5;
+    constexpr int pos_ring_stages             = 3;
+    constexpr int poll_items_per_thread       = 5;
+    constexpr int dense_poll_items_per_thread = 3;
+    constexpr int dense_mode_runs_per_tile    = 128;
+    constexpr int flag_staging_threshold      = detail::warp_threads;
+    return RleLookaheadPolicy{
+      items_per_thread,
+      compute_warps,
+      key_ring_stages,
+      pos_ring_stages,
+      poll_items_per_thread,
+      dense_poll_items_per_thread,
+      dense_mode_runs_per_tile,
+      flag_staging_threshold};
+  }
+
+  _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
+    [[maybe_unused]] ::cuda::compute_capability cc, [[maybe_unused]] const RleLookaheadPolicy& lookahead_policy) const
+  {
+    // We need PTX ISA 9.2 (CUDA 13.2) for the cp.async.bulk .ignore_oob qualifier
+    // The macro `CCCL_DISABLE_WARPSPEED_RLE` will be left in as a kill-switch for users in case they find any bugs
+    // after we shipped the implementation. TODO(nanan): remove CCCL_DISABLE_WARPSPEED_RLE in CCCL 4.0
+#if __cccl_ptx_isa < 920 || defined(CCCL_DISABLE_WARPSPEED_RLE)
+    return false;
+#else
+    if (!input_contiguous || !unique_out_contiguous || !lengths_out_contiguous || !num_runs_out_contiguous
+        || !key_is_trivially_copyable || !input_matches_unique_type)
+    {
+      return false;
+    }
+    if (detail::bulk_copy_min_align % key_size != 0 || key_align != key_size)
+    {
+      return false;
+    }
+    return true;
+#endif // __cccl_ptx_isa < 920 || defined(CCCL_DISABLE_WARPSPEED_RLE)
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
   {
-    return RleEncodePolicy{RleAlgorithm::lookback, get_lookback_policy(cc)};
+    // we first try to get the valid lookahead implementation. if we can't run it, fall back to the lookback impl.
+    // The lookback policy stays populated either way: the dispatch layer re-checks runtime-only facts (device smem
+    // opt-in, temporary-storage alignment) and may still fall back at launch time. Inputs with more than INT_MAX
+    // tiles are rejected with cudaErrorInvalidValue (at the smallest tile that is a 16 TiB input).
+    if (const auto lookahead_policy = get_lookahead_policy(cc))
+    {
+      if (can_use_lookahead(cc, *lookahead_policy))
+      {
+        return RleEncodePolicy{RleAlgorithm::lookahead, get_lookback_policy(cc), *lookahead_policy};
+      }
+    }
+    return RleEncodePolicy{RleAlgorithm::lookback, get_lookback_policy(cc), RleLookaheadPolicy{}};
   }
 };
 
@@ -606,7 +809,13 @@ struct policy_selector
 static_assert(rle_encode_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <class LengthT, class KeyT>
+template <class LengthT,
+          class KeyT,
+          class InputIteratorT,
+          class UniqueOutputIteratorT,
+          class LengthsOutputIteratorT,
+          class NumRunsOutputIteratorT,
+          class OffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
@@ -617,7 +826,14 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
       ::cuda::is_trivially_copyable_v<LengthT>,
-      is_primitive_v<KeyT>};
+      is_primitive_v<KeyT>,
+      int{alignof(KeyT)},
+      ::cuda::is_trivially_copyable_v<KeyT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<UniqueOutputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<LengthsOutputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<NumRunsOutputIteratorT>,
+      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>};
     return selector(cc);
   }
 };
