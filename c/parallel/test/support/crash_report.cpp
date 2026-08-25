@@ -52,6 +52,14 @@ namespace
 CRITICAL_SECTION g_report_lock;
 LONG g_reported = 0;
 
+// These two have no EXCEPTION_* spelling in winnt.h. ntstatus.h would name them,
+// but including it alongside windows.h requires defining WIN32_NO_STATUS, which
+// suppresses the STATUS_* definitions that the EXCEPTION_* macros above are
+// themselves defined in terms of, and leaves NTSTATUS undeclared. Naming them
+// here is cheaper than that trade.
+constexpr DWORD kStatusStackBufferOverrun = 0xC0000409; // STATUS_STACK_BUFFER_OVERRUN, also __fastfail
+constexpr DWORD kStatusHeapCorruption     = 0xC0000374; // STATUS_HEAP_CORRUPTION
+
 [[nodiscard]] bool is_fatal(DWORD code) noexcept
 {
   switch (code)
@@ -63,8 +71,8 @@ LONG g_reported = 0;
     case EXCEPTION_IN_PAGE_ERROR:
     case EXCEPTION_INT_DIVIDE_BY_ZERO:
     case EXCEPTION_DATATYPE_MISALIGNMENT:
-    case 0xC0000409: // STATUS_STACK_BUFFER_OVERRUN / __fastfail
-    case 0xC0000374: // STATUS_HEAP_CORRUPTION
+    case kStatusStackBufferOverrun:
+    case kStatusHeapCorruption:
       return true;
     default:
       return false;
@@ -184,16 +192,14 @@ LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info) noexcept
   if (record->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
   {
     // Almost no stack remains here, and the faulting thread may be an LLVM
-    // worker with no stack guarantee reserved. Emit one fixed-size message with
-    // a direct WriteFile: no DbgHelp, no CRT buffering, no lock.
-    char message[160];
-    const int length = wsprintfA(
-      message,
-      "\n[cccl-crash] stack overflow at 0x%p on thread %lu (stack walk skipped)\n",
-      record->ExceptionAddress,
-      GetCurrentThreadId());
-    DWORD written = 0;
-    WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, static_cast<DWORD>(length), &written, nullptr);
+    // worker with no stack guarantee reserved. Write a static message straight
+    // through WriteFile: no formatting, no stack buffer, no DbgHelp, no CRT
+    // buffering and no lock, so nothing here can fault again. The faulting
+    // address is deliberately omitted; formatting it would need the stack we
+    // have just run out of, and for a stack overflow it says little anyway.
+    static const char message[] = "\n[cccl-crash] stack overflow (stack walk skipped)\n";
+    DWORD written               = 0;
+    WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, static_cast<DWORD>(sizeof(message) - 1), &written, nullptr);
     return EXCEPTION_CONTINUE_SEARCH;
   }
 
