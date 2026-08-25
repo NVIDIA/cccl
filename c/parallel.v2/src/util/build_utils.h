@@ -172,15 +172,17 @@ inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t&
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in
-// c/parallel.v2/. Algorithm-specific fields (X_fn, determinism, etc.) get
-// nulled by the caller after this. Template'd over the build_result type so
-// each algorithm header doesn't need to include this one transitively.
+// c/parallel.v2/. Algorithm-specific fields (X_fn, determinism, etc.) are the
+// caller's, and the entry points among them are nulled before this is called,
+// since a refused unload can already have unregistered the fatbin, leaving
+// nothing to launch. Template'd over the build_result type so each algorithm
+// header doesn't need to include this one transitively.
 //
-// Returns false if the JIT module refused to unload, leaving the build result exactly as
-// it was — compiler, module and cubin all still there — so the caller can try again.
-// Destroying the compiler then would destroy the only handle to a module that is still
-// mapped and, depending on which stage refused, still registered, after which nothing could
-// unload it. hostjit::JITCompiler::cleanup() has already said why on stderr.
+// Returns false if the JIT module refused to unload, leaving what a retry needs: compiler,
+// module and cubin all still there. Destroying the compiler then would destroy the only
+// handle to a module that is still mapped and, depending on which stage refused, still
+// registered, after which nothing could unload it. The unload has printed the reason on
+// stderr, and it stays available from the compiler.
 template <typename BuildResult>
 bool release_jit_artifacts(BuildResult* build_ptr)
 {

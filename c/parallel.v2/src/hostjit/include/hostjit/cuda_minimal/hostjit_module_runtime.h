@@ -1,3 +1,13 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION.
+//
+//===----------------------------------------------------------------------===//
+
 /*===---- HostJIT module teardown runtime ----------------------------------===
  *
  * This is not a header the compiled program includes: it is the source of one
@@ -25,13 +35,17 @@
 #ifndef __HOSTJIT_MODULE_RUNTIME_H__
 #define __HOSTJIT_MODULE_RUNTIME_H__
 
+// Guarded, though libnvcc always compiles this as C++: a tool that goes by the file
+// extension parses it as C, and everything below is C either way.
+#ifdef __cplusplus
 extern "C" {
-// The only runtime entry point this object calls, declared rather than included:
-// pulling in the CUDA headers would mean compiling the whole host preamble a second
-// time for one declaration. cudaError_t is an unscoped enum with small values, so it
-// comes back in the register an int does on both platforms, and nothing here reads
-// the value -- it is handed to the loader as it is.
+#endif
+// The two runtime entry points this object calls, declared rather than included: pulling
+// in the CUDA headers would mean compiling the whole host preamble a second time for two
+// declarations. cudaError_t is an unscoped enum with small values, so it comes back in the
+// register an int does on both platforms.
 int cudaDeviceSynchronize(void);
+int cudaGetLastError(void);
 
 #if defined(_MSC_VER)
 typedef void(__cdecl* __hostjit_atexit_fn)(void);
@@ -135,9 +149,36 @@ __HOSTJIT_EXPORT_ATTR void __cudacc_module_fini(void)
 // with its own module registry and its own pending-unload queue.
 __HOSTJIT_EXPORT_ATTR int __cudacc_module_sync(void)
 {
-  return cudaDeviceSynchronize();
+  // cudaErrorCudartUnloading, written out because this object sees no CUDA headers.
+  enum
+  {
+    __hostjit_cudart_unloading = 4
+  };
+
+  const int status = cudaDeviceSynchronize();
+  if (status != 0 && status != __hostjit_cudart_unloading)
+  {
+    // The failure stays behind as this runtime's last error for the thread, and this runtime
+    // need not be the caller's: a caller with a runtime of its own clears that one and
+    // reaches nothing here, and the next call the module makes comes back with the wait's
+    // error instead of its own. The status goes to the caller either way, so nothing is lost
+    // by taking it out of the way here. The one status left alone says the runtime is on its
+    // way out with the process, so there is no next call to keep clean.
+    cudaGetLastError();
+  }
+  return status;
 }
 
+// The two hooks below are the fallback for an unmap nobody prepared: a plain dlclose or
+// FreeLibrary, which unregisters the fatbin but cannot wait for the device first, since both
+// hooks run with the loader lock held and a wait there would hold it for as long as the work
+// takes. The unregister itself is what any shared library built by nvcc does from its own
+// destructor, so it asks nothing of the runtime that ordinary CUDA code does not.
+//
+// A caller that can do it before the unmap should, and that sequence is
+// __cudacc_module_sync, __cudacc_module_fini, __cudacc_module_sync, then dlclose or
+// FreeLibrary: all three calls happen off the loader lock, and the hooks below then find
+// the teardown already done.
 #if !defined(_WIN32)
 // ld.so runs .fini_array on dlclose, and the linker builds the array and its
 // dynamic tags without any help from a C runtime, so this works in a
@@ -197,6 +238,8 @@ int __stdcall __hostjit_dll_entry(void* instance, unsigned long reason, void* re
   return 1; // a zero return from the entry point fails LoadLibrary
 }
 #endif
+#ifdef __cplusplus
 } // extern "C"
+#endif
 
 #endif // __HOSTJIT_MODULE_RUNTIME_H__

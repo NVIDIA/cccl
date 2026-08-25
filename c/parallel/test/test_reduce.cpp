@@ -586,6 +586,110 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
+#ifdef CCCL_C_PARALLEL_V2
+// A cleanup that could not unload the JIT module reports it and keeps what a retry needs.
+// The wait before the module's teardown is a cudaDeviceSynchronize, which is refused while
+// the calling thread captures a stream, so a capture produces that refusal on demand.
+C2H_TEST("Reduce cleanup reports a refused unload and can be retried", "[reduce]")
+{
+  using T = int32_t;
+
+  constexpr int device_id     = 0;
+  const auto& build_info      = BuildInformation<device_id>::init();
+  const std::size_t num_items = 42;
+
+  operation_t op             = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{0}};
+
+  cccl_device_reduce_build_result_t build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_build(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+  REQUIRE(build.reduce_fn != nullptr);
+
+  // A second module, built now and run at the end, after the refusal: what it has to show is
+  // that the refused wait left nothing behind in the runtime the modules share. Building it
+  // afterwards would not do -- a build makes calls of its own, and one of them takes the
+  // error away before the launch could report it.
+  cccl_device_reduce_build_result_t next{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_build(
+      &next,
+      input_ptr,
+      output_ptr,
+      op,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  cudaStream_t stream = nullptr;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal));
+
+  const CUresult refused = cccl_device_reduce_cleanup(&build);
+
+  // The refused synchronization invalidates the capture, so this reports that rather than
+  // handing back a graph. Either way it takes the thread out of capture mode.
+  cudaGraph_t graph = nullptr;
+  cudaStreamEndCapture(stream, &graph);
+  if (graph)
+  {
+    cudaGraphDestroy(graph);
+  }
+  cudaStreamDestroy(stream);
+  cudaGetLastError();
+
+  REQUIRE(CUDA_ERROR_ILLEGAL_STATE == refused);
+  // The entry point is gone whichever of the two waits refused, there being no telling from
+  // here whether the fatbin was unregistered in between; the compiler and the payload stay,
+  // since only they can finish the unload.
+  REQUIRE(build.reduce_fn == nullptr);
+  REQUIRE(build.jit_compiler != nullptr);
+  REQUIRE(build.payload != nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
+  REQUIRE(build.jit_compiler == nullptr);
+  REQUIRE(build.payload == nullptr);
+
+  // The refusal is behind us, so the module built before it has to run as if nothing had
+  // happened. The error the refused wait produced belongs to the runtime the modules are
+  // bound to, and not to the one this test calls, so clearing it from here would not reach
+  // it: what has to clear it is the wait itself, on its way out.
+  std::size_t temp_storage_bytes = 0;
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce(next, nullptr, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, nullptr));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(
+            next, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, nullptr));
+  REQUIRE(output_ptr[0] == std::accumulate(input.begin(), input.end(), init.value));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&next));
+}
+#endif
+
 #ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][serialization]")
 {

@@ -148,9 +148,9 @@ libnvccResult libnvccCompileProgramToObject(
  * \param numObjectFiles Number of entries in `objectFiles`. Exactly one object
  * is accepted: it carries its own fatbin and registers it when the library is
  * loaded, so a second object would put a second registration in one library,
- * which is not a shape this compiler produces. Relocatable device compilation
- * generates the registration once at the final link instead, and lifts this
- * restriction.
+ * which is not a shape this compiler produces. There is no option that takes
+ * more: relocatable device compilation, which would generate the registration
+ * once at the final link, is not implemented here.
  * \param objectFiles Array of object file paths to link. They have to come from
  * `libnvccCompileProgramToObject`. The link also gets the module teardown
  * runtime, which libnvcc compiles itself and which defines `atexit` so that the

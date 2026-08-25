@@ -2041,8 +2041,13 @@ public:
     compiler.createFileManager();
     compiler.getFrontendOpts().OutputFile = output_obj;
 
-    clang::EmitObjAction emit_action;
-    const bool success = compiler.ExecuteAction(emit_action);
+    // On the worker thread like every other frontend run here, even though this
+    // translation unit includes nothing and is shallow: the guard costs a thread per
+    // link and keeps one rule for the whole file.
+    const bool success = runWithLargeStack([&] {
+      clang::EmitObjAction emit_action;
+      return compiler.ExecuteAction(emit_action);
+    });
 
     diag_stream.flush();
     diagnostics += diag_output;
@@ -2515,7 +2520,7 @@ extern "C" libnvccResult libnvccLinkToSharedLibrary(
   {
     return LIBNVCC_ERROR_INVALID_PROGRAM;
   }
-  if (numObjectFiles < 0 || (numObjectFiles > 0 && !objectFiles) || !outputLibraryPath || outputLibraryPath[0] == '\0')
+  if (numObjectFiles < 1 || !objectFiles || !outputLibraryPath || outputLibraryPath[0] == '\0')
   {
     setProgramLog(prog, "Invalid link input");
     return LIBNVCC_ERROR_INVALID_INPUT;
