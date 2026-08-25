@@ -293,6 +293,27 @@ def _common_data_for_cc(cc):
     )
 
 
+def _ensure_pch_configured():
+    # Set up the PCH cache before the first build (see cuda.compute._pch).
+    try:
+        from ._pch import ensure_configured
+
+        ensure_configured()
+    except Exception:
+        pass
+
+
+def _evict_pch():
+    # Prune the PCH cache after a build that may have added to it. A failed
+    # prune must never fail a build that already succeeded.
+    try:
+        from ._pch import evict
+
+        evict()
+    except Exception:
+        pass
+
+
 def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     """Build (compile + load) via ``build_impl_fn``, supplying compute capability and paths.
 
@@ -301,6 +322,8 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     Returns the loaded build result.
     """
     global _check_sass
+
+    _ensure_pch_configured()
 
     common_data = _common_data_for_cc(cc)
     result = build_impl_fn(
@@ -314,6 +337,7 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
         temp_cubin_file_name = _check_compile_result(cubin)
         os.unlink(temp_cubin_file_name)
 
+    _evict_pch()
     return result
 
 
@@ -326,10 +350,13 @@ def call_compile(build_impl_cls: Callable, *args, cc, **kwargs):
     result is *not* loaded; call ``.load()`` (once, on a matching device) before
     executing. ``cc`` is a ``(major, minor)`` pair and is required.
     """
+    _ensure_pch_configured()
     common_data = _common_data_for_cc(cc)
     # build_impl_cls is a Device<Algo>BuildResult class exposing a compile()
     # staticmethod; it's typed Callable here, so silence the attr check.
-    return build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    result = build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    _evict_pch()
+    return result
 
 
 def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kwargs):
