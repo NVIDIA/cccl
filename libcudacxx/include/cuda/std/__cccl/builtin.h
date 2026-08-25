@@ -77,11 +77,6 @@
 #  define _CCCL_BUILTIN_ADD_POINTER(...) __add_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__add_pointer)
 
-// NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_rvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(...) __add_rvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)
-
 // TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
 #if 0 // _CCCL_CHECK_BUILTIN(array_rank)
 #  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
