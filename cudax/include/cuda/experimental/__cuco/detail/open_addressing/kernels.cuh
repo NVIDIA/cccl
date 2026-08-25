@@ -24,6 +24,7 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -305,7 +306,9 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
 {
   using __value_type = typename _ContainerRef::value_type;
 
-  __shared__ __value_type __buffer[_BlockSize];
+  // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
+  // require initialization, which is not allowed for shared variables.
+  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
   __shared__ ::cuda::std::uint32_t __buffer_size;
 
   constexpr auto __cg_size         = _ContainerRef::cg_size;
