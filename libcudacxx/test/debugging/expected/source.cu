@@ -6,8 +6,21 @@
 
 // Give the inspected parameter a stack location that survives optimization, so the
 // debugger can read it in this frame. Without this the parameter stays in a
-// caller-clobbered register and reads as unavailable at -O3.
-#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
+// caller-clobbered register and reads as unavailable at -O3. MSVC does not accept
+// GNU asm syntax, so it gets the same volatile-pointer-plus-barrier technique this
+// repo's own DoNotOptimize (test/support/test_macros.h) already uses for its MSVC
+// host path.
+#if _CCCL_COMPILER(MSVC)
+#  include <intrin.h>
+#  define KEEP_FOR_DEBUGGER(values) \
+    do \
+    { \
+      [[maybe_unused]] void const* volatile keep_for_debugger_ptr = &(values); \
+      _ReadWriteBarrier(); \
+    } while (false)
+#else
+#  define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
+#endif
 
 struct parse_error
 {
