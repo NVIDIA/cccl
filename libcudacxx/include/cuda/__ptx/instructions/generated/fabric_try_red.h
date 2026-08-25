@@ -2663,6 +2663,7 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
 }
 #endif // __cccl_ptx_isa >= 930
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2682,7 +2683,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_min_t,
@@ -2705,8 +2706,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2727,7 +2730,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
@@ -2756,8 +2759,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2777,7 +2782,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
@@ -2800,8 +2805,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2822,7 +2829,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
@@ -2851,8 +2858,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2872,7 +2881,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_max_t,
@@ -2895,8 +2904,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2917,7 +2928,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
@@ -2946,8 +2957,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -2967,7 +2980,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
@@ -2990,8 +3003,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3012,7 +3027,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
@@ -3041,8 +3056,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3062,7 +3079,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_min_t,
@@ -3085,8 +3102,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3107,7 +3126,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
@@ -3136,8 +3155,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3157,7 +3178,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
@@ -3180,8 +3201,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 //
 fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
@@ -3203,7 +3226,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
@@ -3232,8 +3255,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3253,7 +3278,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_max_t,
@@ -3276,8 +3301,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3298,7 +3325,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
@@ -3327,8 +3354,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3348,7 +3377,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
@@ -3371,8 +3400,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 //
 fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
@@ -3394,7 +3425,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
@@ -3423,7 +3454,8 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.u32 [dstLeId, dstDataOff],
@@ -3805,6 +3837,7 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
 }
 #endif // __cccl_ptx_isa >= 930
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3824,7 +3857,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_add_t,
@@ -3847,8 +3880,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3869,7 +3904,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
@@ -3898,8 +3933,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3919,7 +3956,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
@@ -3942,8 +3979,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.f16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -3964,7 +4003,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
@@ -3993,8 +4032,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId, dstDataOff],
 [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -4014,7 +4055,7 @@ __device__ static inline void fabric_try_red(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red(
   ::cuda::ptx::op_add_t,
@@ -4037,8 +4078,10 @@ _CCCL_DEVICE static inline void fabric_try_red(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
 [dstLeId, dstDataOff, dstCounterOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -4059,7 +4102,7 @@ __device__ static inline void fabric_try_red_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
@@ -4088,8 +4131,10 @@ _CCCL_DEVICE static inline void fabric_try_red_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.bf16 [dstLeId,
 dstDataOff], [srcMem], size, [smem_bar]; // PTX ISA 93, SM_100
@@ -4109,7 +4154,7 @@ __device__ static inline void fabric_try_red_multimem(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
@@ -4132,8 +4177,10 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem(
       : "r"(__dstLeId), "l"(__dstDataOff), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 //
 fabric.try_red.async.multimem.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.counted::bytes.sem.scope.op.bf16
@@ -4155,7 +4202,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
@@ -4184,7 +4231,8 @@ _CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 /*
 // fabric.try_red.async.src.mbarrier::complete_tx::16B.mbarrier::report::fabric.sem.scope.op.f32 [dstLeId, dstDataOff],

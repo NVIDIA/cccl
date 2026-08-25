@@ -30,6 +30,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Forward-declare __half and __nv_bfloat16. The cuda_fp16.h and cuda_bf16.h are
+// expensive to include. The APIs use only pointers, so we do not have to define
+// the types. If the user wants to use these types, it is their responsibility
+// to include the headers.
+#if _LIBCUDACXX_HAS_NVFP16()
+struct __half;
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
+struct __nv_bfloat16;
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/fabric_try_pullred.h>

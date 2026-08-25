@@ -619,6 +619,7 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
 }
 #endif // __cccl_ptx_isa >= 940
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.min.f16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -638,7 +639,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
@@ -661,8 +662,10 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.max.f16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -682,7 +685,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
@@ -705,8 +708,10 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.min.bf16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -726,7 +731,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
@@ -749,8 +754,10 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.max.bf16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -770,7 +777,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
@@ -793,7 +800,8 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.u32.sync
@@ -883,6 +891,7 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
 }
 #endif // __cccl_ptx_isa >= 940
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.f16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -902,7 +911,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
@@ -925,8 +934,10 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.bf16.sync
 [dst], [srcLeId, srcDataOff], size, [smem_bar], 0xFFFFFFFF; // PTX ISA 94, SM_100
@@ -946,7 +957,7 @@ __device__ static inline void fabric_try_pullred(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 940
+#  if __cccl_ptx_isa >= 940
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
@@ -969,7 +980,8 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
       : "r"(__as_ptr_smem(__dst)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 940
+#  endif // __cccl_ptx_isa >= 940
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 /*
 // fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.f32.sync
@@ -1015,6 +1027,7 @@ _CCCL_DEVICE static inline void fabric_try_pullred(
 }
 #endif // __cccl_ptx_isa >= 940
 
+#if _LIBCUDACXX_HAS_NVFP16()
 /*
 //
 fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.acc::f32.f16.sync
@@ -1036,7 +1049,7 @@ __device__ static inline void fabric_try_pullred_acc_f32(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
   ::cuda::ptx::op_add_t,
@@ -1059,8 +1072,10 @@ _CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
       : "r"(__as_ptr_smem(__dst_mem)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
 /*
 //
 fabric.try_pullred.async.multimem.dst.mbarrier::complete_tx::bytes.mbarrier::report::fabric.sem.scope.add.acc::f32.bf16.sync
@@ -1082,7 +1097,7 @@ __device__ static inline void fabric_try_pullred_acc_f32(
   uint32_t size,
   uint64_t* smem_bar);
 */
-#if __cccl_ptx_isa >= 930
+#  if __cccl_ptx_isa >= 930
 template <typename = void>
 _CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
   ::cuda::ptx::op_add_t,
@@ -1105,6 +1120,7 @@ _CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
       : "r"(__as_ptr_smem(__dst_mem)), "r"(__srcLeId), "l"(__srcDataOff), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
 }
-#endif // __cccl_ptx_isa >= 930
+#  endif // __cccl_ptx_isa >= 930
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // _CUDA_PTX_GENERATED_FABRIC_TRY_PULLRED_H_
