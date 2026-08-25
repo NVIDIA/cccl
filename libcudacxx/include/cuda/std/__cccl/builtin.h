@@ -329,11 +329,6 @@
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
-#  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_pointer)
-
 #if _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF(...) __is_pointer_interconvertible_base_of(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
