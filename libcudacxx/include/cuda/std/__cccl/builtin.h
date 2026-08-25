@@ -372,14 +372,6 @@
 #  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_const)
 
-#if _CCCL_HAS_BUILTIN(__remove_cvref) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_cvref)
-
-#if _CCCL_COMPILER(NVRTC, <, 12, 4) // NVRTC below 12.4 fails to properly compile that builtin
-#  undef _CCCL_BUILTIN_REMOVE_CVREF
-#endif // _CCCL_COMPILER(NVRTC, <, 12, 4)
-
 #if _CCCL_HAS_BUILTIN(__remove_extent) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_extent)
