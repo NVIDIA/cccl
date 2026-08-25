@@ -30,11 +30,6 @@
 
 namespace
 {
-using transform_test_util::expected_for_rank;
-using transform_test_util::make_value;
-using transform_test_util::operators;
-using transform_test_util::value_types;
-
 // Drive the transform through the single-communicator overload, one thread per local rank. Unlike
 // `inclusive_scan`, `transform` posts no collective, so the per-rank calls need not rendezvous.
 // Running them concurrently anyway shows that this overload needs no peer to make progress.
@@ -76,7 +71,8 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
     INFO("device = " << i);
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
 
-    const auto expected_values = expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], op);
+    const auto expected_values =
+      transform_test_util::expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], op);
     const auto expected =
       cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
 
@@ -139,7 +135,7 @@ MULTI_GPU_TEST("transform single-comm documentation example", c2h::type_list<int
   }
 }
 
-MULTI_GPU_TEST("transform single-comm, one element per rank", value_types, operators)
+MULTI_GPU_TEST("transform single-comm, one element per rank", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -159,7 +155,7 @@ MULTI_GPU_TEST("transform single-comm, one element per rank", value_types, opera
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform single-comm, multiple elements per rank", value_types, operators)
+MULTI_GPU_TEST("transform single-comm, multiple elements per rank", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -179,7 +175,7 @@ MULTI_GPU_TEST("transform single-comm, multiple elements per rank", value_types,
 
 // Uneven sizes make sure a rank's element count comes from its own size argument and not from a
 // neighbour's.
-MULTI_GPU_TEST("transform single-comm, uneven rank sizes", value_types, operators)
+MULTI_GPU_TEST("transform single-comm, uneven rank sizes", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -197,7 +193,7 @@ MULTI_GPU_TEST("transform single-comm, uneven rank sizes", value_types, operator
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform single-comm, some ranks empty", value_types, operators)
+MULTI_GPU_TEST("transform single-comm, some ranks empty", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -217,7 +213,7 @@ MULTI_GPU_TEST("transform single-comm, some ranks empty", value_types, operators
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform single-comm, all ranks empty", value_types, operators)
+MULTI_GPU_TEST("transform single-comm, all ranks empty", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
