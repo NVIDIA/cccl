@@ -660,7 +660,7 @@ jobs:
   # libcudacxx:
   nvrtc: { gpu: true, name: 'NVRTC' }
   verify_codegen: { gpu: false, name: 'VerifyCodegen' }
-  codegen_filecheck: { gpu: false, name: 'libcu++ Codegen FileCheck', invoke: { prefix: 'build', args: '-codegen-tests' } }
+  codegen_filecheck: { gpu: false, name: 'libcu++ Codegen FileCheck' }
 
   # CUB:
   build_nolid: { name: 'BuildNoLaunch',     gpu: false, invoke: { prefix: 'build', args: '-no-lid'} }
