@@ -831,3 +831,47 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
     static_cast<int>(d_samples.size()));
   CHECK(h_histogram_ref == d_histogram);
 }
+
+// Regression tests for NVIDIA/cccl#10975: the even-bin arithmetic computed sample - min_level and
+// max_level - min_level in the narrow common type before widening, so level ranges wider than the
+// common type wrapped around (silently misbinning) or overflowed signed types (spuriously rejected).
+CUB_TEST("DeviceHistogram::HistogramEven level range wider than int16", "[histogram_even][device]", CUB_SMALL)
+{
+  // Full int16 range with 100 equal bins: expected bins are 0, 50, and 99.
+  const int16_t h_samples[] = {-32768, 0, 32766};
+  auto d_samples            = c2h::device_vector<int16_t>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram          = c2h::device_vector<int>(100);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    101,
+    static_cast<int16_t>(-32768),
+    static_cast<int16_t>(32767),
+    3);
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[50] == 1);
+  CHECK(h_histogram[99] == 1);
+}
+
+CUB_TEST("DeviceHistogram::HistogramEven wide int32 level range is not spuriously rejected",
+         "[histogram_even][device]",
+         CUB_SMALL)
+{
+  // A [-1.5e9, 1.5e9) range with 100 bins is well within the documented uint64 overflow bound,
+  // but used to wrap the level subtraction in int32 and return cudaErrorInvalidValue.
+  const int h_samples[] = {-1500000000, 0, 1400000000};
+  auto d_samples        = c2h::device_vector<int>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram      = c2h::device_vector<int>(100);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    101,
+    -1500000000,
+    1500000000,
+    3);
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[50] == 1);
+  CHECK(h_histogram[96] == 1);
+}
