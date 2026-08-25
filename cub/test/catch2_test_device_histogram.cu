@@ -836,11 +836,11 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
 // indices in the pass-thru byte-sample path and were never counted.
 CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram][device]", CUB_SMALL)
 {
-  constexpr int num_bins   = 4;
-  constexpr int num_levels = num_bins + 1;
-  const int8_t h_samples[] = {-60, -1, 10, 63};
-  auto d_samples           = c2h::device_vector<int8_t>(cs::begin(h_samples), cs::end(h_samples));
-  const auto* d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+  constexpr int num_bins         = 4;
+  constexpr int num_levels       = num_bins + 1;
+  const int8_t h_samples[]       = {-60, -1, 10, 63};
+  auto d_samples                 = c2h::device_vector<int8_t>(cs::begin(h_samples), cs::end(h_samples));
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
   c2h::host_vector<int> h_expected{1, 1, 1, 1};
 
   SECTION("HistogramEven")
@@ -880,8 +880,8 @@ CUB_TEST("DeviceHistogram::Histogram* full 8-bit domain", "[histogram][device]",
   {
     h_all_samples[i] = static_cast<int8_t>(i - 128);
   }
-  auto d_all_samples       = c2h::device_vector<int8_t>(h_all_samples.begin(), h_all_samples.end());
-  const auto* d_sample_ptr = thrust::raw_pointer_cast(d_all_samples.data());
+  auto d_all_samples             = c2h::device_vector<int8_t>(h_all_samples.begin(), h_all_samples.end());
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_all_samples.data());
   c2h::host_vector<int> h_expected(256, 1);
 
   SECTION("HistogramEven")
@@ -929,8 +929,8 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
   {
     h_i16_samples[i] = static_cast<int16_t>(static_cast<int>(i) - 32768);
   }
-  auto d_samples           = c2h::device_vector<int16_t>(h_i16_samples.begin(), h_i16_samples.end());
-  const auto* d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+  auto d_samples                 = c2h::device_vector<int16_t>(h_i16_samples.begin(), h_i16_samples.end());
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
 
   c2h::host_vector<int> h_expected(num_bins, 1);
 
