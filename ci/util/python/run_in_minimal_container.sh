@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Re-run a CI script inside a deliberately minimal container.
+# Run a CI script inside a deliberately minimal container.
 #
 # cuda.compute is supposed to work with nothing installed beyond its declared
 # pip dependencies -- no host compiler, no system CUDA toolkit. The CCCL
@@ -32,18 +32,13 @@ readonly container_workspace="/home/coder/cccl"
 host_workspace="${HOST_WORKSPACE:-${GITHUB_WORKSPACE:-$(pwd)}}"
 readonly host_workspace
 
-# The script to run is given as a host path (or a path relative to the repo
-# root). Translate an absolute host path into the container's view of the same
-# file; relative paths already resolve against the matching workdir.
+# Repo-relative, so it resolves the same on both sides of the mount. An absolute
+# host path would name a location the container cannot see.
 script="$1"
 shift
 if [[ "${script}" == /* ]]; then
-  if [[ "${script}" != "${host_workspace}"/* ]]; then
-    echo "ERROR: '${script}' is outside the workspace '${host_workspace}'; it would not be" >&2
-    echo "       visible inside the container." >&2
-    exit 1
-  fi
-  script="${container_workspace}/${script#"${host_workspace}"/}"
+  echo "ERROR: '${script}' must be a path relative to the repo root." >&2
+  exit 1
 fi
 readonly script
 
@@ -67,7 +62,6 @@ declare -a env_args=(
   # Only so pretty_printing.sh keeps emitting ::group:: markers; nothing on this
   # side of the handoff touches the artifact or workflow helpers.
   --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}"
-  --env "CCCL_INSIDE_MINIMAL_CONTAINER=1"
   --env "CCCL_CUDA_VERSION=${CCCL_CUDA_VERSION:-${JOB_CUDA:-}}"
   # Load-bearing: test_cuda_compute_python_v2.sh sets this and then execs the v1
   # script, so by the time we hand off, this flag is all that distinguishes them.

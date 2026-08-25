@@ -3,9 +3,8 @@
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Paths below are repo-root relative, not the devcontainer workspace path: the
-# wheel fetch now runs on the CI runner for `devcontainer: false` lanes, where
-# the checkout lives somewhere else entirely.
+# Derived, not hardcoded to the devcontainer workspace: for `devcontainer: false`
+# lanes this half runs on the CI runner, where the checkout lives elsewhere.
 repo_root="$(cd "$ci_dir/.." && pwd)"
 source "$ci_dir/pyenv_helper.sh"
 
@@ -13,63 +12,23 @@ source "$ci_dir/pyenv_helper.sh"
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 
-# Provisioning the wheel needs tooling the minimal test container deliberately
-# lacks (gh to fetch the artifact, docker to build one locally), so it runs
-# before the handoff below and is skipped once we are on the other side of it.
-if [[ -z "${CCCL_INSIDE_MINIMAL_CONTAINER:-}" ]]; then
-  # Fetch or build the cuda_cccl wheel:
-  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-    "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
-  else
-    "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
-  fi
-
-  # Hand the rest of this script to a container that has nothing in it but
-  # Python, so that any reliance on a host compiler or a system CUDA toolkit
-  # fails here instead of silently passing. Lanes opt in with `devcontainer:
-  # false` in ci/matrix.yaml; JOB_DEVCONTAINER is set by the CI action.
-  if [[ "${JOB_DEVCONTAINER:-true}" == "false" ]]; then
-    exec "$ci_dir/util/python/run_in_minimal_container.sh" "$0" "$@"
-  fi
+# Fetch or build the cuda_cccl wheel. This needs `gh` (or docker, for a local
+# build) -- tooling the minimal test container deliberately does not have -- so
+# it happens out here, before the test payload runs.
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
+else
+  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
-# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
-pin_cuda_toolkit "${ctk_mode}"
-
-# Setup Python environment
-setup_python_env "${py_version}"
-
-# Install cuda_cccl. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
-# (system-provided toolkit) depending on the -ctk-mode arg.
-CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
-ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
-
-# Run tests for compute module.
-# On the v2 (HostJIT) backend, abort on first failure — the suite is still
-# stabilizing and a single early failure is enough signal to investigate
-# without scrolling through hundreds of subsequent passes.
-pytest_extra=()
-if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
-  pytest_extra+=(-x)
+# Run the test payload. Lanes with `devcontainer: false` in ci/matrix.yaml run it
+# in a container holding nothing but Python, so that any reliance on a host
+# compiler or a system CUDA toolkit fails loudly. Every other lane runs it right
+# here, in the devcontainer. JOB_DEVCONTAINER is set by the CI action.
+readonly payload="ci/util/python/run_compute_tests.sh"
+if [[ "${JOB_DEVCONTAINER:-true}" == "false" ]]; then
+  exec "$ci_dir/util/python/run_in_minimal_container.sh" "${payload}" "$@"
+else
+  exec "${repo_root}/${payload}" "$@"
 fi
-
-cd "${repo_root}/python/cuda_cccl/tests/"
-if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
-  # The test isolates itself in a fresh subprocess (LLVM initialization is
-  # process-wide and only cold once), but it carries the free_threading marker,
-  # so it must be selected by node-id here or the sweeps below never run it.
-  python -m pytest "${pytest_extra[@]}" -n 0 -v \
-    compute/test_free_threading_stress.py::test_v2_concurrent_cold_llvm_initialization
-fi
-python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large and not free_threading"
-python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large and not free_threading"
-
-# The bfloat16 tests require ml_dtypes (the NumPy bfloat16 extension dtype),
-# which is deliberately not part of the test extras so that the sweeps above
-# run in an environment matching a user's default install (where the bfloat16
-# tests skip themselves). Install it last and run those tests explicitly.
-python -m pip install ml_dtypes
-python -m pytest "${pytest_extra[@]}" -n 6 -v compute/test_bfloat16.py
