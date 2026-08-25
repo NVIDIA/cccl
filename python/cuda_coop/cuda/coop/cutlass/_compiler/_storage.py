@@ -428,9 +428,8 @@ def temp_storage_ffi_args(
         return (Uint32(0), Int32(0), Int32(1))
     if getattr(temp_storage, "is_deferred", False):
         raise NotImplementedError(
-            "deferred TempStorage is currently supported only by "
-            "cuda.coop.cutlass block Load, Store, Exchange, Scan, "
-            "AdjacentDifference, Discontinuity, RadixSort, and MergeSort"
+            f"{scope}.{primitive_name} does not support inferred TempStorage; "
+            "pass a fixed-capacity TempStorage or None"
         )
 
     binding = materialize_temp_storage_binding(
