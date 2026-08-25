@@ -2,23 +2,147 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cross-family dtype and ThreadData factory inference.
+"""Shared payload-inference mechanics and family dispatch.
 
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
+Primitive-specific inference lives in the matching ``_rewrite_<family>``
+mixin. This module owns only the common inference context and dispatch order.
 """
+
+from typing import Any
 
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
-    _dtype_values_match,
     _ThreadDataSpec,
     ir,
     normalize_dtype_param,
-    np,
 )
 
 
+class PayloadInference:
+    """Mutable context shared by the primitive-specific inference handlers."""
+
+    _COMMON_OPERATION_ALIASES = {
+        "_common_radix_rank": "radix_rank",
+        "_common_radix_sort_keys": "radix_sort_keys",
+        "_common_radix_sort_pairs": "radix_sort_pairs",
+        "_common_topk_max_keys": "topk_max_keys",
+        "_common_topk_max_pairs": "topk_max_pairs",
+        "_common_topk_min_keys": "topk_min_keys",
+        "_common_topk_min_pairs": "topk_min_pairs",
+    }
+    _OPERATION_ALIASES = {
+        **_COMMON_OPERATION_ALIASES,
+        "_qualified_group_topk_max_keys": "topk_max_keys",
+        "_qualified_group_topk_max_pairs": "topk_max_pairs",
+        "_qualified_group_topk_min_keys": "topk_min_keys",
+        "_qualified_group_topk_min_pairs": "topk_min_pairs",
+    }
+    _DTYPE_FACTORY_KWARGS = frozenset(
+        {
+            "dtype",
+            "keys",
+            "values",
+            "item_dtype",
+            "counter_dtype",
+            "run_length_dtype",
+            "decoded_offset_dtype",
+            "total_decoded_size_dtype",
+            "relative_offset_dtype",
+        }
+    )
+
+    def __init__(
+        self,
+        rewrite: Any,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        allowed_factory_kwargs: set[str],
+        seen_factory_kwargs: set[str],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        self.rewrite = rewrite
+        self.op_name = self._OPERATION_ALIASES.get(op_name, op_name)
+        self.portable_op_name = self._COMMON_OPERATION_ALIASES.get(op_name)
+        self.runtime_args = runtime_args
+        self.allowed_factory_kwargs = allowed_factory_kwargs
+        self.seen_factory_kwargs = seen_factory_kwargs
+        self.factory_kwargs = factory_kwargs
+
+    def factory_value(self, name: str):
+        return self.factory_kwargs.get(name)
+
+    def _factory_kwarg_matches(self, name: str, actual, expected) -> bool:
+        if name in self._DTYPE_FACTORY_KWARGS:
+            try:
+                actual = normalize_dtype_param(actual)
+                expected = normalize_dtype_param(expected)
+            except (TypeError, ValueError):
+                pass
+        return actual == expected
+
+    def infer_kwarg(self, name: str, value) -> None:
+        if name not in self.allowed_factory_kwargs or value is None:
+            return
+        if name in self.seen_factory_kwargs:
+            if not self._factory_kwarg_matches(name, self.factory_kwargs[name], value):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop movement {self.op_name!r} {name} does not match "
+                    "the value inferred from ThreadData."
+                )
+            return
+        self.factory_kwargs[name] = value
+        self.seen_factory_kwargs.add(name)
+
+    def candidate(self, index: int) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
+        if not 0 <= index < len(self.runtime_args):
+            return (None, None)
+        value = self.runtime_args[index]
+        if not isinstance(value, ir.Var):
+            return (None, None)
+        spec = self.rewrite._resolve_thread_data_spec(value)
+        if self.rewrite._is_typed_group_payload_var(value) and (
+            spec is None or spec.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"coop movement {self.op_name!r} could not infer the static "
+                "extent of a typed group payload"
+            )
+        return (value, spec)
+
+    def array_candidate(
+        self, index: int
+    ) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
+        if not 0 <= index < len(self.runtime_args):
+            return (None, None)
+        value = self.runtime_args[index]
+        if not isinstance(value, ir.Var):
+            return (None, None)
+        spec = self.rewrite._resolve_array_spec_from_var(value, seen=set())
+        if self.rewrite._is_typed_group_payload_var(value) and (
+            spec is None or spec.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"coop movement {self.op_name!r} could not infer the static "
+                "extent of a typed group payload"
+            )
+        return (value, spec)
+
+    def inferred_array_dtype(
+        self,
+        value: ir.Var | None,
+        spec: _ThreadDataSpec | None,
+    ):
+        dtype = spec.dtype if spec is not None else None
+        if dtype is None and value is not None:
+            dtype = self.rewrite._resolve_var_dtype(value)
+        if dtype is None and value is not None:
+            dtype = self.rewrite._infer_thread_data_dtype_from_writes(value)
+        return dtype
+
+
 class _PayloadRewrite:
+    """Dispatch payload inference to the owning primitive-family mixin."""
+
     def _infer_factory_kwargs_from_thread_data(
         self,
         op_name: str,
@@ -27,369 +151,28 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
-        common_operation = {
-            "_common_radix_rank": "radix_rank",
-            "_common_radix_sort_keys": "radix_sort_keys",
-            "_common_radix_sort_pairs": "radix_sort_pairs",
-        }.get(op_name)
-        op_name = {
-            "_common_radix_rank": "radix_rank",
-            "_common_radix_sort_keys": "radix_sort_keys",
-            "_common_radix_sort_pairs": "radix_sort_pairs",
-        }.get(op_name, op_name)
+        inference = PayloadInference(
+            self,
+            op_name,
+            runtime_args,
+            allowed_factory_kwargs,
+            seen_factory_kwargs,
+            factory_kwargs,
+        )
+        operation = inference.op_name
 
-        common_topk_operation = {
-            "_common_topk_max_keys": "topk_max_keys",
-            "_common_topk_max_pairs": "topk_max_pairs",
-            "_common_topk_min_keys": "topk_min_keys",
-            "_common_topk_min_pairs": "topk_min_pairs",
-        }.get(op_name)
-        op_name = {
-            "_common_topk_max_keys": "topk_max_keys",
-            "_common_topk_max_pairs": "topk_max_pairs",
-            "_common_topk_min_keys": "topk_min_keys",
-            "_common_topk_min_pairs": "topk_min_pairs",
-            "_qualified_group_topk_max_keys": "topk_max_keys",
-            "_qualified_group_topk_max_pairs": "topk_max_pairs",
-            "_qualified_group_topk_min_keys": "topk_min_keys",
-            "_qualified_group_topk_min_pairs": "topk_min_pairs",
-        }.get(op_name, op_name)
-
-        def factory_value(name: str):
-            return factory_kwargs.get(name)
-
-        def validate_integer_key_dtype(dtype):
-            if dtype is None:
-                return None
-            from ._parameters import _validate_common_integer_key_dtype
-
-            try:
-                return _validate_common_integer_key_dtype(
-                    dtype, operation=common_operation or op_name
-                )
-            except (TypeError, ValueError) as exc:
-                raise CoopSinglePhaseRewriteError(str(exc)) from exc
-
-        def validate_numeric_value_dtype(dtype):
-            if dtype is None:
-                return None
-            from ._parameters import _validate_common_numeric_dtype
-
-            try:
-                return _validate_common_numeric_dtype(
-                    dtype,
-                    operation=common_operation or op_name,
-                    parameter="value",
-                )
-            except (TypeError, ValueError) as exc:
-                raise CoopSinglePhaseRewriteError(str(exc)) from exc
-
-        def factory_kwarg_matches(name: str, actual, expected) -> bool:
-            if name in {
-                "dtype",
-                "keys",
-                "values",
-                "item_dtype",
-                "counter_dtype",
-                "run_length_dtype",
-                "decoded_offset_dtype",
-                "total_decoded_size_dtype",
-                "relative_offset_dtype",
-            }:
-                try:
-                    actual = normalize_dtype_param(actual)
-                    expected = normalize_dtype_param(expected)
-                except (TypeError, ValueError):
-                    pass
-            return actual == expected
-
-        def infer_kwarg(name: str, value) -> None:
-            if name not in allowed_factory_kwargs or value is None:
-                return
-            if name in seen_factory_kwargs:
-                if not factory_kwarg_matches(name, factory_kwargs[name], value):
-                    raise CoopSinglePhaseRewriteError(
-                        f"coop movement {op_name!r} {name} does not match the value inferred from ThreadData."
-                    )
-                return
-            factory_kwargs[name] = value
-            seen_factory_kwargs.add(name)
-
-        def candidate(index: int) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
-            if not 0 <= index < len(runtime_args):
-                return (None, None)
-            value = runtime_args[index]
-            if not isinstance(value, ir.Var):
-                return (None, None)
-            spec = self._resolve_thread_data_spec(value)
-            if self._is_typed_group_payload_var(value) and (
-                spec is None or spec.items_per_thread is None
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    f"coop movement {op_name!r} could not infer the static extent of a typed group payload"
-                )
-            return (value, spec)
-
-        def validate_common_key_dtype(dtype):
-            if common_topk_operation is None or dtype is None:
-                return dtype
-            from ._parameters import _validate_common_integer_key_dtype
-
-            try:
-                return _validate_common_integer_key_dtype(
-                    dtype,
-                    operation=common_topk_operation,
-                )
-            except TypeError as exc:
-                raise CoopSinglePhaseRewriteError(str(exc)) from exc
-
-        def validate_common_value_dtype(dtype):
-            if common_topk_operation is None or dtype is None:
-                return dtype
-            from ._parameters import _validate_common_numeric_dtype
-
-            try:
-                return _validate_common_numeric_dtype(
-                    dtype,
-                    operation=common_topk_operation,
-                    parameter="value",
-                )
-            except TypeError as exc:
-                raise CoopSinglePhaseRewriteError(str(exc)) from exc
-
-        if op_name in {"topk_max_keys", "topk_min_keys"}:
-            key_var, key_spec = candidate(0)
-            if key_spec is not None:
-                infer_kwarg("items_per_thread", key_spec.items_per_thread)
-            key_dtype = key_spec.dtype if key_spec is not None else None
-            if key_dtype is None and key_var is not None:
-                key_dtype = self._resolve_var_dtype(key_var)
-            if key_dtype is None:
-                key_dtype = factory_value("dtype")
-            key_dtype = validate_common_key_dtype(key_dtype)
-            infer_kwarg("dtype", key_dtype)
-            if key_dtype is not None and key_var is not None:
-                self._record_inferred_thread_data_dtype(key_var, key_dtype)
-            return
-
-        if op_name in {"topk_max_pairs", "topk_min_pairs"}:
-            key_var, key_spec = candidate(0)
-            value_var, value_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name,
-                "key",
-                key_spec,
-                "value",
-                value_spec,
-            )
-            extent = key_spec.items_per_thread if key_spec is not None else None
-            if extent is None and value_spec is not None:
-                extent = value_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            key_dtype = key_spec.dtype if key_spec is not None else None
-            value_dtype = value_spec.dtype if value_spec is not None else None
-            if key_dtype is None and key_var is not None:
-                key_dtype = self._resolve_var_dtype(key_var)
-            if value_dtype is None and value_var is not None:
-                value_dtype = self._resolve_var_dtype(value_var)
-            if key_dtype is None:
-                key_dtype = factory_value("keys")
-            if value_dtype is None:
-                value_dtype = factory_value("values")
-            key_dtype = validate_common_key_dtype(key_dtype)
-            value_dtype = validate_common_value_dtype(value_dtype)
-            infer_kwarg("keys", key_dtype)
-            infer_kwarg("values", value_dtype)
-            if key_dtype is not None and key_var is not None:
-                self._record_inferred_thread_data_dtype(key_var, key_dtype)
-            if value_dtype is not None and value_var is not None:
-                self._record_inferred_thread_data_dtype(value_var, value_dtype)
-            return
-
-        def array_candidate(
-            index: int,
-        ) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
-            if not 0 <= index < len(runtime_args):
-                return (None, None)
-            value = runtime_args[index]
-            if not isinstance(value, ir.Var):
-                return (None, None)
-            spec = self._resolve_array_spec_from_var(value, seen=set())
-            if self._is_typed_group_payload_var(value) and (
-                spec is None or spec.items_per_thread is None
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    f"coop movement {op_name!r} could not infer the static "
-                    "extent of a typed group payload"
-                )
-            return (value, spec)
-
-        def inferred_array_dtype(
-            value: ir.Var | None,
-            spec: _ThreadDataSpec | None,
-        ):
-            dtype = spec.dtype if spec is not None else None
-            if dtype is None and value is not None:
-                dtype = self._resolve_var_dtype(value)
-            if dtype is None and value is not None:
-                dtype = self._infer_thread_data_dtype_from_writes(value)
-            return dtype
-
-        if op_name == "_group_histogram":
-            samples_var, samples_spec = array_candidate(0)
-            histogram_var, histogram_spec = array_candidate(1)
-            if samples_spec is None or samples_spec.items_per_thread is None:
-                raise CoopSinglePhaseRewriteError(
-                    "coop histogram requires a fixed-size samples array"
-                )
-            if histogram_spec is None or histogram_spec.items_per_thread is None:
-                raise CoopSinglePhaseRewriteError(
-                    "coop histogram requires a fixed-size counter array"
-                )
-            infer_kwarg("items_per_thread", samples_spec.items_per_thread)
-            infer_kwarg("bins", histogram_spec.items_per_thread)
-            item_dtype = inferred_array_dtype(samples_var, samples_spec)
-            counter_dtype = inferred_array_dtype(histogram_var, histogram_spec)
-            infer_kwarg("item_dtype", item_dtype)
-            infer_kwarg("counter_dtype", counter_dtype)
-            if item_dtype is not None and samples_var is not None:
-                self._record_inferred_thread_data_dtype(samples_var, item_dtype)
-            return
-
-        if op_name == "_group_run_length_decode":
-            with_relative_offsets = factory_kwargs.get("with_relative_offsets")
-            if not isinstance(with_relative_offsets, bool):
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode with_relative_offsets must be a "
-                    "compile-time bool"
-                )
-            expected_count = 6 if with_relative_offsets else 5
-            if len(runtime_args) != expected_count:
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode runtime arguments do not match "
-                    "with_relative_offsets"
-                )
-
-            run_values_var, run_values_spec = array_candidate(0)
-            run_lengths_var, run_lengths_spec = array_candidate(1)
-            total_var, total_spec = array_candidate(2)
-            decoded_var, decoded_spec = array_candidate(3)
-            relative_var = None
-            relative_spec = None
-            if with_relative_offsets:
-                relative_var, relative_spec = array_candidate(4)
-
-            required_specs = {
-                "run_values": run_values_spec,
-                "run_lengths": run_lengths_spec,
-                "total_decoded_size": total_spec,
-                "decoded_items": decoded_spec,
-            }
-            if with_relative_offsets:
-                required_specs["relative_offsets"] = relative_spec
-            for name, spec in required_specs.items():
-                if spec is None or spec.items_per_thread is None:
-                    raise CoopSinglePhaseRewriteError(
-                        f"coop run_length_decode requires a fixed-size {name} array"
-                    )
-
-            assert run_values_spec is not None
-            assert run_lengths_spec is not None
-            assert total_spec is not None
-            assert decoded_spec is not None
-            runs_per_thread = run_values_spec.items_per_thread
-            if run_lengths_spec.items_per_thread != runs_per_thread:
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode run_values and run_lengths must "
-                    "have matching extents"
-                )
-            if total_spec.items_per_thread != 1:
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode total_decoded_size must contain "
-                    "exactly one item"
-                )
-            decoded_items_per_thread = factory_value("decoded_items_per_thread")
-            if decoded_spec.items_per_thread != decoded_items_per_thread:
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode decoded output extent must match "
-                    "decoded_items_per_thread"
-                )
-            if with_relative_offsets:
-                assert relative_spec is not None
-                if relative_spec.items_per_thread != decoded_items_per_thread:
-                    raise CoopSinglePhaseRewriteError(
-                        "coop run_length_decode relative_offsets extent must "
-                        "match decoded_items_per_thread"
-                    )
-
-            item_dtype = inferred_array_dtype(run_values_var, run_values_spec)
-            decoded_dtype = inferred_array_dtype(decoded_var, decoded_spec)
-            if (
-                item_dtype is not None
-                and decoded_dtype is not None
-                and not _dtype_values_match(item_dtype, decoded_dtype)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode decoded dtype must match run_values"
-                )
-            item_dtype = item_dtype if item_dtype is not None else decoded_dtype
-            run_length_dtype = inferred_array_dtype(run_lengths_var, run_lengths_spec)
-            total_dtype = inferred_array_dtype(total_var, total_spec)
-            if (
-                run_length_dtype is not None
-                and total_dtype is not None
-                and not _dtype_values_match(run_length_dtype, total_dtype)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode total_decoded_size dtype must "
-                    "match run_lengths"
-                )
-            total_dtype = total_dtype if total_dtype is not None else run_length_dtype
-            decoded_offset_dtype = factory_value("decoded_offset_dtype")
-            if decoded_offset_dtype is None:
-                decoded_offset_dtype = run_length_dtype
-            if (
-                run_length_dtype is not None
-                and decoded_offset_dtype is not None
-                and not _dtype_values_match(
-                    run_length_dtype,
-                    decoded_offset_dtype,
-                )
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop run_length_decode decoded offset dtype must match run_lengths"
-                )
-
-            infer_kwarg("runs_per_thread", runs_per_thread)
-            infer_kwarg("item_dtype", item_dtype)
-            infer_kwarg("run_length_dtype", run_length_dtype)
-            infer_kwarg("total_decoded_size_dtype", total_dtype)
-            infer_kwarg("decoded_offset_dtype", decoded_offset_dtype)
-            if with_relative_offsets:
-                relative_dtype = inferred_array_dtype(relative_var, relative_spec)
-                if (
-                    run_length_dtype is not None
-                    and relative_dtype is not None
-                    and not _dtype_values_match(run_length_dtype, relative_dtype)
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop run_length_decode relative_offsets dtype must "
-                        "match run_lengths"
-                    )
-                infer_kwarg("relative_offset_dtype", relative_dtype)
-
-            for value, dtype in (
-                (run_values_var, item_dtype),
-                (decoded_var, item_dtype),
-                (run_lengths_var, run_length_dtype),
-                (total_var, run_length_dtype),
-                (relative_var, run_length_dtype),
-            ):
-                if value is not None and dtype is not None:
-                    self._record_inferred_thread_data_dtype(value, dtype)
-            return
-
-        if op_name in {
+        if operation in {
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+        }:
+            self._infer_topk_payload(inference)
+        elif operation == "_group_histogram":
+            self._infer_histogram_payload(inference)
+        elif operation == "_group_run_length_decode":
+            self._infer_run_length_decode_payload(inference)
+        elif operation in {
             "group_reduce",
             "block_reduce_builtin",
             "reduce",
@@ -398,583 +181,40 @@ class _PayloadRewrite:
             "warp_reduce",
             "warp_sum",
         }:
-            payload_var, payload_spec = candidate(0)
-            if payload_spec is not None:
-                infer_kwarg("items_per_thread", payload_spec.items_per_thread)
-            inferred_dtype = payload_spec.dtype if payload_spec is not None else None
-            if inferred_dtype is None and payload_var is not None:
-                inferred_dtype = self._resolve_var_dtype(payload_var)
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            infer_kwarg("dtype", inferred_dtype)
-            if inferred_dtype is not None and payload_var is not None:
-                self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
-            return
-
-        if op_name == "scan":
-            input_var, input_spec = candidate(0)
-            output_var, output_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name, "input", input_spec, "output", output_spec
-            )
-            input_dtype = input_spec.dtype if input_spec is not None else None
-            output_dtype = output_spec.dtype if output_spec is not None else None
-            if input_dtype is None and input_var is not None:
-                input_dtype = self._resolve_var_dtype(input_var)
-            if output_dtype is None and output_var is not None:
-                output_dtype = self._resolve_var_dtype(output_var)
-            if (
-                input_dtype is not None
-                and output_dtype is not None
-                and not _dtype_values_match(input_dtype, output_dtype)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop scan requires input/output arrays to have matching dtype."
-                )
-            inferred_dtype = input_dtype
-            if inferred_dtype is None:
-                inferred_dtype = output_dtype
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            extent = input_spec.items_per_thread if input_spec is not None else None
-            if extent is None and output_spec is not None:
-                extent = output_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            infer_kwarg("dtype", inferred_dtype)
-            for payload_var in (input_var, output_var):
-                if inferred_dtype is not None and payload_var is not None:
-                    self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
-            if factory_kwargs.get("block_aggregate"):
-                aggregate_var, aggregate_spec = candidate(2)
-                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
-                    raise CoopSinglePhaseRewriteError(
-                        "coop scan block_aggregate must be a one-item "
-                        "ThreadData or local array."
-                    )
-                aggregate_dtype = aggregate_spec.dtype
-                if aggregate_dtype is None and aggregate_var is not None:
-                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
-                if (
-                    inferred_dtype is not None
-                    and aggregate_dtype is not None
-                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop scan block_aggregate dtype must match the input dtype."
-                    )
-                if aggregate_var is not None and inferred_dtype is not None:
-                    self._record_inferred_thread_data_dtype(
-                        aggregate_var, inferred_dtype
-                    )
-            return
-
-        if op_name == "adjacent_difference":
-            input_var, input_spec = candidate(0)
-            output_var, output_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name,
-                "input",
-                input_spec,
-                "output",
-                output_spec,
-            )
-            extent = input_spec.items_per_thread if input_spec is not None else None
-            if extent is None and output_spec is not None:
-                extent = output_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-
-            input_dtype = input_spec.dtype if input_spec is not None else None
-            output_dtype = output_spec.dtype if output_spec is not None else None
-            if input_dtype is None and input_var is not None:
-                input_dtype = self._resolve_var_dtype(input_var)
-            if output_dtype is None and output_var is not None:
-                output_dtype = self._resolve_var_dtype(output_var)
-            if (
-                input_dtype is not None
-                and output_dtype is not None
-                and not _dtype_values_match(input_dtype, output_dtype)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop adjacent_difference input and output dtypes must match."
-                )
-            inferred_dtype = input_dtype
-            if inferred_dtype is None:
-                inferred_dtype = output_dtype
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            infer_kwarg("dtype", inferred_dtype)
-            for payload_var in (input_var, output_var):
-                if inferred_dtype is not None and payload_var is not None:
-                    self._record_inferred_thread_data_dtype(
-                        payload_var,
-                        inferred_dtype,
-                    )
-
-            boundary_index = 2 + int(bool(factory_kwargs.get("valid_items")))
-            boundary_name = None
-            if factory_kwargs.get("tile_predecessor_item"):
-                boundary_name = "tile_predecessor_item"
-            elif factory_kwargs.get("tile_successor_item"):
-                boundary_name = "tile_successor_item"
-            if boundary_name is not None and boundary_index < len(runtime_args):
-                boundary_dtype = self._resolve_var_dtype(runtime_args[boundary_index])
-                if (
-                    inferred_dtype is not None
-                    and boundary_dtype is not None
-                    and not _dtype_values_match(inferred_dtype, boundary_dtype)
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop adjacent_difference boundary dtype must match "
-                        "the input dtype."
-                    )
-            return
-
-        if op_name == "discontinuity":
-            from .._lowering._discontinuity import BlockDiscontinuityType
-
-            mode = BlockDiscontinuityType(
-                factory_kwargs.get(
-                    "block_discontinuity_type",
-                    BlockDiscontinuityType.HEADS,
-                )
-            )
-            input_var, input_spec = candidate(0)
-            head_var, head_spec = candidate(1)
-            tail_var, tail_spec = (
-                candidate(2)
-                if mode is BlockDiscontinuityType.HEADS_AND_TAILS
-                else (None, None)
-            )
-            self._require_matching_items_per_thread(
-                op_name,
-                "input",
-                input_spec,
-                "head flags",
-                head_spec,
-            )
-            self._require_matching_items_per_thread(
-                op_name,
-                "input",
-                input_spec,
-                "tail flags",
-                tail_spec,
-            )
-            extent = input_spec.items_per_thread if input_spec is not None else None
-            if extent is None and head_spec is not None:
-                extent = head_spec.items_per_thread
-            if extent is None and tail_spec is not None:
-                extent = tail_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-
-            inferred_dtype = input_spec.dtype if input_spec is not None else None
-            if inferred_dtype is None and input_var is not None:
-                inferred_dtype = self._resolve_var_dtype(input_var)
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            infer_kwarg("dtype", inferred_dtype)
-
-            from numba_cuda_mlir import types as numba_mlir_types
-
-            flag_dtype = numba_mlir_types.int32
-            infer_kwarg("flag_dtype", flag_dtype)
-            for flag_name, flag_var, flag_spec in (
-                ("head", head_var, head_spec),
-                ("tail", tail_var, tail_spec),
-            ):
-                if flag_var is None:
-                    continue
-                actual_flag_dtype = flag_spec.dtype if flag_spec is not None else None
-                if actual_flag_dtype is None:
-                    actual_flag_dtype = self._resolve_var_dtype(flag_var)
-                if actual_flag_dtype is not None and not _dtype_values_match(
-                    actual_flag_dtype,
-                    flag_dtype,
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        f"coop discontinuity {flag_name} flags must use int32 dtype."
-                    )
-                self._record_inferred_thread_data_dtype(flag_var, flag_dtype)
-            if inferred_dtype is not None and input_var is not None:
-                self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
-
-            boundary_index = 3 if mode is BlockDiscontinuityType.HEADS_AND_TAILS else 2
-            for boundary_name in (
-                "tile_predecessor_item",
-                "tile_successor_item",
-            ):
-                if not factory_kwargs.get(boundary_name):
-                    continue
-                if boundary_index >= len(runtime_args):
-                    break
-                boundary_dtype = self._resolve_var_dtype(runtime_args[boundary_index])
-                if (
-                    inferred_dtype is not None
-                    and boundary_dtype is not None
-                    and not _dtype_values_match(inferred_dtype, boundary_dtype)
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop discontinuity boundary dtype must match the input dtype."
-                    )
-                boundary_index += 1
-            return
-
-        if op_name in {
+            self._infer_reduce_payload(inference)
+        elif operation in {
+            "scan",
             "warp_exclusive_sum",
             "warp_inclusive_sum",
             "warp_exclusive_scan",
             "warp_inclusive_scan",
         }:
-            value_var, value_spec = candidate(0)
-            inferred_dtype = value_spec.dtype if value_spec is not None else None
-            if inferred_dtype is None and value_var is not None:
-                inferred_dtype = self._resolve_var_dtype(value_var)
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            infer_kwarg("dtype", inferred_dtype)
-            aggregate_index = None
-            if factory_kwargs.get("warp_aggregate"):
-                aggregate_index = (
-                    2
-                    if factory_kwargs.get("valid_items")
-                    and op_name in {"warp_exclusive_scan", "warp_inclusive_scan"}
-                    else 1
-                )
-            if aggregate_index is not None:
-                aggregate_var, aggregate_spec = candidate(aggregate_index)
-                if aggregate_spec is None or aggregate_spec.items_per_thread != 1:
-                    raise CoopSinglePhaseRewriteError(
-                        "coop scan warp_aggregate must be a one-item "
-                        "ThreadData or local array."
-                    )
-                aggregate_dtype = aggregate_spec.dtype
-                if aggregate_dtype is None and aggregate_var is not None:
-                    aggregate_dtype = self._resolve_var_dtype(aggregate_var)
-                if (
-                    inferred_dtype is not None
-                    and aggregate_dtype is not None
-                    and not _dtype_values_match(inferred_dtype, aggregate_dtype)
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop scan warp_aggregate dtype must match the input dtype."
-                    )
-                if aggregate_var is not None and inferred_dtype is not None:
-                    self._record_inferred_thread_data_dtype(
-                        aggregate_var, inferred_dtype
-                    )
-            return
-
-        if op_name in {"load", "store", "warp_load", "warp_store"}:
-            payload_var, payload_spec = candidate(1)
-            if payload_spec is None:
-                if op_name in {"store", "warp_store"}:
-                    inferred_dtype = None
-                    for arg in runtime_args[:2]:
-                        if isinstance(arg, ir.Var):
-                            inferred_dtype = self._resolve_var_dtype(arg)
-                        if inferred_dtype is not None:
-                            break
-                    infer_kwarg("items_per_thread", 1)
-                    infer_kwarg("dtype", inferred_dtype)
-                return
-            infer_kwarg("items_per_thread", payload_spec.items_per_thread)
-            inferred_dtype = payload_spec.dtype
-            if (
-                inferred_dtype is None
-                and runtime_args
-                and isinstance(runtime_args[0], ir.Var)
-            ):
-                inferred_dtype = self._resolve_var_dtype(runtime_args[0])
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            infer_kwarg("dtype", inferred_dtype)
-            if inferred_dtype is not None and payload_var is not None:
-                self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
-            return
-        if op_name in {"radix_sort_keys", "radix_sort_keys_descending"}:
-            keys_var, keys_spec = candidate(0)
-            if keys_spec is None:
-                return
-            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
-            key_dtype = keys_spec.dtype
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._resolve_var_dtype(keys_var)
-            if key_dtype is None:
-                key_dtype = factory_value("dtype")
-            key_dtype = validate_integer_key_dtype(key_dtype)
-            infer_kwarg("dtype", key_dtype)
-            if key_dtype is not None and keys_var is not None:
-                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
-            return
-        if op_name in {"radix_sort_pairs", "radix_sort_pairs_descending"}:
-            keys_var, keys_spec = candidate(0)
-            values_var, values_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name, "keys", keys_spec, "values", values_spec
-            )
-            extent = keys_spec.items_per_thread if keys_spec is not None else None
-            if extent is None and values_spec is not None:
-                extent = values_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            key_dtype = keys_spec.dtype if keys_spec is not None else None
-            value_dtype = values_spec.dtype if values_spec is not None else None
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._resolve_var_dtype(keys_var)
-            if value_dtype is None and values_var is not None:
-                value_dtype = self._resolve_var_dtype(values_var)
-            if key_dtype is None:
-                key_dtype = factory_value("key_dtype")
-            if value_dtype is None:
-                value_dtype = factory_value("value_dtype")
-            key_dtype = validate_integer_key_dtype(key_dtype)
-            value_dtype = validate_numeric_value_dtype(value_dtype)
-            infer_kwarg("key_dtype", key_dtype)
-            infer_kwarg("value_dtype", value_dtype)
-            if key_dtype is not None and keys_var is not None:
-                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
-            if value_dtype is not None and values_var is not None:
-                self._record_inferred_thread_data_dtype(values_var, value_dtype)
-            return
-        if op_name == "radix_rank":
-            from numba_cuda_mlir import types as numba_mlir_types
-
-            def is_int32_dtype(dtype) -> bool:
-                if dtype == numba_mlir_types.int32:
-                    return True
-                try:
-                    return np.dtype(dtype) == np.dtype(np.int32)
-                except (TypeError, ValueError):
-                    return False
-
-            keys_var, keys_spec = candidate(0)
-            ranks_var, ranks_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name, "keys", keys_spec, "ranks", ranks_spec
-            )
-            extent = keys_spec.items_per_thread if keys_spec is not None else None
-            if extent is None and ranks_spec is not None:
-                extent = ranks_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            key_dtype = keys_spec.dtype if keys_spec is not None else None
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._resolve_var_dtype(keys_var)
-            if key_dtype is None:
-                key_dtype = factory_value("dtype")
-            key_dtype = validate_integer_key_dtype(key_dtype)
-            infer_kwarg("dtype", key_dtype)
-            if key_dtype is not None and keys_var is not None:
-                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
-            if ranks_spec is not None and ranks_var is not None:
-                if ranks_spec.dtype is not None and not is_int32_dtype(
-                    ranks_spec.dtype
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "coop single-phase 'radix_rank' requires ranks dtype int32."
-                    )
-                self._record_inferred_thread_data_dtype(
-                    ranks_var, numba_mlir_types.int32
-                )
-            if factory_kwargs.get("exclusive_digit_prefix"):
-                prefix_var, prefix_spec = candidate(2)
-                if prefix_spec is None or prefix_var is None:
-                    raise CoopSinglePhaseRewriteError(
-                        "radix_rank exclusive_digit_prefix must be a local array"
-                    )
-                if prefix_spec.dtype is not None and not is_int32_dtype(
-                    prefix_spec.dtype
-                ):
-                    raise CoopSinglePhaseRewriteError(
-                        "radix_rank exclusive_digit_prefix dtype must be int32"
-                    )
-                self._record_inferred_thread_data_dtype(
-                    prefix_var, numba_mlir_types.int32
-                )
-            return
-        if op_name in {"exchange", "warp_exchange"}:
-            input_var, input_spec = candidate(0)
-            second_var, second_spec = candidate(1)
-            if input_spec is None and second_spec is None:
-                return
-            output_var = second_var
-            output_spec = second_spec
-            rank_spec = None
-            valid_flag_spec = None
-            uses_ranks = False
-            uses_valid_flags = False
-            out_of_place = True
-            if op_name == "exchange":
-                from .._lowering._exchange import (
-                    BlockExchangeType,
-                    _normalize_block_exchange_type,
-                )
-
-                exchange_type = _normalize_block_exchange_type(
-                    factory_kwargs.get(
-                        "block_exchange_type", BlockExchangeType.StripedToBlocked
-                    )
-                )
-                uses_ranks = exchange_type in {
-                    BlockExchangeType.ScatterToBlocked,
-                    BlockExchangeType.ScatterToStriped,
-                    BlockExchangeType.ScatterToStripedGuarded,
-                    BlockExchangeType.ScatterToStripedFlagged,
-                }
-                uses_valid_flags = (
-                    exchange_type == BlockExchangeType.ScatterToStripedFlagged
-                )
-                out_of_place = (
-                    not uses_ranks
-                    and len(runtime_args) == 2
-                    or (
-                        uses_ranks
-                        and (not uses_valid_flags)
-                        and (len(runtime_args) == 3)
-                    )
-                    or (uses_valid_flags and len(runtime_args) == 4)
-                )
-                if uses_ranks:
-                    _, rank_spec = candidate(2 if out_of_place else 1)
-                if uses_valid_flags:
-                    _, valid_flag_spec = candidate(3 if out_of_place else 2)
-            else:
-                from .._lowering._exchange import (
-                    WarpExchangeType,
-                    _normalize_warp_exchange_type,
-                )
-
-                exchange_type = _normalize_warp_exchange_type(
-                    factory_kwargs.get(
-                        "warp_exchange_type", WarpExchangeType.StripedToBlocked
-                    )
-                )
-                uses_ranks = exchange_type == WarpExchangeType.ScatterToStriped
-                out_of_place = not uses_ranks or len(runtime_args) == 3
-                if uses_ranks:
-                    _, rank_spec = candidate(2 if out_of_place else 1)
-            if not out_of_place:
-                output_var = None
-                output_spec = None
-            self._require_matching_items_per_thread(
-                op_name, "input", input_spec, "output", output_spec
-            )
-            self._require_matching_items_per_thread(
-                op_name, "input", input_spec, "ranks", rank_spec
-            )
-            self._require_matching_items_per_thread(
-                op_name, "input", input_spec, "valid_flags", valid_flag_spec
-            )
-            if (
-                input_spec is not None
-                and output_spec is not None
-                and (input_spec.dtype is not None)
-                and (output_spec.dtype is not None)
-                and (input_spec.dtype != output_spec.dtype)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "coop exchange requires input/output arrays to have matching dtype."
-                )
-            inferred_dtype = input_spec.dtype if input_spec is not None else None
-            if inferred_dtype is None and output_spec is not None:
-                inferred_dtype = output_spec.dtype
-            if inferred_dtype is None:
-                inferred_dtype = factory_value("dtype")
-            extent = input_spec.items_per_thread if input_spec is not None else None
-            if extent is None and output_spec is not None:
-                extent = output_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            infer_kwarg("dtype", inferred_dtype)
-            if inferred_dtype is not None:
-                if input_var is not None:
-                    self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
-                if output_var is not None:
-                    self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
-            return
-        if op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
-            keys_var, keys_spec = candidate(0)
-            if keys_spec is None:
-                return
-            infer_kwarg("items_per_thread", keys_spec.items_per_thread)
-            key_dtype = keys_spec.dtype
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._resolve_var_dtype(keys_var)
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._infer_thread_data_dtype_from_provenance_writes(
-                    keys_var
-                )
-            if key_dtype is None:
-                key_dtype = factory_value("dtype")
-            infer_kwarg("dtype", key_dtype)
-            if key_dtype is not None and keys_var is not None:
-                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
-            return
-        if op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
-            keys_var, keys_spec = candidate(0)
-            values_var, values_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name,
-                "keys",
-                keys_spec,
-                "values",
-                values_spec,
-            )
-            extent = keys_spec.items_per_thread if keys_spec is not None else None
-            if extent is None and values_spec is not None:
-                extent = values_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            key_dtype = keys_spec.dtype if keys_spec is not None else None
-            value_dtype = values_spec.dtype if values_spec is not None else None
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._resolve_var_dtype(keys_var)
-            if value_dtype is None and values_var is not None:
-                value_dtype = self._resolve_var_dtype(values_var)
-            if key_dtype is None and keys_var is not None:
-                key_dtype = self._infer_thread_data_dtype_from_provenance_writes(
-                    keys_var
-                )
-            if value_dtype is None and values_var is not None:
-                value_dtype = self._infer_thread_data_dtype_from_provenance_writes(
-                    values_var
-                )
-            if key_dtype is None:
-                key_dtype = factory_value("keys")
-            if value_dtype is None:
-                value_dtype = factory_value("values")
-            infer_kwarg("keys", key_dtype)
-            infer_kwarg("values", value_dtype)
-            if key_dtype is not None and keys_var is not None:
-                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
-            if value_dtype is not None and values_var is not None:
-                self._record_inferred_thread_data_dtype(values_var, value_dtype)
-            return
-        if op_name == "shuffle":
-            if len(runtime_args) == 1:
-                value = runtime_args[0]
-                inferred_dtype = (
-                    self._resolve_var_dtype(value)
-                    if isinstance(value, ir.Var)
-                    else None
-                )
-                infer_kwarg("dtype", inferred_dtype or factory_value("dtype"))
-                return
-            input_var, input_spec = candidate(0)
-            output_var, output_spec = candidate(1)
-            self._require_matching_items_per_thread(
-                op_name, "input", input_spec, "output", output_spec
-            )
-            extent = input_spec.items_per_thread if input_spec is not None else None
-            if extent is None and output_spec is not None:
-                extent = output_spec.items_per_thread
-            infer_kwarg("items_per_thread", extent)
-            inferred_dtype = input_spec.dtype if input_spec is not None else None
-            if inferred_dtype is None and output_spec is not None:
-                inferred_dtype = output_spec.dtype
-            if inferred_dtype is None and input_var is not None:
-                inferred_dtype = self._resolve_var_dtype(input_var)
-            infer_kwarg("dtype", inferred_dtype or factory_value("dtype"))
-            if inferred_dtype is not None:
-                if input_var is not None:
-                    self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
-                if output_var is not None:
-                    self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
+            self._infer_scan_payload(inference)
+        elif operation == "adjacent_difference":
+            self._infer_adjacent_difference_payload(inference)
+        elif operation == "discontinuity":
+            self._infer_discontinuity_payload(inference)
+        elif operation in {"load", "store", "warp_load", "warp_store"}:
+            self._infer_load_store_payload(inference)
+        elif operation in {
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
+        }:
+            self._infer_radix_payload(inference)
+        elif operation in {"exchange", "warp_exchange"}:
+            self._infer_exchange_payload(inference)
+        elif operation in {
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
+        }:
+            self._infer_merge_sort_payload(inference)
+        elif operation == "shuffle":
+            self._infer_shuffle_payload(inference)
 
 
 __all__ = ["_PayloadRewrite"]

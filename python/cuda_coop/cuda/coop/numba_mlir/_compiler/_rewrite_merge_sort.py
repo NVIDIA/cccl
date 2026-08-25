@@ -8,6 +8,7 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
@@ -20,6 +21,64 @@ from ._rewrite_support import (
 
 
 class _MergeSortRewrite:
+    def _infer_merge_sort_payload(self, inference: PayloadInference) -> None:
+        """Infer Merge Sort key/value payload shape and dtype metadata."""
+
+        if inference.op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+            keys_var, keys_spec = inference.candidate(0)
+            if keys_spec is None:
+                return
+            inference.infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._infer_thread_data_dtype_from_provenance_writes(
+                    keys_var
+                )
+            if key_dtype is None:
+                key_dtype = inference.factory_value("dtype")
+            inference.infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+
+        keys_var, keys_spec = inference.candidate(0)
+        values_var, values_spec = inference.candidate(1)
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "keys",
+            keys_spec,
+            "values",
+            values_spec,
+        )
+        extent = keys_spec.items_per_thread if keys_spec is not None else None
+        if extent is None and values_spec is not None:
+            extent = values_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+        key_dtype = keys_spec.dtype if keys_spec is not None else None
+        value_dtype = values_spec.dtype if values_spec is not None else None
+        if key_dtype is None and keys_var is not None:
+            key_dtype = self._resolve_var_dtype(keys_var)
+        if value_dtype is None and values_var is not None:
+            value_dtype = self._resolve_var_dtype(values_var)
+        if key_dtype is None and keys_var is not None:
+            key_dtype = self._infer_thread_data_dtype_from_provenance_writes(keys_var)
+        if value_dtype is None and values_var is not None:
+            value_dtype = self._infer_thread_data_dtype_from_provenance_writes(
+                values_var
+            )
+        if key_dtype is None:
+            key_dtype = inference.factory_value("keys")
+        if value_dtype is None:
+            value_dtype = inference.factory_value("values")
+        inference.infer_kwarg("keys", key_dtype)
+        inference.infer_kwarg("values", value_dtype)
+        if key_dtype is not None and keys_var is not None:
+            self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+        if value_dtype is not None and values_var is not None:
+            self._record_inferred_thread_data_dtype(values_var, value_dtype)
+
     @staticmethod
     def _lossless_merge_sort_sentinel(value: object, key_dtype: object) -> object:
         from ._parameters import _NUMBA_MLIR_DTYPE_NAMES

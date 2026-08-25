@@ -14,12 +14,15 @@ from ._rewrite_arguments import _ArgumentRewrite
 from ._rewrite_discontinuity import _DiscontinuityRewrite
 from ._rewrite_exchange import _ExchangeRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
+from ._rewrite_histogram import _HistogramRewrite
 from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
+from ._rewrite_load_store import _LoadStoreRewrite
 from ._rewrite_merge_sort import _MergeSortRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
 from ._rewrite_radix import _RadixRewrite
+from ._rewrite_reduce import _ReduceRewrite
 from ._rewrite_run_length_decode import _RunLengthDecodeRewrite
 from ._rewrite_scan import _ScanRewrite
 from ._rewrite_shuffle import _ShuffleRewrite
@@ -50,12 +53,15 @@ class CoopSinglePhaseRewrite(
     _RadixRewrite,
     _TopKRewrite,
     _RunLengthDecodeRewrite,
+    _HistogramRewrite,
     _GroupMetadataRewrite,
+    _ReduceRewrite,
     _ScanRewrite,
     _AdjacentDifferenceRewrite,
     _DiscontinuityRewrite,
     _ShuffleRewrite,
     _ExchangeRewrite,
+    _LoadStoreRewrite,
     _PayloadRewrite,
     _InvocableRewrite,
     _StorageRewrite,

@@ -8,12 +8,49 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
+    ir,
 )
 
 
 class _ShuffleRewrite:
+    def _infer_shuffle_payload(self, inference: PayloadInference) -> None:
+        """Infer scalar or array shuffle payload metadata."""
+
+        if len(inference.runtime_args) == 1:
+            value = inference.runtime_args[0]
+            inferred_dtype = (
+                self._resolve_var_dtype(value) if isinstance(value, ir.Var) else None
+            )
+            inference.infer_kwarg(
+                "dtype", inferred_dtype or inference.factory_value("dtype")
+            )
+            return
+        input_var, input_spec = inference.candidate(0)
+        output_var, output_spec = inference.candidate(1)
+        self._require_matching_items_per_thread(
+            inference.op_name, "input", input_spec, "output", output_spec
+        )
+        extent = input_spec.items_per_thread if input_spec is not None else None
+        if extent is None and output_spec is not None:
+            extent = output_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+        inferred_dtype = input_spec.dtype if input_spec is not None else None
+        if inferred_dtype is None and output_spec is not None:
+            inferred_dtype = output_spec.dtype
+        if inferred_dtype is None and input_var is not None:
+            inferred_dtype = self._resolve_var_dtype(input_var)
+        inference.infer_kwarg(
+            "dtype", inferred_dtype or inference.factory_value("dtype")
+        )
+        if inferred_dtype is not None:
+            if input_var is not None:
+                self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
+            if output_var is not None:
+                self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
+
     def _finalize_shuffle_factory_kwargs(
         self,
         runtime_arg_count: int,

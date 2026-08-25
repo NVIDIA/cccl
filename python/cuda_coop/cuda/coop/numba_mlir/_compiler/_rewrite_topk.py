@@ -8,6 +8,7 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
@@ -19,6 +20,85 @@ from ._rewrite_support import (
 
 
 class _TopKRewrite:
+    def _infer_topk_payload(self, inference: PayloadInference) -> None:
+        """Infer TopK payload shape and dtype factory arguments."""
+
+        common_operation = inference.portable_op_name
+
+        def validate_common_key_dtype(dtype):
+            if common_operation is None or dtype is None:
+                return dtype
+            from ._parameters import _validate_common_integer_key_dtype
+
+            try:
+                return _validate_common_integer_key_dtype(
+                    dtype,
+                    operation=common_operation,
+                )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        def validate_common_value_dtype(dtype):
+            if common_operation is None or dtype is None:
+                return dtype
+            from ._parameters import _validate_common_numeric_dtype
+
+            try:
+                return _validate_common_numeric_dtype(
+                    dtype,
+                    operation=common_operation,
+                    parameter="value",
+                )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        if inference.op_name in {"topk_max_keys", "topk_min_keys"}:
+            key_var, key_spec = inference.candidate(0)
+            if key_spec is not None:
+                inference.infer_kwarg("items_per_thread", key_spec.items_per_thread)
+            key_dtype = key_spec.dtype if key_spec is not None else None
+            if key_dtype is None and key_var is not None:
+                key_dtype = self._resolve_var_dtype(key_var)
+            if key_dtype is None:
+                key_dtype = inference.factory_value("dtype")
+            key_dtype = validate_common_key_dtype(key_dtype)
+            inference.infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and key_var is not None:
+                self._record_inferred_thread_data_dtype(key_var, key_dtype)
+            return
+
+        key_var, key_spec = inference.candidate(0)
+        value_var, value_spec = inference.candidate(1)
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "key",
+            key_spec,
+            "value",
+            value_spec,
+        )
+        extent = key_spec.items_per_thread if key_spec is not None else None
+        if extent is None and value_spec is not None:
+            extent = value_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+        key_dtype = key_spec.dtype if key_spec is not None else None
+        value_dtype = value_spec.dtype if value_spec is not None else None
+        if key_dtype is None and key_var is not None:
+            key_dtype = self._resolve_var_dtype(key_var)
+        if value_dtype is None and value_var is not None:
+            value_dtype = self._resolve_var_dtype(value_var)
+        if key_dtype is None:
+            key_dtype = inference.factory_value("keys")
+        if value_dtype is None:
+            value_dtype = inference.factory_value("values")
+        key_dtype = validate_common_key_dtype(key_dtype)
+        value_dtype = validate_common_value_dtype(value_dtype)
+        inference.infer_kwarg("keys", key_dtype)
+        inference.infer_kwarg("values", value_dtype)
+        if key_dtype is not None and key_var is not None:
+            self._record_inferred_thread_data_dtype(key_var, key_dtype)
+        if value_dtype is not None and value_var is not None:
+            self._record_inferred_thread_data_dtype(value_var, value_dtype)
+
     def _validate_topk_runtime_controls(
         self,
         *,

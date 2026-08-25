@@ -8,13 +8,107 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
+    _dtype_values_match,
     ir,
 )
 
 
 class _DiscontinuityRewrite:
+    def _infer_discontinuity_payload(self, inference: PayloadInference) -> None:
+        """Infer discontinuity input and flag payload metadata."""
+
+        from .._lowering._discontinuity import BlockDiscontinuityType
+
+        mode = BlockDiscontinuityType(
+            inference.factory_kwargs.get(
+                "block_discontinuity_type",
+                BlockDiscontinuityType.HEADS,
+            )
+        )
+        input_var, input_spec = inference.candidate(0)
+        head_var, head_spec = inference.candidate(1)
+        tail_var, tail_spec = (
+            inference.candidate(2)
+            if mode is BlockDiscontinuityType.HEADS_AND_TAILS
+            else (None, None)
+        )
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "input",
+            input_spec,
+            "head flags",
+            head_spec,
+        )
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "input",
+            input_spec,
+            "tail flags",
+            tail_spec,
+        )
+        extent = input_spec.items_per_thread if input_spec is not None else None
+        if extent is None and head_spec is not None:
+            extent = head_spec.items_per_thread
+        if extent is None and tail_spec is not None:
+            extent = tail_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+
+        inferred_dtype = input_spec.dtype if input_spec is not None else None
+        if inferred_dtype is None and input_var is not None:
+            inferred_dtype = self._resolve_var_dtype(input_var)
+        if inferred_dtype is None:
+            inferred_dtype = inference.factory_value("dtype")
+        inference.infer_kwarg("dtype", inferred_dtype)
+
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        flag_dtype = numba_mlir_types.int32
+        inference.infer_kwarg("flag_dtype", flag_dtype)
+        for flag_name, flag_var, flag_spec in (
+            ("head", head_var, head_spec),
+            ("tail", tail_var, tail_spec),
+        ):
+            if flag_var is None:
+                continue
+            actual_flag_dtype = flag_spec.dtype if flag_spec is not None else None
+            if actual_flag_dtype is None:
+                actual_flag_dtype = self._resolve_var_dtype(flag_var)
+            if actual_flag_dtype is not None and not _dtype_values_match(
+                actual_flag_dtype,
+                flag_dtype,
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop discontinuity {flag_name} flags must use int32 dtype."
+                )
+            self._record_inferred_thread_data_dtype(flag_var, flag_dtype)
+        if inferred_dtype is not None and input_var is not None:
+            self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
+
+        boundary_index = 3 if mode is BlockDiscontinuityType.HEADS_AND_TAILS else 2
+        for boundary_name in (
+            "tile_predecessor_item",
+            "tile_successor_item",
+        ):
+            if not inference.factory_kwargs.get(boundary_name):
+                continue
+            if boundary_index >= len(inference.runtime_args):
+                break
+            boundary_dtype = self._resolve_var_dtype(
+                inference.runtime_args[boundary_index]
+            )
+            if (
+                inferred_dtype is not None
+                and boundary_dtype is not None
+                and not _dtype_values_match(inferred_dtype, boundary_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop discontinuity boundary dtype must match the input dtype."
+                )
+            boundary_index += 1
+
     def _finalize_discontinuity_factory_kwargs(
         self,
         runtime_arg_count: int,

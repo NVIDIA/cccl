@@ -8,6 +8,7 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
     _dtype_values_match,
@@ -16,6 +17,111 @@ from ._rewrite_support import (
 
 
 class _ExchangeRewrite:
+    def _infer_exchange_payload(self, inference: PayloadInference) -> None:
+        """Infer block- or warp-exchange payload shape and dtype metadata."""
+
+        input_var, input_spec = inference.candidate(0)
+        second_var, second_spec = inference.candidate(1)
+        if input_spec is None and second_spec is None:
+            return
+        output_var = second_var
+        output_spec = second_spec
+        rank_spec = None
+        valid_flag_spec = None
+        uses_ranks = False
+        uses_valid_flags = False
+        out_of_place = True
+        if inference.op_name == "exchange":
+            from .._lowering._exchange import (
+                BlockExchangeType,
+                _normalize_block_exchange_type,
+            )
+
+            exchange_type = _normalize_block_exchange_type(
+                inference.factory_kwargs.get(
+                    "block_exchange_type", BlockExchangeType.StripedToBlocked
+                )
+            )
+            uses_ranks = exchange_type in {
+                BlockExchangeType.ScatterToBlocked,
+                BlockExchangeType.ScatterToStriped,
+                BlockExchangeType.ScatterToStripedGuarded,
+                BlockExchangeType.ScatterToStripedFlagged,
+            }
+            uses_valid_flags = (
+                exchange_type == BlockExchangeType.ScatterToStripedFlagged
+            )
+            out_of_place = (
+                not uses_ranks
+                and len(inference.runtime_args) == 2
+                or (
+                    uses_ranks
+                    and (not uses_valid_flags)
+                    and (len(inference.runtime_args) == 3)
+                )
+                or (uses_valid_flags and len(inference.runtime_args) == 4)
+            )
+            if uses_ranks:
+                _, rank_spec = inference.candidate(2 if out_of_place else 1)
+            if uses_valid_flags:
+                _, valid_flag_spec = inference.candidate(3 if out_of_place else 2)
+        else:
+            from .._lowering._exchange import (
+                WarpExchangeType,
+                _normalize_warp_exchange_type,
+            )
+
+            exchange_type = _normalize_warp_exchange_type(
+                inference.factory_kwargs.get(
+                    "warp_exchange_type", WarpExchangeType.StripedToBlocked
+                )
+            )
+            uses_ranks = exchange_type == WarpExchangeType.ScatterToStriped
+            out_of_place = not uses_ranks or len(inference.runtime_args) == 3
+            if uses_ranks:
+                _, rank_spec = inference.candidate(2 if out_of_place else 1)
+        if not out_of_place:
+            output_var = None
+            output_spec = None
+        self._require_matching_items_per_thread(
+            inference.op_name, "input", input_spec, "output", output_spec
+        )
+        self._require_matching_items_per_thread(
+            inference.op_name, "input", input_spec, "ranks", rank_spec
+        )
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "input",
+            input_spec,
+            "valid_flags",
+            valid_flag_spec,
+        )
+        if (
+            input_spec is not None
+            and output_spec is not None
+            and (input_spec.dtype is not None)
+            and (output_spec.dtype is not None)
+            and (input_spec.dtype != output_spec.dtype)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "coop exchange requires input/output arrays to have matching dtype."
+            )
+        inferred_dtype = input_spec.dtype if input_spec is not None else None
+        if inferred_dtype is None and output_spec is not None:
+            inferred_dtype = output_spec.dtype
+        if inferred_dtype is None:
+            inferred_dtype = inference.factory_value("dtype")
+        extent = input_spec.items_per_thread if input_spec is not None else None
+        if extent is None and output_spec is not None:
+            extent = output_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+        inference.infer_kwarg("dtype", inferred_dtype)
+        if inferred_dtype is not None:
+            if input_var is not None:
+                self._record_inferred_thread_data_dtype(input_var, inferred_dtype)
+            if output_var is not None:
+                self._record_inferred_thread_data_dtype(output_var, inferred_dtype)
+
     def _finalize_exchange_factory_kwargs(
         self,
         runtime_args: list[ir.Var],

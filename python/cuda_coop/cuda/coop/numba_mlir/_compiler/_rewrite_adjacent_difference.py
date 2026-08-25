@@ -8,12 +8,78 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
+    _dtype_values_match,
 )
 
 
 class _AdjacentDifferenceRewrite:
+    def _infer_adjacent_difference_payload(self, inference: PayloadInference) -> None:
+        """Infer adjacent-difference payload shape and dtype metadata."""
+
+        input_var, input_spec = inference.candidate(0)
+        output_var, output_spec = inference.candidate(1)
+        self._require_matching_items_per_thread(
+            inference.op_name,
+            "input",
+            input_spec,
+            "output",
+            output_spec,
+        )
+        extent = input_spec.items_per_thread if input_spec is not None else None
+        if extent is None and output_spec is not None:
+            extent = output_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+
+        input_dtype = input_spec.dtype if input_spec is not None else None
+        output_dtype = output_spec.dtype if output_spec is not None else None
+        if input_dtype is None and input_var is not None:
+            input_dtype = self._resolve_var_dtype(input_var)
+        if output_dtype is None and output_var is not None:
+            output_dtype = self._resolve_var_dtype(output_var)
+        if (
+            input_dtype is not None
+            and output_dtype is not None
+            and not _dtype_values_match(input_dtype, output_dtype)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "coop adjacent_difference input and output dtypes must match."
+            )
+        inferred_dtype = input_dtype
+        if inferred_dtype is None:
+            inferred_dtype = output_dtype
+        if inferred_dtype is None:
+            inferred_dtype = inference.factory_value("dtype")
+        inference.infer_kwarg("dtype", inferred_dtype)
+        for payload_var in (input_var, output_var):
+            if inferred_dtype is not None and payload_var is not None:
+                self._record_inferred_thread_data_dtype(
+                    payload_var,
+                    inferred_dtype,
+                )
+
+        boundary_index = 2 + int(bool(inference.factory_kwargs.get("valid_items")))
+        boundary_name = None
+        if inference.factory_kwargs.get("tile_predecessor_item"):
+            boundary_name = "tile_predecessor_item"
+        elif inference.factory_kwargs.get("tile_successor_item"):
+            boundary_name = "tile_successor_item"
+        if boundary_name is not None and boundary_index < len(inference.runtime_args):
+            boundary_dtype = self._resolve_var_dtype(
+                inference.runtime_args[boundary_index]
+            )
+            if (
+                inferred_dtype is not None
+                and boundary_dtype is not None
+                and not _dtype_values_match(inferred_dtype, boundary_dtype)
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "coop adjacent_difference boundary dtype must match "
+                    "the input dtype."
+                )
+
     def _finalize_adjacent_difference_factory_kwargs(
         self,
         runtime_arg_count: int,

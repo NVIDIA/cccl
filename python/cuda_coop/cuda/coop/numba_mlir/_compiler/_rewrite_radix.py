@@ -8,6 +8,7 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
@@ -22,6 +23,138 @@ from ._rewrite_support import (
 
 
 class _RadixRewrite:
+    def _infer_radix_payload(self, inference: PayloadInference) -> None:
+        """Infer radix key/value payload metadata and rank output types."""
+
+        def validate_integer_key_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._parameters import _validate_common_integer_key_dtype
+
+            try:
+                return _validate_common_integer_key_dtype(
+                    dtype,
+                    operation=(inference.portable_op_name or inference.op_name),
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        def validate_numeric_value_dtype(dtype):
+            if dtype is None:
+                return None
+            from ._parameters import _validate_common_numeric_dtype
+
+            try:
+                return _validate_common_numeric_dtype(
+                    dtype,
+                    operation=(inference.portable_op_name or inference.op_name),
+                    parameter="value",
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        if inference.op_name in {
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+        }:
+            keys_var, keys_spec = inference.candidate(0)
+            if keys_spec is None:
+                return
+            inference.infer_kwarg("items_per_thread", keys_spec.items_per_thread)
+            key_dtype = keys_spec.dtype
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if key_dtype is None:
+                key_dtype = inference.factory_value("dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            inference.infer_kwarg("dtype", key_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            return
+
+        if inference.op_name in {
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
+        }:
+            keys_var, keys_spec = inference.candidate(0)
+            values_var, values_spec = inference.candidate(1)
+            self._require_matching_items_per_thread(
+                inference.op_name,
+                "keys",
+                keys_spec,
+                "values",
+                values_spec,
+            )
+            extent = keys_spec.items_per_thread if keys_spec is not None else None
+            if extent is None and values_spec is not None:
+                extent = values_spec.items_per_thread
+            inference.infer_kwarg("items_per_thread", extent)
+            key_dtype = keys_spec.dtype if keys_spec is not None else None
+            value_dtype = values_spec.dtype if values_spec is not None else None
+            if key_dtype is None and keys_var is not None:
+                key_dtype = self._resolve_var_dtype(keys_var)
+            if value_dtype is None and values_var is not None:
+                value_dtype = self._resolve_var_dtype(values_var)
+            if key_dtype is None:
+                key_dtype = inference.factory_value("key_dtype")
+            if value_dtype is None:
+                value_dtype = inference.factory_value("value_dtype")
+            key_dtype = validate_integer_key_dtype(key_dtype)
+            value_dtype = validate_numeric_value_dtype(value_dtype)
+            inference.infer_kwarg("key_dtype", key_dtype)
+            inference.infer_kwarg("value_dtype", value_dtype)
+            if key_dtype is not None and keys_var is not None:
+                self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+            if value_dtype is not None and values_var is not None:
+                self._record_inferred_thread_data_dtype(values_var, value_dtype)
+            return
+
+        from numba_cuda_mlir import types as numba_mlir_types
+
+        def is_int32_dtype(dtype) -> bool:
+            if dtype == numba_mlir_types.int32:
+                return True
+            try:
+                return np.dtype(dtype) == np.dtype(np.int32)
+            except (TypeError, ValueError):
+                return False
+
+        keys_var, keys_spec = inference.candidate(0)
+        ranks_var, ranks_spec = inference.candidate(1)
+        self._require_matching_items_per_thread(
+            inference.op_name, "keys", keys_spec, "ranks", ranks_spec
+        )
+        extent = keys_spec.items_per_thread if keys_spec is not None else None
+        if extent is None and ranks_spec is not None:
+            extent = ranks_spec.items_per_thread
+        inference.infer_kwarg("items_per_thread", extent)
+        key_dtype = keys_spec.dtype if keys_spec is not None else None
+        if key_dtype is None and keys_var is not None:
+            key_dtype = self._resolve_var_dtype(keys_var)
+        if key_dtype is None:
+            key_dtype = inference.factory_value("dtype")
+        key_dtype = validate_integer_key_dtype(key_dtype)
+        inference.infer_kwarg("dtype", key_dtype)
+        if key_dtype is not None and keys_var is not None:
+            self._record_inferred_thread_data_dtype(keys_var, key_dtype)
+        if ranks_spec is not None and ranks_var is not None:
+            if ranks_spec.dtype is not None and not is_int32_dtype(ranks_spec.dtype):
+                raise CoopSinglePhaseRewriteError(
+                    "coop single-phase 'radix_rank' requires ranks dtype int32."
+                )
+            self._record_inferred_thread_data_dtype(ranks_var, numba_mlir_types.int32)
+        if inference.factory_kwargs.get("exclusive_digit_prefix"):
+            prefix_var, prefix_spec = inference.candidate(2)
+            if prefix_spec is None or prefix_var is None:
+                raise CoopSinglePhaseRewriteError(
+                    "radix_rank exclusive_digit_prefix must be a local array"
+                )
+            if prefix_spec.dtype is not None and not is_int32_dtype(prefix_spec.dtype):
+                raise CoopSinglePhaseRewriteError(
+                    "radix_rank exclusive_digit_prefix dtype must be int32"
+                )
+            self._record_inferred_thread_data_dtype(prefix_var, numba_mlir_types.int32)
+
     def _finalize_radix_rank_factory_kwargs(
         self,
         *,
