@@ -476,12 +476,19 @@ public:
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin()
+  _CCCL_HOST_DEVICE iterator begin() const
   {
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      if (get_extent(i) == 0)
+      {
+        return iterator(*this, true);
+      }
+    }
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end()
+  _CCCL_HOST_DEVICE iterator end() const
   {
     return iterator(*this, true);
   }
@@ -585,6 +592,31 @@ UNITTEST("empty box<1>")
   {
     abort();
   }
+};
+
+UNITTEST("empty box<2>")
+{
+  const auto empty_first = box({7, 7}, {2, 5});
+  EXPECT(empty_first.size() == 0);
+  EXPECT(empty_first.begin() == empty_first.end());
+
+  size_t first_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_first)
+  {
+    first_count++;
+  }
+  EXPECT(first_count == 0);
+
+  const auto empty_second = box({2, 5}, {7, 7});
+  EXPECT(empty_second.size() == 0);
+  EXPECT(empty_second.begin() == empty_second.end());
+
+  size_t second_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_second)
+  {
+    second_count++;
+  }
+  EXPECT(second_count == 0);
 };
 
 UNITTEST("mix of integrals and pairs")
