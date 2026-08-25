@@ -67,12 +67,16 @@ cccl_type_info find_accum_type(const std::vector<Arg>& args)
       return val->type;
     }
   }
-  // Second: future_val_t carries explicit type info
+  // Second: future_val_t / no_init_t carry explicit type info
   for (const auto& arg : args)
   {
     if (auto* fv = std::get_if<future_val_t>(&arg))
     {
       return fv->type;
+    }
+    if (auto* ni = std::get_if<no_init_t>(&arg))
+    {
+      return ni->type;
     }
   }
   // Fallback: first input iterator's value_type
@@ -416,6 +420,12 @@ std::string CubCall::body() const
           setup_lines.push_back(
             std::format("cub::FutureValue<accum_t> {}(static_cast<accum_t*>({}));", var_name, param_name));
           cub_args.push_back(var_name);
+        }
+        else if constexpr (std::is_same_v<T, no_init_t>)
+        {
+          // Stateless tag: no wrapper parameter, only influences accum type
+          // resolution and tells CUB not to fold an initial value.
+          cub_args.push_back("cub::detail::reduce::no_init");
         }
         else if constexpr (std::is_same_v<T, cccl_value_t>)
         {

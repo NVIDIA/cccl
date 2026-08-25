@@ -994,7 +994,8 @@ cdef extern from "cccl/c/reduce.h":
         cccl_iterator_t,
         cccl_iterator_t,
         cccl_op_t,
-        cccl_value_t,
+        cccl_type_info,
+        cccl_init_kind_t,
         cccl_determinism_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
@@ -1046,7 +1047,8 @@ cdef class DeviceReduceBuildResult:
         Iterator d_in,
         Iterator d_out,
         Op op,
-        Value h_init,
+        TypeInfo init_type,
+        cccl_init_kind_t init_kind,
         cccl_determinism_t determinism,
         CommonData common_data
     ):
@@ -1064,7 +1066,8 @@ cdef class DeviceReduceBuildResult:
                 d_in.iter_data,
                 d_out.iter_data,
                 op.op_data,
-                h_init.value_data,
+                init_type.type_info,
+                init_kind,
                 determinism,
                 cc_major,
                 cc_minor,
@@ -1101,6 +1104,13 @@ cdef class DeviceReduceBuildResult:
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
+        # h_init is None for CCCL_NO_INIT builds; the C entry point ignores the
+        # init argument for those, so pass a zero-initialized value.
+        cdef cccl_value_t h_init_data
+        memset(&h_init_data, 0, sizeof(cccl_value_t))
+        if h_init is not None:
+            h_init_data = h_init.value_data
+
         with nogil:
             status = cccl_device_reduce(
                 self.build_data,
@@ -1110,7 +1120,7 @@ cdef class DeviceReduceBuildResult:
                 d_out.iter_data,
                 <uint64_t>num_items,
                 op.op_data,
-                h_init.value_data,
+                h_init_data,
                 c_stream
             )
         if status != 0:
