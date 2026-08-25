@@ -85,8 +85,13 @@ public:
     return cubin_;
   }
 
-  // Unload the current library and clean up temporary files
-  void cleanup();
+  // Unload the current library and clean up temporary files. Returns false if the
+  // module could not be unloaded, which leaves it mapped and its artifacts on disk;
+  // getLastError() says why. Depending on which stage refused, the module may already
+  // have unregistered its fatbin, in which case nothing can be run from it any more
+  // and the only thing to do with this object is call cleanup() again -- which is why
+  // a caller that cannot do that must not destroy it. See DynamicLibrary::unload().
+  bool cleanup();
 
 private:
   std::string createTempDirectory();

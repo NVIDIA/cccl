@@ -8,16 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// One module image, two handles. Loading the same library twice gives
-// two handles to ONE mapped image, and the fatbin-unregister callbacks live in
-// that image, shared. Unloading one handle therefore unregisters the fatbin out
-// from under the other handle, which is still open and still callable.
+// One module image, two handles. Loading the same library twice gives two handles to
+// ONE mapped image, and the registration the teardown calls lives in that image, shared.
+// Unloading one handle therefore unregisters the fatbin out from under the other handle,
+// which is still open and still callable.
 //
 // This does not check a requirement, it pins what happens today: registration in
 // CUDART is one-per-register with no reference count, so the loader cannot let
 // the last holder decide when to unregister without counting holders itself.
 // When that counting arrives, this test fails and says so, instead of the change
 // going unnoticed.
+//
+// One handle at a time, from one thread. Unloading the same image from two threads at
+// once is a different question, and not this test's.
 //
 // Both platforms behave the same way here, because the produced DLL names its own
 // entry point and the OS therefore runs the static initializers on the first load
@@ -35,7 +38,7 @@
 
 namespace
 {
-const char* k_source = R"(
+inline constexpr char k_source[] = R"(
 #include <cuda_runtime.h>
 #include <cuda/std/version>
 
@@ -50,8 +53,10 @@ extern "C" _CCCL_VISIBILITY_EXPORT void host_entry(int* ptr, int v)
 }
 )";
 
-// Build the module and keep it on disk, so the probe can open it twice itself.
-bool build_module(hostjit::CompilerConfig config, std::string& module_path)
+// Build the module and keep it on disk, so the probe can open it twice itself. The
+// artifacts directory is handed back for the caller to remove, since keeping the
+// module means nothing else does.
+bool build_module(hostjit::CompilerConfig config, std::string& module_path, std::string& artifacts_path)
 {
   config.enable_pch     = false;
   config.keep_artifacts = true;
@@ -62,7 +67,8 @@ bool build_module(hostjit::CompilerConfig config, std::string& module_path)
     std::fprintf(stderr, "  compile failed: %s\n", compiler.getLastError().c_str());
     return false;
   }
-  module_path = compiler.getLoadedModulePath();
+  module_path    = compiler.getLoadedModulePath();
+  artifacts_path = compiler.getArtifactsPath();
   return !module_path.empty() && std::filesystem::exists(module_path);
 }
 
@@ -70,7 +76,7 @@ bool build_module(hostjit::CompilerConfig config, std::string& module_path)
 // this probe is about what the runtime does, not about a known-good result.
 cudaError_t launch_through(hostjit::DynamicLibrary& lib, int* d_ptr, int v)
 {
-  auto host_entry = reinterpret_cast<void (*)(int*, int)>(lib.getSymbol("host_entry"));
+  const auto host_entry = reinterpret_cast<void (*)(int*, int)>(lib.getSymbol("host_entry"));
   if (!host_entry)
   {
     return cudaErrorSymbolNotFound;
@@ -101,12 +107,23 @@ bool probe_shared_image(const std::string& module_path, int* d_ptr)
     return false;
   }
 
-  first.unload();
+  // Both unloads have to be checked. The launch below says what this test is about only
+  // if the unload before it did what it was asked; a refused unload leaves the image in
+  // some other state, and whatever the launch then reports is about that instead.
+  if (!first.unload())
+  {
+    std::fprintf(stderr, "  unloading the first handle failed: %s\n", first.getLastError().c_str());
+    return false;
+  }
 
   const cudaError_t after = launch_through(second, d_ptr, 3);
   std::printf("  after unloading the first handle, the second launches: %s\n", cudaGetErrorName(after));
 
-  second.unload();
+  if (!second.unload())
+  {
+    std::fprintf(stderr, "  unloading the second handle failed: %s\n", second.getLastError().c_str());
+    return false;
+  }
   cudaGetLastError();
 
   // Today the fatbin is gone while the second handle is still open, so the
@@ -126,7 +143,7 @@ int main()
 {
   std::printf("unload-shared-image -- one module image held by two handles\n");
 
-  auto config = hostjit::detectDefaultConfig();
+  const auto config = hostjit::detectDefaultConfig();
 
   int* d_ptr = nullptr;
   if (cudaMalloc(&d_ptr, sizeof(int)) != cudaSuccess)
@@ -135,8 +152,8 @@ int main()
     return 2;
   }
 
-  std::string module_path;
-  if (!build_module(config, module_path))
+  std::string module_path, artifacts_path;
+  if (!build_module(config, module_path, artifacts_path))
   {
     cudaFree(d_ptr);
     return 2;
@@ -144,6 +161,15 @@ int main()
 
   const bool ok = probe_shared_image(module_path, d_ptr);
   cudaFree(d_ptr);
+
+  // The module was built with keep_artifacts, so that the probe could open the file
+  // itself; nothing else removes what that left behind.
+  std::error_code ec;
+  std::filesystem::remove_all(artifacts_path, ec);
+  if (ec)
+  {
+    std::fprintf(stderr, "unload-shared-image: could not remove %s: %s\n", artifacts_path.c_str(), ec.message().c_str());
+  }
 
   std::printf("unload-shared-image: %s\n", ok ? "PASS" : "FAIL");
   return ok ? 0 : 1;

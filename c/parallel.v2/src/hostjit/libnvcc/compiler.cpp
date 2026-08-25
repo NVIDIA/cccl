@@ -9,6 +9,7 @@
 #include <clang/Lex/PreprocessorOptions.h>
 #include <libnvcc/libnvcc.h>
 #include <lld/Common/Driver.h>
+#include <llvm/ADT/SmallString.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/LLVMContext.h>
@@ -22,6 +23,7 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/thread.h>
@@ -677,6 +679,30 @@ static void appendIncludePaths(std::vector<std::string>& args, const CompilerOpt
   }
 }
 
+// A library cannot be linked into a directory with a '%' in its name, and not for a reason of
+// this library's. The linker writes its output atomically: a run of '%' is appended to the
+// path, llvm::sys::fs creates a file under the model that makes, and it is renamed into place.
+// In a model every '%' stands for a character the call picks, wherever in the path it sits, so
+// one in a directory name sends that temporary file somewhere that does not exist. Refused
+// here, where the reason can be given.
+//
+// Neither of the harmless cases is checked. A '%' in the file name reaches the temporary name
+// only, and the rename produces what the caller asked for; a compilation writes through
+// clang's output backend, which opens the final path when the temporary cannot be created, so
+// it writes into such a directory anyway.
+static bool linkOutputIsWritable(const std::string& path, std::string& diagnostics)
+{
+  const llvm::StringRef directory = llvm::sys::path::parent_path(path);
+  if (!directory.contains('%'))
+  {
+    return true;
+  }
+  diagnostics = "The directory the library goes into has a '%' in its name, which the linker takes as a "
+                "placeholder while writing its output: "
+              + directory.str();
+  return false;
+}
+
 static void appendMacroDefinitions(std::vector<std::string>& args, const CompilerOptions& options)
 {
   for (const auto& [macro_name, macro_value] : options.macro_definitions)
@@ -690,6 +716,131 @@ static void appendMacroDefinitions(std::vector<std::string>& args, const Compile
       args.push_back("-D" + macro_name + "=" + macro_value);
     }
   }
+}
+
+// The -cc1 flags that name the host target and how to generate code for it. These calls
+// go to the cc1 entry point rather than the driver, so nothing here is inferred: the
+// triple does not come from the running machine, and the resource directory (below) does
+// not come from the path of the executable, this being a library and not one.
+//
+// The host architecture is x86-64 in the triple and in the CPU. aarch64 needs more than a
+// string here and is not supported by this library yet.
+static void appendHostTargetArgs(std::vector<std::string>& args)
+{
+  args.push_back("-triple");
+#ifdef _WIN32
+  args.push_back("x86_64-pc-windows-msvc");
+#else
+  args.push_back("x86_64-pc-linux-gnu");
+#endif
+  args.push_back("-emit-obj");
+  args.push_back("-target-cpu");
+  args.push_back("x86-64");
+#ifdef _WIN32
+  args.push_back("-fms-compatibility");
+  args.push_back("-fms-compatibility-version=19.40");
+#else
+  // Headers ask what GNU C they are being compiled by, and cc1 does not answer on its own.
+  args.push_back("-fgnuc-version=4.2.1");
+#endif
+  // The object goes into a shared library, so the code has to be position independent.
+  args.push_back("-mrelocation-model");
+  args.push_back("pic");
+  args.push_back("-pic-level");
+  args.push_back("2");
+}
+
+// What a CUDA host compilation adds to those: the device triple its host side pairs with,
+// the toolkit version the CUDA headers check themselves against, and variadic functions in
+// device code.
+static void appendCudaHostTargetArgs(std::vector<std::string>& args)
+{
+  appendHostTargetArgs(args);
+  args.push_back("-aux-triple");
+  args.push_back("nvptx64-nvidia-cuda");
+  args.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
+  args.push_back("-fcuda-allow-variadic-functions");
+  // A static or global object with a destructor is scheduled for exit by a call the compiler
+  // emits, and for the MSVC ABI that call is atexit -- the image's, which holds the fatbin
+  // unregister and nothing else. The two would then fight over one registration, and the
+  // loser is dropped silently. Nothing in the source names atexit, so the rename in the
+  // force-included header cannot catch it; this diagnostic can. On ELF the same object fails
+  // the link, on an undefined __cxa_atexit, which does not say why.
+  //
+  // It belongs here, with the arguments every host compilation shares, because a precompiled
+  // header is built by one call and the code by another, and the second does not diagnose
+  // what it read from the header.
+  args.push_back("-Werror=exit-time-destructors");
+}
+
+// PTX version floor is 7.8. Some generated device code uses features added in PTX 7.6
+// (e.g. `bmsk`), so older versions can fail to assemble even on sm_75/sm_80.
+static int ptxVersionFor(int sm_version)
+{
+  if (sm_version >= 120)
+  {
+    return 87;
+  }
+  if (sm_version >= 100)
+  {
+    return 85;
+  }
+  if (sm_version >= 90)
+  {
+    return 80;
+  }
+  return 78;
+}
+
+// The same for the device side: the device triple with the host one beside it, the GPU to
+// generate for, and libdevice, which supplies the math builtins the device code calls.
+static void appendDeviceTargetArgs(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  args.push_back("-triple");
+  args.push_back("nvptx64-nvidia-cuda");
+  args.push_back("-aux-triple");
+#ifdef _WIN32
+  args.push_back("x86_64-pc-windows-msvc");
+#else
+  args.push_back("x86_64-pc-linux-gnu");
+#endif
+  args.push_back("-S");
+  args.push_back("-aux-target-cpu");
+  args.push_back("x86-64");
+  args.push_back("-fcuda-is-device");
+  args.push_back("-fcuda-allow-variadic-functions");
+#ifdef _WIN32
+  args.push_back("-fms-compatibility");
+  args.push_back("-fms-compatibility-version=19.40");
+#else
+  args.push_back("-fgnuc-version=4.2.1");
+#endif
+  args.push_back("-mlink-builtin-bitcode");
+  args.push_back(options.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+  args.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
+  args.push_back("-target-cpu");
+  args.push_back("sm_" + std::to_string(options.sm_version));
+  args.push_back("-target-feature");
+  args.push_back("+ptx" + std::to_string(ptxVersionFor(options.sm_version)));
+}
+
+// Where a CUDA compilation, host or device, looks for headers. There is no system include
+// path in it: the stubs directory stands in for the C library headers the compiled program
+// is not allowed to reach, and what the caller asked for comes last.
+static void appendCudaIncludeArgs(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  args.push_back("-resource-dir");
+  args.push_back(CLANG_RESOURCE_DIR);
+  args.push_back("-internal-isystem");
+  args.push_back(options.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
+  args.push_back("-internal-isystem");
+  args.push_back(options.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : options.clang_headers_path);
+  appendSystemIncludePaths(args, options);
+  args.push_back("-internal-isystem");
+  args.push_back(options.cuda_toolkit_path + "/include");
+  args.push_back("-include");
+  args.push_back(options.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+  appendIncludePaths(args, options);
 }
 
 #ifdef _WIN32
@@ -909,72 +1060,18 @@ public:
     std::string temp_dir    = std::filesystem::path(output_ptx).parent_path().string();
     std::string source_file = temp_dir + "/" + input_file;
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
-
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
-    arg_strings.push_back("-triple");
-    arg_strings.push_back("nvptx64-nvidia-cuda");
-    arg_strings.push_back("-aux-triple");
-#ifdef _WIN32
-    arg_strings.push_back("x86_64-pc-windows-msvc");
-#else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
-#endif
-    arg_strings.push_back("-S");
-    arg_strings.push_back("-aux-target-cpu");
-    arg_strings.push_back("x86-64");
-    arg_strings.push_back("-fcuda-is-device");
-    arg_strings.push_back("-fcuda-allow-variadic-functions");
-#ifdef _WIN32
-    arg_strings.push_back("-fms-compatibility");
-    arg_strings.push_back("-fms-compatibility-version=19.40");
-#else
-    arg_strings.push_back("-fgnuc-version=4.2.1");
-#endif
-    arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
-    arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-    arg_strings.push_back("-target-cpu");
-    arg_strings.push_back("sm_" + std::to_string(config.sm_version));
-    arg_strings.push_back("-target-feature");
-    arg_strings.push_back("+ptx" + std::to_string(ptx_version));
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
-    arg_strings.push_back("-include");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
-
-    appendIncludePaths(arg_strings, config);
+    appendDeviceTargetArgs(arg_strings, config);
+    appendCudaIncludeArgs(arg_strings, config);
 
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
 
     std::vector<std::string> bitcode_files_to_link = config.device_bitcode_files;
+    // The same version the invocation above was given; the target machine below is built by
+    // hand rather than by cc1 and has to be told separately.
+    const int ptx_version = ptxVersionFor(config.sm_version);
 
     appendMacroDefinitions(arg_strings, config);
 
@@ -1310,69 +1407,13 @@ public:
       return result;
     }
 
-    std::string input_file   = input_name.empty() ? std::string("input.cu") : input_name;
-    std::string source_file  = temp_dir + "/" + input_file;
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    std::string input_file  = input_name.empty() ? std::string("input.cu") : input_name;
+    std::string source_file = temp_dir + "/" + input_file;
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
-    arg_strings.push_back("-triple");
-    arg_strings.push_back("nvptx64-nvidia-cuda");
-    arg_strings.push_back("-aux-triple");
-#ifdef _WIN32
-    arg_strings.push_back("x86_64-pc-windows-msvc");
-#else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
-#endif
-    arg_strings.push_back("-S");
-    arg_strings.push_back("-aux-target-cpu");
-    arg_strings.push_back("x86-64");
-    arg_strings.push_back("-fcuda-is-device");
-    arg_strings.push_back("-fcuda-allow-variadic-functions");
-#ifdef _WIN32
-    arg_strings.push_back("-fms-compatibility");
-    arg_strings.push_back("-fms-compatibility-version=19.40");
-#else
-    arg_strings.push_back("-fgnuc-version=4.2.1");
-#endif
-    arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
-    arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-    arg_strings.push_back("-target-cpu");
-    arg_strings.push_back("sm_" + std::to_string(config.sm_version));
-    arg_strings.push_back("-target-feature");
-    arg_strings.push_back("+ptx" + std::to_string(ptx_version));
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
-    arg_strings.push_back("-include");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
-
-    appendIncludePaths(arg_strings, config);
+    appendDeviceTargetArgs(arg_strings, config);
+    appendCudaIncludeArgs(arg_strings, config);
 
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
@@ -1482,26 +1523,10 @@ public:
     std::string temp_dir    = std::filesystem::path(output_obj).parent_path().string();
     std::string source_file = temp_dir + "/host_" + input_file;
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
-
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
-    arg_strings.push_back("-triple");
+    appendCudaHostTargetArgs(arg_strings);
 #ifdef _WIN32
-    arg_strings.push_back("x86_64-pc-windows-msvc");
-#else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
-#endif
-    arg_strings.push_back("-aux-triple");
-    arg_strings.push_back("nvptx64-nvidia-cuda");
-    arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-    arg_strings.push_back("-emit-obj");
-    arg_strings.push_back("-target-cpu");
-    arg_strings.push_back("x86-64");
-    arg_strings.push_back("-fcuda-allow-variadic-functions");
-#ifdef _WIN32
-    arg_strings.push_back("-fms-compatibility");
-    arg_strings.push_back("-fms-compatibility-version=19.40");
     // We do not have access to the windows CRT, so the guard support that
     // threadsafe statics need (_tls_index, _Init_thread_epoch, ...) is
     // unavailable and must be disabled. Generated code IS invoked from
@@ -1509,27 +1534,8 @@ public:
     // the first call into each generated function so its function-local
     // statics initialize race-free despite this flag.
     arg_strings.push_back("-fno-threadsafe-statics");
-#else
-    arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
-    arg_strings.push_back("-mrelocation-model");
-    arg_strings.push_back("pic");
-    arg_strings.push_back("-pic-level");
-    arg_strings.push_back("2");
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
-    arg_strings.push_back("-include");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
-
-    appendIncludePaths(arg_strings, config);
+    appendCudaIncludeArgs(arg_strings, config);
 
     arg_strings.push_back("-DNDEBUG");
 
@@ -1912,78 +1918,16 @@ public:
 
     initialize_llvm();
 
-    std::string resource_dir = CLANG_RESOURCE_DIR;
     std::vector<std::string> arg_strings;
     arg_strings.push_back(pch_source_path);
 
     if (kind == LIBNVCC_PCH_DEVICE)
     {
-      int ptx_version = 78;
-      if (config.sm_version >= 120)
-      {
-        ptx_version = 87;
-      }
-      else if (config.sm_version >= 100)
-      {
-        ptx_version = 85;
-      }
-      else if (config.sm_version >= 90)
-      {
-        ptx_version = 80;
-      }
-
-      arg_strings.push_back("-triple");
-      arg_strings.push_back("nvptx64-nvidia-cuda");
-      arg_strings.push_back("-aux-triple");
-#ifdef _WIN32
-      arg_strings.push_back("x86_64-pc-windows-msvc");
-#else
-      arg_strings.push_back("x86_64-pc-linux-gnu");
-#endif
-      arg_strings.push_back("-S");
-      arg_strings.push_back("-aux-target-cpu");
-      arg_strings.push_back("x86-64");
-      arg_strings.push_back("-fcuda-is-device");
-      arg_strings.push_back("-fcuda-allow-variadic-functions");
-#ifdef _WIN32
-      arg_strings.push_back("-fms-compatibility");
-      arg_strings.push_back("-fms-compatibility-version=19.40");
-#else
-      arg_strings.push_back("-fgnuc-version=4.2.1");
-#endif
-      arg_strings.push_back("-mlink-builtin-bitcode");
-      arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
-      arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-      arg_strings.push_back("-target-cpu");
-      arg_strings.push_back("sm_" + std::to_string(config.sm_version));
-      arg_strings.push_back("-target-feature");
-      arg_strings.push_back("+ptx" + std::to_string(ptx_version));
+      appendDeviceTargetArgs(arg_strings, config);
     }
     else if (kind == LIBNVCC_PCH_HOST)
     {
-      arg_strings.push_back("-triple");
-#ifdef _WIN32
-      arg_strings.push_back("x86_64-pc-windows-msvc");
-#else
-      arg_strings.push_back("x86_64-pc-linux-gnu");
-#endif
-      arg_strings.push_back("-aux-triple");
-      arg_strings.push_back("nvptx64-nvidia-cuda");
-      arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-      arg_strings.push_back("-emit-obj");
-      arg_strings.push_back("-target-cpu");
-      arg_strings.push_back("x86-64");
-      arg_strings.push_back("-fcuda-allow-variadic-functions");
-#ifdef _WIN32
-      arg_strings.push_back("-fms-compatibility");
-      arg_strings.push_back("-fms-compatibility-version=19.40");
-#else
-      arg_strings.push_back("-fgnuc-version=4.2.1");
-#endif
-      arg_strings.push_back("-mrelocation-model");
-      arg_strings.push_back("pic");
-      arg_strings.push_back("-pic-level");
-      arg_strings.push_back("2");
+      appendCudaHostTargetArgs(arg_strings);
     }
     else
     {
@@ -1991,20 +1935,7 @@ public:
       return false;
     }
 
-    arg_strings.push_back("-resource-dir");
-    arg_strings.push_back(resource_dir);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(
-      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
-    arg_strings.push_back("-include");
-    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
-
-    appendIncludePaths(arg_strings, config);
+    appendCudaIncludeArgs(arg_strings, config);
 
     if (kind == LIBNVCC_PCH_DEVICE)
     {
@@ -2042,6 +1973,82 @@ public:
     return generatePCH(source_code, pch_source_path, pch_output_path, arg_strings, diagnostics);
   }
 
+  // Compiles the module teardown runtime: atexit and what it records, the two entry points a
+  // loader drives the teardown through, and the hook the OS runs on unload. One object per
+  // library, added by the link rather than defined in the force-included header, so its
+  // definitions can be strong -- the registration constructor's atexit() call has to reach
+  // this one, and any other definition of the name now fails the link on a duplicate symbol
+  // instead of quietly taking that call.
+  //
+  // Plain C++ that includes nothing, not the CUDA host compilation the program itself gets:
+  // that one costs the whole preamble again, around 200 ms per link, for one declaration.
+  bool compileModuleRuntime(const std::string& output_obj, const CompilerOptions& config, std::string& diagnostics)
+  {
+    initialize_llvm();
+
+    // The header itself is the translation unit, compiled as C++ by the -x below rather than
+    // through a generated source that includes it. Nothing else in the image includes it.
+    const std::string source_file = config.hostjit_include_path + "/hostjit/cuda_minimal/hostjit_module_runtime.h";
+
+    std::vector<std::string> arg_strings;
+    arg_strings.push_back(source_file);
+    // The host target and nothing else: no device triple, no CUDA headers, no include paths
+    // at all beyond where this source's own header is.
+    appendHostTargetArgs(arg_strings);
+    arg_strings.push_back("-resource-dir");
+    arg_strings.push_back(CLANG_RESOURCE_DIR);
+    arg_strings.push_back("-O" + std::to_string(config.optimization_level));
+    arg_strings.push_back("-std=c++17");
+    arg_strings.push_back("-x");
+    arg_strings.push_back("c++");
+
+    std::vector<const char*> args;
+    for (const auto& arg : arg_strings)
+    {
+      args.push_back(arg.c_str());
+    }
+
+    if (config.verbose)
+    {
+      diagnostics += "Module runtime args: ";
+      for (const auto& arg : arg_strings)
+      {
+        diagnostics += arg + " ";
+      }
+      diagnostics += "\n";
+    }
+
+    std::string diag_output;
+    llvm::raw_string_ostream diag_stream(diag_output);
+
+    clang::DiagnosticOptions diag_opts;
+    diag_opts.ShowColors                       = false;
+    clang::TextDiagnosticPrinter* diag_printer = new clang::TextDiagnosticPrinter(diag_stream, diag_opts);
+    clang::IntrusiveRefCntPtr<clang::DiagnosticIDs> diag_ids(new clang::DiagnosticIDs());
+    clang::DiagnosticsEngine diag_engine(diag_ids, diag_opts, diag_printer);
+
+    clang::CompilerInstance compiler;
+    if (!clang::CompilerInvocation::CreateFromArgs(compiler.getInvocation(), args, diag_engine))
+    {
+      diag_stream.flush();
+      diagnostics += diag_output;
+      diagnostics += "\nFailed to create the module runtime compiler invocation";
+      return false;
+    }
+
+    compiler.createDiagnostics(diag_engine.getClient(), false);
+    compiler.setVirtualFileSystem(llvm::vfs::getRealFileSystem());
+    compiler.createFileManager();
+    compiler.getFrontendOpts().OutputFile = output_obj;
+
+    clang::EmitObjAction emit_action;
+    const bool success = compiler.ExecuteAction(emit_action);
+
+    diag_stream.flush();
+    diagnostics += diag_output;
+    return success;
+  }
+
   LinkResult linkToSharedLibrary(
     const std::vector<std::string>& object_files, const std::string& output_path, const CompilerOptions& config)
   {
@@ -2055,16 +2062,65 @@ public:
       return result;
     }
 
+    // The intermediate goes next to the library it belongs to, named after it: the caller
+    // named a writable directory by naming the output, while the system temporary directory
+    // would be one more way for a link to fail and would still need everything below. It is
+    // the one path this link writes and then deletes, everything else in that directory being
+    // the caller's, so the name is taken by creating it exclusively rather than by asking
+    // whether a file is there -- between a check and a create a file of the caller's could
+    // appear under it, and a name that answers "no" for a dangling symlink still resolves to
+    // the link's target when written. What stays open is the reopen by name after the
+    // descriptor is dropped below, under a name nothing else can predict. A '%' of the
+    // caller's in the directory never reaches here, the link having been refused for it (see
+    // linkOutputIsWritable).
+#ifdef _WIN32
+    const std::string runtime_model = output_path + ".hostjit_runtime-%%%%%%.obj";
+#else
+    const std::string runtime_model = output_path + ".hostjit_runtime-%%%%%%.o";
+#endif
+    llvm::SmallString<256> runtime_obj_path;
+    int runtime_obj_fd = -1;
+    if (const std::error_code ec = llvm::sys::fs::createUniqueFile(runtime_model, runtime_obj_fd, runtime_obj_path))
+    {
+      result.diagnostics =
+        "Could not create the module teardown runtime object next to " + output_path + ": " + ec.message();
+      return result;
+    }
+    // Held open only to reserve the name; the compilation below writes the object through
+    // that path itself. A failed close leaves the descriptor behind in a library loaded for
+    // the life of the calling process, so it is reported rather than passed over, and the
+    // file goes with it: nothing is going to write through a name this link is giving up on.
+    const std::string runtime_obj(runtime_obj_path.str());
+    if (const std::error_code ec = llvm::sys::Process::SafelyCloseFileDescriptor(runtime_obj_fd))
+    {
+      result.diagnostics = "Could not close " + runtime_obj + ": " + ec.message();
+      if (const std::error_code remove_ec = llvm::sys::fs::remove(runtime_obj))
+      {
+        result.diagnostics += "\nCould not remove " + runtime_obj + ": " + remove_ec.message();
+      }
+      return result;
+    }
+
+    if (!compileModuleRuntime(runtime_obj, config, result.diagnostics))
+    {
+      result.diagnostics += "\nFailed to compile the module teardown runtime";
+      if (const std::error_code ec = llvm::sys::fs::remove(runtime_obj))
+      {
+        result.diagnostics += "\nCould not remove " + runtime_obj + ": " + ec.message();
+      }
+      return result;
+    }
+
     std::vector<std::string> arg_strings;
 
 #ifdef _WIN32
     arg_strings.push_back("lld-link");
     arg_strings.push_back("/DLL");
-    // The DLL carries its own entry point (see __clang_cuda_runtime_wrapper.h):
+    // The DLL carries its own entry point (see hostjit_module_runtime.h):
     // it runs the static constructors on attach, which is what registers the
     // fatbin, and unregisters it on detach. A DLL linked /NOENTRY does neither,
     // and only works for a caller that knows to drive both by hand.
-    arg_strings.push_back("/ENTRY:hostjit_dll_entry");
+    arg_strings.push_back("/ENTRY:__hostjit_dll_entry");
     arg_strings.push_back("/NODEFAULTLIB");
     arg_strings.push_back("/OUT:" + output_path);
 
@@ -2091,6 +2147,7 @@ public:
        "cudaStreamCreate",
        "cudaStreamDestroy",
        "cudaStreamSynchronize",
+       "cudaStreamBeginCapture",
        "cudaEventCreate",
        "cudaEventDestroy",
        "cudaEventRecord",
@@ -2160,6 +2217,7 @@ public:
        "EnterCriticalSection",
        "LeaveCriticalSection",
        "DeleteCriticalSection",
+       "DisableThreadLibraryCalls",
        "InitOnceExecuteOnce",
        "LoadLibraryExA",
        "LoadLibraryExW",
@@ -2183,6 +2241,7 @@ public:
     {
       arg_strings.push_back(obj_file);
     }
+    arg_strings.push_back(runtime_obj);
 
     arg_strings.push_back("cudart.lib");
     arg_strings.push_back("ucrt.lib");
@@ -2216,6 +2275,7 @@ public:
     {
       arg_strings.push_back(obj_file);
     }
+    arg_strings.push_back(runtime_obj);
 
     // pip packages ship libcudart.so.XX without an unversioned symlink,
     // so -lcudart won't work.  Find the actual .so by scanning library_paths.
@@ -2262,6 +2322,16 @@ public:
 #else
     bool link_success = lld::elf::link(args, stdout_os, stderr_os, false, false);
 #endif
+
+    // The name was reserved by creating it, so leaving the file behind would leak a
+    // path per link. A removal that fails is reported rather than passed over: on
+    // Windows it usually means something still has the object open, and the next link
+    // would produce another one under another name with no sign of why.
+    if (const std::error_code ec = llvm::sys::fs::remove(runtime_obj))
+    {
+      result.diagnostics +=
+        "Could not remove the module teardown runtime object " + runtime_obj + ": " + ec.message() + "\n";
+    }
 
     stdout_os.flush();
     stderr_os.flush();
@@ -2448,6 +2518,24 @@ extern "C" libnvccResult libnvccLinkToSharedLibrary(
   if (numObjectFiles < 0 || (numObjectFiles > 0 && !objectFiles) || !outputLibraryPath || outputLibraryPath[0] == '\0')
   {
     setProgramLog(prog, "Invalid link input");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+  std::string path_error;
+  if (!libnvcc::linkOutputIsWritable(outputLibraryPath, path_error))
+  {
+    setProgramLog(prog, path_error);
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+  // Every object carries its own fatbin and registers it at load, so more than
+  // one of them would leave the library with a second registration for one body
+  // of code -- a shape this compiler does not produce and the teardown was not
+  // designed around. Refuse it here rather than link it and hope.
+  if (numObjectFiles > 1)
+  {
+    setProgramLog(
+      prog,
+      "Only one object file can be linked into a library: each one registers its own fatbin, and a library with two "
+      "registrations is not a shape this compiler produces");
     return LIBNVCC_ERROR_INVALID_INPUT;
   }
 

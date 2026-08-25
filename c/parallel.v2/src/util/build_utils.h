@@ -175,13 +175,25 @@ inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t&
 // c/parallel.v2/. Algorithm-specific fields (X_fn, determinism, etc.) get
 // nulled by the caller after this. Template'd over the build_result type so
 // each algorithm header doesn't need to include this one transitively.
+//
+// Returns false if the JIT module refused to unload, leaving the build result exactly as
+// it was — compiler, module and cubin all still there — so the caller can try again.
+// Destroying the compiler then would destroy the only handle to a module that is still
+// mapped and, depending on which stage refused, still registered, after which nothing could
+// unload it. hostjit::JITCompiler::cleanup() has already said why on stderr.
 template <typename BuildResult>
-void release_jit_artifacts(BuildResult* build_ptr)
+bool release_jit_artifacts(BuildResult* build_ptr)
 {
-  delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
+  auto* jit_compiler = static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
+  if (jit_compiler && !jit_compiler->cleanup())
+  {
+    return false;
+  }
+  delete jit_compiler;
   build_ptr->jit_compiler = nullptr;
   delete[] static_cast<char*>(build_ptr->payload);
   build_ptr->payload      = nullptr;
   build_ptr->payload_size = 0;
+  return true;
 }
 } // namespace cccl::detail

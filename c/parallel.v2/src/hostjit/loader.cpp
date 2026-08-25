@@ -1,11 +1,16 @@
+// dlinfo / RTLD_DI_LINKMAP are behind _GNU_SOURCE, which selects declarations in
+// glibc's features.h and so has to be defined before the first libc header in the
+// file, not next to <dlfcn.h> below. Both clang and gcc predefine it for C++, so
+// this only matters for a compiler that does not.
 #ifndef _WIN32
 #  ifndef _GNU_SOURCE
-#    define _GNU_SOURCE // for dlinfo / RTLD_DI_LINKMAP
+#    define _GNU_SOURCE
 #  endif
 #endif
 
+#include <cstddef>
 #include <cstdio>
-#include <cstdlib>
+#include <string>
 
 #include <hostjit/loader.hpp>
 
@@ -19,54 +24,27 @@
 
 namespace hostjit
 {
-#ifdef _WIN32
 namespace
 {
-// GetProcAddress on a loaded DLL only searches that module's own export table,
-// not the DLLs it imports. The JIT module imports cudaDeviceSynchronize from
-// cudart, so look for it in the DLLs the module itself imports, named in its
-// import directory. This mirrors Linux dlsym(handle, ...), which follows the
-// module's dependency graph, and it matters beyond convenience: a process can
-// hold more than one cudart, each with its own module registry and its own
-// pending-unload queue, and only the instance the module registered its fatbin
-// with can drain ours. Taking whatever copy is loaded in the process would be a
-// coin toss between them.
-void* resolveFromModuleImports(void* module, const char* name)
+void* rawSymbol(void* handle, const char* name)
 {
-  auto* base = static_cast<unsigned char*>(module);
-  auto* dos  = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
-  if (dos->e_magic != IMAGE_DOS_SIGNATURE)
-  {
-    return nullptr;
-  }
-  auto* nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-  if (nt->Signature != IMAGE_NT_SIGNATURE)
-  {
-    return nullptr;
-  }
-  const IMAGE_DATA_DIRECTORY& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-  if (dir.VirtualAddress == 0 || dir.Size == 0)
-  {
-    return nullptr;
-  }
-  for (auto* desc = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); desc->Name != 0; ++desc)
-  {
-    const char* dll = reinterpret_cast<const char*>(base + desc->Name);
-    // The module is loaded, so its imports are too: ask for the handle by name
-    // rather than loading anything.
-    HMODULE imported = GetModuleHandleA(dll);
-    if (!imported)
-    {
-      continue;
-    }
-    if (auto* s = reinterpret_cast<void*>(GetProcAddress(imported, name)))
-    {
-      return s;
-    }
-  }
-  return nullptr;
+#ifdef _WIN32
+  return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(handle), name));
+#else
+  return dlsym(handle, name);
+#endif
 }
 
+void closeHandle(void* handle)
+{
+#ifdef _WIN32
+  FreeLibrary(static_cast<HMODULE>(handle));
+#else
+  dlclose(handle);
+#endif
+}
+
+#ifdef _WIN32
 std::string getWindowsError()
 {
   DWORD error = GetLastError();
@@ -102,40 +80,76 @@ std::string getWindowsError()
 
   return message;
 }
-} // anonymous namespace
 #endif
+} // anonymous namespace
 
 DynamicLibrary::DynamicLibrary()
     : handle_(nullptr)
+    , module_fini_(nullptr)
+    , module_sync_(nullptr)
+    , unregistered_(false)
 {}
 
 DynamicLibrary::~DynamicLibrary()
 {
+  // A failed unload has nowhere to report to from here and no one left to retry, so
+  // the image stays mapped -- with its fatbin still registered if it was the first
+  // wait that refused, without it if it was the second. unload() has already said
+  // which on stderr. Callers that need to know call unload() themselves.
   unload();
 }
 
 DynamicLibrary::DynamicLibrary(DynamicLibrary&& other) noexcept
     : handle_(other.handle_)
+    , module_fini_(other.module_fini_)
+    , module_sync_(other.module_sync_)
+    , unregistered_(other.unregistered_)
     , last_error_(std::move(other.last_error_))
 {
-  other.handle_ = nullptr;
+  other.handle_       = nullptr;
+  other.module_fini_  = nullptr;
+  other.module_sync_  = nullptr;
+  other.unregistered_ = false;
 }
 
 DynamicLibrary& DynamicLibrary::operator=(DynamicLibrary&& other) noexcept
 {
   if (this != &other)
   {
-    unload();
-    handle_       = other.handle_;
-    last_error_   = std::move(other.last_error_);
-    other.handle_ = nullptr;
+    if (!unload())
+    {
+      // A module that would not tear down cannot be overwritten here: this is the
+      // only handle to an image that is still mapped, and with it gone nothing could
+      // ever retry. So the two states change places instead of one replacing the
+      // other. The assignment still goes ahead -- this object holds the module being
+      // moved in -- and the module that refused stays owned by the object being moved
+      // from, whose destructor tries once more. unload() has said on stderr why.
+      std::swap(handle_, other.handle_);
+      std::swap(module_fini_, other.module_fini_);
+      std::swap(module_sync_, other.module_sync_);
+      std::swap(unregistered_, other.unregistered_);
+      last_error_.swap(other.last_error_);
+      return *this;
+    }
+    handle_             = other.handle_;
+    module_fini_        = other.module_fini_;
+    module_sync_        = other.module_sync_;
+    unregistered_       = other.unregistered_;
+    last_error_         = std::move(other.last_error_);
+    other.handle_       = nullptr;
+    other.module_fini_  = nullptr;
+    other.module_sync_  = nullptr;
+    other.unregistered_ = false;
   }
   return *this;
 }
 
 bool DynamicLibrary::load(const std::string& library_path)
 {
-  unload();
+  if (!unload())
+  {
+    return false;
+  }
 
 #ifdef _WIN32
   SetLastError(0);
@@ -164,6 +178,29 @@ bool DynamicLibrary::load(const std::string& library_path)
     return false;
   }
 #endif
+
+  // Every library the compiler produces exports these two, and unload() drives the module's
+  // CUDA teardown through them. Without them the module cannot be torn down at all, so the
+  // image is refused here, where the caller gets an error, rather than at teardown where there
+  // is nothing left to report to.
+  //
+  // It is left mapped on purpose: loading it has run its constructors, so a library from an
+  // older compiler has registered its fatbin by now, and closing it would strand that
+  // registration, with no teardown entry point left to undo it first. Dropping the handle
+  // costs the image's memory for the life of the process, which is the recoverable side.
+  module_fini_ = reinterpret_cast<void (*)()>(rawSymbol(handle_, "__cudacc_module_fini"));
+  module_sync_ = reinterpret_cast<int (*)()>(rawSymbol(handle_, "__cudacc_module_sync"));
+  if (!module_fini_ || !module_sync_)
+  {
+    const char* const missing = !module_fini_ ? "__cudacc_module_fini" : "__cudacc_module_sync";
+    last_error_   = std::string("Not a JIT module produced by this compiler: ") + missing
+                  + " is missing; the image is left mapped, since unmapping it could strand a fatbin registration";
+    handle_       = nullptr;
+    module_fini_  = nullptr;
+    module_sync_  = nullptr;
+    unregistered_ = false;
+    return false;
+  }
 
   last_error_.clear();
   return true;
@@ -216,67 +253,89 @@ std::string DynamicLibrary::getLastError() const
   return last_error_;
 }
 
-void DynamicLibrary::unload()
+bool DynamicLibrary::unload()
 {
-  if (handle_)
+  if (!handle_)
   {
-    // Kernel launches are asynchronous, so kernels from this module may still be
-    // executing on the GPU when the caller unloads it, and the CUDA runtime keeps
-    // a pointer into the module's embedded fatbin (modules are loaded lazily).
-    // dlclose / FreeLibrary unmaps the module's memory immediately, so without a
-    // barrier a later CUDA call would dereference freed memory and crash.
-    // Synchronize first, so all GPU work referencing the module has finished
-    // before its memory goes away.
-    //
-    // cudaDeviceSynchronize is looked up by symbol in the loaded module (which
-    // links cudart) rather than called directly, so this file needs no cudart
-    // link dependency. The module always links cudart, so the symbol must
-    // resolve; if it does not, we cannot drain in-flight work and unmapping the
-    // module anyway would risk a use-after-unmap crash -- fail loudly instead of
-    // skipping the barrier silently.
-    using sync_fn = int (*)();
-    sync_fn sync  = nullptr;
+    last_error_.clear();
+    return true;
+  }
+
+  // Kernel launches are asynchronous and the runtime holds a pointer into the module's
+  // embedded fatbin, while dlclose / FreeLibrary unmaps the image at once, so the module's
+  // GPU work has to finish before its memory goes away. The barrier is the module's own
+  // __cudacc_module_sync rather than a direct call: this file then needs no cudart of its
+  // own, and the call lands in the runtime the module registered its fatbin with, of which
+  // a process can hold more than one, each with its own registry and pending-unload queue.
+  //
+  // A failed wait stops the unload. cudaDeviceSynchronize refuses outright while the calling
+  // thread is capturing a stream, and any other failure leaves it equally unknown from here
+  // whether work is still running. Keeping the image mapped costs the module's memory until
+  // the caller retries; unmapping it under a running kernel is the crash this path exists to
+  // prevent. Which of the two waits failed decides what is left behind, told apart below.
+  //
+  // cudaErrorCudartUnloading is not a failure: the runtime is being torn down because the
+  // process is exiting, so no work of ours is left to wait for and no later CUDA call is
+  // coming to drain the queued unload. Only the waits are skipped for it; the teardown below
+  // still runs here, with the image mapped and this thread off the loader lock, rather than
+  // from the OS hook during the unmap. The value is spelled out because this file links no
+  // cudart of its own.
+  constexpr int cudart_unloading = 4; // cudaErrorCudartUnloading
+  bool runtime_unloading         = false;
+
+  // Skipped by a retry after the second wait failed: the teardown has run by then,
+  // and running it again would be a no-op anyway, since it is one-shot. What such a
+  // retry owes is the wait below, which is the one that did not happen.
+  if (!unregistered_)
+  {
+    const int wait_status = module_sync_();
+    if (wait_status != 0 && wait_status != cudart_unloading)
     {
-#ifdef _WIN32
-      // Resolve from the cudart the module imports rather than from the module's
-      // own exports -- GetProcAddress on handle_ would not find an imported
-      // symbol.
-      sync = reinterpret_cast<sync_fn>(resolveFromModuleImports(handle_, "cudaDeviceSynchronize"));
-#else
-      sync = reinterpret_cast<sync_fn>(dlsym(handle_, "cudaDeviceSynchronize"));
-#endif
-      if (!sync)
-      {
-        std::fprintf(stderr, "hostjit: cudaDeviceSynchronize not found in JIT module; cannot safely unload\n");
-        std::abort();
-      }
-      sync();
+      last_error_ =
+        "the wait before unload failed (" + std::to_string(wait_status) + "), the module stays loaded and registered";
+      std::fprintf(stderr, "hostjit: %s\n", last_error_.c_str());
+      return false;
     }
+    runtime_unloading = wait_status == cudart_unloading;
 
     // The module unregisters its fatbin on its own when the OS unloads it, but we
     // want that done while it is still mapped, so that the flush below can give the
     // device state back at unload time. The module exports __cudacc_module_fini()
     // for exactly this; it is one-shot, so the OS hook afterwards finds nothing to do.
-    runModuleFini();
-
-    // Unregistering only queues the module for unload; the runtime issues the
-    // driver call from its next entry point, so without this the module would
-    // stay resident on the device for as long as the process makes no CUDA call.
-    // One more runtime call, made while the module is still mapped, drains that
-    // queue and gives the device state back at unload time. Nothing public says
-    // when the runtime issues that driver call or how to force it, so this rests
-    // on measured behaviour.
-    sync();
-
-    // The fatbin is unregistered, so it is now safe to unmap the module.
-#ifdef _WIN32
-    FreeLibrary(static_cast<HMODULE>(handle_));
-#else
-    dlclose(handle_);
-#endif
-    handle_ = nullptr;
+    module_fini_();
+    unregistered_ = true;
   }
+
+  if (!runtime_unloading)
+  {
+    // Unregistering only queues the module for unload; the runtime issues the driver call
+    // from its next entry point, so one more call here, with the image still mapped, is what
+    // gives the device state back at unload time. Nothing public says when the runtime
+    // issues that call or how to force it, so this rests on measured behaviour.
+    //
+    // A failure here stops the unload the way the first one does, though what it costs is
+    // different: the unmap itself is safe by now, the teardown having only unregistered, so
+    // what a failure means is that the device state has not come back. The message says so --
+    // the fatbin is gone, the module can no longer be launched from, and only the unmap is
+    // outstanding, which is where a retry resumes.
+    const int flush_status = module_sync_();
+    if (flush_status != 0 && flush_status != cudart_unloading)
+    {
+      last_error_ = "the wait after unregistering the module failed (" + std::to_string(flush_status)
+                  + "), the module is unregistered and stays mapped; unload it again to finish";
+      std::fprintf(stderr, "hostjit: %s\n", last_error_.c_str());
+      return false;
+    }
+  }
+
+  // The fatbin is unregistered, so it is now safe to unmap the module.
+  closeHandle(handle_);
+  handle_       = nullptr;
+  module_fini_  = nullptr;
+  module_sync_  = nullptr;
+  unregistered_ = false;
   last_error_.clear();
+  return true;
 }
 
 std::string DynamicLibrary::getLoadedModulePath() const
@@ -286,9 +345,29 @@ std::string DynamicLibrary::getLoadedModulePath() const
     return {};
   }
 #ifdef _WIN32
-  char path[MAX_PATH] = {};
-  DWORD n             = GetModuleFileNameA(static_cast<HMODULE>(handle_), path, static_cast<DWORD>(sizeof(path)));
-  return (n > 0) ? std::string(path, n) : std::string{};
+  // A path that does not fit is truncated silently, and the call then reports the
+  // buffer size rather than failing, so grow the buffer until the result fits. The
+  // cap is the longest path Windows accepts.
+  constexpr std::size_t max_path_bytes = 32768;
+  std::string path(MAX_PATH, '\0');
+  for (;;)
+  {
+    const DWORD n = GetModuleFileNameA(static_cast<HMODULE>(handle_), path.data(), static_cast<DWORD>(path.size()));
+    if (n == 0)
+    {
+      return {};
+    }
+    if (n < path.size())
+    {
+      path.resize(n);
+      return path;
+    }
+    if (path.size() >= max_path_bytes)
+    {
+      return {};
+    }
+    path.resize(path.size() * 2);
+  }
 #else
   struct link_map* lm = nullptr;
   if (dlinfo(handle_, RTLD_DI_LINKMAP, &lm) == 0 && lm != nullptr && lm->l_name != nullptr)
@@ -297,31 +376,5 @@ std::string DynamicLibrary::getLoadedModulePath() const
   }
   return {};
 #endif
-}
-
-void DynamicLibrary::runModuleFini()
-{
-  if (!handle_)
-  {
-    return;
-  }
-
-#ifdef _WIN32
-  auto proc = GetProcAddress(static_cast<HMODULE>(handle_), "__cudacc_module_fini");
-  auto fini = reinterpret_cast<void(__cdecl*)(void)>(proc);
-#else
-  auto fini = reinterpret_cast<void (*)(void)>(dlsym(handle_, "__cudacc_module_fini"));
-#endif
-
-  // Every library the compiler produces exports this. Its absence means the image
-  // came from somewhere else, and this class has no way to tear such an image
-  // down: unmapping it anyway would leave the fatbin registered against memory
-  // that is gone, which is the crash the unload sequence exists to prevent.
-  if (!fini)
-  {
-    std::fprintf(stderr, "hostjit: __cudacc_module_fini not found in the loaded module; cannot safely unload\n");
-    std::abort();
-  }
-  fini();
 }
 } // namespace hostjit

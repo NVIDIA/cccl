@@ -125,6 +125,14 @@ libnvccResult libnvccCompileProgramToDeviceBitcode(
  * `--device-bitcode=<path>` and `--device-ltoir=<path>`. PCH files are used
  * only when explicit `--device-pch=<path>` or `--host-pch=<path>` options are
  * present; libnvcc does not create or cache them implicitly.
+ *
+ * The object references `atexit`, which is where its fatbin registration schedules
+ * the matching unregister. The definition comes from the module teardown runtime
+ * that `libnvccLinkToSharedLibrary` adds, so linking the object any other way needs
+ * that name supplied, and a library whose `atexit` defers to process exit does not
+ * unregister when it is unloaded. That one registration is all it holds: a program
+ * calling `atexit` itself does not compile, there being no C runtime behind the name
+ * to defer a callback to process exit with.
  */
 libnvccResult libnvccCompileProgramToObject(
   libnvccProgram prog,
@@ -137,9 +145,21 @@ libnvccResult libnvccCompileProgramToObject(
  * \brief Link object files into a shared library.
  *
  * \param prog Program handle used to store diagnostics from the link step.
- * \param numObjectFiles Number of entries in `objectFiles`.
- * \param objectFiles Array of object file paths to link.
- * \param outputLibraryPath Destination path for the linked shared library.
+ * \param numObjectFiles Number of entries in `objectFiles`. Exactly one object
+ * is accepted: it carries its own fatbin and registers it when the library is
+ * loaded, so a second object would put a second registration in one library,
+ * which is not a shape this compiler produces. Relocatable device compilation
+ * generates the registration once at the final link instead, and lifts this
+ * restriction.
+ * \param objectFiles Array of object file paths to link. They have to come from
+ * `libnvccCompileProgramToObject`. The link also gets the module teardown
+ * runtime, which libnvcc compiles itself and which defines `atexit` so that the
+ * fatbin unregister is captured; an object that defines `atexit` too makes the
+ * link fail on a duplicate symbol.
+ * \param outputLibraryPath Destination path for the linked shared library. The
+ * teardown runtime is compiled into an object beside it, named after it and
+ * removed once the linker is done; a name already taken is stepped past, so no
+ * file of the caller's is written over.
  * \param numOptions Number of entries in `options`.
  * \param options Array of command-line option strings. Link-time options use
  * the same option parser as compile-time options; currently `--cuda-path`,

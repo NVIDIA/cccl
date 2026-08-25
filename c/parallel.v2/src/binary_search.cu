@@ -164,11 +164,18 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  // A module that refused to unload keeps the whole build result, compiler
+  // included, so that a later cleanup can try again; see release_jit_artifacts().
+  // Nothing of the result is taken apart before that has gone through, or the
+  // retry would be left with a result it can no longer call.
+  if (!cccl::detail::release_jit_artifacts(build_ptr))
+  {
+    return CUDA_ERROR_ILLEGAL_STATE;
+  }
 #if CCCL_OS(WINDOWS)
   delete static_cast<cccl::detail::first_call_gate*>(build_ptr->first_call_state);
   build_ptr->first_call_state = nullptr;
 #endif
-  cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->binary_search_fn = nullptr;
 
   return CUDA_SUCCESS;

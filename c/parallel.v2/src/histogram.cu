@@ -197,7 +197,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  cccl::detail::release_jit_artifacts(build_ptr);
+  // A module that refused to unload keeps the whole build result, compiler
+  // included, so that a later cleanup can try again; see release_jit_artifacts().
+  if (!cccl::detail::release_jit_artifacts(build_ptr))
+  {
+    return CUDA_ERROR_ILLEGAL_STATE;
+  }
   build_ptr->histogram_fn = nullptr;
 
   return CUDA_SUCCESS;

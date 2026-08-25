@@ -417,174 +417,31 @@ extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim, dim3 blockDim, siz
 #  endif
 
 // The JIT shared library is linked without the C runtime (no libc on the link
-// line) so atexit is unavailable.  The CUDA module constructor calls atexit()
-// to register __cuda_module_dtor, which calls __cudaUnregisterFatBinary.  We
-// cannot defer that to process exit (no CRT), so the callback is recorded in a
-// per-module table instead.
+// line), so the only atexit in the image is the one the teardown runtime
+// defines, and it exists for a single call: the CUDA module constructor's, which
+// registers __cuda_module_dtor -> __cudaUnregisterFatBinary so that the image's
+// unload hook can make it.  It holds that one registration and nothing else, and
+// a program's own atexit would have neither a slot to take nor the process-exit
+// behaviour the C standard gives the name.  So a call from the program is turned
+// down here, while it is being compiled, rather than at run time by a return
+// value the caller is unlikely to read.
 //
-// The produced library then runs that table itself when it is unloaded, through
-// the hook the OS gives it: an entry in .fini_array that the dynamic loader calls
-// from dlclose on Linux, the DLL entry point below on Windows.  That keeps the
-// artifact self-contained: whoever loads it -- our own loader, an application that
-// cached the library on disk and opens it in a later process, another consumer
-// entirely -- closes it the ordinary way and the fatbin is unregistered before the
-// image goes away.
-//
-// A loader that wants the teardown to happen earlier than the OS would run it --
-// so that it can flush the runtime's pending unload while the module is still
-// mapped -- calls __cudacc_module_fini(), the one symbol the image exports for
-// this.  The table behind it is internal: draining is one-shot, so the early call
-// and the OS hook together still unregister exactly once.
-#  if !defined(__HOSTJIT_DEVICE_COMPILATION__)
-extern "C" {
-// Every host TU force-includes this header, so the shim is emitted once per TU while
-// the linked library has to end up with a single copy of it. These attributes make
-// the per-TU copies merge instead of colliding.
-//   * Linux/ELF: weak, and bound locally. The table and the atexit shim are hidden,
-//     both to keep them out of the image's interface and so that the registration
-//     object's atexit() call reaches this shim rather than another atexit in the
-//     process, which would defer the dtor to process exit and bring back the
-//     dangling-fatbin crash the unload logic prevents. The finalizer has to be
-//     visible to a loader, so it is protected instead of hidden: exported, but still
-//     not interposable, which is what keeps the .fini_array entry pointing at this
-//     image's own copy. Were it interposable, any definition of the name already in
-//     the process's lookup scope would take that call, and the image would drain
-//     someone else's table and leave its own fatbin registered.
-//   * Windows/COFF: selectany merges the table across objects, and the functions are
-//     inline, which puts each copy in a comdat the linker folds. Weak does not work
-//     here: lld-link reports a duplicate symbol as soon as a second object defines
-//     one. `used` keeps the copies from being dropped before the fold, which matters
-//     for the entry point, since nothing inside the image calls it. COFF has no
-//     cross-DLL symbol interposition, so no hidden-visibility equivalent is needed.
-// On ELF a strong atexit reaching the link from elsewhere would win over the weak
-// definition and disable the capture silently. The link contains only objects the
-// compiler generated itself plus cudart, so there is none.
-#    if defined(_WIN32)
-#      define __HOSTJIT_TABLE_ATTR  __declspec(selectany)
-#      define __HOSTJIT_ATEXIT_ATTR inline __attribute__((used))
-#      define __HOSTJIT_FINI_ATTR   inline __attribute__((used)) __declspec(dllexport)
-#    else
-#      define __HOSTJIT_TABLE_ATTR  __attribute__((weak, visibility("hidden")))
-#      define __HOSTJIT_ATEXIT_ATTR __attribute__((weak, visibility("hidden")))
-#      define __HOSTJIT_FINI_ATTR   __attribute__((weak, visibility("protected")))
-#    endif
-
-#    if defined(_MSC_VER)
-typedef void(__cdecl* __hostjit_atexit_fn)(void);
-#    else
-typedef void (*__hostjit_atexit_fn)(void);
-#    endif
-
-// One library carries one fatbin and one registration constructor, which schedules
-// one atexit(__cuda_module_dtor), so the merged table holds that single callback.
-// Overflow means a second registration reached the shim, which is a library shape
-// the unload path does not handle; failing loudly beats dropping an unregister and
-// bringing back the dangling-fatbin crash this exists to prevent.
-enum
-{
-  __hostjit_max_atexit = 1
-};
-
-__HOSTJIT_TABLE_ATTR __hostjit_atexit_fn hostjit_module_atexit_funcs[__hostjit_max_atexit] = {0};
-__HOSTJIT_TABLE_ATTR int hostjit_module_atexit_count                                       = 0;
-
-__HOSTJIT_ATEXIT_ATTR int atexit(__hostjit_atexit_fn func)
-{
-  if (!func)
-  {
-    return 0;
-  }
-  if (hostjit_module_atexit_count >= __hostjit_max_atexit)
-  {
-    // More module dtors than the unload mechanism can capture (see the note above).
-    __builtin_trap();
-  }
-  hostjit_module_atexit_funcs[hostjit_module_atexit_count++] = func;
-  return 0;
-}
-
-// Tears the module down: runs the captured destructors in reverse registration
-// order, like a real atexit chain, which is what unregisters the fatbin. The OS
-// hooks below call it, and it is the only symbol the image exports for a loader
-// that wants to do it earlier. Draining is what makes it one-shot: a second call
-// finds the table empty and does nothing, so the fatbin is never unregistered
-// twice (which would be a use-after-free -- __cudaUnregisterFatBinary destroys
-// the module rather than dropping a reference).
-__HOSTJIT_FINI_ATTR void __cudacc_module_fini(void)
-{
-  while (hostjit_module_atexit_count > 0)
-  {
-    __hostjit_atexit_fn func = hostjit_module_atexit_funcs[--hostjit_module_atexit_count];
-    if (func)
-    {
-      func();
-    }
-  }
-}
-
-#    if !defined(_WIN32)
-// ld.so runs .fini_array on dlclose, and the linker builds the array and its
-// dynamic tags without any help from a C runtime, so this works in a
-// freestanding image. Every host TU force-includes this header and contributes
-// an entry; the ones that run after the first find the table already drained.
-__attribute__((used,
-               retain,
-               section(".fini_array"),
-               aligned(__alignof__(__hostjit_atexit_fn)))) static __hostjit_atexit_fn __hostjit_module_fini_entry =
-  __cudacc_module_fini;
-#    else
-// Windows has no equivalent of .fini_array: what the OS runs on load and on
-// unload is the DLL's entry point, and a DLL built without a C runtime has
-// none (it used to be linked /NOENTRY). So the shim provides one. It is named
-// on the link line with /ENTRY, and it does both halves of what the CRT would
-// do: run the static constructors on attach, which is where the fatbin gets
-// registered, and drain the callback table on detach.
-//
-// The constructors are found the way the MSVC CRT finds them, through markers
-// that sort around the compiler's own .CRT$XCU contributions. This needs no
-// Windows headers, which the freestanding compilation does not have.
-typedef void(__cdecl* __hostjit_init_fn)(void);
-
-#      pragma section(".CRT$XCA", long, read)
-#      pragma section(".CRT$XCZ", long, read)
-__declspec(allocate(".CRT$XCA")) __declspec(selectany) __hostjit_init_fn __hostjit_ctors_begin[] = {0};
-__declspec(allocate(".CRT$XCZ")) __declspec(selectany) __hostjit_init_fn __hostjit_ctors_end[]   = {0};
-
-__HOSTJIT_ATEXIT_ATTR int __stdcall hostjit_dll_entry(void* instance, unsigned long reason, void* reserved)
-{
-  (void) instance;
-  enum
-  {
-    __hostjit_process_detach = 0,
-    __hostjit_process_attach = 1
-  };
-  if (reason == __hostjit_process_attach)
-  {
-    for (__hostjit_init_fn* it = __hostjit_ctors_begin; it < __hostjit_ctors_end; ++it)
-    {
-      if (*it)
-      {
-        (*it)();
-      }
-    }
-  }
-  // A non-null `reserved` on detach means the process is exiting rather than
-  // the library being unloaded. Nothing is worth unregistering then, and the
-  // runtime may already be torn down, so leave it alone.
-  else if (reason == __hostjit_process_detach && reserved == 0)
-  {
-    __cudacc_module_fini();
-  }
-  return 1; // a zero return from the entry point fails LoadLibrary
-}
-#    endif
-} // extern "C"
-
-// This header is force-included into every host TU, so leave the user's macro
-// namespace as it was found.
-#    undef __HOSTJIT_TABLE_ATTR
-#    undef __HOSTJIT_ATEXIT_ATTR
-#    undef __HOSTJIT_FINI_ATTR
+// The rename is what makes that work: it catches a program that declares atexit
+// itself, and it leaves the constructor's call alone, that one being emitted by
+// the compiler rather than written in the source.  The definition and the hook
+// that calls it live in hostjit_module_runtime.h, which libnvcc compiles into
+// one object per produced library.
+#  define atexit __hostjit_atexit_is_reserved_for_the_module_teardown
+#  if defined(_MSC_VER)
+extern "C" int __hostjit_atexit_is_reserved_for_the_module_teardown(void(__cdecl* func)(void))
+  __attribute__((unavailable("atexit is not available: the image's exit hook is reserved for unregistering the CUDA "
+                             "module, and a freestanding library has no C runtime to defer a callback to process "
+                             "exit")));
+#  else
+extern "C" int __hostjit_atexit_is_reserved_for_the_module_teardown(void (*func)(void))
+  __attribute__((unavailable("atexit is not available: the image's exit hook is reserved for unregistering the CUDA "
+                             "module, and a freestanding library has no C runtime to defer a callback to process "
+                             "exit")));
 #  endif
 
 #endif // __CUDA__ && __clang__
