@@ -372,10 +372,6 @@
 #  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_const)
 
-#if _CCCL_HAS_BUILTIN(__remove_cv) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_cv)
-
 #if _CCCL_HAS_BUILTIN(__remove_cvref) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_cvref)

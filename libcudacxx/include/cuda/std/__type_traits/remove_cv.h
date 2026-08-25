@@ -25,17 +25,28 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_cv) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(14)
+#  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_cv) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 14)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
+
 template <class _Tp>
 struct remove_cv
 {
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 };
 
+// GCC and NVRTC do not accept the builtin in template signatures, see nvbug6669680
+#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
+template <class _Tp>
+using remove_cv_t _CCCL_NODEBUG_ALIAS = typename remove_cv<_Tp>::type;
+#  else // ^^^ _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC) ^^^ / vvv other compilers vvv
 template <class _Tp>
 using remove_cv_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+#  endif // other compilers
 
 #else
 
