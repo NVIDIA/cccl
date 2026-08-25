@@ -179,10 +179,10 @@ list_runnable_benchmark_targets_for() {
   if [[ "$#" -eq 0 ]]; then
     return 0
   fi
-  ninja -C "${build_path}" -t targets all \
-    >/dev/null
-  ninja -C "${build_path}" -t query "$@" \
-    | awk '/^[[:space:]]+bin\/.*\.bench\./ { sub(/^[[:space:]]+bin\//, ""); print }' \
+  {
+    printf "%s\n" "$@"
+    ninja -C "${build_path}" -t inputs "$@"
+  } | awk '/^bin\/.*\.bench\./ { sub(/^bin\//, ""); print }' \
     | sort -u
 }
 
@@ -1038,7 +1038,8 @@ write_summary() {
       echo "- Test build dir: \`${test_build_dir}\`"
       echo "- NVBench SHA/tag: \`${nvbench_sha}\`"
     fi
-    echo "- CUB targets selected: ${#selected_targets[@]}"
+    echo "- CUB build targets selected: ${#selected_targets[@]}"
+    echo "- CUB runnable targets selected: ${#selected_runnable_targets[@]}"
     echo "- CUB comparisons attempted: ${compares_attempted}"
     echo "- CUB comparisons succeeded: ${compares_succeeded}"
     echo "- Python targets selected: ${#selected_py_targets[@]}"
@@ -1082,9 +1083,9 @@ write_summary() {
       echo
     fi
 
-    if [[ "${#selected_targets[@]}" -gt 0 ]]; then
+    if [[ "${#selected_runnable_targets[@]}" -gt 0 ]]; then
       echo "## CUB Compare Reports"
-      for target in "${selected_targets[@]}"; do
+      for target in "${selected_runnable_targets[@]}"; do
         echo
         echo "### \`${target}\`"
         compare_report_file="$(compare_report_path_for_display "${target}" "intervals")"
