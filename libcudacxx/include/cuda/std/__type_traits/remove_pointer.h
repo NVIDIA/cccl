@@ -22,6 +22,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(14)
+#  define _CCCL_BUILTIN_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 14)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_POINTER) && !defined(_LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK)

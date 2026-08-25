@@ -372,10 +372,6 @@
 #  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_const)
 
-#if _CCCL_HAS_BUILTIN(__remove_pointer) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_pointer)
-
 #if _CCCL_HAS_BUILTIN(__remove_reference)
 #  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference(__VA_ARGS__)
 #elif _CCCL_HAS_BUILTIN(__remove_reference_t) && _CCCL_CUDA_COMPILER(CLANG)
