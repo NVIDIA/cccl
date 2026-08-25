@@ -32,7 +32,7 @@
 #  define _CCCL_BUILTIN_ADD_POINTER(...) __add_pointer(__VA_ARGS__)
 #endif // (_CCCL_CHECK_BUILTIN(add_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15))
 
-#if _CCCL_CUDA_COMPILER(NVCC) // NVCC has issues with function pointers
+#if _CCCL_CUDA_COMPILER(NVCC) // NVCC has issues with function pointers see nvbug6665129
 #  undef _CCCL_BUILTIN_ADD_POINTER
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
