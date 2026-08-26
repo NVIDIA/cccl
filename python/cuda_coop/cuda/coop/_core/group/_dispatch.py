@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Classify and dispatch the initial portable group operations."""
+"""Classify and dispatch portable group calls to family planners.
+
+This is the single cross-family routing table after group resolution. It keeps
+runtime ABI classification and planner selection explicit while leaving each
+primitive's semantic and lowering rules in its adjacent family module.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ from .._types import (
     ParameterRole,
     classify_parameter,
 )
+from ..block.adjacent_difference import BlockAdjacentDifferenceBoundary
 from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
 from ._contracts import _unsupported
@@ -22,20 +28,46 @@ from ._model import (
     UnsupportedReasonCode,
 )
 from ._resolution import _resolve_group
+from .adjacent_difference import (
+    GroupAdjacentDifferenceSemantics,
+    _plan_adjacent_difference,
+)
+from .discontinuity import GroupDiscontinuitySemantics, _plan_discontinuity
+from .exchange import GroupExchangeSemantics, _plan_exchange
+from .histogram import GroupHistogramSemantics, _plan_histogram
 from .load_store import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
     _plan_load_store,
 )
 from .reduce import GroupReduceSemantics, _plan_reduce
+from .run_length_decode import (
+    GroupRunLengthDecodeSemantics,
+    _plan_run_length_decode,
+)
 from .scan import GroupScanSemantics, _plan_scan
+from .shuffle import GroupShuffleSemantics, _plan_shuffle
 
 GroupOperationSemantics = (
-    GroupReduceSemantics | GroupScanSemantics | GroupLoadStoreSemantics
+    GroupReduceSemantics
+    | GroupScanSemantics
+    | GroupAdjacentDifferenceSemantics
+    | GroupDiscontinuitySemantics
+    | GroupShuffleSemantics
+    | GroupHistogramSemantics
+    | GroupRunLengthDecodeSemantics
+    | GroupExchangeSemantics
+    | GroupLoadStoreSemantics
 )
 _GROUP_OPERATION_TYPES = (
     GroupReduceSemantics,
     GroupScanSemantics,
+    GroupAdjacentDifferenceSemantics,
+    GroupDiscontinuitySemantics,
+    GroupShuffleSemantics,
+    GroupHistogramSemantics,
+    GroupRunLengthDecodeSemantics,
+    GroupExchangeSemantics,
     GroupLoadStoreSemantics,
 )
 
@@ -104,14 +136,172 @@ def _call_classifications(
         )
         return tuple(classifications)
 
+    if isinstance(operation, GroupRunLengthDecodeSemantics):
+        primitive = operation.primitive
+        classifications = [
+            ParameterClassification(
+                "run_values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+            ),
+            ParameterClassification(
+                "run_lengths", ArgumentKind.RUNTIME, ParameterRole.INPUT
+            ),
+            ParameterClassification(
+                "decoded_items_per_thread",
+                ArgumentKind.STATIC,
+                ParameterRole.CONSTANT,
+            ),
+            ParameterClassification(
+                "decoded_window_offset",
+                ArgumentKind.RUNTIME,
+                ParameterRole.INPUT,
+            ),
+        ]
+        if primitive.has_relative_offsets:
+            classifications.append(
+                ParameterClassification(
+                    "relative_offsets",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.OUTPUT,
+                )
+            )
+        classifications.append(
+            ParameterClassification(
+                "total_decoded_size",
+                ArgumentKind.RUNTIME,
+                ParameterRole.OUTPUT,
+            )
+        )
+        return tuple(classifications)
+
+    primary_argument = (
+        "samples" if isinstance(operation, GroupHistogramSemantics) else "value"
+    )
     classifications = [
         ParameterClassification(
-            "value",
+            primary_argument,
             ArgumentKind.RUNTIME,
             ParameterRole.INPUT,
         )
     ]
-    if isinstance(operation, GroupReduceSemantics):
+    if isinstance(operation, GroupHistogramSemantics):
+        classifications.extend(
+            (
+                ParameterClassification(
+                    "bins", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "bins_per_thread", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "algorithm", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+            )
+        )
+    elif isinstance(operation, GroupAdjacentDifferenceSemantics):
+        classifications.extend(
+            (
+                ParameterClassification(
+                    "direction", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "operation", ArgumentKind.STATIC, ParameterRole.OPERATOR
+                ),
+            )
+        )
+        if operation.primitive.has_partial_tile:
+            classifications.append(
+                ParameterClassification(
+                    "valid_items", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                )
+            )
+        if operation.primitive.boundary is not BlockAdjacentDifferenceBoundary.NONE:
+            boundary_name = (
+                "tile_predecessor_item"
+                if operation.primitive.boundary
+                is BlockAdjacentDifferenceBoundary.PREDECESSOR
+                else "tile_successor_item"
+            )
+            classifications.append(
+                ParameterClassification(
+                    boundary_name, ArgumentKind.RUNTIME, ParameterRole.INPUT
+                )
+            )
+    elif isinstance(operation, GroupDiscontinuitySemantics):
+        classifications.extend(
+            (
+                ParameterClassification(
+                    "mode", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "operation", ArgumentKind.STATIC, ParameterRole.OPERATOR
+                ),
+            )
+        )
+        if operation.primitive.has_tile_predecessor:
+            classifications.append(
+                ParameterClassification(
+                    "tile_predecessor_item",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.INPUT,
+                )
+            )
+        if operation.primitive.has_tile_successor:
+            classifications.append(
+                ParameterClassification(
+                    "tile_successor_item",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.INPUT,
+                )
+            )
+    elif isinstance(operation, GroupShuffleSemantics):
+        classifications.append(
+            ParameterClassification("mode", ArgumentKind.STATIC, ParameterRole.CONSTANT)
+        )
+        if operation.primitive.distance.argument_kind is not None:
+            classifications.append(
+                ParameterClassification(
+                    "distance",
+                    operation.primitive.distance.argument_kind,
+                    (
+                        ParameterRole.CONSTANT
+                        if operation.primitive.distance.kind is BindingKind.STATIC
+                        else ParameterRole.INPUT
+                    ),
+                )
+            )
+        for boundary_name, enabled in (
+            ("block_prefix", operation.primitive.block_prefix),
+            ("block_suffix", operation.primitive.block_suffix),
+        ):
+            if enabled:
+                classifications.append(
+                    ParameterClassification(
+                        boundary_name,
+                        ArgumentKind.RUNTIME,
+                        ParameterRole.OUTPUT,
+                    )
+                )
+    elif isinstance(operation, GroupExchangeSemantics):
+        classifications.append(
+            ParameterClassification("mode", ArgumentKind.STATIC, ParameterRole.CONSTANT)
+        )
+        if operation.primitive.uses_ranks:
+            classifications.append(
+                ParameterClassification(
+                    "ranks",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.INPUT,
+                )
+            )
+        if operation.primitive.uses_valid_flags:
+            classifications.append(
+                ParameterClassification(
+                    "valid_flags",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.INPUT,
+                )
+            )
+    elif isinstance(operation, GroupReduceSemantics):
         if operation.valid_items.argument_kind is not None:
             classifications.append(
                 ParameterClassification(
@@ -136,42 +326,43 @@ def _call_classifications(
         else:
             classifications.append(
                 ParameterClassification(
-                    "operation",
-                    ArgumentKind.STATIC,
-                    ParameterRole.CONSTANT,
+                    "operation", ArgumentKind.STATIC, ParameterRole.CONSTANT
                 )
             )
-        return tuple(classifications)
-
-    classifications.append(
-        ParameterClassification("mode", ArgumentKind.STATIC, ParameterRole.CONSTANT)
-    )
-    for name, parameter in (
-        ("initial_value", operation.initial_value),
-        ("operation", operation.scan_operator),
-        ("prefix_callback", operation.prefix_callback),
-    ):
-        if parameter is None:
-            continue
-        classification = classify_parameter(parameter)
+    elif isinstance(operation, GroupScanSemantics):
         classifications.append(
-            ParameterClassification(
-                name,
-                classification.kind,
-                classification.role,
-            )
+            ParameterClassification("mode", ArgumentKind.STATIC, ParameterRole.CONSTANT)
         )
-    if operation.valid_items.argument_kind is not None:
-        classifications.append(
-            ParameterClassification(
-                "valid_items",
-                operation.valid_items.argument_kind,
-                (
-                    ParameterRole.CONSTANT
-                    if operation.valid_items.kind is BindingKind.STATIC
-                    else ParameterRole.INPUT
-                ),
+        for name, parameter in (
+            ("initial_value", operation.initial_value),
+            ("operation", operation.scan_operator),
+            ("prefix_callback", operation.prefix_callback),
+        ):
+            if parameter is None:
+                continue
+            classification = classify_parameter(parameter)
+            classifications.append(
+                ParameterClassification(
+                    name,
+                    classification.kind,
+                    classification.role,
+                )
             )
+        if operation.valid_items.argument_kind is not None:
+            classifications.append(
+                ParameterClassification(
+                    "valid_items",
+                    operation.valid_items.argument_kind,
+                    (
+                        ParameterRole.CONSTANT
+                        if operation.valid_items.kind is BindingKind.STATIC
+                        else ParameterRole.INPUT
+                    ),
+                )
+            )
+    else:
+        classifications.append(
+            ParameterClassification("mode", ArgumentKind.STATIC, ParameterRole.CONSTANT)
         )
     return tuple(classifications)
 
@@ -183,7 +374,10 @@ def make_group_primitive_call(
     source: str = "canonical",
 ) -> GroupPrimitiveCall:
     del source
-    return GroupPrimitiveCall(group=group, operation=operation)
+    return GroupPrimitiveCall(
+        group=group,
+        operation=operation,
+    )
 
 
 def plan_group_primitive(
@@ -230,6 +424,18 @@ def plan_group_primitive(
         return _plan_reduce(call, resolved, launch, operation)
     if isinstance(operation, GroupScanSemantics):
         return _plan_scan(call, resolved, launch, operation)
+    if isinstance(operation, GroupAdjacentDifferenceSemantics):
+        return _plan_adjacent_difference(call, resolved, launch, operation)
+    if isinstance(operation, GroupDiscontinuitySemantics):
+        return _plan_discontinuity(call, resolved, launch, operation)
+    if isinstance(operation, GroupShuffleSemantics):
+        return _plan_shuffle(call, resolved, launch, operation)
+    if isinstance(operation, GroupHistogramSemantics):
+        return _plan_histogram(call, resolved, launch, operation)
+    if isinstance(operation, GroupRunLengthDecodeSemantics):
+        return _plan_run_length_decode(call, resolved, launch, operation)
+    if isinstance(operation, GroupExchangeSemantics):
+        return _plan_exchange(call, resolved, launch, operation)
     return _plan_load_store(call, resolved, launch, operation)
 
 

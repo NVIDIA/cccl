@@ -22,7 +22,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 _THREADS = 64
 _ITEMS_PER_THREAD = 2
 _TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
-_OUTPUT_SEGMENTS = 2
+_OUTPUT_SEGMENTS = 6
 
 
 @cute.kernel
@@ -47,6 +47,34 @@ def _data_movement_kernel(values: cute.Tensor, output: cute.Tensor):
         qualified_loaded,
         algorithm="striped",
         offset=_TILE_ITEMS,
+    )
+
+    common_exchange = coop.exchange(block, common_loaded)
+    coop.store(block, output, common_exchange, offset=2 * _TILE_ITEMS)
+    qualified_exchange = cutlass_coop.exchange(
+        qualified_block,
+        qualified_loaded,
+        mode="blocked_to_striped",
+    )
+    cutlass_coop.store(
+        qualified_block,
+        output,
+        qualified_exchange,
+        offset=3 * _TILE_ITEMS,
+    )
+
+    common_shuffle = coop.shuffle(block, common_loaded, mode="down")
+    coop.store(block, output, common_shuffle, offset=4 * _TILE_ITEMS)
+    qualified_shuffle = cutlass_coop.shuffle(
+        qualified_block,
+        qualified_loaded,
+        mode="up",
+    )
+    cutlass_coop.store(
+        qualified_block,
+        output,
+        qualified_shuffle,
+        offset=5 * _TILE_ITEMS,
     )
 
 
@@ -88,6 +116,8 @@ def test_common_and_qualified_data_movement_compile_together(
     for header in (
         "cub/block/block_load.cuh",
         "cub/block/block_store.cuh",
+        "cub/block/block_exchange.cuh",
+        "cub/block/block_shuffle.cuh",
     ):
         assert f"#include <{header}>" in source
     for symbol_fragment in (
@@ -95,5 +125,9 @@ def test_common_and_qualified_data_movement_compile_together(
         "cuda_coop_cutlass_cub_load_block_b64_striped_i32_x2_",
         "cuda_coop_cutlass_cub_store_block_b64_direct_i32_x2_",
         "cuda_coop_cutlass_cub_store_block_b64_striped_i32_x2_",
+        "cuda_coop_cutlass_cub_exchange_block_b64_stripedtoblocked_i32_x2",
+        "cuda_coop_cutlass_cub_exchange_block_b64_blockedtostriped_i32_x2",
+        "cuda_coop_cutlass_shuffle_b64_down_i32_x2",
+        "cuda_coop_cutlass_shuffle_b64_up_i32_x2",
     ):
         assert symbol_fragment in source

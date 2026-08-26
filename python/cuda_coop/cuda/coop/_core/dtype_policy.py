@@ -24,6 +24,13 @@ _PORTABLE_INTEGER_VALUE_DTYPE_NAMES = (
     "uint64",
 )
 
+_PORTABLE_INTEGER_KEY_DTYPE_NAMES = (
+    "int32",
+    "uint32",
+    "int64",
+    "uint64",
+)
+
 
 def _validate_portable_dtype_name(
     dtype_name: str,
@@ -74,4 +81,20 @@ def validate_portable_integer_value_dtype_name(
         operation=operation,
         parameter=parameter,
         supported_dtype_names=_PORTABLE_INTEGER_VALUE_DTYPE_NAMES,
+    )
+
+
+def validate_portable_integer_key_dtype_name(
+    dtype_name: str,
+    *,
+    operation: str,
+    parameter: str = "key",
+) -> str:
+    """Validate one normalized dtype name for a portable integer key."""
+
+    return _validate_portable_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+        supported_dtype_names=_PORTABLE_INTEGER_KEY_DTYPE_NAMES,
     )

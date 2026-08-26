@@ -16,6 +16,7 @@ identity based.
 from __future__ import annotations
 
 import inspect
+import operator
 from itertools import count
 from numbers import Integral
 from typing import Any
@@ -41,8 +42,13 @@ from cuda.coop._core import (
 )
 
 from .. import _thread_group as _thread_groups
+from .._group_adjacent_difference import adjacent_difference
+from .._group_discontinuity import discontinuity
+from .._group_exchange import exchange
+from .._group_histogram import histogram
 from .._group_load_store import load, store
 from .._group_reduce import reduce, sum
+from .._group_run_length_decode import run_length_decode
 from .._group_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -50,12 +56,14 @@ from .._group_scan import (
     inclusive_sum,
     scan,
 )
+from .._group_shuffle import shuffle
 from .._scan_op import ScanOp
 from ._operations import group_operation_name
 
 _cuda_module = cuda
 
 _NAME_COUNTER = count()
+_PAYLOAD_DTYPE_INT32 = "int32"
 _PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
@@ -88,17 +96,29 @@ _QUALIFIED_OPERATIONS = (
     "inclusive_sum",
     "exclusive_scan",
     "inclusive_scan",
+    "exchange",
+    "adjacent_difference",
+    "discontinuity",
+    "shuffle",
+    "histogram",
+    "run_length_decode",
 )
 _ROOT_OPERATIONS = {
     function: group_operation_name(function)
     for function in (
+        adjacent_difference,
+        discontinuity,
+        exchange,
         exclusive_scan,
         exclusive_sum,
+        histogram,
         inclusive_scan,
         inclusive_sum,
         load,
         reduce,
+        run_length_decode,
         scan,
+        shuffle,
         store,
         sum,
     )
@@ -116,6 +136,12 @@ _ROOT_OPERATIONS.update(
             "inclusive_sum",
             "exclusive_scan",
             "inclusive_scan",
+            "exchange",
+            "adjacent_difference",
+            "discontinuity",
+            "shuffle",
+            "histogram",
+            "run_length_decode",
         )
     }
 )
@@ -135,6 +161,24 @@ _GROUP_METHODS = frozenset(
 
 class GroupRewriteError(Exception):
     """A group-first call was recognized but could not be lowered safely."""
+
+
+def _builtin_subtract(lhs: Any, rhs: Any) -> Any:
+    return lhs - rhs
+
+
+def _builtin_not_equal(lhs: Any, rhs: Any) -> bool:
+    return lhs != rhs
+
+
+def _histogram_provider_counter_dtype(counter_dtype: Any) -> Any:
+    """Use the unsigned CUB accumulator matching the public counter width."""
+
+    if counter_dtype in (types.int32, types.uint32):
+        return types.uint32
+    if counter_dtype in (types.int64, types.uint64):
+        return types.uint64
+    return counter_dtype
 
 
 def _group_operation_name(function: Any) -> str | None:

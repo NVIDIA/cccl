@@ -5,6 +5,7 @@
 from collections import Counter
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
@@ -267,6 +268,205 @@ def test_fixed_capacity_temp_storage_is_forwarded_to_load_and_store():
     assert resolver._infer_constant(dict(shared_array_calls[0].kws)["alignment"]) == 16
 
 
+@pytest.mark.parametrize("group_kind", ["block", "warp", "logical_warp"])
+def test_common_exchange_lowers_without_truncating_logical_warp(group_kind):
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir._lowering as lowering
+    from cuda import coop
+
+    if group_kind == "block":
+        group = coop.this_block()
+    elif group_kind == "warp":
+        group = coop.this_warp()
+    else:
+        group = coop.this_warp().group_by(8)
+
+    def movement(value):
+        items = coop.ThreadData(5, dtype=types.int32)
+        for index in range(5):
+            items[index] = value + index
+        blocked = coop.exchange(group, items)
+        return coop.exchange(group, blocked, mode="blocked_to_striped")
+
+    func_ir, planner = _plan(movement, arg_types=(types.int32,))
+    assert planner.run()
+    expected = lowering.exchange if group_kind == "block" else lowering.warp_exchange
+    calls = [
+        call
+        for factory, call in _planned_factory_calls(func_ir, ir)
+        if factory is expected
+    ]
+    assert len(calls) == 2
+    if group_kind == "logical_warp":
+        constants = {
+            inst.target.name: inst.value.value
+            for block in func_ir.blocks.values()
+            for inst in block.body
+            if isinstance(inst, ir.Assign) and isinstance(inst.value, ir.Const)
+        }
+        assert [
+            constants[dict(call.kws)["threads_in_warp"].name] for call in calls
+        ] == [8, 8]
+
+
+def test_common_and_qualified_exchange_accept_eight_items_per_thread():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+
+    def common(value):
+        items = coop.ThreadData(8, dtype=types.int32)
+        items[0] = value
+        return coop.exchange(coop.this_block(), items)
+
+    _, common_planner = _plan(common, arg_types=(types.int32,))
+    assert common_planner.run()
+
+    def qualified(value):
+        items = numba_coop.ThreadData(8, dtype=types.int32)
+        items[0] = value
+        return numba_coop.exchange(numba_coop.this_block(), items)
+
+    _, qualified_planner = _plan(qualified, arg_types=(types.int32,))
+    assert qualified_planner.run()
+
+
+def test_common_and_qualified_shuffle_lower_to_block_factory():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as numba_coop
+    import cuda.coop.numba_mlir._lowering as lowering
+    from cuda import coop
+
+    def common(value):
+        items = coop.ThreadData(3, dtype=types.int32)
+        for index in range(3):
+            items[index] = value + index
+        return coop.shuffle(coop.this_block(), items, mode="up")
+
+    def qualified(value):
+        items = numba_coop.ThreadData(3, dtype=types.int32)
+        for index in range(3):
+            items[index] = value + index
+        return numba_coop.shuffle(numba_coop.this_block(), items, mode="up")
+
+    for function in (common, qualified):
+        func_ir, planner = _plan(function, arg_types=(types.int32,))
+        assert planner.run()
+        factories = [factory for factory, _ in _planned_factory_calls(func_ir, ir)]
+        assert factories.count(lowering.shuffle) == 1
+
+
+def test_qualified_shuffle_rejects_boundary_outputs():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+
+    def qualified(value):
+        items = coop.ThreadData(3, dtype=types.int32)
+        suffix = coop.ThreadData(1, dtype=types.int32)
+        for index in range(3):
+            items[index] = value + index
+        return coop.shuffle(
+            coop.this_block(),
+            items,
+            mode="up",
+            block_suffix=suffix,
+        )
+
+    _, planner = _plan(qualified, arg_types=(types.int32,))
+    with pytest.raises(NotImplementedError, match="without boundary outputs"):
+        planner.run()
+
+
+@pytest.mark.parametrize(
+    ("factory", "keyword"),
+    [
+        ("block_exchange", "block_exchange_type"),
+        ("block_shuffle", "block_shuffle_type"),
+        ("warp_exchange", "warp_exchange_type"),
+    ],
+)
+def test_integer_selectors_use_index_and_reject_bool(factory, keyword):
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    if factory == "block_exchange":
+        from cuda.coop.numba_mlir._lowering._exchange import exchange as operation
+
+        kwargs = {"threads_per_block": 32}
+    elif factory == "block_shuffle":
+        from cuda.coop.numba_mlir._lowering._shuffle import shuffle as operation
+
+        kwargs = {"threads_per_block": 32}
+    else:
+        from cuda.coop.numba_mlir._lowering._exchange import (
+            warp_exchange as operation,
+        )
+
+        kwargs = {"threads_in_warp": 8}
+
+    with pytest.raises(TypeError, match="must not be bool"):
+        operation(dtype=types.int32, **kwargs, **{keyword: True})
+
+    # NumPy integers implement __index__; accepting them avoids lossy int(...)
+    # coercions while preserving exact selector validation.
+    try:
+        operation(dtype=types.int32, **kwargs, **{keyword: np.int64(1)})
+    except RuntimeError:
+        # Materialization can require a CUDA toolkit in a host-only test. The
+        # selector has already passed validation by this point.
+        pass
+
+
+def test_warp_exchange_rejects_fractional_width_instead_of_truncating():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._lowering._exchange import warp_exchange
+
+    with pytest.raises(TypeError, match="threads_in_warp must be an integer"):
+        warp_exchange(dtype=types.int32, threads_in_warp=8.5)
+
+
+def test_shuffle_boundary_none_and_omitted_types_are_preserved():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop.numba_mlir._compiler._rewrite import (
+        CoopSinglePhaseRewrite,
+    )
+
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    rewrite._block_defs = {}
+    rewrite._func_ir = SimpleNamespace(
+        get_definition=lambda _value: (_ for _ in ()).throw(KeyError())
+    )
+    rewrite._state = SimpleNamespace(args=())
+    none_var = ir.Var(ir.Scope(None, ir.Loc("test", 1)), "none", ir.Loc("test", 1))
+    omitted_var = ir.Var(
+        none_var.scope,
+        "omitted",
+        none_var.loc,
+    )
+    rewrite._arg_type_map = {
+        none_var.name: types.none,
+        omitted_var.name: types.Omitted(None),
+    }
+
+    assert rewrite._resolve_factory_kwarg_value("block_prefix", none_var) is None
+    assert rewrite._resolve_factory_kwarg_value("block_suffix", omitted_var) is None
+
+
 def _parameter_names(specialization):
     return [
         [type(parameter).__name__ for parameter in overload]
@@ -455,3 +655,109 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings():
         not isinstance(value, ArgumentBinding) or value.kind is not BindingKind.RUNTIME
         for value in load_match.factory_kwargs.values()
     )
+
+
+def test_block_exchange_adapter_preserves_in_and_out_of_place_forms():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core.block import make_block_exchange_spec
+    from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+
+    exchange = NumbaMlirCoreAdapter().materialize(
+        make_block_exchange_spec(
+            dtype=types.int32,
+            block_dim=(16, 2, 1),
+            items_per_thread=3,
+            mode="scatter_to_striped_flagged",
+            value_form="both",
+            rank_dtype=types.int32,
+            valid_flag_dtype=types.uint8,
+        ).specialization
+    )
+    assert exchange.method_name == "ScatterToStripedFlagged"
+    assert _parameter_names(exchange) == [
+        ["Pointer", "Array", "Array", "Array"],
+        ["Pointer", "Array", "Array", "Array", "Array"],
+    ]
+
+
+def test_block_shuffle_adapter_preserves_static_distance_and_boundary():
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import ArgumentBinding
+    from cuda.coop._core.block import make_block_shuffle_spec
+    from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+
+    scalar = NumbaMlirCoreAdapter().materialize(
+        make_block_shuffle_spec(
+            dtype=types.int32,
+            block_dim=(32, 1, 1),
+            mode="offset",
+            distance=ArgumentBinding.static(-2),
+        ).specialization
+    )
+    assert scalar.method_name == "Offset"
+    assert scalar.fake_return
+    assert scalar.parameters[0][-1].cpp == "-2"
+
+    array = NumbaMlirCoreAdapter().materialize(
+        make_block_shuffle_spec(
+            dtype=types.int32,
+            block_dim=(32, 1, 1),
+            mode="down",
+            items_per_thread=2,
+            block_prefix=True,
+        ).specialization
+    )
+    assert array.method_name == "Down"
+    assert _parameter_names(array) == [
+        ["Pointer", "Array", "Array", "PointerReference"]
+    ]
+
+
+@pytest.mark.parametrize(
+    ("module_name", "operation", "factory_kwargs"),
+    [
+        (
+            "cuda.coop.numba_mlir._lowering._exchange",
+            "exchange",
+            {"threads_per_block": 32, "use_output_items": True},
+        ),
+        (
+            "cuda.coop.numba_mlir._lowering._exchange",
+            "warp_exchange",
+            {"threads_in_warp": 8, "threads_per_block": 64},
+        ),
+    ],
+)
+def test_exchange_factories_define_aggregate_storage(
+    monkeypatch,
+    module_name,
+    operation,
+    factory_kwargs,
+):
+    import importlib
+
+    pytest.importorskip("numba_cuda_mlir")
+    from numba_cuda_mlir import types
+
+    module = importlib.import_module(module_name)
+    captured = {}
+
+    def capture(specialization, **kwargs):
+        captured.update(kwargs)
+        return specialization
+
+    monkeypatch.setattr(module, "make_invocable_from_specialization", capture)
+    specialization = getattr(module, operation)(
+        dtype=types.complex128,
+        items_per_thread=2,
+        **factory_kwargs,
+    )
+
+    assert "struct __align__(8) storage_t" in specialization.type_definitions[0].code
+    assert "char data[16]" in specialization.type_definitions[0].code
+    if operation == "warp_exchange":
+        assert captured == {"threads": 8, "block_threads": 64}

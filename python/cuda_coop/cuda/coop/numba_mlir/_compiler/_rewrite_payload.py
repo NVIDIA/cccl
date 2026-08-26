@@ -23,7 +23,17 @@ class PayloadInference:
 
     _COMMON_OPERATION_ALIASES: dict[str, str] = {}
     _OPERATION_ALIASES: dict[str, str] = {}
-    _DTYPE_FACTORY_KWARGS = frozenset({"dtype"})
+    _DTYPE_FACTORY_KWARGS = frozenset(
+        {
+            "dtype",
+            "item_dtype",
+            "counter_dtype",
+            "run_length_dtype",
+            "decoded_offset_dtype",
+            "total_decoded_size_dtype",
+            "relative_offset_dtype",
+        }
+    )
 
     def __init__(
         self,
@@ -135,7 +145,11 @@ class _PayloadRewrite:
         )
         operation = inference.op_name
 
-        if operation in {
+        if operation == "_group_histogram":
+            self._infer_histogram_payload(inference)
+        elif operation == "_group_run_length_decode":
+            self._infer_run_length_decode_payload(inference)
+        elif operation in {
             "group_reduce",
             "block_reduce_builtin",
             "reduce",
@@ -153,8 +167,16 @@ class _PayloadRewrite:
             "warp_inclusive_scan",
         }:
             self._infer_scan_payload(inference)
+        elif operation == "adjacent_difference":
+            self._infer_adjacent_difference_payload(inference)
+        elif operation == "discontinuity":
+            self._infer_discontinuity_payload(inference)
         elif operation in {"load", "store", "warp_load", "warp_store"}:
             self._infer_load_store_payload(inference)
+        elif operation in {"exchange", "warp_exchange"}:
+            self._infer_exchange_payload(inference)
+        elif operation == "shuffle":
+            self._infer_shuffle_payload(inference)
 
 
 __all__ = ["_PayloadRewrite"]

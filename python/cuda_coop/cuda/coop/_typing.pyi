@@ -96,6 +96,15 @@ NonSumScanOperator: TypeAlias = Literal[
 ]
 ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
+ExchangeMode: TypeAlias = Literal[
+    "striped_to_blocked",
+    "blocked_to_striped",
+]
+AdjacentDifferenceDirection: TypeAlias = Literal["left", "right"]
+DiscontinuityMode: TypeAlias = Literal["heads", "tails"]
+PortableShuffleMode: TypeAlias = Literal["down", "up"]
+ShuffleMode: TypeAlias = Literal["down", "up", "offset", "rotate"]
+HistogramAlgorithm: TypeAlias = Literal["atomic", "sort"]
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 BinaryFunction: TypeAlias = Callable[[ItemT, ItemT], ItemT]
 
@@ -133,6 +142,12 @@ ScalarValue: TypeAlias = (
 )
 IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
 TraceInteger: TypeAlias = int | numpy.integer[Any]
+PortableIntegerKey: TypeAlias = (
+    int | numpy.int32 | numpy.uint32 | numpy.int64 | numpy.uint64 | CompilerIntegerLike
+)
+PortableIntegerValue: TypeAlias = PortableIntegerKey | numpy.uint8
+PortableRunValue: TypeAlias = PortableIntegerValue
+PortableRunLength: TypeAlias = PortableIntegerKey
 ValidItems: TypeAlias = IntegerValue
 
 class ThreadDataLike(Protocol[ItemT]):
@@ -177,13 +192,19 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
+    "AdjacentDifferenceDirection",
     "BinaryFunction",
+    "DiscontinuityMode",
+    "ExchangeMode",
+    "HistogramAlgorithm",
     "LoadStoreAlgorithm",
+    "PortableShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
     "ScanAlgorithm",
     "ScanMode",
     "ScanOperator",
+    "ShuffleMode",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",

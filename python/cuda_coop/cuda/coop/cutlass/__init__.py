@@ -12,8 +12,13 @@ from ._compiler import register_trace_context as _register_trace_context
 from ._compiler._runtime import (
     validate_cutlass_runtime as _validate_cutlass_runtime,
 )
+from ._group_adjacent_difference import adjacent_difference
+from ._group_discontinuity import discontinuity
+from ._group_exchange import exchange
+from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
+from ._group_run_length_decode import run_length_decode
 from ._group_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -21,6 +26,7 @@ from ._group_scan import (
     inclusive_sum,
     scan,
 )
+from ._group_shuffle import shuffle
 from ._thread_data import (
     ThreadData,
     ThreadDataLoadSource,
@@ -50,13 +56,19 @@ __all__ = [
     "ThreadDataTensorMetadata",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "reduce",
+    "run_length_decode",
     "scan",
+    "shuffle",
     "store",
     "sum",
     "this_block",

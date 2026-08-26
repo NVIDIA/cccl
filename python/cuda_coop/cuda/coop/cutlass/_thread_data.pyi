@@ -536,6 +536,9 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
     def __setitem__(self, index: int, value: _ItemT, /) -> None:
         """Replace one register value."""
 
+CutlassHistogramOpaqueSamples: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
+CutlassRunTensor: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
+
 __all__ = [
     "ThreadData",
     "ThreadDataLoadSource",
