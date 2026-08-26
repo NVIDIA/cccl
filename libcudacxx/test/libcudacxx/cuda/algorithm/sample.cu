@@ -15,6 +15,7 @@
 #include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/cstddef>
+#include <cuda/std/limits>
 #include <cuda/std/mdspan>
 #include <cuda/std/random>
 #include <cuda/std/span>
@@ -199,6 +200,24 @@ C2H_TEST("cuda::sample returns the whole population when k >= n", "[algorithm][s
   }
 }
 
+C2H_TEST("cuda::sample returns the whole population for a huge unsigned k", "[algorithm][sample]")
+{
+  // A large unsigned k (e.g. size_t::max) must not wrap to -1 after a narrowing cast to int64_t.
+  // Before the fix, static_cast<int64_t>(size_t::max) == -1 caused __k <= 0 and an early return
+  // with no output written.
+  constexpr cuda::std::size_t n = 5;
+  constexpr cuda::std::size_t k = cuda::std::numeric_limits<cuda::std::size_t>::max();
+
+  const auto sample = device_sample(n, k);
+
+  REQUIRE(sample.size() == n);
+
+  for (cuda::std::size_t i = 0; i < n; ++i)
+  {
+    REQUIRE(sample[i] == i);
+  }
+}
+
 C2H_TEST("cuda::sample writes nothing for a degenerate request", "[algorithm][sample]")
 {
   // A sample size of zero, or an empty population, must write nothing. A negative sample size is
@@ -335,11 +354,12 @@ C2H_TEST("cuda::sample covers a large population uniformly", "[algorithm][sample
     stat += (delta * delta) / expected;
   }
 
-  // Each draw selects `k` different indices, so one index cannot occur two times in a draw. This
-  // limit makes the counts vary less than the score above assumes. The counts vary by the factor
-  // `1 - k / n`, so divide by that factor before the comparison. Without this division the test
+  // Each draw picks `k` different indices, so the same index cannot appear twice in one draw.
+  // This reduces how much the counts vary compared to what the formula above assumes. The
+  // true variance is smaller by the factor `(n - k) / (n - 1)`. Divide `stat` by that factor
+  // to get a value that follows the chi-squared distribution. Without this step the test
   // accepts a biased sampler.
-  stat /= 1.0 - static_cast<double>(s.k_) / static_cast<double>(s.n_);
+  stat *= (static_cast<double>(s.n_) - 1.0) / (static_cast<double>(s.n_) - static_cast<double>(s.k_));
 
   INFO("n = " << s.n_ << ", k = " << s.k_ << ", chi2 = " << stat);
   REQUIRE(stat < chi_squared_critical_value(static_cast<double>(s.n_) - 1.0));

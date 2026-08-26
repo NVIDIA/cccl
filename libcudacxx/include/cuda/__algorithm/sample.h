@@ -22,12 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -218,7 +218,7 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
         __limit  = static_cast<double>(__qu1);
       }
 
-      for (auto __t = __N_real - 1.0; __t >= __limit; __t -= 1.0)
+      for (auto __t = __N_real - 1.0; __t >= __limit; __t -= 1.0) // NOLINT(bugprone-float-loop-counter)
       {
         __y2 = (__y2 * __top) / __bottom;
         __top -= 1.0;
@@ -315,7 +315,9 @@ _CCCL_API _SampleIterator sample(
   }
 
   const auto __N = static_cast<_CommonType>(__last - __first);
-  const auto __k = (::cuda::std::min) (static_cast<_CommonType>(__n), __N);
+  // __n might be UINT128T_MAX, which won't fit in our _CommonType so need safely clamp to __N
+  // instead of just blindly casting min() to _CommonType.
+  const auto __k = ::cuda::std::cmp_greater(__n, __N) ? __N : static_cast<_CommonType>(__n);
 
   if (__k <= 0)
   {

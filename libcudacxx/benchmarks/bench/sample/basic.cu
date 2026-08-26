@@ -45,7 +45,7 @@ template <class Rng, class Kernel>
 void run(
   nvbench::state& state, Kernel kernel, cuda::std::size_t n, cuda::std::size_t k, cuda::std::size_t population_reads)
 {
-  const auto device = cuda::device_ref{state.get_device()->get_id()};
+  const auto device = cuda::device_ref{state.get_device()->get_id()}; // NOLINT(bugprone-unchecked-optional-access)
   auto stream       = cuda::stream{device};
   auto resource     = cuda::device_default_memory_pool(device);
   auto population   = cuda::make_buffer<int>(stream, resource, n, 0);
