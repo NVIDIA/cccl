@@ -35,8 +35,13 @@ struct remove_pointer
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
 };
 
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
+template <class _Tp>
+using remove_pointer_t _CCCL_NODEBUG_ALIAS = typename remove_pointer<_Tp>::type;
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
 using remove_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else
 template <class _Tp>

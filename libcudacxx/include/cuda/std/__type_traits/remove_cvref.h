@@ -44,13 +44,13 @@ struct remove_cvref
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
 };
 
-#  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
 using remove_cvref_t _CCCL_NODEBUG_ALIAS = typename remove_cvref<_Tp>::type;
-#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
 using remove_cvref_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
-#  endif // !_CCCL_COMPILER(GCC)
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else // ^^^ _CCCL_BUILTIN_REMOVE_CVREF ^^^ / vvv !_CCCL_BUILTIN_REMOVE_CVREF vvv
 

@@ -39,14 +39,13 @@ struct remove_cv
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 };
 
-// GCC and NVRTC do not accept the builtin in template signatures, see nvbug6669680
-#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
 using remove_cv_t _CCCL_NODEBUG_ALIAS = typename remove_cv<_Tp>::type;
-#  else // ^^^ _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC) ^^^ / vvv other compilers vvv
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
 using remove_cv_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
-#  endif // other compilers
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else
 
