@@ -85,8 +85,9 @@ _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator 
       .second;
 
   return ::cuda::std::__rewrap_iter(__result, __ret);
+}
 
-  _CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
