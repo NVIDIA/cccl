@@ -50,10 +50,12 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}} PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
-; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]]{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
