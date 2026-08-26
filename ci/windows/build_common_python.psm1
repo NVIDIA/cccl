@@ -18,6 +18,10 @@ function Get-Python {
     # no compilation, no build dependencies, no pyenv-win required.
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "Installing uv..."
+        # Windows PowerShell 5.1 in a bare image may still default to TLS 1.0,
+        # which astral.sh rejects.
+        [Net.ServicePointManager]::SecurityProtocol =
+            [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
         # uv installs to $HOME\.local\bin on Windows
         $uvBin = Join-Path $HOME '.local\bin'

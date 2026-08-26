@@ -66,14 +66,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Windows exposes GPUs to a container as a whole device class rather than
-# individually, and only under process isolation. Ask the driver whether there
-# is anything to pass on.
-$gpuArgs = @()
-& nvidia-smi -L *> $null
-if ($LASTEXITCODE -eq 0) {
-    $gpuArgs = @('--isolation=process', '--device', 'class/5B45201D-F2F2-4F3B-85BB-30FF1F953599')
-} else {
-    Write-Host "No GPU visible here; the payload will run without one."
+# individually, and only under process isolation. There is no way to ask from in
+# here whether one was attached -- nvidia-smi is not on PATH in the devcontainer,
+# and the CI action passes its GPU decision as a docker flag rather than an
+# environment variable. Request it unconditionally instead: every lane that
+# reaches this helper is a GPU lane, and the devcontainer around us was started
+# with this same flag. Docker fails loudly if the device is absent.
+$gpuArgs = @('--isolation=process')
+if ($env:CCCL_MINIMAL_CONTAINER_NO_GPU -ne '1') {
+    $gpuArgs += @('--device', 'class/5B45201D-F2F2-4F3B-85BB-30FF1F953599')
 }
 
 # There is no nvcc in the sibling, so hand it the version resolved out here.
