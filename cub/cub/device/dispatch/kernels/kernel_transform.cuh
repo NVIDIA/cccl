@@ -362,7 +362,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
 //
 // For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
+// https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#asynchronous-data-copies
 //
 // We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
@@ -371,10 +371,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // should align to 128 bytes instead of 16 on Hopper.
 //
 // However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
-// * According to the CUDA programming guide
-// (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses), "any address of a variable
-// residing in global memory or returned by one of the memory allocation routines from the driver or runtime API is
-// always aligned to at least 256 bytes."
+// * According to the CUDA Best Practices guide
+// (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#a-sequential-but-misaligned-access-pattern), "Memory
+// allocated through the CUDA Runtime API, such as via cudaMalloc(), is guaranteed to be aligned to at least 256 bytes."
 // * Memory protection is usually done on memory page level, which is even larger than 256 bytes for CUDA and 4KiB on
 // Intel x86 and 4KiB+ ARM. Front and tail padding thus never leaves the memory page of the input buffer.
 // * This should count for device memory, but also for device accessible memory living on the host.

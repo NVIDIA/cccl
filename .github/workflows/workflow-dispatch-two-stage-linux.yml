@@ -15,13 +15,23 @@ on:
         description: "The dispatch.json's linux_two_stage.jobs.<name>[*].consumers array."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        type: string
+        required: false
+        default: ${{ github.repository }}
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ${{ github.sha }}
 
 jobs:
   # Accumulating results from multiple producers is not easily implemented. For now, only a single producer is supported.
   # The build-workflow.py script will emit an error if more than one producer is specified.
   producer:
     name: ${{ fromJSON(inputs.producers)[0].name }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -30,6 +40,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.commit }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
@@ -44,7 +56,7 @@ jobs:
   consumers:
     name: "${{ matrix.name }}"
     needs: producer
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -57,6 +69,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.commit }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
