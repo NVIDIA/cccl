@@ -53,6 +53,12 @@ def test_cute_partition_from_spec():
     assert part.local_leaves == [(4, 1)]
     assert [part.place_offset(i) for i in range(3)] == [0, 4, 8]
     assert [part.grid_place_offset(i) for i in range(3)] == [0, 4, 8]
+    with pytest.raises(ValueError, match="out of range"):
+        part.place_offset(-1)
+    with pytest.raises(ValueError, match="out of range"):
+        part.place_offset(3)
+    with pytest.raises(TypeError, match="integer"):
+        part.place_offset(0.5)
 
     # 3-D non-cubic tensor, middle dimension blocked. In C order, (8, 6, 4)
     # has the extent-4 axis contiguous: each place owns 3 slabs of 4 elements.
@@ -134,6 +140,8 @@ def test_cute_partition_owner():
 
     with pytest.raises(ValueError):
         part2.owner((0,))  # rank mismatch
+    with pytest.raises(ValueError, match="owner query failed"):
+        part2.owner((6, 0))  # first coordinate is outside the padded extents
 
 
 def test_tensor_of_tiles_owner_ignores_payload():

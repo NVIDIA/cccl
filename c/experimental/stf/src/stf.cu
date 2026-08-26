@@ -794,6 +794,10 @@ stf_cute_partition_handle stf_cute_partition_create(
   ::std::memcpy(&td, true_dims, sizeof(td));
   ::std::memcpy(&gd, grid_dims, sizeof(gd));
   return to_opaque(stf_try_allocate([&] {
+    if (rank > 4)
+    {
+      throw ::std::invalid_argument("stf_cute_partition_create: rank must be at most 4");
+    }
     ::std::vector<::cuda::experimental::places::dim_spec> cpp_spec(rank);
     for (size_t d = 0; d < rank; d++)
     {
@@ -930,7 +934,15 @@ int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_c
   try
   {
     const pos4 coords(data_coords->x, data_coords->y, data_coords->z, data_coords->t);
-    const pos4 owner = from_opaque_const(h)->owner(coords);
+    const auto* part = from_opaque_const(h);
+    const dim4 dims  = part->padded_dims();
+    if (coords.x < 0 || coords.y < 0 || coords.z < 0 || coords.t < 0 || static_cast<uint64_t>(coords.x) >= dims.x
+        || static_cast<uint64_t>(coords.y) >= dims.y || static_cast<uint64_t>(coords.z) >= dims.z
+        || static_cast<uint64_t>(coords.t) >= dims.t)
+    {
+      throw ::std::out_of_range("stf_cute_partition_owner: coordinates are outside the padded extents");
+    }
+    const pos4 owner = part->owner(coords);
     out_grid_pos->x  = owner.x;
     out_grid_pos->y  = owner.y;
     out_grid_pos->z  = owner.z;
@@ -940,6 +952,11 @@ int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_c
   catch (const ::std::exception& e)
   {
     fprintf(stderr, "stf_cute_partition_owner failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_cute_partition_owner failed: unknown exception\n");
     return 1;
   }
 }
@@ -954,6 +971,11 @@ uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t p
   catch (const ::std::exception& e)
   {
     fprintf(stderr, "stf_cute_partition_place_offset failed: %s\n", e.what());
+    return UINT64_MAX;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_cute_partition_place_offset failed: unknown exception\n");
     return UINT64_MAX;
   }
 }
