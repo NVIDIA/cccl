@@ -52,8 +52,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+needs_cuda_toolkit=false
+needs_gpu=false
 case "$stage" in
   contracts)
+    ;;
+  cutlass-host)
+    needs_cuda_toolkit=true
+    ;;
+  cutlass-gpu | cutlass-final-link)
+    needs_cuda_toolkit=true
+    needs_gpu=true
     ;;
   *)
     echo "Error: unknown cuda.coop test stage '$stage'" >&2
@@ -64,6 +73,14 @@ esac
 
 # shellcheck source=ci/pyenv_helper.sh
 source "$ci_dir/pyenv_helper.sh"
+
+if [[ "$needs_cuda_toolkit" == true ]]; then
+  if ! command -v nvcc >/dev/null 2>&1; then
+    echo "Error: cuda.coop stage '$stage' requires nvcc on PATH" >&2
+    exit 1
+  fi
+  pin_cuda_toolkit "${ctk_mode}"
+fi
 
 setup_python_env "${py_version}" ".cccl-coop-test-venv"
 
@@ -84,7 +101,22 @@ fi
 
 cd "$repo_root/python/cuda_coop/tests"
 
-python -m pip install "${wheels[0]}[test]"
+case "$stage" in
+  contracts)
+    python -m pip install "${wheels[0]}[test]"
+    ;;
+  cutlass-host | cutlass-gpu | cutlass-final-link)
+    if [[ "$cuda_major_version" != "13" ]]; then
+      echo "Error: CUTLASS stages currently require CUDA 13" >&2
+      exit 1
+    fi
+    python -m pip install "${wheels[0]}[test,cutlass]" torch
+    ;;
+  *)
+    echo "Error: unhandled cuda.coop test stage '$stage'" >&2
+    exit 1
+    ;;
+esac
 
 python -m pip check
 python -I - <<'PY'
@@ -108,4 +140,58 @@ paths = resolve_include_paths(
 assert paths.origin == "cuda-coop wheel header bundle"
 PY
 
-python -m pytest -v contracts/ packaging/
+if [[ "$needs_gpu" == true ]]; then
+  nvidia-smi \
+    --query-gpu=name,compute_cap,driver_version \
+    --format=csv,noheader
+fi
+
+case "$stage" in
+  contracts)
+    python -m pytest -v contracts/ packaging/
+    ;;
+  cutlass-host)
+    python - <<'PY'
+import importlib.metadata
+
+import cutlass.cute  # noqa: F401
+
+print(f"nvidia-cutlass-dsl={importlib.metadata.version('nvidia-cutlass-dsl')}")
+PY
+    python -m pytest -v \
+      backends/cutlass/unit/ \
+      backends/cutlass/compile/
+    ;;
+  cutlass-gpu | cutlass-final-link)
+    python - <<'PY'
+import importlib.metadata
+
+import cutlass.cute as cute
+import torch
+
+if not callable(getattr(cute, "_get_launch_facts", None)):
+    raise SystemExit("CUTLASS DSL does not provide launch-facts support")
+if not torch.cuda.is_available():
+    raise SystemExit("PyTorch cannot access an NVIDIA GPU")
+print(f"nvidia-cutlass-dsl={importlib.metadata.version('nvidia-cutlass-dsl')}")
+PY
+    if [[ "$stage" == "cutlass-gpu" ]]; then
+      unset CUDA_COOP_CUTLASS_FINAL_LINK_TEST
+      python -m pytest -v backends/cutlass/runtime/
+    else
+      export CUDA_COOP_CUTLASS_FINAL_LINK_TEST=1
+      unset CUDA_COOP_CUTLASS_PROVIDER_CCCL_ROOT
+      unset CUDA_COOP_CCCL_ROOT
+      python -m pytest -v \
+        backends/cutlass/runtime/test_group_hierarchy.py::test_local_physical_and_exhaustive_mapped_groups_runtime \
+        backends/cutlass/runtime/test_group_hierarchy.py::test_non_exhaustive_mapped_group_membership_runtime \
+        backends/cutlass/runtime/test_data_movement.py::test_block_and_warp_data_movement_match_independent_oracles \
+        backends/cutlass/runtime/test_data_movement.py::test_fixed_capacity_storage_reaches_block_load_and_store \
+        backends/cutlass/runtime/test_reduce_scan.py::test_reduce_scan_group_routes_match_independent_oracles
+    fi
+    ;;
+  *)
+    echo "Error: unhandled cuda.coop test stage '$stage'" >&2
+    exit 1
+    ;;
+esac

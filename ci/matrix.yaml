@@ -724,6 +724,11 @@ jobs:
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
   test_py_coop_host: { name: "Test cuda.coop (host)", gpu: false, needs: 'build', invoke: { prefix: 'test'} }
+  # CUTLASS jobs are ready for manual overrides, but stay unscheduled until
+  # nvidia-cutlass-dsl>=4.8 is available from the public package index.
+  test_py_coop_cutlass_host: { name: "Test cuda.coop CUTLASS (host)", gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-host'} }
+  test_py_coop_cutlass_gpu: { name: "Test cuda.coop CUTLASS (GPU)", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-gpu'} }
+  test_py_coop_cutlass_final_link: { name: "Test cuda.coop CUTLASS final link", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-final-link'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }

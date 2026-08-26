@@ -71,6 +71,37 @@ struct ReduceKernel
   }
 };
 
+template <bool Broadcasted>
+struct ConsecutiveReduceKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config, int* d_out)
+  {
+    cudax::this_block block{config};
+    int thread_data[1] = {1};
+
+    if constexpr (Broadcasted)
+    {
+      const auto first = cudax::coop::reduce(cudax::broadcasted, block, thread_data, cuda::std::plus<>{});
+      thread_data[0] += 2;
+      const auto second = cudax::coop::reduce(cudax::broadcasted, block, thread_data, cuda::std::plus<>{});
+      d_out[cuda::gpu_thread.rank_as<int>(block)] = first + second;
+    }
+    else
+    {
+      const auto first = cudax::coop::reduce(block, thread_data, cuda::std::plus<>{});
+      thread_data[0] += 2;
+      const auto second = cudax::coop::reduce(block, thread_data, cuda::std::plus<>{});
+      REQUIRE(first.has_value() == cuda::gpu_thread.is_root_rank(block));
+      REQUIRE(second.has_value() == cuda::gpu_thread.is_root_rank(block));
+      if (first.has_value() && second.has_value())
+      {
+        *d_out = *first + *second;
+      }
+    }
+  }
+};
+
 /***********************************************************************************************************************
  * Type list definition
  **********************************************************************************************************************/
@@ -220,4 +251,21 @@ C2H_TEST("reduce/this_block Broadcasted", "[reduce][this_block]", integral_type_
     run_reduce_kernel(stream, block_size_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(block_size_t::value, reference_result), c2h::host_vector<value_t>(d_out));
   }
+}
+
+C2H_TEST("reduce/this_block handles consecutive reductions", "[reduce][this_block]")
+{
+  constexpr int block_size = 128;
+  constexpr int expected   = 4 * block_size;
+  cuda::stream stream{cuda::devices[0]};
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<block_size>());
+  c2h::device_vector<int> d_result(1);
+  c2h::device_vector<int> d_broadcast(block_size);
+
+  cuda::launch(stream, config, ConsecutiveReduceKernel<false>{}, thrust::raw_pointer_cast(d_result.data()));
+  cuda::launch(stream, config, ConsecutiveReduceKernel<true>{}, thrust::raw_pointer_cast(d_broadcast.data()));
+  stream.sync();
+
+  verify_results(expected, c2h::host_vector<int>(d_result)[0]);
+  verify_results(c2h::host_vector<int>(block_size, expected), c2h::host_vector<int>(d_broadcast));
 }
