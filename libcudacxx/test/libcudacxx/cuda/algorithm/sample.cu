@@ -62,7 +62,8 @@ std::vector<cuda::std::size_t> device_sample(cuda::std::size_t n, cuda::std::siz
 
   const auto expected = cuda::std::min(k, n);
 
-  auto out     = cuda::make_buffer<cuda::std::size_t>(stream, resource, expected, static_cast<cuda::std::size_t>(-1));
+  auto out = cuda::make_buffer<cuda::std::size_t>(
+    stream, resource, expected, cuda::std::numeric_limits<cuda::std::size_t>::max());
   auto written = cuda::make_buffer<cuda::std::size_t>(stream, resource, cuda::std::size_t{1}, cuda::std::size_t{0});
 
   cuda::launch(
@@ -103,7 +104,7 @@ struct batched_sample_kernel
   cuda::std::size_t n_;
   Rng rng_;
 
-  TEST_DEVICE_FUNC void operator()(cuda::std::mdspan<cuda::std::size_t, cuda::std::dextents<cuda::std::size_t, 2>> out)
+  TEST_DEVICE_FUNC void operator()(cuda::std::mdspan<cuda::std::size_t, cuda::std::dims<2>> out) const
   {
     const auto rank = static_cast<cuda::std::size_t>(cuda::gpu_thread.rank(cuda::grid));
     const auto size = static_cast<cuda::std::size_t>(cuda::gpu_thread.count(cuda::grid));
@@ -113,9 +114,13 @@ struct batched_sample_kernel
 
     for (cuda::std::size_t i = rank; i < out.extent(0); i += size)
     {
-      auto rng = rng_;
-      rng.discard(i * 4096);
+      constexpr auto max_draws = 4096;
+      auto rng                 = rng_;
 
+      // We assume here that the following sample call will poll the rng less than max_draws
+      // per call. If it doesn't, then subsequent iterations of the loop will get overlapping
+      // streamz of random numbers as a previous iteration which pollutes the result.
+      rng.discard(i * max_draws);
       cuda::sample(first, last, &out(i, 0), out.extent(1), rng);
     }
   }
@@ -131,11 +136,10 @@ device_sample_batch(cuda::std::size_t n, cuda::std::size_t k, cuda::std::size_t 
 
   auto out = cuda::make_buffer<cuda::std::size_t>(stream, resource, iterations * k, static_cast<cuda::std::size_t>(-1));
 
-  cuda::launch(
-    stream,
-    cuda::make_config(cuda::grid_dims(256), cuda::block_dims(128)),
-    batched_sample_kernel<Rng>{n, rng},
-    cuda::std::mdspan<cuda::std::size_t, cuda::std::dextents<cuda::std::size_t, 2>>{out.data(), iterations, k});
+  cuda::launch(stream,
+               cuda::make_config(cuda::grid_dims(256), cuda::block_dims(128)),
+               batched_sample_kernel<Rng>{n, rng},
+               cuda::std::mdspan<cuda::std::size_t, cuda::std::dims<2>>{out.data(), iterations, k});
 
   std::vector<cuda::std::size_t> host_out(iterations * k);
   cuda::copy_bytes(stream, out, host_out);
@@ -255,8 +259,7 @@ C2H_TEST("cuda::sample draws every subset with equal probability", "[algorithm][
     const auto iterations = 50 * n_choose_k;
 
     auto storage = device_sample_batch(n, k, iterations);
-    const cuda::std::mdspan<cuda::std::size_t, cuda::std::dextents<cuda::std::size_t, 2>> batch{
-      storage.data(), iterations, k};
+    const cuda::std::mdspan<cuda::std::size_t, cuda::std::dims<2>> batch{storage.data(), iterations, k};
 
     // One counter per answer. The key holds the answer as bits: bit `i` is set when index `i` is in
     // the sample, so {0, 2, 3} becomes binary 1101.
@@ -327,8 +330,7 @@ C2H_TEST("cuda::sample covers a large population uniformly", "[algorithm][sample
     static_cast<cuda::std::size_t>(target_hits * static_cast<double>(s.n_) / static_cast<double>(s.k_));
 
   auto storage = device_sample_batch(s.n_, s.k_, iterations);
-  const cuda::std::mdspan<cuda::std::size_t, cuda::std::dextents<cuda::std::size_t, 2>> batch{
-    storage.data(), iterations, s.k_};
+  const cuda::std::mdspan<cuda::std::size_t, cuda::std::dims<2>> batch{storage.data(), iterations, s.k_};
 
   std::vector<cuda::std::size_t> hits(s.n_, 0);
 
@@ -422,7 +424,9 @@ C2H_TEST("cuda::sample spreads a sample across a large population", "[algorithm]
 
 C2H_TEST("cuda::sample is a pure function of the generator state", "[algorithm][sample]")
 {
-  // Two identically seeded runs must agree exactly, and two different states must disagree.
+  // Two identically seeded runs must agree exactly, and two different states are likely to
+  // disagree. In this case, since the seeds are constant, there is no likelihood but if we had
+  // a random seed here as well it could spuriously fail.
   const cuda::std::size_t n = GENERATE(256, 4096);
   const cuda::std::size_t k = GENERATE(1, 32);
 

@@ -218,15 +218,18 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
         __limit  = static_cast<double>(__qu1);
       }
 
-      for (auto __t = __N_real - 1.0; __t >= __limit; __t -= 1.0) // NOLINT(bugprone-float-loop-counter)
+      // NOLINTNEXTLINE(bugprone-float-loop-counter)
+      for (auto __t = __N_real - 1.0; __t >= __limit; __t -= 1.0, __top -= 1.0, __bottom -= 1.0)
       {
         __y2 = (__y2 * __top) / __bottom;
-        __top -= 1.0;
-        __bottom -= 1.0;
       }
 
+      // Note: the paper has this as N/(-x + N) but we move to rhs and multiply because this is
+      // more efficient on device. The compiler won't do this for us because these are all
+      // floating point.
+      //
       // NOLINTNEXTLINE(readability-suspicious-call-argument)
-      if (__N_real / (-__x + __N_real) >= __y1 * ::cuda::std::pow(__y2, __n_min_1_inv))
+      if (__N_real >= (__N_real - __x) * __y1 * ::cuda::std::pow(__y2, __n_min_1_inv))
       {
         // Accept.
         __V_prime = ::cuda::std::pow(__uniform(__g), __n_min_1_inv);
