@@ -65,13 +65,10 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    # Diagnostic draft: run only the Windows Python lanes that produce the
-    # intermittent native crashes, all of which concentrate on CTK 12.0.
+    # Diagnostic draft: standalone nvJitLink/driver reproducer only, across every
+    # Windows CTK. No CCCL or Python involved, and no producer jobs.
     # Reset this list to empty (do not delete the key) before merging.
-    - {jobs: ['test'], project: 'python', ctk: '12.0', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022'}
-    - {jobs: ['test'], project: 'python', ctk: '12.0', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022', py_ctk_mode: 'sysctk'}
-    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '12.0', py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022'}
-    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: '12.0', py_version: '3.14t', gpu: 'l4', cxx: 'msvc2022', py_ctk_mode: 'sysctk'}
+    - {jobs: ['test'], project: 'nvjitlink_repro', ctk: ['12.0', '12.9', '13.0', '13.3'], cxx: 'msvc2022', gpu: 'l4'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -626,6 +623,11 @@ jobs:
 
   test_nobuild: { gpu: true, name: 'Test', invoke: { prefix: 'test' } }
 
+  # Standalone nvJitLink/driver reproducer (no CCCL, no Python). Two variants so
+  # the single-process and 6-way-concurrent shapes can be compared directly.
+  repro_serial:   { name: 'ReproSerial',   gpu: true, invoke: { prefix: 'test', args: '-jobs 1' } }
+  repro_parallel: { name: 'ReproParallel', gpu: true, invoke: { prefix: 'test', args: '-jobs 6' } }
+
   compute_sanitizer: { gpu: true, name: 'ComputeSanitizer', needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer' } }
 
   # libcudacxx:
@@ -691,6 +693,13 @@ jobs:
 #            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
 #            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
 projects:
+  nvjitlink_repro:
+    name: 'nvJitLink Repro'
+    job_map:
+      # Empty build: the reproducer is a single .cpp compiled by the test script,
+      # so no producer is needed and the job starts immediately.
+      build: []
+      test: ['repro_serial', 'repro_parallel']
   packaging:
     name: 'CCCL Packaging'
     stds: [17, 20]

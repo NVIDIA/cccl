@@ -297,16 +297,23 @@ function Enable-CrashDumps {
         0xC0000602) that faulthandler cannot see. Keying on the image name
         covers pytest-xdist workers and example subprocesses alike.
     #>
-    param([Parameter(Mandatory, Position = 0)][string]$Path)
+    param(
+        [Parameter(Mandatory, Position = 0)][string]$Path,
+        # LocalDumps keys on the image name, so it must name the process that
+        # actually crashes -- python.exe for the test lanes, but not for others.
+        [Parameter(Position = 1)][string[]]$ImageNames = @("python.exe")
+    )
 
-    $key = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\python.exe"
-    New-Item -Path $key -Force | Out-Null
-    New-ItemProperty -Path $key -Name DumpFolder -Value $Path -PropertyType ExpandString -Force | Out-Null
-    New-ItemProperty -Path $key -Name DumpCount -Value 10 -PropertyType DWord -Force | Out-Null
-    # 1 = minidump. A full dump of a CUDA-loaded process runs to hundreds of MB.
-    New-ItemProperty -Path $key -Name DumpType -Value 1 -PropertyType DWord -Force | Out-Null
+    foreach ($image in $ImageNames) {
+        $key = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\$image"
+        New-Item -Path $key -Force | Out-Null
+        New-ItemProperty -Path $key -Name DumpFolder -Value $Path -PropertyType ExpandString -Force | Out-Null
+        New-ItemProperty -Path $key -Name DumpCount -Value 10 -PropertyType DWord -Force | Out-Null
+        # 1 = minidump. A full dump of a CUDA-loaded process runs to hundreds of MB.
+        New-ItemProperty -Path $key -Name DumpType -Value 1 -PropertyType DWord -Force | Out-Null
+    }
     New-Item -ItemType Directory -Force -Path $Path | Out-Null
-    Write-Host "crash dumps: WER configured to write minidumps for python.exe to $Path"
+    Write-Host "crash dumps: WER configured for $($ImageNames -join ', ') -> $Path"
 }
 
 function Show-CrashDiagnostics {
