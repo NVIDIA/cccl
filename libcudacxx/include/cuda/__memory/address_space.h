@@ -64,11 +64,13 @@ enum class address_space
 [[nodiscard]] _CCCL_DEVICE_API inline bool __internal_is_address_from(const void* __ptr, address_space __space) noexcept
 {
   _CCCL_ASSERT(::cuda::device::__cccl_is_valid_address_space(__space), "invalid address space");
-  // NVCC and NVRTC < 12.3 have problems tracking the address space of pointers, fallback to inline PTX for them
+  // NVCC and NVRTC below 13.1 miscompile the `__isXXX` address-space intrinsics: the pointer is not
+  // lowered to `i8*` for the `isspacep` intrinsic, which breaks the LLVM verifier (see nvbug 5254298).
+  // Fall back to inline PTX for them.
   switch (__space)
   {
     case address_space::global: {
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
       unsigned __ret;
       asm volatile(
         "{\n\t"
@@ -79,18 +81,18 @@ enum class address_space
         : "=r"(__ret)
         : "l"(__ptr));
       return static_cast<bool>(__ret);
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) vvv
       bool __p = static_cast<bool>(::__isGlobal(__ptr));
       if (__p)
       {
         _CCCL_ASSUME(__p);
       }
       return __p;
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^
     }
     case address_space::constant: {
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
       unsigned __ret;
       asm volatile(
         "{\n\t"
@@ -101,15 +103,15 @@ enum class address_space
         : "=r"(__ret)
         : "l"(__ptr));
       return static_cast<bool>(__ret);
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) vvv
       bool __p = static_cast<bool>(::__isConstant(__ptr));
       if (__p)
       {
         _CCCL_ASSUME(__p);
       }
       return __p;
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^
     }
     case address_space::local: {
       // __isLocal is buggy until CUDA 13.1, see nvbug 5254298
@@ -159,7 +161,7 @@ enum class address_space
 #  endif // ^^^ no functional __isGridConstant() ^^^
     }
     case address_space::cluster_shared: {
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_90,
         (unsigned __ret; //
@@ -170,8 +172,8 @@ enum class address_space
                       "}\n\t" : "=r"(__ret) : "l"(__ptr));
          return static_cast<bool>(__ret);),
         ([[fallthrough]]; /* to `case shared:` */))
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) vvv
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_90,
         (bool __p = static_cast<bool>(::__isClusterShared(__ptr)); //
@@ -181,11 +183,11 @@ enum class address_space
          } //
          return __p;),
         ([[fallthrough]]; /* to `case shared:` */))
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^
     }
     case address_space::shared: {
       // smem can start at address 0x0 before sm_90
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
       unsigned __ret;
       asm volatile(
         "{\n\t"
@@ -196,15 +198,15 @@ enum class address_space
         : "=r"(__ret)
         : "l"(__ptr));
       return static_cast<bool>(__ret);
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) vvv
       bool __p = static_cast<bool>(::__isShared(__ptr));
       if (__p)
       {
         _CCCL_ASSUME(__p);
       }
       return __p;
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^
     }
     default:
       return false;
