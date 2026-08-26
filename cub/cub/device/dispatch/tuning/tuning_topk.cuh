@@ -54,14 +54,14 @@ struct topk_policy
   BlockScanAlgorithm scan_algorithm;
   int bits_per_pass;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.bits_per_pass == rhs.bits_per_pass;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
   {
     return !(lhs == rhs);
   }

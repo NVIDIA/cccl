@@ -41,26 +41,26 @@ struct __fmt_validation_format_arg_handle
   void (*__parse_)(basic_format_parse_context<_CharT>&);
 
   template <class _Tp>
-  _CCCL_API static constexpr void __formatter_invoker(basic_format_parse_context<_CharT>& __parse_ctx)
+  _CCCL_HOST_DEVICE_API static constexpr void __formatter_invoker(basic_format_parse_context<_CharT>& __parse_ctx)
   {
     formatter<_Tp, _CharT> __f;
     __parse_ctx.advance_to(__f.parse(__parse_ctx));
   }
 
-  _CCCL_API static constexpr void __formatter_invoker_invalid(basic_format_parse_context<_CharT>&)
+  _CCCL_HOST_DEVICE_API static constexpr void __formatter_invoker_invalid(basic_format_parse_context<_CharT>&)
   {
     ::cuda::std::__throw_format_error("Not a handle");
   }
 
   template <class _ParseCtx>
-  _CCCL_API constexpr void __parse(_ParseCtx& __parse_ctx) const
+  _CCCL_HOST_DEVICE_API constexpr void __parse(_ParseCtx& __parse_ctx) const
   {
     __parse_(__parse_ctx);
   }
 };
 
 template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_API constexpr __fmt_validation_format_arg_handle<typename _Context::char_type>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_validation_format_arg_handle<typename _Context::char_type>
 __fmt_make_validation_format_arg_handle()
 {
   using _CharT = typename _Context::char_type;
@@ -91,28 +91,28 @@ public:
   //!        this iterator are a NOP.
   struct iterator
   {
-    _CCCL_API constexpr iterator& operator=(_CharT)
+    _CCCL_HOST_DEVICE_API constexpr iterator& operator=(_CharT)
     {
       return *this;
     }
-    _CCCL_API constexpr iterator& operator*()
+    _CCCL_HOST_DEVICE_API constexpr iterator& operator*()
     {
       return *this;
     }
-    _CCCL_API constexpr iterator operator++(int)
+    _CCCL_HOST_DEVICE_API constexpr iterator operator++(int)
     {
       return *this;
     }
   };
 
-  _CCCL_API constexpr explicit __fmt_validation_format_context(
+  _CCCL_HOST_DEVICE_API constexpr explicit __fmt_validation_format_context(
     const __fmt_arg_t* __args, const _FmtArgHandle* __handles, size_t __size)
       : __args_{__args}
       , __handles_{__handles}
       , __size_{__size}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr __fmt_arg_t arg(size_t __id) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_arg_t arg(size_t __id) const
   {
     if (__id >= __size_)
     {
@@ -121,7 +121,7 @@ public:
     return __args_[__id];
   }
 
-  [[nodiscard]] _CCCL_API constexpr const _FmtArgHandle& __handle(size_t __id) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const _FmtArgHandle& __handle(size_t __id) const
   {
     if (__id >= __size_)
     {
@@ -130,11 +130,11 @@ public:
     return __handles_[__id];
   }
 
-  [[nodiscard]] _CCCL_API constexpr iterator out()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator out()
   {
     return {};
   }
-  _CCCL_API constexpr void advance_to(iterator) {}
+  _CCCL_HOST_DEVICE_API constexpr void advance_to(iterator) {}
 };
 
 // [format.string.std]/8
@@ -146,8 +146,8 @@ public:
 //
 // _HasPrecision does the formatter have a precision?
 template <class _CharT, class _Tp, bool _HasPrecision = false>
-_CCCL_API constexpr void __fmt_validate_format_arg(basic_format_parse_context<_CharT>& __parse_ctx,
-                                                   __fmt_validation_format_context<_CharT>& __ctx)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_validate_format_arg(
+  basic_format_parse_context<_CharT>& __parse_ctx, __fmt_validation_format_context<_CharT>& __ctx)
 {
   // LWG3720 originally allowed "signed or unsigned integer types", however
   // the final version explicitly changed it to "*standard* signed or unsigned
@@ -191,7 +191,7 @@ _CCCL_API constexpr void __fmt_validate_format_arg(basic_format_parse_context<_C
 }
 
 template <class _CharT>
-_CCCL_API constexpr void __fmt_validate_visit_format_arg(
+_CCCL_HOST_DEVICE_API constexpr void __fmt_validate_visit_format_arg(
   basic_format_parse_context<_CharT>& __parse_ctx, __fmt_validation_format_context<_CharT>& __ctx, __fmt_arg_t __type)
 {
   switch (__type)

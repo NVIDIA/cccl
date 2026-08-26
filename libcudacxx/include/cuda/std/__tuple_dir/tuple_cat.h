@@ -121,7 +121,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
 {
   template <class _Tuple0>
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&>::type
-  operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
   {
     return ::cuda::std::forward_as_tuple(
       ::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
@@ -134,7 +134,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
 
   template <class _Tuple0, class _Tuple1, class... _Tuples>
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&, _Tuple1&&, _Tuples&&...>::type
-  operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
   {
     using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
     using _T1 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple1>;

@@ -22,7 +22,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/std/__algorithm/min.h>
@@ -135,7 +134,7 @@ struct agent_t
     // number of keys per tile
     const int keys1_count_tile = static_cast<int>(keys1_end - keys1_beg);
     const int keys2_count_tile = static_cast<int>(keys2_end - keys2_beg);
-    if constexpr (IsFullTile)
+    if constexpr (IsFullTile) // NOLINT(bugprone-branch-clone)
     {
       _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == items_per_tile, "");
     }

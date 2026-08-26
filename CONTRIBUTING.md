@@ -250,11 +250,15 @@ Now code linters and formatters will be run each time you commit changes.
 
 You can skip these checks with `git commit --no-verify` or with the short version `git commit -n`.
 
+## Secret Scanning
+
+The `secret-scan-trufflehog` pre-commit hook scans staged files and installs TruffleHog on first run (use Git Bash on Windows). If it flags a secret, remove it before committing, or contact a maintainer if it's a false positive. Secrets are also scanned server-side in CI on `main`.
+
 ## Continuous Integration (CI)
 
 CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures.
 For external contributors, the CI pipeline will not begin until a maintainer leaves an `/ok to test` comment. For members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately.
-For a detailed overview of CCCL's CI, see [ci-overview.md](ci-overview.md).
+For a detailed overview of CCCL's CI, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 There is a CI check for pre-commit, called [pre-commit.ci](pre-commit.ci).
 This enforces that all linters (such as `clang-format`) pass.

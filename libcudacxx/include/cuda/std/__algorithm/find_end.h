@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 __find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -45,16 +45,13 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   {
     return __r;
   }
-  bool __searching = true;
-  while (__searching)
+  while (true)
   {
-    while (__searching)
+    while (true)
     {
       if (__first1 == __last1) // if source exhausted return last correct answer
       {
-        // return __r; //    (or __last1 if never found)
-        __searching = false;
-        break;
+        return __r; //    (or __last1 if never found)
       }
       if (__pred(*__first1, *__first2))
       {
@@ -65,7 +62,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
     // *__first1 matches *__first2, now match elements after here
     _ForwardIterator1 __m1 = __first1;
     _ForwardIterator2 __m2 = __first2;
-    while (__searching)
+    while (true)
     {
       if (++__m2 == __last2)
       { // Pattern exhausted, record answer and search for another one
@@ -75,9 +72,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       }
       if (++__m1 == __last1) // Source exhausted, return last answer
       {
-        // return __r;
-        __searching = false;
-        break;
+        return __r;
       }
       if (!__pred(*__m1, *__m2)) // mismatch, restart with a new __first
       {
@@ -86,12 +81,11 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       } // else there is a match, check next elements
     }
   }
-  return __r;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _BidirectionalIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _BidirectionalIterator1 __find_end(
   _BidirectionalIterator1 __first1,
   _BidirectionalIterator1 __last1,
   _BidirectionalIterator2 __first2,
@@ -145,7 +139,7 @@ template <class _BinaryPredicate, class _BidirectionalIterator1, class _Bidirect
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _RandomAccessIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _RandomAccessIterator1 __find_end(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -200,7 +194,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1 find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -218,7 +212,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return ::cuda::std::find_end(__first1, __last1, __first2, __last2, __equal_to{});

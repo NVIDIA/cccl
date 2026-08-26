@@ -7,8 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable ("count") cannot be used in tile code
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
+// UNSUPPORTED: enable-tile
+// BUGBUG: codegen error
 
 // <functional>
 
@@ -29,29 +32,29 @@ TEST_GLOBAL_VARIABLE int count = 0;
 
 // 1 arg, return void
 
-TEST_FUNC void f_void_1(int i)
+TEST_HOST_DEVICE_FUNC void f_void_1(int i)
 {
   count += i;
 }
 
 struct A_void_1
 {
-  TEST_FUNC void operator()(int i)
+  TEST_HOST_DEVICE_FUNC void operator()(int i)
   {
     count += i;
   }
 
-  TEST_FUNC void mem1()
+  TEST_HOST_DEVICE_FUNC void mem1()
   {
     ++count;
   }
-  TEST_FUNC void mem2() const
+  TEST_HOST_DEVICE_FUNC void mem2() const
   {
     ++count;
   }
 };
 
-TEST_FUNC void test_void_1()
+TEST_HOST_DEVICE_FUNC void test_void_1()
 {
   int save_count = count;
   // function
@@ -113,33 +116,33 @@ TEST_FUNC void test_void_1()
 
 // 1 arg, return int
 
-TEST_FUNC int f_int_1(int i)
+TEST_HOST_DEVICE_FUNC int f_int_1(int i)
 {
   return i + 1;
 }
 
 struct A_int_1
 {
-  TEST_FUNC A_int_1()
+  TEST_HOST_DEVICE_FUNC A_int_1()
       : data_(5)
   {}
-  TEST_FUNC int operator()(int i)
+  TEST_HOST_DEVICE_FUNC int operator()(int i)
   {
     return i - 1;
   }
 
-  TEST_FUNC int mem1()
+  TEST_HOST_DEVICE_FUNC int mem1()
   {
     return 3;
   }
-  TEST_FUNC int mem2() const
+  TEST_HOST_DEVICE_FUNC int mem2() const
   {
     return 4;
   }
   int data_;
 };
 
-TEST_FUNC void test_int_1()
+TEST_HOST_DEVICE_FUNC void test_int_1()
 {
   // function
   {
@@ -200,29 +203,29 @@ TEST_FUNC void test_int_1()
 
 // 2 arg, return void
 
-TEST_FUNC void f_void_2(int i, int j)
+TEST_HOST_DEVICE_FUNC void f_void_2(int i, int j)
 {
   count += i + j;
 }
 
 struct A_void_2
 {
-  TEST_FUNC void operator()(int i, int j)
+  TEST_HOST_DEVICE_FUNC void operator()(int i, int j)
   {
     count += i + j;
   }
 
-  TEST_FUNC void mem1(int i)
+  TEST_HOST_DEVICE_FUNC void mem1(int i)
   {
     count += i;
   }
-  TEST_FUNC void mem2(int i) const
+  TEST_HOST_DEVICE_FUNC void mem2(int i) const
   {
     count += i;
   }
 };
 
-TEST_FUNC void test_void_2()
+TEST_HOST_DEVICE_FUNC void test_void_2()
 {
   int save_count = count;
   // function
@@ -288,29 +291,29 @@ TEST_FUNC void test_void_2()
 
 // 2 arg, return int
 
-TEST_FUNC int f_int_2(int i, int j)
+TEST_HOST_DEVICE_FUNC int f_int_2(int i, int j)
 {
   return i + j;
 }
 
 struct A_int_2
 {
-  TEST_FUNC int operator()(int i, int j)
+  TEST_HOST_DEVICE_FUNC int operator()(int i, int j)
   {
     return i + j;
   }
 
-  TEST_FUNC int mem1(int i)
+  TEST_HOST_DEVICE_FUNC int mem1(int i)
   {
     return i + 1;
   }
-  TEST_FUNC int mem2(int i) const
+  TEST_HOST_DEVICE_FUNC int mem2(int i) const
   {
     return i + 2;
   }
 };
 
-TEST_FUNC void testint_2()
+TEST_HOST_DEVICE_FUNC void testint_2()
 {
   // function
   {

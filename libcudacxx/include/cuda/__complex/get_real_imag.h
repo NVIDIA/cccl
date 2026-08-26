@@ -28,24 +28,28 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_real(const complex<_Tp>& __c) noexcept
 {
   return __c.real();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_imag(const complex<_Tp>& __c) noexcept
 {
   return __c.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_real(const ::cuda::std::complex<_Tp>& __c) noexcept
 {
   return __c.real();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __get_imag(const ::cuda::std::complex<_Tp>& __c) noexcept
 {

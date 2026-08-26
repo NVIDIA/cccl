@@ -45,6 +45,16 @@ struct collective_communicator_model : communicator_model
   void all_gather(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
 
   template <class Tp>
+  void all_gather_v(
+    group_guard_type&,
+    Tp*,
+    ::cuda::std::size_t,
+    Tp*,
+    const ::cuda::std::size_t*,
+    const ::cuda::std::size_t*,
+    ::cuda::stream_ref);
+
+  template <class Tp>
   void broadcast(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 
   template <class Tp>

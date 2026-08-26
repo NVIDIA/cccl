@@ -44,7 +44,7 @@ struct __cccl_is_referenceable_impl
 
 template <class _Tp>
 struct __cccl_is_referenceable
-    : integral_constant<bool, _IsNotSame<decltype(__cccl_is_referenceable_impl::__test<_Tp>(0)), false_type>::value>
+    : bool_constant<!is_same_v<decltype(__cccl_is_referenceable_impl::__test<_Tp>(0)), false_type>>
 {};
 #endif // defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 

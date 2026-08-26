@@ -34,6 +34,21 @@ def serialize(algorithm: Any) -> bytes:
 def deserialize(blob: bytes):
     """Reconstruct a built algorithm from a blob produced by :func:`serialize`.
 
+    Warning:
+        The returned object is **not safe to use from multiple threads
+        concurrently**. Do not deserialize once and share the object across
+        threads: every call writes its arguments (array pointers, sizes,
+        operator and initial-value state) into the object before launching, so
+        overlapping calls can launch kernels with another thread's arguments —
+        silently wrong results or CUDA errors, with no exception raised at the
+        point of misuse. Unlike the ``make_*`` factories, which hand each
+        calling thread its own cached object, ``deserialize`` returns a fresh
+        uncached object with no per-thread protection. For concurrent use,
+        call :func:`deserialize` in each thread — reconstruction performs no
+        recompilation, so per-thread deserialization from one shared blob is
+        cheap. One thread at a time (for example, handing the object between
+        threads with proper ordering) is fine.
+
     Raises:
         ValueError: if the blob is malformed or its algorithm tag is unknown.
     """

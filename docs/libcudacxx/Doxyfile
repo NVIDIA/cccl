@@ -20,7 +20,7 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
                          ../../libcudacxx/include/nv \
-                         ../../libcudacxx/include/cuda/std/__cccl/architecture.h \
+                         ../../libcudacxx/include/cuda/std/__cccl/host_arch.h \
                          ../../libcudacxx/include/cuda/std/__cccl/os.h
 
 RECURSIVE              = YES
@@ -161,7 +161,8 @@ PREDEFINED = \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \
-    "THRUST_PREVENT_MACRO_SUBSTITUTION"
+    "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+    "_CCCL_HOSTED()=1"
 
 # IMPORTANT: Aliases for custom commands
 # The rst alias enables embedding reStructuredText in doxygen comments

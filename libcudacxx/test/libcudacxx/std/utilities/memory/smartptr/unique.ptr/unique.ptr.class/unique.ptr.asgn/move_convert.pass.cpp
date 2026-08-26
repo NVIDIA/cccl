@@ -10,8 +10,8 @@
 
 // UNSUPPORTED: nvrtc
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -29,23 +29,23 @@
 template <int ID = 0>
 struct GenericDeleter
 {
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <int ID = 0>
 struct GenericConvertingDeleter
 {
   template <int OID>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 GenericConvertingDeleter(GenericConvertingDeleter<OID>)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 GenericConvertingDeleter(GenericConvertingDeleter<OID>)
   {}
 
   template <int OID>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 GenericConvertingDeleter& operator=(GenericConvertingDeleter<OID> const&)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 GenericConvertingDeleter& operator=(GenericConvertingDeleter<OID> const&)
   {
     return *this;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <class T, class U>
@@ -75,46 +75,46 @@ struct ConstTrackingDeleter;
 template <int ID>
 struct TrackingDeleter
 {
-  TEST_FUNC TrackingDeleter()
+  TEST_HOST_DEVICE_FUNC TrackingDeleter()
       : arg_type(&makeArgumentID<>())
   {}
 
-  TEST_FUNC TrackingDeleter(TrackingDeleter const&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter(TrackingDeleter const&)
       : arg_type(&makeArgumentID<TrackingDeleter const&>())
   {}
 
-  TEST_FUNC TrackingDeleter(TrackingDeleter&&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter(TrackingDeleter&&)
       : arg_type(&makeArgumentID<TrackingDeleter&&>())
   {}
 
   template <class T, class = EnableIfSpecialization<TrackingDeleter, T>>
-  TEST_FUNC TrackingDeleter(T&&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter(T&&)
       : arg_type(&makeArgumentID<T&&>())
   {}
 
-  TEST_FUNC TrackingDeleter& operator=(TrackingDeleter const&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter& operator=(TrackingDeleter const&)
   {
     arg_type = &makeArgumentID<TrackingDeleter const&>();
     return *this;
   }
 
-  TEST_FUNC TrackingDeleter& operator=(TrackingDeleter&&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter& operator=(TrackingDeleter&&)
   {
     arg_type = &makeArgumentID<TrackingDeleter&&>();
     return *this;
   }
 
   template <class T, class = EnableIfSpecialization<TrackingDeleter, T>>
-  TEST_FUNC TrackingDeleter& operator=(T&&)
+  TEST_HOST_DEVICE_FUNC TrackingDeleter& operator=(T&&)
   {
     arg_type = &makeArgumentID<T&&>();
     return *this;
   }
 
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 
 public:
-  TEST_FUNC TypeID const* reset() const
+  TEST_HOST_DEVICE_FUNC TypeID const* reset() const
   {
     TypeID const* tmp = arg_type;
     arg_type          = nullptr;
@@ -127,46 +127,46 @@ public:
 template <int ID>
 struct ConstTrackingDeleter
 {
-  TEST_FUNC ConstTrackingDeleter()
+  TEST_HOST_DEVICE_FUNC ConstTrackingDeleter()
       : arg_type(&makeArgumentID<>())
   {}
 
-  TEST_FUNC ConstTrackingDeleter(ConstTrackingDeleter const&)
+  TEST_HOST_DEVICE_FUNC ConstTrackingDeleter(ConstTrackingDeleter const&)
       : arg_type(&makeArgumentID<ConstTrackingDeleter const&>())
   {}
 
-  TEST_FUNC ConstTrackingDeleter(ConstTrackingDeleter&&)
+  TEST_HOST_DEVICE_FUNC ConstTrackingDeleter(ConstTrackingDeleter&&)
       : arg_type(&makeArgumentID<ConstTrackingDeleter&&>())
   {}
 
   template <class T, class = EnableIfSpecialization<ConstTrackingDeleter, T>>
-  TEST_FUNC ConstTrackingDeleter(T&&)
+  TEST_HOST_DEVICE_FUNC ConstTrackingDeleter(T&&)
       : arg_type(&makeArgumentID<T&&>())
   {}
 
-  TEST_FUNC const ConstTrackingDeleter& operator=(ConstTrackingDeleter const&) const
+  TEST_HOST_DEVICE_FUNC const ConstTrackingDeleter& operator=(ConstTrackingDeleter const&) const
   {
     arg_type = &makeArgumentID<ConstTrackingDeleter const&>();
     return *this;
   }
 
-  TEST_FUNC const ConstTrackingDeleter& operator=(ConstTrackingDeleter&&) const
+  TEST_HOST_DEVICE_FUNC const ConstTrackingDeleter& operator=(ConstTrackingDeleter&&) const
   {
     arg_type = &makeArgumentID<ConstTrackingDeleter&&>();
     return *this;
   }
 
   template <class T, class = EnableIfSpecialization<ConstTrackingDeleter, T>>
-  TEST_FUNC const ConstTrackingDeleter& operator=(T&&) const
+  TEST_HOST_DEVICE_FUNC const ConstTrackingDeleter& operator=(T&&) const
   {
     arg_type = &makeArgumentID<T&&>();
     return *this;
   }
 
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 
 public:
-  TEST_FUNC TypeID const* reset() const
+  TEST_HOST_DEVICE_FUNC TypeID const* reset() const
   {
     TypeID const* tmp = arg_type;
     arg_type          = nullptr;
@@ -177,13 +177,13 @@ public:
 };
 
 template <class ExpectT, int ID>
-TEST_FUNC bool checkArg(TrackingDeleter<ID> const& d)
+TEST_HOST_DEVICE_FUNC bool checkArg(TrackingDeleter<ID> const& d)
 {
   return d.arg_type && *d.arg_type == makeArgumentID<ExpectT>();
 }
 
 template <class ExpectT, int ID>
-TEST_FUNC bool checkArg(ConstTrackingDeleter<ID> const& d)
+TEST_HOST_DEVICE_FUNC bool checkArg(ConstTrackingDeleter<ID> const& d)
 {
   return d.arg_type && *d.arg_type == makeArgumentID<ExpectT>();
 }
@@ -204,24 +204,24 @@ struct AssignDeleter
   AssignDeleter& operator=(T&&) const&& = delete;
 
   template <class T, class = typename cuda::std::enable_if<cuda::std::is_same<T&&, From>::value && !AssignIsConst>::type>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 AssignDeleter& operator=(T&&) &
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 AssignDeleter& operator=(T&&) &
   {
     return *this;
   }
 
   template <class T, class = typename cuda::std::enable_if<cuda::std::is_same<T&&, From>::value && AssignIsConst>::type>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 const AssignDeleter& operator=(T&&) const&
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 const AssignDeleter& operator=(T&&) const&
   {
     return *this;
   }
 
   template <class T>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T) const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T) const
   {}
 };
 
 template <class VT, class DDest, class DSource>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void doDeleterTest()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void doDeleterTest()
 {
   using U1 = cuda::std::unique_ptr<VT, DDest>;
   using U2 = cuda::std::unique_ptr<VT, DSource>;
@@ -234,7 +234,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void doDeleterTest()
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
 
@@ -324,7 +324,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
   {
@@ -350,7 +350,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 }
 
 template <bool IsArray>
-TEST_FUNC void test_deleter_value_category()
+TEST_HOST_DEVICE_FUNC void test_deleter_value_category()
 {
   using VT  = typename cuda::std::conditional<IsArray, A[], A>::type;
   using TD1 = TrackingDeleter<1>;
@@ -448,7 +448,7 @@ TEST_FUNC void test_deleter_value_category()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae</*IsArray*/ false>();

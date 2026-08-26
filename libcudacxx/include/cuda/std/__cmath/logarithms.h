@@ -201,7 +201,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half log10(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(::cuda::std::log10f(__half2float(__x)));))
@@ -209,7 +209,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(::cuda::std::log10f(__bfloat162float(__x)));))

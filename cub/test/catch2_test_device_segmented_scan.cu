@@ -12,7 +12,7 @@
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -111,7 +111,11 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
 
 using offsets = c2h::type_list<std::int32_t, std::uint64_t>;
 
-C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][scan][device]", full_type_list, offsets)
+CUB_TEST("Device segmented_scan works with all device interfaces",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         full_type_list,
+         offsets)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;

@@ -251,23 +251,23 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-    _CCCL_GRID_CONSTANT KeyInT* const in_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
-    _CCCL_GRID_CONSTANT KeyInT* const out_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
+    const KeyInputIteratorT d_keys_in,
+    const KeyOutputIteratorT d_keys_out,
+    const ValueInputIteratorT d_values_in,
+    const ValueOutputIteratorT d_values_out,
+    KeyInT* const in_buf,
+    OffsetT* const in_idx_buf,
+    KeyInT* const out_buf,
+    OffsetT* const out_idx_buf,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    _CCCL_GRID_CONSTANT OffsetT* const histogram,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const OutOffsetT k,
-    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    OffsetT* const histogram,
+    const OffsetT num_items,
+    const OutOffsetT k,
+    const OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op,
-    _CCCL_GRID_CONSTANT const int pass,
-    _CCCL_GRID_CONSTANT const bool is_last_pass)
+    const int pass,
+    const bool is_last_pass)
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
@@ -316,18 +316,18 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+    const KeyInputIteratorT d_keys_in,
+    const KeyOutputIteratorT d_keys_out,
+    const ValueInputIteratorT d_values_in,
+    const ValueOutputIteratorT d_values_out,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    _CCCL_GRID_CONSTANT OffsetT* const histogram,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const OutOffsetT k,
-    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    OffsetT* const histogram,
+    const OffsetT num_items,
+    const OutOffsetT k,
+    const OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
-    _CCCL_GRID_CONSTANT const int pass,
-    _CCCL_GRID_CONSTANT const bool is_last_pass)
+    const int pass,
+    const bool is_last_pass)
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
@@ -377,18 +377,18 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-    _CCCL_GRID_CONSTANT KeyInT* const in_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
+    const KeyInputIteratorT d_keys_in,
+    const KeyOutputIteratorT d_keys_out,
+    const ValueInputIteratorT d_values_in,
+    const ValueOutputIteratorT d_values_out,
+    KeyInT* const in_buf,
+    OffsetT* const in_idx_buf,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const OutOffsetT k,
-    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    const OffsetT num_items,
+    const OutOffsetT k,
+    const OffsetT buffer_length,
     IdentifyCandidatesOpT identify_candidates_op,
-    _CCCL_GRID_CONSTANT const int pass)
+    const int pass)
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =

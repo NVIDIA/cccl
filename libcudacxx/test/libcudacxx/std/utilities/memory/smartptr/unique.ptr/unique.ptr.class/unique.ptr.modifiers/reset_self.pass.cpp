@@ -8,8 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile && !c++17
+// ptxas error   : Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
 
 // <memory>
 
@@ -25,16 +28,16 @@ struct A
 {
   cuda::std::unique_ptr<A> ptr_;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A()
       : ptr_(this)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void reset()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void reset()
   {
     ptr_.reset();
   }
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   (new A)->reset();
 

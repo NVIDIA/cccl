@@ -9,7 +9,6 @@ CUDA Experimental
 
    Overview <self>
    container
-   memory_resource
    graph
    places
    stf
@@ -22,8 +21,6 @@ Specifically, ``cudax`` provides:
    - :ref:`asynchronous host from/to device byte-wise mdspan copy <cudax-copy-bytes>`
    - :ref:`mdspan byte fill <cudax-fill-bytes>`
    - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-async-buffer>`
-   - :ref:`an owning type erased memory resource <libcudacxx-memory-resource-any-async-resource>`
-   - :ref:`stream-ordered memory resources <libcudacxx-memory-resource-async>`
    - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
    - :ref:`places <cudax-places>` for managing execution and data affinity across devices
@@ -39,4 +36,4 @@ Availability
 -------------
 
 Due to its experimental nature and the lack of stability guarantees, ``cudax`` is not shipped with the CUDA toolkit but
-is solely available through github.
+is solely available through GitHub.

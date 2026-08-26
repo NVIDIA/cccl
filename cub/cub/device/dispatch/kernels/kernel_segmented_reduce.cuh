@@ -112,14 +112,14 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) //
   void DeviceSegmentedReduceKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-    _CCCL_GRID_CONSTANT const int num_segments,
+    const InputIteratorT d_in,
+    const OutputIteratorT d_out,
+    const BeginOffsetIteratorT d_begin_offsets,
+    const EndOffsetIteratorT d_end_offsets,
+    const int num_segments,
     ReductionOpT reduction_op,
-    _CCCL_GRID_CONSTANT const InitValueT init,
-    _CCCL_GRID_CONSTANT const size_t max_segment_size)
+    const InitValueT init,
+    const size_t max_segment_size)
 {
   static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
 
@@ -317,15 +317,15 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-  _CCCL_GRID_CONSTANT const OffsetT segment_size,
-  _CCCL_GRID_CONSTANT const int num_segments,
+  const InputIteratorT d_in,
+  const OutputIteratorT d_out,
+  const OffsetT segment_size,
+  const int num_segments,
   ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const InitValueT init,
-  _CCCL_GRID_CONSTANT AccumT* const d_partial_out,
-  _CCCL_GRID_CONSTANT const int full_chunk_size,
-  _CCCL_GRID_CONSTANT const int blocks_per_segment)
+  const InitValueT init,
+  AccumT* const d_partial_out,
+  const int full_chunk_size,
+  const int blocks_per_segment)
 {
   static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
 

@@ -20,7 +20,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/offset_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__functional/invoke.h>
@@ -32,6 +31,15 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce_by_key
 {
+struct reduce_by_key_kernel_source
+{
+  template <typename PolicySelector, typename... KernelArgTs>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto reduce_by_key_kernel()
+  {
+    return &DeviceReduceByKeyKernel<PolicySelector, KernelArgTs...>;
+  }
+};
+
 template <typename KeysInputIteratorT,
           typename UniqueOutputIteratorT,
           typename ValuesInputIteratorT,
@@ -44,7 +52,8 @@ template <typename KeysInputIteratorT,
           typename PolicySelector =
             policy_selector_from_types<ReductionOpT,
                                        AccumT,
-                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>>
+                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
+          typename KernelSource = reduce_by_key_kernel_source>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
@@ -60,7 +69,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   ReductionOpT reduction_op,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  PolicySelector policy_selector              = {},
+  [[maybe_unused]] KernelSource kernel_source = {})
 {
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(ptx_compute_cap(cc)))
@@ -90,8 +100,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int threads_per_block = policy.threads_per_block;
-  const int items_per_thread  = policy.items_per_thread;
+  const int threads_per_block = policy.lookback.threads_per_block;
+  const int items_per_thread  = policy.lookback.items_per_thread;
   const auto tile_size =
     static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
@@ -173,7 +183,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
             (long long) stream,
             items_per_thread);
 #endif
-    auto reduce_by_key_kernel = DeviceReduceByKeyKernel<
+    auto reduce_by_key_kernel = KernelSource::template reduce_by_key_kernel<
       PolicySelector,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
@@ -185,7 +195,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       ReductionOpT,
       local_offset_t,
       AccumT,
-      streaming_context_t>;
+      streaming_context_t>();
 
     if constexpr (use_streaming_invocation)
     {

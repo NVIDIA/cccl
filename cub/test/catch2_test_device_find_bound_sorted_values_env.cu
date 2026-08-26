@@ -20,13 +20,13 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, device_upper_bou
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find][device][binary-search]")
+CUB_TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -45,7 +45,7 @@ TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find
   REQUIRE(d_output == expected);
 }
 
-TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find][device][binary-search]")
+CUB_TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -66,7 +66,7 @@ TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find
 
 #endif
 
-C2H_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binary-search]")
+CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -100,7 +100,7 @@ C2H_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binar
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]")
+CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -135,7 +135,7 @@ C2H_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test FindBoundSortedValuesPolicy properties", "[find][device][binary-search]")
+CUB_TEST("Test FindBoundSortedValuesPolicy properties", "[find][device][binary-search]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::FindBoundSortedValuesPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindBoundSortedValuesPolicy>);

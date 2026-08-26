@@ -28,13 +28,28 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
+
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_constructible
+    : public bool_constant<_CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<add_const_t<_Tp>>)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_copy_constructible_v = is_copy_constructible<_Tp>::value;
+inline constexpr bool is_copy_constructible_v =
+  _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<add_const_t<_Tp>>);
+
+#else // ^^^ Use builtin ^^^ / vvv No builtin
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>
+{};
+
+template <class _Tp>
+inline constexpr bool is_copy_constructible_v = is_constructible<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>::value;
+
+#endif // No builtin
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

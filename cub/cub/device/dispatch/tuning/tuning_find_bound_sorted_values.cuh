@@ -33,14 +33,14 @@ struct FindBoundSortedValuesPolicy
   int items_per_thread; //!< Number of items processed per thread
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const FindBoundSortedValuesPolicy& lhs, const FindBoundSortedValuesPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const FindBoundSortedValuesPolicy& lhs, const FindBoundSortedValuesPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

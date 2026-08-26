@@ -16,11 +16,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT, class I>
-TEST_FUNC _CCCL_NOINLINE void test_integer_as_integer()
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test_integer_as_integer()
 {
   // *** align-fill & width ***
   assert(check(SV("answer is '42'"), SV("answer is '{:<1}'"), I(42)));
@@ -151,7 +151,7 @@ TEST_FUNC _CCCL_NOINLINE void test_integer_as_integer()
 }
 
 template <class CharT, class I>
-TEST_FUNC _CCCL_NOINLINE void test_integer_as_char()
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test_integer_as_char()
 {
   // *** align-fill & width ***
   assert(check(SV("answer is '*     '"), SV("answer is '{:6c}'"), I(42)));
@@ -217,14 +217,14 @@ TEST_FUNC _CCCL_NOINLINE void test_integer_as_char()
 }
 
 template <class CharT, class T>
-TEST_FUNC void test_integer()
+TEST_HOST_DEVICE_FUNC void test_integer()
 {
   test_integer_as_integer<CharT, T>();
   test_integer_as_char<CharT, T>();
 }
 
 template <class CharT>
-TEST_FUNC _CCCL_NOINLINE void test_min_max()
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test_min_max()
 {
   // *** check the minima and maxima ***
   assert(check(SV("-0b10000000"), SV("{:#b}"), cuda::std::numeric_limits<cuda::std::int8_t>::min()));
@@ -299,7 +299,7 @@ TEST_FUNC _CCCL_NOINLINE void test_min_max()
 }
 
 template <class CharT>
-TEST_FUNC _CCCL_NOINLINE void test()
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE void test()
 {
   test_integer<CharT, signed char>();
   test_integer<CharT, signed short>();
@@ -313,7 +313,7 @@ TEST_FUNC _CCCL_NOINLINE void test()
   test_min_max<CharT>();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

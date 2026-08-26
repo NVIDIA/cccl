@@ -53,8 +53,14 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
+  // The handle stays null if instantiation throws below: the deleter must
+  // not destroy it in that case, or the abort would mask the real error.
   ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-                                           cuda_safe_call(cudaGraphExecDestroy(*p));
+                                           if (*p)
+                                           {
+                                             cuda_safe_call(cudaGraphExecDestroy(*p));
+                                           }
+                                           delete p;
                                          }};
 
   // Automatically free graph-owned async allocations between launches. This

@@ -124,6 +124,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr bool isnormal(__float128 __x) noexcept
+{
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool isnormal(_Tp __x) noexcept

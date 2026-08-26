@@ -18,7 +18,7 @@
 #include <numeric>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/generators.h>
 
 using float_type_list =
@@ -44,8 +44,9 @@ struct custom_policy_selector
   }
 };
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
@@ -86,8 +87,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   REQUIRE_APPROX_EQ_ABS(h_expected, h_actual, abs_err);
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type     = typename c2h::get<0, TestType>;
@@ -149,8 +151,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_EQ_WITH_NAN_MATCHING(d_output_p1, d_output_p2);
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different iterators",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different iterators",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -202,8 +205,9 @@ struct square_t
   }
 };
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -258,8 +262,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
-C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different init values",
+CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different init values",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -296,8 +301,9 @@ using test_types =
 #endif
                  >;
 
-C2H_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
+CUB_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
          "[reduce][nondeterministic]",
+         CUB_SMALL,
          test_types)
 {
   using type = typename c2h::get<0, TestType>;

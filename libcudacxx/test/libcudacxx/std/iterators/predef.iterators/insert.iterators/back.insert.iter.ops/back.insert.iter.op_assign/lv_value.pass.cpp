@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/iterator>
 
@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class C>
-TEST_FUNC void test(C c)
+TEST_HOST_DEVICE_FUNC void test(C c)
 {
   const typename C::value_type v = typename C::value_type();
   cuda::std::back_insert_iterator<C> i(c);
@@ -38,15 +38,15 @@ class Copyable
   int data_;
 
 public:
-  TEST_FUNC Copyable()
+  TEST_HOST_DEVICE_FUNC Copyable()
       : data_(0)
   {}
-  TEST_FUNC ~Copyable()
+  TEST_HOST_DEVICE_FUNC ~Copyable()
   {
     data_ = -1;
   }
 
-  TEST_FUNC friend bool operator==(const Copyable& x, const Copyable& y)
+  TEST_HOST_DEVICE_FUNC friend bool operator==(const Copyable& x, const Copyable& y)
   {
     return x.data_ == y.data_;
   }

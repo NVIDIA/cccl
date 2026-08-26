@@ -16,7 +16,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -95,7 +95,7 @@ struct abs_less_t
   }
 };
 
-C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
+CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -541,7 +541,7 @@ struct non_copy_assignable_less
   }
 };
 
-C2H_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]")
+CUB_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]", CUB_SMALL)
 {
   using item_t   = int;
   using output_t = int;
@@ -589,7 +589,7 @@ struct faulting_reduce
   }
 };
 
-C2H_TEST("Device reduce works without initial value", "[reduce][device]")
+CUB_TEST("Device reduce works without initial value", "[reduce][device]", CUB_SMALL)
 {
   constexpr int num_items = 1000;
   c2h::device_vector<int> input(num_items, checking_reduce::sentinel);

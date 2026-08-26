@@ -13,7 +13,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -47,7 +47,7 @@ auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate)
   return static_cast<OffsetT>(std::distance(first, it));
 }
 
-C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
+CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using offset_t = c2h::get<1, TestType>;
@@ -160,7 +160,7 @@ C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
   }
 }
 
-C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]")
+CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]", CUB_SMALL)
 {
   using input_t  = int32_t;
   using offset_t = int32_t;
@@ -243,7 +243,7 @@ struct index_to_value
 static_assert(!cuda::std::is_default_constructible_v<NotDefaultConstructible>,
               "NotDefaultConstructible should not be default constructible");
 
-C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
+CUB_TEST("Device find_if works with non default constructible types", "[device][find_if]", CUB_SMALL)
 {
   using input_t  = NotDefaultConstructible;
   using offset_t = int;
@@ -334,21 +334,22 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   CHECK(offsets_ref == offsets_h);
 }
 
-C2H_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", binary_search_types)
+CUB_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", CUB_SMALL, binary_search_types)
 {
   using value_type = c2h::get<0, TestType>;
   test_vectorized<value_type>(lower_bound, std_lower_bound);
 }
 
-C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", binary_search_types)
+CUB_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", CUB_SMALL, binary_search_types)
 {
   using value_type = c2h::get<0, TestType>;
   test_vectorized<value_type>(upper_bound, std_upper_bound);
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::LowerBound really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {
@@ -364,8 +365,9 @@ C2H_TEST("DeviceFind::LowerBound really large input",
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::UpperBound really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {

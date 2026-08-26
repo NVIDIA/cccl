@@ -37,7 +37,7 @@
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__coop/shuffle_down.cuh>
-#include <cuda/experimental/__utility/broadcasted.cuh>
+#include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

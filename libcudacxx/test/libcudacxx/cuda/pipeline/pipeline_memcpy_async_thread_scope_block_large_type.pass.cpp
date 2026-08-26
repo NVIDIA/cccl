@@ -10,8 +10,8 @@
 
 // UNSUPPORTED: pre-sm-70
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 #include "pipeline_memcpy_async_thread_scope_generic.h"
 

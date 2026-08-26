@@ -16,7 +16,7 @@
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/barrier>

@@ -22,6 +22,7 @@
 
 using UDI = UserDefinedIntegral<unsigned>;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test_char()
 {
@@ -34,6 +35,7 @@ TEST_FUNC constexpr void test_char()
   assert(a[3] == 1);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test_int()
 {
@@ -147,6 +149,7 @@ TEST_FUNC constexpr void test6()
   cuda::std::fill_n(&foo[0], UDI(5), Storage());
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test_char<cpp17_output_iterator<char*>>();
@@ -170,9 +173,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test_int<host_only_iterator<int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test_int<device_only_iterator<int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

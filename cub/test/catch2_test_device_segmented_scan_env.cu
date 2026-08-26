@@ -28,7 +28,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, dev
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -38,7 +38,7 @@ namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device segmented exclusive sum works with default environment", "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented exclusive sum works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -54,7 +54,7 @@ TEST_CASE("Device segmented exclusive sum works with default environment", "[seg
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented exclusive scan works with default environment", "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented exclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -70,7 +70,7 @@ TEST_CASE("Device segmented exclusive scan works with default environment", "[se
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive sum works with default environment", "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive sum works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -86,7 +86,7 @@ TEST_CASE("Device segmented inclusive sum works with default environment", "[seg
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -102,7 +102,9 @@ TEST_CASE("Device segmented inclusive scan works with default environment", "[se
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive scan init works with default environment", "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive scan init works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -118,8 +120,9 @@ TEST_CASE("Device segmented inclusive scan init works with default environment",
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented exclusive sum with separate offsets works with default environment",
-          "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented exclusive sum with separate offsets works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -138,8 +141,9 @@ TEST_CASE("Device segmented exclusive sum with separate offsets works with defau
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented exclusive scan with separate offsets works with default environment",
-          "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented exclusive scan with separate offsets works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -159,8 +163,9 @@ TEST_CASE("Device segmented exclusive scan with separate offsets works with defa
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive sum with separate offsets works with default environment",
-          "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive sum with separate offsets works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -179,8 +184,9 @@ TEST_CASE("Device segmented inclusive sum with separate offsets works with defau
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive scan with separate offsets works with default environment",
-          "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive scan with separate offsets works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -200,8 +206,9 @@ TEST_CASE("Device segmented inclusive scan with separate offsets works with defa
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented inclusive scan init with separate offsets works with default environment",
-          "[segmented_scan][device]")
+CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works with default environment",
+              "[segmented_scan][device]",
+              CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -223,7 +230,7 @@ TEST_CASE("Device segmented inclusive scan init with separate offsets works with
 
 #endif
 
-C2H_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -245,7 +252,7 @@ C2H_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][de
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -276,7 +283,7 @@ C2H_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][d
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -298,7 +305,7 @@ C2H_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][de
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -328,7 +335,7 @@ C2H_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][d
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive scan init uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive scan init uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -359,7 +366,7 @@ C2H_TEST("Device segmented inclusive scan init uses environment", "[segmented_sc
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented exclusive sum with separate offsets uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented exclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -392,7 +399,7 @@ C2H_TEST("Device segmented exclusive sum with separate offsets uses environment"
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented exclusive scan with separate offsets uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented exclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -435,7 +442,7 @@ C2H_TEST("Device segmented exclusive scan with separate offsets uses environment
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive sum with separate offsets uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -468,7 +475,7 @@ C2H_TEST("Device segmented inclusive sum with separate offsets uses environment"
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive scan with separate offsets uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -502,7 +509,9 @@ C2H_TEST("Device segmented inclusive scan with separate offsets uses environment
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented inclusive scan init with separate offsets uses environment", "[segmented_scan][device]")
+CUB_TEST("Device segmented inclusive scan init with separate offsets uses environment",
+         "[segmented_scan][device]",
+         CUB_SMALL)
 {
   const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
@@ -572,7 +581,7 @@ using block_sizes =
 // (block_size_extracting_constant_iterator). The "Scan" APIs take a user scan operator, so we wrap a plus<> in
 // block_size_extracting_op which both records the block size and computes the expected result.
 
-C2H_TEST("Device segmented exclusive sum can be tuned", "[segmented_scan][device]", block_sizes)
+CUB_TEST("Device segmented exclusive sum can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   ::cuda::std::int64_t num_segments        = 3;
@@ -587,7 +596,7 @@ C2H_TEST("Device segmented exclusive sum can be tuned", "[segmented_scan][device
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device]", block_sizes)
+CUB_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   ::cuda::std::int64_t num_segments        = 3;
@@ -602,7 +611,7 @@ C2H_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][device]", block_sizes)
+CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   ::cuda::std::int64_t num_segments        = 3;
@@ -622,7 +631,7 @@ C2H_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][device]", block_sizes)
+CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   ::cuda::std::int64_t num_segments        = 3;
@@ -642,7 +651,7 @@ C2H_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][device]", block_sizes)
+CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   ::cuda::std::int64_t num_segments        = 3;
@@ -665,7 +674,7 @@ C2H_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]")
+CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);

@@ -87,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      nullptr);
+      __policy);
 
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
@@ -114,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
@@ -133,8 +133,8 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

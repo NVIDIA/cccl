@@ -345,7 +345,7 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
 
 // Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>
-[[nodiscard]] _CCCL_API constexpr const void* __get_kernel_launcher() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr const void* __get_kernel_launcher() noexcept
 {
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;

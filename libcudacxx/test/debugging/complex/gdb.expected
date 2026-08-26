@@ -1,0 +1,48 @@
+=============== complex.std.default begin ===============
+cuda::std::complex<float> = {
+  real = 0,
+  imag = 0
+}
+=============== complex.std.default end ===============
+=============== complex.std.double begin ===============
+cuda::std::complex<double> = {
+  real = 1.5,
+  imag = -2.25
+}
+=============== complex.std.double end ===============
+=============== complex.cuda.float begin ===============
+cuda::complex<float> = {
+  real = 0.5,
+  imag = 42.5
+}
+=============== complex.cuda.float end ===============
+=============== complex.alias begin ===============
+cuda::std::complex<float> = {
+  real = -3.5,
+  imag = 0.25
+}
+=============== complex.alias end ===============
+=============== complex.nested begin ===============
+cuda::std::array<cuda::std::complex<float>, 2> = {
+  [0] = cuda::std::complex<float> = {
+    real = 13.5,
+    imag = -5.5
+  },
+  [1] = cuda::std::complex<float> = {
+    real = 0.25,
+    imag = 88.5
+  }
+}
+=============== complex.nested end ===============
+=============== complex.update.before begin ===============
+cuda::std::complex<double> = {
+  real = 6.5,
+  imag = -91.5
+}
+=============== complex.update.before end ===============
+=============== complex.update.after begin ===============
+cuda::std::complex<double> = {
+  real = 3.25,
+  imag = 85.5
+}
+=============== complex.update.after end ===============

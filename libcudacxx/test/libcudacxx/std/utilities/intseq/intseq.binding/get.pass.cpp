@@ -55,12 +55,20 @@ TEST_FUNC constexpr void test(typename Seq::value_type ref_val)
 }
 
 template <class T, T... Vs>
+struct TestFunctor
+{
+  template <cuda::std::size_t I>
+  TEST_FUNC constexpr void operator()(cuda::std::integral_constant<cuda::std::size_t, I>) const
+  {
+    constexpr T values[(sizeof...(Vs) > 0) ? sizeof...(Vs) : 1]{Vs...};
+    test<cuda::std::integer_sequence<T, Vs...>, I>(values[I]);
+  }
+};
+
+template <class T, T... Vs>
 TEST_FUNC constexpr void test()
 {
-  cuda::static_for<sizeof...(Vs)>([](auto i) {
-    constexpr T values[(sizeof...(Vs) > 0) ? sizeof...(Vs) : 1]{Vs...};
-    test<cuda::std::integer_sequence<T, Vs...>, i()>(values[i()]);
-  });
+  cuda::static_for<sizeof...(Vs)>(TestFunctor<T, Vs...>{});
 }
 
 TEST_FUNC constexpr bool test()

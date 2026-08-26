@@ -77,7 +77,7 @@
 #endif
 
 #if defined(CUB_STDERR) || defined(CUB_DEBUG_LOG)
-#  include <cstdio>
+#  include <cuda/std/__host_stdlib/cstdio>
 #endif
 
 CUB_NAMESPACE_BEGIN

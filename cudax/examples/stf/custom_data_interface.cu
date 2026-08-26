@@ -15,6 +15,8 @@
  *
  */
 
+#include <cuda/std/array>
+
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -93,12 +95,12 @@ public:
     return m * n;
   }
 
-  using coords_t = ::std::tuple<size_t, size_t>;
+  using coords_t = ::cuda::std::array<size_t, 2>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    return coords_t(index % m, index / m);
+    return {index % m, index / m};
   }
 
   size_t m;

@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
@@ -20,6 +20,7 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 class _ThreeWayPartition(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -68,17 +69,27 @@ class _ThreeWayPartition(Serializable):
             (value_type,), types.uint8
         )
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceThreeWayPartitionBuildResult,
-            self.d_in_cccl,
-            self.d_first_part_out_cccl,
-            self.d_second_part_out_cccl,
-            self.d_unselected_out_cccl,
-            self.d_num_selected_out_cccl,
-            self.select_first_part_op_cccl,
-            self.select_second_part_op_cccl,
+            d_in,
+            d_first_part_out,
+            d_second_part_out,
+            d_unselected_out,
+            d_num_selected_out,
+            select_first_part_op,
+            select_second_part_op,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceThreeWayPartitionBuildResult,
+                self.d_in_cccl,
+                self.d_first_part_out_cccl,
+                self.d_second_part_out_cccl,
+                self.d_unselected_out_cccl,
+                self.d_num_selected_out_cccl,
+                self.select_first_part_op_cccl,
+                self.select_second_part_op_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -96,7 +107,9 @@ class _ThreeWayPartition(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_first_part_out_cccl, d_first_part_out)

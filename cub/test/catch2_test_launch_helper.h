@@ -22,7 +22,7 @@
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
-//! C2H_TEST("Reduce test", "[device][reduce]")
+//! CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and

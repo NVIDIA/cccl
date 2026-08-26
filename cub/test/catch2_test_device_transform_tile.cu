@@ -5,7 +5,7 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // The tile dispatch path only exists when nvcc is invoked with --enable-tile and the user opts in via
 // CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH. In any other build this file compiles to a single skipped test.
@@ -72,8 +72,9 @@ using tile_types = c2h::type_list<::cuda::std::uint32_t, ::cuda::std::uint64_t>;
 // kernel; the others fall back to the standard CUB dispatch. Both must produce identical results.
 #  define TILE_TRANSFORM_SIZES GENERATE(::cuda::std::int64_t{0}, 16, 32, 128, 1024, 4096, 65536, 17, 127, 1000)
 
-C2H_TEST("DeviceTransform tile dispatch: unary scalar op routed through its tile_operator substitute",
+CUB_TEST("DeviceTransform tile dispatch: unary scalar op routed through its tile_operator substitute",
          "[device][transform][tile]",
+         CUB_SMALL,
          tile_types)
 {
   using type                           = c2h::get<0, TestType>;
@@ -92,8 +93,9 @@ C2H_TEST("DeviceTransform tile dispatch: unary scalar op routed through its tile
   REQUIRE(reference_h == result);
 }
 
-C2H_TEST("DeviceTransform tile dispatch: binary scalar op routed through its tile_operator substitute",
+CUB_TEST("DeviceTransform tile dispatch: binary scalar op routed through its tile_operator substitute",
          "[device][transform][tile]",
+         CUB_SMALL,
          tile_types)
 {
   using type                           = c2h::get<0, TestType>;
@@ -117,7 +119,7 @@ C2H_TEST("DeviceTransform tile dispatch: binary scalar op routed through its til
 
 #else // !_CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 
-C2H_TEST("DeviceTransform tile dispatch requires --enable-tile", "[device][transform][tile]")
+CUB_TEST("DeviceTransform tile dispatch requires --enable-tile", "[device][transform][tile]", CUB_SMALL)
 {
   SUCCEED("tile transform dispatch not enabled in this build");
 }

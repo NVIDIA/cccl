@@ -122,6 +122,12 @@ _CCCL_CONCEPT __cccl_basic_sv_is_std_to_cuda_std_char_traits = _CCCL_REQUIRES_EX
     requires(__is_std_char_traits_v<_HostTraits>) //
   );
 
+namespace __string_view_detail
+{
+template <class _CharT>
+_CCCL_API constexpr basic_string_view<_CharT> __from_string_literal(const _CharT* __s, size_t __len) noexcept;
+} // namespace __string_view_detail
+
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view
 {
@@ -224,8 +230,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__cccl_basic_sv_compatible_range<_Range, _CharT, _Traits>)
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
-      : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
-      , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
+      : __data_{::cuda::std::ranges::data(__r)}
+      , __size_{::cuda::std::ranges::size(__r)}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
@@ -380,6 +386,11 @@ public:
       _CCCL_THROW(::std::out_of_range, "string_view::substr");
     }
     return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr basic_string_view subview(size_type __pos = 0, size_type __n = npos) const
+  {
+    return substr(__pos, __n);
   }
 
   // compare
@@ -806,16 +817,34 @@ private:
   // This is the same as the pointer and length constructor, but without the additional hardening checks. It is intended
   // for use within the class, when the class invariants already guarantee the resulting object is valid. The compiler
   // usually cannot eliminate the redundant checks because it does not know class invariants.
+  //
+  // The string-view literal operators also satisfy those preconditions, but cannot directly name this constructor while
+  // keeping it private: literal operator friend declarations inside class templates are not accepted by all supported
+  // compilers. Keep the unchecked path non-public by friending only the reserved detail helper below; the literal
+  // operators call that helper instead of exposing a public factory or a generally usable unchecked constructor.
   _CCCL_API constexpr basic_string_view(__assume_valid, const _CharT* __s, size_type __len) noexcept
       : __data_{__s}
       , __size_{__len}
   {}
+
+  template <class _OtherCharT>
+  friend _CCCL_API constexpr basic_string_view<_OtherCharT>
+  __string_view_detail::__from_string_literal(const _OtherCharT*, size_t) noexcept;
 
   const value_type* __data_;
   size_type __size_;
 };
 
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
+
+namespace __string_view_detail
+{
+template <class _CharT>
+_CCCL_API constexpr basic_string_view<_CharT> __from_string_literal(const _CharT* __s, size_t __len) noexcept
+{
+  return {typename basic_string_view<_CharT>::__assume_valid{}, __s, __len};
+}
+} // namespace __string_view_detail
 
 _CCCL_TEMPLATE(class _It, class _End)
 _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
@@ -882,31 +911,31 @@ inline namespace string_view_literals
 {
 _CCCL_API constexpr basic_string_view<char> operator""sv(const char* __str, size_t __len) noexcept
 {
-  return basic_string_view<char>{__str, __len};
+  return __string_view_detail::__from_string_literal(__str, __len);
 }
 
 #if _CCCL_HAS_WCHAR_T()
 _CCCL_API constexpr basic_string_view<wchar_t> operator""sv(const wchar_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<wchar_t>{__str, __len};
+  return __string_view_detail::__from_string_literal(__str, __len);
 }
 #endif // _CCCL_HAS_WCHAR_T()
 
 #if _CCCL_HAS_CHAR8_T()
 _CCCL_API constexpr basic_string_view<char8_t> operator""sv(const char8_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char8_t>{__str, __len};
+  return __string_view_detail::__from_string_literal(__str, __len);
 }
 #endif // _CCCL_HAS_CHAR8_T()
 
 _CCCL_API constexpr basic_string_view<char16_t> operator""sv(const char16_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char16_t>{__str, __len};
+  return __string_view_detail::__from_string_literal(__str, __len);
 }
 
 _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char32_t>{__str, __len};
+  return __string_view_detail::__from_string_literal(__str, __len);
 }
 } // namespace string_view_literals
 } // namespace literals

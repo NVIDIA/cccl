@@ -616,12 +616,18 @@ private:
   // Instantiate a CUDA graph
   static ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   {
-    // Custom deleter specifically for cudaGraphExec_t
+    // Custom deleter specifically for cudaGraphExec_t. The handle is
+    // value-initialized and stays null if instantiation throws: do not
+    // destroy it in that case (that would mask the instantiation error).
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-      cudaGraphExecDestroy(*pGraphExec);
+      if (*pGraphExec)
+      {
+        cudaGraphExecDestroy(*pGraphExec);
+      }
+      delete pGraphExec;
     };
 
-    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t{}, cudaGraphExecDeleter);
 
     cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 

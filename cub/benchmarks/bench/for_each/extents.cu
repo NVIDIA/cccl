@@ -56,7 +56,10 @@ void for_each_in_extents(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-NVBENCH_BENCH_TYPES(for_each_in_extents, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
+// in tile there are not 128 bit types, so we cannot use 64 bit types because they get promoted internally
+using offsets = cuda::std::conditional_t<_CCCL_TILE_COMPILATION(), nvbench::type_list<int32_t>, offset_types>;
+
+NVBENCH_BENCH_TYPES(for_each_in_extents, NVBENCH_TYPE_AXES(fundamental_types, offsets))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
