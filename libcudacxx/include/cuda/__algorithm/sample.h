@@ -27,7 +27,6 @@
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -281,10 +280,6 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
 //! a random access population iterator so that skipped elements are never touched. Each selected
 //! element is written in increasing population order, so the result is stable.
 //!
-//! The implementation follows Appendix A2 of the paper, and it hands the tail of the sample to
-//! Method A of Appendix A1 once the sampling fraction becomes high. Method A costs `O(__N)`
-//! arithmetic on the remaining population, but it still reads only the selected elements.
-//!
 //! The gap distribution is computed in `double`. The population size must therefore be exactly
 //! representable as a `double`, that is, at most 2^53.
 //!
@@ -293,6 +288,7 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
 //! @param[out] __output_iter Beginning of the destination range
 //! @param[in] __n Number of elements to select
 //! @param[in,out] __g Uniform random number generator
+//!
 //! @return The end of the written destination range
 template <class _PopulationIterator,
           class _PopulationSent,
@@ -309,13 +305,17 @@ _CCCL_API _SampleIterator sample(
   static_assert(::cuda::std::__has_random_access_traversal<_PopulationIterator>,
                 "PopulationIterator must meet the requirements of RandomAccessIterator");
 
-  using _Difference = typename ::cuda::std::iterator_traits<_PopulationIterator>::difference_type;
-  using _CommonType = ::cuda::std::common_type_t<_Distance, _Difference>;
+  // We would use the usual ::cuda::std::common_type_t machinery, but clang-cuda 21+ crashes
+  // when casting a __int128 to double, see https://github.com/llvm/llvm-project/issues/218919.
+  using _CommonType = ::cuda::std::int64_t;
 
-  _CCCL_ASSERT(!::cuda::std::is_signed_v<_Distance> || __n >= 0, "N must be a positive number.");
+  if constexpr (::cuda::std::is_signed_v<_Distance>)
+  {
+    _CCCL_ASSERT(__n >= 0, "N must be a positive number.");
+  }
 
   const auto __N = static_cast<_CommonType>(__last - __first);
-  const auto __k = ::cuda::std::min(static_cast<_CommonType>(__n), __N);
+  const auto __k = (::cuda::std::min) (static_cast<_CommonType>(__n), __N);
 
   if (__k <= 0)
   {
@@ -326,6 +326,9 @@ _CCCL_API _SampleIterator sample(
   {
     return ::cuda::std::copy(__first, __last, __output_iter);
   }
+
+  _CCCL_ASSERT(__N <= (_CommonType{1} << 53),
+               "Population size must be exactly representable as a double, that is, at most 2^53.");
 
   return ::cuda::__detail::__vitter_sample_method_d(__first, __output_iter, __N, __k, __g);
 }
