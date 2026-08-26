@@ -70,6 +70,9 @@ function Get-CudaMajor {
         $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+)(?:\.\d+)?')
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
+    # The minimal test container has no CUDA toolkit at all, by design, so the
+    # caller passes the version resolved outside it.
+    if ($env:CCCL_CUDA_VERSION -match '^(\d+)\.') { return $Matches[1] }
     return '13'
 }
 
@@ -90,6 +93,8 @@ function Get-CudaVersion {
         $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+\.\d+)')
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
+    # See Get-CudaMajor.
+    if ($env:CCCL_CUDA_VERSION -match '^\d+\.\d+$') { return $env:CCCL_CUDA_VERSION }
     return '13.0'
 }
 
@@ -243,4 +248,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

@@ -157,10 +157,19 @@ happened to find ``gcc`` and ``/usr/local/cuda`` lying around".
 
 The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
 and then run the test payload in a sibling container holding nothing but Python, launched
-through the host's docker daemon by ``ci/util/python/run_in_minimal_container.sh``. This
-is the same docker-outside-of-docker arrangement ``ci/build_cuda_cccl_python.sh`` uses to
-build wheels. An undeclared dependency fails there instead of passing silently. The same
-applies to both the v1 (NVRTC) and v2 (HostJIT) backends.
+through the host's docker daemon -- by ``ci/util/python/run_in_minimal_container.sh`` on
+Linux and ``ci/windows/run_in_minimal_container.ps1`` on Windows. This is the same
+docker-outside-of-docker arrangement the wheel builds already use. An undeclared
+dependency fails there instead of passing silently. The same applies to both the v1
+(NVRTC) and v2 (HostJIT) backends.
+
+The two platforms differ only where they must. Linux hands the sibling the specific GPUs
+the driver reports, since ``--gpus all`` would reach GPUs belonging to other jobs on a
+shared runner. Windows exposes GPUs as a whole device class and only under process
+isolation, and its image must match the host kernel -- the devcontainer images are
+LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:ltsc2022``.
+Neither image ships Python: ``uv`` installs the interpreter the lane asked for, exactly as
+it does in the devcontainer.
 
 Each lane is therefore two scripts: ``ci/test_<lane>.sh`` provisions the wheel and
 dispatches, and ``ci/util/python/run_<lane>_tests.sh`` is the payload that must survive in
@@ -175,7 +184,6 @@ These lanes deliberately stay in the devcontainer, because they need what it pro
 * ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
 * ``test_py_stf`` -- ``cuda-stf`` is a separate wheel with its own producer and test
   script, which does not use this path.
-* Windows lanes -- these run the ``ci/windows/*.ps1`` scripts, which have no equivalent.
 
 Reproducing a failure locally
 -----------------------------

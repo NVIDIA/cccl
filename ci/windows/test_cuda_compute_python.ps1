@@ -1,3 +1,14 @@
+<#
+.SYNOPSIS
+    Entry point for the Windows cuda.compute test lanes.
+.DESCRIPTION
+    Provisions the cuda_cccl wheel and then runs the test payload, by default in
+    a minimal sibling container (see run_in_minimal_container.ps1 for what that
+    buys). `sysctk` is the exception: that mode exists to test against a
+    system-provided CUDA toolkit, which only the devcontainer has. Set
+    CCCL_MINIMAL_CONTAINER=0 to stay in the devcontainer as well -- useful
+    locally, or to compare against the devcontainer environment.
+#>
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
@@ -10,35 +21,20 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
-# Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-$python = Get-Python -Version $PyVersion
-$cudaMajor = Get-CudaMajor
-$ctkFlavor = Get-CtkExtraFlavor $CtkMode
+# Fetching the wheel needs gh and the workflow helpers, which the minimal
+# container deliberately does not have -- so it happens out here.
+$null = Get-CudaCcclWheel
 
-# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
-# opts out). See build_common_python.psm1.
-Set-CtkPin $CtkMode
+$payloadArgs = @('-py-version', $PyVersion)
+if ($CtkMode) { $payloadArgs += @('-ctk-mode', $CtkMode) }
 
-$repoRoot = Get-RepoRoot
-
-$wheelPath = Get-CudaCcclWheel
-
-Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl test extra"
-
-Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
-try {
-    Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
-    Invoke-Checked { & $python -m pytest -n 0 -v compute/ -m "large and not free_threading" } "compute tests (large) failed"
-
-    # The bfloat16 tests require ml_dtypes (the NumPy bfloat16 extension dtype),
-    # which is deliberately not part of the test extras so that the sweeps above
-    # run in an environment matching a user's default install (where the bfloat16
-    # tests skip themselves). Install it last and run those tests explicitly.
-    Invoke-Checked { & $python -m pip install ml_dtypes } "Failed to install ml_dtypes"
-    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_bfloat16.py } "bfloat16 tests failed"
+if (((Get-CtkExtraFlavor $CtkMode) -ne 'sysctk') -and ($env:CCCL_MINIMAL_CONTAINER -ne '0')) {
+    & "$PSScriptRoot/run_in_minimal_container.ps1" `
+        -Script 'ci\windows\run_compute_tests.ps1' `
+        -ScriptArgs $payloadArgs
+} else {
+    & "$PSScriptRoot/run_compute_tests.ps1" @payloadArgs
 }
-finally { Pop-Location }
+exit $LASTEXITCODE
