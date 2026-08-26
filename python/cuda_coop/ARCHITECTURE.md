@@ -71,13 +71,22 @@ compilers have the same execution model.
 
 CUTLASS traces qualified calls and registers immutable provider requests in a
 per-trace session. Finalization renders all requested providers in canonical
-order, resolves an exact cache hit when possible, otherwise compiles one bundle,
-materializes deferred scratch storage, and attaches the resulting linkable
-artifact to the kernel.
+order, resolves an exact AOT or cache hit when possible, otherwise compiles one
+bundle, materializes deferred scratch storage, and attaches the resulting
+linkable artifact to the kernel.
 
-A JIT path must preload NVRTC before querying its version or constructing PCH
-state. Renderer kinds, source bytes, generated symbols, bundle identities, and
-cache schemas must not change merely because Python modules move.
+The ordering is a compatibility contract. An exact AOT hit must avoid header
+discovery and mutable cache/toolchain state. A JIT path must preload NVRTC
+before querying its version or constructing PCH state. Renderer kinds, source
+bytes, generated symbols, bundle identities, cache schemas, and AOT manifests
+must not change merely because Python modules move.
+
+AOT portability is governed by the provider ABI plus exact rendered source,
+bundle format, architecture, compiler options, layout expressions, and linker
+compatibility. The writer version is diagnostic rather than an equality gate,
+and current headers are intentionally absent from an exact-hit lookup. A
+header or provider change that can alter the ABI or semantics of identical
+rendered source therefore requires a provider-ABI bump.
 
 ### Numba-CUDA-MLIR
 
@@ -111,7 +120,7 @@ that manage activation can disable portable-root probing before import with
   compiler evidence used to resolve that description, not part of the public
   container itself.
 - Semantic and artifact keys describe behavior and generated-provider
-  identity. Persisted cache formats are versioned only when their actual
+  identity. Persisted cache or AOT formats are versioned only when their actual
   representation changes; directory or module renames do not justify a new
   version.
 

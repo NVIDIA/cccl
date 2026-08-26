@@ -25,7 +25,7 @@ CUTLASS-qualified API
 The qualified module provides the same group constructors and primitive
 families as the portable API. It additionally exports ``ThreadDataSource``,
 ``ThreadDataLoadSource``, and ``ThreadDataTensorMetadata`` for adapting CuTe
-register values.
+register values, plus the :mod:`cuda.coop.cutlass.aot` pack interface.
 
 See the :github:`CUTLASS type declarations
 <python/cuda_coop/cuda/coop/cutlass/__init__.pyi>` for its complete overload
