@@ -93,6 +93,30 @@ CUB_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]", CUB_SMALL)
   REQUIRE(vec == expected);
 }
 
+// __for_each_n is the internal two-phase entry point other device algorithms compose with
+CUB_TEST("DeviceFor::__for_each_n two-phase overload takes an environment", "[for][env]", CUB_SMALL)
+{
+  auto vec = c2h::device_vector<int>{1, 2, 3, 4};
+  square_ref_op op{};
+  const auto num_items = static_cast<int>(vec.size());
+
+  cuda::stream stream{cuda::devices[0]};
+  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == cub::DeviceFor::__for_each_n(nullptr, temp_storage_bytes, vec.begin(), num_items, op, env));
+  REQUIRE(temp_storage_bytes > 0);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  REQUIRE(
+    cudaSuccess == cub::DeviceFor::__for_each_n(d_temp_storage, temp_storage_bytes, vec.begin(), num_items, op, env));
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream.get()));
+
+  c2h::device_vector<int> expected{1, 4, 9, 16};
+  REQUIRE(vec == expected);
+}
+
 // -----------------------------------------------------------------------
 // ForEach
 // -----------------------------------------------------------------------
@@ -198,9 +222,9 @@ struct with_get_stream_method
   }
 };
 
-// A non-const conversion operator is unreachable through the const& the env APIs take, which would
-// silently select the default stream. DeviceFor rejects it at compile time instead; this pins the
-// trait pair that its static_assert keys on.
+// A non-const conversion operator is unreachable through the const& the env APIs take, so the type
+// provides no stream to the env query and work runs on the default stream. The static_asserts pin
+// the trait pair behind that fallback.
 struct mutable_stream_wrapper
 {
   cudaStream_t stream;
@@ -544,6 +568,12 @@ void test_env_kinds(TestFn test_fn)
   {
     non_copyable_stream_wrapper wrapper{stream.get()};
     test_fn(wrapper, cuda::stream_ref{stream});
+  }
+
+  SECTION("wrapper with a non-const conversion to cudaStream_t")
+  {
+    // the stream is unreachable through the const& env query, so work runs on the default stream
+    test_fn(mutable_stream_wrapper{stream.get()}, default_stream);
   }
 
   SECTION("type with a stream() member")

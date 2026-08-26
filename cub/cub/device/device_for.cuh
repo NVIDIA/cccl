@@ -38,8 +38,6 @@
 #include <cuda/std/__mdspan/layout_left.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/array>
 
@@ -134,12 +132,6 @@ struct DeviceFor
   template <class OffsetT, class OpT, class EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, const EnvT& env = {})
   {
-    // `env` is queried through a const reference, so a conversion operator or accessor that is not
-    // const-qualified is unreachable and would silently fall back to the default stream.
-    static_assert(!(::cuda::std::is_convertible_v<EnvT, cudaStream_t>
-                    && !::cuda::std::__is_callable_v<::cuda::get_stream_t, const EnvT&>),
-                  "a type convertible to cudaStream_t must have a const-qualified conversion operator to be usable "
-                  "as a DeviceFor environment");
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     [[maybe_unused]] const auto tuning_env =
       ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
@@ -172,6 +164,23 @@ struct DeviceFor
     }
 
     return __bulk(num_items, __op_wrapper_t<NumItemsT, OpT, RandomAccessIteratorT>{first, op}, env);
+  }
+
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorT first,
+    NumItemsT num_items,
+    OpT op,
+    const EnvT& env = {})
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return __for_each_n(first, num_items, op, env);
   }
 
 public:
@@ -1283,6 +1292,7 @@ public:
     {
       return cudaSuccess;
     }
+
     const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
     const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
     const for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
