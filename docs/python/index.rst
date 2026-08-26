@@ -11,6 +11,9 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
+* :doc:`cuda.coop <coop>` — Cooperative group primitives for authoring portable
+  GPU algorithms inside Python kernel DSLs.
+
 * :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
   logical data and tasks with read/write annotations; STF orchestrates execution
   and data movement.
@@ -34,6 +37,7 @@ Who is this for?
 
    setup
    compute/index
+   coop
    stf
    resources
    api_reference
