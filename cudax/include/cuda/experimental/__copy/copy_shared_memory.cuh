@@ -59,14 +59,21 @@
 
 namespace cuda::experimental
 {
-//! @brief Compute the shared-memory offset for the XOR swizzle.
+//! @brief Compute an optimized shared-memory offset.
 //!
 //! @param[in] __offset The offset in the shared-memory tile.
-//! @return The offset in the shared-memory tile with the XOR swizzle applied.
-template <bool _UseXorSwizzle>
+//! @return The physical offset in the optimized shared-memory layout.
+template <bool _UseOptimizedSmemLayout, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_DEVICE_API __tile_extent_t __smem_offset(__tile_extent_t __offset) noexcept
 {
-  if constexpr (_UseXorSwizzle)
+  if constexpr (_UseOptimizedSmemLayout && _MaxRank == 2 && (sizeof(_Tp) == 1 || sizeof(_Tp) == 2))
+  {
+    // Align each row to the next 32-bit bank word. The resulting 36-char and 34-short pitches distribute transposed
+    // accesses across all 32 shared-memory banks.
+    constexpr __tile_extent_t __smem_padding = sizeof(unsigned) / sizeof(_Tp);
+    return __offset + (__offset / __max_tile_size_32) * __smem_padding;
+  }
+  else if constexpr (_UseOptimizedSmemLayout)
   {
     static_assert(__max_tile_size_32 == 32, "XOR shared-memory swizzle assumes 32 banks and 32-element tile modes");
     constexpr __tile_extent_t __swizzle_tile_size = __max_tile_size_32 * __max_tile_size_32;
@@ -107,7 +114,7 @@ template <bool _UseXorSwizzle>
 //! @param[in]  __tile_sizes             Per-dimension tile extents
 //! @param[in]  __extents                Per-dimension tensor extents (for partial-tile bounds)
 //! @param[in]  __src_strides            Per-dimension source strides (for partial-tile access)
-template <bool _UseXorSwizzle,
+template <bool _UseOptimizedSmemLayout,
           typename _Config,
           ::cuda::std::size_t _MaxRankUZ,
           typename _TpSrc,
@@ -181,37 +188,76 @@ __global__ void __copy_shared_mem_kernel(
   if (__is_full_tile)
   {
     using _Tp = ::cuda::std::remove_cv_t<_TpSrc>;
-    using __partial_tensor_smem =
-      __partial_tensor<_Tp, __tile_extent_t, _MaxRankUZ, ::cuda::std::default_accessor<_Tp>>;
+    constexpr bool __use_rank2_padded_smem =
+      _UseOptimizedSmemLayout && _MaxRankUZ == 2 && (sizeof(_Tp) == 1 || sizeof(_Tp) == 2);
 
     extern __shared__ char __smem_bytes[];
     auto* __smem = reinterpret_cast<_Tp*>(__smem_bytes);
 
     // (1) load src to shared memory by using the src/tile-permuted ordering
-    const __partial_tensor_src __src_tensor{__src_ptr, __src_perm_src_strides, __src_accessor};
-    const __partial_tensor_smem __smem_tensor{
-      __smem, __tile_src_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
-
-    for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+    if constexpr (__use_rank2_padded_smem)
     {
-      const auto __coords          = __tile_perm_iter(__i);
-      const auto __raw_offset      = __smem_tensor.__offset(__coords);
-      const auto __swizzled_offset = ::cuda::experimental::__smem_offset<_UseXorSwizzle>(__raw_offset);
-      __smem[__swizzled_offset]    = __src_tensor(__coords);
+      using __src_value_type = ::cuda::std::remove_const_t<_TpSrc>;
+      for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+      {
+        const auto __inner      = static_cast<__tile_extent_t>(__i) % __max_tile_size_32;
+        const auto __outer      = static_cast<__tile_extent_t>(__i) / __max_tile_size_32;
+        const auto __src_offset = static_cast<_StrideTIn>(__inner) * __src_perm_src_strides[0]
+                                + static_cast<_StrideTIn>(__outer) * __src_perm_src_strides[1];
+        const auto __raw_offset = __inner * __tile_src_perm_smem_strides[0] + __outer * __tile_src_perm_smem_strides[1];
+        const auto __smem_offset = ::cuda::experimental::__smem_offset<true, _Tp, _MaxRankUZ>(__raw_offset);
+        __smem[__smem_offset]    = __src_accessor.access(const_cast<__src_value_type*>(__src_ptr), __src_offset);
+      }
+    }
+    else
+    {
+      using __partial_tensor_smem =
+        __partial_tensor<_Tp, __tile_extent_t, _MaxRankUZ, ::cuda::std::default_accessor<_Tp>>;
+      const __partial_tensor_src __src_tensor{__src_ptr, __src_perm_src_strides, __src_accessor};
+      const __partial_tensor_smem __smem_tensor{
+        __smem, __tile_src_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
+
+      for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+      {
+        const auto __coords     = __tile_perm_iter(__i);
+        const auto __raw_offset = __smem_tensor.__offset(__coords);
+        const auto __optimized_offset =
+          ::cuda::experimental::__smem_offset<_UseOptimizedSmemLayout, _Tp, _MaxRankUZ>(__raw_offset);
+        __smem[__optimized_offset] = __src_tensor(__coords);
+      }
     }
     __syncthreads();
 
     // (2) store from shared memory to destination by using the dst/tile-permuted ordering
-    const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_perm_dst_strides, __dst_accessor};
-    const __partial_tensor_smem __smem_dst_tensor{
-      __smem, __tile_dst_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
-
-    for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+    if constexpr (__use_rank2_padded_smem)
     {
-      const auto __coords          = __tile_dst_perm_iter(__i);
-      const auto __raw_offset      = __smem_dst_tensor.__offset(__coords);
-      const auto __swizzled_offset = ::cuda::experimental::__smem_offset<_UseXorSwizzle>(__raw_offset);
-      __dst_tensor(__coords)       = __smem[__swizzled_offset];
+      for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+      {
+        const auto __inner      = static_cast<__tile_extent_t>(__i) % __max_tile_size_32;
+        const auto __outer      = static_cast<__tile_extent_t>(__i) / __max_tile_size_32;
+        const auto __dst_offset = static_cast<_StrideTOut>(__inner) * __dst_perm_dst_strides[0]
+                                + static_cast<_StrideTOut>(__outer) * __dst_perm_dst_strides[1];
+        const auto __raw_offset = __inner * __tile_dst_perm_smem_strides[0] + __outer * __tile_dst_perm_smem_strides[1];
+        const auto __smem_offset = ::cuda::experimental::__smem_offset<true, _Tp, _MaxRankUZ>(__raw_offset);
+        __dst_accessor.access(__dst_ptr, __dst_offset) = __smem[__smem_offset];
+      }
+    }
+    else
+    {
+      using __partial_tensor_smem =
+        __partial_tensor<_Tp, __tile_extent_t, _MaxRankUZ, ::cuda::std::default_accessor<_Tp>>;
+      const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_perm_dst_strides, __dst_accessor};
+      const __partial_tensor_smem __smem_dst_tensor{
+        __smem, __tile_dst_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
+
+      for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
+      {
+        const auto __coords     = __tile_dst_perm_iter(__i);
+        const auto __raw_offset = __smem_dst_tensor.__offset(__coords);
+        const auto __optimized_offset =
+          ::cuda::experimental::__smem_offset<_UseOptimizedSmemLayout, _Tp, _MaxRankUZ>(__raw_offset);
+        __dst_tensor(__coords) = __smem[__optimized_offset];
+      }
     }
   }
 
@@ -284,10 +330,11 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   using ::cuda::std::size_t;
   _CCCL_ASSERT(__src.__rank >= 2, "Rank must be at least 2 for shared memory transpose");
 
-  const auto __tiling          = cudax::__find_shared_mem_tiling<_TpIn>(__src, __dst);
-  const auto __tile_sizes      = __tiling.__tile_sizes;
-  const auto __rank            = __src.__rank;
-  const auto __tile_total_size = __tiling.__tile_total_size;
+  const auto __tiling               = cudax::__find_shared_mem_tiling<_TpIn>(__src, __dst);
+  const auto __tile_sizes           = __tiling.__tile_sizes;
+  const auto __rank                 = __src.__rank;
+  const auto __tile_total_size      = __tiling.__tile_total_size;
+  const auto __smem_allocation_size = __tiling.__smem_allocation_size;
 
   //--------------------------------------------------------------------------------------------------------------------
   // Find the grid size (number of blocks) and strides for block index decomposition
@@ -350,15 +397,16 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
 
   //--------------------------------------------------------------------------------------------------------------------
   // Launch the kernel
-  using __value_type            = ::cuda::std::remove_cv_t<_TpIn>;
-  const int __thread_block_size = cudax::__find_thread_block_size(__tile_total_size * sizeof(__value_type));
+  using __value_type = ::cuda::std::remove_cv_t<_TpIn>;
+  const int __thread_block_size =
+    __tiling.__use_padded_smem ? 64 : cudax::__find_thread_block_size(__smem_allocation_size * sizeof(__value_type));
 
   const auto __config = ::cuda::make_config(
     ::cuda::block_dims(__thread_block_size),
     ::cuda::grid_dims(__grid_size),
-    ::cuda::dynamic_shared_memory<__value_type[]>(__tile_total_size));
+    ::cuda::dynamic_shared_memory<__value_type[]>(__smem_allocation_size));
 
-  if (__tiling.__use_xor_swizzle)
+  if (__tiling.__use_xor_swizzle || __tiling.__use_padded_smem)
   {
     const auto __kernel = cudax::__copy_shared_mem_kernel<
       true,

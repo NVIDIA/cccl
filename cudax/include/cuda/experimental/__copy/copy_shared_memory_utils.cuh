@@ -112,13 +112,15 @@ inline constexpr size_t __max_tile_size_32 = 32;
 // - __tile_sizes: the size of each tile dimension in shared-memory
 // - __src_perm: the permutation of the source dimensions (copy to shared-memory)
 // - __dst_perm: the permutation of the destination dimensions (copy from shared-memory)
-// - __tile_total_size: the total size of the tile in shared-memory
+// - __tile_total_size: the logical number of elements in the tile
+// - __smem_allocation_size: the physical number of shared-memory elements, including padding
 // - __src_coalesced_tile_size: the number of coalesced source elements covered by the tile
 // - __dst_coalesced_tile_size: the number of coalesced destination elements covered by the tile
 // - __active_tile_dims: the number of dimensions covered by the tile
 // - __active_32_dims: the number of tile dimensions with extent __max_tile_size_32
 // - __is_valid: true if the tiling is valid
 // - __use_xor_swizzle: true if the XOR swizzle is used
+// - __use_padded_smem: true if padding is added after every 32 logical elements
 template <::cuda::std::size_t _MaxRank>
 struct __shared_mem_tiling_result
 {
@@ -126,12 +128,14 @@ struct __shared_mem_tiling_result
   ::cuda::std::array<::cuda::std::size_t, _MaxRank> __src_perm{};
   ::cuda::std::array<::cuda::std::size_t, _MaxRank> __dst_perm{};
   ::cuda::std::size_t __tile_total_size         = 1;
+  ::cuda::std::size_t __smem_allocation_size    = 1;
   ::cuda::std::size_t __src_coalesced_tile_size = 1;
   ::cuda::std::size_t __dst_coalesced_tile_size = 1;
   ::cuda::std::size_t __active_tile_dims        = 0;
   ::cuda::std::size_t __active_32_dims          = 0;
   bool __is_valid                               = false;
   bool __use_xor_swizzle                        = false;
+  bool __use_padded_smem                        = false;
 };
 
 //! @brief Adds a contiguous stride-1 run from one tensor to the shared-memory tile.
@@ -251,11 +255,13 @@ template <typename _TpIn,
 //!
 //! @param[in,out] __result Tiling candidate to validate
 //! @param[in]     __dst Destination raw tensor descriptor
+//! @param[in]     __max_shared_mem_bytes Maximum shared-memory capacity for one tile
 //! @param[in]     __num_sms Number of multiprocessors available on the device
 template <typename _TpIn, typename _ExtentT, typename _StrideTOut, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void __validate_shared_mem_tiling(
   __shared_mem_tiling_result<_MaxRank>& __result,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpDst, _MaxRank>& __dst,
+  ::cuda::std::size_t __max_shared_mem_bytes,
   ::cuda::std::size_t __num_sms) noexcept
 {
   using ::cuda::std::size_t;
@@ -263,6 +269,23 @@ _CCCL_HOST_API void __validate_shared_mem_tiling(
   // dimensions is less than 2, reject the candidate.
   if (__result.__tile_total_size < __max_tile_size_32 * 8 || __result.__src_coalesced_tile_size < 2
       || __result.__dst_coalesced_tile_size < 2 || __result.__active_tile_dims < 2)
+  {
+    return;
+  }
+
+  __result.__smem_allocation_size = __result.__tile_total_size;
+  if constexpr (_MaxRank == 2 && (sizeof(_TpIn) == 1 || sizeof(_TpIn) == 2))
+  {
+    if (__result.__active_32_dims == 2)
+    {
+      // Align the row pitch to the next 32-bit bank word. This gives pitches of 36 chars and 34 shorts, whose bank
+      // strides (9 and 17) are coprime with the 32 shared-memory banks.
+      constexpr size_t __smem_padding = sizeof(unsigned) / sizeof(_TpIn);
+      __result.__smem_allocation_size += (__result.__tile_total_size / __max_tile_size_32) * __smem_padding;
+      __result.__use_padded_smem = true;
+    }
+  }
+  if (__result.__smem_allocation_size * sizeof(_TpIn) > __max_shared_mem_bytes)
   {
     return;
   }
@@ -311,7 +334,7 @@ template <typename _TpIn,
 {
   auto __result =
     ::cuda::experimental::__make_shared_mem_tiling_candidate<_TpIn>(__src, __dst, __max_shared_mem_bytes, 0);
-  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __num_sms);
+  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
   if (__result.__is_valid)
   {
     return __result;
@@ -320,7 +343,7 @@ template <typename _TpIn,
   // fallback with one warp of coalesced elements per layout
   __result = ::cuda::experimental::__make_shared_mem_tiling_candidate<_TpIn>(
     __src, __dst, __max_shared_mem_bytes, __max_tile_size_32);
-  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __num_sms);
+  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
   return __result;
 }
 

@@ -47,6 +47,32 @@ TEST_CASE("copy d2d shared_memory 2D partial tiles", "[copy][d2d][shared_memory]
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
+TEMPLATE_TEST_CASE(
+  "copy d2d shared_memory 2D small-element transpose", "[copy][d2d][shared_memory][transpose][small]", char, short)
+{
+  SECTION("column-major to row-major")
+  {
+    constexpr int M     = 8192;
+    constexpr int N     = 32;
+    constexpr int alloc = M * N;
+    cuda::std::array<int, 2> shape{M, N};
+    cuda::std::array<int, 2> src_strides{1, M};
+    cuda::std::array<int, 2> dst_strides{N, 1};
+    test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+  }
+
+  SECTION("partial column-major to row-major")
+  {
+    constexpr int M     = 8193;
+    constexpr int N     = 37;
+    constexpr int alloc = M * N;
+    cuda::std::array<int, 2> shape{M, N};
+    cuda::std::array<int, 2> src_strides{1, M};
+    cuda::std::array<int, 2> dst_strides{N, 1};
+    test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+  }
+}
+
 // src: (8192,16,16):(1,8192,131072), column-major
 // dst: (8192,16,16):(256,16,1), row-major
 // The simplified tensor rank remains 3, covering the generic shared-memory launch.
