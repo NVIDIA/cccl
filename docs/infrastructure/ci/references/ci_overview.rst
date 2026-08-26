@@ -147,6 +147,36 @@ groups for the next run. They also block merge while present, forcing a clean fi
 The recognized tags and their semantics are catalogued in :ref:`infra-ci-skip-tags`.
 ``[bench-only]`` is shorthand for the common benchmark-request combination.
 
+Testing Python in a minimal container
+-------------------------------------
+
+``cuda.compute`` is meant to work with nothing installed beyond its declared pip
+dependencies -- no host compiler and no system CUDA toolkit. The devcontainer supplies
+both, so a test running there cannot distinguish "we depend only on our wheels" from "we
+happened to find ``gcc`` and ``/usr/local/cuda`` lying around".
+
+The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
+and then run the test payload in a sibling container holding nothing but Python, launched
+through the host's docker daemon by ``ci/util/python/run_in_minimal_container.sh``. This
+is the same docker-outside-of-docker arrangement ``ci/build_cuda_cccl_python.sh`` uses to
+build wheels. An undeclared dependency fails there instead of passing silently. The same
+applies to both the v1 (NVRTC) and v2 (HostJIT) backends.
+
+Each lane is therefore two scripts: ``ci/test_<lane>.sh`` provisions the wheel and
+dispatches, and ``ci/util/python/run_<lane>_tests.sh`` is the payload that must survive in
+the minimal image. Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the devcontainer
+instead, which is useful locally and for comparing the two environments.
+
+These lanes deliberately stay in the devcontainer, because they need what it provides:
+
+* ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
+  toolkit.
+* ``test_headers`` -- compiles C++, so it needs a host compiler.
+* ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
+* ``test_py_stf`` -- ``cuda-stf`` is a separate wheel with its own producer and test
+  script, which does not use this path.
+* Windows lanes -- these run the ``ci/windows/*.ps1`` scripts, which have no equivalent.
+
 Reproducing a failure locally
 -----------------------------
 
