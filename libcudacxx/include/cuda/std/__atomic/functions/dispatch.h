@@ -23,7 +23,7 @@
 
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_local.h>
-#include <cuda/std/__atomic/functions/cuda_ptx.h>
+#include <cuda/std/__atomic/functions/device_backend.h>
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__atomic/functions/host.h>
 #include <cuda/std/__type_traits/copy_cv.h>
