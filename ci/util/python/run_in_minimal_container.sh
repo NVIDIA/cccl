@@ -50,22 +50,19 @@ readonly script
 
 # Every lane using this path is single-GPU. A multi-GPU lane would need the same
 # handling workflow-run-job-linux gives it (--gpus all rather than a device id).
-# "void" is the nvidia-container-toolkit spelling of "no GPU", so it names no
-# device to hand on.
+# Hand the sibling exactly the GPUs this devcontainer can see. NVIDIA_VISIBLE_DEVICES
+# is not usable for this: the devcontainer image sets it to "void" (the
+# nvidia-container-toolkit spelling of "no GPU") and that wins over the value the
+# CI action passes in, so it reads "void" even on GPU jobs. Ask the driver
+# instead, and name the devices explicitly -- `--gpus all` would reach every GPU
+# on the host, including any assigned to a different job.
 declare -a gpu_request=()
-if [[ -n "${NVIDIA_VISIBLE_DEVICES:-}" && "${NVIDIA_VISIBLE_DEVICES}" != "void" ]]; then
-  gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
-elif nvidia-smi -L &> /dev/null; then
-  # GPUs are reachable here, but nothing said which one to pass on. Every lane
-  # using this path needs one, and running without would fail confusingly deep
-  # inside pytest -- so in CI that is an error. Locally it is common enough
-  # (developer devcontainers often leave the variable unset) to be a warning.
-  readonly gpu_msg="GPUs are present but NVIDIA_VISIBLE_DEVICES names none (\"${NVIDIA_VISIBLE_DEVICES:-unset}\")"
-  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    echo "ERROR: ${gpu_msg}." >&2
-    exit 1
-  fi
-  echo "WARNING: ${gpu_msg}; the payload will run without one." >&2
+gpu_uuids="$(nvidia-smi --query-gpu=uuid --format=csv,noheader 2>/dev/null | paste -sd, - || true)"
+readonly gpu_uuids
+if [[ -n "${gpu_uuids}" ]]; then
+  # The inner quotes are load-bearing: docker splits the --gpus value on commas
+  # unless the device list is quoted within the argument itself.
+  gpu_request+=(--gpus "\"device=${gpu_uuids}\"")
 fi
 
 # The whole approach rests on the devcontainer being able to reach the host
