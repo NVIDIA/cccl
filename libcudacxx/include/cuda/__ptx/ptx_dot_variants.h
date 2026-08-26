@@ -132,6 +132,12 @@ enum class dot_kind
   tf32
 };
 
+enum class dot_phase_type
+{
+  primary,
+  conditional
+};
+
 template <dot_sem __sem>
 using sem_t         = ::cuda::std::integral_constant<dot_sem, __sem>;
 using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
@@ -219,6 +225,15 @@ using kind_tf32_t     = kind_t<dot_kind::tf32>;
 [[maybe_unused]] static constexpr kind_mxf4nvf4_t kind_mxf4nvf4{};
 [[maybe_unused]] static constexpr kind_mxf8f6f4_t kind_mxf8f6f4{};
 [[maybe_unused]] static constexpr kind_tf32_t kind_tf32{};
+
+template <dot_phase_type __phase>
+using mbarrier_phase_t = ::cuda::std::integral_constant<dot_phase_type, __phase>;
+
+using mbarrier_phase_primary_t     = mbarrier_phase_t<dot_phase_type::primary>;
+using mbarrier_phase_conditional_t = mbarrier_phase_t<dot_phase_type::conditional>;
+
+[[maybe_unused]] static constexpr mbarrier_phase_primary_t mbarrier_phase_primary{};
+[[maybe_unused]] static constexpr mbarrier_phase_conditional_t mbarrier_phase_conditional{};
 
 template <int n>
 using n32_t = ::cuda::std::integral_constant<int, n>;
