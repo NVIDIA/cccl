@@ -18,8 +18,10 @@ from ._rewrite_histogram import _HistogramRewrite
 from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
 from ._rewrite_load_store import _LoadStoreRewrite
+from ._rewrite_merge_sort import _MergeSortRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
+from ._rewrite_radix import _RadixRewrite
 from ._rewrite_reduce import _ReduceRewrite
 from ._rewrite_run_length_decode import _RunLengthDecodeRewrite
 from ._rewrite_scan import _ScanRewrite
@@ -39,13 +41,17 @@ from ._rewrite_support import (
     register_rewrite,
     require_launch_config,
 )
+from ._rewrite_topk import _TopKRewrite
 
 
 @register_rewrite("before-inference")
 class CoopSinglePhaseRewrite(
     _ProvenanceRewrite,
+    _MergeSortRewrite,
     _ArgumentRewrite,
     _LaunchRewrite,
+    _RadixRewrite,
+    _TopKRewrite,
     _RunLengthDecodeRewrite,
     _HistogramRewrite,
     _GroupMetadataRewrite,
@@ -65,9 +71,31 @@ class CoopSinglePhaseRewrite(
 
     _TEMP_STORAGE_RUNTIME_KW_OPS = frozenset(
         {
+            "_common_radix_rank",
+            "_common_radix_sort_keys",
+            "_common_radix_sort_pairs",
             "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
             "scan",
             "store",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+            "_common_topk_max_keys",
+            "_common_topk_max_pairs",
+            "_common_topk_min_keys",
+            "_common_topk_min_pairs",
+            "_qualified_group_topk_max_keys",
+            "_qualified_group_topk_max_pairs",
+            "_qualified_group_topk_min_keys",
+            "_qualified_group_topk_min_pairs",
             "adjacent_difference",
             "discontinuity",
             "warp_load",
@@ -367,6 +395,120 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
         },
+        "merge_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "compare_op"},
+        },
+        "merge_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "compare_op",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "compare_op",
+            },
+        },
+        "topk_max_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "topk_min_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "topk_max_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {3, 4, 5, 6},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"keys", "values", "threads_per_block"},
+        },
+        "topk_min_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {3, 4, 5, 6},
+            "runtime_factory_kwargs": ("num_valid", "begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "threads_per_block",
+                "items_per_thread",
+                "num_valid",
+                "begin_bit",
+                "end_bit",
+            },
+            "required_factory_kwargs": {"keys", "values", "threads_per_block"},
+        },
         "_group_histogram": {
             "namespace": "block",
             "runtime_arg_counts": {2},
@@ -466,7 +608,169 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"dtype"},
         },
+        "warp_merge_sort_keys": {
+            "namespace": "warp",
+            "runtime_arg_counts": {1, 3},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "items_per_thread", "compare_op"},
+        },
+        "warp_merge_sort_pairs": {
+            "namespace": "warp",
+            "runtime_arg_counts": {2, 4},
+            "runtime_factory_kwargs": ("valid_items", "oob_default"),
+            "runtime_factory_kw_prerequisites": {"oob_default": "valid_items"},
+            "allowed_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+                "threads_in_warp",
+                "threads_per_block",
+                "valid_items",
+                "oob_default",
+                "methods",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "keys",
+                "values",
+                "items_per_thread",
+                "compare_op",
+            },
+        },
+        "radix_rank": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3},
+            "runtime_factory_kwargs": ("exclusive_digit_prefix",),
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "begin_bit",
+                "end_bit",
+                "descending",
+                "exclusive_digit_prefix",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "begin_bit",
+                "end_bit",
+            },
+        },
+        "radix_sort_keys": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_keys_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 3},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "radix_sort_pairs": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
+        "radix_sort_pairs_descending": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 4},
+            "runtime_only_kwargs": ("begin_bit", "end_bit"),
+            "runtime_factory_kw_prerequisites": {
+                "begin_bit": "end_bit",
+                "end_bit": "begin_bit",
+            },
+            "allowed_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "blocked_to_striped",
+            },
+            "required_factory_kwargs": {
+                "key_dtype",
+                "value_dtype",
+                "threads_per_block",
+            },
+        },
     }
+    for _private_name, _public_name in {
+        "_common_radix_rank": "radix_rank",
+        "_common_radix_sort_keys": "radix_sort_keys",
+        "_common_radix_sort_pairs": "radix_sort_pairs",
+        "_common_topk_max_keys": "topk_max_keys",
+        "_common_topk_max_pairs": "topk_max_pairs",
+        "_common_topk_min_keys": "topk_min_keys",
+        "_common_topk_min_pairs": "topk_min_pairs",
+        "_qualified_group_topk_max_keys": "topk_max_keys",
+        "_qualified_group_topk_max_pairs": "topk_max_pairs",
+        "_qualified_group_topk_min_keys": "topk_min_keys",
+        "_qualified_group_topk_min_pairs": "topk_min_pairs",
+    }.items():
+        _public_spec = _OP_SPECS[_public_name]
+        _OP_SPECS[_private_name] = {
+            **_public_spec,
+            "allowed_factory_kwargs": set(_public_spec["allowed_factory_kwargs"]),
+            "required_factory_kwargs": set(_public_spec["required_factory_kwargs"]),
+        }
+        if _private_name in {"_common_radix_sort_keys", "_common_radix_sort_pairs"}:
+            _OP_SPECS[_private_name]["allowed_factory_kwargs"].add("descending")
+        if "topk_" in _private_name:
+            _OP_SPECS[_private_name]["runtime_factory_kw_prerequisites"] = {
+                "end_bit": "begin_bit"
+            }
+    del _private_name, _public_name, _public_spec
 
     for _spec in _OP_SPECS.values():
         if (
@@ -487,6 +791,8 @@ class CoopSinglePhaseRewrite(
             "warp_inclusive_scan",
             "warp_inclusive_sum",
             "warp_load",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
             "warp_store",
         }
     )
@@ -567,6 +873,7 @@ class CoopSinglePhaseRewrite(
                     runtime_temp_storage_var,
                     factory_kwargs,
                     factory_kw_value_vars,
+                    runtime_arg_constant_replacements,
                 ) = self._validate_and_split_args(
                     op_name, call, target.getitem_temp_storage
                 )
@@ -591,6 +898,7 @@ class CoopSinglePhaseRewrite(
                 factory_kwargs=factory_kwargs,
                 factory_kw_value_vars=factory_kw_value_vars,
                 loc=inst.loc,
+                runtime_arg_constant_replacements=runtime_arg_constant_replacements,
                 physical_warp_tile_origin=physical_warp_tile_origin,
                 preserve_root_store_payload=preserve_root_store_payload,
                 root_store_scalar=root_store_scalar,
@@ -925,6 +1233,16 @@ class CoopSinglePhaseRewrite(
                 continue
             assert match is not None
             rewritten_runtime_args = list(match.runtime_args)
+            for argument_index, value in match.runtime_arg_constant_replacements:
+                replacement_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_runtime_constant_{next(_GLOBAL_NAME_COUNTER)}__",
+                    match.loc,
+                )
+                new_block.append(
+                    ir.Assign(ir.Const(value, match.loc), replacement_var, match.loc)
+                )
+                rewritten_runtime_args[argument_index] = replacement_var
             if match.preserve_root_store_payload:
                 if len(rewritten_runtime_args) < 2:
                     raise CoopSinglePhaseRewriteError(

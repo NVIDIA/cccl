@@ -39,6 +39,11 @@ _PUBLIC_EXPORTS = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -51,6 +56,10 @@ _PUBLIC_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 

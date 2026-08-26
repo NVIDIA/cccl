@@ -9,6 +9,8 @@ from ._core.api.discontinuity import discontinuity
 from ._core.api.exchange import exchange
 from ._core.api.histogram import histogram
 from ._core.api.load_store import load, store
+from ._core.api.merge_sort import merge_sort_keys, merge_sort_pairs
+from ._core.api.radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from ._core.api.reduce import reduce, sum
 from ._core.api.run_length_decode import run_length_decode
 from ._core.api.scan import (
@@ -31,6 +33,12 @@ from ._core.api.thread_group import (
     this_thread,
     this_warp,
 )
+from ._core.api.topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 __version__: str
 
@@ -52,6 +60,11 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -63,4 +76,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

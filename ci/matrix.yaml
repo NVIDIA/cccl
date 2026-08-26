@@ -181,10 +181,10 @@ workflows:
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     # cuda.cccl.headers: CPU-only (gpu:false), arch-insensitive
     - {jobs: ['test_headers'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: ['pinned', 'latest', 'sysctk']}
-    # cuda.coop -- host contracts consume the universal wheel without a GPU.
-    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.3', py_version: '3.14', cxx: 'gcc13'}
+    # cuda.coop -- host contracts and Windows wheel smoke cover Python endpoints.
+    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.3', py_version: ['3.10', '3.14'], cxx: 'gcc13'}
     - {jobs: ['test_py_coop_numba_mlir'], project: 'cuda_coop_python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['build'], project: 'cuda_coop_python', ctk: '13.X', py_version: '3.14', cxx: 'msvc2022'}
+    - {jobs: ['build'], project: 'cuda_coop_python', ctk: '13.X', py_version: ['3.10', '3.14'], cxx: 'msvc2022'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 't4', args: '-min-cmake'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 't4'}
@@ -247,9 +247,9 @@ workflows:
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {project: 'cuda_coop_python', jobs: ['test_py_coop_host'], ctk: '13.3', py_version: '3.14', cxx: 'gcc13'}
+    - {project: 'cuda_coop_python', jobs: ['test_py_coop_host'], ctk: '13.3', py_version: ['3.10', '3.14'], cxx: 'gcc13'}
     - {project: 'cuda_coop_python', jobs: ['test_py_coop_numba_mlir'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {project: 'cuda_coop_python', jobs: ['build'], ctk: '13.X', py_version: '3.14', cxx: 'msvc2022'}
+    - {project: 'cuda_coop_python', jobs: ['build'], ctk: '13.X', py_version: ['3.10', '3.14'], cxx: 'msvc2022'}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['test'], args: '-min-cmake', gpu: 't4', sm: 'gpu'}
@@ -367,10 +367,10 @@ workflows:
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     # cuda.cccl.headers (CPU-only): all CTK x source x OS, py endpoints 3.10 + 3.14
     - {jobs: ['test_headers'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.14'], cxx: ['gcc13', 'msvc2022'], py_ctk_mode: ['pinned', 'latest', 'sysctk']}
-    # cuda.coop -- public Numba dependencies and universal Windows wheel.
-    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.3', py_version: '3.14', cxx: 'gcc13'}
-    - {jobs: ['test_py_coop_numba_mlir'], project: 'cuda_coop_python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['build'], project: 'cuda_coop_python', ctk: '13.X', py_version: '3.14', cxx: 'msvc2022'}
+    # cuda.coop -- Python endpoints, public Numba dependencies, and Windows wheel.
+    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.3', py_version: ['3.10', '3.14'], cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_numba_mlir'], project: 'cuda_coop_python', ctk: '12.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['build'], project: 'cuda_coop_python', ctk: '13.X', py_version: ['3.10', '3.14'], cxx: 'msvc2022'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 't4', args: '-min-cmake'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -521,7 +521,9 @@ workflows:
     # deliberately absent (like the TSan lanes below): the experimental
     # cuda-stf wheel must not be published, and the combined STF producer's
     # cuda_cccl wheel would collide with the release one in dist/. STF
-    # coverage lives in the pull_request/nightly/weekly workflows.
+    # coverage lives in the pull_request/nightly/weekly workflows. cuda.coop
+    # is likewise absent until cuda-coop has a registered release target;
+    # its coverage also lives in those non-publishing workflows.
     - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: 'gcc13'}
@@ -529,7 +531,6 @@ workflows:
     # the full test extras cannot resolve on free-threaded Python (numba-cuda
     # has no cp314t wheels).
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
   devcontainers:
@@ -726,13 +727,13 @@ jobs:
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
-  test_py_coop_host: { name: "Test cuda.coop (host)", gpu: false, needs: 'build', invoke: { prefix: 'test'} }
-  test_py_coop_numba_mlir: { name: "Test cuda.coop Numba-MLIR", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage numba-mlir'} }
+  test_py_coop_host: { name: "Test cuda.coop (host)", gpu: false, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test'} }
+  test_py_coop_numba_mlir: { name: "Test cuda.coop Numba-MLIR", gpu: true, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage numba-mlir'} }
   # CUTLASS jobs are ready for manual overrides, but stay unscheduled until
   # nvidia-cutlass-dsl>=4.8 is available from the public package index.
-  test_py_coop_cutlass_host: { name: "Test cuda.coop CUTLASS (host)", gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-host'} }
-  test_py_coop_cutlass_gpu: { name: "Test cuda.coop CUTLASS (GPU)", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-gpu'} }
-  test_py_coop_cutlass_final_link: { name: "Test cuda.coop CUTLASS final link", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage cutlass-final-link'} }
+  test_py_coop_cutlass_host: { name: "Test cuda.coop CUTLASS (host)", gpu: false, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage cutlass-host'} }
+  test_py_coop_cutlass_gpu: { name: "Test cuda.coop CUTLASS (GPU)", gpu: true, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage cutlass-gpu'} }
+  test_py_coop_cutlass_final_link: { name: "Test cuda.coop CUTLASS final link", gpu: true, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage cutlass-final-link'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }

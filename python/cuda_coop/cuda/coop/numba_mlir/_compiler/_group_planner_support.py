@@ -47,6 +47,8 @@ from .._group_discontinuity import discontinuity
 from .._group_exchange import exchange
 from .._group_histogram import histogram
 from .._group_load_store import load, store
+from .._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from .._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from .._group_reduce import reduce, sum
 from .._group_run_length_decode import run_length_decode
 from .._group_scan import (
@@ -57,6 +59,12 @@ from .._group_scan import (
     scan,
 )
 from .._group_shuffle import shuffle
+from .._group_topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from .._scan_op import ScanOp
 from ._operations import group_operation_name
 
@@ -100,6 +108,15 @@ _QUALIFIED_OPERATIONS = (
     "adjacent_difference",
     "discontinuity",
     "shuffle",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
     "histogram",
     "run_length_decode",
 )
@@ -115,12 +132,21 @@ _ROOT_OPERATIONS = {
         inclusive_scan,
         inclusive_sum,
         load,
+        merge_sort_keys,
+        merge_sort_pairs,
+        radix_rank,
+        radix_sort_keys,
+        radix_sort_pairs,
         reduce,
         run_length_decode,
         scan,
         shuffle,
         store,
         sum,
+        topk_max_keys,
+        topk_max_pairs,
+        topk_min_keys,
+        topk_min_pairs,
     )
 }
 _ROOT_OPERATIONS.update(
@@ -128,6 +154,9 @@ _ROOT_OPERATIONS.update(
         getattr(_portable_api, name): name
         for name in (
             "load",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_pairs",
             "store",
             "reduce",
             "sum",
@@ -140,6 +169,12 @@ _ROOT_OPERATIONS.update(
             "adjacent_difference",
             "discontinuity",
             "shuffle",
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
             "histogram",
             "run_length_decode",
         )
@@ -161,6 +196,29 @@ _GROUP_METHODS = frozenset(
 
 class GroupRewriteError(Exception):
     """A group-first call was recognized but could not be lowered safely."""
+
+
+def _builtin_less(lhs: Any, rhs: Any) -> bool:
+    return lhs < rhs
+
+
+def _builtin_greater(lhs: Any, rhs: Any) -> bool:
+    return lhs > rhs
+
+
+def _static_index(scope_name: str, operation: str, name: str, value: Any) -> int:
+    if isinstance(value, (bool, np.bool_)):
+        raise TypeError(f"{scope_name}.{operation} {name} must be an integer")
+    try:
+        return operator.index(value)
+    except TypeError as exc:
+        raise TypeError(f"{scope_name}.{operation} {name} must be an integer") from exc
+
+
+def _static_bool(scope_name: str, operation: str, name: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{scope_name}.{operation} {name} must be a compile-time bool")
+    return value
 
 
 def _builtin_subtract(lhs: Any, rhs: Any) -> Any:

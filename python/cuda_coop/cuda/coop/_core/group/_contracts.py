@@ -79,6 +79,7 @@ def _contracts(
     TempStorageContract,
 ]:
     from .discontinuity import GroupDiscontinuitySemantics
+    from .merge_sort import GroupMergeSortSemantics
     from .reduce import GroupReduceSemantics
     from .scan import GroupScanSemantics
     from .shuffle import GroupShuffleSemantics
@@ -127,7 +128,29 @@ def _contracts(
         else ResultOwnership.EACH_MEMBER
     )
     results = []
-    if isinstance(operation, GroupDiscontinuitySemantics):
+    if isinstance(operation, GroupMergeSortSemantics):
+        results.append(
+            LogicalResultContract(
+                name="keys",
+                dtype=operation.key_dtype,
+                visibility=visibility,
+                ownership=ownership,
+                operand_kind=GroupOperandKind.ARRAY,
+                items_per_member=operation.items_per_thread,
+            )
+        )
+        if operation.value_dtype is not None:
+            results.append(
+                LogicalResultContract(
+                    name="values",
+                    dtype=operation.value_dtype,
+                    visibility=visibility,
+                    ownership=ownership,
+                    operand_kind=GroupOperandKind.ARRAY,
+                    items_per_member=operation.items_per_thread,
+                )
+            )
+    elif isinstance(operation, GroupDiscontinuitySemantics):
         for name, enabled in (
             ("head_flags", operation.primitive.has_heads),
             ("tail_flags", operation.primitive.has_tails),

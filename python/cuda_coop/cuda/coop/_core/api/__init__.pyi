@@ -9,6 +9,8 @@ from .discontinuity import discontinuity
 from .exchange import exchange
 from .histogram import histogram
 from .load_store import load, store
+from .merge_sort import merge_sort_keys, merge_sort_pairs
+from .radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from .reduce import reduce, sum
 from .run_length_decode import run_length_decode
 from .scan import (
@@ -31,6 +33,7 @@ from .thread_group import (
     this_thread,
     this_warp,
 )
+from .topk import topk_max_keys, topk_max_pairs, topk_min_keys, topk_min_pairs
 
 __all__ = [
     "Hierarchy",
@@ -49,6 +52,11 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -60,4 +68,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

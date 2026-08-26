@@ -9,6 +9,8 @@ from ._group_discontinuity import discontinuity
 from ._group_exchange import exchange
 from ._group_histogram import histogram
 from ._group_load_store import load, store
+from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from ._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from ._group_reduce import reduce, sum
 from ._group_run_length_decode import run_length_decode
 from ._group_scan import (
@@ -19,6 +21,7 @@ from ._group_scan import (
     scan,
 )
 from ._group_shuffle import shuffle
+from ._group_topk import topk_max_keys, topk_max_pairs, topk_min_keys, topk_min_pairs
 from ._temp_storage import TempStorage
 from ._thread_data import (
     ThreadData,
@@ -55,6 +58,11 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -66,4 +74,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
