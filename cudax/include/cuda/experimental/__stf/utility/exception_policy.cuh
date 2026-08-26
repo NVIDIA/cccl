@@ -749,6 +749,82 @@ auto remember(::std::shared_ptr<_T> __cell)
   return remember_t<::std::shared_ptr<_T>>{::cuda::std::move(__cell)};
 }
 
+//! @brief Thrown by @ref circuit_breaker_t "circuit_breaker" to refuse an attempt while the
+//! circuit is open. It escapes the whole guarded expression: the policy that raises it never
+//! handles it.
+struct circuit_open : ::std::runtime_error
+{
+  circuit_open()
+      : ::std::runtime_error("circuit breaker open: the failure budget is spent")
+  {}
+};
+
+/**
+ * @brief Counter-based circuit breaker over a caller-owned failure budget.
+ *
+ * The budget is a `shared_ptr<int>` holding the number of failures the circuit absorbs before
+ * opening. Each exception decrements it (the hook is an effect and answers `std::ignore`); a
+ * success restores it to the value it held at creation. Once the budget is spent, the entry
+ * gate refuses further attempts by throwing @ref circuit_open before the callable runs: the
+ * failing dependency gets quiet instead of hammering, and callers fail fast instead of piling
+ * up. The budget is shared and caller-owned, so several call sites may gate on one circuit,
+ * and writing to the `int` administers the breaker externally (a monitor may re-close the
+ * circuit by refilling it).
+ *
+ * Use as an `&` arm ahead of the recovery, e.g.
+ * `circuit_breaker(budget) & retry * 2 | notify & subst(fallback)`.
+ */
+struct circuit_breaker_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  ::std::shared_ptr<int> __budget_;
+  int __initial_;
+
+  //! @brief The entry gate: refuses the attempt once the budget is spent.
+  void on_enter() const
+  {
+    if (*__budget_ <= 0)
+    {
+      throw circuit_open{};
+    }
+  }
+
+  //! @brief The exception hook: record the failure, answer as an effect.
+  template <class _Fn>
+  decltype(::std::ignore)
+  operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
+  {
+    --*__budget_;
+    return ::std::ignore;
+  }
+
+  //! @brief Success restores the budget to its creation-time value.
+  template <class _R>
+  ::cuda::std::conditional_t<::cuda::std::is_lvalue_reference_v<_R&&>, _R&&, ::cuda::std::remove_cvref_t<_R>>
+  on_success(_R&& __result) const
+  {
+    *__budget_ = __initial_;
+    return ::cuda::std::forward<_R>(__result);
+  }
+
+  void on_success() const
+  {
+    *__budget_ = __initial_;
+  }
+};
+
+//! @brief Creates a counter-based circuit breaker; see @ref circuit_breaker_t. The initial
+//! `*__budget` is the failure allowance restored on success.
+inline circuit_breaker_t circuit_breaker(::std::shared_ptr<int> __budget)
+{
+  _CCCL_ASSERT(__budget, "circuit_breaker requires a non-null budget");
+  const int __initial = *__budget;
+  return circuit_breaker_t{::std::move(__budget), __initial};
+}
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
@@ -786,6 +862,25 @@ using __on_success_void_of = decltype(::cuda::std::declval<_P&>().on_success());
 template <class _P>
 inline constexpr bool __has_on_success_void =
   ::cuda::std::_IsValidExpansion<__on_success_void_of, ::cuda::std::remove_reference_t<_P>>::value;
+
+// Capability 2c: the entry hook `p.on_enter()`, run once per attempt expression, before the
+// callable and outside the policy's own catch. It answers nothing: it either admits the
+// attempt or refuses it by throwing.
+template <class _P>
+using __on_enter_of = decltype(::cuda::std::declval<_P&>().on_enter());
+
+template <class _P>
+inline constexpr bool __has_on_enter =
+  ::cuda::std::_IsValidExpansion<__on_enter_of, ::cuda::std::remove_reference_t<_P>>::value;
+
+// Nothrow-ness of the entry hook, vacuously true when absent (two-step form: `&&` does not
+// short-circuit template instantiation).
+template <class _P, bool = __has_on_enter<_P>>
+inline constexpr bool __on_enter_nothrow_v = true;
+
+template <class _P>
+inline constexpr bool __on_enter_nothrow_v<_P, true> =
+  noexcept(::cuda::std::declval<::cuda::std::remove_reference_t<_P>&>().on_enter());
 
 // A policy is anything exposing at least one capability (exception hook probed with a throwaway).
 template <class _P>
@@ -867,6 +962,12 @@ struct __forwards_success
   decltype(auto) on_success()
   {
     return __p_.on_success();
+  }
+
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_on_enter<_Self>, int> = 0>
+  void on_enter() noexcept(__on_enter_nothrow_v<_P>)
+  {
+    __p_.on_enter();
   }
 };
 
@@ -1043,6 +1144,22 @@ struct __composite_hooks
     else
     {
       return __l_.on_success();
+    }
+  }
+
+  // Entry gates run left to right: each side may refuse the attempt before it starts.
+  template <class _LL                                                                 = _L,
+            class _RR                                                                 = _R,
+            ::cuda::std::enable_if_t<__has_on_enter<_LL> || __has_on_enter<_RR>, int> = 0>
+  void on_enter() noexcept(__on_enter_nothrow_v<_L> && __on_enter_nothrow_v<_R>)
+  {
+    if constexpr (__has_on_enter<_L>)
+    {
+      __l_.on_enter();
+    }
+    if constexpr (__has_on_enter<_R>)
+    {
+      __r_.on_enter();
     }
   }
 };
@@ -1393,7 +1510,8 @@ template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy,
-                          _Fn&& __fn) noexcept(__exception_path_nothrow_v<_Reaction, _Fn>)
+                          _Fn&& __fn) noexcept(__exception_path_nothrow_v<_Reaction, _Fn>
+                                               && __on_enter_nothrow_v<_Reaction>)
 {
   // Bind as a non-const lvalue: a hook may invoke it again later.
   _Fn& __f = __fn;
@@ -1407,6 +1525,16 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
 
   using _Expr = decltype(__f());
   using _P    = _Reaction;
+
+  // The entry gate runs before the attempt and outside the policy's own catch: an exception
+  // thrown here (a gate refusing the attempt) belongs to the enclosing scope, never to the
+  // policy that raised it.
+  if constexpr (__has_on_enter<_P>)
+  {
+    static_assert(::cuda::std::is_void_v<__on_enter_of<_P>>,
+                  "on_enter answers nothing: it admits the attempt or refuses it by throwing");
+    __policy.__reaction_.on_enter();
+  }
 
   if constexpr (::cuda::std::is_void_v<_Expr>)
   {
@@ -1657,6 +1785,22 @@ struct always_t
   {
     return __head_.on_success();
   }
+
+  // Entry gates forward to head and finalizer alike: each may refuse the attempt.
+  template <class _AA                                                                               = _A,
+            class _BB                                                                               = _B,
+            ::cuda::std::enable_if_t<detail::__has_on_enter<_AA> || detail::__has_on_enter<_BB>, int> = 0>
+  void on_enter() noexcept(detail::__on_enter_nothrow_v<_A> && detail::__on_enter_nothrow_v<_B>)
+  {
+    if constexpr (detail::__has_on_enter<_A>)
+    {
+      __head_.on_enter();
+    }
+    if constexpr (detail::__has_on_enter<_B>)
+    {
+      __fin_.on_enter();
+    }
+  }
 };
 
 //! @brief See @ref always_t. Variadic: `always(a, b, c)` folds left, so both `b` and `c` run
@@ -1752,6 +1896,9 @@ public:
     {
       return {};
     }
+
+    //! @brief Entry gate, run before each attempt. Default: admit.
+    virtual void on_enter() {}
   };
 
 private:
@@ -1920,11 +2067,26 @@ private:
     {
       if constexpr (detail::__has_on_success_void<_P>)
       {
-        return ::std::any(__p_.on_success());
+        if constexpr (::cuda::std::is_void_v<decltype(__p_.on_success())>)
+        {
+          __p_.on_success();
+          return {};
+        }
+        else
+        {
+          return ::std::any(__p_.on_success());
+        }
       }
       else
       {
         return {};
+      }
+    }
+    void on_enter() override
+    {
+      if constexpr (detail::__has_on_enter<_P>)
+      {
+        __p_.on_enter();
       }
     }
   };
@@ -2218,6 +2380,12 @@ public:
     }
   }
 
+  //! @brief Entry gate: forwards to the erased policy (no-op when it has none).
+  void on_enter()
+  {
+    __p_->on_enter();
+  }
+
   //! @brief Type-preserving success passthrough: box, delegate, unbox to the same type.
   template <class _R>
   _R on_success(_R&& __r)
@@ -2275,7 +2443,8 @@ exception_sink type_erase(_P&& __p)
  * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
- * @ref exception_policies::remember_t "remember", and @ref exception_policies::always. Guards decline what they do not
+ * @ref exception_policies::remember_t "remember", @ref exception_policies::circuit_breaker_t
+ * "circuit_breaker", and @ref exception_policies::always. Guards decline what they do not
  * claim; translators decline with a different exception; delay/backoff/retry re-run; remember serves the last success.
  * Policies compose with `&` (sequence; the last element answers; non-final answers are
  * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
@@ -2375,6 +2544,91 @@ UNITTEST("nullval")
     return ok ? 42 : never();
   };
   EXPECT(pick(true) == 42);
+};
+
+UNITTEST("circuit_breaker")
+{
+  using namespace cuda::experimental::stf;
+  namespace pol = cuda::experimental::stf::exception_policies;
+
+  auto budget = ::std::make_shared<int>(2);
+  // A NAMED policy value: the entry gate still fires per attempt, not per construction.
+  auto guarded = pol::circuit_breaker(budget) & pol::subst(-1);
+
+  int runs   = 0;
+  auto flaky = [&]() -> int {
+    ++runs;
+    throw ::std::runtime_error("down");
+  };
+
+  // Two failures spend the budget; each answers through subst.
+  EXPECT((on_throw(guarded) << flaky) == -1);
+  EXPECT((on_throw(guarded) << flaky) == -1);
+  EXPECT(*budget == 0);
+
+  // Third attempt: refused at the gate, the body never runs, circuit_open escapes.
+  bool __gated = false;
+  _CCCL_TRY
+  {
+    on_throw(guarded) << flaky;
+  }
+  _CCCL_CATCH ([[maybe_unused]] const pol::circuit_open& __open)
+  {
+    __gated = true;
+  }
+  _CCCL_CATCH_ALL
+  {
+    EXPECT(false, "the gate must refuse with circuit_open, nothing else");
+  }
+  EXPECT(__gated);
+  EXPECT(runs == 2);
+
+  // External administration: refill through the shared int, then a success restores the
+  // budget to its creation-time value.
+  *budget = 1;
+  EXPECT((on_throw(guarded) << [] () -> int { return 7; }) == 7);
+  EXPECT(*budget == 2);
+
+  // The macro spelling gates identically.
+  *budget = 0;
+  __gated = false;
+  _CCCL_TRY
+  {
+    ON_THROW(circuit_breaker(budget) & subst(-1)) {
+      return 9;
+    };
+  }
+  _CCCL_CATCH ([[maybe_unused]] const pol::circuit_open& __open)
+  {
+    __gated = true;
+  }
+  _CCCL_CATCH_ALL
+  {
+    EXPECT(false, "the gate must refuse with circuit_open, nothing else");
+  }
+  EXPECT(__gated);
+
+  // The erased form carries the gate through: sinks re-erase, gates survive.
+  *budget = 0;
+  pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
+  __gated                 = false;
+  _CCCL_TRY
+  {
+    on_throw(__erased) << flaky;
+  }
+  _CCCL_CATCH ([[maybe_unused]] const pol::circuit_open& __open)
+  {
+    __gated = true;
+  }
+  _CCCL_CATCH_ALL
+  {
+    EXPECT(false, "the erased gate must refuse with circuit_open, nothing else");
+  }
+  EXPECT(__gated);
+  EXPECT(runs == 2);
+
+  // A gate that can throw removes noexcept from the whole expression.
+  static_assert(!noexcept(on_throw(guarded) << flaky));
 };
 
 // Negative-compile expectations (do not compile; kept as comments near the code they guard):
