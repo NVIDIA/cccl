@@ -287,6 +287,63 @@ function Show-FaultHandlerDumps {
     }
 }
 
+function Enable-CrashDumps {
+    <#
+    .SYNOPSIS
+        Configures Windows Error Reporting to write a minidump for python.exe.
+    .DESCRIPTION
+        WER runs on the process-termination path rather than as a user-mode
+        exception handler, so it captures fail-fast terminations (0xC0000409 /
+        0xC0000602) that faulthandler cannot see. Keying on the image name
+        covers pytest-xdist workers and example subprocesses alike.
+    #>
+    param([Parameter(Mandatory, Position = 0)][string]$Path)
+
+    $key = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\python.exe"
+    New-Item -Path $key -Force | Out-Null
+    New-ItemProperty -Path $key -Name DumpFolder -Value $Path -PropertyType ExpandString -Force | Out-Null
+    New-ItemProperty -Path $key -Name DumpCount -Value 10 -PropertyType DWord -Force | Out-Null
+    # 1 = minidump. A full dump of a CUDA-loaded process runs to hundreds of MB.
+    New-ItemProperty -Path $key -Name DumpType -Value 1 -PropertyType DWord -Force | Out-Null
+    New-Item -ItemType Directory -Force -Path $Path | Out-Null
+    Write-Host "crash dumps: WER configured to write minidumps for python.exe to $Path"
+}
+
+function Show-CrashDiagnostics {
+    <#
+    .SYNOPSIS
+        Prints Windows crash records produced since $Since, plus any minidumps.
+    .DESCRIPTION
+        Application Error (1000) records the faulting module and offset, which is
+        the only attribution available for a fail-fast: it unwinds no handlers, so
+        the process leaves behind no traceback of its own.
+    #>
+    param(
+        [Parameter(Mandatory, Position = 0)][datetime]$Since,
+        [Parameter(Position = 1)][string]$DumpPath
+    )
+
+    $events = @(Get-WinEvent -FilterHashtable @{LogName = 'Application'; StartTime = $Since; Id = 1000, 1001 } -ErrorAction SilentlyContinue)
+    if ($events.Count -eq 0) {
+        Write-Host "crash diagnostics: no Application Error or WER events since the run started."
+    }
+    foreach ($event in $events) {
+        Write-Host "::group::Windows crash record [$($event.Id)] $($event.ProviderName) $($event.TimeCreated.ToString('HH:mm:ss'))"
+        $event.Message -split "`n" | ForEach-Object { Write-Host $_.TrimEnd() }
+        Write-Host "::endgroup::"
+    }
+
+    if ($DumpPath -and (Test-Path $DumpPath)) {
+        $dumps = @(Get-ChildItem -Path $DumpPath -Filter *.dmp -ErrorAction SilentlyContinue)
+        if ($dumps.Count -eq 0) {
+            Write-Host "crash dumps: none written."
+        }
+        foreach ($dump in $dumps) {
+            Write-Host ("crash dumps: {0} ({1:N0} bytes) at {2}" -f $dump.Name, $dump.Length, $dump.FullName)
+        }
+    }
+}
+
 function Invoke-Checked {
     <#
     .SYNOPSIS
@@ -307,5 +364,5 @@ function Invoke-Checked {
     }
 }
 
-Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked, Format-ExitCode, Show-FaultHandlerDumps
+Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked, Format-ExitCode, Show-FaultHandlerDumps, Enable-CrashDumps, Show-CrashDiagnostics
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION

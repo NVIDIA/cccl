@@ -35,6 +35,12 @@ Invoke-Checked { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]
 $env:PYTHONFAULTHANDLER = "1"
 $env:CCCL_FAULTHANDLER_DIR = Join-Path $repoRoot "faulthandler-dumps"
 
+# A fail-fast termination unwinds no handlers, so faulthandler sees nothing.
+# WER still records the faulting module and writes a minidump.
+$crashDumpDir = Join-Path $repoRoot "crash-dumps"
+Enable-CrashDumps $crashDumpDir
+$runStart = Get-Date
+
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
@@ -42,5 +48,6 @@ try {
 }
 finally {
     Show-FaultHandlerDumps $env:CCCL_FAULTHANDLER_DIR
+    Show-CrashDiagnostics $runStart $crashDumpDir
     Pop-Location
 }
