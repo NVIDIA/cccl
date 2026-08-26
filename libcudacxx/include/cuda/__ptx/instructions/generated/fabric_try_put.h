@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_
 #define _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_
 
@@ -270,5 +273,7 @@ _CCCL_DEVICE static inline void fabric_try_put_multimem_counted(
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 930
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_

@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_CLUSTERLAUNCHCONTROL_H_
 #define _CUDA_PTX_GENERATED_CLUSTERLAUNCHCONTROL_H_
 
@@ -188,5 +191,7 @@ clusterlaunchcontrol_query_cancel_get_first_ctaid(_B32 (&__block_dim)[4], _B128 
       :);
 }
 #endif // __cccl_ptx_isa >= 860
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_CLUSTERLAUNCHCONTROL_H_

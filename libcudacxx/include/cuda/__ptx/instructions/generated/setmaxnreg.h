@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_SETMAXNREG_H_
 #define _CUDA_PTX_GENERATED_SETMAXNREG_H_
 
@@ -30,5 +33,7 @@ _CCCL_DEVICE static inline void setmaxnreg_dec(::cuda::ptx::n32_t<_N32> __imm_re
   asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;" : : "n"(__imm_reg_count.value) :);
 }
 #endif // __cccl_ptx_isa >= 800
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_SETMAXNREG_H_

@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_WAIT_GROUP_H_
 #define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_WAIT_GROUP_H_
 
@@ -30,5 +33,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(::cuda::ptx::n32_t
   asm volatile("cp.async.bulk.wait_group.read %0;" : : "n"(__N.value) : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_WAIT_GROUP_H_

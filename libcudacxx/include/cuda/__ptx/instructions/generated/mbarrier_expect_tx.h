@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_MBARRIER_EXPECT_TX_H_
 #define _CUDA_PTX_GENERATED_MBARRIER_EXPECT_TX_H_
 
@@ -86,5 +89,7 @@ _CCCL_DEVICE static inline void mbarrier_expect_tx(
   }
 }
 #endif // __cccl_ptx_isa >= 800
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_MBARRIER_EXPECT_TX_H_

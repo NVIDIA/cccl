@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_TCGEN05_SHIFT_H_
 #define _CUDA_PTX_GENERATED_TCGEN05_SHIFT_H_
 
@@ -27,5 +30,7 @@ tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std
   }
 }
 #endif // __cccl_ptx_isa >= 860
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_TCGEN05_SHIFT_H_

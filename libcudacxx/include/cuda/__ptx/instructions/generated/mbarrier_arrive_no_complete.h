@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_NO_COMPLETE_H_
 #define _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_NO_COMPLETE_H_
 
@@ -23,5 +26,7 @@ mbarrier_arrive_no_complete(::cuda::std::uint64_t* __addr, const ::cuda::std::ui
   return __state;
 }
 #endif // __cccl_ptx_isa >= 700
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_NO_COMPLETE_H_

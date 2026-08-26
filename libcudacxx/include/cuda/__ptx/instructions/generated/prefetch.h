@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_PREFETCH_H_
 #define _CUDA_PTX_GENERATED_PREFETCH_H_
 
@@ -86,5 +89,7 @@ _CCCL_DEVICE static inline void prefetch_tensormap(const void* __addr)
   asm volatile("prefetch.tensormap [%0];" : : "l"(__addr) : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_PREFETCH_H_

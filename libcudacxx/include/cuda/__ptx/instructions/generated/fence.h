@@ -4,7 +4,7 @@
 #define _CUDA_PTX_GENERATED_FENCE_H_
 
 // clang-tidy does not distinguish these branches by their inline-assembly strings.
-// NOLINTBEGIN(bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
 
 /*
 // fence.sem.scope; // 1. PTX ISA 60, SM_70
@@ -172,6 +172,6 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_release_t, ::cuda::ptx::s
 }
 #endif // __cccl_ptx_isa >= 860
 
-// NOLINTEND(bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_FENCE_H_

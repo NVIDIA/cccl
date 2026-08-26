@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_FENCE_PROXY_TENSORMAP_GENERIC_H_
 #define _CUDA_PTX_GENERATED_FENCE_PROXY_TENSORMAP_GENERIC_H_
 
@@ -86,5 +89,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   }
 }
 #endif // __cccl_ptx_isa >= 830
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_FENCE_PROXY_TENSORMAP_GENERIC_H_
