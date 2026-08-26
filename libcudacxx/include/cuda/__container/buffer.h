@@ -379,7 +379,10 @@ public:
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-  _CCCL_HOST_API ~buffer();
+  // The point of explicitly defining the destructor is to attach _CCCL_HOST_API to it. But we
+  // cannot = default it because nvcc doesn't let you attach host/device annotations to that,
+  // so we must define it normally.
+  _CCCL_HOST_API ~buffer() noexcept {} // NOLINT(modernize-use-equals-default)
 
   //! @brief Returns an iterator to the first element of the buffer. If the
   //! buffer is empty, the returned iterator will be equal to end().
@@ -823,9 +826,6 @@ public:
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HOST_API friend void get_property(const buffer&, _Property) noexcept {}
 };
-
-template <class _Tp, class... _Properties>
-_CCCL_HOST_API buffer<_Tp, _Properties...>::~buffer() = default;
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
