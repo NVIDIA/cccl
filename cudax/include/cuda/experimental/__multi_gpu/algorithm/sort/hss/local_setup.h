@@ -70,7 +70,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
     {
       __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
         ::cuda::get_stream(*__env_it),
-        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device().underlying_device()),
+        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device()),
         __comm_size,
         // Technically, we only need to write this value at entry rank(), but that would
         // require a whole separate memcpy call which honestly does not seem worth it.
