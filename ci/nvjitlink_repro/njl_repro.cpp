@@ -128,8 +128,12 @@ int main(int argc, char** argv)
   check_cu(cuInit(0), "cuInit", -1);
   CUdevice device{};
   check_cu(cuDeviceGet(&device, 0), "cuDeviceGet", -1);
+  // Primary context rather than cuCtxCreate: the latter became cuCtxCreate_v4 in
+  // CUDA 13 and takes a params struct, whereas cuDevicePrimaryCtxRetain is stable
+  // across 12 and 13 -- and it is the context cuda.compute actually runs on.
   CUcontext context{};
-  check_cu(cuCtxCreate(&context, 0, device), "cuCtxCreate", -1);
+  check_cu(cuDevicePrimaryCtxRetain(&context, device), "cuDevicePrimaryCtxRetain", -1);
+  check_cu(cuCtxSetCurrent(context), "cuCtxSetCurrent", -1);
 
   int major = 0, minor = 0;
   check_cu(cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device),
@@ -172,6 +176,6 @@ int main(int argc, char** argv)
     std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start).count();
   std::printf("CLEAN: %d cycles in %llds with no fail-fast\n", completed, static_cast<long long>(elapsed));
   std::fflush(stdout);
-  cuCtxDestroy(context);
+  cuDevicePrimaryCtxRelease(device);
   return 0;
 }
