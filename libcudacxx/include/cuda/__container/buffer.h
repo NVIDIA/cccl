@@ -379,6 +379,8 @@ public:
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+  _CCCL_HOST_API ~buffer();
+
   //! @brief Returns an iterator to the first element of the buffer. If the
   //! buffer is empty, the returned iterator will be equal to end().
   [[nodiscard]] _CCCL_HOST_API iterator begin() noexcept
@@ -821,6 +823,9 @@ public:
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HOST_API friend void get_property(const buffer&, _Property) noexcept {}
 };
+
+template <class _Tp, class... _Properties>
+_CCCL_HOST_API buffer<_Tp, _Properties...>::~buffer() = default;
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
