@@ -348,11 +348,6 @@
 #  define _CCCL_BUILTIN_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_reference)
 
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_referenceable)
-#  define _CCCL_BUILTIN_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_referenceable)
-
 #if _CCCL_HAS_BUILTIN(__is_rvalue_reference)
 #  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_rvalue_reference)

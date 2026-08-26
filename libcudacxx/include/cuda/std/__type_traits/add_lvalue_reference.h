@@ -52,7 +52,7 @@ using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFE
 
 #else // ^^^ _CCCL_BUILTIN_ADD_LVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE vvv
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __is_referenceable_v<_Tp>>
 struct __add_lvalue_reference_impl
 {
   using type _CCCL_NODEBUG_ALIAS = _Tp;
