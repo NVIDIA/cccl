@@ -111,10 +111,10 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   REQUIRE(stf_cute_partition_place_offset(part, 3) == UINT64_MAX);
 
   const stf_partition_dim_spec bad_policy[1] = {{99, 0, 0}};
-  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, bad_policy, 1) == nullptr);
+  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, bad_policy, 1, 0) == nullptr);
   const stf_partition_dim_spec rank_five_spec[5] = {
     {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}};
-  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, rank_five_spec, 5) == nullptr);
+  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, rank_five_spec, 5, 0) == nullptr);
 
   // Rebuilding from the exported leaves must give an equivalent partition
   const stf_dim4 padded_dims{12, 1, 1, 1};
@@ -145,7 +145,7 @@ C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
   const stf_dim4 grid_dims{2, 1, 1, 1};
 
-  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0);
   REQUIRE(part != nullptr);
 
   stf_placement_stats s_mapper{}, s_part{};
