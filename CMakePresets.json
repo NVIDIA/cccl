@@ -553,7 +553,6 @@
         "libcudacxx.test.atomics.sass",
         "libcudacxx.test.simd.ptx",
         "libcudacxx.test.warp.sass",
-        "libcudacxx.test.c2h_all",
         "libcudacxx.test.simd.sass"
       ]
     },
