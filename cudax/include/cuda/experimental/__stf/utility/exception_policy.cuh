@@ -1059,6 +1059,41 @@ struct __catch_only_t : __forwards_success<_P>
   }
 };
 
+// Intra-pack duplicates are dead for exact matching; cone relations are fine (Base and
+// Derived may both be listed, each matching only its own dynamic type).
+template <class...>
+inline constexpr bool __catch_exactly_pack_ok = true;
+
+template <class _Head, class... _Tail>
+inline constexpr bool __catch_exactly_pack_ok<_Head, _Tail...> =
+  (!::cuda::std::is_same_v<_Head, _Tail> && ...) && __catch_exactly_pack_ok<_Tail...>;
+
+// Is `_B` textually one of `_As...`? The exact-guard analogue of `__claimed_by_any`.
+template <class _B, class... _As>
+inline constexpr bool __listed_exactly = (::cuda::std::is_same_v<_As, _B> || ...);
+
+// `catch_exactly<E1, E2, ...>(p)`: run `p`'s exception path when the active exception's
+// DYNAMIC type is exactly one of the listed types, else decline by rethrowing. Monomorphic
+// where `catch_only` is polymorphic: derived types do not match, so a handler accepts a type
+// without inheriting its cone. Matching reads typeid through the std::exception funnel, so
+// listed types must derive std::exception (enforced by the factory); a non-std active
+// exception (null funnel) always declines.
+template <class _P, class... _Es>
+struct __catch_exactly_t : __forwards_success<_P>
+{
+  using __exception_sink_tag = void;
+
+  template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
+  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    if (__exception != nullptr && ((typeid(*__exception) == typeid(_Es)) || ...))
+    {
+      return this->__p_(__exception, __loc, __fn);
+    }
+    throw; // decline: the active exception's dynamic type is not listed
+  }
+};
+
 // Tags a raw capability-bearing callable so normal forms are uniformly sink-typed.
 // Forwards every capability it wraps; adds none. Storage follows the `subst_t<_R>`
 // convention: an lvalue reaction is held by reference, an rvalue moved in.
@@ -1214,6 +1249,17 @@ template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_only_t<_P2, _Bs...>> =
   __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
 
+// A cone on the left starves an exact entry inside it on the right; an exact entry on the
+// left starves only its own repetitions. The converse (exact left, cone right) never starves:
+// the cone always has more members.
+template <class _P1, class... _As, class _P2, class... _Bs>
+inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_exactly_t<_P2, _Bs...>> =
+  __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
+
+template <class _P1, class... _As, class _P2, class... _Bs>
+inline constexpr bool __right_arm_starved<__catch_exactly_t<_P1, _As...>, __catch_exactly_t<_P2, _Bs...>> =
+  __exception_path_nothrow_v<_P1> && (__listed_exactly<_Bs, _As...> && ...);
+
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
 // acceptance is interpreted at `decltype(fn())`.
@@ -1227,7 +1273,7 @@ struct __policy_or : __composite_hooks<_L, _R>
   static_assert(!__exception_path_nothrow_v<_L>,
                 "the left policy never declines; alternatives after it are unreachable");
   static_assert(!__right_arm_starved<_L, _R>,
-                "the left catch_only already claims every exception type the right arm lists; "
+                "the left type guard already claims every exception type the right arm lists; "
                 "the right alternative is unreachable");
 
   template <class _Fn,
@@ -1607,6 +1653,32 @@ auto catch_only(_P&& __p)
                 "(Base already claims it)");
   auto __np = detail::__normalize(::cuda::std::forward<_P>(__p));
   return detail::__catch_only_t<decltype(__np), _Es...>{::cuda::std::move(__np)};
+}
+
+/**
+ * @brief Restricts a policy to exceptions whose dynamic type is exactly one of `E1, E2, ...`:
+ * monomorphic where @ref catch_only is polymorphic, so a handler accepts a type without
+ * inheriting its cone. `catch_exactly<std::bad_alloc>(p)` handles allocation pressure yet
+ * lets `std::bad_array_new_length`, a size-computation bug, fly on; value operations that
+ * would slice under a cone (copy, store) are safe behind an exact gate; and the guard's
+ * contract cannot drift when someone derives a new type later. Matching reads the dynamic
+ * type through the `std::exception` funnel, so every listed type must derive
+ * `std::exception`, and a non-std active exception always declines. Duplicates are rejected;
+ * Base and Derived may both be listed, each matching only itself. In `|` chains,
+ * `catch_exactly<E>(recover) | catch_only<E>(fallback)` layers the exact type against the
+ * rest of its cone; the reverse order starves the exact arm and is a compile error.
+ */
+template <class... _Es, class _P>
+auto catch_exactly(_P&& __p)
+{
+  static_assert(sizeof...(_Es) > 0, "catch_exactly requires at least one exception type");
+  static_assert((::cuda::std::is_base_of_v<::std::exception, _Es> && ...),
+                "catch_exactly matches dynamic types through the std::exception funnel; every "
+                "listed type must derive std::exception (catch_only takes anything catchable)");
+  static_assert(detail::__catch_exactly_pack_ok<_Es...>,
+                "catch_exactly<..., E, ..., E, ...>: a repeated entry is dead");
+  auto __np = detail::__normalize(::cuda::std::forward<_P>(__p));
+  return detail::__catch_exactly_t<decltype(__np), _Es...>{::cuda::std::move(__np)};
 }
 
 /**
@@ -2439,7 +2511,7 @@ exception_sink type_erase(_P&& __p)
  * exception_policies::defer_t "defer",
  * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
  * exception_policies::as_expected_t "as_expected", @ref exception_policies::noop_t "noop", @ref
- * exception_policies::catch_only,
+ * exception_policies::catch_only, @ref exception_policies::catch_exactly,
  * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
@@ -2903,6 +2975,26 @@ UNITTEST("policy algebra")
   };
   EXPECT(r10 == 2);
 
+  // catch_exactly is monomorphic: the exact dynamic type handles, everything else declines.
+  const int rx1 = on_throw(catch_exactly<::std::logic_error>(subst(1)) | subst(2)) << []() -> int {
+    throw ::std::logic_error{"exact"};
+  };
+  EXPECT(rx1 == 1);
+  const int rx2 = on_throw(catch_exactly<::std::logic_error>(subst(1)) | subst(2)) << []() -> int {
+    throw ::std::domain_error{"derived, so no exact match"};
+  };
+  EXPECT(rx2 == 2);
+  const int rx3 = on_throw(catch_exactly<::std::logic_error>(subst(1)) | subst(2)) << []() -> int {
+    throw 42; // non-std: the funnel is null, catch_exactly must decline
+  };
+  EXPECT(rx3 == 2);
+  // Layered severity: the exact type recovers, the rest of its cone takes the next arm.
+  const int rx4 = on_throw(catch_exactly<::std::logic_error>(subst(1)) | catch_only<::std::logic_error>(subst(2)))
+               << []() -> int {
+                    throw ::std::domain_error{"cone remainder"};
+                  };
+  EXPECT(rx4 == 2);
+
   // Derived-to-base matching, like a real catch clause.
   const int r11 = on_throw(catch_only<::std::exception>(subst(1)) | subst(2)) << []() -> int {
     throw ::std::runtime_error("derived");
@@ -3065,7 +3157,9 @@ UNITTEST("policy algebra")
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - on_throw(catch_only<::std::exception>(subst(1)) | catch_only<::std::runtime_error>(subst(2))) << ...;
-  //      -> "the left catch_only already claims every exception type the right arm lists; ..."
+  //      -> "the left type guard already claims every exception type the right arm lists; ..."
+  //  5b. on_throw(catch_only<std::logic_error>(subst(1)) | catch_exactly<std::logic_error>(subst(2))) << ...
+  //      -> same message: the cone on the left starves the exact entry inside it
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
