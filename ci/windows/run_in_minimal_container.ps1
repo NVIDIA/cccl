@@ -2,21 +2,9 @@
 .SYNOPSIS
     Run a CI script inside a deliberately minimal sibling container.
 .DESCRIPTION
-    cuda.compute is supposed to work with nothing installed beyond its declared
-    pip dependencies -- no host compiler, no system CUDA toolkit. The CCCL
-    devcontainer has both, so a test running there cannot tell the difference
-    between "we depend only on our wheels" and "we happened to find cl.exe and
-    the CUDA toolkit lying around". This runs the payload in an image that has
-    neither, so that difference fails loudly.
-
-    The job itself still runs in the devcontainer; this launches a sibling
-    through the host's Docker daemon (Docker-outside-of-Docker), the same
-    arrangement Invoke-Cuda13NestedBuild in build_cuda_cccl_python.ps1 uses.
-    Everything the CI harness needs -- gh to fetch the wheel artifact, the
-    workflow helpers -- stays in the devcontainer. Only the payload runs inside.
-
-    The image must match the host kernel, because GPU access requires process
-    isolation. The devcontainer images are LTSC 2022, so the default is too.
+    See "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_overview.rst for what this buys and why
+    the lanes are split this way.
 .PARAMETER Script
     Repo-relative path to the script to run, e.g. 'ci\windows\run_compute_tests.ps1'.
     Repo-relative so it resolves the same on both sides of the mount.
@@ -37,6 +25,8 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 $image = if ($env:CCCL_MINIMAL_CONTAINER_IMAGE) {
     $env:CCCL_MINIMAL_CONTAINER_IMAGE
 } else {
+    # The image must match the host kernel, because GPU access requires process
+    # isolation. The devcontainer images are LTSC 2022, so this is too.
     'mcr.microsoft.com/windows/servercore:ltsc2022'
 }
 
@@ -60,33 +50,20 @@ if ([System.IO.Path]::IsPathRooted($Script)) {
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw "docker CLI not found in the devcontainer image; cannot launch a sibling container."
 }
-& docker version *> $null
-if ($LASTEXITCODE -ne 0) {
-    throw "Cannot reach the host Docker daemon; cannot launch a sibling container."
-}
 
-# Windows exposes GPUs to a container as a whole device class rather than
-# individually, and only under process isolation. There is no way to ask from in
-# here whether one was attached -- nvidia-smi is not on PATH in the devcontainer,
-# and the CI action passes its GPU decision as a docker flag rather than an
-# environment variable. Request it unconditionally instead: every lane that
-# reaches this helper is a GPU lane, and the devcontainer around us was started
-# with this same flag. Docker fails loudly if the device is absent.
-$gpuArgs = @('--isolation=process')
-if ($env:CCCL_MINIMAL_CONTAINER_NO_GPU -ne '1') {
-    $gpuArgs += @('--device', 'class/5B45201D-F2F2-4F3B-85BB-30FF1F953599')
-}
+# Windows exposes GPUs as a whole device class rather than individually, and
+# only under process isolation. Every lane that reaches this helper is a GPU
+# lane, so request the class unconditionally; docker fails loudly if it is
+# absent.
+$gpuArgs = @(
+    '--isolation=process',
+    '--device', 'class/5B45201D-F2F2-4F3B-85BB-30FF1F953599'
+)
 
 # There is no nvcc in the sibling, so hand it the version resolved out here.
 $cudaVersion = Get-CudaVersion
 
 $payload = Join-Path $containerWorkspace $Script
-
-# The image is missing the MSVC runtime, which every C++ Python extension in the
-# test environment needs; the bootstrap installs it and then runs the payload.
-# See minimal_container_bootstrap.ps1 for why that does not undo the point of
-# the minimal container.
-$bootstrap = Join-Path $containerWorkspace 'ci\windows\minimal_container_bootstrap.ps1'
 
 $dockerArgs = @(
     'run', '--rm', '-i'
@@ -97,10 +74,9 @@ $dockerArgs = @(
     '--env', "CCCL_PYTHON_USE_V2=$($env:CCCL_PYTHON_USE_V2)",
     '--env', "GITHUB_ACTIONS=$($env:GITHUB_ACTIONS)",
     '--env', 'PYTHONDONTWRITEBYTECODE=1',
-    '--env', "CCCL_MINIMAL_PAYLOAD=$payload",
     $image,
     'powershell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-    '-File', $bootstrap
+    '-File', $payload
 ) + $ScriptArgs
 
 Write-Host "Running in minimal container: $image"

@@ -1,3 +1,28 @@
+# Windows PowerShell 5.1 in a bare image may still default to TLS 1.0, which
+# astral.sh and aka.ms both reject.
+[Net.ServicePointManager]::SecurityProtocol =
+    [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+function Invoke-Checked {
+    <#
+    .SYNOPSIS
+        Runs a script block and throws if the last native command in it exits
+        non-zero. $ErrorActionPreference = "Stop" does not make native commands
+        (python/pip/pytest/...) throw, so their $LASTEXITCODE must be checked
+        explicitly; this wraps that boilerplate into one call.
+    .EXAMPLE
+        Invoke-Checked { & $python -m pip install pytest } "pip install failed"
+    #>
+    param(
+        [Parameter(Mandatory, Position = 0)][scriptblock]$ScriptBlock,
+        [Parameter(Position = 1)][string]$ErrorMessage = "Native command failed"
+    )
+    & $ScriptBlock
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ErrorMessage (exit code $LASTEXITCODE)"
+    }
+}
+
 function Get-Python {
     <#
     .SYNOPSIS
@@ -18,10 +43,6 @@ function Get-Python {
     # no compilation, no build dependencies, no pyenv-win required.
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "Installing uv..."
-        # Windows PowerShell 5.1 in a bare image may still default to TLS 1.0,
-        # which astral.sh rejects.
-        [Net.ServicePointManager]::SecurityProtocol =
-            [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
         # uv installs to $HOME\.local\bin on Windows
         $uvBin = Join-Path $HOME '.local\bin'
@@ -252,4 +273,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Invoke-Checked, Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

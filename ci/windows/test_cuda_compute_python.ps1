@@ -2,12 +2,10 @@
 .SYNOPSIS
     Entry point for the Windows cuda.compute test lanes.
 .DESCRIPTION
-    Provisions the cuda_cccl wheel and then runs the test payload, by default in
-    a minimal sibling container (see run_in_minimal_container.ps1 for what that
-    buys). `sysctk` is the exception: that mode exists to test against a
-    system-provided CUDA toolkit, which only the devcontainer has. Set
-    CCCL_MINIMAL_CONTAINER=0 to stay in the devcontainer as well -- useful
-    locally, or to compare against the devcontainer environment.
+    Provisions the cuda_cccl wheel, then runs the test payload -- by default in a
+    minimal sibling container, except in `sysctk` mode or when
+    CCCL_MINIMAL_CONTAINER=0. See "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_overview.rst.
 #>
 Param(
     [Parameter(Mandatory = $true)]
@@ -23,8 +21,7 @@ $ErrorActionPreference = "Stop"
 
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-# Fetching the wheel needs gh and the workflow helpers, which the minimal
-# container deliberately does not have -- so it happens out here.
+# Needs gh and the workflow helpers, which the minimal container lacks.
 $null = Get-CudaCcclWheel
 
 $payloadArgs = @('-py-version', $PyVersion)

@@ -3,9 +3,10 @@
 # Invoked by ci/test_cuda_cccl_examples_python.sh, which has already
 # put the cuda_cccl wheel in wheelhouse/.
 #
-# This may run inside the minimal container (see run_in_minimal_container.sh),
-# so everything here must work with nothing but Python and the wheel's declared
-# pip dependencies.
+# Normally runs in the minimal container, so everything here must work with
+# nothing but Python and the wheel's declared pip dependencies. See "Testing
+# Python in a minimal container" in
+# docs/infrastructure/ci/references/ci_overview.rst.
 
 set -euo pipefail
 
@@ -22,7 +23,6 @@ parse_python_args "$@"
 # cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
 pin_cuda_toolkit "${ctk_mode}"
 
-# Setup Python environment
 setup_python_env "${py_version}"
 
 # Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
@@ -32,13 +32,9 @@ setup_python_env "${py_version}"
 CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 
-# CuPy resolves its CUDA libraries (curand, cublas, cufft, ...) through
-# cuda-pathfinder at first use, and nothing else in this environment installs
-# them -- cuda-cccl only pulls the handful cuda.compute itself needs. On the
-# pip-toolkit lanes that leaves e.g. libcurand missing, which the examples that
-# call cp.random then fail on; request CuPy's own `ctk` extra so it brings the
-# set it needs. The sysctk lanes deliberately use the system toolkit, so they
-# stay bare -- pulling the pip wheels there would defeat the lane.
+# CuPy needs its own `ctk` extra to get curand/cublas/... (see the note on the
+# test extras in python/cuda_cccl/pyproject.toml). The sysctk lanes use the
+# system toolkit, so they stay bare.
 cupy_req="cupy-cuda${cuda_major_version}x"
 if [[ "${ctk_flavor}" == "cu" ]]; then
   cupy_req="${cupy_req}[ctk]"
@@ -46,7 +42,6 @@ fi
 
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "${cupy_req}" pytest-benchmark
 
-# Run tests for parallel module
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 test_examples.py
 

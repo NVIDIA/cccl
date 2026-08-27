@@ -3,9 +3,10 @@
 # Invoked by ci/test_cuda_compute_minimal_python.sh, which has already
 # put the cuda_cccl wheel in wheelhouse/.
 #
-# This may run inside the minimal container (see run_in_minimal_container.sh),
-# so everything here must work with nothing but Python and the wheel's declared
-# pip dependencies.
+# Normally runs in the minimal container, so everything here must work with
+# nothing but Python and the wheel's declared pip dependencies. See "Testing
+# Python in a minimal container" in
+# docs/infrastructure/ci/references/ci_overview.rst.
 
 set -euo pipefail
 
@@ -24,7 +25,6 @@ wheelhouse_dir="${repo_root}/wheelhouse"
 # cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
 pin_cuda_toolkit "${ctk_mode}"
 
-# Setup Python environment
 setup_python_env "${py_version}"
 
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the

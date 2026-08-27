@@ -3,13 +3,12 @@
     Test payload: the cuda.compute pytest suite.
 .DESCRIPTION
     Invoked by ci/windows/test_cuda_compute_python.ps1, which has already put the
-    cuda_cccl wheel in wheelhouse/.
+    cuda_cccl wheel in wheelhouse/. This normally runs in the minimal container;
+    see "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_overview.rst.
 
-    This may run inside the minimal container (see run_in_minimal_container.ps1),
-    so everything here must work with nothing but Python and the wheel's declared
-    pip dependencies. Note in particular that build_common.psm1 must NOT be
-    imported: it resolves cl.exe at import time, which by design does not exist
-    in the minimal image.
+    build_common.psm1 must NOT be imported here: it resolves cl.exe at import
+    time, which by design does not exist in the minimal image.
 #>
 Param(
     [Parameter(Mandatory = $true)]
@@ -25,10 +24,21 @@ $ErrorActionPreference = "Stop"
 
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-function Invoke-Step {
-    param([scriptblock]$Command, [string]$ErrorMessage)
-    & $Command
-    if ($LASTEXITCODE -ne 0) { throw $ErrorMessage }
+# Server Core ships no MSVC runtime, and every C++ Python extension used here
+# links against it -- numba's _typeconv and cccl.c.parallel.dll among them. It
+# is a Windows prerequisite rather than a packaging gap, so install it instead
+# of expecting a wheel to carry it. vcruntime140*.dll ship next to some
+# interpreters, which makes msvcp140.dll the reliable probe.
+$msvcp = Join-Path $env:SystemRoot 'System32\msvcp140.dll'
+if (-not (Test-Path $msvcp)) {
+    Write-Host "Installing the MSVC runtime redistributable..."
+    $installer = Join-Path $env:TEMP 'vc_redist.x64.exe'
+    Invoke-WebRequest -UseBasicParsing `
+        -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile $installer
+    Start-Process -Wait -FilePath $installer -ArgumentList '/quiet', '/norestart'
+    if (-not (Test-Path $msvcp)) {
+        throw "vc_redist.x64.exe did not install msvcp140.dll."
+    }
 }
 
 $python = Get-Python -Version $PyVersion
@@ -41,19 +51,18 @@ Set-CtkPin $CtkMode
 $repoRoot = Get-RepoRoot
 $wheelPath = Get-OnePathMatch -Path (Join-Path $repoRoot 'wheelhouse') -Pattern '^cuda_cccl-.*\.whl' -File
 
-Invoke-Step { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Step { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl test extra"
+Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
+Invoke-Checked { & $python -m pip install "$wheelPath[test-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl test extra"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
-    Invoke-Step { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
-    Invoke-Step { & $python -m pytest -n 0 -v compute/ -m "large and not free_threading" } "compute tests (large) failed"
+    Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
+    Invoke-Checked { & $python -m pytest -n 0 -v compute/ -m "large and not free_threading" } "compute tests (large) failed"
 
-    # The bfloat16 tests require ml_dtypes (the NumPy bfloat16 extension dtype),
-    # which is deliberately not part of the test extras so that the sweeps above
-    # run in an environment matching a user's default install (where the bfloat16
-    # tests skip themselves). Install it last and run those tests explicitly.
-    Invoke-Step { & $python -m pip install ml_dtypes } "Failed to install ml_dtypes"
-    Invoke-Step { & $python -m pytest -n 6 -v compute/test_bfloat16.py } "bfloat16 tests failed"
+    # ml_dtypes (the NumPy bfloat16 extension dtype) is deliberately not in the
+    # test extras, so the sweeps above match a user's default install, where the
+    # bfloat16 tests skip themselves. Install it last and run them explicitly.
+    Invoke-Checked { & $python -m pip install ml_dtypes } "Failed to install ml_dtypes"
+    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_bfloat16.py } "bfloat16 tests failed"
 }
 finally { Pop-Location }

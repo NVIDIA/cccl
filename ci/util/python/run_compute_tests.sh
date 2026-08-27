@@ -3,9 +3,10 @@
 # Invoked by ci/test_cuda_compute_python.sh, which has already
 # put the cuda_cccl wheel in wheelhouse/.
 #
-# This may run inside the minimal container (see run_in_minimal_container.sh),
-# so everything here must work with nothing but Python and the wheel's declared
-# pip dependencies.
+# Normally runs in the minimal container, so everything here must work with
+# nothing but Python and the wheel's declared pip dependencies. See "Testing
+# Python in a minimal container" in
+# docs/infrastructure/ci/references/ci_overview.rst.
 
 set -euo pipefail
 
@@ -22,7 +23,6 @@ parse_python_args "$@"
 # cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
 pin_cuda_toolkit "${ctk_mode}"
 
-# Setup Python environment
 setup_python_env "${py_version}"
 
 # Install cuda_cccl. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
@@ -31,7 +31,6 @@ CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
-# Run tests for compute module.
 # On the v2 (HostJIT) backend, abort on first failure — the suite is still
 # stabilizing and a single early failure is enough signal to investigate
 # without scrolling through hundreds of subsequent passes.

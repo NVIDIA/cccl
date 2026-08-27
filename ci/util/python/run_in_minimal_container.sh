@@ -1,18 +1,8 @@
 #!/usr/bin/env bash
-# Run a CI script inside a deliberately minimal sibling container.
-#
-# cuda.compute is supposed to work with nothing installed beyond its declared
-# pip dependencies -- no host compiler, no system CUDA toolkit. The CCCL
-# devcontainer has all of those, so a test running there cannot tell the
-# difference between "we depend only on our wheels" and "we happened to find
-# gcc and /usr/local/cuda lying around". This script runs the payload in an
-# image that has nothing but Python, so that difference fails loudly.
-#
-# The job itself still runs in the devcontainer; this launches a sibling
-# container through the host's docker daemon, the same docker-outside-of-docker
-# arrangement ci/build_cuda_cccl_python.sh uses. Everything the CI harness needs
-# (gh to fetch the wheel artifact, jq/tar to stage result artifacts) stays in the
-# devcontainer. Only the test payload runs inside the minimal image.
+# Run a CI script inside a deliberately minimal sibling container. See "Testing
+# Python in a minimal container" in
+# docs/infrastructure/ci/references/ci_overview.rst for what this buys and why
+# the lanes are split this way.
 #
 # Note that a matrix `environment:` entry reaches the devcontainer but not this
 # container; add it to env_args below if a lane ever needs one.
@@ -48,14 +38,10 @@ if [[ "${script}" == /* ]]; then
 fi
 readonly script
 
-# Every lane using this path is single-GPU. A multi-GPU lane would need the same
-# handling workflow-run-job-linux gives it (--gpus all rather than a device id).
-# Hand the sibling exactly the GPUs this devcontainer can see. NVIDIA_VISIBLE_DEVICES
-# is not usable for this: the devcontainer image sets it to "void" (the
-# nvidia-container-toolkit spelling of "no GPU") and that wins over the value the
-# CI action passes in, so it reads "void" even on GPU jobs. Ask the driver
-# instead, and name the devices explicitly -- `--gpus all` would reach every GPU
-# on the host, including any assigned to a different job.
+# Hand the sibling exactly the GPUs this devcontainer can see, named explicitly:
+# `--gpus all` would reach every GPU on the host, including any assigned to a
+# different job. NVIDIA_VISIBLE_DEVICES cannot be used to discover them -- the
+# devcontainer image pins it to "void" -- so ask the driver.
 declare -a gpu_request=()
 gpu_uuids="$(nvidia-smi --query-gpu=uuid --format=csv,noheader 2>/dev/null | paste -sd, - || true)"
 readonly gpu_uuids

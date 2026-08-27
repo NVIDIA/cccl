@@ -175,14 +175,15 @@ Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc
 because every C/C++ Python extension links against them; Server Core ships neither of
 the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come from the
 MSVC redistributable rather than from Windows itself. Without them numba and
-``cccl.c.parallel.dll`` both fail to load. ``ci/windows/minimal_container_bootstrap.ps1``
-installs the redistributable before handing off to the payload, which leaves the
-comparison the lane exists to make intact: still no compiler, still no CUDA toolkit.
+``cccl.c.parallel.dll`` both fail to load. The Windows payload installs the
+redistributable before running anything, which leaves the comparison the lane exists to
+make intact: still no compiler, still no CUDA toolkit.
 
-Each lane is therefore two scripts: ``ci/test_<lane>.sh`` provisions the wheel and
-dispatches, and ``ci/util/python/run_<lane>_tests.sh`` is the payload that must survive in
-the minimal image. Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the devcontainer
-instead, which is useful locally and for comparing the two environments.
+Each lane is therefore two scripts: an entry point that provisions the wheel and
+dispatches (``ci/test_<lane>.sh``, or ``ci/windows/test_<lane>.ps1``), and a payload that
+must survive in the minimal image (``ci/util/python/run_<lane>_tests.sh``, or
+``ci/windows/run_<lane>.ps1``). Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
+devcontainer instead, which is useful locally and for comparing the two environments.
 
 These lanes deliberately stay in the devcontainer, because they need what it provides:
 

@@ -15,8 +15,7 @@ setup_python_env() {
 
     begin_group "🐍 Setting up Python ${py_version} (uv)"
 
-    # Install uv if not present. The minimal Python containers used by the
-    # test lanes ship no curl, but they do ship pip, so fall back to that.
+    # The minimal Python containers ship pip but no curl.
     if ! command -v uv &> /dev/null; then
         if command -v curl &> /dev/null; then
             curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -42,8 +41,7 @@ setup_python_env() {
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
 
-# Pin the cuda-toolkit wheels to the container's CTK major.minor (read from nvcc,
-# or from CCCL_CUDA_VERSION where there is no nvcc -- see below)
+# Pin the cuda-toolkit wheels to the container's CTK major.minor
 # via PIP_CONSTRAINT when the mode ($1) is "pinned" (the default; empty also means
 # pinned). "latest" and "sysctk" leave it unpinned; any other value is a hard
 # error. This is the lane's mode gate -- it runs before ctk_extra_flavor in every
@@ -51,11 +49,9 @@ setup_python_env() {
 # exports cuda_version / cuda_major_version; the caller uses cuda_major_version in
 # the pip-extra name (e.g. minimal-cu${cuda_major_version}).
 pin_cuda_toolkit() {
-    # nvcc is the source of truth wherever it exists: in `sysctk` mode the whole
-    # point is to match the toolkit that is actually installed. The minimal test
-    # containers deliberately have no CUDA toolkit at all, so fall back to
-    # CCCL_CUDA_VERSION, which the devcontainer sets and
-    # run_in_minimal_container.sh forwards into the sibling.
+    # nvcc is the source of truth wherever it exists; `sysctk` mode depends on
+    # matching the toolkit actually installed. The minimal containers have no
+    # toolkit, so they get the version forwarded in via CCCL_CUDA_VERSION.
     if command -v nvcc &> /dev/null; then
         cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1-2 | cut -d 'V' -f 2)
     elif [[ -n "${CCCL_CUDA_VERSION:-}" ]]; then

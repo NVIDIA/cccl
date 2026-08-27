@@ -79,10 +79,6 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    # Bring-up for the minimal sibling container: one Linux lane and one Windows
-    # lane. Reset to empty before merge.
-    - {jobs: ['test_py_par'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_par'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'msvc2022'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
