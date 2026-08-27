@@ -33,6 +33,24 @@ def _require_device():
         pytest.skip("no usable CUDA device")
 
 
+def _require_vmm():
+    """Shaped composite allocations build a localized array, which needs CUDA
+    virtual address management. Skip rather than fail where it is absent (the
+    C test at c/experimental/stf/test/test_placement.cpp gates the same way)."""
+    from cuda.bindings import driver as cu
+
+    assert cu.cuInit(0)[0] == cu.CUresult.CUDA_SUCCESS
+    err, dev = cu.cuDeviceGet(0)
+    assert err == cu.CUresult.CUDA_SUCCESS
+    err, supported = cu.cuDeviceGetAttribute(
+        cu.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED,
+        dev,
+    )
+    assert err == cu.CUresult.CUDA_SUCCESS
+    if not supported:
+        pytest.skip("device 0 does not support CUDA VMM (virtual address management)")
+
+
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):
     """Blocked partition along the outermost dimension (C-order contract)."""
     n = data_dims[0]
@@ -439,6 +457,7 @@ def test_partition_fn_returns_typed_wrapper():
 
 def test_shaped_allocation_on_composite_places():
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
 
@@ -466,6 +485,7 @@ def test_shaped_allocation_c_order_extents():
     """composite_cute allocation takes C-order extents: the partition's
     non-square public shape allocates, its transpose is rejected."""
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
 
@@ -483,6 +503,7 @@ def test_tensor_of_tiles_allocation():
     """A rank-4 tensor-of-tiles partition allocates through composite_cute
     with C-order extents (repeated device 0: functional, not residency)."""
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.create([stf.exec_place.device(0)] * 4, grid_dims=(2, 2))
 
@@ -540,7 +561,7 @@ def test_multi_gpu_residency():
                     "block is not resident on the place that owns it"
                 )
             finally:
-                cu.cuMemRelease(handle)
+                assert cu.cuMemRelease(handle)[0] == cu.CUresult.CUDA_SUCCESS
     finally:
         dp.deallocate(ptr, n * 4)
 

@@ -2342,6 +2342,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
     cdef stf_dim4 dims
     cdef stf_dim4 gd
     cdef stf_placement_stats c_stats
+    if grid._h == NULL:
+        raise RuntimeError("exec_place handle is null")
     stf_exec_place_get_dims(grid._h, &gd)
     cdef size_t grid_size = gd.x * gd.y * gd.z * gd.t
     cdef uint64_t* per_pos = <uint64_t*>malloc(grid_size * sizeof(uint64_t))
