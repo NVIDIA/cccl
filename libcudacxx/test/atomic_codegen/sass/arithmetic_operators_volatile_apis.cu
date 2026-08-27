@@ -44,6 +44,7 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
   return OP(atom);
 }
 
+// clang-format off
 /*
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
@@ -52,7 +53,7 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; NON_BLOCK-DAG: {{.*}}CCTL.IVALL{{.*}}
-; INC-DAG: {{.*}}{{(IMAD\.)?MOV(\.U32)?|HFMA2(\.MMA)?}} [[OPERAND:R[0-9]+]], {{.*}}{{0x1|5\.9604644775390625e-08}}{{.*}}
+; INC-DAG: {{.*}}{{(IMAD\.)?MOV(\.U32)?|HFMA2(\.MMA)?}} [[OPERAND:R[0-9]+]], {{.*}}{{(0x1|5\.9604644775390625e-08)([,;[:space:]]|$)}}{{.*}}
 ; DEC-DAG: {{.*}}{{(IMAD\.)?MOV(\.U32)?}} [[OPERAND:R[0-9]+]], {{.*}}0xffffffff{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
@@ -63,10 +64,11 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; POST_INC-NOT: {{.*}}{{(VIADD|IADD3|IADD)}}{{.*}}[[OLD]]{{.*}}
 ; POST_DEC-NOT: {{.*}}{{(VIADD|IADD3|IADD)}}{{.*}}[[OLD]]{{.*}}
-; PRE_INC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], 0x1{{.*}}
-; PRE_DEC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], {{-0x1|0xffffffff}}{{.*}}
+; PRE_INC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], 0x1{{([,;[:space:]]|$)}}{{.*}}
+; PRE_DEC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], {{(-0x1|0xffffffff)([,;[:space:]]|$)}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
+// clang-format on
