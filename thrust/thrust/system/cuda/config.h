@@ -3,6 +3,16 @@
 
 #pragma once
 
+#include <thrust/detail/config.h> // IWYU pragma: export
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #ifdef THRUST_DEBUG_SYNC
 
 #  if _CCCL_COMPILER(MSVC)
@@ -17,16 +27,6 @@
 #else
 #  define THRUST_DEBUG_SYNC_FLAG false
 #endif
-
-#include <thrust/detail/config.h> // IWYU pragma: export
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 // We don't directly include <cub/version.cuh> since it doesn't exist in
 // older releases. This header will always pull in version info:
