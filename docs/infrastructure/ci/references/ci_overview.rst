@@ -171,6 +171,14 @@ LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:lts
 Neither image ships Python: ``uv`` installs the interpreter the lane asked for, exactly as
 it does in the devcontainer.
 
+Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc++,
+because every C/C++ Python extension links against them; Server Core ships neither of
+the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come from the
+MSVC redistributable rather than from Windows itself. Without them numba and
+``cccl.c.parallel.dll`` both fail to load. ``ci/windows/minimal_container_bootstrap.ps1``
+installs the redistributable before handing off to the payload, which leaves the
+comparison the lane exists to make intact: still no compiler, still no CUDA toolkit.
+
 Each lane is therefore two scripts: ``ci/test_<lane>.sh`` provisions the wheel and
 dispatches, and ``ci/util/python/run_<lane>_tests.sh`` is the payload that must survive in
 the minimal image. Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the devcontainer

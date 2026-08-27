@@ -82,6 +82,12 @@ $cudaVersion = Get-CudaVersion
 
 $payload = Join-Path $containerWorkspace $Script
 
+# The image is missing the MSVC runtime, which every C++ Python extension in the
+# test environment needs; the bootstrap installs it and then runs the payload.
+# See minimal_container_bootstrap.ps1 for why that does not undo the point of
+# the minimal container.
+$bootstrap = Join-Path $containerWorkspace 'ci\windows\minimal_container_bootstrap.ps1'
+
 $dockerArgs = @(
     'run', '--rm', '-i'
 ) + $gpuArgs + @(
@@ -91,9 +97,10 @@ $dockerArgs = @(
     '--env', "CCCL_PYTHON_USE_V2=$($env:CCCL_PYTHON_USE_V2)",
     '--env', "GITHUB_ACTIONS=$($env:GITHUB_ACTIONS)",
     '--env', 'PYTHONDONTWRITEBYTECODE=1',
+    '--env', "CCCL_MINIMAL_PAYLOAD=$payload",
     $image,
     'powershell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-    '-File', $payload
+    '-File', $bootstrap
 ) + $ScriptArgs
 
 Write-Host "Running in minimal container: $image"
