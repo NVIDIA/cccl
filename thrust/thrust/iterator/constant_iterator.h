@@ -119,6 +119,7 @@ public:
   //! \endcond
 
   //! Default constructor initializes this \p constant_iterator's constant using its default constructor
+  _CCCL_EXEC_CHECK_DISABLE
   constant_iterator() = default;
 
   //! Copy constructor copies the value of another \p constant_iterator with related System type.

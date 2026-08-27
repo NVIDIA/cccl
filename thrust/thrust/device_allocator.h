@@ -120,6 +120,7 @@ public:
   };
 
   /*! Default constructor has no effect. */
+  _CCCL_EXEC_CHECK_DISABLE
   device_allocator() = default;
 
   /*! Copy constructor has no effect. */

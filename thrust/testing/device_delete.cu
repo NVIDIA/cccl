@@ -38,6 +38,7 @@ void TestDeviceDeleteDestructorInvocation()
 }
 DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
 
+#if !_CCCL_TILE_COMPILATION() // Virtual functions are not supported in tile mode
 // based on: https://github.com/NVIDIA/cccl/issues/6132
 struct base
 {
@@ -89,3 +90,4 @@ void TestDeviceDeleteVirtualDestructorInvocation()
   }
 }
 DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);
+#endif // !_CCCL_TILE_COMPILATION()

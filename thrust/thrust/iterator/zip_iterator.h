@@ -177,6 +177,7 @@ public:
   //! The underlying iterator tuple type. Alias to zip_iterator's first template argument.
   using iterator_tuple = IteratorTuple;
 
+  _CCCL_EXEC_CHECK_DISABLE
   zip_iterator() = default;
 
   //! This constructor creates a new \p zip_iterator from a \p tuple of iterators.

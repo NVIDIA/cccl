@@ -76,6 +76,7 @@ public:
   static_assert(::cuda::std::is_convertible_v<decltype(StrideHolder::value), difference_type>,
                 "The stride must be convertible to the iterator's difference_type");
 
+  _CCCL_EXEC_CHECK_DISABLE
   strided_iterator() = default;
 
   //! @brief Creates a strided_iterator from an existing iterator and a stride.

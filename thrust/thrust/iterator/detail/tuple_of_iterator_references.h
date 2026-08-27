@@ -121,6 +121,7 @@ public:
   using super_t = ::cuda::std::tuple<Ts...>;
   using super_t::super_t;
 
+  _CCCL_EXEC_CHECK_DISABLE
   tuple_of_iterator_references() = default;
 
   // allow implicit construction from cuda::std::tuple<refs>

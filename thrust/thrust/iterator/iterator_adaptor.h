@@ -27,9 +27,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_facade.h>
+
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -131,12 +135,13 @@ protected:
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
    */
+  _CCCL_EXEC_CHECK_DISABLE
   iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
+  _CCCL_API explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
   {}
 
