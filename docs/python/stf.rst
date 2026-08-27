@@ -372,9 +372,10 @@ Physical placement is page-granular: memory is localized in blocks of the
 device's allocation granularity (typically 2 MiB), and a block landing on the
 boundary between two owners is placed with the majority owner. Placement can
 therefore only approximate element ownership when ownership runs are smaller
-than a page. Use ``placement_evaluate(grid, partition, elemsize)`` to score a
-candidate mapping -- its ``accuracy`` is the fraction of bytes local to their
-owner -- before committing memory.
+than a page. Use ``placement_evaluate(grid, partition, None, elemsize)`` to
+score a candidate mapping -- its ``accuracy`` is the fraction of bytes local to
+their owner -- before committing memory. The third argument is the data shape;
+pass ``None`` with a ``cute_partition``, which carries its own extents.
 
 **Tensor of tiles.** Multidimensional distributions match the page granularity
 best when storage is reorganized into tiles: a ``(tiles_y, tiles_x, tile_y,

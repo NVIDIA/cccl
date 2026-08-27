@@ -145,7 +145,7 @@ C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][
   const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
   const stf_dim4 grid_dims{2, 1, 1, 1};
 
-  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1, 0);
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
   REQUIRE(part != nullptr);
 
   stf_placement_stats s_mapper{}, s_part{};
