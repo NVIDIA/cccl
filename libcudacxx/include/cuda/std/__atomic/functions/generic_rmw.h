@@ -22,7 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/functions/backend.h>
+#include <cuda/std/__atomic/functions/common.h>
+#include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -137,16 +140,16 @@ struct __cuda_atomic_rmw_result
 };
 
 template <class _Backend,
-          class _Type,
+          class _Pointee,
           class _Fn,
           class _Order,
           class _InitialOrder,
           class _Operand,
           class _RmwOperand,
           class _Sco>
-_CCCL_HOST_DEVICE static __cuda_atomic_rmw_result<_Type> __cuda_atomic_rmw(
+_CCCL_HOST_DEVICE static __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rmw(
   _Backend __backend,
-  _Type* __ptr,
+  _Pointee* __ptr,
   const _Fn& __op,
   _Order __order,
   _InitialOrder __initial_order,
@@ -154,24 +157,26 @@ _CCCL_HOST_DEVICE static __cuda_atomic_rmw_result<_Type> __cuda_atomic_rmw(
   _RmwOperand,
   _Sco __scope)
 {
+  using _Type = __unv<_Pointee>;
   static_assert(_Operand::__op == __cuda_atomic_operand::_b, "generic RMW requires a bitwise operand");
   static_assert(_RmwOperand::__op == __cuda_atomic_operand::_b, "generic RMW requires a bitwise CAS operand");
   static_assert(_Operand::__size <= _RmwOperand::__size, "generic RMW cannot use a narrower CAS operand");
 
-  using __rmw_type = typename __cuda_atomic_rmw_type<_RmwOperand::__size>::type;
-  using __window   = __cuda_atomic_rmw_window<_Type, __rmw_type>;
+  using __rmw_type    = typename __cuda_atomic_rmw_type<_RmwOperand::__size>::type;
+  using __rmw_pointee = __copy_cv_t<_Pointee, __rmw_type>;
+  using __window      = __cuda_atomic_rmw_window<_Type, __rmw_type>;
 
-  __rmw_type* __aligned;
+  __rmw_pointee* __aligned;
   uint8_t __offset;
   if constexpr (sizeof(_Type) == sizeof(__rmw_type))
   {
-    __aligned = reinterpret_cast<__rmw_type*>(__ptr);
+    __aligned = reinterpret_cast<__rmw_pointee*>(__ptr);
     __offset  = 0;
   }
   else
   {
     constexpr uintptr_t __alignmask = sizeof(__rmw_type) - 1;
-    __aligned = reinterpret_cast<__rmw_type*>(reinterpret_cast<uintptr_t>(__ptr) & ~__alignmask); // NOLINT
+    __aligned = reinterpret_cast<__rmw_pointee*>(reinterpret_cast<uintptr_t>(__ptr) & ~__alignmask); // NOLINT
     __offset  = static_cast<uint8_t>((reinterpret_cast<uintptr_t>(__ptr) & __alignmask) * 8);
   }
 
@@ -282,7 +287,7 @@ struct __cuda_atomic_op_fetch_min
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
   {
-    return __op < __old ? __op : __old;
+    return __cuda_atomic_less(__op, __old) ? __op : __old;
   }
 };
 
@@ -291,14 +296,15 @@ struct __cuda_atomic_op_fetch_max
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
   {
-    return __old < __op ? __op : __old;
+    return __cuda_atomic_less(__old, __op) ? __op : __old;
   }
 };
 
-template <class _Backend, class _Type, class _Fn, class _Order, class _Operand, class _Sco>
-_CCCL_HOST_DEVICE_API _Type
-__cuda_atomic_fetch_update(_Backend __backend, _Type* __ptr, const _Fn& __op, _Order __order, _Operand, _Sco __scope)
+template <class _Backend, class _Pointee, class _Fn, class _Order, class _Operand, class _Sco>
+_CCCL_HOST_DEVICE_API __unv<_Pointee>
+__cuda_atomic_fetch_update(_Backend __backend, _Pointee* __ptr, const _Fn& __op, _Order __order, _Operand, _Sco __scope)
 {
+  using _Type = __unv<_Pointee>;
   static_assert(sizeof(_Type) * 8 == _Operand::__size, "generic RMW requires matching type and operand sizes");
   constexpr size_t __rmw_size =
     _Operand::__size < _Backend::__smallest_cas ? _Backend::__smallest_cas : _Operand::__size;
@@ -311,7 +317,7 @@ __cuda_atomic_fetch_update(_Backend __backend, _Type* __ptr, const _Fn& __op, _O
            __ptr,
            __cuda_atomic_rmw_op<_Type, _Fn>{__op},
            __order,
-           __cuda_atomic_initial_load_order<_Order>(),
+           __cuda_atomic_initial_load_order(__order),
            __bitwise_operand{},
            __rmw_operand{},
            __scope)

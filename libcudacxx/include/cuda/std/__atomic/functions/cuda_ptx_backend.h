@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/functions/backend.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/cstddef>
@@ -33,24 +32,65 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __cuda_atomic_ptx_backend
 {
-  template <class _Type>
-  using __enable_if_direct_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;
+  template <class _Order>
+  _CCCL_HOST_DEVICE_API static constexpr auto __transform_order(_Order)
+  {
+    if constexpr (is_same_v<_Order, __cuda_atomic_order_relaxed>)
+    {
+      return __cuda_atomic_ptx_order_relaxed{false};
+    }
+    else if constexpr (is_same_v<_Order, __cuda_atomic_order_release>)
+    {
+      return __cuda_atomic_ptx_order_release{false};
+    }
+    else if constexpr (is_same_v<_Order, __cuda_atomic_order_acquire>)
+    {
+      return __cuda_atomic_ptx_order_acquire{false};
+    }
+    else
+    {
+      static_assert(is_same_v<_Order, __cuda_atomic_order_acq_rel>, "invalid PTX atomic order");
+      return __cuda_atomic_ptx_order_acq_rel{false};
+    }
+  }
 
-  template <class _Type>
-  using __enable_if_direct_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) < 16), bool>;
+  template <class _Order>
+  _CCCL_HOST_DEVICE_API static constexpr _Order __collapse_cas_order(_Order __order)
+  {
+    return __order;
+  }
 
-  template <class _Type>
-  using __enable_if_direct_minmax = enable_if_t<is_integral_v<_Type> && (sizeof(_Type) < 16), bool>;
+  template <class _Success, class _Failure>
+  _CCCL_HOST_DEVICE_API static constexpr auto __collapse_cas_order(__cuda_atomic_cas_order<_Success, _Failure>)
+  {
+    if constexpr (is_same_v<_Success, __cuda_atomic_order_seq_cst> || is_same_v<_Failure, __cuda_atomic_order_seq_cst>)
+    {
+      return __cuda_atomic_order_seq_cst{};
+    }
+    else if constexpr (is_same_v<_Success, __cuda_atomic_order_acq_rel>
+                       || (is_same_v<_Success, __cuda_atomic_order_release>
+                           && is_same_v<_Failure, __cuda_atomic_order_acquire>) )
+    {
+      return __cuda_atomic_order_acq_rel{};
+    }
+    else if constexpr (is_same_v<_Success, __cuda_atomic_order_release>)
+    {
+      return __cuda_atomic_order_release{};
+    }
+    else if constexpr (is_same_v<_Success, __cuda_atomic_order_acquire>
+                       || is_same_v<_Failure, __cuda_atomic_order_acquire>)
+    {
+      return __cuda_atomic_order_acquire{};
+    }
+    else
+    {
+      return __cuda_atomic_order_relaxed{};
+    }
+  }
 
-  template <class _Type>
-  using __enable_if_fallback_bitwise = enable_if_t<(sizeof(_Type) == 16), bool>;
-
-  template <class _Type>
-  using __enable_if_fallback_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) == 16), bool>;
-
-  template <class _Type>
-  using __enable_if_fallback_minmax =
-    enable_if_t<!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16), bool>;
+  template <class _Operation, class _Fn, class _Order, class _Sco>
+  _CCCL_DEVICE_API static auto __with_transformed_order(_Operation, _Fn& __fn, _Order __order, _Sco __scope)
+    -> decltype(__fn(__order));
 
   static constexpr bool __needs_constant_order             = true;
   static constexpr bool __requires_local_memory_workaround = true;

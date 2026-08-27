@@ -21,17 +21,84 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Operation, class _Fn, class _Order, class _Sco>
+_CCCL_DEVICE_API auto
+__cuda_atomic_ptx_backend::__with_transformed_order(_Operation, _Fn& __fn, _Order __order, _Sco __scope)
+  -> decltype(__fn(__order))
+{
+  constexpr bool __is_load  = is_same_v<_Operation, __cuda_atomic_operation_load>;
+  constexpr bool __is_store = is_same_v<_Operation, __cuda_atomic_operation_store>;
+  constexpr bool __is_rmw   = is_same_v<_Operation, __cuda_atomic_operation_rmw>;
+  static_assert(__is_load || __is_store || __is_rmw, "invalid atomic operation class");
+
+  constexpr bool __is_seq_cst = is_same_v<_Order, __cuda_atomic_order_seq_cst>;
+  constexpr bool __is_release = is_same_v<_Order, __cuda_atomic_order_release>;
+  constexpr bool __is_acq_rel = is_same_v<_Order, __cuda_atomic_order_acq_rel>;
+  constexpr bool __is_acquire = is_same_v<_Order, __cuda_atomic_order_acquire>;
+  constexpr bool __membar_before =
+    __is_seq_cst || (__is_store && __is_release) || (__is_rmw && (__is_release || __is_acq_rel));
+  constexpr bool __membar_after = (__is_load || __is_rmw) && (__is_acquire || __is_acq_rel || __is_seq_cst);
+
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70,
+    ({
+      if constexpr (__is_seq_cst)
+      {
+        if constexpr (__is_store)
+        {
+          return __fn(__cuda_atomic_ptx_order_relaxed{true});
+        }
+        else
+        {
+          return __fn(__cuda_atomic_ptx_order_acquire{true});
+        }
+      }
+      else
+      {
+        return __fn(__transform_order(__order));
+      }
+    }),
+    NV_IS_DEVICE,
+    ({
+      if constexpr (__membar_before)
+      {
+        __cuda_atomic_membar(__scope);
+      }
+      if constexpr (__membar_after)
+      {
+        if constexpr (is_void_v<decltype(__fn(__cuda_atomic_order_volatile{}))>)
+        {
+          __fn(__cuda_atomic_order_volatile{});
+          __cuda_atomic_membar(__scope);
+          return;
+        }
+        else
+        {
+          auto __result = __fn(__cuda_atomic_order_volatile{});
+          __cuda_atomic_membar(__scope);
+          return __result;
+        }
+      }
+      else
+      {
+        return __fn(__cuda_atomic_order_volatile{});
+      }
+    }))
+}
 
 template <class _Type, enable_if_t<is_integral_v<_Type>, bool> = false>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_ptx_negate(_Type __value)
@@ -48,9 +115,19 @@ template <class _Type, enable_if_t<!is_integral_v<_Type>, bool> = false>
   return -__value;
 }
 
-template <class _Type, class _Order, class _Operand, class _Sco>
+template <class _Type,
+          class _Order,
+          class _Operand,
+          class _Sco,
+          enable_if_t<(_Operand::__size >= 32) && (_Operand::__size <= 64), bool> = false>
 _CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
-  __cuda_atomic_ptx_backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  __cuda_atomic_ptx_backend __backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  _Order __order,
+  _Operand,
+  _Sco __scope)
 {
   __cuda_atomic_fetch_add(__backend, __ptr, __dst, __cuda_atomic_ptx_negate(__op), __order, _Operand{}, __scope);
 }

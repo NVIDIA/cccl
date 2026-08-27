@@ -17,13 +17,13 @@
 
 #include "definitions.h"
 
-inline std::string fetch_op_skip_v(std::string fetch_op)
+inline std::string fetch_op_transform(std::string fetch_op)
 {
   if (fetch_op == "add")
   {
-    return "constexpr auto __skip_v = __atomic_ptr_skip_t<_Type>::__skip;";
+    return "\n  __op = __op * __atomic_ptr_skip_t<_Type>::__skip;";
   }
-  return "constexpr auto __skip_v = 1;";
+  return {};
 }
 
 inline void FormatFetchOps(std::ostream& out)
@@ -50,39 +50,6 @@ inline void FormatFetchOps(std::ostream& out)
     std::pair{std::string{"and"}, std::pair{bitwise_types, std::string{"bitwise"}}},
   };
 
-  // Memory order dispatcher
-  out << R"XXX(
-template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_order_dispatch(
-  __cuda_atomic_ptx_backend, _Fn& __cuda_fetch, memory_order __order, _Sco) {
-  const int __memorder = __atomic_order_to_int(__order);
-  NV_DISPATCH_TARGET(
-    NV_PROVIDES_SM_70, (
-      switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __cuda_atomic_order_seq_cst{}); [[fallthrough]];
-        case __ATOMIC_CONSUME: [[fallthrough]];
-        case __ATOMIC_ACQUIRE: __cuda_fetch(__cuda_atomic_order_acquire{}); break;
-        case __ATOMIC_ACQ_REL: __cuda_fetch(__cuda_atomic_order_acq_rel{}); break;
-        case __ATOMIC_RELEASE: __cuda_fetch(__cuda_atomic_order_release{}); break;
-        case __ATOMIC_RELAXED: __cuda_fetch(__cuda_atomic_order_relaxed{}); break;
-        default: _CCCL_ASSERT(false, "invalid memory order");
-      }
-    ),
-    NV_IS_DEVICE, (
-      switch (__memorder) {
-        case __ATOMIC_SEQ_CST: [[fallthrough]];
-        case __ATOMIC_ACQ_REL: __cuda_atomic_membar(_Sco{}); [[fallthrough]];
-        case __ATOMIC_CONSUME: [[fallthrough]];
-        case __ATOMIC_ACQUIRE: __cuda_fetch(__cuda_atomic_order_volatile{}); __cuda_atomic_membar(_Sco{}); break;
-        case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __cuda_fetch(__cuda_atomic_order_volatile{}); break;
-        case __ATOMIC_RELAXED: __cuda_fetch(__cuda_atomic_order_volatile{}); break;
-        default: _CCCL_ASSERT(false, "invalid memory order");
-      }
-    )
-  )
-}
-)XXX";
-
   // Argument ID Reference
   // 0 - Atomic Operation
   // 1 - Operand Type
@@ -95,12 +62,11 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_order_dispatch(
   constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
-  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __dst, _Type __op, {5}, __cuda_atomic_operand_{1}{2}, {7})
-{{ asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
-
+  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, {5} __order, __cuda_atomic_operand_{1}{2}, {7})
+{{ __cuda_atomic_ptx_maybe_sc_fence(__order, {7}{{}}); asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
   // 0 - Atomic Operation
   // 1 - Operand type constraint
-  // 2 - Pointer op skip_v
+  // 2 - Operand transform
   constexpr auto fetch_bind_invoke = R"XXX(
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -108,61 +74,35 @@ template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_fetch_{0} {{
   _Backend __backend;
   _Type* __ptr;
-  _Type* __dst;
-  _Type* __op;
+  __unv<_Type>* __dst;
+  __unv<_Type> __op;
 
   template <typename _Atomic_Memorder>
   _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {{
-    __cuda_atomic_fetch_{0}(__backend, __ptr, *__dst, *__op, __order, _Tag{{}}, _Sco{{}});
+    __cuda_atomic_fetch_{0}(__backend, __ptr, *__dst, __op, __order, _Tag{{}}, _Sco{{}});
   }}
 }};
 template <class _Backend,
           class _Type,
           class _Up,
-          class _Sco,
-          typename _Backend::template __enable_if_direct_{1}<_Type> = 0>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_{0}_dispatch(
+          class _Sco>
+[[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type> __cuda_atomic_fetch_{0}_dispatch(
   _Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
-{{
-  {2}
-  __op = __op * __skip_v;
-  using __proxy_t        = __cuda_atomic_deduce_{1}_t<_Type>;
-  using __proxy_tag      = __cuda_atomic_deduce_{1}_tag_t<_Type>;
-  _Type __dst{{}};
-  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+{{{2}
+  using __value_type     = __unv<_Type>;
+  using __proxy_t        = __cuda_atomic_deduce_{1}_t<__value_type>;
+  using __proxy_pointee  = __copy_cv_t<_Type, __proxy_t>;
+  using __proxy_tag      = __cuda_atomic_deduce_{1}_tag_t<__value_type>;
+  __value_type __dst{{}};
+  __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {{
     if (__cuda_atomic_fetch_{0}_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {{return __dst;}}
   }}
-  __cuda_atomic_bind_fetch_{0}<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_{0}{{
-    __backend, __ptr_proxy, __dst_proxy, __op_proxy}};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_{0}, __order, __scope);
-  return __dst;
-}}
-template <class _Backend,
-          class _Type,
-          class _Up,
-          class _Sco,
-          typename _Backend::template __enable_if_direct_{1}<_Type> = 0>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_fetch_{0}_dispatch(
-  _Backend __backend, _Type volatile* __ptr, _Up __op, memory_order __order, _Sco __scope)
-{{
-  {2}
-  __op = __op * __skip_v;
-  using __proxy_t        = __cuda_atomic_deduce_{1}_t<_Type>;
-  using __proxy_tag      = __cuda_atomic_deduce_{1}_tag_t<_Type>;
-  _Type __dst{{}};
-  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
-  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
-  if constexpr (_Backend::__requires_local_memory_workaround)
-  {{
-    if (__cuda_atomic_fetch_{0}_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {{return __dst;}}
-  }}
-  __cuda_atomic_bind_fetch_{0}<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_{0}{{
-    __backend, __ptr_proxy, __dst_proxy, __op_proxy}};
+  __cuda_atomic_bind_fetch_{0}<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_{0}{{
+    __backend, __ptr_proxy, __dst_proxy, *__op_proxy}};
   __cuda_atomic_fetch_order_dispatch(__backend, __bound_{0}, __order, __scope);
   return __dst;
 }}
@@ -223,14 +163,14 @@ template <class _Backend,
               /* 2 */ size,
               /* 3 */ constraints(type, size),
               /* 4 */ semantic(sem),
-              /* 5 */ semantic_tag(sem),
+              /* 5 */ ptx_semantic_tag(sem),
               /* 6 */ scope(sco),
               /* 7 */ scope_tag(sco));
           }
         }
       }
     }
-    out << "\n" << std::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
+    out << "\n" << std::format(fetch_bind_invoke, op_name, deduction, fetch_op_transform(op_name));
   }
 }
 

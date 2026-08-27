@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/generic_rmw.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -31,7 +32,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Backend,
-          class _Type,
+          class _Pointee,
           class _Cas,
           class _Order,
           class _Operand,
@@ -39,8 +40,17 @@ template <class _Backend,
           enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size < _Backend::__smallest_cas),
                       bool> = false>
 _CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Cas, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend,
+  _Pointee* __ptr,
+  __unv<_Pointee>& __dst,
+  __unv<_Pointee> __cmp,
+  __unv<_Pointee> __op,
+  _Cas,
+  _Order __order,
+  _Operand,
+  _Sco __scope)
 {
+  using _Type                 = __unv<_Pointee>;
   constexpr size_t __rmw_size = _Backend::__smallest_cas;
   static_assert(__rmw_size <= _Backend::__widest_cas, "atomic CAS cannot be widened beyond the backend's widest CAS");
 
@@ -59,15 +69,15 @@ _CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
 }
 
 template <class _Backend,
-          class _Type,
+          class _Pointee,
           class _Cas,
           class _Order,
           class _Operand,
           class _Sco,
           enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size > _Backend::__widest_cas),
                       bool> = false>
-_CCCL_HOST_DEVICE static bool
-__cuda_atomic_compare_exchange(_Backend, _Type*, _Type&, _Type, _Type, _Cas, _Order, _Operand, _Sco)
+_CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
+  _Backend, _Pointee*, __unv<_Pointee>&, __unv<_Pointee>, __unv<_Pointee>, _Cas, _Order, _Operand, _Sco)
 {
   static_assert(_Operand::__size < _Backend::__widest_cas, "the backend must provide its widest CAS operation");
   return false;
@@ -80,10 +90,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_add(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_add>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_add>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -93,81 +104,12 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_sub(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_sub>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_sub>{__op}, __order, _Operand{}, __scope);
 }
-
-struct __cuda_atomic_fetch_and_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_and(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_add_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_add(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_sub_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_sub(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_or_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_or(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_xor_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_xor(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_min_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_min(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
-
-struct __cuda_atomic_fetch_max_op
-{
-  template <class _Backend, class _Type, class _Order, class _Operand, class _Sco>
-  _CCCL_HOST_DEVICE_API void
-  operator()(_Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope) const
-  {
-    __cuda_atomic_fetch_max(__backend, __ptr, __dst, __op, __order, _Operand{}, __scope);
-  }
-};
 
 template <class _Backend,
           class _Type,
@@ -176,10 +118,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_and(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, ::cuda::std::bit_and>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_and>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -189,10 +132,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_or(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, ::cuda::std::bit_or>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_or>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -202,10 +146,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_xor(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, ::cuda::std::bit_xor>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_xor>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -215,10 +160,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_min(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_min>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_min>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -228,10 +174,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_max(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_max>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_max>{__op}, __order, _Operand{}, __scope);
 }
 
 template <class _Backend,
@@ -241,10 +188,11 @@ template <class _Backend,
           class _Sco,
           __cuda_atomic_enable_generic_rmw<_Backend, _Operand> = false>
 _CCCL_HOST_DEVICE static void __cuda_atomic_exchange(
-  _Backend __backend, _Type* __ptr, _Type& __dst, _Type __op, _Order __order, _Operand, _Sco __scope)
+  _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
-  __dst = __cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_Type, __cuda_atomic_op_store>{__op}, __order, _Operand{}, __scope);
+  using _ValueType = __unv<_Type>;
+  __dst            = __cuda_atomic_fetch_update(
+    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_store>{__op}, __order, _Operand{}, __scope);
 }
 _CCCL_END_NAMESPACE_CUDA_STD
 

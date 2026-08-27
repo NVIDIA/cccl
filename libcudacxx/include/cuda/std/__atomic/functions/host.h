@@ -92,7 +92,7 @@ template <class _Type, class _Operand, class _Mmio>
 _CCCL_HOST_API void __cuda_atomic_load(
   __cuda_atomic_host_backend,
   const _Type* __ptr,
-  _Type& __dst,
+  __unv<_Type>& __dst,
   memory_order __order,
   _Operand,
   __thread_scope_tag,
@@ -104,7 +104,13 @@ _CCCL_HOST_API void __cuda_atomic_load(
 
 template <class _Type, class _Operand, class _Mmio>
 _CCCL_HOST_API void __cuda_atomic_store(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __val, memory_order __order, _Operand, __thread_scope_tag, _Mmio)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __val,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag,
+  _Mmio)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __atomic_store(&__atomic_force_align_host(__ptr)->__atom, &__val, __atomic_order_to_int(__order));
@@ -114,9 +120,9 @@ template <class _Type, class _Cas, class _Operand>
 _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_host_backend,
   _Type* __ptr,
-  _Type& __dst,
-  _Type __cmp,
-  _Type __op,
+  __unv<_Type>& __dst,
+  __unv<_Type> __cmp,
+  __unv<_Type> __op,
   _Cas __cas,
   __cuda_atomic_runtime_cas_order __order,
   _Operand,
@@ -138,9 +144,9 @@ template <class _Type, class _Cas, class _Operand>
 _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_host_backend __backend,
   _Type* __ptr,
-  _Type& __dst,
-  _Type __cmp,
-  _Type __op,
+  __unv<_Type>& __dst,
+  __unv<_Type> __cmp,
+  __unv<_Type> __op,
   _Cas __cas,
   memory_order __order,
   _Operand __operand,
@@ -160,31 +166,49 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
 
 template <class _Type, class _Operand>
 _CCCL_HOST_API void __cuda_atomic_exchange(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __atomic_exchange(&__atomic_force_align_host(__ptr)->__atom, &__op, &__dst, __atomic_order_to_int(__order));
 }
 
-template <
-  class _Type,
-  class _Operand,
-  enable_if_t<!is_floating_point_v<_Type> && (_Operand::__op != __cuda_atomic_operand::_f) && (_Operand::__size <= 128),
-              bool> = false>
+template <class _Type,
+          class _Operand,
+          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+                        && (_Operand::__size <= 64),
+                      bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_add(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __atomic_fetch_add(__ptr, __op, __atomic_order_to_int(__order));
 }
 
-template <
-  class _Type,
-  class _Operand,
-  enable_if_t<!is_floating_point_v<_Type> && (_Operand::__op != __cuda_atomic_operand::_f) && (_Operand::__size <= 128),
-              bool> = false>
+template <class _Type,
+          class _Operand,
+          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+                        && (_Operand::__size <= 64),
+                      bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_sub(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __atomic_fetch_sub(__ptr, __op, __atomic_order_to_int(__order));
@@ -192,9 +216,15 @@ _CCCL_HOST_API void __cuda_atomic_fetch_sub(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 128), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_and(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __atomic_fetch_and(__ptr, __op, __atomic_order_to_int(__order));
@@ -202,9 +232,15 @@ _CCCL_HOST_API void __cuda_atomic_fetch_and(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 128), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_or(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __atomic_fetch_or(__ptr, __op, __atomic_order_to_int(__order));
@@ -212,9 +248,15 @@ _CCCL_HOST_API void __cuda_atomic_fetch_or(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 128), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_xor(
-  __cuda_atomic_host_backend, _Type* __ptr, _Type& __dst, _Type __op, memory_order __order, _Operand, __thread_scope_tag)
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __atomic_fetch_xor(__ptr, __op, __atomic_order_to_int(__order));

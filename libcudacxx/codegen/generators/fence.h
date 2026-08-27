@@ -77,6 +77,20 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
   }
   out << "\n"
       << R"XXX(
+template <class _Order, class _Sco>
+static inline _CCCL_DEVICE void
+__cuda_atomic_ptx_maybe_sc_fence(__cuda_atomic_ptx_order<_Order> __order, _Sco __scope)
+{
+  if (__order.__was_seq_cst)
+  {
+    __cuda_atomic_fence(__scope, __cuda_atomic_order_seq_cst{});
+  }
+}
+
+template <class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_ptx_maybe_sc_fence(__cuda_atomic_order_volatile, _Sco)
+{}
+
 template <typename _Sco>
 static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(
   __cuda_atomic_ptx_backend, memory_order __order, _Sco) {

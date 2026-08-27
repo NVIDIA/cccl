@@ -44,6 +44,7 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
