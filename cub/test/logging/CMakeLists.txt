@@ -77,11 +77,22 @@ set_tests_properties(
 # Smoke test that a real algorithm dispatch actually logs when logging is enabled. We reuse
 # cub_add_test() for consistency with the rest of the CUB test suite. That helper compiles non-Catch2
 # tests with CUB_DEBUG_SYNC, which enables CUB_DEBUG_LOG and would compile out the new experimental
-# logging, so we undo it again with -UCUB_DEBUG_SYNC. If that ever stops working, the experimental
-# logging line is not emitted and the PASS_REGULAR_EXPRESSION below fails the test.
+# logging, so we undo it again by removing the definition. We can't use a -UCUB_DEBUG_SYNC compile
+# option instead: nvcc forwards it to the MSVC host compiler verbatim, and sccache fails to parse the
+# resulting "-U" argument on Windows. If this stops working, the experimental logging line is not
+# emitted and the PASS_REGULAR_EXPRESSION below fails the test.
 cub_add_test(dispatch_test_target "logging.dispatch" "" "logging_dispatch_smoke.cu" 0)
 cub_configure_cuda_target(${dispatch_test_target} RDC OFF)
-target_compile_options(${dispatch_test_target} PRIVATE -UCUB_DEBUG_SYNC)
+get_target_property(
+  _cub_logging_smoke_defs
+  ${dispatch_test_target}
+  COMPILE_DEFINITIONS
+)
+list(REMOVE_ITEM _cub_logging_smoke_defs CUB_DEBUG_SYNC)
+set_property(
+  TARGET ${dispatch_test_target}
+  PROPERTY COMPILE_DEFINITIONS "${_cub_logging_smoke_defs}"
+)
 set_tests_properties(
   ${dispatch_test_target}
   PROPERTIES
