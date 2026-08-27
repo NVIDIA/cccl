@@ -214,9 +214,7 @@ run_side()
     cd "${side_path[${side}]}"
     # `build_common.sh` parses `$@` as its own arguments.
     set -- "${common_args[@]}"
-    { set -x; } 2>/dev/null
     source ci/build_common.sh
-    { set +x; } 2>/dev/null
     "${cmd[@]}"
   )
 }
