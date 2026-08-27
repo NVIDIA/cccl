@@ -114,6 +114,7 @@ set(
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
   stackable/composite_conditional.cu
+  stackable/executable_graph_cache_streams.cu
   stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
