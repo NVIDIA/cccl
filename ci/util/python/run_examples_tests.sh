@@ -3,10 +3,8 @@
 # Invoked by ci/test_cuda_cccl_examples_python.sh, which has already
 # put the cuda_cccl wheel in wheelhouse/.
 #
-# Normally runs in the minimal container, so everything here must work with
-# nothing but Python and the wheel's declared pip dependencies. See "Testing
-# Python in a minimal container" in
-# docs/infrastructure/ci/references/ci_overview.rst.
+# Runs in the minimal container: nothing here may assume more than Python and
+# the wheel's declared deps (docs/infrastructure/ci/references/ci_overview.rst).
 
 set -euo pipefail
 
@@ -15,21 +13,13 @@ repo_root="$(cd "$ci_dir/.." && pwd)"
 # shellcheck source=ci/pyenv_helper.sh
 source "$ci_dir/pyenv_helper.sh"
 
-# shellcheck source=ci/util/python/common_arg_parser.sh
-source "$ci_dir/util/python/common_arg_parser.sh"
-parse_python_args "$@"
-
-# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
-# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
-pin_cuda_toolkit "${ctk_mode}"
-
-setup_python_env "${py_version}"
+python_payload_init "$@"
 
 # Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
 # pytest-benchmark for the host-overhead benchmark smoke test below. (cuda-bench,
 # for the throughput smoke, is installed best-effort further down since it does
 # not always ship a wheel for the newest Python.)
-CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
+CUDA_CCCL_WHEEL_PATH="$(cuda_cccl_wheel_path)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 
 # CuPy needs its own `ctk` extra to get curand/cublas/... (see the note on the

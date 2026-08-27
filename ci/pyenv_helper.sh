@@ -95,3 +95,64 @@ ctk_extra_flavor() {
         echo "cu"
     fi
 }
+
+# Echoes the path of the cuda_cccl wheel the entry point staged in wheelhouse/,
+# erroring unless there is exactly one (a bare glob yields "" or two paths, and
+# either goes on to be pip-installed as-is).
+cuda_cccl_wheel_path() {
+    local repo_root
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    local matches=()
+    while IFS= read -r match; do
+        matches+=("${match}")
+    done < <(find "${repo_root}/wheelhouse" -maxdepth 1 -name 'cuda_cccl-*.whl' 2>/dev/null | sort)
+
+    if [[ "${#matches[@]}" -ne 1 ]]; then
+        echo "ERROR: expected exactly one cuda_cccl wheel in ${repo_root}/wheelhouse, found ${#matches[@]}" >&2
+        return 1
+    fi
+    echo "${matches[0]}"
+}
+
+# Brings up what every test payload needs: the lane's arguments, the cuda-toolkit
+# pin, and the interpreter. Sets py_version, ctk_mode, cuda_version and
+# cuda_major_version for the caller.
+python_payload_init() {
+    local ci_dir
+    ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=ci/util/python/common_arg_parser.sh
+    source "${ci_dir}/util/python/common_arg_parser.sh"
+    parse_python_args "$@"
+    pin_cuda_toolkit "${ctk_mode}"
+    setup_python_env "${py_version}"
+}
+
+# Stages the cuda_cccl wheel, then hands off to the lane's test payload ($1),
+# forwarding the remaining arguments. The payload runs in a minimal sibling
+# container except in `sysctk` mode, which exists to test a system-provided CUDA
+# toolkit, or when CCCL_MINIMAL_CONTAINER=0. Expects parse_python_args to have
+# run. See "Testing Python in a minimal container" in
+# docs/infrastructure/ci/references/ci_overview.rst.
+dispatch_python_lane() {
+    local payload="$1"
+    shift
+
+    local ci_dir repo_root
+    ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    repo_root="$(cd "${ci_dir}/.." && pwd)"
+
+    # Needs `gh` (or docker, for a local build), which the minimal container lacks.
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        local wheel_artifact_name
+        wheel_artifact_name="$("${ci_dir}/util/workflow/get_wheel_artifact_name.sh")"
+        "${ci_dir}/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
+    else
+        "${ci_dir}/build_cuda_cccl_python.sh" -py-version "${py_version}"
+    fi
+
+    if [[ "${ctk_mode,,}" != "sysctk" && "${CCCL_MINIMAL_CONTAINER:-1}" != "0" ]]; then
+        exec "${ci_dir}/util/python/run_in_minimal_container.sh" "${payload}" "$@"
+    else
+        exec "${repo_root}/${payload}" "$@"
+    fi
+}
