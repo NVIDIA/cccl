@@ -221,36 +221,14 @@ target_matches_filters() {
   return 1
 }
 
-resolve_compare_script() {
+resolve_robust_compare_script() {
   local build_path="$1"
   local nvbench_src="${build_path}/_deps/nvbench-src"
-  local candidate=""
-  # Different versions have the script at different locations:
-  for candidate in \
-    "${nvbench_src}/python/scripts/nvbench_compare_robust.py" \
-    "${nvbench_src}/scripts/nvbench_compare_robust.py"; do
-    if [[ -f "${candidate}" ]]; then
-      printf "%s" "${candidate}"
-      return 0
-    fi
-  done
-  return 1
-}
-
-resolve_legacy_compare_script() {
-  local build_path="$1"
-  local nvbench_src="${build_path}/_deps/nvbench-src"
-  local candidate=""
-  # Different versions have the script at different locations:
-  for candidate in \
-    "${nvbench_src}/python/scripts/nvbench_compare.py" \
-    "${nvbench_src}/scripts/nvbench_compare.py"; do
-    if [[ -f "${candidate}" ]]; then
-      printf "%s" "${candidate}"
-      return 0
-    fi
-  done
-  return 1
+  local candidate="${nvbench_src}/python/scripts/nvbench_compare_robust.py"
+  if [[ -f "${candidate}" ]]; then
+    printf "%s" "${candidate}"
+  fi
+  return 0
 }
 
 run_target_for_side() {
@@ -871,12 +849,11 @@ run_compare_command_with_pythonpath() {
 
 run_compare_target() {
   local target="$1"
-  local compare_script="$2"
-  local compare_script_dir="$3"
-  local base_json="$4"
-  local test_json="$5"
-  local legacy_compare_script="$6"
-  local legacy_compare_script_dir="$7"
+  local compare_script_dir="$2"
+  local robust_compare_script="$3"
+  local legacy_compare_script="$4"
+  local base_json="$5"
+  local test_json="$6"
 
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
   local compare_python="${CCCL_BENCH_COMPARE_PYTHON:-python3}"
@@ -891,7 +868,7 @@ run_compare_target() {
     compare_log="$(compare_log_path_for_display "${target}" "${display}")"
     compare_cmd=(
       "${compare_python}"
-      "${compare_script}"
+      "${robust_compare_script}"
       --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
@@ -914,7 +891,6 @@ run_compare_target() {
   done
 
   if [[ -n "${legacy_compare_script}" ]]; then
-    compare_pythonpath="${legacy_compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
     compare_cmd=(
       "${compare_python}"
       "${legacy_compare_script}"
@@ -1232,13 +1208,6 @@ parse_cli_args() {
   done
 }
 
-if [[ "${CCCL_BENCH_COMPARE_PATHS_SOURCE_ONLY:-0}" == "1" ]]; then
-  if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
-    return 0
-  fi
-  exit 0
-fi
-
 parse_cli_args "$@"
 
 declare -a NVBENCH_RUN_ARGS
@@ -1406,25 +1375,21 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
   printf "%s\n" "${selected_runnable_targets[@]}" > "${artifact_dir}/meta/selected_runnable_targets.txt"
 
   if [[ "${#selected_runnable_targets[@]}" -gt 0 ]]; then
-    compare_script="$(resolve_compare_script "${test_build_dir}" || true)"
-    if [[ -z "${compare_script}" ]]; then
-      compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
+    robust_compare_script="$(resolve_robust_compare_script "${test_build_dir}")"
+    if [[ -z "${robust_compare_script}" ]]; then
+      robust_compare_script="$(resolve_robust_compare_script "${base_build_dir}")"
     fi
-    if [[ -z "${compare_script}" ]]; then
+    if [[ -z "${robust_compare_script}" ]]; then
       die "Unable to locate nvbench_compare_robust.py in build dependencies." 1
     fi
-    compare_script_dir="$(dirname "${compare_script}")"
+    compare_script_dir="$(dirname "${robust_compare_script}")"
 
-    legacy_compare_script="$(resolve_legacy_compare_script "${test_build_dir}" || true)"
-    if [[ -z "${legacy_compare_script}" ]]; then
-      legacy_compare_script="$(resolve_legacy_compare_script "${base_build_dir}" || true)"
-    fi
-    legacy_compare_script_dir=""
-    if [[ -n "${legacy_compare_script}" ]]; then
-      legacy_compare_script_dir="$(dirname "${legacy_compare_script}")"
+    legacy_compare_script="${compare_script_dir}/nvbench_compare.py"
+    if [[ ! -f "${legacy_compare_script}" ]]; then
+      legacy_compare_script=""
     fi
   elif [[ "${base_build_all_rc}" -eq 0 && "${test_build_all_rc}" -eq 0 ]]; then
-    echo "No runnable CUB benchmark targets matched the supplied filters." >&2
+    echo "No runnable CUB benchmark targets matched the supplied filters; marking comparison as failed." >&2
     any_failures=1
   fi
 
@@ -1473,12 +1438,11 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
       compares_attempted=$((compares_attempted + 1))
       if run_compare_target \
         "${target}" \
-        "${compare_script}" \
         "${compare_script_dir}" \
-        "${base_json}" \
-        "${test_json}" \
+        "${robust_compare_script}" \
         "${legacy_compare_script}" \
-        "${legacy_compare_script_dir}"; then
+        "${base_json}" \
+        "${test_json}"; then
         compares_succeeded=$((compares_succeeded + 1))
       else
         any_failures=1
