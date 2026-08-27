@@ -11,8 +11,11 @@
 // clang-format off
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE type i128:u128
-// %PARAM% OP,SASS_CALC op add=fetch_add,IADD3:sub=fetch_sub,IADD3:min=fetch_min,ISETP:max=fetch_max,ISETP
+// %PARAM% OP,FILECHECK_PREFIX_CALC op add=fetch_add,add_sub:sub=fetch_sub,add_sub:min=fetch_min,minmax:max=fetch_max,minmax
 // %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar
+// %FILECHECK% PREFIX_COMBINE sm90,add_sub
+// %FILECHECK% PREFIX_COMBINE sm100,add_sub
+// %FILECHECK% PREFIX_COMBINE sm120,add_sub
 // %FILECHECK% PREFIX_COMBINE non_block,seq_cst
 // %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
@@ -35,7 +38,12 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; BLOCK: {{.*}}LD.E.128.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E.128.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; SMXX-NOT: {{.*}}LD.E.128{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
-; SMXX: {{.*}}[[SASS_CALC]]{{.*}}
+; SM90_ADD_SUB: {{.*}}IADD3{{.*}}
+; SM100_ADD_SUB: {{.*}}IADD3{{.*}}
+; SM120_ADD_SUB-DAG: {{.*}}IADD.64 RZ, [[CARRY:P[0-9]+]], {{.*}}
+; SM120_ADD_SUB-DAG: {{.*}}IADD.64 [[LOW:R[0-9]+]], {{.*}}
+; SM120_ADD_SUB: {{.*}}IADD.64.X [[HIGH:R[0-9]+]], {{.*}}, [[CARRY]]{{.*}}
+; MINMAX: {{.*}}ISETP{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
@@ -47,11 +55,16 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.128.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, {{R[0-9]+}}, {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.128.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, {{R[0-9]+}}, {{R[0-9]+}}{{.*}}
-; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
+; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{.*}}
+; NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
+; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
+; SMXX: {{.*}}@{{!?P[0-9]+}} BRA{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 

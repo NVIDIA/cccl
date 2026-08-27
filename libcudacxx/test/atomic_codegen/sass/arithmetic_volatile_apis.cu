@@ -32,10 +32,10 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom, i
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
-; ADD-NOT: {{.*}}{{(IADD3|IMAD\.MOV)}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
+; ADD-NOT: {{.*}}{{(IADD3|IADD|IMAD\.MOV)}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SUB-DAG: {{.*}}{{(IADD3|IMAD\.MOV)}} [[OPERAND:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
+; SUB-DAG: {{.*}}{{(IADD3|IADD|IMAD\.MOV)}} [[OPERAND:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
 ; MEMBAR-DAG: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
 ; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}

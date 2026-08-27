@@ -39,8 +39,8 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& at
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; ADD: {{.*}}{{IADD3|IMAD\.IADD}}{{.*}}
-; SUB: {{.*}}{{IADD3|IMAD\.IADD}}{{.*}}
+; ADD: {{.*}}{{IADD3|IADD|IMAD\.IADD}}{{.*}}
+; SUB: {{.*}}{{IADD3|IADD|IMAD\.IADD}}{{.*}}
 ; MIN: {{.*}}IMNMX{{.*}}
 ; MAX: {{.*}}IMNMX{{.*}}
 ; RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
@@ -48,10 +48,12 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& at
 ; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}} PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
-; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}

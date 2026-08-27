@@ -43,12 +43,17 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<TYPE, SCOPE>& atom, TYPE
 ; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS[[SASS_SIZE]].STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS[[SASS_SIZE]].STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
-; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{.*}} [[CAS_RESULT_PRED:P[0-9]+]],{{.*}}
+; NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*}}
+; SMXX: {{.*}}@{{!?}}[[CAS_RESULT_PRED]] BRA{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */

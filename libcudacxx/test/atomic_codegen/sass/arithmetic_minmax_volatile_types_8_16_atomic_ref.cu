@@ -10,9 +10,13 @@
 
 // clang-format off
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block
-// %PARAM% TYPE,SASS_CALC type f16=f16,HSETP2:bf16=bf16,HSETP2
+// %PARAM% TYPE,FILECHECK_PREFIX_TYPE type f16=f16,f16:bf16=bf16,bf16
 // %PARAM% OP op fetch_min:fetch_max
 // %PARAM% ORDER,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,non_seq_cst,no_acquire,no_membar:acquire=moa,non_seq_cst,acquire,no_membar:release=more,non_seq_cst,no_acquire,release:acq_rel=moar,non_seq_cst,acquire,release:seq_cst=mosc,seq_cst,acquire,seq_cst
+// %FILECHECK% PREFIX_COMBINE sm75,f16
+// %FILECHECK% PREFIX_COMBINE sm75,bf16
+// %FILECHECK% PREFIX_COMBINE sm80,f16
+// %FILECHECK% PREFIX_COMBINE sm80,bf16
 // %FILECHECK% PREFIX_COMBINE non_block,seq_cst
 // %FILECHECK% PREFIX_COMBINE non_block,acquire
 // clang-format on
@@ -36,7 +40,11 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
-; SMXX-DAG: {{.*}}[[SASS_CALC]]{{.*}}
+; SM75_F16-DAG: {{.*}}HSETP2{{.*}}
+; SM75_BF16-DAG: {{.*}}FSETP{{.*}}
+; SM80_F16-DAG: {{.*}}HSETP2{{.*}}
+; SM80_BF16-DAG: {{.*}}FSETP{{.*}}
+; SM90-PLUS-DAG: {{.*}}HSETP2{{.*}}
 ; BLOCK-DAG: {{.*}}LD.E.STRONG.{{CTA|SM}} [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK-DAG: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; SEQ_CST-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
@@ -49,10 +57,12 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}} PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{\[}}[[ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
-; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; SMXX-DAG: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
+; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
+; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{MIN|MAX}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.CAS{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
