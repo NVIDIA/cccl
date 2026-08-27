@@ -183,9 +183,7 @@ class __physical_device
   {
     auto __domains = ::cuda::__make_raw_storage_array<__logical_device>(/*__count=*/1);
 
-    ::cuda::std::__construct_at(__domains.get(),
-                                __logical_device::from_native_handle(
-                                  __device_, ::cuda::__driver::__greenCtxCreate(__device_, /*__descriptor=*/nullptr)));
+    ::cuda::std::__construct_at(__domains.get(), __device_);
     __domains.get_deleter().__count_ = 1;
 
     auto __refs = ::cuda::__make_raw_storage_array<__logical_device_ref>(/*__count=*/1);
