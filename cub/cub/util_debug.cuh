@@ -47,10 +47,9 @@
 /**
  * @def CUB_DEBUG_ALL
  *
- * Causes host and device-side precondition assertions to be checked. Apart
- * from that, causes synchronization of the stream after every kernel launch to
- * check for errors. Also causes kernel launch configurations to be printed to
- * the console.
+ * Causes synchronization of the stream after every kernel launch to check
+ * for errors. Also causes kernel launch configurations to be printed to the
+ * console.
  *
  * Deprecated [Since 3.6]
  */
