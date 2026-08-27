@@ -8,11 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Temporary nvcc workaround for a cuda::buffer destructor conflict
-#if defined(__CUDACC__)
-#  pragma nv_diag_suppress 20011
-#endif // defined(__CUDACC__)
-
 #include <cuda/__cccl_config>
 #include <cuda/functional>
 #include <cuda/iterator>
