@@ -185,7 +185,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   ::cuda::std::integral_constant<int, _Width> = {})
 {
   ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
-  // __src_lane is unrestricted because th final shuffle index is __src_lane % _Width
+  // __src_lane is unrestricted because the final shuffle index is __src_lane % _Width
   // __src_lane is always in range [minLane, maxLane]
 
   if constexpr (_Width == 1)
