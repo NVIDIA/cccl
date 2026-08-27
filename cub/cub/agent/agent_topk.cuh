@@ -645,9 +645,11 @@ struct AgentTopK
     bool is_last_pass,
     CounterUpdateFn counter_update_fn)
   {
-    // Ensure all writes to the global memory-histogram are visible to all threads before
-    // proceeding to compute the prefix sum over the histogram.
+    // Make this block's histogram contributions visible device-wide before publishing retirement
     __threadfence();
+
+    // Wait for all threads in this block to finish merge_histograms() before thread 0 signals completion
+    __syncthreads();
 
     // Identify the last block in the grid to perform the prefix sum over the histogram
     bool is_last_block = false;
