@@ -336,26 +336,45 @@ public:
       return true;
     }
 
+    // Walk up to the deepest existing import; the levels in between are the
+    // path along which the data must be pushed.
+    ::std::stack<int> path;
     int imported_offset = ctx_offset;
     while (!data().was_imported(imported_offset))
     {
+      path.push(imported_offset);
       imported_offset = sctx_ref.get_parent_offset(imported_offset);
       _CCCL_ASSERT(imported_offset >= 0, "");
     }
-    const int imported_parent      = sctx_ref.get_parent_offset(imported_offset);
-    const bool inherited_read_only = m == access_mode::read && imported_parent >= 0 && data().is_frozen(imported_parent)
-                                  && data().get_frozen_mode(imported_parent) == access_mode::read;
+
+    // The freeze that created the deepest import bounds what any deeper scope
+    // may request, exactly like the parent freeze in the already-imported
+    // branch above.
+    const int imported_parent = sctx_ref.get_parent_offset(imported_offset);
+    bool inherited_read_only  = false;
+    if (imported_parent >= 0 && data().is_frozen(imported_parent))
+    {
+      const access_mode imported_mode = data().get_frozen_mode(imported_parent);
+      if (!access_mode_permits(imported_mode, m))
+      {
+        fprintf(stderr,
+                "Error: Invalid access mode transition - import frozen with %s, requesting %s\n",
+                access_mode_string(imported_mode),
+                access_mode_string(m));
+        abort();
+      }
+      inherited_read_only = imported_mode == access_mode::read;
+    }
+
+    // For data whose deepest import is the root context (no frozen ancestor
+    // import to inherit from), a read access still imports rw: eagerly
+    // claiming write capability avoids a re-push if a later task in the
+    // nested scope writes, at the cost of serializing sibling scopes that
+    // only read (see the warning in pop_before_finalize).
     const access_mode push_mode =
       (is_read_only() || inherited_read_only)
         ? access_mode::read
         : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
-
-    ::std::stack<int> path;
-    for (int current = ctx_offset; !data().was_imported(current); current = sctx_ref.get_parent_offset(current))
-    {
-      _CCCL_ASSERT(current >= 0, "");
-      path.push(current);
-    }
 
     // Read-only imports of a dependency at a concrete replicated place use
     // that place, so the push imports every member instance (member walk in
