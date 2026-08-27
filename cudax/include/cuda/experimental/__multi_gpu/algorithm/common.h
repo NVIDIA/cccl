@@ -23,9 +23,9 @@
 #endif // no system header
 
 #include <cuda/__container/buffer.h>
-#include <cuda/__device/device_ref.h>
+#include <cuda/__device/logical_device_ref.h>
 #include <cuda/__functional/lazy_call_or.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
+#include <cuda/__memory_pool/locality_domain_memory_pool.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__runtime/ensure_current_context.h>
@@ -47,21 +47,21 @@
 
 namespace cuda::experimental::__detail
 {
-#define __CUDAX_MULTI_GPU_DISPATCH(__logical_device, __call, ...)                              \
-  do                                                                                           \
-  {                                                                                            \
-    const auto __cur_context = ::cuda::__ensure_current_context{(__logical_device).context()}; \
-    _CCCL_TRY_CUDA_API(__call, "performing" #__call "(" #__VA_ARGS__ ")", __VA_ARGS__);        \
+#define __CUDAX_MULTI_GPU_DISPATCH(__logical_device, __call, ...)                        \
+  do                                                                                     \
+  {                                                                                      \
+    const auto __cur_context = ::cuda::__ensure_current_context{__logical_device};       \
+    _CCCL_TRY_CUDA_API(__call, "performing " #__call "(" #__VA_ARGS__ ")", __VA_ARGS__); \
   } while (0)
 
 template <class _Env>
 [[nodiscard]]
-_CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, ::cuda::device_ref __device)
+_CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, ::cuda::__logical_device_ref __device)
 {
   return ::cuda::__lazy_call_or(
     ::cuda::mr::get_memory_resource,
     [&] {
-      return ::cuda::device_default_memory_pool(__device);
+      return ::cuda::__device_default_memory_pool(__device);
     },
     __env);
 }
@@ -69,9 +69,9 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
 template <class _Env>
 using __resource_type_for _CCCL_NODEBUG =
   ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
-    ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+    ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::__logical_device_ref>()))>;
 
-template <typename _Env>
+template <class _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)
 {
   if constexpr (::cuda::__buffer_compatible_env<_Env>)
@@ -100,14 +100,15 @@ template <class _Tp, class _Resource, class _Env>
   }
 }
 
-template <class _InputRangeOfIters, class _RangeOfOutputIt, class _EnvRange>
+template <class _InputRangeOfIters, class _OutputRangeOfIters, class _EnvRange>
 struct __in_range_out_it_properties
 {
   using __input_iter_type _CCCL_NODEBUG =
     ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRangeOfIters>>;
   using __input_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__input_iter_type>;
-  using __output_type _CCCL_NODEBUG =
-    ::cuda::std::iter_value_t<::cuda::std::ranges::range_reference_t<_RangeOfOutputIt>>;
+  using __output_iter_type _CCCL_NODEBUG =
+    ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_OutputRangeOfIters>>;
+  using __output_type _CCCL_NODEBUG = ::cuda::std::iter_value_t<__output_iter_type>;
 
   using __env_type _CCCL_NODEBUG = ::cuda::std::ranges::range_value_t<_EnvRange>;
 

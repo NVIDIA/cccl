@@ -169,7 +169,9 @@ struct AgentBlockSort
 
     if constexpr (IS_LAST_TILE)
     {
-      BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
+      // The no-sentinel overload: only the sorted valid prefix is needed, and no oob_default
+      // ordered after all valid keys is available for arbitrary key types and comparators.
+      BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining);
     }
     else
     {

@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/mapping_result.cuh>
@@ -86,8 +87,8 @@ public:
     return _MappingResult{
       __prev_mapping_result.group_count() * 2,
       __prev_mapping_result.group_rank() + ((__pred) ? __prev_mapping_result.group_count() : 0u),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask)),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask)),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
       ::cuda::device::lane_mask{__match_mask}};
   }
 };
