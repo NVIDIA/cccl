@@ -63,7 +63,7 @@ inline void FormatFetchOps(std::ostream& out)
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, {5} __order, __cuda_atomic_operand_{1}{2}, {7})
-{{ __cuda_atomic_ptx_maybe_sc_fence(__order, {7}{{}}); asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
+{{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {7}{{}}); asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
   // 0 - Atomic Operation
   // 1 - Operand type constraint
   // 2 - Operand transform
@@ -79,7 +79,7 @@ struct __cuda_atomic_bind_fetch_{0} {{
 
   template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
   _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {{
-    __cuda_atomic_fetch_{0}(__backend, __ptr, *__dst, __op, __order, _Tag{{}}, _Sco{{}});
+    ::cuda::std::__cuda_atomic_fetch_{0}(__backend, __ptr, *__dst, __op, __order, _Tag{{}}, _Sco{{}});
   }}
 }};
 template <class _Backend,
@@ -99,7 +99,7 @@ template <class _Backend,
   __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {{
-    if (__cuda_atomic_fetch_{0}_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {{return __dst;}}
+    if (::cuda::std::__cuda_atomic_fetch_{0}_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {{return __dst;}}
   }}
   __cuda_atomic_bind_fetch_{0}<_Backend, __proxy_pointee> __bound_{0}{{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy}};

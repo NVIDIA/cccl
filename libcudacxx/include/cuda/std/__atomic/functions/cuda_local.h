@@ -80,19 +80,19 @@ _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_sub(_Type __atom, _Type con
 template <class _Type>
 _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_max(_Type __atom, _Type const& __v)
 {
-  return __cuda_atomic_less(__atom, __v) ? __v : __atom;
+  return ::cuda::std::__cuda_atomic_less(__atom, __v) ? __v : __atom;
 }
 template <class _Type>
 _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_min(_Type __atom, _Type const& __v)
 {
-  return __cuda_atomic_less(__v, __atom) ? __v : __atom;
+  return ::cuda::std::__cuda_atomic_less(__v, __atom) ? __v : __atom;
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool
 __cuda_atomic_load_weak_if_local(const _Type* __ptr, __unv<_Type>* __ret, [[maybe_unused]] size_t __size)
 {
-  if (!__cuda_atomic_is_local(__ptr))
+  if (!::cuda::std::__cuda_atomic_is_local(__ptr))
   {
     return false;
   }
@@ -106,7 +106,7 @@ template <class _Type>
 _CCCL_DEVICE_API bool
 __cuda_atomic_store_weak_if_local(_Type* __ptr, const __unv<_Type>* __val, [[maybe_unused]] size_t __size)
 {
-  if (!__cuda_atomic_is_local(__ptr))
+  if (!::cuda::std::__cuda_atomic_is_local(__ptr))
   {
     return false;
   }
@@ -118,7 +118,7 @@ template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange_weak_if_local(
   _Type* __ptr, __unv<_Type>* __expected, const __unv<_Type>* __desired, bool* __success)
 {
-  if (!__cuda_atomic_is_local(__ptr))
+  if (!::cuda::std::__cuda_atomic_is_local(__ptr))
   {
     return false;
   }
@@ -142,7 +142,7 @@ _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange_weak_if_local(
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_exchange_weak_if_local(_Type* __ptr, __unv<_Type>* __val, __unv<_Type>* __ret)
 {
-  if (!__cuda_atomic_is_local(__ptr))
+  if (!::cuda::std::__cuda_atomic_is_local(__ptr))
   {
     return false;
   }
@@ -156,7 +156,7 @@ template <class _Type, class _BOp>
 _CCCL_DEVICE_API bool
 __cuda_atomic_fetch_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret, _BOp&& __bop)
 {
-  if (!__cuda_atomic_is_local(__ptr))
+  if (!::cuda::std::__cuda_atomic_is_local(__ptr))
   {
     return false;
   }
@@ -174,49 +174,56 @@ template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_and_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_and<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_and<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_or_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_or<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_or<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_xor_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_xor<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_xor<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_add_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_add<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_add<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_sub_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_sub<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_sub<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_max_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_max<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_max<_ValueType>);
 }
 
 template <class _Type>
 _CCCL_DEVICE_API bool __cuda_atomic_fetch_min_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>* __ret)
 {
   using _ValueType = __unv<_Type>;
-  return __cuda_atomic_fetch_weak_if_local(__ptr, __val, __ret, __cuda_atomic_fetch_local_bop_min<_ValueType>);
+  return ::cuda::std::__cuda_atomic_fetch_weak_if_local(
+    __ptr, __val, __ret, ::cuda::std::__cuda_atomic_fetch_local_bop_min<_ValueType>);
 }
 
 #endif // _CCCL_CUDA_COMPILATION()

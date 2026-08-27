@@ -159,7 +159,7 @@ template <class _Order>
   }
   else
   {
-    return __cuda_atomic_initial_load_order(__order);
+    return ::cuda::std::__cuda_atomic_initial_load_order(__order);
   }
 }
 

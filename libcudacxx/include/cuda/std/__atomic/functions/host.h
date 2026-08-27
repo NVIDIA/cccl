@@ -135,7 +135,7 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
     // This is only alignment wrapped in order to prevent GCC-6 from triggering an unused warning.
     &__atomic_force_align_host(&__dst)->__atom,
     &__op,
-    __cuda_atomic_cas_is_weak(__cas),
+    ::cuda::std::__cuda_atomic_cas_is_weak(__cas),
     __atomic_order_to_int(__order.__success),
     __atomic_failure_order_to_int(__order.__failure));
 }
@@ -152,14 +152,14 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   _Operand __operand,
   __thread_scope_tag __scope)
 {
-  return __cuda_atomic_compare_exchange(
+  return ::cuda::std::__cuda_atomic_compare_exchange(
     __backend,
     __ptr,
     __dst,
     __cmp,
     __op,
     __cas,
-    __cuda_atomic_runtime_cas_order{__order, __cuda_atomic_failure_order(__order)},
+    __cuda_atomic_runtime_cas_order{__order, ::cuda::std::__cuda_atomic_failure_order(__order)},
     __operand,
     __scope);
 }

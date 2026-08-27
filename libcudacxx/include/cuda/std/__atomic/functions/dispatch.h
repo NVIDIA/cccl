@@ -129,14 +129,14 @@ template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_order_dispatch(
   _Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
-  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
+  ::cuda::std::__cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
 }
 
 template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void
 __cuda_atomic_fetch_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
-  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
+  ::cuda::std::__cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
 }
 
 template <class _Success, class _Backend, class _Fn, class _Sco, class... _Args>
@@ -227,7 +227,7 @@ struct __cuda_atomic_bind_fetch_sub
   template <class _Order, class _Operand, class _Sco>
   _CCCL_HOST_DEVICE_API void operator()(_Order __order, _Operand, _Sco)
   {
-    __cuda_atomic_fetch_sub(__backend, __ptr, *__dst, *__op, __order, _Operand{}, _Sco{});
+    ::cuda::std::__cuda_atomic_fetch_sub(__backend, __ptr, *__dst, *__op, __order, _Operand{}, _Sco{});
   }
 };
 
@@ -247,14 +247,14 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   auto* __op_proxy  = reinterpret_cast<__proxy_type*>(&__op);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
-    if (__cuda_atomic_fetch_sub_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
+    if (::cuda::std::__cuda_atomic_fetch_sub_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
     {
       return __dst;
     }
   }
   __cuda_atomic_bind_fetch_sub<_Backend, __proxy_pointee> __bound_fetch_sub{
     __backend, __ptr_proxy, __dst_proxy, __op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_sub, __order, __scope, __proxy_operand{});
+  ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_sub, __order, __scope, __proxy_operand{});
   return __dst;
 }
 

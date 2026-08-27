@@ -75,20 +75,20 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
     ({
       if constexpr (__membar_before)
       {
-        __cuda_atomic_membar(__scope);
+        ::cuda::std::__cuda_atomic_membar(__scope);
       }
       if constexpr (__membar_after)
       {
         if constexpr (is_void_v<decltype(__fn(__cuda_atomic_order_volatile{}, __args..., __scope))>)
         {
           __fn(__cuda_atomic_order_volatile{}, __args..., __scope);
-          __cuda_atomic_membar(__scope);
+          ::cuda::std::__cuda_atomic_membar(__scope);
           return;
         }
         else
         {
           auto __result = __fn(__cuda_atomic_order_volatile{}, __args..., __scope);
-          __cuda_atomic_membar(__scope);
+          ::cuda::std::__cuda_atomic_membar(__scope);
           return __result;
         }
       }
@@ -128,7 +128,8 @@ _CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
   _Operand,
   _Sco __scope)
 {
-  __cuda_atomic_fetch_add(__backend, __ptr, __dst, __cuda_atomic_ptx_negate(__op), __order, _Operand{}, __scope);
+  ::cuda::std::__cuda_atomic_fetch_add(
+    __backend, __ptr, __dst, ::cuda::std::__cuda_atomic_ptx_negate(__op), __order, _Operand{}, __scope);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

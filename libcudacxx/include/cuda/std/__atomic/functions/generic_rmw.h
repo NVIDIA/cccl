@@ -287,7 +287,7 @@ struct __cuda_atomic_op_fetch_min
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
   {
-    return __cuda_atomic_less(__op, __old) ? __op : __old;
+    return ::cuda::std::__cuda_atomic_less(__op, __old) ? __op : __old;
   }
 };
 
@@ -296,7 +296,7 @@ struct __cuda_atomic_op_fetch_max
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
   {
-    return __cuda_atomic_less(__old, __op) ? __op : __old;
+    return ::cuda::std::__cuda_atomic_less(__old, __op) ? __op : __old;
   }
 };
 
@@ -312,12 +312,12 @@ __cuda_atomic_fetch_update(_Backend __backend, _Pointee* __ptr, const _Fn& __op,
 
   using __bitwise_operand = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, _Operand::__size>;
   using __rmw_operand     = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, __rmw_size>;
-  return __cuda_atomic_rmw(
+  return ::cuda::std::__cuda_atomic_rmw(
            __backend,
            __ptr,
            __cuda_atomic_rmw_op<_Type, _Fn>{__op},
            __order,
-           __cuda_atomic_initial_load_order(__order),
+           ::cuda::std::__cuda_atomic_initial_load_order(__order),
            __bitwise_operand{},
            __rmw_operand{},
            __scope)

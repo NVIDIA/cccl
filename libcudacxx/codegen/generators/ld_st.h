@@ -53,7 +53,7 @@ inline void FormatLoad(std::ostream& out)
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
-  __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
+  ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b ld/st is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (),
@@ -71,13 +71,13 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
-{{ __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
+{{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
-  __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
+  ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   uint16_t __tmp;
   asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__tmp) : "l"(__ptr) : "memory");
   __dst = static_cast<__unv<_Type>>(__tmp);
@@ -198,7 +198,7 @@ struct __cuda_atomic_bind_load {
 
   template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
   _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
-    __cuda_atomic_load(__backend, __ptr, *__dst, __order, _Tag{}, _Sco{}, _Mmio{});
+    ::cuda::std::__cuda_atomic_load(__backend, __ptr, *__dst, __order, _Tag{}, _Sco{}, _Mmio{});
   }
 };
 template <class _Backend, class _Type, class _Sco>
@@ -218,7 +218,7 @@ __cuda_atomic_load_dispatch(
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
-    if (__cuda_atomic_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {return;}
+    if (::cuda::std::__cuda_atomic_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {return;}
   }
   __cuda_atomic_bind_load<_Backend, __proxy_pointee> __bound_load{
     __backend, __ptr_proxy, __dst_proxy};
@@ -231,7 +231,7 @@ template <class _Backend, class _Type, class _Sco>
 __cuda_atomic_load_dispatch(_Backend __backend, const _Type* __ptr, memory_order __order, _Sco __scope)
 {
   __unv<_Type> __dst;
-  __cuda_atomic_load_dispatch(__backend, __ptr, __dst, __order, __scope);
+  ::cuda::std::__cuda_atomic_load_dispatch(__backend, __ptr, __dst, __order, __scope);
   return __dst;
 }
 
@@ -256,7 +256,7 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
-  __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
+  ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b ld/st is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (),
@@ -274,13 +274,13 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
-{{ __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
+{{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
-  __cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
+  ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   const uint16_t __tmp = static_cast<uint16_t>(__val);
   asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__tmp) : "memory");
 }})XXX";
@@ -397,7 +397,7 @@ struct __cuda_atomic_bind_store {
 
   template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
   _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
-    __cuda_atomic_store(__backend, __ptr, __val, __order, _Tag{}, _Sco{}, _Mmio{});
+    ::cuda::std::__cuda_atomic_store(__backend, __ptr, __val, __order, _Tag{}, _Sco{}, _Mmio{});
   }
 };
 template <class _Backend, class _Type, class _Up, class _Sco>
@@ -413,7 +413,7 @@ __cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory
   __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__store);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
-    if (__cuda_atomic_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {return;}
+    if (::cuda::std::__cuda_atomic_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {return;}
   }
   __cuda_atomic_bind_store<_Backend, __proxy_pointee> __bound_store{
     __backend, __ptr_proxy, *__val_proxy};

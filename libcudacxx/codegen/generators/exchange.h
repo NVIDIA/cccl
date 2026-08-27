@@ -31,7 +31,7 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __old, __unv<_Type> __new, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
 {{
-  __cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}});
+  ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}});
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b exchange is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
@@ -51,7 +51,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __old, __unv<_Type> __new, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
-{{ __cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}}); asm volatile("atom.exch{3}{5}.{0}{1} %0,[%1],%2;" : "={2}"(__old) : "l"(__ptr), "{2}"(__new) : "memory"); }})XXX";
+{{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}}); asm volatile("atom.exch{3}{5}.{0}{1} %0,[%1],%2;" : "={2}"(__old) : "l"(__ptr), "{2}"(__new) : "memory"); }})XXX";
 
   constexpr Operand supported_types[] = {
     Operand::Bit,
@@ -137,7 +137,7 @@ struct __cuda_atomic_bind_exchange {
 
   template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
   _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
-    __cuda_atomic_exchange(__backend, __ptr, *__old, __new, __order, _Tag{}, _Sco{});
+    ::cuda::std::__cuda_atomic_exchange(__backend, __ptr, *__old, __new, __order, _Tag{}, _Sco{});
   }
 };
 template <class _Backend, class _Type, class _Sco>
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
-    if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
+    if(::cuda::std::__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
   }
   __cuda_atomic_bind_exchange<_Backend, __proxy_pointee> __bound_swap{
     __backend, __ptr_proxy, __old_proxy, *__new_proxy};
@@ -171,7 +171,8 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 {
   using __value_type = __unv<_Type>;
   __value_type __old;
-  __cuda_atomic_exchange_dispatch(__backend, __ptr, __old, static_cast<__value_type>(__new), __order, __scope);
+  ::cuda::std::__cuda_atomic_exchange_dispatch(
+    __backend, __ptr, __old, static_cast<__value_type>(__new), __order, __scope);
   return __old;
 }
 

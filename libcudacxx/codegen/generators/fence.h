@@ -83,7 +83,7 @@ __cuda_atomic_ptx_maybe_sc_fence(__cuda_atomic_ptx_order<_Order> __order, _Sco _
 {
   if (__order.__was_seq_cst)
   {
-    __cuda_atomic_fence(__scope, __cuda_atomic_order_seq_cst{});
+    ::cuda::std::__cuda_atomic_fence(__scope, __cuda_atomic_order_seq_cst{});
   }
 }
 
@@ -98,11 +98,11 @@ static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __cuda_atomic_order_seq_cst{}); break;
+        case __ATOMIC_SEQ_CST: ::cuda::std::__cuda_atomic_fence(_Sco{}, __cuda_atomic_order_seq_cst{}); break;
         case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: [[fallthrough]];
         case __ATOMIC_ACQ_REL: [[fallthrough]];
-        case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __cuda_atomic_order_acq_rel{}); break;
+        case __ATOMIC_RELEASE: ::cuda::std::__cuda_atomic_fence(_Sco{}, __cuda_atomic_order_acq_rel{}); break;
         case __ATOMIC_RELAXED: break;
         default: _CCCL_ASSERT(false, "invalid memory order");
       }
@@ -113,7 +113,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(
         case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: [[fallthrough]];
         case __ATOMIC_ACQ_REL: [[fallthrough]];
-        case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); break;
+        case __ATOMIC_RELEASE: ::cuda::std::__cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: break;
         default: _CCCL_ASSERT(false, "invalid memory order");
       }

@@ -55,12 +55,12 @@ _CCCL_HOST_DEVICE static bool __cuda_atomic_compare_exchange(
   static_assert(__rmw_size <= _Backend::__widest_cas, "atomic CAS cannot be widened beyond the backend's widest CAS");
 
   using __rmw_operand = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, __rmw_size>;
-  const auto __result = __cuda_atomic_rmw(
+  const auto __result = ::cuda::std::__cuda_atomic_rmw(
     __backend,
     __ptr,
     __cuda_atomic_compare_exchange_op<_Type>{__cmp, __op},
     __order,
-    __cuda_atomic_compare_exchange_initial_load_order(__order),
+    ::cuda::std::__cuda_atomic_compare_exchange_initial_load_order(__order),
     _Operand{},
     __rmw_operand{},
     __scope);
@@ -93,7 +93,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_add(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_add>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_sub(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_sub>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_and(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_and>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -135,7 +135,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_or(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_or>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -149,7 +149,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_xor(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_xor>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -163,7 +163,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_min(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_min>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -177,7 +177,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_fetch_max(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_fetch_max>{__op}, __order, _Operand{}, __scope);
 }
 
@@ -191,7 +191,7 @@ _CCCL_HOST_DEVICE static void __cuda_atomic_exchange(
   _Backend __backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order __order, _Operand, _Sco __scope)
 {
   using _ValueType = __unv<_Type>;
-  __dst            = __cuda_atomic_fetch_update(
+  __dst            = ::cuda::std::__cuda_atomic_fetch_update(
     __backend, __ptr, __cuda_atomic_op_bind<_ValueType, __cuda_atomic_op_store>{__op}, __order, _Operand{}, __scope);
 }
 _CCCL_END_NAMESPACE_CUDA_STD

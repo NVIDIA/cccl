@@ -54,6 +54,7 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/generic.h>
+#include <cuda/std/__atomic/functions/host.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
 #include <cuda/std/__atomic/functions/cuda_local.h>
 
