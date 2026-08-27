@@ -79,6 +79,8 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build_nolid', 'build_lid0', 'build_lid1', 'build_lid2'], project: 'cub', std: 'minmax', ctk: '13.3', cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build'], project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '13.3', cxx: ['gcc', 'clang', 'msvc']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
