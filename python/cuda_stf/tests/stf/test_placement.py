@@ -293,6 +293,45 @@ def test_placement_evaluate_all_mapper_forms():
     assert s_callable.bytes_per_grid_index == s_native.bytes_per_grid_index
 
 
+def test_placement_evaluate_misaligned_majority():
+    """An ownership boundary inside a placement block exercises the sampled
+    majority vote: the straddling block goes to the owner of most of it and
+    accuracy drops below 1. The rank-2 row mapper also pins the C-order
+    contract at rank > 1: with transposed coordinates the owner index would
+    be a column index, far outside the grid, and the callback's range check
+    would fail the evaluation loudly."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    rows, cols = 4, 768 * 1024  # 3 MiB of 1-byte elements
+    block = 2 * MiB
+
+    def row_blocked(data_coords, data_dims, grid_dims):
+        # Rows 0-1 to place 0, rows 2-3 to place 1 (public axis 0 = rows)
+        return (data_coords[0] // 2,)
+
+    s = stf.placement_evaluate(
+        grid, row_blocked, (rows, cols), elemsize=1, probes=100, block_size=block
+    )
+    # Two blocks: [0, 2 MiB) straddles the 1.5 MiB ownership boundary (3/4 of
+    # it belongs to place 0), [2 MiB, 3 MiB) is entirely place 1. Blocks are
+    # attributed at full block granularity.
+    assert s.total_bytes == 3 * MiB
+    assert s.vm_bytes == 4 * MiB
+    assert s.nblocks == 2
+    assert s.nallocs == 2
+    assert s.bytes_per_grid_index == [2 * MiB, 2 * MiB]
+    # The straddled block's majority holds at least half of its samples and
+    # the aligned block matches fully, so accuracy lands in [0.75, 1). The
+    # exact value depends on the standard library's distribution mapping, so
+    # only the bounds are asserted; the upper bound is strict up to the
+    # ~0.75**100 chance that every probe of the straddled block lands on one
+    # side of the boundary.
+    assert s.total_samples == 200
+    assert 0.75 <= s.accuracy < 1.0
+
+
 def test_partition_fn_returns_typed_wrapper():
     """Native partitioners are typed (not bare ints) so composite() can tell
     them apart from Python callables; int() still exposes the raw pointer."""
