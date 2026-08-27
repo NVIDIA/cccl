@@ -665,7 +665,8 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
     policy.lookback.scan_algorithm,
     delay_constructor_t<policy.lookback.lookback_delay.kind,
                         policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
+                        policy.lookback.lookback_delay.l2_write_latency>,
+    /* StableReductionOrder */ true>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
@@ -801,7 +802,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       ReductionOpT,
       OffsetT,
       AccumT,
-      streaming_context_t>;
+      streaming_context_t,
+      /* StableReductionOrder */ true>;
 
     int reduce_by_key_sm_occupancy{};
     if (const auto error =
