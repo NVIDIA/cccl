@@ -35,6 +35,7 @@ Checks:
   # This is just noise
   - '-bugprone-signed-char-misuse'
   - '-bugprone-multi-level-implicit-pointer-conversion'
+  - 'misc-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
