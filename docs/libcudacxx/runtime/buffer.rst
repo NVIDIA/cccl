@@ -97,7 +97,7 @@ In each case the memory is allocated and initialized in stream order on the prov
    Construction from host iterators or host ranges is stream-ordered: the copy from the source is enqueued on the
    provided stream. The source memory must remain valid until that copy completes on the stream, not just until the
    constructor returns. This follows the same ordering rules as other asynchronous work submitted to a
-   `CUDA stream <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__.
+   `CUDA stream <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#cuda-streams>`__.
 
    Avoid returning a buffer constructed from a temporary host source:
 

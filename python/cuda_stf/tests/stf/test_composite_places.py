@@ -132,6 +132,9 @@ class TestCompositeDataPlace:
         grid = stf.exec_place_grid.from_devices([0])
         with pytest.raises(TypeError, match="callable"):
             stf.data_place.composite(grid, "not a function")
+        raw_pointer = int(stf.partition_fn_blocked())
+        with pytest.raises(TypeError, match="native_partition_fn"):
+            stf.data_place.composite(grid, raw_pointer)
 
     def test_current_device_factories(self):
         ep = stf.exec_place.current_device()
@@ -178,6 +181,37 @@ class TestCompositeTask:
         ctx.finalize()
         for i in range(N):
             assert X[i] == float(i)
+
+    def test_numpy_integer_mapper_result(self):
+        """NumPy integer scalars satisfy the 1-D mapper result contract."""
+        grid = stf.exec_place_grid.from_devices([0, 0])
+
+        def numpy_mapper(data_coords, data_dims, grid_dims):
+            return np.int64(0)
+
+        dplace = stf.data_place.composite(grid, numpy_mapper, data_rank=1)
+        ctx = stf.context()
+        X = np.zeros(8, dtype=np.float32)
+        lX = ctx.logical_data(X)
+        with ctx.task(stf.exec_place.device(0), lX.rw(dplace)):
+            pass
+        ctx.finalize()
+
+    def test_rank2_mapper_rejected_on_task_backed_data(self):
+        """The flat task path must not reinterpret byte offsets as rank-2
+        element coordinates."""
+        grid = stf.exec_place_grid.from_devices([0, 0])
+
+        def rank2_mapper(data_coords, data_dims, grid_dims):
+            return 0
+
+        dplace = stf.data_place.composite(grid, rank2_mapper, data_rank=2)
+        ctx = stf.context()
+        X = np.zeros((2, 4), dtype=np.float32)
+        lX = ctx.logical_data(X)
+        with pytest.raises(ValueError, match="flat rank-1 byte buffer"):
+            ctx.task(stf.exec_place.device(0), lX.rw(dplace))
+        ctx.finalize()
 
     def test_affine_with_grid(self):
         """Grid with affine data place set; deps use the default (affine) placement."""

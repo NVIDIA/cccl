@@ -35,8 +35,8 @@ inline std::string mmio(Mmio m)
 inline std::string mmio_tag(Mmio m)
 {
   static const char* mmio_map[]{
-    "__atomic_cuda_mmio_disable",
-    "__atomic_cuda_mmio_enable",
+    "__cuda_atomic_mmio_disable",
+    "__cuda_atomic_mmio_enable",
   };
   return mmio_map[std::underlying_type_t<Mmio>(m)];
 }
@@ -143,12 +143,12 @@ inline std::string semantic(Semantic sem)
 inline std::string semantic_tag(Semantic sem)
 {
   static std::map sem_map = {
-    std::pair{Semantic::Relaxed, "__atomic_cuda_relaxed"},
-    std::pair{Semantic::Release, "__atomic_cuda_release"},
-    std::pair{Semantic::Acquire, "__atomic_cuda_acquire"},
-    std::pair{Semantic::Acq_Rel, "__atomic_cuda_acq_rel"},
-    std::pair{Semantic::Seq_Cst, "__atomic_cuda_seq_cst"},
-    std::pair{Semantic::Volatile, "__atomic_cuda_volatile"},
+    std::pair{Semantic::Relaxed, "__cuda_atomic_order_relaxed"},
+    std::pair{Semantic::Release, "__cuda_atomic_order_release"},
+    std::pair{Semantic::Acquire, "__cuda_atomic_order_acquire"},
+    std::pair{Semantic::Acq_Rel, "__cuda_atomic_order_acq_rel"},
+    std::pair{Semantic::Seq_Cst, "__cuda_atomic_order_seq_cst"},
+    std::pair{Semantic::Volatile, "__cuda_atomic_order_volatile"},
   };
   return sem_map[sem];
 }

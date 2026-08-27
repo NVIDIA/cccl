@@ -22,8 +22,14 @@ _CUDA_STREAM_LEGACY_HANDLE = 1
 _CUDA_STREAM_PER_THREAD_HANDLE = 2
 _CUDA_STREAM_CAPTURE_STATUS_NONE = 0
 _CUDA_STREAM_CAPTURE_STATUS_ACTIVE = 1
-_CUDA_STREAM_IS_CAPTURING = "((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)"
+# The queries use the driver API. libcuda is always shared, so its symbols are
+# always present; the cudart equivalents are absent from a statically linked
+# runtime unless the program itself calls them, which silently drops a field.
+_CU_STREAM_IS_CAPTURING = "((int (*)(void*, int*))cuStreamIsCapturing)"
 _CU_STREAM_GET_ID = "((int (*)(void*, unsigned long long*))cuStreamGetId)"
+_CU_STREAM_GET_DEVICE = "((int (*)(void*, int*))cuStreamGetDevice)"
+_CU_STREAM_GET_PRIORITY = "((int (*)(void*, int*))cuStreamGetPriority)"
+_CU_STREAM_GET_FLAGS = "((int (*)(void*, unsigned int*))cuStreamGetFlags)"
 
 
 class StreamInfo(NamedTuple):
@@ -63,7 +69,7 @@ def _query_stream_property(handle: int, function: str, output_type: str) -> int 
         if address == 0:
             return None
         status = gdb.parse_and_eval(
-            f"(int){function}((cudaStream_t){handle:#x}, ({output_type}*){address:#x})"
+            f"(int){function}((void*){handle:#x}, ({output_type}*){address:#x})"
         )
         if int(status) != 0:
             return None
@@ -112,13 +118,15 @@ def _query_stream_id(handle: int) -> int | None:
     unique_id = _query_stream_property(handle, _CU_STREAM_GET_ID, "unsigned long long")
     if unique_id is not None:
         return unique_id
+    # cuStreamGetId needs a CUDA 12.0 driver. The runtime entry point is the only
+    # way to read the ID on an older one, when the program happens to keep it.
     return _query_stream_property(handle, "cudaStreamGetId", "unsigned long long")
 
 
 def _query_stream_device(handle: int) -> int | None:
-    # cudaStreamGetDevice is unavailable before CUDA 12.8. Reporting no device
-    # there is safer than changing the current CUDA context from a formatter.
-    return _query_stream_property(handle, "cudaStreamGetDevice", "int")
+    # cuStreamGetDevice arrived in CUDA 12.8. Reporting no device on an older
+    # driver is safer than changing the current CUDA context from a formatter.
+    return _query_stream_property(handle, _CU_STREAM_GET_DEVICE, "int")
 
 
 def _stream_info(handle_value: gdb.Value) -> StreamInfo:
@@ -134,9 +142,7 @@ def _stream_info(handle_value: gdb.Value) -> StreamInfo:
         return StreamInfo(handle, description, None, None, None, None, None)
 
     try:
-        capture_status = _query_stream_property(
-            handle, _CUDA_STREAM_IS_CAPTURING, "int"
-        )
+        capture_status = _query_stream_property(handle, _CU_STREAM_IS_CAPTURING, "int")
         is_capturing = (
             capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
             if capture_status is not None
@@ -152,9 +158,9 @@ def _stream_info(handle_value: gdb.Value) -> StreamInfo:
             description,
             _query_stream_id(handle),
             _query_stream_device(handle),
-            _query_stream_property(handle, "cudaStreamGetPriority", "int"),
+            _query_stream_property(handle, _CU_STREAM_GET_PRIORITY, "int"),
             is_capturing,
-            _query_stream_property(handle, "cudaStreamGetFlags", "unsigned int"),
+            _query_stream_property(handle, _CU_STREAM_GET_FLAGS, "unsigned int"),
         )
     finally:
         if original_context == 0:

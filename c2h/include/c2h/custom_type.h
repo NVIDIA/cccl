@@ -67,6 +67,12 @@ struct huge_data
     // Where the filler starts, i.e. where the bases in front of it end
     static constexpr std::size_t bytes_before_filler = sizeof(custom_type_state_t) + other_policy_bytes;
 
+    // A second huge_data policy, or any policy contributing more than its one-byte MSVC workaround
+    // member, breaks the one-byte-per-policy assumption above and underflows the filler size below.
+    static_assert(bytes_before_filler <= object_bytes,
+                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be at "
+                  "least as large as custom_type_state_t plus one byte per remaining policy");
+
     // Whatever the other bases leave over becomes the filler
     std::uint8_t data[object_bytes - bytes_before_filler]{};
   };
