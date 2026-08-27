@@ -38,9 +38,9 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<TYPE, SCOPE>& atom, cuda
 ; SCALED: {{.*}}SHF.L.U64{{.*}}, {{R[0-9]+}}{{(\.reuse)?}}, 0x2{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
+; MEMBAR-DAG: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; SUB-DAG: {{.*}}{{(IADD3|IADD(\.64)?|LEA)}} [[OPERAND:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
-; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
-; NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}

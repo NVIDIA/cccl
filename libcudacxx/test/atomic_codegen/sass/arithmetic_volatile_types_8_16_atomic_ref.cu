@@ -39,9 +39,9 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] [[EXPECTED:R[0-9]+]], {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; ADD-NOT: {{.*}}{{IADD3|IADD|IMAD\.IADD}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
+; ADD-NOT: {{.*}}{{IADD3|IADD|IMAD\.IADD|IMAD\.MOV}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
 ; ADD: {{.*}}{{IADD3|IADD|IMAD\.IADD}}{{.*}}
-; SUB: {{.*}}{{IADD3|IADD|IMAD\.IADD}} [[SUB_VALUE:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
+; SUB: {{.*}}{{IADD3|IADD|IMAD\.IADD|IMAD\.MOV}} [[SUB_VALUE:R[0-9]+]], {{.*}}-{{R[0-9]+}}{{.*}}
 ; SUB: {{.*}}{{IADD3|IADD|IMAD\.IADD|PRMT|LOP3\.LUT}} {{R[0-9]+}}, {{.*}}[[SUB_VALUE]]{{.*}}
 ; MIN: {{.*}}IMNMX{{.*}}
 ; MAX: {{.*}}IMNMX{{.*}}
