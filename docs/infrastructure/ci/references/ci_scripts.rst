@@ -44,14 +44,11 @@ Testing Python in a minimal container
 -------------------------------------
 
 ``cuda.compute`` is meant to work with nothing installed beyond its declared pip
-dependencies -- no host compiler and no system CUDA toolkit. The devcontainer supplies
-both, so a test running there cannot distinguish "we depend only on our wheels" from "we
-happened to find ``gcc`` and ``/usr/local/cuda`` lying around".
+dependencies.
 
 The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
 and then run the test payload in a sibling container holding nothing but Python, launched
-through the host's docker daemon -- by ``ci/util/python/run_in_minimal_container.sh`` on
-Linux and ``ci/windows/run_in_minimal_container.ps1`` on Windows. This is the same
+through the host's docker daemon. This is the same
 docker-outside-of-docker arrangement the wheel builds already use. An undeclared
 dependency fails there instead of passing silently. The same applies to both the v1
 (NVRTC) and v2 (HostJIT) backends.
@@ -61,9 +58,6 @@ the driver reports, since ``--gpus all`` would reach GPUs belonging to other job
 shared runner. Windows exposes GPUs as a whole device class and only under process
 isolation, and its image must match the host kernel -- the devcontainer images are
 LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:ltsc2022``.
-Neither image ships the interpreter the lane asked for: ``uv`` installs that, exactly as it
-does in the devcontainer. The Linux image supplies a Python only to bootstrap ``uv``;
-Server Core has none at all.
 
 Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc++,
 because every C/C++ Python extension links against them; Server Core ships neither of
