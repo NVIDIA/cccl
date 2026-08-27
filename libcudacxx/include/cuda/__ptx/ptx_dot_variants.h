@@ -132,10 +132,26 @@ enum class dot_kind
   tf32
 };
 
+enum class dot_layout
+{
+  v0,
+  v1
+};
+
 enum class dot_phase_type
 {
   primary,
   conditional
+};
+
+enum class dot_report_mechanism
+{
+  disabled,
+  per_16bytes_80000000,
+  per_16bytes_8000,
+  per_16bytes_80,
+  per_16bytes_8,
+  per_element_ff,
 };
 
 template <dot_sem __sem>
@@ -235,8 +251,34 @@ using mbarrier_phase_conditional_t = mbarrier_phase_t<dot_phase_type::conditiona
 [[maybe_unused]] static constexpr mbarrier_phase_primary_t mbarrier_phase_primary{};
 [[maybe_unused]] static constexpr mbarrier_phase_conditional_t mbarrier_phase_conditional{};
 
+template <dot_layout __layout>
+using layout_t = ::cuda::std::integral_constant<dot_layout, __layout>;
+
+using layout_v0_t = layout_t<dot_layout::v0>;
+using layout_v1_t = layout_t<dot_layout::v1>;
+
+[[maybe_unused]] static constexpr layout_v0_t layout_v0{};
+[[maybe_unused]] static constexpr layout_v1_t layout_v1{};
+
 template <int n>
 using n32_t = ::cuda::std::integral_constant<int, n>;
+
+template <dot_report_mechanism __report_mechanism>
+using report_mechanism_t         = ::cuda::std::integral_constant<dot_report_mechanism, __report_mechanism>;
+using mbarrier_report_disabled_t = report_mechanism_t<dot_report_mechanism::disabled>;
+using mbarrier_report_valid_per_16bytes_80000000_t = report_mechanism_t<dot_report_mechanism::per_16bytes_80000000>;
+using mbarrier_report_valid_per_16bytes_8000_t     = report_mechanism_t<dot_report_mechanism::per_16bytes_8000>;
+using mbarrier_report_valid_per_16bytes_80_t       = report_mechanism_t<dot_report_mechanism::per_16bytes_80>;
+using mbarrier_report_valid_per_16bytes_8_t        = report_mechanism_t<dot_report_mechanism::per_16bytes_8>;
+using mbarrier_report_valid_per_element_ff_t       = report_mechanism_t<dot_report_mechanism::per_element_ff>;
+
+[[maybe_unused]] static constexpr mbarrier_report_disabled_t mbarrier_report_disabled{};
+[[maybe_unused]] static constexpr mbarrier_report_valid_per_16bytes_80000000_t
+  mbarrier_report_valid_per_16bytes_80000000{};
+[[maybe_unused]] static constexpr mbarrier_report_valid_per_16bytes_8000_t mbarrier_report_valid_per_16bytes_8000{};
+[[maybe_unused]] static constexpr mbarrier_report_valid_per_16bytes_80_t mbarrier_report_valid_per_16bytes_80{};
+[[maybe_unused]] static constexpr mbarrier_report_valid_per_16bytes_8_t mbarrier_report_valid_per_16bytes_8{};
+[[maybe_unused]] static constexpr mbarrier_report_valid_per_element_ff_t mbarrier_report_valid_per_element_ff{};
 
 _CCCL_END_NAMESPACE_CUDA_PTX
 
