@@ -10,21 +10,87 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstdlib>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 using namespace cuda::experimental::stf;
 
-static ::std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode_t root)
+// Dependency structure of one CUDA graph, captured once so that repeated
+// reachability queries do not re-enumerate edges through the CUDA API.
+class graph_topology
 {
-  ::std::unordered_set<cudaGraphNode_t> visited;
-  ::std::vector<cudaGraphNode_t> pending{root};
-
-  while (!pending.empty())
+public:
+  explicit graph_topology(cudaGraph_t graph)
+      : graph_(graph)
   {
-    cudaGraphNode_t node = pending.back();
-    pending.pop_back();
+    size_t count = 0;
+    cuda_safe_call(cudaGraphGetNodes(graph, nullptr, &count));
+    nodes_.resize(count);
+    cuda_safe_call(cudaGraphGetNodes(graph, nodes_.data(), &count));
 
+    for (cudaGraphNode_t node : nodes_)
+    {
+      direct_deps_[node] = direct_dependencies(node);
+    }
+  }
+
+  ::std::vector<cudaGraphNode_t> nodes_of_type(cudaGraphNodeType type) const
+  {
+    ::std::vector<cudaGraphNode_t> result;
+    for (cudaGraphNode_t node : nodes_)
+    {
+      cudaGraphNodeType node_type;
+      cuda_safe_call(cudaGraphNodeGetType(node, &node_type));
+      if (node_type == type)
+      {
+        result.push_back(node);
+      }
+    }
+    return result;
+  }
+
+  ::std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode_t root) const
+  {
+    ::std::unordered_set<cudaGraphNode_t> visited;
+    ::std::vector<cudaGraphNode_t> pending{root};
+
+    while (!pending.empty())
+    {
+      cudaGraphNode_t node = pending.back();
+      pending.pop_back();
+
+      const auto it = direct_deps_.find(node);
+      if (it == direct_deps_.end())
+      {
+        continue;
+      }
+      for (cudaGraphNode_t dependency : it->second)
+      {
+        if (visited.insert(dependency).second)
+        {
+          pending.push_back(dependency);
+        }
+      }
+    }
+
+    visited.erase(root);
+    return visited;
+  }
+
+  // Write a DOT dump of the graph next to the test binary so that a topology
+  // failure in CI can be diagnosed from the artifact rather than reproduced.
+  void dump_dot(const char* label) const
+  {
+    ::std::string filename = ::std::string("sibling_scope_dependencies-") + label + ".dot";
+    cuda_safe_call(cudaGraphDebugDotPrint(graph_, filename.c_str(), cudaGraphDebugDotFlagsVerbose));
+    fprintf(stderr, "graph topology check '%s' failed, graph dumped to %s\n", label, filename.c_str());
+  }
+
+private:
+  static ::std::vector<cudaGraphNode_t> direct_dependencies(cudaGraphNode_t node)
+  {
     size_t count = 0;
 #if _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, nullptr, &count));
@@ -38,54 +104,61 @@ static ::std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNo
 #else
     cuda_safe_call(cudaGraphNodeGetDependencies(node, dependencies.data(), &count));
 #endif
-    for (cudaGraphNode_t dependency : dependencies)
-    {
-      if (visited.insert(dependency).second)
-      {
-        pending.push_back(dependency);
-      }
-    }
+    return dependencies;
   }
 
-  visited.erase(root);
-  return visited;
-}
+  cudaGraph_t graph_;
+  ::std::vector<cudaGraphNode_t> nodes_;
+  ::std::unordered_map<cudaGraphNode_t, ::std::vector<cudaGraphNode_t>> direct_deps_;
+};
 
-static ::std::vector<cudaGraphNode_t> nodes_of_type(cudaGraph_t graph, cudaGraphNodeType type)
+static void check_or_dump(const graph_topology& topology, bool condition, const char* label)
 {
-  size_t count = 0;
-  cuda_safe_call(cudaGraphGetNodes(graph, nullptr, &count));
-  ::std::vector<cudaGraphNode_t> nodes(count);
-  cuda_safe_call(cudaGraphGetNodes(graph, nodes.data(), &count));
-
-  ::std::vector<cudaGraphNode_t> result;
-  for (cudaGraphNode_t node : nodes)
+  if (!condition)
   {
-    cudaGraphNodeType node_type;
-    cuda_safe_call(cudaGraphNodeGetType(node, &node_type));
-    if (node_type == type)
+    topology.dump_dot(label);
+  }
+  EXPECT(condition);
+}
+
+// The two sibling nodes of the given type must not depend on each other, yet
+// must both depend on at least one common node. The second condition keeps
+// the test honest: independence alone would also hold if the scopes stopped
+// sharing their input entirely, and the check would pass vacuously.
+static void expect_independent(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
+{
+  const graph_topology topology(graph);
+  auto siblings = topology.nodes_of_type(type);
+  check_or_dump(topology, siblings.size() == 2, label);
+
+  const auto deps0 = topology.transitive_dependencies(siblings[0]);
+  const auto deps1 = topology.transitive_dependencies(siblings[1]);
+  check_or_dump(topology, deps0.count(siblings[1]) == 0, label);
+  check_or_dump(topology, deps1.count(siblings[0]) == 0, label);
+
+  bool share_an_ancestor = false;
+  for (cudaGraphNode_t node : deps0)
+  {
+    if (deps1.count(node) != 0)
     {
-      result.push_back(node);
+      share_an_ancestor = true;
+      break;
     }
   }
-  return result;
+  check_or_dump(topology, share_an_ancestor, label);
 }
 
-static void expect_independent(cudaGraph_t graph, cudaGraphNodeType type)
+// Exactly one of the two sibling nodes of the given type must transitively
+// depend on the other.
+static void expect_ordered(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
 {
-  auto siblings = nodes_of_type(graph, type);
-  EXPECT(siblings.size() == 2);
-  EXPECT(transitive_dependencies(siblings[0]).count(siblings[1]) == 0);
-  EXPECT(transitive_dependencies(siblings[1]).count(siblings[0]) == 0);
-}
+  const graph_topology topology(graph);
+  auto siblings = topology.nodes_of_type(type);
+  check_or_dump(topology, siblings.size() == 2, label);
 
-static void expect_ordered(cudaGraph_t graph, cudaGraphNodeType type)
-{
-  auto siblings = nodes_of_type(graph, type);
-  EXPECT(siblings.size() == 2);
-  const bool first_before_second = transitive_dependencies(siblings[1]).count(siblings[0]) != 0;
-  const bool second_before_first = transitive_dependencies(siblings[0]).count(siblings[1]) != 0;
-  EXPECT(first_before_second != second_before_first);
+  const bool first_before_second = topology.transitive_dependencies(siblings[1]).count(siblings[0]) != 0;
+  const bool second_before_first = topology.transitive_dependencies(siblings[0]).count(siblings[1]) != 0;
+  check_or_dump(topology, first_before_second != second_before_first, label);
 }
 
 static void test_graph_scopes()
@@ -114,7 +187,53 @@ static void test_graph_scopes()
       };
     }
 
-    expect_independent(outer.graph(), cudaGraphNodeTypeGraph);
+    expect_independent(outer.graph(), cudaGraphNodeTypeGraph, "graph_scopes");
+    outer.launch();
+  }
+
+  ctx.finalize();
+  EXPECT(a[0] == input[0]);
+  EXPECT(b[0] == input[0]);
+}
+
+// Same shape as test_graph_scopes, but each sibling reads the shared input
+// from a doubly-nested scope whose intermediate level never touches the data.
+// This exercises the multi-hop import walk in validate_access: the read-only
+// mode inherited from the outer freeze must propagate through the intermediate
+// scope rather than escalate to rw.
+static void test_nested_graph_scopes()
+{
+  stackable_ctx ctx;
+  int input[1] = {42};
+  int a[1]     = {0};
+  int b[1]     = {0};
+  auto din     = ctx.logical_data(input);
+  auto da      = ctx.logical_data(a);
+  auto db      = ctx.logical_data(b);
+
+  {
+    stackable_ctx::launchable_graph_scope outer{ctx};
+    din.push(access_mode::read, data_place::current_device());
+    {
+      auto mid = ctx.graph_scope();
+      {
+        auto inner = ctx.graph_scope();
+        ctx.parallel_for(box(1), din.read(), da.write())->*[] __device__(size_t, auto in, auto out) {
+          out(0) = in(0);
+        };
+      }
+    }
+    {
+      auto mid = ctx.graph_scope();
+      {
+        auto inner = ctx.graph_scope();
+        ctx.parallel_for(box(1), din.read(), db.write())->*[] __device__(size_t, auto in, auto out) {
+          out(0) = in(0);
+        };
+      }
+    }
+
+    expect_independent(outer.graph(), cudaGraphNodeTypeGraph, "nested_graph_scopes");
     outer.launch();
   }
 
@@ -144,13 +263,85 @@ static void test_shared_data_graph_scopes()
       };
     }
 
-    expect_ordered(outer.graph(), cudaGraphNodeTypeGraph);
+    expect_ordered(outer.graph(), cudaGraphNodeTypeGraph, "shared_data_graph_scopes");
     outer.launch();
   }
 
   ctx.finalize();
   EXPECT(value[0] == 2);
 }
+
+// Documents current behavior rather than desirable behavior: a root-created
+// logical data that no scope pushed read-only is imported eagerly in rw mode
+// by the first sibling (avoiding a re-push if a later scope writes), so two
+// read-only siblings still serialize. If the read-only inheritance in
+// validate_access is ever extended to root data, this should flip to
+// expect_independent, deliberately.
+static void test_root_read_graph_scopes()
+{
+  stackable_ctx ctx;
+  int input[1] = {42};
+  int a[1]     = {0};
+  int b[1]     = {0};
+  auto din     = ctx.logical_data(input);
+  auto da      = ctx.logical_data(a);
+  auto db      = ctx.logical_data(b);
+
+  {
+    stackable_ctx::launchable_graph_scope outer{ctx};
+    {
+      auto sibling = ctx.graph_scope();
+      ctx.parallel_for(box(1), din.read(), da.write())->*[] __device__(size_t, auto in, auto out) {
+        out(0) = in(0);
+      };
+    }
+    {
+      auto sibling = ctx.graph_scope();
+      ctx.parallel_for(box(1), din.read(), db.write())->*[] __device__(size_t, auto in, auto out) {
+        out(0) = in(0);
+      };
+    }
+
+    expect_ordered(outer.graph(), cudaGraphNodeTypeGraph, "root_read_graph_scopes");
+    outer.launch();
+  }
+
+  ctx.finalize();
+  EXPECT(a[0] == input[0]);
+  EXPECT(b[0] == input[0]);
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+// Number of kernel nodes in a graph, descending into child graphs. Conditional
+// bodies wrap their work in child graph nodes, so a flat count would miss it.
+static size_t count_kernel_nodes_recursive(cudaGraph_t graph)
+{
+  const graph_topology topology(graph);
+  size_t count = topology.nodes_of_type(cudaGraphNodeTypeKernel).size();
+  for (cudaGraphNode_t child : topology.nodes_of_type(cudaGraphNodeTypeGraph))
+  {
+    cudaGraph_t child_graph;
+    cuda_safe_call(cudaGraphChildGraphNodeGetGraph(child, &child_graph));
+    count += count_kernel_nodes_recursive(child_graph);
+  }
+  return count;
+}
+
+// The independence check alone would also pass if the conditional bodies came
+// out empty; require that each body actually contains a kernel.
+static void expect_nonempty_conditional_bodies(cudaGraph_t graph)
+{
+  const graph_topology topology(graph);
+  for (cudaGraphNode_t node : topology.nodes_of_type(cudaGraphNodeTypeConditional))
+  {
+    cudaGraphNodeParams params{};
+    cuda_safe_call(cudaGraphNodeGetParams(node, &params));
+    EXPECT(params.type == cudaGraphNodeTypeConditional);
+    EXPECT(params.conditional.size >= 1);
+    EXPECT(count_kernel_nodes_recursive(params.conditional.phGraph_out[0]) > 0);
+  }
+}
+#endif
 
 static void test_while_graph_scopes()
 {
@@ -185,7 +376,8 @@ static void test_while_graph_scopes()
       };
     }
 
-    expect_independent(outer.graph(), cudaGraphNodeTypeConditional);
+    expect_independent(outer.graph(), cudaGraphNodeTypeConditional, "while_graph_scopes");
+    expect_nonempty_conditional_bodies(outer.graph());
     outer.launch();
   }
 
@@ -198,6 +390,8 @@ static void test_while_graph_scopes()
 int main()
 {
   test_graph_scopes();
+  test_nested_graph_scopes();
   test_shared_data_graph_scopes();
+  test_root_read_graph_scopes();
   test_while_graph_scopes();
 }
