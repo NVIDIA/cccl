@@ -79,10 +79,19 @@ public:
     return visited;
   }
 
-  // Write a DOT dump of the graph next to the test binary so that a topology
-  // failure in CI can be diagnosed from the artifact rather than reproduced.
+  // On failure, dump a DOT of the graph for diagnosis. Gated behind the
+  // usual STF debug variables so a plain run (CI included) creates no files;
+  // the failure message names the switch instead.
   void dump_dot(const char* label) const
   {
+    const bool enabled =
+      (getenv("CUDASTF_DUMP_GRAPHS") != nullptr) || (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
+    if (!enabled)
+    {
+      fprintf(
+        stderr, "graph topology check '%s' failed; rerun with CUDASTF_DUMP_GRAPHS=1 to dump the graph as DOT\n", label);
+      return;
+    }
     ::std::string filename = ::std::string("sibling_scope_dependencies-") + label + ".dot";
     cuda_safe_call(cudaGraphDebugDotPrint(graph_, filename.c_str(), cudaGraphDebugDotFlagsVerbose));
     fprintf(stderr, "graph topology check '%s' failed, graph dumped to %s\n", label, filename.c_str());
