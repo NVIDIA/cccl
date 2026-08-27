@@ -140,9 +140,11 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return ::cuda::std::__copy<_ClassicAlgPolicy>(
-           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
-    .second;
+  return ::cuda::std::__rewrap_iter(
+    __result,
+    ::cuda::std::__copy<_ClassicAlgPolicy>(
+      ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
+      .second);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
