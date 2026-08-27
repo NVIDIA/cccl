@@ -45,12 +45,6 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
   static_assert(__is_load || __is_store || __is_rmw, "invalid atomic operation class");
 
   constexpr bool __is_seq_cst = is_same_v<_Order, __cuda_atomic_order_seq_cst>;
-  constexpr bool __is_release = is_same_v<_Order, __cuda_atomic_order_release>;
-  constexpr bool __is_acq_rel = is_same_v<_Order, __cuda_atomic_order_acq_rel>;
-  constexpr bool __is_acquire = is_same_v<_Order, __cuda_atomic_order_acquire>;
-  constexpr bool __membar_before =
-    __is_seq_cst || (__is_store && __is_release) || (__is_rmw && (__is_release || __is_acq_rel));
-  constexpr bool __membar_after = (__is_load || __is_rmw) && (__is_acquire || __is_acq_rel || __is_seq_cst);
 
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70,
@@ -73,6 +67,13 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
     }),
     NV_IS_DEVICE,
     ({
+      constexpr bool __is_release = is_same_v<_Order, __cuda_atomic_order_release>;
+      constexpr bool __is_acq_rel = is_same_v<_Order, __cuda_atomic_order_acq_rel>;
+      constexpr bool __is_acquire = is_same_v<_Order, __cuda_atomic_order_acquire>;
+      constexpr bool __membar_before =
+        __is_seq_cst || (__is_store && __is_release) || (__is_rmw && (__is_release || __is_acq_rel));
+      constexpr bool __membar_after = (__is_load || __is_rmw) && (__is_acquire || __is_acq_rel || __is_seq_cst);
+
       if constexpr (__membar_before)
       {
         ::cuda::std::__cuda_atomic_membar(__scope);
