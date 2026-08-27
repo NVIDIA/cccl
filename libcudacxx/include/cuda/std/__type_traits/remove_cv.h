@@ -29,10 +29,6 @@
 #  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(remove_cv) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 14)
 
-#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3) // nvcc < 13.3 fails to compile cudax launch configurations
-#  undef _CCCL_BUILTIN_REMOVE_CV
-#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
