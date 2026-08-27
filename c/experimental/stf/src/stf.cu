@@ -42,6 +42,14 @@ static_assert(sizeof(pos4) == sizeof(stf_pos4), "pos4 and stf_pos4 must have ide
 static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have identical layout for C/C++ interop");
 static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
 static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
+// The coordinate structs cross the C boundary through bit_cast, which requires
+// both sides to be trivially copyable. Note this licenses converting the
+// structs only: it says nothing about casting between function types that
+// differ in their parameter types, which the mapper adapters avoid doing.
+static_assert(::std::is_trivially_copyable_v<pos4> && ::std::is_trivially_copyable_v<stf_pos4>,
+              "pos4 and stf_pos4 must be trivially copyable to convert via bit_cast");
+static_assert(::std::is_trivially_copyable_v<dim4> && ::std::is_trivially_copyable_v<stf_dim4>,
+              "dim4 and stf_dim4 must be trivially copyable to convert via bit_cast");
 
 template <class T, class = void>
 struct is_complete : ::std::false_type
@@ -841,9 +849,21 @@ int stf_placement_evaluate(
   ::std::memcpy(&dims, data_dims, sizeof(dims));
   try
   {
-    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+    // Adapt the C callback rather than casting it to partition_fn_t: the two
+    // function types differ in their parameter types, so the cast would not
+    // yield a compatible function type. The coordinate structs themselves are
+    // layout-identical (static_asserted above), so bit_cast converts them.
+    const dim4 grid_dims = grid_ptr->get_dims();
+    const auto stats     = ::cuda::experimental::places::evaluate_localized_placement(
       *grid_ptr,
-      reinterpret_cast<partition_fn_t>(mapper),
+      [mapper, dims, grid_dims](size_t index) {
+        stf_pos4 result{};
+        mapper(&result,
+               ::std::bit_cast<stf_pos4>(dims.index_to_pos(index)),
+               ::std::bit_cast<stf_dim4>(dims),
+               ::std::bit_cast<stf_dim4>(grid_dims));
+        return ::std::bit_cast<pos4>(result);
+      },
       dims,
       elemsize,
       probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
