@@ -379,6 +379,11 @@ public:
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+  // The point of explicitly defining the destructor is to attach _CCCL_HOST_API to it. But we
+  // cannot = default it because nvcc doesn't let you attach host/device annotations to that,
+  // so we must define it normally.
+  _CCCL_HOST_API ~buffer() noexcept {} // NOLINT(modernize-use-equals-default)
+
   //! @brief Returns an iterator to the first element of the buffer. If the
   //! buffer is empty, the returned iterator will be equal to end().
   [[nodiscard]] _CCCL_HOST_API iterator begin() noexcept

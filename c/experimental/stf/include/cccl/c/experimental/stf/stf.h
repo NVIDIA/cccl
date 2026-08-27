@@ -466,6 +466,114 @@ void* stf_data_place_allocate_nd(
 
 //! \}
 
+//! \defgroup Placement Tensor placement description and evaluation
+//! \brief Structured partitions (cute_partition) and placement statistics
+//! \{
+
+//! \brief Opaque handle to a structured tensor partition (see
+//! stf_cute_partition_create()). Caller owns the handle; release with
+//! stf_cute_partition_destroy().
+typedef struct stf_cute_partition_opaque_t* stf_cute_partition_handle;
+
+//! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
+typedef enum stf_dim_policy
+{
+  STF_DIM_WHOLE        = 0, //!< dimension is not distributed
+  STF_DIM_BLOCKED      = 1, //!< contiguous chunks of ceil(extent / places)
+  STF_DIM_CYCLIC       = 2, //!< round-robin elements
+  STF_DIM_BLOCK_CYCLIC = 3 //!< round-robin blocks of a given size
+} stf_dim_policy;
+
+//! \brief Per-dimension entry of a JAX-like partition specification.
+typedef struct stf_partition_dim_spec
+{
+  int policy; //!< an stf_dim_policy value
+  int mesh_axis; //!< grid axis this dimension distributes over (ignored for STF_DIM_WHOLE)
+  uint64_t block; //!< block size (STF_DIM_BLOCK_CYCLIC only)
+} stf_partition_dim_spec;
+
+//! \brief Build a structured partition from a JAX-like per-dimension
+//! specification ("dimension 1, blocked over grid axis 0").
+//!
+//! Split dimensions are padded up to divisibility so the underlying layout is
+//! exact; coordinates beyond the true extents own no bytes (predication).
+//!
+//! \param true_dims True tensor extents (dimension 0 fastest; must not be NULL)
+//! \param grid_dims Extents of the grid of places (must not be NULL)
+//! \param spec      One entry per tensor dimension (must not be NULL)
+//! \param rank      Number of entries in \p spec (at most 4)
+//! \return New partition handle, or NULL on invalid input
+stf_cute_partition_handle stf_cute_partition_create(
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank);
+
+//! \brief Build a structured partition directly from flattened
+//! (extent, stride) leaves (expert form; see the C++ cute_partition docs).
+//! Strides are in linear element units over the padded extents, dimension 0
+//! fastest, leaf 0 fastest within each mode.
+//!
+//! \return New partition handle, or NULL if the leaves do not tile the padded
+//!         space exactly
+stf_cute_partition_handle stf_cute_partition_from_leaves(
+  const uint64_t* place_extents,
+  const int64_t* place_strides,
+  const int* place_axes,
+  size_t num_place_leaves,
+  const uint64_t* local_extents,
+  const int64_t* local_strides,
+  size_t num_local_leaves,
+  const stf_dim4* padded_dims,
+  const stf_dim4* true_dims,
+  const stf_dim4* grid_dims);
+
+//! \brief Destroy a partition handle (NULL is ignored).
+void stf_cute_partition_destroy(stf_cute_partition_handle h);
+
+//! \brief Get the true tensor extents of a partition.
+void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Get the padded tensor extents of a partition.
+void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Get the grid extents of a partition.
+void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Number of leaves in the place mode.
+size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h);
+
+//! \brief Number of leaves in the local mode.
+size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h);
+
+//! \brief Fill the place-mode leaves (arrays sized by
+//! stf_cute_partition_num_place_leaves(); any output may be NULL to skip).
+void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes);
+
+//! \brief Fill the local-mode leaves (arrays sized by
+//! stf_cute_partition_num_local_leaves(); any output may be NULL to skip).
+void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides);
+
+//! \brief Linear element offset (in the padded space) of a place's first
+//! element, given the place's linear index in place-mode order.
+//! Returns UINT64_MAX (with a diagnostic on stderr) if the index is out of
+//! range.
+uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index);
+
+//! \brief Grid position owning the element at the given data coordinates
+//! (closed-form; coordinates must be within the padded extents).
+//! Returns nonzero on failure (with a diagnostic on stderr).
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos);
+
+//! \brief Create a composite data place backed by a structured partition.
+//!
+//! Such a place is specific to one tensor (the partition's true extents):
+//! allocate with stf_data_place_allocate_nd() using those extents.
+//!
+//! \param grid      Grid of execution places (must not be NULL)
+//! \param partition Structured partition (must not be NULL; copied)
+//! \return New data place handle, or NULL on failure
+stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition);
+
+//! \}
+
 //! \defgroup Handles Opaque Handles
 //! \brief Opaque handle types for STF objects
 //! \{

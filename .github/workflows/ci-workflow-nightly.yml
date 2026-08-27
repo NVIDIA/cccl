@@ -217,21 +217,24 @@ jobs:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
 
-      - name: Render GitHub failure analysis
-        id: render-github
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
         uses: ./.github/actions/ci-failure-analysis-render
         with:
           analysis_file: ${{ steps.analyze.outputs.analysis_file }}
-          format: github
+          format: github-verbose-summary
 
       - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
         env:
-          GITHUB_REPORT: ${{ steps.render-github.outputs.content }}
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
         run: |
-          test -n "${GITHUB_REPORT}"
-          printf '%s\n' "${GITHUB_REPORT}" >> "${GITHUB_STEP_SUMMARY}"
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Render Slack failure analysis
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
         id: render-slack
         uses: ./.github/actions/ci-failure-analysis-render
         with:

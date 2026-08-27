@@ -227,7 +227,7 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
   using key_type    = c2h::get<0, TestType>;
   using mapped_type = c2h::get<1, TestType>;
 
-  using probing_t         = cudax::cuco::linear_probing<1, cudax::cuco::hash<key_type>>;
+  using probing_t         = cudax::cuco::linear_probing<1, cuda::hash<key_type>>;
   constexpr auto capacity = cudax::cuco::make_valid_capacity<probing_t, bucket>(::cuda::std::size_t{512});
   using map_type          = cudax::cuco::fixed_capacity_map<
     key_type,

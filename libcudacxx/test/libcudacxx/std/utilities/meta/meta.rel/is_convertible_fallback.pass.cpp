@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
+
 // type_traits
 
 // is_convertible
@@ -20,6 +22,4 @@
 #  pragma clang diagnostic ignored "-Wkeyword-compat"
 #endif
 
-#define _LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
 #include "is_convertible.pass.cpp"
-#include "test_macros.h"
