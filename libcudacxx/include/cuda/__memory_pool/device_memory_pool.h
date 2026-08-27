@@ -28,15 +28,12 @@
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__type_traits/is_trivially_destructible.h>
-
-#  if _CCCL_HOSTED()
-#    include <mutex>
-#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -95,11 +92,7 @@ public:
 
 struct __default_device_memory_pool
 {
-#  if _CCCL_HOSTED()
-  ::std::once_flag __once_{};
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-  bool __initialized_{false};
-#  endif // _CCCL_FREESTANDING()
+  __once_flag __once_{};
 
   union __storage_t
   {
@@ -117,23 +110,14 @@ struct __default_device_memory_pool
       &__storage_.__pool_,
       ::cuda::__get_default_memory_pool(
         ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED));
-#  if !_CCCL_HOSTED()
-    __initialized_ = true;
-#  endif // !_CCCL_HOSTED()
   }
 
   [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref& __get(::cuda::device_ref __device)
   {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__once_, [this, __device]() {
+    ::cuda::__call_once(__once_, [this, __device]() {
       this->__init(__device);
     });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    if (!__initialized_)
-    {
-      this->__init(__device);
-    }
-#  endif // _CCCL_FREESTANDING()
+
     return __storage_.__pool_;
   }
 };

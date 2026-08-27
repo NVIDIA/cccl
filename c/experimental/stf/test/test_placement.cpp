@@ -106,6 +106,15 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   const stf_pos4 coords_in_place_2{11, 0, 0, 0}; // padded coordinate, still owned
   REQUIRE(stf_cute_partition_owner(part, &coords_in_place_2, &owner_pos) == 0);
   REQUIRE(owner_pos.x == 2);
+  const stf_pos4 coords_out_of_range{12, 0, 0, 0};
+  REQUIRE(stf_cute_partition_owner(part, &coords_out_of_range, &owner_pos) != 0);
+  REQUIRE(stf_cute_partition_place_offset(part, 3) == UINT64_MAX);
+
+  const stf_partition_dim_spec bad_policy[1] = {{99, 0, 0}};
+  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, bad_policy, 1) == nullptr);
+  const stf_partition_dim_spec rank_five_spec[5] = {
+    {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}, {STF_DIM_WHOLE, 0, 0}};
+  REQUIRE(stf_cute_partition_create(&true_dims, &grid_dims, rank_five_spec, 5) == nullptr);
 
   // Rebuilding from the exported leaves must give an equivalent partition
   const stf_dim4 padded_dims{12, 1, 1, 1};

@@ -93,7 +93,7 @@ struct agent_t
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
     CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
 
-    alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
+    alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
 
     constexpr int number_of_vectors = ItemsPerThread / VecSize;

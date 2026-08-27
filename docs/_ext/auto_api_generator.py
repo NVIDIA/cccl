@@ -1216,6 +1216,10 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
 def generate_api_docs(app, config):
     """Generate API documentation pages during Sphinx build."""
 
+    if os.environ.get("CCCL_DOCS_SKIP_AUTO_API_GENERATOR") == "1":
+        logger.info("Skipping automatic API page generation")
+        return
+
     # Only generate for projects with breathe configuration
     if not hasattr(config, "breathe_projects"):
         return
