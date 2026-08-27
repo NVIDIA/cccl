@@ -275,7 +275,7 @@ public:
   template <typename F>
   localized_array(
     exec_place grid,
-    partition_fn_t mapper,
+    partition_mapper mapper,
     F&& delinearize,
     size_t total_size,
     size_t elemsize,
@@ -640,7 +640,7 @@ private:
   }
 
   exec_place grid;
-  partition_fn_t mapper = nullptr;
+  partition_mapper mapper;
   ::std::vector<metadata> meta;
 
   size_t block_size_bytes = 0;
@@ -764,8 +764,8 @@ inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_comp
 
 inline void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize)
 {
-  const exec_place& grid       = p.get_grid();
-  const partition_fn_t& mapper = p.get_partitioner();
+  const exec_place& grid         = p.get_grid();
+  const partition_mapper& mapper = p.get_partitioner();
   // Linear memory follows the dimension-0-fastest convention of
   // dim4::get_index(), like STF slices; the partitioner receives true element
   // coordinates within data_dims.
