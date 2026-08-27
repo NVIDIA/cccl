@@ -88,9 +88,10 @@ struct __cuda_atomic_ptx_backend
     }
   }
 
-  template <class _Operation, class _Fn, class _Order, class _Sco>
-  _CCCL_DEVICE_API static auto __with_transformed_order(_Operation, _Fn& __fn, _Order __order, _Sco __scope)
-    -> decltype(__fn(__order));
+  template <class _Operation, class _Fn, class _Order, class _Sco, class... _Args>
+  _CCCL_DEVICE_API static auto
+  __with_transformed_order(_Operation, _Fn& __fn, _Order __order, _Sco __scope, _Args... __args)
+    -> decltype(__fn(__order, __args..., __scope));
 
   static constexpr bool __needs_constant_order             = true;
   static constexpr bool __requires_local_memory_workaround = true;

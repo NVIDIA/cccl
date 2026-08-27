@@ -35,10 +35,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Operation, class _Fn, class _Order, class _Sco>
-_CCCL_DEVICE_API auto
-__cuda_atomic_ptx_backend::__with_transformed_order(_Operation, _Fn& __fn, _Order __order, _Sco __scope)
-  -> decltype(__fn(__order))
+template <class _Operation, class _Fn, class _Order, class _Sco, class... _Args>
+_CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
+  _Operation, _Fn& __fn, _Order __order, _Sco __scope, _Args... __args) -> decltype(__fn(__order, __args..., __scope))
 {
   constexpr bool __is_load  = is_same_v<_Operation, __cuda_atomic_operation_load>;
   constexpr bool __is_store = is_same_v<_Operation, __cuda_atomic_operation_store>;
@@ -60,16 +59,16 @@ __cuda_atomic_ptx_backend::__with_transformed_order(_Operation, _Fn& __fn, _Orde
       {
         if constexpr (__is_store)
         {
-          return __fn(__cuda_atomic_ptx_order_relaxed{true});
+          return __fn(__cuda_atomic_ptx_order_relaxed{true}, __args..., __scope);
         }
         else
         {
-          return __fn(__cuda_atomic_ptx_order_acquire{true});
+          return __fn(__cuda_atomic_ptx_order_acquire{true}, __args..., __scope);
         }
       }
       else
       {
-        return __fn(__transform_order(__order));
+        return __fn(__transform_order(__order), __args..., __scope);
       }
     }),
     NV_IS_DEVICE,
@@ -80,22 +79,22 @@ __cuda_atomic_ptx_backend::__with_transformed_order(_Operation, _Fn& __fn, _Orde
       }
       if constexpr (__membar_after)
       {
-        if constexpr (is_void_v<decltype(__fn(__cuda_atomic_order_volatile{}))>)
+        if constexpr (is_void_v<decltype(__fn(__cuda_atomic_order_volatile{}, __args..., __scope))>)
         {
-          __fn(__cuda_atomic_order_volatile{});
+          __fn(__cuda_atomic_order_volatile{}, __args..., __scope);
           __cuda_atomic_membar(__scope);
           return;
         }
         else
         {
-          auto __result = __fn(__cuda_atomic_order_volatile{});
+          auto __result = __fn(__cuda_atomic_order_volatile{}, __args..., __scope);
           __cuda_atomic_membar(__scope);
           return __result;
         }
       }
       else
       {
-        return __fn(__cuda_atomic_order_volatile{});
+        return __fn(__cuda_atomic_order_volatile{}, __args..., __scope);
       }
     }))
 }

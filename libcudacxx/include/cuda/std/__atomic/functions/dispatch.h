@@ -34,13 +34,13 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Backend, class _Fn, class _Sco>
+template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
-    __fn(__order);
+    __fn(__order, __args..., __scope);
   }
   else
   {
@@ -48,28 +48,28 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_relaxed{}, __scope);
+          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_relaxed{}, __scope, __args...);
       case __ATOMIC_CONSUME:
         [[fallthrough]];
       case __ATOMIC_ACQUIRE:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_acquire{}, __scope);
+          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_acquire{}, __scope, __args...);
       case __ATOMIC_SEQ_CST:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_seq_cst{}, __scope);
+          __cuda_atomic_operation_load{}, __fn, __cuda_atomic_order_seq_cst{}, __scope, __args...);
       default:
         _CCCL_ASSERT(false, "invalid load memory order");
     }
   }
 }
 
-template <class _Backend, class _Fn, class _Sco>
+template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
-    __fn(__order);
+    __fn(__order, __args..., __scope);
   }
   else
   {
@@ -77,26 +77,26 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_relaxed{}, __scope);
+          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_relaxed{}, __scope, __args...);
       case __ATOMIC_RELEASE:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_release{}, __scope);
+          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_release{}, __scope, __args...);
       case __ATOMIC_SEQ_CST:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_seq_cst{}, __scope);
+          __cuda_atomic_operation_store{}, __fn, __cuda_atomic_order_seq_cst{}, __scope, __args...);
       default:
         _CCCL_ASSERT(false, "invalid store memory order");
     }
   }
 }
 
-template <class _Backend, class _Fn, class _Sco>
+template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_rmw_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
-    __fn(__order);
+    __fn(__order, __args..., __scope);
   }
   else
   {
@@ -104,44 +104,44 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_rmw_order_dispatch(
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_relaxed{}, __scope);
+          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_relaxed{}, __scope, __args...);
       case __ATOMIC_CONSUME:
         [[fallthrough]];
       case __ATOMIC_ACQUIRE:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_acquire{}, __scope);
+          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_acquire{}, __scope, __args...);
       case __ATOMIC_RELEASE:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_release{}, __scope);
+          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_release{}, __scope, __args...);
       case __ATOMIC_ACQ_REL:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_acq_rel{}, __scope);
+          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_acq_rel{}, __scope, __args...);
       case __ATOMIC_SEQ_CST:
         return __backend.__with_transformed_order(
-          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_seq_cst{}, __scope);
+          __cuda_atomic_operation_rmw{}, __fn, __cuda_atomic_order_seq_cst{}, __scope, __args...);
       default:
         _CCCL_ASSERT(false, "invalid read-modify-write memory order");
     }
   }
 }
 
-template <class _Backend, class _Fn, class _Sco>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_exchange_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+template <class _Backend, class _Fn, class _Sco, class... _Args>
+_CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_order_dispatch(
+  _Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
-  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope);
+  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
 }
 
-template <class _Backend, class _Fn, class _Sco>
+template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void
-__cuda_atomic_fetch_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+__cuda_atomic_fetch_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
-  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope);
+  __cuda_atomic_rmw_order_dispatch(__backend, __fn, __order, __scope, __args...);
 }
 
-template <class _Success, class _Backend, class _Fn, class _Sco>
-[[nodiscard]] _CCCL_HOST_DEVICE_API bool
-__cuda_atomic_compare_exchange_failure_order_dispatch(_Backend __backend, _Fn& __fn, int __failure, _Sco __scope)
+template <class _Success, class _Backend, class _Fn, class _Sco, class... _Args>
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_failure_order_dispatch(
+  _Backend __backend, _Fn& __fn, int __failure, _Sco __scope, _Args... __args)
 {
   switch (__failure)
   {
@@ -150,7 +150,8 @@ __cuda_atomic_compare_exchange_failure_order_dispatch(_Backend __backend, _Fn& _
         __cuda_atomic_operation_rmw{},
         __fn,
         __backend.__collapse_cas_order(__cuda_atomic_cas_order<_Success, __cuda_atomic_order_relaxed>{}),
-        __scope);
+        __scope,
+        __args...);
     case __ATOMIC_CONSUME:
       [[fallthrough]];
     case __ATOMIC_ACQUIRE:
@@ -158,30 +159,33 @@ __cuda_atomic_compare_exchange_failure_order_dispatch(_Backend __backend, _Fn& _
         __cuda_atomic_operation_rmw{},
         __fn,
         __backend.__collapse_cas_order(__cuda_atomic_cas_order<_Success, __cuda_atomic_order_acquire>{}),
-        __scope);
+        __scope,
+        __args...);
     case __ATOMIC_SEQ_CST:
       return __backend.__with_transformed_order(
         __cuda_atomic_operation_rmw{},
         __fn,
         __backend.__collapse_cas_order(__cuda_atomic_cas_order<_Success, __cuda_atomic_order_seq_cst>{}),
-        __scope);
+        __scope,
+        __args...);
     default:
       _CCCL_ASSERT(false, "invalid compare-exchange failure memory order");
       _CCCL_UNREACHABLE();
   }
 }
 
-template <class _Backend, class _Fn, class _Sco>
+template <class _Backend, class _Fn, class _Sco, class... _Args>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_order_dispatch(
   [[maybe_unused]] _Backend __backend,
   _Fn& __fn,
   memory_order __success,
   memory_order __failure,
-  [[maybe_unused]] _Sco __scope)
+  [[maybe_unused]] _Sco __scope,
+  _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
-    return __fn(__cuda_atomic_runtime_cas_order{__success, __failure});
+    return __fn(__cuda_atomic_runtime_cas_order{__success, __failure}, __args..., __scope);
   }
   else
   {
@@ -190,21 +194,21 @@ template <class _Backend, class _Fn, class _Sco>
     {
       case __ATOMIC_RELAXED:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_relaxed>(
-          __backend, __fn, __failure_order, __scope);
+          __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_CONSUME:
         [[fallthrough]];
       case __ATOMIC_ACQUIRE:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acquire>(
-          __backend, __fn, __failure_order, __scope);
+          __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_RELEASE:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_release>(
-          __backend, __fn, __failure_order, __scope);
+          __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_ACQ_REL:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_acq_rel>(
-          __backend, __fn, __failure_order, __scope);
+          __backend, __fn, __failure_order, __scope, __args...);
       case __ATOMIC_SEQ_CST:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_seq_cst>(
-          __backend, __fn, __failure_order, __scope);
+          __backend, __fn, __failure_order, __scope, __args...);
       default:
         _CCCL_ASSERT(false, "invalid compare-exchange success memory order");
         _CCCL_UNREACHABLE();
@@ -223,7 +227,7 @@ struct __cuda_atomic_bind_fetch_sub
   template <class _Order, class _Operand, class _Sco>
   _CCCL_HOST_DEVICE_API void operator()(_Order __order, _Operand, _Sco)
   {
-    ::cuda::std::__cuda_atomic_fetch_sub(__backend, __ptr, *__dst, *__op, __order, _Operand{}, _Sco{});
+    __cuda_atomic_fetch_sub(__backend, __ptr, *__dst, *__op, __order, _Operand{}, _Sco{});
   }
 };
 
@@ -241,19 +245,16 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   auto* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   auto* __dst_proxy = reinterpret_cast<__proxy_type*>(&__dst);
   auto* __op_proxy  = reinterpret_cast<__proxy_type*>(&__op);
-#if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
-    if (::cuda::std::__cuda_atomic_fetch_sub_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
+    if (__cuda_atomic_fetch_sub_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
     {
       return __dst;
     }
   }
-#endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_sub<_Backend, __proxy_pointee> __bound_fetch_sub{
     __backend, __ptr_proxy, __dst_proxy, __op_proxy};
-  ::cuda::std::__cuda_atomic_fetch_order_dispatch(
-    __backend, __bound_fetch_sub, __order, __scope, __proxy_operand{});
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_sub, __order, __scope, __proxy_operand{});
   return __dst;
 }
 

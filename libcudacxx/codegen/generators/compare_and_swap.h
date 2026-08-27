@@ -128,7 +128,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
       << R"XXX(
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Cas, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_compare_exchange {
   _Backend __backend;
   _Type* __ptr;
@@ -136,8 +136,8 @@ struct __cuda_atomic_bind_compare_exchange {
   __unv<_Type> __cmp;
   __unv<_Type> __des;
 
-  template <typename _Atomic_Memorder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Cas, typename _Tag, typename _Sco>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order, _Cas, _Tag, _Sco) {
     return __cuda_atomic_compare_exchange(
       __backend, __ptr, *__exp, __cmp, __des, _Cas{}, __order, _Tag{}, _Sco{});
   }
@@ -165,10 +165,10 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee> __bound_compare_swap{
     __backend, __ptr_proxy, __exp_proxy, *__exp_proxy, *__des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
-    __backend, __bound_compare_swap, __success, __failure, __scope);
+    __backend, __bound_compare_swap, __success, __failure, __scope, _Cas{}, __proxy_tag{});
 }
 
 #if _CCCL_CUDA_COMPILATION()

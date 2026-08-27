@@ -1277,14 +1277,14 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco, typename _Mmio>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_load {
   _Backend __backend;
   const _Type* __ptr;
   __unv<_Type>* __dst;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
     __cuda_atomic_load(__backend, __ptr, *__dst, __order, _Tag{}, _Sco{}, _Mmio{});
   }
 };
@@ -1307,9 +1307,10 @@ __cuda_atomic_load_dispatch(
   {
     if (__cuda_atomic_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {return;}
   }
-  __cuda_atomic_bind_load<_Backend, __proxy_pointee, __proxy_tag, _Sco, __cuda_atomic_mmio_disable> __bound_load{
+  __cuda_atomic_bind_load<_Backend, __proxy_pointee> __bound_load{
     __backend, __ptr_proxy, __dst_proxy};
-  __cuda_atomic_load_order_dispatch(__backend, __bound_load, __order, __scope);
+  __cuda_atomic_load_order_dispatch(
+    __backend, __bound_load, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
 }
 
 template <class _Backend, class _Type, class _Sco>
@@ -1820,14 +1821,14 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco, typename _Mmio>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_store {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type> __val;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
     __cuda_atomic_store(__backend, __ptr, __val, __order, _Tag{}, _Sco{}, _Mmio{});
   }
 };
@@ -1846,9 +1847,10 @@ __cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory
   {
     if (__cuda_atomic_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {return;}
   }
-  __cuda_atomic_bind_store<_Backend, __proxy_pointee, __proxy_tag, _Sco, __cuda_atomic_mmio_disable> __bound_store{
+  __cuda_atomic_bind_store<_Backend, __proxy_pointee> __bound_store{
     __backend, __ptr_proxy, *__val_proxy};
-  __cuda_atomic_store_order_dispatch(__backend, __bound_store, __order, __scope);
+  __cuda_atomic_store_order_dispatch(
+    __backend, __bound_store, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
 }
 
 #if _CCCL_CUDA_COMPILATION()
@@ -2416,7 +2418,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Cas, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_compare_exchange {
   _Backend __backend;
   _Type* __ptr;
@@ -2424,8 +2426,8 @@ struct __cuda_atomic_bind_compare_exchange {
   __unv<_Type> __cmp;
   __unv<_Type> __des;
 
-  template <typename _Atomic_Memorder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Cas, typename _Tag, typename _Sco>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order, _Cas, _Tag, _Sco) {
     return __cuda_atomic_compare_exchange(
       __backend, __ptr, *__exp, __cmp, __des, _Cas{}, __order, _Tag{}, _Sco{});
   }
@@ -2453,10 +2455,10 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   {
     if (__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee, __proxy_tag, _Cas, _Sco> __bound_compare_swap{
+  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee> __bound_compare_swap{
     __backend, __ptr_proxy, __exp_proxy, *__exp_proxy, *__des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
-    __backend, __bound_compare_swap, __success, __failure, __scope);
+    __backend, __bound_compare_swap, __success, __failure, __scope, _Cas{}, __proxy_tag{});
 }
 
 #if _CCCL_CUDA_COMPILATION()
@@ -3024,15 +3026,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_exchange {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __old;
   __unv<_Type> __new;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_exchange(__backend, __ptr, *__old, __new, __order, _Tag{}, _Sco{});
   }
 };
@@ -3056,9 +3058,9 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   {
     if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
   }
-  __cuda_atomic_bind_exchange<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_swap{
+  __cuda_atomic_bind_exchange<_Backend, __proxy_pointee> __bound_swap{
     __backend, __ptr_proxy, __old_proxy, *__new_proxy};
-  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope);
+  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope, __proxy_tag{});
 }
 
 template <class _Backend, class _Type, class _Up, class _Sco>
@@ -3476,15 +3478,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_add {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_add(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -3508,9 +3510,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_add_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_add<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_add{
+  __cuda_atomic_bind_fetch_add<_Backend, __proxy_pointee> __bound_add{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_add, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_add, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -3680,15 +3682,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_and {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_and(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -3711,9 +3713,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_and_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_and<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_and{
+  __cuda_atomic_bind_fetch_and<_Backend, __proxy_pointee> __bound_and{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_and, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_and, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -4043,15 +4045,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_max {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_max(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -4074,9 +4076,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_max_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_max<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_max{
+  __cuda_atomic_bind_fetch_max<_Backend, __proxy_pointee> __bound_max{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_max, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_max, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -4406,15 +4408,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_min {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_min(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -4437,9 +4439,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_min_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_min<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_min{
+  __cuda_atomic_bind_fetch_min<_Backend, __proxy_pointee> __bound_min{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_min, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_min, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -4609,15 +4611,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_or {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_or(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -4640,9 +4642,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_or_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_or<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_or{
+  __cuda_atomic_bind_fetch_or<_Backend, __proxy_pointee> __bound_or{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_or, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_or, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
@@ -4812,15 +4814,15 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
+template <typename _Backend, typename _Type>
 struct __cuda_atomic_bind_fetch_xor {
   _Backend __backend;
   _Type* __ptr;
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
     __cuda_atomic_fetch_xor(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
 };
@@ -4843,9 +4845,9 @@ template <class _Backend,
   {
     if (__cuda_atomic_fetch_xor_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {return __dst;}
   }
-  __cuda_atomic_bind_fetch_xor<_Backend, __proxy_pointee, __proxy_tag, _Sco> __bound_xor{
+  __cuda_atomic_bind_fetch_xor<_Backend, __proxy_pointee> __bound_xor{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy};
-  __cuda_atomic_fetch_order_dispatch(__backend, __bound_xor, __order, __scope);
+  __cuda_atomic_fetch_order_dispatch(__backend, __bound_xor, __order, __scope, __proxy_tag{});
   return __dst;
 }
 
