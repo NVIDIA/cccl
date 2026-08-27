@@ -590,10 +590,22 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // Distinct function pointer types (C typedef vs C++ alias) are not
-  // convertible via static_cast under nvcc.
-  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Adapt the C callback rather than calling through a partition_fn_t: the two
+  // function types differ in their parameter types. The cast below is used
+  // only as the mapper's identity - never invoked - which is what makes two
+  // composite places built from the same C callback compare equal and share a
+  // cached mapping.
+  ::cuda::experimental::places::partition_mapper cpp_mapper(
+    [mapper](pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims) {
+      stf_pos4 c_result{};
+      mapper(&c_result,
+             ::std::bit_cast<stf_pos4>(data_coords),
+             ::std::bit_cast<stf_dim4>(data_dims),
+             ::std::bit_cast<stf_dim4>(grid_dims));
+      *result = ::std::bit_cast<pos4>(c_result);
+    },
+    reinterpret_cast<partition_fn_t>(mapper));
+  auto* dp = stf_try_allocate([&cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);

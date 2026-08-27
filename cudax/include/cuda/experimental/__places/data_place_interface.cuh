@@ -42,6 +42,7 @@
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
+#include <utility>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -58,6 +59,73 @@ class exec_place;
 //! Uses an out-pointer convention so the signature is trivially representable
 //! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
 using partition_fn_t = void (*)(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+
+/**
+ * @brief The partitioner of a composite data place: how it maps data
+ * coordinates to a grid position, plus the identity that distinguishes it
+ * from other partitioners.
+ *
+ * A plain partition_fn_t converts implicitly and is its own identity, so
+ * existing callers are unaffected. The second form exists for a mapper that
+ * cannot be *called* as a partition_fn_t - one reached through a foreign ABI,
+ * whose coordinate structs are its own types, or a stateful partitioner. Such
+ * a caller wraps the call in an adapter and supplies a separate identity.
+ *
+ * Identity is what makes two composite places compare (and order) equal, and
+ * what lets the localized_array cache reuse a mapping, so it must be stable
+ * for a given partitioner. Note the identity is only ever compared, never
+ * called: reinterpret_cast between function pointer types is well defined as
+ * long as the result is not invoked, which is exactly how a foreign-ABI
+ * callback can serve as one.
+ */
+class partition_mapper
+{
+public:
+  using call_type = ::std::function<void(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)>;
+
+  partition_mapper() = default;
+
+  //! A raw partition function is its own identity
+  /*implicit*/ partition_mapper(partition_fn_t fn)
+      : call_(fn)
+      , identity_(fn)
+  {}
+
+  //! A mapper that is not callable as a partition_fn_t, with an explicit identity
+  partition_mapper(call_type call, partition_fn_t identity)
+      : call_(::std::move(call))
+      , identity_(identity)
+  {}
+
+  void operator()(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims) const
+  {
+    call_(result, data_coords, data_dims, grid_dims);
+  }
+
+  [[nodiscard]] explicit operator bool() const noexcept
+  {
+    return static_cast<bool>(call_);
+  }
+
+  [[nodiscard]] friend bool operator==(const partition_mapper& lhs, const partition_mapper& rhs) noexcept
+  {
+    return lhs.identity_ == rhs.identity_;
+  }
+
+  [[nodiscard]] friend bool operator!=(const partition_mapper& lhs, const partition_mapper& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+  [[nodiscard]] friend bool operator<(const partition_mapper& lhs, const partition_mapper& rhs) noexcept
+  {
+    return ::std::less<partition_fn_t>{}(lhs.identity_, rhs.identity_);
+  }
+
+private:
+  call_type call_;
+  partition_fn_t identity_ = nullptr;
+};
 
 /**
  * @brief Abstract interface for data_place implementations
@@ -267,7 +335,7 @@ public:
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */
-  virtual const partition_fn_t& get_partitioner() const
+  virtual const partition_mapper& get_partitioner() const
   {
     _CCCL_THROW(::std::logic_error, "get_partitioner() called on non-composite data_place");
   }
