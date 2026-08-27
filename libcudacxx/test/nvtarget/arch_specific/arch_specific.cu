@@ -17,11 +17,11 @@
 #  error "This test works with nvcc only."
 #endif // !__NVCC__
 
-#if defined(__CUDA_ARCH__)
-#  if __CUDA_ARCH_SPECIFIC__ != 1030
-#    error "This test must be compiled for sm_103a target."
-#  endif // __CUDA_ARCH_SPECIFIC__ != 1030
-#endif // __CUDA_ARCH__
+#if defined(__CUDA_ARCH_SPECIFIC__)
+#  if __CUDA_ARCH_SPECIFIC__ != 1070
+#    error "This test must be compiled for sm_107a target."
+#  endif // __CUDA_ARCH_SPECIFIC__ != 1070
+#endif // __CUDA_ARCH_SPECIFIC__
 
 #define CHECK_TRUE(_PRED)                                                 \
   do                                                                      \
@@ -40,23 +40,27 @@ __tile__
   __host__ __device__ void
   fn()
 {
-#if defined(__CUDA_ARCH__)
-  CHECK_TRUE(NV_IS_EXACTLY_SM_103);
+#if defined(__CUDA_ARCH_SPECIFIC__)
+  CHECK_TRUE(NV_IS_EXACTLY_SM_107);
 
-  CHECK_TRUE(NV_HAS_FEATURE_SM_103a);
+  CHECK_TRUE(NV_HAS_FEATURE_SM_107a);
 
   CHECK_TRUE(NV_HAS_FEATURE_SM_100f);
   CHECK_TRUE(NV_HAS_FEATURE_SM_103f);
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+  CHECK_TRUE(NV_HAS_FEATURE_SM_107f);
+#elif !defined(__CUDA_ARCH__) // ^^^ __CUDA_ARCH_SPECIFIC__ ^^^ / vvv host vvv
   CHECK_TRUE(NV_IS_HOST);
 
   CHECK_FALSE(NV_HAS_FEATURE_SM_103a);
+  CHECK_FALSE(NV_HAS_FEATURE_SM_107a);
 
   CHECK_FALSE(NV_HAS_FEATURE_SM_100f);
   CHECK_FALSE(NV_HAS_FEATURE_SM_103f);
-#endif // ^^^ !__CUDA_ARCH__ ^^^
+  CHECK_FALSE(NV_HAS_FEATURE_SM_107f);
+#endif // ^^^ host ^^^
 
   CHECK_FALSE(NV_HAS_FEATURE_SM_100a);
+  CHECK_FALSE(NV_HAS_FEATURE_SM_103a);
   CHECK_FALSE(NV_HAS_FEATURE_SM_110a);
 
   CHECK_FALSE(NV_HAS_FEATURE_SM_110f);

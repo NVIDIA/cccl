@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_MULTIMEM_RED_H_
 #define _CUDA_PTX_GENERATED_MULTIMEM_RED_H_
 
@@ -17,7 +20,6 @@ __device__ static inline void multimem_red(
   uint32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -26,10 +28,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.min.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -62,10 +63,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.min.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -83,7 +80,6 @@ __device__ static inline void multimem_red(
   uint64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -92,10 +88,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.min.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -128,10 +123,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.min.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -149,7 +140,6 @@ __device__ static inline void multimem_red(
   int32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -158,10 +148,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.min.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -194,10 +183,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.min.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -215,7 +200,6 @@ __device__ static inline void multimem_red(
   int64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -224,10 +208,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.min.s64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -260,10 +243,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.min.s64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -281,7 +260,6 @@ __device__ static inline void multimem_red(
   uint32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -290,10 +268,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.max.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -326,10 +303,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.max.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -347,7 +320,6 @@ __device__ static inline void multimem_red(
   uint64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -356,10 +328,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.max.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -392,10 +363,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.max.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -413,7 +380,6 @@ __device__ static inline void multimem_red(
   int32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -422,10 +388,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.max.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -458,10 +423,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.max.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -479,7 +440,6 @@ __device__ static inline void multimem_red(
   int64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -488,10 +448,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.max.s64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -524,10 +483,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.max.s64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -545,7 +500,6 @@ __device__ static inline void multimem_red(
   uint32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -554,10 +508,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.add.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -590,10 +543,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.add.u32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -611,7 +560,6 @@ __device__ static inline void multimem_red(
   uint64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -620,10 +568,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.add.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -656,10 +603,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.add.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -677,7 +620,6 @@ __device__ static inline void multimem_red(
   int32_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -686,10 +628,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.add.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
@@ -722,10 +663,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.add.s32 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -743,7 +680,6 @@ __device__ static inline void multimem_red(
   int64_t val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
@@ -752,10 +688,9 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.add.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
@@ -788,10 +723,6 @@ _CCCL_DEVICE static inline void multimem_red(
   {
     asm("multimem.red.release.sys.global.add.u64 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "l"(__val) : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -809,7 +740,6 @@ __device__ static inline void multimem_red(
   B32 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -821,11 +751,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.and.b32 [%0], %1;"
@@ -882,10 +811,6 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -903,7 +828,6 @@ __device__ static inline void multimem_red(
   B32 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -915,11 +839,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.or.b32 [%0], %1;"
@@ -976,10 +899,6 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -997,7 +916,6 @@ __device__ static inline void multimem_red(
   B32 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -1009,11 +927,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.xor.b32 [%0], %1;"
@@ -1070,10 +987,6 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1091,7 +1004,6 @@ __device__ static inline void multimem_red(
   B64 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -1103,11 +1015,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.and.b64 [%0], %1;"
@@ -1164,10 +1075,6 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1185,7 +1092,6 @@ __device__ static inline void multimem_red(
   B64 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -1197,11 +1103,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.or.b64 [%0], %1;"
@@ -1258,10 +1163,6 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1279,7 +1180,6 @@ __device__ static inline void multimem_red(
   B64 val);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
@@ -1291,11 +1191,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
     asm("multimem.red.relaxed.cta.global.xor.b64 [%0], %1;"
@@ -1352,11 +1251,9 @@ _CCCL_DEVICE static inline void multimem_red(
         : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_MULTIMEM_RED_H_
