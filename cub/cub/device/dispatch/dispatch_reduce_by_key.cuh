@@ -187,7 +187,8 @@ template <typename PolicySelector,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT,
-          typename StreamingContextT>
+          typename StreamingContextT,
+          bool StableReductionOrder = false>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
@@ -215,7 +216,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     policy.lookback.scan_algorithm,
     delay_constructor_t<policy.lookback.lookback_delay.kind,
                         policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
+                        policy.lookback.lookback_delay.l2_write_latency>,
+    StableReductionOrder>;
 
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
     AgentReduceByKeyPolicyT,

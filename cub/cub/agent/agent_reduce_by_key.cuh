@@ -43,7 +43,8 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
-          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>,
+          bool StableReductionOrder  = false>
 struct agent_reduce_by_key_policy
 {
   static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
@@ -51,6 +52,7 @@ struct agent_reduce_by_key_policy
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
+  static constexpr bool STABLE_REDUCTION_ORDER       = StableReductionOrder;
 
   struct detail
   {
@@ -230,7 +232,11 @@ struct AgentReduceByKey
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
+    TilePrefixCallbackOp<OffsetValuePairT,
+                         ReduceBySegmentOpT,
+                         ScanTileStateT,
+                         DelayConstructorT,
+                         AgentReduceByKeyPolicyT::STABLE_REDUCTION_ORDER>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];
