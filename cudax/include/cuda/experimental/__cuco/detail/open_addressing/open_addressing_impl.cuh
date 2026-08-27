@@ -480,6 +480,7 @@ public:
 
       __open_addressing::__rehash<__block_size>
         <<<static_cast<unsigned>(__grid_size), __block_size, 0, __stream.get()>>>(__old_storage, __new_ref, __is_filled);
+      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to rehash");
     }
 
     __new_slots.destroy(__stream);
