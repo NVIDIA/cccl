@@ -23,9 +23,18 @@ readonly image="${CCCL_MINIMAL_CONTAINER_IMAGE:-python:3.14-slim}"
 
 # Any fixed path works; this matches the devcontainer's for familiarity.
 readonly container_workspace="/home/coder/cccl"
-# The host daemon resolves the bind-mount source, so it must be a host path:
-# HOST_WORKSPACE is what the devcontainer sets for exactly this purpose.
-host_workspace="${HOST_WORKSPACE:-$(pwd)}"
+# The host daemon resolves the bind-mount source, so it must be a host path.
+# HOST_WORKSPACE is what the devcontainer sets for exactly this purpose; running
+# straight on the host, the working directory already is one.
+if [[ -n "${HOST_WORKSPACE:-}" ]]; then
+  host_workspace="${HOST_WORKSPACE}"
+elif [[ ! -f /.dockerenv ]]; then
+  host_workspace="$(pwd)"
+else
+  echo "ERROR: HOST_WORKSPACE is not set, so the host daemon would be handed a path only this container can see." >&2
+  echo "       Set it, or set CCCL_MINIMAL_CONTAINER=0 to run the payload here." >&2
+  exit 1
+fi
 readonly host_workspace
 
 # Repo-relative, so it resolves the same on both sides of the mount. An absolute
