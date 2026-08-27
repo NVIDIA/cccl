@@ -101,20 +101,6 @@ TEST_DEVICE_FUNC void test_non_trivial_types(const T& data)
   }
 }
 
-TEST_DEVICE_FUNC void test_64bit_types()
-{
-  constexpr uint32_t mask = 0xFFFFFFFFu;
-  uint64_t data           = threadIdx.x;
-
-  auto up = cuda::device::warp_shuffle_up(data, 1, mask);
-  assert(up.data == __shfl_up_sync(mask, data, 1));
-  assert(up.pred == (threadIdx.x >= 1));
-
-  auto down = cuda::device::warp_shuffle_down(data, 1, mask);
-  assert(down.data == __shfl_down_sync(mask, data, 1));
-  assert(down.pred == (threadIdx.x + 1 < 32));
-}
-
 template <class T>
 TEST_DEVICE_FUNC bool is_equal(const T& lhs, const T& rhs)
 {
@@ -129,7 +115,7 @@ TEST_DEVICE_FUNC bool is_equal(const T& lhs, const T& rhs)
 }
 
 template <class T>
-TEST_DEVICE_FUNC void test_shuffle_types(
+TEST_DEVICE_FUNC void test_shuffle_values(
   const T& data, const T& idx_expected, const T& xor_expected, const T& up_expected, const T& down_expected)
 {
   auto idx = cuda::device::warp_shuffle_idx(data, 1);
@@ -156,31 +142,46 @@ TEST_DEVICE_FUNC void test_shuffle_types(
 }
 
 template <class T>
-TEST_DEVICE_FUNC void test_subbyte_floating_point_types()
+TEST_DEVICE_FUNC T make_shuffle_value(uint32_t lane)
 {
-  auto data = cuda::std::bit_cast<T>(uint8_t{3});
-  test_shuffle_types(data, data, data, data, data);
+  if constexpr (sizeof(T) == 1)
+  {
+    auto value = static_cast<uint8_t>(lane + 1);
+    if constexpr (cuda::std::is_integral_v<T>)
+    {
+      return static_cast<T>(value);
+    }
+    else
+    {
+      return cuda::std::bit_cast<T>(value);
+    }
+  }
+  else if constexpr (sizeof(T) == 2)
+  {
+    return (static_cast<T>(lane + 2) << 8) | static_cast<T>(lane + 1);
+  }
+  else if constexpr (sizeof(T) == 8)
+  {
+    return (static_cast<T>(lane + 2) << 32) | static_cast<T>(lane + 1);
+  }
+  else // 16-bytes
+  {
+    return (static_cast<T>(lane + 4) << 96) | (static_cast<T>(lane + 3) << 64) | (static_cast<T>(lane + 2) << 32)
+         | static_cast<T>(lane + 1);
+  }
 }
 
-#if _CCCL_HAS_INT128()
-TEST_DEVICE_FUNC __uint128_t make_128bit_value(const uint32_t lane)
-{
-  return (static_cast<__uint128_t>(lane + 3) << 96) | (static_cast<__uint128_t>(lane + 2) << 64)
-       | (static_cast<__uint128_t>(lane + 1) << 32) | static_cast<__uint128_t>(lane);
-}
-
-TEST_DEVICE_FUNC void test_128bit_types()
+template <class T>
+TEST_DEVICE_FUNC void test_shuffle_type()
 {
   uint32_t lane = threadIdx.x;
-  auto data     = make_128bit_value(lane);
-  test_shuffle_types(
-    data,
-    make_128bit_value(1),
-    make_128bit_value(lane ^ 1),
-    make_128bit_value(lane == 0 ? lane : lane - 1),
-    make_128bit_value(lane == 31 ? lane : lane + 1));
+  test_shuffle_values(
+    make_shuffle_value<T>(lane),
+    make_shuffle_value<T>(1),
+    make_shuffle_value<T>(lane ^ 1),
+    make_shuffle_value<T>(lane == 0 ? lane : lane - 1),
+    make_shuffle_value<T>(lane == 31 ? lane : lane + 1));
 }
-#endif // _CCCL_HAS_INT128()
 
 TEST_DEVICE_FUNC void test_overloadings()
 {
@@ -211,18 +212,20 @@ __global__ void test_kernel()
   test_semantic<16>();
   test_semantic<32>();
 
-  test_64bit_types();
+  test_shuffle_type<uint8_t>();
+  test_shuffle_type<uint16_t>();
+  test_shuffle_type<uint64_t>();
 #if _CCCL_HAS_NVFP6_E3M2()
-  test_subbyte_floating_point_types<__nv_fp6_e3m2>();
+  test_shuffle_type<__nv_fp6_e3m2>();
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP6_E2M3()
-  test_subbyte_floating_point_types<__nv_fp6_e2m3>();
+  test_shuffle_type<__nv_fp6_e2m3>();
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP4_E2M1()
-  test_subbyte_floating_point_types<__nv_fp4_e2m1>();
+  test_shuffle_type<__nv_fp4_e2m1>();
 #endif // _CCCL_HAS_NVFP4_E2M1()
 #if _CCCL_HAS_INT128()
-  test_128bit_types();
+  test_shuffle_type<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
 
   test_overloadings();

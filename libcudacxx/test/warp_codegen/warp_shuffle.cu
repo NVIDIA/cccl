@@ -33,10 +33,37 @@ DEFINE_WARP_SHUFFLE_CODEGEN_TESTS(uint8_t, u8)
 DEFINE_WARP_SHUFFLE_CODEGEN_TESTS(uint16_t, u16)
 DEFINE_WARP_SHUFFLE_CODEGEN_TESTS(uint32_t, u32)
 DEFINE_WARP_SHUFFLE_CODEGEN_TESTS(uint64_t, u64)
+#if _CCCL_HAS_INT128()
+DEFINE_WARP_SHUFFLE_CODEGEN_TESTS(__uint128_t, u128)
+#endif // _CCCL_HAS_INT128()
 
 #undef DEFINE_WARP_SHUFFLE_CODEGEN_TESTS
 
 /*
+
+; SMXX-LABEL: {{[[:space:]]*}}Function : wrapper_xor_u128
+; SMXX-NOT: {{.*PRMT.*}}
+; SMXX-COUNT-8: {{.*SHFL.BFLY.*}}
+; SMXX-NOT: {{.*(PRMT|SHFL).*$}}
+; SMXX: {{.*RET.*}}
+
+; SMXX-LABEL: {{[[:space:]]*}}Function : wrapper_down_u128
+; SMXX-NOT: {{.*PRMT.*}}
+; SMXX-COUNT-8: {{.*SHFL.DOWN.*}}
+; SMXX-NOT: {{.*(PRMT|SHFL).*$}}
+; SMXX: {{.*RET.*}}
+
+; SMXX-LABEL: {{[[:space:]]*}}Function : wrapper_up_u128
+; SMXX-NOT: {{.*PRMT.*}}
+; SMXX-COUNT-8: {{.*SHFL.UP.*}}
+; SMXX-NOT: {{.*(PRMT|SHFL).*$}}
+; SMXX: {{.*RET.*}}
+
+; SMXX-LABEL: {{[[:space:]]*}}Function : wrapper_idx_u128
+; SMXX-NOT: {{.*PRMT.*}}
+; SMXX-COUNT-8: {{.*SHFL.IDX.*}}
+; SMXX-NOT: {{.*(PRMT|SHFL).*$}}
+; SMXX: {{.*RET.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : wrapper_xor_u64
 ; SMXX-NOT: {{.*PRMT.*}}

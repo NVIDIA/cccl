@@ -29,7 +29,7 @@ endif()
 
 set(
   dump_and_check_script
-  "${CMAKE_CURRENT_SOURCE_DIR}/../atomic_codegen/dump_and_check.bash"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../codegen/dump_and_check.bash"
 )
 message("-- Building warp codegen tests")
 

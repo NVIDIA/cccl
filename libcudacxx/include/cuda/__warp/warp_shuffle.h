@@ -23,11 +23,11 @@
 
 #if _CCCL_CUDA_COMPILATION() && (__cccl_ptx_isa >= 600)
 
-#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/__cmath/ceil_div.h>
 #  include <cuda/__cmath/pow2.h>
 #  include <cuda/__ptx/instructions/shfl_sync.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
