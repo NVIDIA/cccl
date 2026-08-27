@@ -5,14 +5,14 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Guard: the legacy memory-size query call with all defaults (no explicit stream)
 // must resolve unambiguously to the legacy temp-storage overload when the env
 // passthrough overload is also visible. If the env overload's SFINAE is too loose,
 // this becomes "ambiguous overload" or silently dispatches to env.
 
-C2H_TEST("DeviceRunLengthEncode::Encode legacy size-query is unambiguous", "[run_length_encode][device]")
+CUB_TEST("DeviceRunLengthEncode::Encode legacy size-query is unambiguous", "[run_length_encode][device]", CUB_SMALL)
 {
   int* d_in       = nullptr;
   int* d_unique   = nullptr;
@@ -24,7 +24,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode legacy size-query is unambiguous", "[run
   REQUIRE(cudaSuccess == cub::DeviceRunLengthEncode::Encode(nullptr, bytes, d_in, d_unique, d_lengths, d_num_runs, n));
 }
 
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns legacy size-query is unambiguous", "[run_length_encode][device]")
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns legacy size-query is unambiguous",
+         "[run_length_encode][device]",
+         CUB_SMALL)
 {
   int* d_in       = nullptr;
   int* d_offsets  = nullptr;

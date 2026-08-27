@@ -36,7 +36,7 @@ Both wrappers provide a non-templated API surface for allocation and property qu
 on ownership, then the usage patterns are the same.
 
 ``resource_ref`` is constructible from any non-const reference or pointer to a memory resource that satisfies
-``cuda::mr::{synchronous_}resource``. ``any_resource`` is constructible from a resource object and takes ownership of it.
+``cuda::mr::resource``. ``any_resource`` is constructible from a resource object and takes ownership of it.
 
 Properties may be passed to both wrappers just as with ``cuda::mr::resource_with``.
 
@@ -101,6 +101,9 @@ any_resource
 ``cuda::mr::any_resource`` is the owning counterpart. It is especially suited for containers that must ensure the
 resource outlives the container.
 
+``cuda::mr::make_any_resource<Resource, Properties...>(args...)`` constructs an ``any_resource<Properties...>`` that
+owns a newly constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::resource_with<Resource, Properties...>``.
+
 .. code:: cpp
 
    #include <cuda/devices>
@@ -133,8 +136,13 @@ The synchronous wrappers mirror the same ownership split: ``synchronous_resource
 .. _libcudacxx-extended-api-memory-resources-any-synchronous-resource:
 .. _cccl-runtime-memory-resource-any-synchronous-resource:
 
-``cuda::mr::any_synchronous_resource`` is a type-erased wrapper for synchronous memory resources (those that only support
-synchronous allocation/deallocation). It can be constructed from an ``any_resource``.
+``cuda::mr::any_synchronous_resource`` is a type-erased wrapper for resources that satisfy
+``cuda::mr::synchronous_resource``. It can be constructed from an ``any_resource``, but only exposes synchronous
+allocation/deallocation.
+
+``cuda::mr::make_any_synchronous_resource<Resource, Properties...>(args...)`` constructs an
+``any_synchronous_resource<Properties...>`` that owns a newly constructed ``Resource``. ``Resource`` must satisfy
+``cuda::mr::synchronous_resource_with<Resource, Properties...>``.
 
 .. code:: cpp
 
@@ -154,12 +162,78 @@ synchronous allocation/deallocation). It can be constructed from an ``any_resour
      resource.deallocate_sync(ptr, 1024, 16);
    }
 
+resource_cast
+~~~~~~~~~~~~~
+.. _libcudacxx-extended-api-memory-resources-resource-cast:
+
+``cuda::mr::resource_cast<T>(&resource)`` returns a pointer to the concrete resource stored in a type-erased wrapper
+when the stored resource has type ``T``. It returns ``nullptr`` when the stored type does not match.
+
+This is similar to pointer-form ``dynamic_cast<T*>`` in that callers must check for ``nullptr`` before using the
+result. Unlike ``dynamic_cast``, ``resource_cast`` matches the exact type stored in the wrapper.
+
+``resource_cast`` works with ``any_resource``, ``any_synchronous_resource``, ``resource_ref``, and
+``synchronous_resource_ref``.
+
+.. code:: cpp
+
+   #include <cuda/devices>
+   #include <cuda/memory_resource>
+   #include <cuda/stream>
+
+   void use_resource_cast(cuda::stream_ref stream) {
+     cuda::mr::any_resource<cuda::mr::device_accessible> resource{
+       cuda::device_default_memory_pool(cuda::devices[0])
+     };
+
+     if (auto* pool = cuda::mr::resource_cast<cuda::device_memory_pool_ref>(&resource)) {
+       pool->trim_to(1024 * 1024);
+
+       void* ptr = pool->allocate(stream, 1024, 16);
+       pool->deallocate(stream, ptr, 1024, 16);
+     }
+   }
+
+try_get_property
+~~~~~~~~~~~~~~~~
+.. _libcudacxx-extended-api-memory-resources-try-get-property:
+
+Type-erased wrapper conversions can discard properties from the wrapper's type. ``try_get_property(resource, property)``
+can query a property that was present before such a conversion, even when it is not listed in the resulting wrapper's
+property set. For stateless properties, it returns ``bool``. For stateful properties, it returns
+``cuda::std::optional<Property::value_type>``.
+
+.. code:: cpp
+
+   #include <cuda/memory_resource>
+
+   bool is_device_accessible(cuda::mr::any_synchronous_resource<> resource) {
+     return try_get_property(resource, cuda::mr::device_accessible{});
+   }
+
+dynamic_resource_cast
+~~~~~~~~~~~~~~~~~~~~~
+.. _libcudacxx-extended-api-memory-resources-dynamic-resource-cast:
+
+``cuda::mr::dynamic_resource_cast<Properties...>(resource)`` casts a type-erased resource wrapper to the same wrapper
+kind with a different property set. It checks the stored resource at run time and throws if the stored resource does
+not support the requested properties.
+
+.. code:: cpp
+
+   #include <cuda/memory_resource>
+
+   cuda::mr::any_resource<cuda::mr::device_accessible>
+   require_device_accessible(cuda::mr::any_resource<> resource) {
+     return cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(cuda::std::move(resource));
+   }
+
 ``cuda::mr::synchronous_resource_ref``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. _cccl-runtime-memory-resource-synchronous-resource-ref:
 
-``cuda::mr::synchronous_resource_ref`` provides the same type-erased reference behavior as ``resource_ref``, but targets
-resources that only offer synchronous allocation and deallocation.
+``cuda::mr::synchronous_resource_ref`` provides the same type-erased reference behavior as ``resource_ref``, but only
+exposes synchronous allocation and deallocation.
 
 .. code:: cpp
 

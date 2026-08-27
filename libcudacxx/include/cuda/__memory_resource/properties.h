@@ -32,10 +32,10 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The default alignment by a cudaMalloc{...} call
-inline constexpr size_t default_cuda_malloc_alignment = 256;
+inline constexpr ::cuda::std::size_t default_cuda_malloc_alignment = 256;
 
 //! @brief The default alignment by a cudaMallocHost{...} call
-inline constexpr size_t default_cuda_malloc_host_alignment = alignof(::cuda::std::max_align_t);
+inline constexpr ::cuda::std::size_t default_cuda_malloc_host_alignment = alignof(::cuda::std::max_align_t);
 
 //! @brief The device_accessible property signals that the allocated memory is device accessible
 struct device_accessible
@@ -125,7 +125,7 @@ struct dynamic_accessibility_property
 };
 
 template <bool _HostAccessible, bool _DeviceAccessible>
-_CCCL_API constexpr __memory_accessibility __memory_accessibility_from_static_properties() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __memory_accessibility __memory_accessibility_from_static_properties() noexcept
 {
   return _HostAccessible && _DeviceAccessible ? __memory_accessibility ::__host_device
        : _DeviceAccessible                    ? __memory_accessibility ::__device
@@ -134,11 +134,14 @@ _CCCL_API constexpr __memory_accessibility __memory_accessibility_from_static_pr
 }
 
 template <class... _Properties>
+inline constexpr __memory_accessibility __memory_accessibility_from_properties_v =
+  ::cuda::mr::__memory_accessibility_from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
+                                                            ::cuda::mr::__is_device_accessible<_Properties...>>();
+
+template <class... _Properties>
 struct __memory_accessibility_from_properties
 {
-  static constexpr __memory_accessibility value =
-    __memory_accessibility_from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
-                                                  ::cuda::mr::__is_device_accessible<_Properties...>>();
+  static constexpr __memory_accessibility value = ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_MR

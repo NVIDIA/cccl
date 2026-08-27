@@ -16,8 +16,8 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
-#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -28,8 +28,9 @@ using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
 
 // Index types used for OffsetsT testing
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
          "[pairs][segmented][radix][sort][device]",
+         CUB_SMALL,
          value_types,
          offset_types)
 {
@@ -105,7 +106,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
   REQUIRE(ref_values == out_values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API", "[pairs][segmented][radix][sort][device]", value_types)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API",
+         "[pairs][segmented][radix][sort][device]",
+         CUB_SMALL,
+         value_types)
 {
   using key_t    = cuda::std::uint32_t;
   using value_t  = c2h::get<0, TestType>;
@@ -169,8 +173,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API", "[pairs][segme
   REQUIRE(ref_values == values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
          "[pairs][segmented][radix][sort][device]",
+         CUB_SMALL,
          value_types)
 {
   using key_t    = cuda::std::uint32_t;
@@ -256,8 +261,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
   REQUIRE((ref_values == out_values) == true);
 }
 
-C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
+CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
@@ -316,8 +322,9 @@ catch (std::bad_alloc& e)
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
 #if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments",
          "[pairs][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {

@@ -11,7 +11,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -77,19 +77,21 @@ void test_sorted(Variant variant,
   CHECK(offsets_ref == offsets_h);
 }
 
-C2H_TEST("DeviceFind::LowerBoundSortedValues works", "[find][device][binary-search]", types)
+CUB_TEST("DeviceFind::LowerBoundSortedValues works", "[find][device][binary-search]", CUB_SMALL, types)
 {
   using value_type = c2h::get<0, TestType>;
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound);
 }
 
-C2H_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-search]", types)
+CUB_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-search]", CUB_SMALL, types)
 {
   using value_type = c2h::get<0, TestType>;
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound);
 }
 
-C2H_TEST("DeviceFind::LowerBoundSortedValues works with a transform output iterator", "[find][device][binary-search]")
+CUB_TEST("DeviceFind::LowerBoundSortedValues works with a transform output iterator",
+         "[find][device][binary-search]",
+         CUB_SMALL)
 {
   using value_type = int;
   using Result     = std::ptrdiff_t;
@@ -131,19 +133,21 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues works with a transform output itera
   CHECK(offsets_ref == offsets_h);
 }
 
-C2H_TEST("DeviceFind::LowerBoundSortedValues works with descending order", "[find][device][binary-search]", types)
+CUB_TEST(
+  "DeviceFind::LowerBoundSortedValues works with descending order", "[find][device][binary-search]", CUB_SMALL, types)
 {
   using value_type = c2h::get<0, TestType>;
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, 7492, 749, cuda::std::greater<value_type>{});
 }
 
-C2H_TEST("DeviceFind::UpperBoundSortedValues works with descending order", "[find][device][binary-search]", types)
+CUB_TEST(
+  "DeviceFind::UpperBoundSortedValues works with descending order", "[find][device][binary-search]", CUB_SMALL, types)
 {
   using value_type = c2h::get<0, TestType>;
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 7492, 749, cuda::std::greater<value_type>{});
 }
 
-C2H_TEST("DeviceFind::LowerBoundSortedValues input sizes", "[find][device][binary-search]")
+CUB_TEST("DeviceFind::LowerBoundSortedValues input sizes", "[find][device][binary-search]", CUB_SMALL)
 {
   using value_type                   = int;
   const std::size_t range_num_items  = GENERATE(0, 1, 23, 123, 3234);
@@ -152,7 +156,7 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues input sizes", "[find][device][binar
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, range_num_items, values_num_items);
 }
 
-C2H_TEST("DeviceFind::UpperBoundSortedValues input sizes", "[find][device][binary-search]")
+CUB_TEST("DeviceFind::UpperBoundSortedValues input sizes", "[find][device][binary-search]", CUB_SMALL)
 {
   using value_type                   = int;
   const std::size_t range_num_items  = GENERATE(0, 1, 23, 123, 3234);
@@ -161,7 +165,7 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues input sizes", "[find][device][binar
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, range_num_items, values_num_items);
 }
 
-C2H_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]")
+CUB_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]", CUB_SMALL)
 {
   using value_type = int;
   cuda::compute_capability cc{};
@@ -174,7 +178,7 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[f
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, 1, tile_size);
 }
 
-C2H_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]")
+CUB_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]", CUB_SMALL)
 {
   using value_type = int;
   cuda::compute_capability cc{};
@@ -188,8 +192,9 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::LowerBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::LowerBoundSortedValues really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {
@@ -206,8 +211,9 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues really large input",
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::UpperBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {

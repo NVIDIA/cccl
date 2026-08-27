@@ -134,6 +134,9 @@ TEST_FUNC constexpr bool test()
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>();
 #endif // _CCCL_HAS_NVFP4_E2M1
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   test_type<signed char>();
   test_type<unsigned char>();

@@ -7,8 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: enable-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // If we have a copy-propagating cache, when we copy ZeroOnDestroy, we will get a

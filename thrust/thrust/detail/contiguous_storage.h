@@ -121,7 +121,8 @@ private:
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void swap(contiguous_storage& other) noexcept(is_swap_noexcept())
+  _CCCL_HOST_DEVICE void
+  swap(contiguous_storage& other) noexcept(is_swap_noexcept()) // NOLINT(bugprone-exception-escape)
   {
     using ::cuda::std::swap;
     swap(m_begin, other.m_begin);
@@ -222,6 +223,7 @@ private:
 
   size_type m_size;
 
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   friend _CCCL_HOST_DEVICE void swap(contiguous_storage& lhs, contiguous_storage& rhs) noexcept(noexcept(lhs.swap(rhs)))
   {
     lhs.swap(rhs);

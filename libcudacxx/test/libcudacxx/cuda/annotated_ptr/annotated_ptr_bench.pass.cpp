@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 #include "test_macros.h"
@@ -47,7 +47,7 @@ __global__ void ptr_timing(int* in, int* out)
   ptr_timing_dev(in, out);
 };
 
-TEST_FUNC __noinline__ void bench()
+TEST_HOST_DEVICE_FUNC __noinline__ void bench()
 {
 #ifndef __CUDA_ARCH__
   static const size_t ARR_SZ     = 1 << 22;

@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 struct CustomLess
@@ -378,8 +378,13 @@ struct params_t
   static constexpr bool is_stable           = c2h::get<3, TestType>::value == stability::stable;
 };
 
-C2H_TEST(
-  "Warp sort on keys-only works", "[sort][warp]", key_types, logical_warp_threads, items_per_thread_list, stability_list)
+CUB_TEST("Warp sort on keys-only works",
+         "[sort][warp]",
+         CUB_SMALL,
+         key_types,
+         logical_warp_threads,
+         items_per_thread_list,
+         stability_list)
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
@@ -404,8 +409,9 @@ C2H_TEST(
   REQUIRE(h_in_out == d_out);
 }
 
-C2H_TEST("Warp sort keys-only on partial warp-tile works",
+CUB_TEST("Warp sort keys-only on partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,
@@ -437,8 +443,9 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   REQUIRE(h_in_out == d_out);
 }
 
-C2H_TEST("Warp sort on keys-value pairs works",
+CUB_TEST("Warp sort on keys-value pairs works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,
@@ -479,8 +486,9 @@ C2H_TEST("Warp sort on keys-value pairs works",
   REQUIRE(h_values_in_out == d_values_out);
 }
 
-C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
+CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,

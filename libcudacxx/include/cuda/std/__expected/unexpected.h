@@ -157,7 +157,7 @@ private:
 };
 
 template <class _Err>
-unexpected(_Err) -> unexpected<_Err>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES unexpected(_Err) -> unexpected<_Err>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

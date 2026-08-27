@@ -51,6 +51,7 @@ inline constexpr bool __can_apply<_Fn, _Tuple, true> = __can_apply_impl<_Fn, __m
     return __VA_ARGS__;                  \
   }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class _Tuple, size_t... _Id>
 _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
   _LIBCUDACXX_NOEXCEPT_RETURN(
@@ -59,21 +60,23 @@ _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, _
     // NOLINTNEXTLINE(bugprone-use-after-move)
     ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::get<_Id>(::cuda::std::forward<_Tuple>(__t))...))
 
-    template <class _Fn, class _Tuple>
-    _CCCL_API constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
-      _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__apply_tuple_impl(
-        ::cuda::std::forward<_Fn>(__f),
-        ::cuda::std::forward<_Tuple>(__t),
-        __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
+    _CCCL_EXEC_CHECK_DISABLE
+template <class _Fn, class _Tuple>
+_CCCL_API constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
+  _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__apply_tuple_impl(
+    ::cuda::std::forward<_Fn>(__f),
+    ::cuda::std::forward<_Tuple>(__t),
+    __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
-        template <class _Tp, class _Tuple, size_t... _Idx>
-        _CCCL_API constexpr _Tp
-  __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
-    _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(::cuda::std::get<_Idx>(::cuda::std::forward<_Tuple>(__t))...))
+    _CCCL_EXEC_CHECK_DISABLE
+template <class _Tp, class _Tuple, size_t... _Idx>
+_CCCL_API constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
+  _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(::cuda::std::get<_Idx>(::cuda::std::forward<_Tuple>(__t))...))
 
-      template <class _Tp, class _Tuple>
-      _CCCL_API constexpr _Tp
-  make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__make_from_tuple_impl<_Tp>(
+    _CCCL_EXEC_CHECK_DISABLE
+template <class _Tp, class _Tuple>
+_CCCL_API constexpr _Tp make_from_tuple(_Tuple&& __t)
+  _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__make_from_tuple_impl<_Tp>(
     ::cuda::std::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
 #undef _LIBCUDACXX_NOEXCEPT_RETURN

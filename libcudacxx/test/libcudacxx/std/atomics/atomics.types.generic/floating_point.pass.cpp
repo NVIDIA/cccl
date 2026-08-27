@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -88,7 +88,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC __noinline__ void do_test()
+TEST_HOST_DEVICE_FUNC __noinline__ void do_test()
 {
   Selector<A, constructor_initializer> sel;
   A& obj                   = *sel.construct(T(0));
@@ -143,7 +143,7 @@ TEST_FUNC __noinline__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC __noinline__ void test()
+TEST_HOST_DEVICE_FUNC __noinline__ void test()
 {
   do_test<A, T, Selector>();
   do_test<volatile A, T, Selector>();
@@ -152,7 +152,7 @@ TEST_FUNC __noinline__ void test()
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-TEST_FUNC void test_for_all_types()
+TEST_HOST_DEVICE_FUNC void test_for_all_types()
 {
   test<Atomic<float, Scope>, float, Selector>();
   test<Atomic<double, Scope>, double, Selector>();

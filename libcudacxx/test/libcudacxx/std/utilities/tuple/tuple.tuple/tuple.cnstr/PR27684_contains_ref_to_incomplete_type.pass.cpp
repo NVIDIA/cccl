@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: msvc
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // <cuda/std/tuple>

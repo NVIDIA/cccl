@@ -305,30 +305,34 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _B
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-// clang-format off
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
-struct __fn {
-  template <class _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value) const
-    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value))))
-    -> repeat_view<remove_cvref_t<_Tp>>
-    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value)); }
 
+_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
+struct __fn
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __value) noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value))))
+    -> repeat_view<remove_cvref_t<_Tp>>
+  {
+    return ranges::repeat_view(::cuda::std::forward<_Tp>(__value));
+  }
 
   template <class _Tp, class _Bound>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value, _Bound&& __bound_sentinel) const
-    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel))))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __value, _Bound&& __bound_sentinel) noexcept(
+    noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel))))
     -> repeat_view<remove_cvref_t<_Tp>, remove_cvref_t<_Bound>>
-    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel)); }
+  {
+    return ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel));
+  }
 };
 _CCCL_END_NAMESPACE_CPO
-// clang-format on
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES

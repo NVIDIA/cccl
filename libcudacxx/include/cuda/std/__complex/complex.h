@@ -198,7 +198,7 @@ public:
     __im_ *= __re;
     return *this;
   }
-  _CCCL_API constexpr complex& operator/=(const value_type& __re)
+  _CCCL_HOST_DEVICE_API constexpr complex& operator/=(const value_type& __re)
   {
     __re_ /= __re;
     __im_ /= __re;
@@ -228,13 +228,14 @@ _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, 
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 
 // 26.3.6 operators:
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -243,6 +244,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -251,6 +253,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -259,6 +262,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -267,6 +271,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -275,6 +280,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -282,6 +288,7 @@ template <class _Tp>
   __t += __x;
   return __t;
 }
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
@@ -299,11 +306,11 @@ template <class _Tp>
     bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
     bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
     bool __z_nan  = !__z_inf
-                && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
-                    || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
-    bool __w_nan = !__w_inf
-                && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
-                    || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
+                 && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
+                     || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
+    bool __w_nan  = !__w_inf
+                 && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
+                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -395,6 +402,7 @@ template <class _Tp>
   return complex<_Tp>(__x, __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator*(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -403,6 +411,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator*(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -411,6 +420,7 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
@@ -437,11 +447,11 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
     bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
     bool __z_nan  = !__z_inf
-                && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
-                    || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
-    bool __w_nan = !__w_inf
-                && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
-                    || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
+                 && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
+                     || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
+    bool __w_nan  = !__w_inf
+                 && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
+                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if ((__z_nan || __w_nan) || (__z_inf && __w_inf))
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -510,12 +520,14 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   return complex<_Tp>(__x, __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator/(const complex<_Tp>& __x, const _Tp& __y)
 {
   return complex<_Tp>(__x.real() / __y, __x.imag() / __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -524,24 +536,28 @@ template <class _Tp>
   return __t;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator+(const complex<_Tp>& __x)
 {
   return __x;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr complex<_Tp> operator-(const complex<_Tp>& __x)
 {
   return complex<_Tp>(-__x.real(), -__x.imag());
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return __x.real() == __y.real() && __x.imag() == __y.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -549,18 +565,21 @@ template <class _Tp>
 }
 
 #if _CCCL_STD_VER <= 2017
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const _Tp& __x, const complex<_Tp>& __y)
 {
   return __x == __y.real() && _Tp(0) == __y.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -575,6 +594,7 @@ template <class _Tp>
 #endif // _CCCL_STD_VER <= 2017
 
 #if _CCCL_HOSTED()
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -583,6 +603,7 @@ template <class _Tp, class _Up>
 }
 
 #  if _CCCL_STD_VER <= 2017
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
@@ -590,12 +611,14 @@ template <class _Tp, class _Up>
       && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
   return !(__x == __y);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
@@ -606,6 +629,7 @@ template <class _Tp, class _Up>
 
 // real
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp real(const complex<_Tp>& __c)
 {
@@ -640,6 +664,7 @@ using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::
 template <class _Tp>
 using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __cccl_complex_value_type<_Tp> real(_Tp __re)
 {
@@ -648,12 +673,14 @@ template <class _Tp>
 
 // imag
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp imag(const complex<_Tp>& __c)
 {
   return __c.imag();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __cccl_complex_value_type<_Tp> imag(_Tp)
 {

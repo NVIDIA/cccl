@@ -150,15 +150,15 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
   static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
   static constexpr ScanLookbackPolicy policy = active_policy.lookback;
   using ScanPolicy                           = agent_scan_policy<
-                              0,
-                              0,
-                              void,
-                              policy.load_algorithm,
-                              policy.load_modifier,
-                              policy.store_algorithm,
-                              policy.scan_algorithm,
-                              NoScaling<policy.threads_per_block, policy.items_per_thread>,
-                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+    0,
+    0,
+    void,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.scan_algorithm,
+    NoScaling<policy.threads_per_block, policy.items_per_thread>,
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
@@ -413,7 +413,7 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
       values,
       current_bit,
       end_bit,
-      bool_constant_v < Order == SortOrder::Descending >,
+      bool_constant_v<Order == SortOrder::Descending>,
       bool_constant_v<KEYS_ONLY>,
       decomposer);
 
@@ -520,15 +520,15 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
 {
   static constexpr RadixSortOnesweepPolicy policy = current_policy<PolicySelector>().onesweep;
   using OnesweepPolicyT                           = detail::agent_radix_sort_onesweep_policy<
-                              0,
-                              0,
-                              void,
-                              policy.rank_private_partitions,
-                              policy.rank_algorithm,
-                              policy.scan_algorithm,
-                              policy.store_algorithm,
-                              policy.radix_bits,
-                              NoScaling<policy.threads_per_block, policy.items_per_thread>>;
+    0,
+    0,
+    void,
+    policy.rank_private_partitions,
+    policy.rank_algorithm,
+    policy.scan_algorithm,
+    policy.store_algorithm,
+    policy.radix_bits,
+    NoScaling<policy.threads_per_block, policy.items_per_thread>>;
 
   using AgentT =
     AgentRadixSortOnesweep<OnesweepPolicyT,

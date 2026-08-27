@@ -17,7 +17,7 @@
 
 // Regularized incomplete gamma function P(a,x)
 // Adapted from numerical recipes
-TEST_FUNC inline double incomplete_gamma(double a, double x)
+TEST_HOST_DEVICE_FUNC inline double incomplete_gamma(double a, double x)
 {
   if (x <= 0.0)
   {
@@ -43,7 +43,7 @@ TEST_FUNC inline double incomplete_gamma(double a, double x)
 
 // Regularized incomplete beta function I_x(a,b)
 // Adapted from numerical recipes
-TEST_FUNC inline double incomplete_beta(double a, double b, double x)
+TEST_HOST_DEVICE_FUNC inline double incomplete_beta(double a, double b, double x)
 {
   if (x <= 0.0)
   {

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -175,7 +176,7 @@ class block_allocator : public block_allocator_untyped
 public:
   template <typename ctx_t, typename... Args>
   block_allocator(ctx_t& ctx, Args&&... args)
-      : block_allocator_untyped(ctx, ::std::make_shared<T>(::std::forward<Args>(args)...))
+      : block_allocator_untyped(ctx, ::std::make_shared<T>(::cuda::std::forward<Args>(args)...))
   {}
 
   block_allocator(::std::shared_ptr<block_allocator_interface> ptr)

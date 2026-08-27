@@ -11,7 +11,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
@@ -22,7 +22,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_triple<custom_t>, type_triple<std::int64_t, std::int64_t, custom_t>>;
 
-C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using value_t  = typename params::item_t;

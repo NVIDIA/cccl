@@ -37,6 +37,8 @@ The following factory methods create the most common execution places:
 - ``exec_place::cuda_context(ctx, devid)`` -- an externally-owned CUDA driver
   context; the device ordinal is derived from the context when ``devid`` is
   omitted
+- ``exec_place::locality_domain(devid, domain)`` -- one locality domain of a
+  device (see :ref:`places-locality-domains`)
 
 When an execution place is activated, it sets the appropriate CUDA context
 (e.g. calls ``cudaSetDevice``). Each execution place also has an *affine*
@@ -60,6 +62,8 @@ following factory methods are available:
 - ``data_place::managed()`` -- CUDA managed (unified) memory
 - ``data_place::affine()`` -- the data place naturally associated with the
   current execution place
+- ``data_place::locality_domain(devid, domain)`` -- memory localized to one
+  locality domain of a device (see :ref:`places-locality-domains`)
 
 The *affine* data place is the default: when no data place is specified,
 data is placed in the memory that is local to the execution place. For
@@ -114,6 +118,150 @@ place using an ``std::unordered_map`` keyed by ``exec_place``:
      }
      return h;
    }
+
+.. _places-locality-domains:
+
+Locality domain places (CUDA 13.4+)
+-----------------------------------
+
+Some devices partition their multiprocessors and memory into *locality
+domains* (see the ``CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`` device
+attribute). Compute throughput and memory bandwidth are higher within a
+domain than across domains, so pinning both execution and data to the same
+domain can improve locality. Locality domain places expose this capability:
+
+- ``locality_domain_count(devid)`` -- number of domains the device exposes
+  (never ``0``: a device without locality-domain support reports a single
+  whole-device domain; invalid device ordinals are rejected with an
+  exception)
+- ``exec_place::locality_domain(devid, domain[, split])`` -- an execution
+  place backed by an SM partition for the requested domain (a green context
+  built from an SM split by locality domain); the optional ``split``
+  selects the SM split method (see below)
+- ``data_place::locality_domain(devid, domain)`` -- a data place whose
+  allocations are localized to the requested domain (stream-ordered memory
+  pools and VMM physical handles)
+- ``make_locality_domain_grid(devid[, split])`` -- a grid with one execution
+  place per domain of the device, all built with the same SM split method
+- ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
+  ``green_context_helper``; hands out ``locality_domain_view`` identity
+  tokens accepted by both factories
+
+``exec_place::locality_domain(d, i)`` and ``data_place::locality_domain(d, i)``
+share the same domain ordinal and are therefore co-located: the execution
+place's affine data place is the matching locality-domain data place.
+
+SM split methods
+~~~~~~~~~~~~~~~~
+
+Not every SM of a device necessarily participates in a strict per-domain SM
+split: SMs may not be assigned to any domain, and the default co-scheduling
+alignment can leave a domain's incomplete SM groups unassigned. The
+``locality_domain_sm_split`` enumeration therefore lets execution-place
+construction choose how the per-domain SM partitions are carved out of the
+device (with ``cuDevSmResourceSplit``):
+
+- ``locality_domain_sm_split::backfill`` (the default): every domain place
+  is sized to an even share of the device total and backfilled by the
+  driver -- with the target domain's SMs first, then SMs not assigned to any
+  domain, then SMs from other domains -- so the domain places together cover
+  the whole device. The backfilled SMs may sit outside the place's domain
+  (they have no memory affinity with it), and the partition uses the
+  finest co-scheduling granularity, which does not support launching
+  thread-block clusters.
+- ``locality_domain_sm_split::aligned`` -- only SMs of the domain that form
+  complete co-scheduled groups at the device's default alignment. Every SM
+  of the place is affine to the place's domain and thread-block cluster
+  launches remain available, but incomplete groups and SMs outside any
+  domain are left out of the partition.
+- ``locality_domain_sm_split::fine`` -- all of the domain's SMs, grouped at
+  the finest co-scheduling granularity (groups of 2). Every SM of the place
+  is affine to the place's domain, at the cost of thread-block cluster
+  launches.
+
+``backfill`` is the least surprising default: work spread over the domain
+places uses the whole device. The strictly per-domain methods trade that
+coverage for affinity -- when work is partitioned by data affinity, SMs
+backfilled from outside a domain execute against remote memory, which can
+offset the locality benefit the partitioning was meant to capture. Prefer
+``aligned`` or ``fine`` when per-place SM/memory affinity matters more than
+whole-device coverage.
+
+The split method only affects the execution side: data places take no
+method, and places built with different methods for the same
+``(device, domain)`` are distinct places sharing the same (equal) affine
+data place. Backends without native locality-domain support (pre-13.4
+toolkits, the whole-device degrade, the fake-topology override) accept and
+ignore the method.
+
+All three methods rest on the CUDA 13.4 driver surface that locality-domain
+places already require (splitting by locality domain with
+``cuDevSmResourceSplit``); the extra pieces ``backfill`` and ``fine`` use
+predate it, so no method needs a toolkit newer than 13.4.
+
+.. code:: cpp
+
+    // Strictly per-domain partitions for affinity-partitioned work
+    auto grid = make_locality_domain_grid(dev, locality_domain_sm_split::fine);
+
+The following schematic example assumes the usual CUDASTF setup (a
+``context ctx``, a logical data ``lX`` and a ``kernel``, as in the STF
+introduction):
+
+.. code:: cpp
+
+    const int dev = 0;
+
+    // Never 0: a device without locality-domain support reports a single
+    // whole-device domain, so the same code runs everywhere.
+    const unsigned int n = locality_domain_count(dev);
+
+    // One task per domain (with CUDASTF)
+    for (unsigned int i = 0; i < n; i++) {
+        ctx.task(exec_place::locality_domain(dev, i), lX.rw())
+            ->*[](cudaStream_t s, auto x) { kernel<<<16, 128, 0, s>>>(x); };
+    }
+
+    // Or distribute a parallel_for over all domains at once
+    auto grid = make_locality_domain_grid(dev);
+    ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
+        ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
+
+Like ``data_place::device(id)``, a locality-domain place is identified by a
+``(device, domain)`` pair that acts as an identity token: construction of a
+data place performs no existence check, and the ordinals are validated
+lazily when the place is actually used. Places for distinct domains hash and
+compare as distinct values, so they can be used as container keys.
+
+**Behavior on older toolkits (before CUDA 13.4):**
+
+The same API compiles and runs, with whole-device semantics: every valid
+device reports a single locality domain (``locality_domain_count() == 1``),
+data places allocate plain device memory, and execution places activate the
+whole device. The domain ordinal is still carried through hashing,
+comparison and ``to_string()``, so distinct ordinals remain distinguishable
+as labels. This lets code name a locality domain precisely even when the
+underlying implementation is the whole device, and keeps a single code path
+across toolkits. The same degrade applies at runtime on a CUDA 13.4+ toolkit
+whose driver cannot answer the locality-domain query: the count is never
+``0``, and such a device reports exactly one whole-device domain.
+
+**Environment variables:**
+
+- ``CUDASTF_DISABLE_LOCALIZED_MEMORY`` -- locality-domain data places hand
+  out plain device memory instead of domain-localized memory, while
+  execution still runs on per-domain SM partitions. This is an A/B knob to
+  measure the effect of memory localization independently of execution
+  confinement.
+- ``CUDASTF_FAKE_LOCALITY_DOMAINS=N`` -- forces ``N`` domains per device,
+  backed by an even green-context SM split (granularity-aware) with plain
+  device memory, on any green-context-capable toolkit (CUDA 12.4+). This is
+  the converse ablation control -- SM confinement without memory
+  localization -- and also lets locality-domain code paths be exercised on
+  devices with a single domain. The override is strict: when the device
+  cannot provide ``N`` domains (SM budget, group granularity, or no
+  green-context support at runtime), locality-domain queries and factories
+  throw instead of silently reporting a smaller topology.
 
 .. _places-activate:
 
@@ -487,7 +635,7 @@ the selected extents; later axes shift left and trailing extents become one:
 
 These operations are useful when a partition should consume several axes of
 a processor grid as one logical axis. They are coordinate transformations,
-not :ref:`places-partitioning`: the latter decomposes a place into constituent
+not :ref:`partitioning <places-partitioning>`: the latter decomposes a place into constituent
 resources.
 
 .. _places-partitioning:
@@ -497,14 +645,23 @@ Partitioning grids
 
 The ``place_partition`` class partitions an execution place at a given
 granularity. This is useful for splitting a multi-device grid into its
-constituent devices, or for partitioning a device into green contexts or
-CUDA streams.
+constituent devices, or for partitioning a device into locality domains,
+green contexts or CUDA streams.
 
 The partitioning granularity is specified by ``place_partition_scope``:
 
 - ``place_partition_scope::cuda_device`` -- partition into individual devices
+- ``place_partition_scope::locality_domain`` -- partition into locality
+  domains (devices without locality-domain support contribute a single
+  whole-device domain; an optional ``locality_domain_sm_split`` argument
+  selects the SM split method)
 - ``place_partition_scope::green_context`` -- partition into green contexts (CUDA 12.4+)
 - ``place_partition_scope::cuda_stream`` -- partition into CUDA streams
+
+Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
+the machine-wide form: it yields every locality domain of every device. The
+single-device helper ``make_locality_domain_grid(dev_id)`` is convenience
+sugar over this mechanism.
 
 .. code:: c++
 
@@ -643,14 +800,16 @@ grid of places.
    // dimensions 0 and 2 not distributed
    auto part = make_partition(
        dim4(nx, ny, nz),
-       {dim_spec{}, dim_spec{dim_policy::blocked, /*mesh_axis*/ 0}, dim_spec{}},
+       partition_spec{whole, blocked<0>, whole},
        grid.get_dims());
 
-Each ``dim_spec`` entry selects a policy for the corresponding tensor
-dimension: ``whole`` (not distributed), ``blocked``, ``cyclic``, or
-``block_cyclic`` (with a block size), bound to one axis of the grid. This is
-strictly more expressive than the classic policies -- splitting dimension 1
-of a 3-D tensor, or mixing policies across dimensions, cannot be stated with
+Each entry in ``partition_spec`` selects a policy for the corresponding
+tensor dimension: ``whole`` (not distributed), ``blocked<axis>``,
+``cyclic<axis>``, or ``block_cyclic<axis>(block_size)``. Rank, policy,
+mesh-axis, and leaf counts are preserved in the C++ type; tensor extents,
+strides, and block sizes remain runtime values. This is strictly more
+expressive than the classic policies -- splitting dimension 1 of a 3-D
+tensor, or mixing policies across dimensions, cannot be stated with
 ``blocked_partition``.
 
 The reference shape, padding, and predication
@@ -708,17 +867,69 @@ Conventions and limits
 - Extents follow the **dimension-0-fastest** linearization of
   ``dim4::get_index()`` (the convention of STF slices). A row-major front-end
   must present its *whole* description in this order -- the extents, the
-  per-dimension ``dim_spec`` list, and any coordinates passed to ``owner()``
+  per-dimension ``partition_spec``, and any coordinates passed to ``owner()``
   reverse together, since reversing only the extents would silently re-target
-  each ``dim_spec`` at the wrong axis.
-- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain), and at most
-  ``cute_partition::max_leaves`` layout leaves per mode -- ``make_partition``
-  emits at most 2 per dimension, so the bound only concerns the expert
-  ``cute_partition`` constructor, which accepts raw (extent, stride) leaves
-  for layouts the per-dimension grammar cannot express.
-- The partition object is trivially copyable (fixed-capacity storage) and
-  its queries are host/device callable.
+  each policy at the wrong axis.
+- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain).
+- Typed partitions and their kernel-facing sub-shapes store exactly their
+  layout leaves. Runtime interfaces (including C/Python opaque handles) erase
+  them to a canonical descriptor only at the data-place boundary.
+- The partition object is trivially copyable and its queries are host/device
+  callable.
 
 The ``partitioned_axpy`` example shows the intended workflow end to end:
 express the partition once, evaluate it, run tasks over data placed by it,
 and perform a raw geometry-aware allocation.
+
+Computing over structured partitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same ``parallel_for`` entry point that accepts the classic policies
+accepts a structured partition instance, which then decides **both** the
+per-place kernel decomposition and (through the task's affine data place)
+the placement of the data those kernels touch -- one object, both sides:
+
+.. code:: c++
+
+   // Every place computes exactly the coordinates it owns
+   ctx.parallel_for(part, grid, lX.shape(), lX.write())
+       ->*[] __device__(size_t x, size_t y, size_t z, auto X) { ... };
+
+The shape argument may also be a ``box`` describing a *region within the
+tensor the partition was built for* (validated by containment) -- e.g. the
+interior of a stencil domain. Each place still enumerates its own
+coordinates; those outside the region (like the padding phantoms of uneven
+extents) are skipped by a per-coordinate predicate, so iteration stays
+aligned with data ownership rather than re-splitting the region:
+
+.. code:: c++
+
+   box interior({1ul, nx - 1}, {1ul, ny - 1}, {1ul, nz - 1});
+   ctx.parallel_for(part, grid, interior, lX.rw())->*...;
+
+Predication has a cost proportional to the *rejected* fraction of the
+enumerated coordinates, which makes it the right tool for regions that are
+dense in their bounds (interiors: the rejected boundary shell is a
+surface-to-volume fraction) and the wrong tool for thin regions. For
+boundary-style updates -- a face of the domain, say -- prefer one of:
+
+- **fuse** the boundary handling into the volumetric kernel's body when the
+  condition is cheap (application-dependent);
+- iterate the face with a **classic scale-free policy** (tight, no rejected
+  coordinates) while an explicit dependency keeps placement on the
+  partition's composite place:
+
+  .. code:: c++
+
+     auto dist = make_composite_data_place(grid, part);
+     box face({0ul, nx}, {0ul, ny}, {0ul, 1ul});
+     ctx.parallel_for(blocked_partition(), grid, face, lX.rw(dist))->*...;
+
+  The face's few remote writes (places computing parts of a face another
+  place owns) are typically negligible against the volumetric traffic.
+
+The ``fdtd_mgpu`` example demonstrates the full pattern: a single
+``make_partition`` call decides which dimension splits for every task --
+initialization over the full shape, updates over interior boxes, a point
+source -- and places the fields' data, so changing the distribution of the
+whole simulation is editing one ``partition_spec`` entry.

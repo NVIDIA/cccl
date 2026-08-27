@@ -58,7 +58,7 @@ public:
   //! @brief Constructs a linear probing scheme with the given hasher callable.
   //!
   //! @param __hash Hasher
-  _CCCL_HOST_DEVICE_API constexpr linear_probing(const _Hash& __hash = {})
+  _CCCL_HOST_DEVICE_API constexpr linear_probing(const _Hash& __hash = _Hash{})
       : __hash{__hash}
   {}
 
@@ -157,7 +157,7 @@ public:
   //!
   //! @param __hash1 First hasher
   //! @param __hash2 Second hasher
-  _CCCL_HOST_DEVICE_API constexpr double_hashing(const _Hash1& __hash1 = {}, const _Hash2& __hash2 = {1})
+  _CCCL_HOST_DEVICE_API constexpr double_hashing(const _Hash1& __hash1 = _Hash1{}, const _Hash2& __hash2 = _Hash2{1})
       : __hash1{__hash1}
       , __hash2{__hash2}
   {}

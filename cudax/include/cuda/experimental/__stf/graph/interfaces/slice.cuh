@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,6 +28,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -47,7 +49,7 @@ public:
   /// @brief Alias for the shape type
   using typename base::shape_t;
 
-  using mutable_value_type = typename ::std::remove_const<T>::type;
+  using mutable_value_type = typename ::cuda::std::remove_const<T>::type;
 
   /**
    * @brief Constructor from slice
@@ -87,7 +89,6 @@ public:
       return;
     }
 
-    exec_place grid   = memory_node.affine_exec_place();
     size_t total_size = this->shape.size();
 
     // Get the extents stored as a dim4
@@ -110,8 +111,8 @@ public:
       }
     };
 
-    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
-      memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
+    auto [array,
+          cached_prereqs] = bctx.get_composite_cache().get(memory_node, delinearize, total_size, sizeof(T), data_dims);
     assert(array);
     prereqs.merge(mv(cached_prereqs));
     T* base_ptr = static_cast<T*>(array->get_base_ptr());
@@ -155,7 +156,13 @@ public:
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
     auto* array = static_cast<localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
+    bctx.get_composite_cache().put(
+      memory_node,
+      ::std::unique_ptr<localized_array>(array),
+      prereqs,
+      this->shape.size(),
+      sizeof(T),
+      this->shape.get_data_dims());
   }
 
   /// @brief Implementation of interface primitive
@@ -235,10 +242,7 @@ public:
         .kind     = kind};
     }
 
-    cudaGraphNode_t result;
-    cuda_safe_call(cudaGraphAddMemcpyNode(&result, graph, input_nodes, input_cnt, &cpy_params));
-
-    return result;
+    return cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
   }
 
   /// @brief Implementation of interface primitive

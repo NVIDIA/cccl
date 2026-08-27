@@ -10,10 +10,11 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -43,11 +44,11 @@ enum class gen_data_t
 template <typename OffsetT, typename InputIt, typename Predicate>
 auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate) -> OffsetT
 {
-  const auto it = std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
-  return static_cast<OffsetT>(std::distance(first, it));
+  const auto it = cuda::std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
+  return static_cast<OffsetT>(cuda::std::distance(first, it));
 }
 
-C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
+CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using offset_t = c2h::get<1, TestType>;
@@ -87,7 +88,7 @@ C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
     else
     {
       // omit the largest value from the random values so we have a value to that does not occur
-      c2h::gen(C2H_SEED(1), in_items, input_t{0}, static_cast<input_t>(::cuda::std::numeric_limits<input_t>::max() - 1));
+      c2h::gen(C2H_SEED(1), in_items, input_t{0}, static_cast<input_t>(cuda::std::numeric_limits<input_t>::max() - 1));
     }
   }
   else
@@ -111,7 +112,7 @@ C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
   else
   {
     // max value is neither in the random input and nor in the constant
-    val_to_find = ::cuda::std::numeric_limits<input_t>::max();
+    val_to_find = cuda::std::numeric_limits<input_t>::max();
   }
 
   auto predicate = predice_t{val_to_find};
@@ -160,7 +161,7 @@ C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
   }
 }
 
-C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]")
+CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]", CUB_SMALL)
 {
   using input_t  = int32_t;
   using offset_t = int32_t;
@@ -191,7 +192,7 @@ C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   }
 
   { // transform_iterator of counting_iterator input and thrust device_ptr output
-    auto t_it = cuda::make_transform_iterator(c_it, ::cuda::std::negate{});
+    auto t_it = cuda::make_transform_iterator(c_it, cuda::std::negate{});
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = cuda::equal_to_value<input_t>{-val_to_find};
     find_if(t_it, out_result.data(), predicate, num_items);
@@ -201,7 +202,7 @@ C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   { // counting_iterator input and transform_output_iterator output
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = cuda::equal_to_value<input_t>{val_to_find};
-    auto out_it    = cuda::make_transform_output_iterator(out_result.begin(), ::cuda::std::negate{});
+    auto out_it    = cuda::make_transform_output_iterator(out_result.begin(), cuda::std::negate{});
     find_if(c_it, out_it, predicate, num_items);
     REQUIRE(-expected_if_found == out_result[0]);
   }
@@ -243,7 +244,7 @@ struct index_to_value
 static_assert(!cuda::std::is_default_constructible_v<NotDefaultConstructible>,
               "NotDefaultConstructible should not be default constructible");
 
-C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
+CUB_TEST("Device find_if works with non default constructible types", "[device][find_if]", CUB_SMALL)
 {
   using input_t  = NotDefaultConstructible;
   using offset_t = int;
@@ -284,7 +285,7 @@ struct std_lower_bound_t
   template <typename RangeIteratorT, typename T, typename CompareOpT>
   RangeIteratorT operator()(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp) const
   {
-    return std::lower_bound(first, last, value, comp);
+    return cuda::std::lower_bound(first, last, value, comp);
   }
 } std_lower_bound;
 
@@ -293,7 +294,7 @@ struct std_upper_bound_t
   template <typename RangeIteratorT, typename T, typename CompareOpT>
   RangeIteratorT operator()(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp) const
   {
-    return std::upper_bound(first, last, value, comp);
+    return cuda::std::upper_bound(first, last, value, comp);
   }
 } std_upper_bound;
 
@@ -334,21 +335,22 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   CHECK(offsets_ref == offsets_h);
 }
 
-C2H_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", binary_search_types)
+CUB_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", CUB_SMALL, binary_search_types)
 {
   using value_type = c2h::get<0, TestType>;
   test_vectorized<value_type>(lower_bound, std_lower_bound);
 }
 
-C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", binary_search_types)
+CUB_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", CUB_SMALL, binary_search_types)
 {
   using value_type = c2h::get<0, TestType>;
   test_vectorized<value_type>(upper_bound, std_upper_bound);
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::LowerBound really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {
@@ -364,8 +366,9 @@ C2H_TEST("DeviceFind::LowerBound really large input",
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceFind::UpperBound really large input",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 {
   try
   {

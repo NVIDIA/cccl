@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 #include <cub/config.cuh>
 
-#include "c2h/catch2_test_helper.h"
 #include "c2h/utility.h"
+#include "cub_test_macros.h"
 
 /***********************************************************************************************************************
  * TEST CASES
@@ -23,7 +23,7 @@ using index_types =
 #endif
                  >;
 
-C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
+CUB_TEST("FastDivMod random", "[FastDivMod][Random]", CUB_SMALL, index_types)
 {
   using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
@@ -38,7 +38,7 @@ C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
   REQUIRE(dividend % divisor == div_mod(dividend).remainder);
 }
 
-C2H_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", index_types)
+CUB_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", CUB_SMALL, index_types)
 {
   using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;

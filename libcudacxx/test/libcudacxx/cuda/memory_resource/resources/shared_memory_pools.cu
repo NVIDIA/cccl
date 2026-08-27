@@ -48,6 +48,42 @@ PoolType construct_shared_pool(cuda::memory_pool_properties props = {})
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
+#if _CCCL_CTK_AT_LEAST(13, 3)
+template <typename PoolType>
+void check_shared_pool_creation_attributes(const PoolType& pool, const cuda::memory_pool_properties props)
+{
+  auto expected_allocation_type = ::cudaMemAllocationTypePinned;
+  auto expected_location_type   = ::cudaMemLocationTypeDevice;
+  auto expected_location_id     = 0;
+
+#  if _CCCL_CTK_AT_LEAST(12, 9)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::shared_pinned_memory_pool>)
+  {
+    expected_location_type = ::cudaMemLocationTypeHostNuma;
+    expected_location_id   = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::shared_managed_memory_pool>)
+  {
+    expected_allocation_type = ::cudaMemAllocationTypeManaged;
+    expected_location_type   = ::cudaMemLocationTypeNone;
+    expected_location_id     = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == expected_location_id);
+  REQUIRE(location.type == expected_location_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
+  REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
+
 // --- static assertions ---
 
 template <typename PoolType>
@@ -224,6 +260,11 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool operations", "[memory_resource]", SHARE
   {
     size_t threshold = pool.attribute(cuda::memory_pool_attributes::release_threshold);
     CHECK(threshold == cuda::std::numeric_limits<size_t>::max());
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+    cuda::memory_pool_properties expected_props{};
+    check_shared_pool_creation_attributes(pool, expected_props);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
   }
 
   SECTION("set_attribute")

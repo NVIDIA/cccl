@@ -12,6 +12,13 @@
 
 #include <cuda/std/__functional/invoke.h>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_run_length_encode.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +30,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
+#include <cub/device/dispatch/dispatch_rle_encode.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
@@ -81,30 +89,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceRunLengthEncode
 {
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // DeviceRunLengthEncode::Encode dispatches to ReduceByKey, but we want to have a dedicated tuning policy, so we need
-  // to adapt the policy selector to convert the tuning policy
-  template <typename PolicySelector>
-#  if _CCCL_HAS_CONCEPTS()
-    requires detail::rle::encode::rle_encode_policy_selector<PolicySelector>
-#  endif // _CCCL_HAS_CONCEPTS()
-  struct __policy_selector_adapter
-  {
-    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-      -> ReduceByKeyPolicy
-    {
-      const RleEncodePolicy policy = PolicySelector{}(cc);
-      return ReduceByKeyPolicy{
-        policy.threads_per_block,
-        policy.items_per_thread,
-        policy.load_algorithm,
-        policy.load_modifier,
-        policy.scan_algorithm,
-        policy.lookback_delay};
-    }
-  };
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
@@ -234,21 +218,25 @@ struct DeviceRunLengthEncode
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
-    return detail::reduce_by_key::dispatch_streaming(
+    return detail::rle::encode::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_unique_out,
-      lengths_input_iterator_t(length_t{1}),
       d_counts_out,
       d_num_runs_out,
-      equality_op{},
-      reduction_op{},
       static_cast<offset_t>(num_items),
       stream,
-      __policy_selector_adapter<policy_selector_t>{});
+      policy_selector_t{});
   }
 
   //! @rst
@@ -334,7 +322,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::Encode");
 
@@ -345,23 +333,27 @@ struct DeviceRunLengthEncode
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
     using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using default_policy_selector = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce_by_key::dispatch_streaming(
+        return detail::rle::encode::dispatch(
           storage,
           bytes,
           d_in,
           d_unique_out,
-          lengths_input_iterator_t(length_t{1}),
           d_counts_out,
           d_num_runs_out,
-          equality_op{},
-          reduction_op{},
           static_cast<offset_t>(num_items),
           stream,
-          __policy_selector_adapter<decltype(policy_selector)>{});
+          policy_selector);
       });
   }
 
@@ -582,7 +574,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::NonTrivialRuns");
 

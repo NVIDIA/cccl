@@ -1,0 +1,247 @@
+set(LIBCUDACXX_SUPPORTED_DEBUGGERS lldb gdb)
+set(LIBCUDACXX_DEBUGGING_BASE_TARGET libcudacxx.test.debugging)
+
+function(libcudacxx_init_debugger_testing enabled_var)
+  # Unconditionally create the umbrella target to make CMakePresets easier to setup. If we
+  # don't have the debuggers available, this target doesn't do anything
+  add_custom_target(${LIBCUDACXX_DEBUGGING_BASE_TARGET})
+
+  # Windows lldb is broken sometimes (see
+  # https://github.com/llvm/llvm-project/issues/74073) so merely finding it does not mean
+  # it is functional. In any case, it is good to validate the binary since even a found
+  # lldb/gdb on other platforms that ends up not working is annoying to work around
+  function(validator result_var item)
+    execute_process(
+      COMMAND ${item} --version
+      OUTPUT_QUIET
+      ERROR_QUIET
+      RESULT_VARIABLE result
+      TIMEOUT 10
+    )
+
+    if (result EQUAL 0)
+      set(${result_var} TRUE PARENT_SCOPE)
+    else()
+      set(${result_var} FALSE PARENT_SCOPE)
+    endif()
+  endfunction()
+
+  set(enabled FALSE)
+  foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
+    string(TOUPPER "${debugger}" DEBUGGER_UPPER)
+
+    find_program(
+      LIBCUDACXX_${DEBUGGER_UPPER}
+      NAMES "${debugger}"
+      VALIDATOR validator
+    )
+
+    if (LIBCUDACXX_${DEBUGGER_UPPER})
+      set(debugger_exe "${LIBCUDACXX_${DEBUGGER_UPPER}}")
+      message(STATUS "Found ${debugger}: ${debugger_exe}")
+      execute_process(
+        COMMAND ${debugger_exe} --version
+        OUTPUT_VARIABLE version
+        ERROR_VARIABLE version
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
+      )
+      message(STATUS "${debugger_exe} --version: ${version}")
+    endif()
+
+    set(default OFF)
+    if (LIBCUDACXX_${DEBUGGER_UPPER})
+      set(default ON)
+    endif()
+
+    option(
+      LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING
+      "Run libcudacxx pretty-printer tests with ${debugger}"
+      ${default}
+    )
+
+    if (
+      LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING
+      AND NOT LIBCUDACXX_${DEBUGGER_UPPER}
+    )
+      message(
+        FATAL_ERROR
+        "LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING is enabled, but ${debugger} was not found"
+      )
+    endif()
+
+    set(
+      LIBCUDACXX_${DEBUGGER_UPPER}
+      "${LIBCUDACXX_${DEBUGGER_UPPER}}"
+      PARENT_SCOPE
+    )
+    set(
+      LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING
+      "${LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING}"
+      PARENT_SCOPE
+    )
+
+    if (LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING)
+      set(enabled TRUE)
+    endif()
+  endforeach()
+
+  set(${enabled_var} ${enabled} PARENT_SCOPE)
+endfunction()
+
+libcudacxx_init_debugger_testing(testing_enabled)
+
+if (NOT testing_enabled)
+  return()
+endif()
+
+cccl_get_cudatoolkit()
+
+#[=======================================================================[.rst:
+libcudacxx_add_pretty_printer_test
+---------------------------------
+
+Build a CUDA pretty-printer scenario and register its enabled debugger tests.
+
+A scenario that prints ``LIBCUDACXX_PRETTY_PRINTER_SKIP: <reason>`` instead of running
+its cases is reported as skipped, which covers support that only the driver knows about.
+
+The function creates the executable target
+``libcudacxx.test.debugging.<NAME>`` with host debug information and optimization
+disabled. For each enabled debugger, it registers a serial CTest named
+``libcudacxx.test.debugging.<debugger>.<NAME>``. The test uses the debugger's
+formatter entry point and the ``<debugger>.expected`` file in the caller's source
+directory.
+
+Arguments
+^^^^^^^^^
+
+``NAME``
+  Scenario name used in the executable target, CTest names, and diagnostic output.
+
+``SOURCES``
+  Source files used to build the CUDA scenario executable. Relative paths are resolved
+  against the caller's source directory.
+
+``CASES``
+  Ordered runner arguments describing the debugger stops and expressions. Each case
+  has the form ``--case <breakpoint> <section-name> <expression>``. The expression is
+  evaluated in the breakpoint function's own frame.
+
+#]=======================================================================]
+function(libcudacxx_add_pretty_printer_test)
+  set(options)
+  set(one_value_arguments NAME)
+  set(multi_value_arguments SOURCES CASES)
+  cmake_parse_arguments(
+    pretty_printer
+    "${options}"
+    "${one_value_arguments}"
+    "${multi_value_arguments}"
+    ${ARGN}
+  )
+
+  if (pretty_printer_UNPARSED_ARGUMENTS)
+    message(
+      FATAL_ERROR
+      "Unrecognized arguments: ${pretty_printer_UNPARSED_ARGUMENTS}"
+    )
+  endif()
+  if (NOT pretty_printer_NAME)
+    message(FATAL_ERROR "libcudacxx_add_pretty_printer_test requires NAME")
+  endif()
+  if (NOT pretty_printer_SOURCES)
+    message(FATAL_ERROR "libcudacxx_add_pretty_printer_test requires SOURCES")
+  endif()
+  if (NOT pretty_printer_CASES)
+    message(FATAL_ERROR "libcudacxx_add_pretty_printer_test requires CASES")
+  endif()
+
+  set(target_name "${LIBCUDACXX_DEBUGGING_BASE_TARGET}.${pretty_printer_NAME}")
+  cccl_add_executable(
+    ${target_name}
+    DIALECT 17
+    NO_CLANG_TIDY
+    SOURCES ${pretty_printer_SOURCES}
+  )
+  target_link_libraries(
+    ${target_name}
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart
+  )
+
+  # Explicitly set max optimization, the printers should work even when everything is
+  # compiled out.
+  target_compile_options(${target_name} PRIVATE -g -O3)
+  target_compile_definitions(${target_name} PRIVATE NDEBUG)
+
+  foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
+    string(TOUPPER "${debugger}" DEBUGGER_UPPER)
+
+    if (NOT LIBCUDACXX_ENABLE_${DEBUGGER_UPPER}_TESTING)
+      continue()
+    endif()
+
+    set(executable "${LIBCUDACXX_${DEBUGGER_UPPER}}")
+    set(
+      formatter
+      "${libcudacxx_SOURCE_DIR}/share/libcudacxx/${debugger}/__init__.py"
+    )
+    set(test_name "${target_name}.${debugger}")
+    # The runner owns the timeout so that it can retry a timed-out attempt, which CTest
+    # cannot do. The per-attempt limit is aggressive because pretty printers must not be
+    # slow. If they are, then it's a problem with the printer and/or it is doing too much.
+    # A timeout is still possible on a loaded machine, so the runner retries it.
+    set(attempt_timeout 10)
+    # read: retry 2 more times after failure
+    set(retries 2)
+    add_test(
+      NAME ${test_name}
+      COMMAND
+        # gersemi: off
+        "${Python_EXECUTABLE}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_pretty_printer_test.py"
+        --debugger "${debugger}"
+        --debugger-executable "${executable}"
+        --program "$<TARGET_FILE:${target_name}>"
+        --formatter-init "${formatter}"
+        --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
+        --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
+        --timeout "${attempt_timeout}"
+        --retries "${retries}"
+        ${pretty_printer_CASES}
+      # gersemi: on
+    )
+    # Backstop only. It must exceed the total runner budget so that the runner, and not
+    # CTest, reports a timeout. It catches a hung runner instead of a hung debugger.
+    math(EXPR ctest_timeout "${attempt_timeout} * (${retries} + 1) + 30")
+    set_tests_properties(
+      ${test_name}
+      PROPERTIES TIMEOUT ${ctest_timeout} SKIP_RETURN_CODE 77
+    )
+  endforeach()
+endfunction()
+
+add_subdirectory(array)
+add_subdirectory(atomic)
+add_subdirectory(buffer)
+add_subdirectory(complex)
+add_subdirectory(event)
+add_subdirectory(hierarchy)
+add_subdirectory(inplace_vector)
+add_subdirectory(mdspan)
+add_subdirectory(memory_pool)
+# Registered only on a toolkit new enough to have the types, which keeps the
+# golden output of every registered scenario unconditional. Gate on the toolkit
+# version rather than the compiler version, since the CUDA compiler may be clang.
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.9)
+  add_subdirectory(memory_pool_pinned)
+endif()
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
+  add_subdirectory(memory_pool_managed)
+endif()
+add_subdirectory(memory_resource)
+add_subdirectory(optional)
+add_subdirectory(shared_resource)
+add_subdirectory(span)
+add_subdirectory(stream)
+add_subdirectory(tuple)

@@ -13,8 +13,8 @@
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_reduce.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 #include <c2h/operator.cuh>
@@ -115,8 +115,9 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadReduce Integral Type Tests",
+CUB_TEST("ThreadReduce Integral Type Tests",
          "[reduce][thread]",
+         CUB_SMALL,
          integral_type_list,
          cub_operator_integral_list,
          items_per_thread_list)
@@ -147,8 +148,9 @@ C2H_TEST("ThreadReduce Integral Type Tests",
   REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
-C2H_TEST("ThreadReduce Floating-Point Type Tests",
+CUB_TEST("ThreadReduce Floating-Point Type Tests",
          "[reduce][thread]",
+         CUB_SMALL,
          fp_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -181,8 +183,9 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
+CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
          "[reduce][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -220,7 +223,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
+CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
 {
   using op_t       = cuda::std::plus<>;
   using dist_param = dist_interval<int, op_t, max_size>;
@@ -255,7 +258,7 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 }
 
-C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]")
+CUB_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]", CUB_SMALL)
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},

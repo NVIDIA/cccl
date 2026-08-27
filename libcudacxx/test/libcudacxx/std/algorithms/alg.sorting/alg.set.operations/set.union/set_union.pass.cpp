@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: function-to-pointer decay is unsupported in tile code
-
 // <algorithm>
 
 // template<InputIterator InIter1, InputIterator InIter2, typename OutIter>
@@ -29,6 +26,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1, class Iter2, class OutIter>
 TEST_FUNC constexpr void test4()
 {
@@ -38,7 +36,8 @@ TEST_FUNC constexpr void test4()
     T result[20] = {};
     T expected[] = {11, 22, 33, 31, 41, 42, 52};
     OutIter end  = cuda::std::set_union(Iter1(a), Iter1(a + 4), Iter2(b), Iter2(b + 5), OutIter(result));
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 7, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 7, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -48,7 +47,8 @@ TEST_FUNC constexpr void test4()
     T result[20] = {};
     T expected[] = {11, 22, 32, 31, 43, 42, 52};
     OutIter end  = cuda::std::set_union(Iter1(b), Iter1(b + 5), Iter2(a), Iter2(a + 4), OutIter(result));
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 7, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 7, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -56,6 +56,7 @@ TEST_FUNC constexpr void test4()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1, class Iter2>
 TEST_FUNC constexpr void test3()
 {
@@ -66,6 +67,7 @@ TEST_FUNC constexpr void test3()
   test4<T, Iter1, Iter2, T*>();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1>
 TEST_FUNC constexpr void test2()
 {
@@ -76,6 +78,7 @@ TEST_FUNC constexpr void test2()
   test3<T, Iter1, const T*>();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T>
 TEST_FUNC constexpr void test1()
 {
@@ -88,9 +91,9 @@ TEST_FUNC constexpr void test1()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test2<T, host_only_iterator<const T*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test2<T, device_only_iterator<const T*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 }
 
 TEST_FUNC constexpr bool test()

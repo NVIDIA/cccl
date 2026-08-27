@@ -212,6 +212,22 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
 stf_exec_place_handle
 stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims);
 
+//! \brief Return a grid with new dimensions and the same linear place order.
+//!
+//! Every extent in \p grid_dims must be positive and their product must equal
+//! the size of \p grid. The returned handle owns an independent grid wrapper;
+//! destroying either handle does not invalidate the other.
+//! \return A new execution-place handle, or NULL if the dimensions are invalid.
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims);
+
+//! \brief Collapse a contiguous inclusive range of grid axes.
+//!
+//! Axes in [\p first_axis, \p last_axis] are replaced by one axis whose
+//! extent is their product. Later axes shift left, trailing extents become
+//! one, and linear place order is preserved.
+//! \return A new execution-place handle, or NULL if the axis range is invalid.
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis);
+
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
@@ -284,6 +300,90 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Number of locality domains of a device. Never 0 for a valid
+//! device: without native locality-domain support (pre-13.4 toolkit, or a
+//! driver that cannot answer the query) the device reports a single domain
+//! covering the whole device. Returns 0 only on error (invalid device;
+//! detail on stderr).
+uint32_t stf_locality_domain_count(int dev_id);
+
+//! \brief SM split methods for locality-domain execution places.
+//!
+//! Selects how a locality-domain execution place's SM partition is carved
+//! out of the device (native backend only; other backends ignore it):
+//! - BACKFILL (the default): every domain place is sized to an even share
+//!   of the device total and backfilled by the driver (target domain first,
+//!   then SMs outside any domain, then other domains), so the domain places
+//!   together cover the whole device. Backfilled SMs may sit outside the
+//!   place's domain (no memory affinity with it), and the partition does
+//!   not support launching thread-block clusters.
+//! - ALIGNED: only SMs of the domain that form complete co-scheduled groups
+//!   at the device's default alignment. Strictly domain-affine and
+//!   cluster-capable, but incomplete groups and SMs outside any domain are
+//!   left out of the partition.
+//! - FINE: all of the domain's SMs at the finest co-scheduling granularity.
+//!   Strictly domain-affine, at the cost of thread-block cluster launches.
+typedef enum stf_locality_domain_sm_split
+{
+  STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL = 0,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED  = 1,
+  STF_LOCALITY_DOMAIN_SM_SPLIT_FINE     = 2,
+} stf_locality_domain_sm_split;
+
+//! \brief Execution place pinned to one locality domain of a device (the
+//! whole device with the fallback backend). Ordinals are identity tokens,
+//! validated lazily at use (native backend). Uses the default SM split
+//! method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Like \ref stf_exec_place_locality_domain with an explicit SM
+//! split method. Returns NULL on an invalid \p split value.
+stf_exec_place_handle
+stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split);
+
+//! \brief Grid with one execution place per locality domain of \p dev_id
+//! (a single whole-device place with the fallback backend). Uses the
+//! default SM split method (STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL).
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
+
+//! \brief Like \ref stf_exec_place_locality_domain_grid with an explicit SM
+//! split method applied to every place of the grid. Returns NULL on an
+//! invalid \p split value.
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split);
+
+//! \brief Data place whose allocations are localized to one locality
+//! domain of a device (plain device memory with the fallback backend).
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id);
+
+//! \brief Replicated placement: one copy of the data in the affine memory of
+//! every member of \p grid. Read-only at the place: mutate the data at
+//! another place, the next replicated read re-broadcasts.
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid);
+
+//! \brief Deferred replicated placement: replicated over the grid of
+//! whichever task the dependency is used with (bound at task acquisition; a
+//! scalar execution place degenerates to its affine data place).
+stf_data_place_handle stf_data_place_replicated_deferred(void);
+
+//! \brief Whether \p h is a replicated data place (concrete or deferred).
+//! Replicated places only support read access; bindings can validate at
+//! dependency construction instead of hitting the C++ exception at task
+//! creation. Returns 1 if replicated, 0 otherwise.
+int stf_data_place_is_replicated(stf_data_place_handle h);
+
+//! \brief Native blocked partition function for a given dimension,
+//! usable wherever an stf_get_executor_fn is expected without any FFI
+//! callback cost.
+//!
+//! The requested dimension is clamped to the highest axis whose extent is
+//! greater than one: values outside [0, 3] (like -1) always select that
+//! axis, and an in-range \p dim beyond it is clamped down to it (e.g.
+//! \p dim 2 on extents {n, 1, 1, 1} partitions along axis 0).
+stf_get_executor_fn stf_partition_fn_blocked(int dim);
+
+//! \brief Native cyclic (round-robin) partition function.
+stf_get_executor_fn stf_partition_fn_cyclic(void);
+
 //! \brief Create a data_place from green-context helper \p helper and view index \p idx.
 //! Returns NULL on failure or if \p idx is out of range.
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
@@ -338,6 +438,139 @@ void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, 
 //! \param h Data place handle (must not be NULL)
 //! \return 1 if stream-ordered, 0 otherwise
 int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
+
+//! \brief Allocate memory at a data place for a tensor with the given extents.
+//!
+//! For most places this is equivalent to allocating
+//! prod(data_dims) * elemsize bytes; composite places use the geometry to
+//! back each block of the allocation on the place owning it according to the
+//! partitioner (which is why the plain byte-count stf_data_place_allocate()
+//! fails on them: a byte count alone does not carry the tensor geometry).
+//! Extents follow the dimension-0-fastest linearization convention; row-major
+//! callers should present reversed extents (and a coordinate-reversing
+//! partitioner).
+//!
+//! The product of the extents and \p elemsize is validated before the
+//! allocation is attempted: if it overflows uint64_t (or exceeds
+//! PTRDIFF_MAX), the call fails and returns NULL instead of silently
+//! wrapping to a smaller byte count.
+//!
+//! \param h         Data place handle (must not be NULL)
+//! \param data_dims Extents of the tensor (must not be NULL)
+//! \param elemsize  Size of one element in bytes
+//! \param stream    CUDA stream for stream-ordered allocation (may be NULL)
+//! \return Pointer to allocated memory (release with
+//!         stf_data_place_deallocate()), or NULL on failure
+void* stf_data_place_allocate_nd(
+  stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream);
+
+//! \}
+
+//! \defgroup Placement Tensor placement description and evaluation
+//! \brief Structured partitions (cute_partition) and placement statistics
+//! \{
+
+//! \brief Opaque handle to a structured tensor partition (see
+//! stf_cute_partition_create()). Caller owns the handle; release with
+//! stf_cute_partition_destroy().
+typedef struct stf_cute_partition_opaque_t* stf_cute_partition_handle;
+
+//! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
+typedef enum stf_dim_policy
+{
+  STF_DIM_WHOLE        = 0, //!< dimension is not distributed
+  STF_DIM_BLOCKED      = 1, //!< contiguous chunks of ceil(extent / places)
+  STF_DIM_CYCLIC       = 2, //!< round-robin elements
+  STF_DIM_BLOCK_CYCLIC = 3 //!< round-robin blocks of a given size
+} stf_dim_policy;
+
+//! \brief Per-dimension entry of a JAX-like partition specification.
+typedef struct stf_partition_dim_spec
+{
+  int policy; //!< an stf_dim_policy value
+  int mesh_axis; //!< grid axis this dimension distributes over (ignored for STF_DIM_WHOLE)
+  uint64_t block; //!< block size (STF_DIM_BLOCK_CYCLIC only)
+} stf_partition_dim_spec;
+
+//! \brief Build a structured partition from a JAX-like per-dimension
+//! specification ("dimension 1, blocked over grid axis 0").
+//!
+//! Split dimensions are padded up to divisibility so the underlying layout is
+//! exact; coordinates beyond the true extents own no bytes (predication).
+//!
+//! \param true_dims True tensor extents (dimension 0 fastest; must not be NULL)
+//! \param grid_dims Extents of the grid of places (must not be NULL)
+//! \param spec      One entry per tensor dimension (must not be NULL)
+//! \param rank      Number of entries in \p spec (at most 4)
+//! \return New partition handle, or NULL on invalid input
+stf_cute_partition_handle stf_cute_partition_create(
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank);
+
+//! \brief Build a structured partition directly from flattened
+//! (extent, stride) leaves (expert form; see the C++ cute_partition docs).
+//! Strides are in linear element units over the padded extents, dimension 0
+//! fastest, leaf 0 fastest within each mode.
+//!
+//! \return New partition handle, or NULL if the leaves do not tile the padded
+//!         space exactly
+stf_cute_partition_handle stf_cute_partition_from_leaves(
+  const uint64_t* place_extents,
+  const int64_t* place_strides,
+  const int* place_axes,
+  size_t num_place_leaves,
+  const uint64_t* local_extents,
+  const int64_t* local_strides,
+  size_t num_local_leaves,
+  const stf_dim4* padded_dims,
+  const stf_dim4* true_dims,
+  const stf_dim4* grid_dims);
+
+//! \brief Destroy a partition handle (NULL is ignored).
+void stf_cute_partition_destroy(stf_cute_partition_handle h);
+
+//! \brief Get the true tensor extents of a partition.
+void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Get the padded tensor extents of a partition.
+void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Get the grid extents of a partition.
+void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims);
+
+//! \brief Number of leaves in the place mode.
+size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h);
+
+//! \brief Number of leaves in the local mode.
+size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h);
+
+//! \brief Fill the place-mode leaves (arrays sized by
+//! stf_cute_partition_num_place_leaves(); any output may be NULL to skip).
+void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes);
+
+//! \brief Fill the local-mode leaves (arrays sized by
+//! stf_cute_partition_num_local_leaves(); any output may be NULL to skip).
+void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides);
+
+//! \brief Linear element offset (in the padded space) of a place's first
+//! element, given the place's linear index in place-mode order.
+//! Returns UINT64_MAX (with a diagnostic on stderr) if the index is out of
+//! range.
+uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index);
+
+//! \brief Grid position owning the element at the given data coordinates
+//! (closed-form; coordinates must be within the padded extents).
+//! Returns nonzero on failure (with a diagnostic on stderr).
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos);
+
+//! \brief Create a composite data place backed by a structured partition.
+//!
+//! Such a place is specific to one tensor (the partition's true extents):
+//! allocate with stf_data_place_allocate_nd() using those extents.
+//!
+//! \param grid      Grid of execution places (must not be NULL)
+//! \param partition Structured partition (must not be NULL; copied)
+//! \return New data place handle, or NULL on failure
+stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition);
 
 //! \}
 
@@ -2049,6 +2282,51 @@ void stf_stackable_while_cond_scalar(
   stf_compare_op op,
   double threshold,
   stf_dtype dtype);
+
+//! \brief Maximum number of terms accepted by \c stf_stackable_while_cond_multi().
+#  define STF_WHILE_COND_MAX_TERMS 8
+
+//! \brief Combiner for multi-term while conditions.
+typedef enum stf_cond_combiner
+{
+  STF_COND_ALL = 0, //!< Continue while every term holds (logical AND)
+  STF_COND_ANY = 1, //!< Continue while at least one term holds (logical OR)
+} stf_cond_combiner;
+
+//! \brief One comparison term of a multi-term while condition.
+//!
+//! Evaluates as ``(*ld <op> threshold)``, then negated if \c negate is nonzero.
+typedef struct stf_while_cond_term
+{
+  stf_logical_data_handle ld; //!< Scalar logical data (1 element of \c dtype)
+  stf_compare_op op; //!< Comparison operator
+  double threshold; //!< Right-hand side compared against the scalar
+  stf_dtype dtype; //!< Element type of \c ld
+  int negate; //!< Nonzero to negate the term result
+} stf_while_cond_term;
+
+//! \brief Set a compound while-loop condition combining several scalar comparisons.
+//!
+//! Schedules a single internal task that reads every referenced scalar
+//! logical data, evaluates each ``(*ld <op> threshold)`` term (with optional
+//! negation) and folds the results with the requested combiner: continue
+//! while *all* terms hold (\c STF_COND_ALL) or while *any* term holds
+//! (\c STF_COND_ANY). Call exactly once per iteration after the loop body
+//! tasks of the current scope.
+//!
+//! With \p n_terms == 1 this is equivalent to \c stf_stackable_while_cond_scalar().
+//!
+//! \param ctx      Stackable context handle
+//! \param scope    While scope handle
+//! \param terms    Array of \p n_terms comparison terms
+//! \param n_terms  Number of terms (1 to \c STF_WHILE_COND_MAX_TERMS)
+//! \param combiner How the term results are combined
+void stf_stackable_while_cond_multi(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  const stf_while_cond_term* terms,
+  int n_terms,
+  stf_cond_combiner combiner);
 
 #endif // CUDART_VERSION >= 12040
 

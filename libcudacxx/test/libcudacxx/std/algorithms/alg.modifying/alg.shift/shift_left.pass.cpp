@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <algorithm>
 
 // template<class ForwardIterator>
@@ -52,39 +49,43 @@ TEST_FUNC constexpr void test()
 
   // n == 0
   {
+    constexpr int len  = 3;
     T input[]          = {0, 1, 2};
     const T expected[] = {0, 1, 2};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 0);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == e);
   }
 
   // n > 0 && n < len
   {
+    constexpr int len  = 3;
     T input[]          = {0, 1, 2};
     const T expected[] = {1, 2};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 1);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 2, b, it));
   }
   {
+    constexpr int len  = 8;
     T input[]          = {1, 2, 3, 4, 5, 6, 7, 8};
     const T expected[] = {3, 4, 5, 6, 7, 8};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 2);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 6, b, it));
   }
   {
+    constexpr int len  = 8;
     T input[]          = {1, 2, 3, 4, 5, 6, 7, 8};
     const T expected[] = {7, 8};
-    Iter b             = Iter(cuda::std::begin(input));
-    Iter e             = Iter(cuda::std::end(input));
+    Iter b             = Iter(input);
+    Iter e             = Iter(input + len);
     Iter it            = cuda::std::shift_left(b, e, 6);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, it));
+    assert(cuda::std::equal(expected, expected + 2, b, it));
   }
 
   // n == len
@@ -92,10 +93,10 @@ TEST_FUNC constexpr void test()
     constexpr int len     = 3;
     T input[len]          = {0, 1, 2};
     const T expected[len] = {0, 1, 2};
-    Iter b                = Iter(cuda::std::begin(input));
-    Iter e                = Iter(cuda::std::end(input));
+    Iter b                = Iter(input);
+    Iter e                = Iter(input + len);
     Iter it               = cuda::std::shift_left(b, e, len);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == b);
   }
 
@@ -104,10 +105,10 @@ TEST_FUNC constexpr void test()
     constexpr int len     = 3;
     T input[len]          = {0, 1, 2};
     const T expected[len] = {0, 1, 2};
-    Iter b                = Iter(cuda::std::begin(input));
-    Iter e                = Iter(cuda::std::end(input));
+    Iter b                = Iter(input);
+    Iter e                = Iter(input + len);
     Iter it               = cuda::std::shift_left(b, e, len + 1);
-    assert(cuda::std::equal(cuda::std::begin(expected), cuda::std::end(expected), b, e));
+    assert(cuda::std::equal(expected, expected + len, b, e));
     assert(it == b);
   }
 }

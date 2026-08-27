@@ -13,7 +13,7 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 
@@ -136,7 +136,8 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
   return {};
 }
 
-C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", index_types, dimensions, layouts)
+CUB_TEST(
+  "DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", CUB_SMALL, index_types, dimensions, layouts)
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
@@ -163,7 +164,11 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
-C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][device]", index_types_dynamic, layouts)
+CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
+         "[ForEachInLayout][dynamic][device]",
+         CUB_SMALL,
+         index_types_dynamic,
+         layouts)
 {
   [[maybe_unused]] constexpr int rank = 3;
   using index_type                    = c2h::get<0, TestType>;
@@ -205,7 +210,7 @@ struct incrementer_t
   }
 };
 
-C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", layouts)
+CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", CUB_SMALL, layouts)
 {
   constexpr int min_items = 1;
   constexpr int max_items = 5000000;

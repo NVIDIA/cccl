@@ -140,15 +140,38 @@
 #  define _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() 0
 #endif // ^^^ no static operator[] ^^^
 
-// nvcc 13+, clang 16+ and gcc 13+ backport the static call operator back to c++17.
-#if __cpp_static_call_operator >= 202207L                                              \
-  || ((_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13)                    \
-       || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13))) \
-      && (!_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVCC, >=, 13, 0) || _CCCL_CUDA_COMPILER(CLANG)))
+// clang 16+, gcc 13+ and nvhpc 26.1 backport the static call operator back to c++17.
+#if __cpp_static_call_operator >= 202207L                          \
+  || (_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13) \
+      || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13)))
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 1
 #else // ^^^ has static operator() ^^^ / vvv no static operator() vvv
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
 #endif // ^^^ no static operator() ^^^
+
+// nvcc supports the static call operator since 13.0.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 0) && _CCCL_CUDA_COMPILATION()
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 0) && _CCCL_CUDA_COMPILATION()
+
+// Intel LLVM 2023.0 reports to be based on clang-16, but doesn't have static call operator support.
+#if (__INTEL_LLVM_COMPILER / 100) == 202300
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
+#endif // (__INTEL_LLVM_COMPILER / 100) == 202300
+
+// Force static call operator in tile mode to make CPOs work.
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_TILE_COMPILATION()
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 1
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_TILE_COMPILATION()
+
+#if _CCCL_HAS_STATIC_CALL_OPERATOR()
+#  define _CCCL_STATIC_CALL_OPERATOR(...) static operator()(__VA_ARGS__)
+#else // ^^^ _CCCL_HAS_STATIC_CALL_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_CALL_OPERATOR() vvv
+#  define _CCCL_STATIC_CALL_OPERATOR(...) operator()(__VA_ARGS__) const
+#endif // ^^^ !_CCCL_HAS_STATIC_CALL_OPERATOR() ^^^
 
 // if consteval requires C++23, but most compilers support it even in C++20 mode while emitting some warnings. Those are
 // silenced in prologue/epilogue. nvcc is happy about using it in C++20 since 13.0, but only when compiling host code.

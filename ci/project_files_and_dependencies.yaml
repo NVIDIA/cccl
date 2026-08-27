@@ -137,6 +137,22 @@ projects:
       - "python/cuda_cccl/"
       - "pyproject\\.toml"
 
+  python_tsan:
+    name: "Python (cuda.compute free-threaded ThreadSanitizer)"
+    matrix_project: "python_tsan"
+    # Same v1 sources as `python`, rebuilt with ThreadSanitizer. Must be listed
+    # here or the per-PR python_tsan job is pruned as never-dirty and never runs.
+    # cccl_c_parallel_public covers c/parallel/{src,include}; c/parallel/CMakeLists.txt
+    # is listed directly because the TSan build config (the -fsanitize=thread option)
+    # lives there and is owned by cccl_c_parallel_internal, which this lane otherwise
+    # does not depend on -- without it a change to the TSan flags would skip this lane.
+    lite_dependencies: [cccl_c_parallel_public]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+      - "c/parallel/CMakeLists\\.txt"
+
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
     matrix_project: "cccl_c_stf"
@@ -148,11 +164,13 @@ projects:
   python:
     name: "Python"
     matrix_project: "python"
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cccl_c_stf]
     full_dependencies: []
     include_regexes:
-    - "python/"
+    - "python/cuda_cccl/"
+    - "python/cuda_stf/"
     - "pyproject.toml"
+    exclude_regexes: []
 
   packaging:
     name: "CCCL Packaging"
@@ -248,6 +266,7 @@ ignore_regexes:
   - '\.github/problem-matchers/problem-matcher\.json'
   - '\.github/workflows/backport-prs\.yml'
   - '\.github/workflows/bench.*\.yml'
+  - '\.github/workflows/compile-time-bench\.yml'
   - '\.github/workflows/build-docs\.yml'
   - '\.github/workflows/build-matx\.yml'
   - '\.github/workflows/build-pytorch\.yml'

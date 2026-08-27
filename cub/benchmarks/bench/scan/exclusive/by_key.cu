@@ -19,13 +19,14 @@ struct bench_scan_by_key_policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanByKeyPolicy
   {
-    return {TUNE_THREADS,
-            TUNE_ITEMS,
-            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
-            TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            lookback_delay_policy};
+    return {cub::ScanByKeyAlgorithm::lookback,
+            {TUNE_THREADS,
+             TUNE_ITEMS,
+             TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+             TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+             TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE

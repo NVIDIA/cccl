@@ -22,19 +22,19 @@ TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 template <typename T_size, typename T_thread_rank>
 struct single_thread_test_group
 {
-  TEST_FUNC void sync() const {}
-  TEST_FUNC T_size size() const
+  TEST_HOST_DEVICE_FUNC void sync() const {}
+  TEST_HOST_DEVICE_FUNC T_size size() const
   {
     return 1;
   }
-  TEST_FUNC T_thread_rank thread_rank() const
+  TEST_HOST_DEVICE_FUNC T_thread_rank thread_rank() const
   {
     return 0;
   }
 };
 
 template <cuda::thread_scope Scope, typename T_size, typename T_thread_rank>
-TEST_FUNC void test_fully_specialized()
+TEST_HOST_DEVICE_FUNC void test_fully_specialized()
 {
   auto group = single_thread_test_group<T_size, T_thread_rank>{};
 
@@ -58,7 +58,7 @@ TEST_FUNC void test_fully_specialized()
 }
 
 template <cuda::thread_scope Scope, typename T_size>
-TEST_FUNC void test_select_thread_rank_type()
+TEST_HOST_DEVICE_FUNC void test_select_thread_rank_type()
 {
   test_fully_specialized<Scope, T_size, bool>();
   test_fully_specialized<Scope, T_size, int8_t>();
@@ -72,7 +72,7 @@ TEST_FUNC void test_select_thread_rank_type()
 }
 
 template <cuda::thread_scope Scope>
-TEST_FUNC void test_select_size_type()
+TEST_HOST_DEVICE_FUNC void test_select_size_type()
 {
   test_select_thread_rank_type<Scope, bool>();
   test_select_thread_rank_type<Scope, int8_t>();

@@ -12,8 +12,6 @@
 
 // template <class Alloc, class U1, class U2>
 //   tuple(allocator_arg_t, const Alloc& a, pair<U1, U2>&&);
-
-// UNSUPPORTED: enable-tile
 // In tile mode virtual functions are unsupported
 
 #include <cuda/std/__memory_>
@@ -23,28 +21,32 @@
 #include "../alloc_first.h"
 #include "../alloc_last.h"
 #include "allocators.h"
+#include "MoveOnly.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION()
 struct B
 {
   int id_;
 
-  TEST_FUNC explicit B(int i)
+  TEST_HOST_DEVICE_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  TEST_FUNC virtual ~B() {}
+  TEST_HOST_DEVICE_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  TEST_FUNC explicit D(int i)
+  TEST_HOST_DEVICE_FUNC explicit D(int i)
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION()
   {
     using T0 = cuda::std::pair<int, cuda::std::unique_ptr<D>>;
     using T1 = cuda::std::tuple<alloc_first, cuda::std::unique_ptr<B>>;
@@ -55,6 +57,17 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
+  {
+    using T0 = cuda::std::pair<int, MoveOnly>;
+    using T1 = cuda::std::tuple<alloc_first, MoveOnly>;
+    T0 t0(2, MoveOnly(3));
+    alloc_first::allocator_constructed() = false;
+    T1 t1(cuda::std::allocator_arg, A1<int>(5), cuda::std::move(t0));
+    assert(alloc_first::allocator_constructed());
+    assert(cuda::std::get<0>(t1) == 2);
+    assert(cuda::std::get<1>(t1) == 3);
+  }
   return 0;
 }
