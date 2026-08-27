@@ -905,42 +905,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // (otherwise, it is cheaper to recalculate positions from head_flags directly)
           // Paired with STORE's predicate; they intentionally disagree at run_count == 0 (see there).
           const bool stage_flags = (local_run_count < staging_threshold);
-          // CRITICAL: When stage_flags is true, we skip waiting on the pos_buf barriers too. This buys 3% BWUtil in
-          // some cells. Generally, skipping a wait like this would cause a race (phasebit can only encode parity).
-          // But we can prove, when 2 * pos_ring_stages >= key_ring_stages, this race would not happen.
-          // Proof. let's say P = pos_ring_stages and S = key_ring_stages, and we are at pipeline_generation g with
-          // g / P = n. Let's say for g, stage_flags is false, so g is waiting for phase (n - 1) to complete, i.e.
-          // the phase bit of the barrier is no longer (n - 1) % 2. If g - P waits and arrives properly, this is
-          // sound. However, if g - P skipped the wait, when the barrier is no longer (n - 1) % 2, it could also mean
-          // it just flipped from (n - 3) % 2, i.e. g - 2P could also be using the slot! This is a race/hazard:
-          // For this slot, we have 3 dependence types:
-          //   1. RAW: ST warps of gen g must read the slot after COMPUTE warps wrote them, i.e. write(g) must be
-          //      before reads(g). This is protected by staged_warp_tile.
-          //   2. WAR: COMPUTE warps of gen g must write after the ST warps finish reading g - P / g - 2P's, i.e.
-          //      reads(g- P, g - 2P, ...) must happen before write(g). This is now unprotected after the wait is
-          //      skipped. We are going to prove that with 2P >= S, this is guaranteed.
-          //   3. WAW: write(g - 2P) must happen before write(g). This is guaranteed because each CW write to
-          //      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_idx)], i.e. each segment only has 1 writer.
-          //      WAW is guaranteed by the progression of each CW.
-          // On WAR: notice that when g is in flight, load's wait on empty(g - S) must have passed. This means for all
-          // store warps STw, they must have arrived empty(h) for all h <= g - S. Given 2P >= S, they all must have
-          // arrived empty(g - 2P). Since we always arrive pos_buf_free before empty, this means they all must have
-          // arrived pos_buf_free(g - 2P) too. So there is no race.
+          if (pos_ring_stages < key_ring_stages)
+          {
+            // the pos slot is shared by pipeline_gens g, g+pos_ring_stages, ...
+            // need to wait for it to be cleared by STORE
+            if (pipeline_gen >= pos_ring_stages)
+            {
+              wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
+            }
+          }
           if (stage_flags)
           {
             head_flag_buf[slot_id][compute_warp_id * detail::warp_threads + lane_id] = my_flags;
           }
           else
           {
-            if (pos_ring_stages < key_ring_stages)
-            {
-              // the pos slot is shared by pipeline_gens g, g+pos_ring_stages, ...
-              // need to wait for it to be cleared by STORE
-              if (pipeline_gen >= pos_ring_stages)
-              {
-                wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
-              }
-            }
             stage_head_positions<items_per_thread>(my_flags, pos_dst, warp_tile_offset, lane_id);
           } // stage flags
           __syncwarp();

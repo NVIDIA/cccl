@@ -163,7 +163,7 @@ git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 "cuda" = "cuda"
 
 [tool.mypy]
-cache_dir = "../../.cache/mypy"
+cache_dir = ".cache/mypy"
 python_version = "3.10"
 
 [[tool.mypy.overrides]]
@@ -174,6 +174,7 @@ module = [
   "numpy.*",
   "numba.*",
   "llvmlite.*",
+  "ml_dtypes",
   "cuda.cccl.*",
   "cuda.bindings.*",
   "cuda.core.*",

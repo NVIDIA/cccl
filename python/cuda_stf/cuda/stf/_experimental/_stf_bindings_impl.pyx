@@ -453,10 +453,11 @@ class _MapperCallbackState:
     drove the mapping and re-raise instead of silently misplacing data.
     """
 
-    __slots__ = ("mapper", "error", "callback", "c_ptr")
+    __slots__ = ("mapper", "data_rank", "error", "callback", "c_ptr")
 
-    def __init__(self, mapper):
+    def __init__(self, mapper, data_rank):
         self.mapper = mapper
+        self.data_rank = data_rank
         self.error = None      # first BaseException raised inside the callback
         self.callback = None   # ctypes callback object (kept alive here)
         self.c_ptr = 0
@@ -488,7 +489,7 @@ def _make_mapper_callback(mapper, data_rank, grid_rank):
         raise ValueError(f"data_rank must be between 1 and 4, got {data_rank}")
     if not 1 <= grid_rank <= 4:
         raise ValueError(f"grid_rank must be between 1 and 4, got {grid_rank}")
-    state = _MapperCallbackState(mapper)
+    state = _MapperCallbackState(mapper, data_rank)
 
     def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
         # Leave a valid in-range fallback (place 0) so STF never reads
@@ -514,7 +515,7 @@ def _make_mapper_callback(mapper, data_rank, grid_rank):
             data_dims = native_dims[:data_rank][::-1]
             grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)[:grid_rank][::-1]
             result = mapper(coords, data_dims, grid_dims)
-            if isinstance(result, int):
+            if isinstance(result, _numbers.Integral):
                 result = (result,)
             if len(result) != grid_rank:
                 raise ValueError(
@@ -2184,7 +2185,18 @@ cdef class cute_partition:
         grid's linear place order when tensor dimensions map to grid axes in
         a different order; see :meth:`grid_place_offset`.
         """
-        return stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+        if isinstance(place_index, bool) or not isinstance(place_index, _numbers.Integral):
+            raise TypeError(f"place_index must be an integer, got {place_index!r}")
+        place_index = int(place_index)
+        total = 1
+        for extent, _, _ in self.place_leaves:
+            total *= extent
+        if not 0 <= place_index < total:
+            raise ValueError(f"place_index {place_index} out of range for {total} places")
+        cdef uint64_t offset = stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+        if offset == 0xffffffffffffffff:
+            raise ValueError(f"place_offset query failed for place_index {place_index}")
+        return offset
 
     def owner(self, coords):
         """Grid coordinates of the place owning the element at ``coords``.
@@ -2318,7 +2330,7 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
             mapper_state = None
             if isinstance(mapper, bool):
                 raise TypeError("mapper must not be a bool")
-            elif isinstance(mapper, (native_partition_fn, int)):
+            elif isinstance(mapper, native_partition_fn):
                 ptr_val = <uintptr_t>int(mapper)
                 if ptr_val == 0:
                     raise ValueError("mapper function pointer must not be NULL")
@@ -2328,7 +2340,7 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
                 ptr_val = mapper_state.c_ptr
             else:
                 raise TypeError(
-                    "mapper must be a cute_partition, a native partition function pointer, or a callable")
+                    "mapper must be a cute_partition, a native_partition_fn, or a callable")
             rc = stf_placement_evaluate(
                 grid._h, <stf_get_executor_fn>ptr_val, &dims, <uint64_t>elemsize,
                 <uint64_t>probes, <uint64_t>block_size, &c_stats, per_pos)
@@ -2519,18 +2531,18 @@ cdef class data_place:
         What the mapper partitions depends on how the place is used. Shaped
         allocations (``allocate((extents, ...), elemsize=...)``, a
         :class:`DeviceArray` on this place) invoke it with true element
-        coordinates of the declared rank. A logical data created from a host
-        array currently reaches the native layer as a flat byte buffer
-        (``stf_logical_data(addr, nbytes)``), so on the task path the mapper
-        sees rank-1 byte-offset coordinates with ``data_dims == (nbytes,)``
-        regardless of the array's Python-side shape.
+        coordinates of the declared rank. Task-backed logical data currently
+        reaches the native layer as a flat byte buffer
+        (``stf_logical_data(addr, nbytes)``), so that path accepts only a
+        ``data_rank=1`` Python mapper; higher-rank places are rejected instead
+        of silently interpreting byte offsets as element coordinates.
         """
         cdef data_place p = data_place.__new__(data_place)
         cdef uintptr_t ptr_val
         cdef object state
         if isinstance(mapper, bool):
             raise TypeError("mapper must be a partition function or a callable, not a bool")
-        if isinstance(mapper, native_partition_fn) or isinstance(mapper, int):
+        if isinstance(mapper, native_partition_fn):
             if data_rank is not None:
                 raise ValueError(
                     "data_rank only applies to Python callables; a native partition "
@@ -2715,6 +2727,17 @@ cdef _raise_first_mapper_error(list states):
             st.raise_if_error()
 
 
+cdef _reject_ranked_mapper_on_task_path(list states):
+    """Reject Python mappers that need geometry the task path cannot carry."""
+    for st in states:
+        if st.data_rank > 1:
+            raise ValueError(
+                f"a data_rank={st.data_rank} Python partition mapper cannot be used "
+                "with task-backed logical data: that path currently exposes a flat "
+                "rank-1 byte buffer; use data_rank=1 or a native partition function"
+            )
+
+
 cdef class task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
@@ -2729,6 +2752,10 @@ cdef class task:
     # Composite-place mapper states referenced by this task's exec place or
     # deps; checked after start() so a mapper failure surfaces as a Python error.
     cdef list _mapper_states
+    # Mapper states inherited from the execution place's affine data place.
+    # These apply only to dependencies without an explicit data-place override.
+    cdef list _default_mapper_states
+    cdef bint _has_default_dplace_dep
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
     # Grid rank of the exec place set through set_exec_place (1 = scalar)
@@ -2742,6 +2769,8 @@ cdef class task:
         self._lds_args = []
         self._owners = []
         self._mapper_states = []
+        self._default_mapper_states = []
+        self._has_default_dplace_dep = False
         self._alive = ctx._alive
         self._grid_rank = 1
 
@@ -2756,6 +2785,8 @@ cdef class task:
         self._t = NULL
 
     def start(self):
+        if self._has_default_dplace_dep:
+            _reject_ranked_mapper_on_task_path(self._default_mapper_states)
         # This is ignored if this is not a graph task
         stf_task_enable_capture(self._t)
 
@@ -2792,20 +2823,27 @@ cdef class task:
         cdef int           mode_int  = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
+        cdef list states
 
         if ldata._ctx != self._ctx:
             raise ValueError("dep logical_data belongs to a different context")
 
         if d.dplace is None:
+            self._has_default_dplace_dep = True
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
             if not isinstance(d.dplace, data_place):
                 raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
+            states = []
+            _collect_mapper_states_from(dp, states, set())
+            _reject_ranked_mapper_on_task_path(states)
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
-            _collect_mapper_states_from(dp, self._mapper_states, set())
+            for state in states:
+                if state not in self._mapper_states:
+                    self._mapper_states.append(state)
 
         self._lds_args.append(ldata)
 
@@ -2821,7 +2859,10 @@ cdef class task:
         self._grid_rank = _exec_place_grid_rank(ep)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
-        _collect_mapper_states_from(ep, self._mapper_states, set())
+        _collect_mapper_states_from(ep, self._default_mapper_states, set())
+        for state in self._default_mapper_states:
+            if state not in self._mapper_states:
+                self._mapper_states.append(state)
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.
@@ -2993,6 +3034,8 @@ cdef class cuda_kernel:
         self._k = NULL
 
     def start(self):
+        if self._lds_args:
+            _reject_ranked_mapper_on_task_path(self._mapper_states)
         stf_cuda_kernel_start(self._k)
         if self._mapper_states:
             try:

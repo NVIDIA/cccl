@@ -24,6 +24,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__group/fwd.cuh>
@@ -38,7 +39,7 @@ namespace cuda::experimental
 template <::cuda::std::size_t _UnitCount>
 class take
 {
-  static_assert(::cuda::std::in_range<unsigned>(_UnitCount), "_UnitCount must be within uint32_t range");
+  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCount), "_UnitCount must be within uint32_t range");
 
 public:
   _CCCL_HIDE_FROM_ABI explicit take() = default;
@@ -48,9 +49,9 @@ public:
     return _UnitCount;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
-    return unsigned{_UnitCount};
+    return ::cuda::std::uint32_t{_UnitCount};
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
@@ -84,14 +85,14 @@ public:
                    "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
     }
 
-    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, static_cast<unsigned>(_UnitCount)))
+    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, static_cast<::cuda::std::uint32_t>(_UnitCount)))
     {
       return _MappingResult::invalid_with_group_count(__prev_mapping_result.group_count());
     }
 
     const auto __group_count = __prev_mapping_result.group_count();
     const auto __group_rank  = __prev_mapping_result.group_rank();
-    const auto __unit_count  = static_cast<unsigned>(_UnitCount);
+    const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_UnitCount);
     const auto __unit_rank   = __prev_unit_rank;
     const auto __lane_mask =
       (::cuda::std::is_same_v<_Unit, thread_level>)
@@ -105,12 +106,12 @@ public:
 template <>
 class take<::cuda::std::dynamic_extent>
 {
-  unsigned __unit_count_{0};
+  ::cuda::std::uint32_t __unit_count_{0};
 
 public:
   _CCCL_HIDE_FROM_ABI explicit take() = default;
 
-  _CCCL_DEVICE_API constexpr explicit take(unsigned __unit_count) noexcept
+  _CCCL_DEVICE_API constexpr explicit take(::cuda::std::uint32_t __unit_count) noexcept
       : __unit_count_{__unit_count}
   {}
 
@@ -119,7 +120,7 @@ public:
     return ::cuda::std::dynamic_extent;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
     return __unit_count_;
   }
@@ -163,7 +164,7 @@ public:
   }
 };
 
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(unsigned) -> take<::cuda::std::dynamic_extent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(::cuda::std::uint32_t) -> take<::cuda::std::dynamic_extent>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

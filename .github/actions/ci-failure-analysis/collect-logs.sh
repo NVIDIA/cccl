@@ -41,6 +41,7 @@ gh api --paginate --slurp \
               or .conclusion == "startup_failure"
               or .conclusion == "action_required"
             ))
+          | map({id, name, conclusion})
         end
     ' \
     > "${output_dir}/jobs.json"

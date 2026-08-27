@@ -160,7 +160,8 @@ namespace detail
  **********************************************************************************************************************/
 
 /// DPX instructions compute min, max, and sum for up to three 16 and 32-bit signed or unsigned integer parameters
-/// see DPX documentation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
+/// see DPX documentation
+/// https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions
 /// NOTE: The compiler is able to automatically vectorize all cases with 3 operands
 ///       However, all other cases with per-halfword comparison need to be explicitly vectorized
 ///
