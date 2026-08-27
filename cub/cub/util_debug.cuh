@@ -39,6 +39,8 @@
  * Causes synchronization of the stream after every kernel launch to check
  * for errors. Also causes kernel launch configurations to be printed to the
  * console.
+ *
+ * Deprecated [Since 3.6]
  */
 #  define CUB_DEBUG_SYNC
 
@@ -56,6 +58,14 @@
 
 // CUB_DEBUG_SYNC also enables CUB_DEBUG_LOG
 #ifdef CUB_DEBUG_SYNC
+
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: CUB_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1")
+#  else
+#    warning CUB_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1
+#  endif
+
 #  ifndef CUB_DEBUG_LOG
 #    define CUB_DEBUG_LOG
 #  endif
