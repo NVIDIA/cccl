@@ -264,9 +264,14 @@ public:
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& s)
-      : s(s)
-  {}
+  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& bounds)
+  {
+    for (const size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = bounds[ind].first;
+      s[ind].second = bounds[ind].second;
+    }
+  }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
@@ -632,6 +637,22 @@ UNITTEST("mix of integrals and pairs")
   }
 
   EXPECT(cnt == expected_cnt);
+};
+
+UNITTEST("box from an array of integral pairs")
+{
+  const auto bounds = ::std::array{
+    ::std::pair{0, 10},
+    ::std::pair{20, 30},
+  };
+  const auto shape = box(bounds);
+
+  static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<decltype(shape)>, box<2>>);
+  EXPECT(shape.get_begin(0) == 0);
+  EXPECT(shape.get_end(0) == 10);
+  EXPECT(shape.get_begin(1) == 20);
+  EXPECT(shape.get_end(1) == 30);
+  EXPECT(shape.size() == 100);
 };
 
 UNITTEST("pos4 large values")

@@ -90,9 +90,9 @@ template <bool __has_direct_reduction,
   //
   // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
   // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device.context()};
+  const auto _                = ::cuda::__ensure_current_context{__logical_device};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device.underlying_device());
+  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device);
 
   // One partial per segment. The butterfly fallback folds in place, but needs extra room for
   // the other ranks' data so we allocate it here
