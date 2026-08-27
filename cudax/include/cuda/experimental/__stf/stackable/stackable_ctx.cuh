@@ -336,9 +336,19 @@ public:
       return true;
     }
 
+    int imported_offset = ctx_offset;
+    while (!data().was_imported(imported_offset))
+    {
+      imported_offset = sctx_ref.get_parent_offset(imported_offset);
+      _CCCL_ASSERT(imported_offset >= 0, "");
+    }
+    const int imported_parent      = sctx_ref.get_parent_offset(imported_offset);
+    const bool inherited_read_only = m == access_mode::read && imported_parent >= 0 && data().is_frozen(imported_parent)
+                                  && data().get_frozen_mode(imported_parent) == access_mode::read;
     const access_mode push_mode =
-      is_read_only() ? access_mode::read
-                     : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
+      (is_read_only() || inherited_read_only)
+        ? access_mode::read
+        : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
 
     ::std::stack<int> path;
     for (int current = ctx_offset; !data().was_imported(current); current = sctx_ref.get_parent_offset(current))
