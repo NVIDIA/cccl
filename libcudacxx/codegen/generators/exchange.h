@@ -20,7 +20,9 @@ inline void FormatExchange(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange_order_dispatch(_Fn& __cuda_exch, int __memorder, _Sco) {
+static inline _CCCL_DEVICE void __cuda_atomic_exchange_order_dispatch(
+  __cuda_atomic_ptx_backend, _Fn& __cuda_exch, memory_order __order, _Sco) {
+  const int __memorder = __atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -59,7 +61,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange_order_dispatch(_Fn& __cud
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __old, _Type __new, {4}, __cuda_atomic_operand_{0}{1}, {6})
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __old, _Type __new, {4}, __cuda_atomic_operand_{0}{1}, {6})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b exchange is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
@@ -80,7 +82,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __old, _Type __new, {4}, __cuda_atomic_operand_{0}{1}, {6})
+  __cuda_atomic_ptx_backend, _Type* __ptr, _Type& __old, _Type __new, {4}, __cuda_atomic_operand_{0}{1}, {6})
 {{ asm volatile("atom.exch{3}{5}.{0}{1} %0,[%1],%2;" : "={2}"(__old) : "l"(__ptr), "{2}"(__new) : "memory"); }})XXX";
 
   constexpr Operand supported_types[] = {
@@ -156,41 +158,75 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
 
   out << "\n"
       << R"XXX(
-template <typename _Type, typename _Tag, typename _Sco>
+#endif // _CCCL_CUDA_COMPILATION()
+
+template <typename _Backend, typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_exchange {
+  _Backend __backend;
   _Type* __ptr;
   _Type* __old;
   _Type* __new;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
-    __cuda_atomic_exchange(__ptr, *__old, *__new, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order) {
+    __cuda_atomic_exchange(__backend, __ptr, *__old, *__new, __order, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
+template <class _Backend, class _Type, class _Sco>
+_CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
+  _Backend __backend, _Type* __ptr, _Type& __old, _Type __new, memory_order __order, _Sco __scope)
 {
-  using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<_Type>;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
-  if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {{return;}}
-  __cuda_atomic_bind_exchange<__proxy_t, __proxy_tag, _Sco> __bound_swap{__ptr_proxy, __old_proxy, __new_proxy};
-  __cuda_atomic_exchange_order_dispatch(__bound_swap, __memorder, _Sco{});
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
+  }
+  __cuda_atomic_bind_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_swap{
+    __backend, __ptr_proxy, __old_proxy, __new_proxy};
+  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope);
 }
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type volatile* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
+
+template <class _Backend, class _Type, class _Sco>
+_CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
+  _Backend __backend, _Type volatile* __ptr, _Type& __old, _Type __new, memory_order __order, _Sco __scope)
 {
-  using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
-  using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
+  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<_Type>;
+  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<_Type>;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
-  if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {{return;}}
-  __cuda_atomic_bind_exchange<__proxy_t, __proxy_tag, _Sco> __bound_swap{__ptr_proxy, __old_proxy, __new_proxy};
-  __cuda_atomic_exchange_order_dispatch(__bound_swap, __memorder, _Sco{});
+  if constexpr (_Backend::__requires_local_memory_workaround)
+  {
+    if(__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
+  }
+  __cuda_atomic_bind_exchange<_Backend, __proxy_t, __proxy_tag, _Sco> __bound_swap{
+    __backend, __ptr_proxy, __old_proxy, __new_proxy};
+  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope);
 }
+
+template <class _Backend, class _Type, class _Up, class _Sco>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_exchange_dispatch(
+  _Backend __backend, _Type* __ptr, _Up __new, memory_order __order, _Sco __scope)
+{
+  _Type __old;
+  __cuda_atomic_exchange_dispatch(__backend, __ptr, __old, static_cast<_Type>(__new), __order, __scope);
+  return __old;
+}
+
+template <class _Backend, class _Type, class _Up, class _Sco>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_exchange_dispatch(
+  _Backend __backend, volatile _Type* __ptr, _Up __new, memory_order __order, _Sco __scope)
+{
+  _Type __old;
+  __cuda_atomic_exchange_dispatch(__backend, __ptr, __old, static_cast<_Type>(__new), __order, __scope);
+  return __old;
+}
+
+#if _CCCL_CUDA_COMPILATION()
 )XXX";
 }
 

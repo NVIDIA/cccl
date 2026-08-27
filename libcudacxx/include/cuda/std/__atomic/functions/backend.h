@@ -21,14 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
-#include <cuda/std/__type_traits/is_scalar.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -55,6 +54,88 @@ using __cuda_atomic_order_acquire  = __cuda_atomic_order_tag<__cuda_atomic_order
 using __cuda_atomic_order_acq_rel  = __cuda_atomic_order_tag<__cuda_atomic_order::_acq_rel>;
 using __cuda_atomic_order_seq_cst  = __cuda_atomic_order_tag<__cuda_atomic_order::_seq_cst>;
 using __cuda_atomic_order_volatile = __cuda_atomic_order_tag<__cuda_atomic_order::_volatile>;
+
+struct __cuda_atomic_runtime_cas_order
+{
+  memory_order __success;
+  memory_order __failure;
+};
+
+template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
+_CCCL_HOST_DEVICE_API void
+__cuda_atomic_load_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+{
+  __fn(__order);
+}
+
+template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
+_CCCL_HOST_DEVICE_API void
+__cuda_atomic_store_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+{
+  __fn(__order);
+}
+
+template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
+_CCCL_HOST_DEVICE_API void
+__cuda_atomic_exchange_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+{
+  __fn(__order);
+}
+
+template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
+_CCCL_HOST_DEVICE_API void
+__cuda_atomic_fetch_order_dispatch(_Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope)
+{
+  __fn(__order);
+}
+
+template <class _Backend, class _Fn, class _Sco, enable_if_t<!_Backend::__needs_constant_order, int> = 0>
+_CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_order_dispatch(
+  _Backend __backend, _Fn& __fn, memory_order __success, memory_order __failure, _Sco __scope)
+{
+  return __fn(__cuda_atomic_runtime_cas_order{__success, __failure});
+}
+
+template <class _Order>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_initial_load_order()
+{
+  if constexpr (is_same_v<_Order, __cuda_atomic_order_volatile>)
+  {
+    return __cuda_atomic_order_volatile{};
+  }
+  else if constexpr (is_same_v<_Order, memory_order> || is_same_v<_Order, __cuda_atomic_runtime_cas_order>)
+  {
+    return memory_order_relaxed;
+  }
+  else
+  {
+    return __cuda_atomic_order_relaxed{};
+  }
+}
+
+// Compare-exchange may fail after the initial load without issuing a CAS, so that load must satisfy the failure order.
+template <class _Order>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __cuda_atomic_compare_exchange_initial_load_order(_Order __order)
+{
+  if constexpr (is_same_v<_Order, __cuda_atomic_runtime_cas_order>)
+  {
+    return __order.__failure;
+  }
+  else if constexpr (is_same_v<_Order, memory_order>)
+  {
+    return __order == memory_order_release
+           ? memory_order_relaxed
+           : (__order == memory_order_acq_rel ? memory_order_acquire : __order);
+  }
+  else if constexpr (is_same_v<_Order, __cuda_atomic_order_acquire> || is_same_v<_Order, __cuda_atomic_order_acq_rel>)
+  {
+    return __cuda_atomic_order_acquire{};
+  }
+  else
+  {
+    return __cuda_atomic_initial_load_order<_Order>();
+  }
+}
 
 template <bool _Volatile>
 using __cuda_atomic_mmio_tag = integral_constant<bool, _Volatile>;
@@ -112,70 +193,158 @@ struct _CCCL_ALIGNAS(16) __cuda_atomic_longlong2
 };
 
 template <class _Type>
-using __cuda_atomic_deduce_bitwise =
-  __type_switch<sizeof(_Type),
-                __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_b8>>,
-                __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_b16>>,
-                __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_b32>>,
-                __type_case<8, __cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_b64>>,
-                __type_default<__cuda_atomic_operand_deduction<__cuda_atomic_longlong2, __cuda_atomic_operand_b128>>>;
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_bitwise_impl() noexcept
+{
+  if constexpr (sizeof(_Type) == 1)
+  {
+    return __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_b8>{};
+  }
+  else if constexpr (sizeof(_Type) == 2)
+  {
+    return __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_b16>{};
+  }
+  else if constexpr (sizeof(_Type) == 4)
+  {
+    return __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_b32>{};
+  }
+  else if constexpr (sizeof(_Type) == 8)
+  {
+    return __cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_b64>{};
+  }
+  else
+  {
+    return __cuda_atomic_operand_deduction<__cuda_atomic_longlong2, __cuda_atomic_operand_b128>{};
+  }
+}
+
+// TODO: Once CUDA 12.0 is no longer supported, factor the repeated decltype below into a common deduction alias.
+// CUDA 12.0 cudafe can substitute an unrelated alias for an intermediate alias template in large translation units.
+template <class _Type>
+using __cuda_atomic_deduce_bitwise_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__type;
 
 template <class _Type>
-using __cuda_atomic_deduce_arithmetic = _If<
-  is_floating_point_v<_Type>,
-  _If<sizeof(_Type) == 4,
-      __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>,
-      __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>>,
-  _If<is_signed_v<_Type>,
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>>,
-                    __type_case<2, __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>>,
-                    __type_case<4, __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>>,
-                    __type_default<__cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_u64>>>, // There is no
-                                                                                                          // atom.add.s64
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>>,
-                    __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>>,
-                    __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>>,
-                    __type_default<__cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>>>>>;
+using __cuda_atomic_deduce_bitwise_tag_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__tag;
 
 template <class _Type>
-using __cuda_atomic_deduce_minmax = _If<
-  is_floating_point_v<_Type>,
-  _If<sizeof(_Type) == 4,
-      __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>,
-      __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>>,
-  _If<is_signed_v<_Type>,
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>>,
-                    __type_case<2, __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>>,
-                    __type_case<4, __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>>,
-                    __type_default<__cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_s64>>>, // atom.min|max.s64
-                                                                                                          // supported
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>>,
-                    __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>>,
-                    __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>>,
-                    __type_default<__cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>>>>>;
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_arithmetic_impl() noexcept
+{
+  if constexpr (is_floating_point_v<_Type>)
+  {
+    if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>{};
+    }
+    else
+    {
+      return __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>{};
+    }
+  }
+  else if constexpr (is_signed_v<_Type>)
+  {
+    if constexpr (sizeof(_Type) == 1)
+    {
+      return __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>{};
+    }
+    else if constexpr (sizeof(_Type) == 2)
+    {
+      return __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>{};
+    }
+    else if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>{};
+    }
+    else
+    {
+      // There is no atom.add.s64.
+      return __cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_u64>{};
+    }
+  }
+  else
+  {
+    if constexpr (sizeof(_Type) == 1)
+    {
+      return __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>{};
+    }
+    else if constexpr (sizeof(_Type) == 2)
+    {
+      return __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>{};
+    }
+    else if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>{};
+    }
+    else
+    {
+      return __cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>{};
+    }
+  }
+}
 
 template <class _Type>
-using __atomic_enable_if_native_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;
+using __cuda_atomic_deduce_arithmetic_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__type;
 
 template <class _Type>
-using __atomic_enable_if_native_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) < 16), bool>;
+using __cuda_atomic_deduce_arithmetic_tag_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__tag;
 
 template <class _Type>
-using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type> && (sizeof(_Type) < 16), bool>;
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_minmax_impl() noexcept
+{
+  if constexpr (is_floating_point_v<_Type>)
+  {
+    if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>{};
+    }
+    else
+    {
+      return __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>{};
+    }
+  }
+  else if constexpr (is_signed_v<_Type>)
+  {
+    if constexpr (sizeof(_Type) == 1)
+    {
+      return __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>{};
+    }
+    else if constexpr (sizeof(_Type) == 2)
+    {
+      return __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>{};
+    }
+    else if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>{};
+    }
+    else
+    {
+      return __cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_s64>{};
+    }
+  }
+  else
+  {
+    if constexpr (sizeof(_Type) == 1)
+    {
+      return __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>{};
+    }
+    else if constexpr (sizeof(_Type) == 2)
+    {
+      return __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>{};
+    }
+    else if constexpr (sizeof(_Type) == 4)
+    {
+      return __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>{};
+    }
+    else
+    {
+      return __cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>{};
+    }
+  }
+}
 
 template <class _Type>
-using __atomic_enable_if_not_native_bitwise = enable_if_t<(sizeof(_Type) == 16), bool>;
+using __cuda_atomic_deduce_minmax_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__type;
 
 template <class _Type>
-using __atomic_enable_if_not_native_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) == 16), bool>;
-
-template <class _Type>
-using __atomic_enable_if_not_native_minmax =
-  enable_if_t<!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16), bool>;
+using __cuda_atomic_deduce_minmax_tag_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__tag;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
