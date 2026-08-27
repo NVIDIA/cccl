@@ -4,6 +4,14 @@
 #pragma once
 
 #ifdef THRUST_DEBUG_SYNC
+
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: THRUST_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1")
+#  else
+#    warning THRUST_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1
+#  endif
+
 #  define THRUST_DEBUG_SYNC_FLAG true
 #  define CUB_DEBUG_SYNC
 #else
