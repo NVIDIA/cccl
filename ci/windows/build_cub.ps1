@@ -11,6 +11,9 @@ Param(
     [Alias("cmake-options")]
     [string]$CMAKE_OPTIONS = "",
     [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false,
+    [Parameter(Mandatory = $false)]
     [Alias("no-lid")]
     [switch]$NO_LID_SWITCH = $false,
     [Parameter(Mandatory = $false)]
@@ -32,7 +35,7 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cub"
 $artifactTags = @()
