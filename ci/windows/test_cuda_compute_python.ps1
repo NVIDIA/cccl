@@ -32,6 +32,8 @@ if (((Get-CtkExtraFlavor $CtkMode) -ne 'sysctk') -and ($env:CCCL_MINIMAL_CONTAIN
         -Script 'ci\windows\run_compute_tests.ps1' `
         -ScriptArgs $payloadArgs
 } else {
-    & "$PSScriptRoot/run_compute_tests.ps1" @payloadArgs
+    # By name, not @payloadArgs: array splatting binds positionally, so the
+    # payload would receive the literal "-py-version" as its version.
+    & "$PSScriptRoot/run_compute_tests.ps1" -PyVersion $PyVersion -CtkMode $CtkMode
 }
 exit $LASTEXITCODE
