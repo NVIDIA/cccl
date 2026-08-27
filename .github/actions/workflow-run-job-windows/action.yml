@@ -177,6 +177,18 @@ runs:
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
         $ErrorActionPreference = 'Stop'
 
+        # Install latest sccache client
+        pushd "C:\tools"
+        Remove-Item "C:\tools\sccache" -Force -Recurse
+        Invoke-WebRequest -Uri "https://github.com/trxcllnt/sccache/releases/latest/download/sccache-x86_64-pc-windows-msvc.zip" -OutFile "./sccache.zip" -UseBasicParsing
+        Expand-Archive "./sccache.zip"
+        Remove-Item "./sccache.zip"
+        # Remove the versioned subdirectory:
+        $subdir = Get-ChildItem .\sccache -Directory | Select-Object -First 1
+        Move-Item "$($subdir.FullName)\*" .\sccache\
+        Remove-Item $subdir.FullName -Force
+        popd
+
         git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
 
         $env:SCCACHE_ERROR_LOG="$env:TEMP\sccache.log"
