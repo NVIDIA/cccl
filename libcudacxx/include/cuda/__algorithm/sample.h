@@ -35,52 +35,44 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
-//! @brief Ratio of remaining population to remaining samples below which Method A is faster.
-//!
-//! Method D stays in its acceptance-rejection loop while `__N > __sample_alpha_inv * __n`, and
-//! hands the rest of the sample to Method A once the sampling fraction rises above `1 / this
-//! value`. The paper calls the reciprocal `alpha` and stores `-1/alpha` in the integer
-//! `negalphainv`. It uses `alpha = 1/13`, and it gives 0.05 to 0.15 as the useful range for
-//! `alpha`, that is, `__sample_alpha_inv` between 7 and 20.
-inline constexpr int __sample_alpha_inv = 13;
-
 //! @brief Selects `__n` elements from `__first[__index, __index + __N)` using Vitter's Method A.
 //!
-//! Method A draws one uniform variate per selected element and walks the remaining population by
-//! whole gaps. It costs `O(__N)` arithmetic, but it avoids the rejection loop of Method D, so it is
-//! faster when the sampling fraction is high.
+//! Method A draws one uniform variate per selected element and walks the remaining population
+//! by whole gaps. It costs `O(__N)` arithmetic, but it avoids the rejection loop of Method D,
+//! so it is faster when the sampling fraction is high.
 //!
 //! @param[in] __first Beginning of the population
 //! @param[out] __output_iter Beginning of the destination range
 //! @param[in,out] __index Index of the next candidate element, advanced past the selected elements
-//! @param[in] __N Number of population elements that remain available
-//! @param[in] __n Number of samples to draw, must satisfy `0 < __n <= __N`
+//! @param[in] __N_int Number of population elements that remain available
+//! @param[in] __n_int Number of samples to draw, must satisfy `0 < __n <= __N`
 //! @param[in,out] __g Uniform random number generator
+//!
 //! @return The end of the written destination range
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
 [[nodiscard]] _CCCL_API _SampleIterator __vitter_sample_method_a(
   _PopulationIterator __first,
   _SampleIterator __output_iter,
-  _Distance& __index,
-  _Distance __N,
-  _Distance __n,
+  _Distance __index,
+  _Distance __N_int,
+  _Distance __n_int,
   _UniformRandomNumberGenerator& __g)
 {
   ::cuda::std::uniform_real_distribution<double> __uniform{};
 
-  auto __top    = static_cast<double>(__N - __n);
-  auto __N_real = static_cast<double>(__N);
+  auto __top    = static_cast<double>(__N_int - __n_int);
+  auto __N_real = static_cast<double>(__N_int);
 
-  while (__n >= 2)
+  while (__n_int >= 2)
   {
-    // `__top` counts the elements that are still available but will not be selected, and it holds
-    // the invariant `__top == __N_real - __n`. When it reaches zero, the remaining population is
-    // exactly the remaining sample, so every element from here on is selected. The loop below
-    // would still find them, but it would draw one discarded variate per element to do it.
-    if (__top == 0.0)
+    // `__top` counts the elements that are still available but will not be selected, and it
+    // holds the invariant `__top == __N_real - __n`. When it reaches zero (or slightly less
+    // than with floating point arithmetic), the remaining population is exactly the remaining
+    // sample, so every element from here on is selected. The loop below would still find them,
+    // but it would draw one discarded variate per element to do it.
+    if (__top <= 0.0)
     {
-      __output_iter = ::cuda::std::copy(__first + __index, __first + __index + __n, __output_iter);
-      __index += __n;
+      __output_iter = ::cuda::std::copy(__first + __index, __first + __index + __n_int, __output_iter);
       return __output_iter;
     }
 
@@ -102,12 +94,13 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
     *__output_iter++ = __first[__index++];
 
     __N_real -= 1.0;
-    --__n;
+    --__n_int;
   }
 
-  // The `__n == 1` tail below draws a variate. When `__top` is zero that variate cannot change the
-  // result, because `__N_real` is then 1 and the product truncates to zero.
-  if (__top == 0.0)
+  // The `__n == 1` tail below draws a variate. When `__top` is zero (or slightly less due to
+  // fp math) that variate cannot change the result, because `__N_real` is then 1 and the
+  // product truncates to zero.
+  if (__top <= 0.0)
   {
     *__output_iter++ = __first[__index++];
     return __output_iter;
@@ -127,16 +120,16 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
 //!
 //! @param[in] __first Beginning of the population
 //! @param[out] __output_iter Beginning of the destination range
-//! @param[in] __N Number of population elements
-//! @param[in] __n Number of samples to draw, must satisfy `0 < __n <= __N`
+//! @param[in] __N_int Number of population elements
+//! @param[in] __n_int Number of samples to draw, must satisfy `0 < __n <= __N`
 //! @param[in,out] __g Uniform random number generator
 //! @return The end of the written destination range
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
 [[nodiscard]] _CCCL_API _SampleIterator __vitter_sample_method_d(
   _PopulationIterator __first,
   _SampleIterator __output_iter,
-  _Distance __N,
-  _Distance __n,
+  _Distance __N_int,
+  _Distance __n_int,
   _UniformRandomNumberGenerator& __g)
 {
   ::cuda::std::uniform_real_distribution<double> __uniform{};
@@ -144,10 +137,10 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
   // Index of the next candidate element. Method D never moves it backwards, so the output is stable.
   auto __index = _Distance{0};
 
-  auto __k      = __n;
+  auto __k      = __n_int;
   auto __n_real = static_cast<double>(__k);
   auto __n_inv  = 1.0 / __n_real;
-  auto __N_real = static_cast<double>(__N);
+  auto __N_real = static_cast<double>(__N_int);
 
   // V_prime is the __k-th root of a uniform variate. It carries across loop iterations, because a
   // rejected candidate still yields a usable variate for the next attempt.
@@ -156,12 +149,21 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
   // to pow()
   auto __V_prime = ::cuda::std::pow(__uniform(__g), __n_inv);
 
-  auto __qu1      = __N - __k + 1;
+  auto __qu1      = __N_int - __k + 1;
   auto __qu1_real = __N_real - __n_real + 1.0;
 
-  auto __threshold = ::cuda::__detail::__sample_alpha_inv * __k;
+  // Ratio of remaining population to remaining samples below which Method A is faster.
+  //
+  // Method D stays in its acceptance-rejection loop while `__N_int > __SAMPLE_ALPHA_INV *
+  // __n_int`, and hands the rest of the sample to Method A once the sampling fraction rises
+  // above `1 / this value`. The paper calls the reciprocal `alpha` and stores `-1/alpha` in
+  // the integer `negalphainv`. It uses `alpha = 1/13`, and it gives 0.05 to 0.15 as the useful
+  // range for `alpha`, that is, `__SAMPLE_ALPHA_INV` between 7 and 20.
+  constexpr int __SAMPLE_ALPHA_INV = 13;
 
-  while ((__k > 1) && (__threshold < __N))
+  auto __threshold = __SAMPLE_ALPHA_INV * __k;
+
+  while ((__k > 1) && (__threshold < __N_int))
   {
     const auto __n_min_1_inv = 1.0 / (__n_real - 1.0);
 
@@ -243,7 +245,7 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
     __index += __s;
     *__output_iter++ = __first[__index++];
 
-    __N      = __N - __s - 1;
+    __N_int  = __N_int - __s - 1;
     __N_real = __neg_S_real + __N_real - 1.0;
 
     --__k;
@@ -253,13 +255,13 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
     __qu1      = __qu1 - __s;
     __qu1_real = __neg_S_real + __qu1_real;
 
-    __threshold -= ::cuda::__detail::__sample_alpha_inv;
+    __threshold -= __SAMPLE_ALPHA_INV;
   }
 
   if (__k > 1)
   {
     // The sampling fraction is now high enough that Method A is faster.
-    return ::cuda::__detail::__vitter_sample_method_a(__first, __output_iter, __index, __N, __k, __g);
+    return ::cuda::__detail::__vitter_sample_method_a(__first, __output_iter, __index, __N_int, __k, __g);
   }
 
   // Special case __k == 1. Reuse the carried Vprime rather than drawing again.
