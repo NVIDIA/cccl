@@ -97,10 +97,12 @@ template <class _Backend,
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+#if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {{
     if (::cuda::std::__cuda_atomic_fetch_{0}_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy)) {{return __dst;}}
   }}
+#endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_{0}<_Backend, __proxy_pointee> __bound_{0}{{
     __backend, __ptr_proxy, __dst_proxy, *__op_proxy}};
   __cuda_atomic_fetch_order_dispatch(__backend, __bound_{0}, __order, __scope, __proxy_tag{{}});

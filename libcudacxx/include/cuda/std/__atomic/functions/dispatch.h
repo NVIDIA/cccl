@@ -245,6 +245,7 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   auto* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   auto* __dst_proxy = reinterpret_cast<__proxy_type*>(&__dst);
   auto* __op_proxy  = reinterpret_cast<__proxy_type*>(&__op);
+#if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
     if (::cuda::std::__cuda_atomic_fetch_sub_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
@@ -252,6 +253,7 @@ __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
       return __dst;
     }
   }
+#endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_fetch_sub<_Backend, __proxy_pointee> __bound_fetch_sub{
     __backend, __ptr_proxy, __dst_proxy, __op_proxy};
   ::cuda::std::__cuda_atomic_fetch_order_dispatch(__backend, __bound_fetch_sub, __order, __scope, __proxy_operand{});

@@ -156,10 +156,12 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
+#if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
     if(::cuda::std::__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
   }
+#endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_exchange<_Backend, __proxy_pointee> __bound_swap{
     __backend, __ptr_proxy, __old_proxy, *__new_proxy};
   __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope, __proxy_tag{});

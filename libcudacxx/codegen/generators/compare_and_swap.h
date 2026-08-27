@@ -160,11 +160,13 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
   __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
+#if _CCCL_CUDA_COMPILATION()
   bool __res = false;
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
     if (::cuda::std::__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
   }
+#endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee> __bound_compare_swap{
     __backend, __ptr_proxy, __exp_proxy, *__exp_proxy, *__des_proxy};
   return __cuda_atomic_compare_exchange_order_dispatch(
