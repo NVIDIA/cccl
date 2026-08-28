@@ -336,6 +336,7 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   const auto __tile_total_size      = __tiling.__tile_total_size;
   const auto __smem_allocation_size = __tiling.__smem_allocation_size;
 
+  //
   //--------------------------------------------------------------------------------------------------------------------
   // Find the grid size (number of blocks) and strides for block index decomposition
   ::cuda::std::array<_ExtentT, _MaxRank> __grid_tile_sizes{};
