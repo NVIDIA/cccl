@@ -81,7 +81,7 @@ private:
   using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
 
 public:
-  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __cccl_is_referenceable<_Up>::value>::type;
+  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __is_referenceable_v<_Up>>::type;
 };
 
 template <class _Tp>
