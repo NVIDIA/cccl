@@ -339,20 +339,50 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   //
   //--------------------------------------------------------------------------------------------------------------------
   // Find the grid size (number of blocks) and strides for block index decomposition
+  ::cuda::std::array<size_t, _MaxRank> __grid_perm{};
+  for (size_t __i = 0; __i < _MaxRank; ++__i)
+  {
+    __grid_perm[__i] = __i;
+  }
+  // When destination row size is not a multiple of the tile size, visit the destination tensor in a row-major order to
+  // improve cache reuse
+  if constexpr (_MaxRank == 2)
+  {
+    const auto __dst_contiguous_dim = __tiling.__dst_perm[0];
+    const auto __dst_outer_dim      = __tiling.__dst_perm[1];
+    const auto __dst_tile_width     = static_cast<_StrideTOut>(__tile_sizes[__dst_contiguous_dim]);
+    if (__dst.__strides[__dst_outer_dim] % __dst_tile_width != 0)
+    {
+      __grid_perm = __tiling.__dst_perm;
+    }
+  }
+
   ::cuda::std::array<_ExtentT, _MaxRank> __grid_tile_sizes{};
   ::cuda::std::array<_StrideTIn, _MaxRank> __grid_tile_src_strides{};
   ::cuda::std::array<_StrideTOut, _MaxRank> __grid_tile_dst_strides{};
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __grid_tile_extents{};
+  ::cuda::std::array<_ExtentT, _MaxRank> __grid_extents{};
+  ::cuda::std::array<_StrideTIn, _MaxRank> __grid_src_strides{};
+  ::cuda::std::array<_StrideTOut, _MaxRank> __grid_dst_strides{};
   _ExtentT __grid_size = 1;
   for (size_t __i = 0; __i < __rank; ++__i)
   {
-    __grid_tile_sizes[__i]       = ::cuda::ceil_div(__src.__extents[__i], static_cast<_ExtentT>(__tile_sizes[__i]));
-    __grid_tile_src_strides[__i] = static_cast<_StrideTIn>(__tile_sizes[__i]) * __src.__strides[__i];
-    __grid_tile_dst_strides[__i] = static_cast<_StrideTOut>(__tile_sizes[__i]) * __dst.__strides[__i];
+    const auto __p               = __grid_perm[__i];
+    __grid_tile_sizes[__i]       = ::cuda::ceil_div(__src.__extents[__p], static_cast<_ExtentT>(__tile_sizes[__p]));
+    __grid_tile_src_strides[__i] = static_cast<_StrideTIn>(__tile_sizes[__p]) * __src.__strides[__p];
+    __grid_tile_dst_strides[__i] = static_cast<_StrideTOut>(__tile_sizes[__p]) * __dst.__strides[__p];
+    __grid_tile_extents[__i]     = __tile_sizes[__p];
+    __grid_extents[__i]          = __dst.__extents[__p];
+    __grid_src_strides[__i]      = __src.__strides[__p];
+    __grid_dst_strides[__i]      = __dst.__strides[__p];
     __grid_size *= __grid_tile_sizes[__i];
   }
+  // remaining unused dimensions
   for (size_t __i = __rank; __i < _MaxRank; ++__i)
   {
-    __grid_tile_sizes[__i] = 1;
+    __grid_tile_sizes[__i]   = 1;
+    __grid_tile_extents[__i] = 1;
+    __grid_extents[__i]      = 1;
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -398,9 +428,8 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
 
   //--------------------------------------------------------------------------------------------------------------------
   // Launch the kernel
-  using __value_type = ::cuda::std::remove_cv_t<_TpIn>;
-  const int __thread_block_size =
-    __tiling.__use_padded_smem ? 64 : cudax::__find_thread_block_size(__smem_allocation_size * sizeof(__value_type));
+  using __value_type                = ::cuda::std::remove_cv_t<_TpIn>;
+  constexpr int __thread_block_size = 256;
 
   const auto __config = ::cuda::make_config(
     ::cuda::block_dims(__thread_block_size),
@@ -438,11 +467,11 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
       __tile_dst_perm_iter,
       __dst_perm_dst_strides,
       __tile_dst_perm_smem_strides,
-      __dst.__strides,
+      __grid_dst_strides,
       static_cast<int>(__tile_total_size),
-      __tile_sizes,
-      __dst.__extents,
-      __src.__strides);
+      __grid_tile_extents,
+      __grid_extents,
+      __grid_src_strides);
   }
   else
   {
@@ -475,11 +504,11 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
       __tile_dst_perm_iter,
       __dst_perm_dst_strides,
       __tile_dst_perm_smem_strides,
-      __dst.__strides,
+      __grid_dst_strides,
       static_cast<int>(__tile_total_size),
-      __tile_sizes,
-      __dst.__extents,
-      __src.__strides);
+      __grid_tile_extents,
+      __grid_extents,
+      __grid_src_strides);
   }
 }
 
