@@ -2583,10 +2583,19 @@ auto on_throw(_Reaction&& __reaction,
 //! captured exactly as with plain on_throw. The macro ends at `[&]()`:
 //! supply the body type by composition when needed, as in
 //! ON_THROW(retry | subst(-1)) -> int { throw failure(); };.
-#define ON_THROW(...)                                              \
-  [&] {                                                            \
-    using namespace ::cuda::experimental::stf::exception_policies; \
-    return ::cuda::experimental::stf::on_throw(__VA_ARGS__);       \
+//!
+//! The block-scope using-declarations pin `abort` and `terminate` to the
+//! policies. Without them, using the macro at global scope with the C
+//! library in scope would be ambiguous: the using-directive parks the
+//! policy names at the nearest namespace enclosing both it and
+//! `exception_policies`, which in user code is the global namespace,
+//! right next to `::abort`.
+#define ON_THROW(...)                                                \
+  [&] {                                                              \
+    using namespace ::cuda::experimental::stf::exception_policies;   \
+    using ::cuda::experimental::stf::exception_policies::abort;      \
+    using ::cuda::experimental::stf::exception_policies::terminate;  \
+    return ::cuda::experimental::stf::on_throw(__VA_ARGS__);         \
   }() << [&]()
 
 #ifdef UNITTESTED_FILE
