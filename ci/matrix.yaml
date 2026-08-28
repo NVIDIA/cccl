@@ -9,7 +9,7 @@ compile_time:
         - cub.headers.base
         - thrust.cpp.cuda.headers.base
         - libcudacxx.test.public_headers
-      args: "-arch native"
+      args: "-arch sm_75"
       slices:
         - id: total-compilation
           title: TU total compilation
