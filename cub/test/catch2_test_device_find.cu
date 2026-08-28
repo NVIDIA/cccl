@@ -10,6 +10,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
@@ -43,8 +44,8 @@ enum class gen_data_t
 template <typename OffsetT, typename InputIt, typename Predicate>
 auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate) -> OffsetT
 {
-  const auto it = std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
-  return static_cast<OffsetT>(std::distance(first, it));
+  const auto it = cuda::std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
+  return static_cast<OffsetT>(cuda::std::distance(first, it));
 }
 
 CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
@@ -87,7 +88,7 @@ CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, of
     else
     {
       // omit the largest value from the random values so we have a value to that does not occur
-      c2h::gen(C2H_SEED(1), in_items, input_t{0}, static_cast<input_t>(::cuda::std::numeric_limits<input_t>::max() - 1));
+      c2h::gen(C2H_SEED(1), in_items, input_t{0}, static_cast<input_t>(cuda::std::numeric_limits<input_t>::max() - 1));
     }
   }
   else
@@ -111,7 +112,7 @@ CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, of
   else
   {
     // max value is neither in the random input and nor in the constant
-    val_to_find = ::cuda::std::numeric_limits<input_t>::max();
+    val_to_find = cuda::std::numeric_limits<input_t>::max();
   }
 
   auto predicate = predice_t{val_to_find};
@@ -191,7 +192,7 @@ CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   }
 
   { // transform_iterator of counting_iterator input and thrust device_ptr output
-    auto t_it = cuda::make_transform_iterator(c_it, ::cuda::std::negate{});
+    auto t_it = cuda::make_transform_iterator(c_it, cuda::std::negate{});
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = cuda::equal_to_value<input_t>{-val_to_find};
     find_if(t_it, out_result.data(), predicate, num_items);
@@ -201,7 +202,7 @@ CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   { // counting_iterator input and transform_output_iterator output
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = cuda::equal_to_value<input_t>{val_to_find};
-    auto out_it    = cuda::make_transform_output_iterator(out_result.begin(), ::cuda::std::negate{});
+    auto out_it    = cuda::make_transform_output_iterator(out_result.begin(), cuda::std::negate{});
     find_if(c_it, out_it, predicate, num_items);
     REQUIRE(-expected_if_found == out_result[0]);
   }
@@ -284,7 +285,7 @@ struct std_lower_bound_t
   template <typename RangeIteratorT, typename T, typename CompareOpT>
   RangeIteratorT operator()(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp) const
   {
-    return std::lower_bound(first, last, value, comp);
+    return cuda::std::lower_bound(first, last, value, comp);
   }
 } std_lower_bound;
 
@@ -293,7 +294,7 @@ struct std_upper_bound_t
   template <typename RangeIteratorT, typename T, typename CompareOpT>
   RangeIteratorT operator()(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp) const
   {
-    return std::upper_bound(first, last, value, comp);
+    return cuda::std::upper_bound(first, last, value, comp);
   }
 } std_upper_bound;
 
