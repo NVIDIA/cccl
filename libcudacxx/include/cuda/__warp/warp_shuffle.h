@@ -65,7 +65,7 @@ struct warp_shuffle_result
 
 #  define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
 
-// bit_cast does not support arrays. Larger types use their specialized or generic array paths.
+// bit_cast does not support raw arrays. Larger types use their specialized or generic array paths.
 template <typename _Up>
 inline constexpr bool __is_shuffle_bitcast_path_v =
   !::cuda::std::is_array_v<_Up> && (sizeof(_Up) == 1 || sizeof(_Up) == 2 || sizeof(_Up) == 4);
@@ -163,7 +163,7 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
 }
 
 template <int _Width, typename _Tp, typename _Up>
-_CCCL_DEVICE_API constexpr void __warp_shuffle_preconditions()
+_CCCL_DEVICE_API constexpr void __warp_shuffle_mandates()
 {
   static_assert(::cuda::std::is_default_constructible_v<_Tp>,
                 "cuda::device::warp_shuffle: _Tp must be default constructible");
@@ -184,7 +184,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
+  ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   // __src_lane is unrestricted because the final shuffle index is __src_lane % _Width
   // __src_lane is always in range [minLane, maxLane]
 
@@ -229,7 +229,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
+  ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __xor_mask, &__pred1),
                                                            "all active lanes must have the same xor_mask");))
@@ -279,7 +279,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
+  ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "delta must be in the range [0, _Width)");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
@@ -328,7 +328,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
+  ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "__delta must be in the range [0, _Width)");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
