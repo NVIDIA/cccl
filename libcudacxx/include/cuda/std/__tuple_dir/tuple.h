@@ -116,22 +116,22 @@ public:
       : __base_(allocator_arg_t(), __a)
   {}
 
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__variadic_copy_construction,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_Tp...>::__select_variadic_copy_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(const _Tp&... __t) noexcept((is_nothrow_copy_constructible_v<_Tp> && ...))
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__variadic_copy_construction,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+  template <__select_constructor _Constraints = __tuple_constraints<_Tp...>::__select_variadic_copy_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(const _Tp&... __t) noexcept((is_nothrow_copy_constructible_v<_Tp> && ...))
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
             enable_if_t<sizeof...(_Tp) != 0, int> = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                    = typename __tuple_constraints<_Tp...>::__variadic_copy_construction,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints     = __tuple_constraints<_Tp...>::__select_variadic_copy_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     (is_nothrow_copy_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
@@ -139,24 +139,24 @@ public:
 
   template <class _Alloc,
             enable_if_t<sizeof...(_Tp) != 0, int> = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                    = typename __tuple_constraints<_Tp...>::__variadic_copy_construction,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints     = __tuple_constraints<_Tp...>::__select_variadic_copy_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     (is_nothrow_copy_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__variadic_copy_construction,
-            enable_if_t<_Constraints::__can_construct, int> = 0>
+            __select_constructor _Constraints = __tuple_constraints<_Tp...>::__select_variadic_copy_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, const tuple& __t) noexcept(
     (is_nothrow_copy_constructible_v<_Tp> && ...))
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, __t)
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__variadic_move_construction,
-            enable_if_t<_Constraints::__can_construct, int> = 0>
+            __select_constructor _Constraints = __tuple_constraints<_Tp...>::__select_variadic_move_constructible(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, tuple&& __t) noexcept(
     (is_nothrow_move_constructible_v<_Tp> && ...))
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::move(__t))

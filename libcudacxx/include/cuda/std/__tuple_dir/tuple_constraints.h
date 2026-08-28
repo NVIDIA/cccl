@@ -117,8 +117,8 @@ struct __tuple_constraints
       return __select_constructor::__explicit;
     }
   }
-  using __variadic_copy_construction = _ConstructorConstraint<__select_variadic_copy_constructible()>;
 
+  template <int = 0>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
   __select_variadic_move_constructible() noexcept
   {
@@ -135,7 +135,6 @@ struct __tuple_constraints
       return __select_constructor::__explicit;
     }
   }
-  using __variadic_move_construction = _ConstructorConstraint<__select_variadic_move_constructible()>;
 
   template <class... _UTypes, enable_if_t<sizeof...(_UTypes) != 1, int> = 0>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor __select_variadic_constructible() noexcept
