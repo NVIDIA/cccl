@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -47,14 +48,14 @@ enum class __cuda_atomic_order
 };
 
 template <__cuda_atomic_order _Order>
-using __cuda_atomic_order_tag = integral_constant<__cuda_atomic_order, _Order>;
+using __cuda_atomic_order_tag _CCCL_NODEBUG = integral_constant<__cuda_atomic_order, _Order>;
 
-using __cuda_atomic_order_relaxed  = __cuda_atomic_order_tag<__cuda_atomic_order::_relaxed>;
-using __cuda_atomic_order_release  = __cuda_atomic_order_tag<__cuda_atomic_order::_release>;
-using __cuda_atomic_order_acquire  = __cuda_atomic_order_tag<__cuda_atomic_order::_acquire>;
-using __cuda_atomic_order_acq_rel  = __cuda_atomic_order_tag<__cuda_atomic_order::_acq_rel>;
-using __cuda_atomic_order_seq_cst  = __cuda_atomic_order_tag<__cuda_atomic_order::_seq_cst>;
-using __cuda_atomic_order_volatile = __cuda_atomic_order_tag<__cuda_atomic_order::_volatile>;
+using __cuda_atomic_order_relaxed _CCCL_NODEBUG  = __cuda_atomic_order_tag<__cuda_atomic_order::_relaxed>;
+using __cuda_atomic_order_release _CCCL_NODEBUG  = __cuda_atomic_order_tag<__cuda_atomic_order::_release>;
+using __cuda_atomic_order_acquire _CCCL_NODEBUG  = __cuda_atomic_order_tag<__cuda_atomic_order::_acquire>;
+using __cuda_atomic_order_acq_rel _CCCL_NODEBUG  = __cuda_atomic_order_tag<__cuda_atomic_order::_acq_rel>;
+using __cuda_atomic_order_seq_cst _CCCL_NODEBUG  = __cuda_atomic_order_tag<__cuda_atomic_order::_seq_cst>;
+using __cuda_atomic_order_volatile _CCCL_NODEBUG = __cuda_atomic_order_tag<__cuda_atomic_order::_volatile>;
 
 template <class _Order>
 struct __cuda_atomic_ptx_order : _Order
@@ -66,10 +67,10 @@ struct __cuda_atomic_ptx_order : _Order
   {}
 };
 
-using __cuda_atomic_ptx_order_relaxed = __cuda_atomic_ptx_order<__cuda_atomic_order_relaxed>;
-using __cuda_atomic_ptx_order_release = __cuda_atomic_ptx_order<__cuda_atomic_order_release>;
-using __cuda_atomic_ptx_order_acquire = __cuda_atomic_ptx_order<__cuda_atomic_order_acquire>;
-using __cuda_atomic_ptx_order_acq_rel = __cuda_atomic_ptx_order<__cuda_atomic_order_acq_rel>;
+using __cuda_atomic_ptx_order_relaxed _CCCL_NODEBUG = __cuda_atomic_ptx_order<__cuda_atomic_order_relaxed>;
+using __cuda_atomic_ptx_order_release _CCCL_NODEBUG = __cuda_atomic_ptx_order<__cuda_atomic_order_release>;
+using __cuda_atomic_ptx_order_acquire _CCCL_NODEBUG = __cuda_atomic_ptx_order<__cuda_atomic_order_acquire>;
+using __cuda_atomic_ptx_order_acq_rel _CCCL_NODEBUG = __cuda_atomic_ptx_order<__cuda_atomic_order_acq_rel>;
 
 struct __cuda_atomic_operation_load
 {};
@@ -89,8 +90,8 @@ struct __cuda_atomic_runtime_cas_order
 template <class _Success, class _Failure>
 struct __cuda_atomic_cas_order
 {
-  using __success = _Success;
-  using __failure = _Failure;
+  using __success _CCCL_NODEBUG = _Success;
+  using __failure _CCCL_NODEBUG = _Failure;
 };
 
 struct __cuda_atomic_cas_strong
@@ -253,14 +254,14 @@ struct _CCCL_ALIGNAS(16) __cuda_atomic_longlong2
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_bitwise_impl() noexcept
 {
-  using __tag = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, sizeof(_Type) * 8>;
+  using __tag = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, sizeof(_Type) * CHAR_BIT>;
   if constexpr (sizeof(_Type) == 16)
   {
     return __cuda_atomic_operand_deduction<__cuda_atomic_longlong2, __tag>{};
   }
   else
   {
-    return __cuda_atomic_operand_deduction<__make_nbit_uint_t<sizeof(_Type) * 8>, __tag>{};
+    return __cuda_atomic_operand_deduction<__make_nbit_uint_t<sizeof(_Type) * CHAR_BIT>, __tag>{};
   }
 }
 
@@ -279,14 +280,14 @@ template <class _Type>
   constexpr auto __op =
     __is_floating ? __cuda_atomic_operand::_f
                   : (is_signed_v<_Type> && sizeof(_Type) != 8 ? __cuda_atomic_operand::_s : __cuda_atomic_operand::_u);
-  using __tag = __cuda_atomic_operand_tag<__op, sizeof(_Type) * 8>;
+  using __tag = __cuda_atomic_operand_tag<__op, sizeof(_Type) * CHAR_BIT>;
   if constexpr (__is_floating || sizeof(_Type) == 16)
   {
     return __cuda_atomic_operand_deduction<_Type, __tag>{};
   }
   else
   {
-    return __cuda_atomic_operand_deduction<__make_nbit_int_t<sizeof(_Type) * 8, is_signed_v<_Type>>, __tag>{};
+    return __cuda_atomic_operand_deduction<__make_nbit_int_t<sizeof(_Type) * CHAR_BIT, is_signed_v<_Type>>, __tag>{};
   }
 }
 
@@ -302,14 +303,14 @@ template <class _Type>
   constexpr bool __is_floating = is_floating_point_v<_Type> || __is_extended_floating_point_v<_Type>;
   constexpr auto __op = __is_floating ? __cuda_atomic_operand::_f
                                       : (is_signed_v<_Type> ? __cuda_atomic_operand::_s : __cuda_atomic_operand::_u);
-  using __tag         = __cuda_atomic_operand_tag<__op, sizeof(_Type) * 8>;
+  using __tag         = __cuda_atomic_operand_tag<__op, sizeof(_Type) * CHAR_BIT>;
   if constexpr (__is_floating || sizeof(_Type) == 16)
   {
     return __cuda_atomic_operand_deduction<_Type, __tag>{};
   }
   else
   {
-    return __cuda_atomic_operand_deduction<__make_nbit_int_t<sizeof(_Type) * 8, is_signed_v<_Type>>, __tag>{};
+    return __cuda_atomic_operand_deduction<__make_nbit_int_t<sizeof(_Type) * CHAR_BIT, is_signed_v<_Type>>, __tag>{};
   }
 }
 

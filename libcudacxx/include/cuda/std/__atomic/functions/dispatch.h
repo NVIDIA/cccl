@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
@@ -65,7 +65,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
 
 template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
@@ -92,7 +92,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
 
 template <class _Backend, class _Fn, class _Sco, class... _Args>
 _CCCL_HOST_DEVICE_API void __cuda_atomic_rmw_order_dispatch(
-  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, [[maybe_unused]] _Sco __scope, _Args... __args)
+  [[maybe_unused]] _Backend __backend, _Fn& __fn, memory_order __order, _Sco __scope, _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)
   {
@@ -180,7 +180,7 @@ template <class _Backend, class _Fn, class _Sco, class... _Args>
   _Fn& __fn,
   memory_order __success,
   memory_order __failure,
-  [[maybe_unused]] _Sco __scope,
+  _Sco __scope,
   _Args... __args)
 {
   if constexpr (!_Backend::__needs_constant_order)

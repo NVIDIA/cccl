@@ -149,10 +149,10 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   memory_order __order,
   _Sco __scope)
 {
-  using __value_type     = __unv<_Type>;
-  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<__value_type>;
-  using __proxy_pointee  = __copy_cv_t<_Type, __proxy_t>;
-  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
+  using __value_type _CCCL_NODEBUG    = __unv<_Type>;
+  using __proxy_t _CCCL_NODEBUG       = __cuda_atomic_deduce_bitwise_t<__value_type>;
+  using __proxy_pointee _CCCL_NODEBUG = __copy_cv_t<_Type, __proxy_t>;
+  using __proxy_tag _CCCL_NODEBUG     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
@@ -171,7 +171,7 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type> __cuda_atomic_exchange_dispatch(
   _Backend __backend, _Type* __ptr, _Up __new, memory_order __order, _Sco __scope)
 {
-  using __value_type = __unv<_Type>;
+  using __value_type _CCCL_NODEBUG = __unv<_Type>;
   __value_type __old;
   ::cuda::std::__cuda_atomic_exchange_dispatch(
     __backend, __ptr, __old, static_cast<__value_type>(__new), __order, __scope);

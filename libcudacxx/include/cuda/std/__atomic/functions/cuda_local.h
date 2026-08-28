@@ -53,37 +53,37 @@ _CCCL_DEVICE_API inline bool __cuda_atomic_is_local(const volatile void* __ptr)
 }
 
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_and(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_and(_Type __atom, _Type const& __v)
 {
   return __atom & __v;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_or(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_or(_Type __atom, _Type const& __v)
 {
   return __atom | __v;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_xor(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_xor(_Type __atom, _Type const& __v)
 {
   return __atom ^ __v;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_add(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_add(_Type __atom, _Type const& __v)
 {
   return __atom + __v;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_sub(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_sub(_Type __atom, _Type const& __v)
 {
   return __atom - __v;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_max(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_max(_Type __atom, _Type const& __v)
 {
   return ::cuda::std::__cuda_atomic_less(__atom, __v) ? __v : __atom;
 }
 template <class _Type>
-_CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_min(_Type __atom, _Type const& __v)
+[[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_min(_Type __atom, _Type const& __v)
 {
   return ::cuda::std::__cuda_atomic_less(__v, __atom) ? __v : __atom;
 }
