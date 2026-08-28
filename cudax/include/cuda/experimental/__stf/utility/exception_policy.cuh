@@ -2589,7 +2589,7 @@ auto on_throw(_Reaction&& __reaction,
 //! library in scope would be ambiguous: the using-directive parks the
 //! policy names at the nearest namespace enclosing both it and
 //! `exception_policies`, which in user code is the global namespace,
-//! right next to `::abort`.
+//! right next to the C library's `abort`.
 #define ON_THROW(...)                                                \
   [&] {                                                              \
     using namespace ::cuda::experimental::stf::exception_policies;   \
