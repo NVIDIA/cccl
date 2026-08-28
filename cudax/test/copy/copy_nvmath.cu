@@ -158,7 +158,7 @@ static cuda::std::array<int, 23> make_flatten_common_dst_strides()
 
 // src: (2,)^23, bit-permuted strides
 // dst: (2,)^23, different bit-permuted strides
-TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]")
+TEMPLATE_TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]", int8_t, int16_t)
 {
   constexpr int alloc = 1 << 23;
   cuda::std::array<int, 23> shape{};
@@ -166,7 +166,7 @@ TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]")
   {
     s = 2;
   }
-  test_copy_stride_relaxed<data_t>(
+  test_copy_stride_relaxed<TestType>(
     alloc, 0, shape, make_flatten_common_src_strides(), alloc, 0, make_flatten_common_dst_strides());
 }
 

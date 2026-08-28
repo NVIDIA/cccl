@@ -46,6 +46,7 @@
 #  include <cuda/std/__type_traits/is_same.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
+#  include <cuda/experimental/__copy/copy_dst_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_optimized.cuh>
 #  include <cuda/experimental/__copy/copy_shared_memory.cuh>
 #  include <cuda/experimental/__copy/dispatch_by_vector.cuh>
@@ -84,10 +85,32 @@ _CCCL_HOST_API void __copy_simplified_rank(
   const _SrcAccessor& __src_accessor,
   const _DstAccessor& __dst_accessor) noexcept
 {
+  // create a copy of the tensors with compile-time rank
   const auto __src_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__src);
   const auto __dst_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__dst);
   if constexpr (_RankOut >= 2)
   {
+    // if source and destination tensors are not both contiguous, try to use the destination tensor as contiguous
+    if constexpr (sizeof(_TpIn) <= 2 && sizeof(_TpOut) <= 2)
+    {
+      auto __src_dst_ordered = __src_narrow;
+      auto __dst_dst_ordered = __dst_narrow;
+      ::cuda::experimental::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::experimental::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
+      // destination tensor is contiguous
+      if (::cuda::experimental::__num_contiguous_dimensions(__dst_dst_ordered) == __dst_dst_ordered.__rank)
+      {
+        ::cuda::experimental::__copy_dst_contiguous(
+          __src_dst_ordered,
+          __dst_dst_ordered,
+          ::cuda::experimental::__total_size(__src_dst_ordered),
+          __stream,
+          __src_accessor,
+          __dst_accessor);
+        return;
+      }
+    }
+
     if (::cuda::experimental::__use_shared_mem_kernel(__src_narrow, __dst_narrow))
     {
       ::cuda::experimental::__launch_copy_shared_mem_kernel(
