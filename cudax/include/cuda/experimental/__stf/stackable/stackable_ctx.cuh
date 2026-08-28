@@ -34,6 +34,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <thread>
+#include <tuple>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/internal/task.cuh"
