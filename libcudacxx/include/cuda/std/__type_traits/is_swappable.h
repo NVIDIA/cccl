@@ -161,7 +161,7 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 template <class _Tp, class _Up>
 inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __is_referenceable_v<_Tp>>
 inline constexpr bool is_swappable_v = false;
 
 template <class _Tp>
@@ -171,7 +171,7 @@ inline constexpr bool is_swappable_v<_Tp, true> =
 template <class _Tp, class _Up>
 inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __is_referenceable_v<_Tp>>
 inline constexpr bool is_nothrow_swappable_v = false;
 
 template <class _Tp>
