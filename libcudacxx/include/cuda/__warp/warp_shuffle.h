@@ -75,7 +75,7 @@ template <typename _Tp>
 using __shuffle_bitcast_storage_t = ::cuda::std::__make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
 template <typename _Tp>
-_CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
+[[nodiscard]] _CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
 {
   using __unsigned_t = __shuffle_bitcast_storage_t<_Tp>;
   return static_cast<::cuda::std::uint32_t>(::cuda::std::bit_cast<__unsigned_t>(__data));
