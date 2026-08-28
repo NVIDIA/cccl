@@ -135,7 +135,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
-    { ::cuda::std::ranges::iter_move(__t) } -> __can_reference;
+    { ::cuda::std::ranges::iter_move(__t) } -> __referenceable;
   }
 using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
 
@@ -144,7 +144,7 @@ using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
                        requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                          requires(__can_reference<decltype(::cuda::std::ranges::iter_move(__t))>)));
+                                          requires(__referenceable<decltype(::cuda::std::ranges::iter_move(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);

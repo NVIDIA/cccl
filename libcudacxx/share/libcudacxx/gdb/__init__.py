@@ -27,6 +27,8 @@ import inplace_vector  # noqa: E402
 import mdspan  # noqa: E402
 import memory_pool  # noqa: E402
 import memory_resource  # noqa: E402
+import optional  # noqa: E402
+import shared_resource  # noqa: E402
 import span  # noqa: E402
 import std_array  # noqa: E402
 import stream  # noqa: E402
@@ -46,6 +48,8 @@ _PRINTERS = (
     mdspan,
     memory_pool,
     span,
+    optional,
+    shared_resource,
 )
 
 

@@ -251,6 +251,13 @@ function(
         ${test_target}
         PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
       )
+      # NVRTC's frontend recurses deeply while parsing the block-level primitives compiled by this
+      # test and overflows MSVC's 1 MiB default stack, see NVIDIA/cccl#9612. Give the main thread the
+      # 8 MiB that Linux provides by default, which is the size libnvcc's frontend worker uses for the
+      # same reason, see c/parallel.v2/src/hostjit/libnvcc/compiler.cpp.
+      if (MSVC)
+        target_link_options(${test_target} PRIVATE "/STACK:8388608") # 8 MiB
+      endif()
     endif()
 
     if ("${test_src}" MATCHES "test_iterator\\.cu$")
@@ -329,7 +336,6 @@ function(
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)

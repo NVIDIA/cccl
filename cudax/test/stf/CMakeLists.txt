@@ -22,6 +22,7 @@ set(
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
+  error_checks/dim4_get_index_bounds.cu
   error_checks/double_finalize.cu
   error_checks/erase_frozen.cu
   error_checks/misformed_tasks_dbl_end.cu
@@ -73,6 +74,7 @@ set(
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
+  local_stf/stackable_while_token.cu
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/stackable_tmp.cu

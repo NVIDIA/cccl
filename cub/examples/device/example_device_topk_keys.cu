@@ -10,7 +10,6 @@
 #define CUB_STDERR
 
 #include <cub/device/device_topk.cuh>
-#include <cub/util_allocator.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>

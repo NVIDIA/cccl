@@ -55,12 +55,6 @@ __device__ void check_and_reset_invoke_count(const Group& group)
 template <class Group>
 __device__ void test_invoke_one(const Group& group)
 {
-  // We need only 1 group for these tests.
-  if (group.rank(cuda::grid) > 0)
-  {
-    return;
-  }
-
   // invoke_one callable with void return type
   {
     auto callable = []() {
@@ -255,16 +249,37 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
+    // We want only 1 unit to be used for the test.
+
     // Test this groups.
-    test_invoke_one(cudax::this_thread{config});
-    test_invoke_one(cudax::this_warp{config});
-    test_invoke_one(cudax::this_block{config});
-    test_invoke_one(cudax::this_cluster{config});
+    if (cuda::gpu_thread.rank(cuda::grid, config) == 0)
+    {
+      test_invoke_one(cudax::this_thread{config});
+    }
+    if (cuda::warp.rank(cuda::grid, config) == 0)
+    {
+      test_invoke_one(cudax::this_warp{config});
+    }
+    if (cuda::block.rank(cuda::grid, config) == 0)
+    {
+      test_invoke_one(cudax::this_block{config});
+    }
+    if (cuda::cluster.rank(cuda::grid, config) == 0)
+    {
+      test_invoke_one(cudax::this_cluster{config});
+    }
+    test_invoke_one(cudax::this_grid{config});
 
     // Test custom groups.
+    if (cuda::warp.rank(cuda::grid, config) == 0)
     {
-      cudax::group group{cuda::gpu_thread, cudax::this_warp{config}, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
-      test_invoke_one(group);
+      cudax::this_warp warp{config};
+      cudax::group group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
+
+      if (group.rank(warp) == 0)
+      {
+        test_invoke_one(group);
+      }
     }
   }
 };

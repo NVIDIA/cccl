@@ -6,6 +6,10 @@
  * Test evaluation for caching allocator of device memory
  ******************************************************************************/
 
+// TODO: remove this test in CCCL 4.0
+// This test intentionally exercises the deprecated caching allocator.
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 

@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_BFIND_H_
 #define _CUDA_PTX_GENERATED_BFIND_H_
 
@@ -150,5 +153,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t bfind_shiftamt(_S64 __a_reg)
   return __dest;
 }
 #endif // __cccl_ptx_isa >= 200
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_BFIND_H_
