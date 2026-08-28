@@ -1339,6 +1339,29 @@ public:
     template <typename T>
     using data_t_of = typename T::data_t;
 
+    // cuda_kernel drops void_interface (token) instances from the arguments
+    // it applies to the wrapper functor (task_dep_vector::non_void_instance),
+    // so the functor's parameter list must be computed with the same filter,
+    // not the raw data_t_of<Deps>... pack. This mirrors deps_tup_t in
+    // parallel_for_scope.cuh.
+    using filtered_data_t = reserved::remove_void_interface_from_pack_t<data_t_of<Deps>...>;
+
+    template <typename CondFunc, typename FilteredTuple>
+    struct launcher;
+
+    template <typename CondFunc, typename... FilteredArgs>
+    struct launcher<CondFunc, ::std::tuple<FilteredArgs...>>
+    {
+      CondFunc cond_func;
+      cudaGraphConditionalHandle h;
+
+      cuda_kernel_desc operator()(FilteredArgs... args) const
+      {
+        return cuda_kernel_desc{
+          reserved::condition_update_kernel<CondFunc, FilteredArgs...>, 1, 1, 0, h, cond_func, args...};
+      }
+    };
+
     template <typename CondFunc>
     void operator->*(CondFunc&& cond_func)
     {
@@ -1347,10 +1370,7 @@ public:
           return this->ctx_.cuda_kernel(deps...).set_symbol("condition_update");
         },
         tdeps)
-          ->*[cond_func = mv(cond_func), h = handle_](data_t_of<Deps>... args) {
-                return cuda_kernel_desc{
-                  reserved::condition_update_kernel<CondFunc, data_t_of<Deps>...>, 1, 1, 0, h, cond_func, args...};
-              };
+          ->*launcher<::cuda::std::decay_t<CondFunc>, filtered_data_t>{mv(cond_func), handle_};
     }
 
   private:
