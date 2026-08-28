@@ -13,6 +13,8 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <functional>
+
 #include <testing.cuh>
 
 #include <catch2/matchers/catch_matchers_exception.hpp>
@@ -246,6 +248,32 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
 }
+
+#if _CCCL_HAS_HOST_STD_LIB()
+C2H_CCCLRT_TEST("Stream hash", "[stream]")
+{
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<decltype(std::hash<cuda::stream>{}(cuda::std::declval<cuda::stream&>())), size_t>);
+  STATIC_REQUIRE(cuda::std::is_default_constructible_v<std::hash<cuda::stream>>);
+  STATIC_REQUIRE(cuda::std::is_copy_constructible_v<std::hash<cuda::stream>>);
+
+  cuda::stream stream{cuda::device_ref{0}};
+
+  // The hash is stable across calls.
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream>{}(stream));
+
+  // A stream and a stream_ref that refer to the same stream are equal, so they
+  // must hash equally.
+  cuda::stream_ref ref{stream};
+  CCCLRT_REQUIRE(ref == stream);
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream_ref>{}(ref));
+
+  // A moved-to stream owns the same underlying stream, so the hash follows it.
+  auto hash_before = std::hash<cuda::stream>{}(stream);
+  cuda::stream moved{cuda::std::move(stream)};
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(moved) == hash_before);
+}
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 C2H_CCCLRT_TEST("Default stream diagnostics mention the missing current context", "[stream]")
 {

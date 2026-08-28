@@ -32,6 +32,7 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__fwd/hash.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
@@ -339,6 +340,30 @@ _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream_id>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_id __id) noexcept
+  {
+    return ::std::hash<::cuda::std::underlying_type_t<::cuda::stream_id>>{}(::cuda::std::to_underlying(__id));
+  }
+};
+
+template <>
+struct hash<::cuda::stream_ref>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_ref __stream)
+  {
+    return ::std::hash<::cuda::stream_id>{}(__stream.id());
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 
