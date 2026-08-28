@@ -58,6 +58,52 @@
 
 namespace cuda::experimental
 {
+//! @brief Launch a copy using the simplified tensor pair's exact static rank.
+//!
+//! The shared-memory path is reconsidered with the narrower descriptors because the original mdspan rank may exceed
+//! the shared-memory kernel rank limit.
+//!
+//! @param[in]  __src          Simplified source raw tensor
+//! @param[out] __dst          Simplified destination raw tensor
+//! @param[in]  __stream       CUDA stream for the asynchronous transfer
+//! @param[in]  __src_accessor Accessor for reading source elements
+//! @param[in]  __dst_accessor Accessor for writing destination elements
+template <::cuda::std::size_t _RankOut,
+          typename _ExtentT,
+          typename _StrideTIn,
+          typename _StrideTOut,
+          typename _TpIn,
+          typename _TpOut,
+          ::cuda::std::size_t _MaxRank,
+          typename _SrcAccessor,
+          typename _DstAccessor>
+_CCCL_HOST_API void __copy_simplified_rank(
+  const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank>& __src,
+  const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
+  ::cuda::stream_ref __stream,
+  const _SrcAccessor& __src_accessor,
+  const _DstAccessor& __dst_accessor) noexcept
+{
+  const auto __src_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__src);
+  const auto __dst_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__dst);
+  if constexpr (_RankOut >= 2)
+  {
+    if (::cuda::experimental::__use_shared_mem_kernel(__src_narrow, __dst_narrow))
+    {
+      ::cuda::experimental::__launch_copy_shared_mem_kernel(
+        __src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
+      return;
+    }
+  }
+  ::cuda::experimental::__copy_optimized(
+    __src_narrow,
+    __dst_narrow,
+    ::cuda::experimental::__total_size(__src_narrow),
+    __stream,
+    __src_accessor,
+    __dst_accessor);
+}
+
 //! @brief Copy elements between two device mdspans.
 //!
 //! Validates preconditions, converts mdspans to raw tensor descriptors, simplifies the paired layout
@@ -248,7 +294,45 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         return;
       }
     }
-    // (5) generic case (fallback)
+    // (5) use the simplified rank in device code for common low-rank layouts
+    if constexpr (__max_rank > 1)
+    {
+      if (__src_simplified.__rank == 1)
+      {
+        cudax::__copy_simplified_rank<1>(
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+        return;
+      }
+    }
+    if constexpr (__max_rank > 2)
+    {
+      if (__src_simplified.__rank == 2)
+      {
+        cudax::__copy_simplified_rank<2>(
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+        return;
+      }
+    }
+    if constexpr (__max_rank > 3)
+    {
+      if (__src_simplified.__rank == 3)
+      {
+        cudax::__copy_simplified_rank<3>(
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+        return;
+      }
+    }
+    if constexpr (__max_rank > 4)
+    {
+      if (__src_simplified.__rank == 4)
+      {
+        cudax::__copy_simplified_rank<4>(
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+        return;
+      }
+    }
+
+    // (6) generic case (fallback)
     cudax::__copy_optimized(
       __src_normalized,
       __dst_normalized,

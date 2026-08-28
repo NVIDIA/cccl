@@ -186,6 +186,32 @@ TEST_CASE("copy d2d nvmath flatten_one", "[copy][d2d][nvmath][flatten]")
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
 }
 
+TEST_CASE("copy d2d simplified static rank dispatch", "[copy][d2d][nvmath][flatten]")
+{
+  constexpr cuda::std::array<int, 5> shape{2, 2, 2, 2, 2};
+
+  SECTION("rank 1")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 8, 16, 32};
+    test_copy_stride_relaxed<data_t>(64, 0, shape, strides);
+  }
+  SECTION("rank 2")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 8, 32, 64};
+    test_copy_stride_relaxed<data_t>(128, 0, shape, strides);
+  }
+  SECTION("rank 3")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 16, 32, 128};
+    test_copy_stride_relaxed<data_t>(256, 0, shape, strides);
+  }
+  SECTION("rank 4")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 8, 16, 64, 256};
+    test_copy_stride_relaxed<data_t>(512, 0, shape, strides);
+  }
+}
+
 /***********************************************************************************************************************
  * nvmath vectorize test cases (device-to-device)
  **********************************************************************************************************************/
