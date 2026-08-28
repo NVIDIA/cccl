@@ -3,7 +3,9 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/prefetch.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -16,7 +18,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -105,7 +107,7 @@ using types =
 
 using flag_types = c2h::type_list<std::uint8_t, std::uint64_t, custom_t>;
 
-C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -123,7 +125,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -143,7 +145,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -163,8 +165,9 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
+CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
          "[device][select_flagged_if]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint64_t>,
          flag_types)
 {
@@ -204,8 +207,9 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -316,8 +320,9 @@ C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
   }
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -424,9 +429,79 @@ C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
     test_flagged_if(policy);
   }
 }
+
+template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
+struct flagged_if_prefetch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
+  {
+    auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
+    policy.lookback._load_prefetch = Prefetch;
+    return policy;
+  }
+};
+
+using prefetch_policies =
+  c2h::enum_type_list<cub::detail::LoadPrefetch, cub::detail::LoadPrefetch::l2, cub::detail::LoadPrefetch::bulk_l2>;
+
+using selection_policies =
+  c2h::enum_type_list<cub::SelectImpl, cub::SelectImpl::Select, cub::SelectImpl::SelectPotentiallyInPlace>;
+
+CUB_TEST("DeviceSelect::FlaggedIf works with explicit prefetch policies",
+         "[device][select_flagged_if][prefetch]",
+         CUB_SMALL,
+         prefetch_policies,
+         selection_policies)
+{
+  constexpr auto prefetch     = c2h::get<0, TestType>::value;
+  constexpr auto selection_op = c2h::get<1, TestType>::value;
+  constexpr int num_items     = 100003;
+
+  c2h::device_vector<int> in(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(C2H_SEED(1), flags);
+
+  const is_even_t<int> is_even{};
+  const c2h::host_vector<int> reference = get_reference(in, flags, is_even);
+  const int num_selected                = static_cast<int>(reference.size());
+
+  c2h::device_vector<int> num_selected_out(1, 0);
+
+  int* const d_in               = thrust::raw_pointer_cast(in.data());
+  int* const d_flags            = thrust::raw_pointer_cast(flags.data());
+  int* const d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  const auto tuned_execution    = cuda::execution::tune(flagged_if_prefetch_policy_selector<prefetch, selection_op>{});
+
+  if constexpr (selection_op == cub::SelectImpl::SelectPotentiallyInPlace)
+  {
+    REQUIRE(cudaSuccess
+            == cub::DeviceSelect::FlaggedIf(d_in, d_flags, d_num_selected_out, num_items, is_even, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    in.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == in);
+  }
+  else
+  {
+    c2h::device_vector<int> out(num_items);
+    int* const d_out = thrust::raw_pointer_cast(out.data());
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceSelect::FlaggedIf(d_in, d_flags, d_out, d_num_selected_out, num_items, is_even, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    out.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == out);
+  }
+}
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", CUB_SMALL, all_types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -454,7 +529,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", CUB_SMALL, types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;

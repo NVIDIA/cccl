@@ -59,6 +59,9 @@ C2H_TEST("nccl_communicator_ref concept conformance", "[multi_gpu][nccl]")
   STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator_ref>);
   STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator_ref, payload*>);
   STATIC_REQUIRE(!cudax::__has_all_gather<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_all_gather_v<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_all_gather_v<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_all_gather_v<cudax::nccl_communicator_ref, non_trivial*>);
   STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator_ref>);
   STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator_ref, payload*>);
   STATIC_REQUIRE(!cudax::__has_broadcast<cudax::nccl_communicator_ref, non_trivial*>);

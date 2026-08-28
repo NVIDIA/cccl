@@ -14,6 +14,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -46,13 +48,13 @@ inline constexpr bool is_stackable_task_dep_v = is_stackable_task_dep<T>::value;
 template <typename U>
 decltype(auto) resolve_dep(int offset, U&& u)
 {
-  if constexpr (is_stackable_task_dep_v<::std::decay_t<U>>)
+  if constexpr (is_stackable_task_dep_v<::cuda::std::decay_t<U>>)
   {
     return u.resolve(offset);
   }
   else
   {
-    return ::std::forward<U>(u);
+    return ::cuda::std::forward<U>(u);
   }
 }
 } // end namespace reserved

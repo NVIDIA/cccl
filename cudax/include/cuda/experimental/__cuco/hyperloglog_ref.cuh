@@ -262,8 +262,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
-  estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API double estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
   }
@@ -280,7 +279,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_API constexpr double
   estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
     return __impl.__estimate(__host_mr, __stream);

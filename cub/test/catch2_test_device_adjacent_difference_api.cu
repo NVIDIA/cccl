@@ -5,14 +5,16 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Guard: the legacy memory-size query call with all defaults (no explicit difference_op,
 // no explicit stream) must resolve unambiguously to the legacy temp-storage overload
 // when the env passthrough overload is also visible. If the env overload's SFINAE
 // is too loose, this becomes "ambiguous overload" or silently dispatches to env.
 
-C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy legacy size-query is unambiguous", "[adjacent_difference][device]")
+CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy legacy size-query is unambiguous",
+         "[adjacent_difference][device]",
+         CUB_SMALL)
 {
   int* d_in    = nullptr;
   int* d_out   = nullptr;
@@ -22,7 +24,9 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy legacy size-query is unambi
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractLeftCopy(nullptr, bytes, d_in, d_out, n));
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractLeft legacy size-query is unambiguous", "[adjacent_difference][device]")
+CUB_TEST("DeviceAdjacentDifference::SubtractLeft legacy size-query is unambiguous",
+         "[adjacent_difference][device]",
+         CUB_SMALL)
 {
   int* d_in    = nullptr;
   size_t bytes = 0;
@@ -31,8 +35,9 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft legacy size-query is unambiguou
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractLeft(nullptr, bytes, d_in, n));
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy legacy size-query is unambiguous",
-         "[adjacent_difference][device]")
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy legacy size-query is unambiguous",
+         "[adjacent_difference][device]",
+         CUB_SMALL)
 {
   int* d_in    = nullptr;
   int* d_out   = nullptr;
@@ -42,7 +47,9 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy legacy size-query is unamb
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractRightCopy(nullptr, bytes, d_in, d_out, n));
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight legacy size-query is unambiguous", "[adjacent_difference][device]")
+CUB_TEST("DeviceAdjacentDifference::SubtractRight legacy size-query is unambiguous",
+         "[adjacent_difference][device]",
+         CUB_SMALL)
 {
   int* d_in    = nullptr;
   size_t bytes = 0;

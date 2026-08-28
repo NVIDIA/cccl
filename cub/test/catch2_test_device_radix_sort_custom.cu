@@ -19,7 +19,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
@@ -147,7 +147,7 @@ static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_s
   return std::make_pair(result_keys, result_values);
 }
 
-C2H_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]")
+CUB_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -164,7 +164,7 @@ C2H_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][d
   REQUIRE(reference_keys == out_keys);
 }
 
-C2H_TEST("Device radix descending sort works with custom i128_t", "[radix][sort][device]")
+CUB_TEST("Device radix descending sort works with custom i128_t", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -196,7 +196,7 @@ C2H_TEST("Device radix descending sort works with custom i128_t", "[radix][sort]
   REQUIRE(reference_keys == out_keys);
 }
 
-C2H_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][sort][device]")
+CUB_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -237,7 +237,7 @@ C2H_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][so
   REQUIRE(reference.second == out_values);
 }
 
-C2H_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -267,7 +267,7 @@ C2H_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
   REQUIRE(reference_keys == out_keys);
 }
 
-C2H_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -309,7 +309,7 @@ C2H_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
   REQUIRE(reference_keys.second == out_values);
 }
 
-C2H_TEST("Device radix descending sort works with bits of custom i128_t", "[radix][sort][device]")
+CUB_TEST("Device radix descending sort works with bits of custom i128_t", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
 
@@ -348,7 +348,7 @@ C2H_TEST("Device radix descending sort works with bits of custom i128_t", "[radi
   REQUIRE(reference_keys == out_keys);
 }
 
-C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[radix][sort][device]")
+CUB_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
 
@@ -397,7 +397,7 @@ C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[r
   REQUIRE(reference.second == out_values);
 }
 
-C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -430,7 +430,7 @@ C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   REQUIRE(reference_keys == out_keys);
 }
 
-C2H_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix][sort][device]", CUB_SMALL)
 {
   constexpr int max_items = 1 << 18;
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
@@ -509,7 +509,7 @@ __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
 
-C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][device]")
+CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][device]", CUB_SMALL)
 {
   SECTION("Keys")
   {
@@ -705,7 +705,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
   }
 }
 
-C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort][device]", CUB_SMALL)
 {
   SECTION("Keys")
   {
@@ -924,7 +924,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
   }
 }
 
-C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][sort][device]", CUB_SMALL)
 {
   SECTION("Keys")
   {
@@ -1196,7 +1196,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   }
 }
 
-C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radix][sort][device]")
+CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radix][sort][device]", CUB_SMALL)
 {
   SECTION("Keys")
   {

@@ -15,11 +15,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT, class T>
-TEST_FUNC void test_pointer()
+TEST_HOST_DEVICE_FUNC void test_pointer()
 {
   // *** align-fill & width ***
   assert(check(SV("answer is '   0x0'"), SV("answer is '{:6}'"), T(nullptr)));
@@ -70,14 +70,14 @@ TEST_FUNC void test_pointer()
 }
 
 template <class CharT>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_pointer<CharT, cuda::std::nullptr_t>();
   test_pointer<CharT, void*>();
   test_pointer<CharT, const void*>();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

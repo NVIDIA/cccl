@@ -97,13 +97,13 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     class _Policy, class _InputIterator, class _OutputIterator, class _UnaryOp, class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                    is_invocable_v<_UnaryOp, iter_reference_t<_InputIterator>>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
     _UnaryOp __func,
-    _Predicate __pred = {}) const
+    _Predicate __pred = {})
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
@@ -149,14 +149,14 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
                  class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator1> _CCCL_AND __has_forward_traversal<_InputIterator2> _CCCL_AND
                    __has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator1 __first1,
     _InputIterator1 __last1,
     _InputIterator2 __first2,
     _OutputIterator __result,
     _BinaryOp __func,
-    _Predicate __pred = {}) const
+    _Predicate __pred = {})
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator1>
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>

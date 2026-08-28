@@ -15,7 +15,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -26,14 +26,14 @@ using dims_1d_t = cuda::std::dims<1, int>;
 using dims_2d_t = cuda::std::dims<2, int>;
 using dims_4d_t = cuda::std::dims<4, int>;
 
-C2H_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]", CUB_SMALL)
 {
   auto mdspan_in_empty  = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   auto mdspan_out_empty = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   device_copy_mdspan(mdspan_in_empty, mdspan_out_empty);
 }
 
-C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]", CUB_SMALL)
 {
   constexpr size_t num_items = 10000;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
@@ -61,7 +61,9 @@ C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][md
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user provided memory", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user provided memory",
+         "[copy][mdspan]",
+         CUB_SMALL)
 {
   constexpr size_t num_items = 10000;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
@@ -147,7 +149,7 @@ C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdspan]", CUB_SMALL)
 {
   constexpr size_t num_items = 10000;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
@@ -175,7 +177,7 @@ struct is_42
   }
 };
 
-C2H_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
 {
   constexpr size_t num_items = (2 * 100 + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
@@ -209,7 +211,7 @@ C2H_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]")
   REQUIRE(count == expected_untouched);
 }
 
-C2H_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdspan]", CUB_SMALL)
 {
   constexpr size_t num_items = (2 * 100 + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);

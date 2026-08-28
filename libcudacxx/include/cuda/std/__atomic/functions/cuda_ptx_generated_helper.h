@@ -36,7 +36,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-enum class __atomic_cuda_memorder
+enum class __cuda_atomic_order
 {
   _relaxed,
   _release,
@@ -46,23 +46,23 @@ enum class __atomic_cuda_memorder
   _volatile,
 };
 
-template <__atomic_cuda_memorder _Order>
-using __atomic_cuda_memorder_tag = integral_constant<__atomic_cuda_memorder, _Order>;
+template <__cuda_atomic_order _Order>
+using __cuda_atomic_order_tag = integral_constant<__cuda_atomic_order, _Order>;
 
-using __atomic_cuda_relaxed  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_relaxed>;
-using __atomic_cuda_release  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_release>;
-using __atomic_cuda_acquire  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_acquire>;
-using __atomic_cuda_acq_rel  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_acq_rel>;
-using __atomic_cuda_seq_cst  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_seq_cst>;
-using __atomic_cuda_volatile = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_volatile>;
+using __cuda_atomic_order_relaxed  = __cuda_atomic_order_tag<__cuda_atomic_order::_relaxed>;
+using __cuda_atomic_order_release  = __cuda_atomic_order_tag<__cuda_atomic_order::_release>;
+using __cuda_atomic_order_acquire  = __cuda_atomic_order_tag<__cuda_atomic_order::_acquire>;
+using __cuda_atomic_order_acq_rel  = __cuda_atomic_order_tag<__cuda_atomic_order::_acq_rel>;
+using __cuda_atomic_order_seq_cst  = __cuda_atomic_order_tag<__cuda_atomic_order::_seq_cst>;
+using __cuda_atomic_order_volatile = __cuda_atomic_order_tag<__cuda_atomic_order::_volatile>;
 
 template <bool _Volatile>
-using __atomic_cuda_mmio_tag = integral_constant<bool, _Volatile>;
+using __cuda_atomic_mmio_tag = integral_constant<bool, _Volatile>;
 
-using __atomic_cuda_mmio_enable  = __atomic_cuda_mmio_tag<true>;
-using __atomic_cuda_mmio_disable = __atomic_cuda_mmio_tag<false>;
+using __cuda_atomic_mmio_enable  = __cuda_atomic_mmio_tag<true>;
+using __cuda_atomic_mmio_disable = __cuda_atomic_mmio_tag<false>;
 
-enum class __atomic_cuda_operand
+enum class __cuda_atomic_operand
 {
   _f,
   _s,
@@ -70,93 +70,93 @@ enum class __atomic_cuda_operand
   _b,
 };
 
-template <__atomic_cuda_operand _Op, size_t _Size>
-struct __atomic_cuda_operand_tag
+template <__cuda_atomic_operand _Op, size_t _Size>
+struct __cuda_atomic_operand_tag
 {
   static constexpr auto __op   = _Op;
   static constexpr auto __size = _Size;
 };
 
-using __atomic_cuda_operand_f8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 8>;
-using __atomic_cuda_operand_s8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 8>;
-using __atomic_cuda_operand_u8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 8>;
-using __atomic_cuda_operand_b8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 8>;
-using __atomic_cuda_operand_f16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 16>;
-using __atomic_cuda_operand_s16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 16>;
-using __atomic_cuda_operand_u16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 16>;
-using __atomic_cuda_operand_b16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 16>;
-using __atomic_cuda_operand_f32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 32>;
-using __atomic_cuda_operand_s32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 32>;
-using __atomic_cuda_operand_u32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 32>;
-using __atomic_cuda_operand_b32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 32>;
-using __atomic_cuda_operand_f64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 64>;
-using __atomic_cuda_operand_s64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 64>;
-using __atomic_cuda_operand_u64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 64>;
-using __atomic_cuda_operand_b64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 64>;
-using __atomic_cuda_operand_f128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 128>;
-using __atomic_cuda_operand_s128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 128>;
-using __atomic_cuda_operand_u128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 128>;
-using __atomic_cuda_operand_b128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 128>;
+using __cuda_atomic_operand_f8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 8>;
+using __cuda_atomic_operand_s8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 8>;
+using __cuda_atomic_operand_u8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 8>;
+using __cuda_atomic_operand_b8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 8>;
+using __cuda_atomic_operand_f16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 16>;
+using __cuda_atomic_operand_s16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 16>;
+using __cuda_atomic_operand_u16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 16>;
+using __cuda_atomic_operand_b16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 16>;
+using __cuda_atomic_operand_f32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 32>;
+using __cuda_atomic_operand_s32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 32>;
+using __cuda_atomic_operand_u32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 32>;
+using __cuda_atomic_operand_b32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 32>;
+using __cuda_atomic_operand_f64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 64>;
+using __cuda_atomic_operand_s64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 64>;
+using __cuda_atomic_operand_u64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 64>;
+using __cuda_atomic_operand_b64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 64>;
+using __cuda_atomic_operand_f128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 128>;
+using __cuda_atomic_operand_s128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 128>;
+using __cuda_atomic_operand_u128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 128>;
+using __cuda_atomic_operand_b128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 128>;
 
 template <class _AtomicType, class _OpTag>
-struct __atomic_cuda_operand_deduction
+struct __cuda_atomic_operand_deduction
 {
   using __type = _AtomicType;
   using __tag  = _OpTag;
 };
 
-struct _CCCL_ALIGNAS(16) __atomic_longlong2
+struct _CCCL_ALIGNAS(16) __cuda_atomic_longlong2
 {
   uint64_t __x;
   uint64_t __y;
 };
 
 template <class _Type>
-using __atomic_cuda_deduce_bitwise =
+using __cuda_atomic_deduce_bitwise =
   __type_switch<sizeof(_Type),
-                __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_b8>>,
-                __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_b16>>,
-                __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>>,
-                __type_case<8, __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>,
-                __type_default<__atomic_cuda_operand_deduction<__atomic_longlong2, __atomic_cuda_operand_b128>>>;
+                __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_b8>>,
+                __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_b16>>,
+                __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_b32>>,
+                __type_case<8, __cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_b64>>,
+                __type_default<__cuda_atomic_operand_deduction<__cuda_atomic_longlong2, __cuda_atomic_operand_b128>>>;
 
 template <class _Type>
-using __atomic_cuda_deduce_arithmetic = _If<
+using __cuda_atomic_deduce_arithmetic = _If<
   is_floating_point_v<_Type>,
   _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
-      __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+      __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>,
+      __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>>,
   _If<is_signed_v<_Type>,
       __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
-                    __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>>, // There is no
+                    __type_case<1, __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>>,
+                    __type_case<2, __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>>,
+                    __type_case<4, __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>>,
+                    __type_default<__cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_u64>>>, // There is no
                                                                                                           // atom.add.s64
       __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
-                    __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
+                    __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>>,
+                    __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>>,
+                    __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>>,
+                    __type_default<__cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>>>>>;
 
 template <class _Type>
-using __atomic_cuda_deduce_minmax = _If<
+using __cuda_atomic_deduce_minmax = _If<
   is_floating_point_v<_Type>,
   _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
-      __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+      __cuda_atomic_operand_deduction<float, __cuda_atomic_operand_f32>,
+      __cuda_atomic_operand_deduction<double, __cuda_atomic_operand_f64>>,
   _If<is_signed_v<_Type>,
       __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
-                    __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>, // atom.min|max.s64
+                    __type_case<1, __cuda_atomic_operand_deduction<int8_t, __cuda_atomic_operand_s8>>,
+                    __type_case<2, __cuda_atomic_operand_deduction<int16_t, __cuda_atomic_operand_s16>>,
+                    __type_case<4, __cuda_atomic_operand_deduction<int32_t, __cuda_atomic_operand_s32>>,
+                    __type_default<__cuda_atomic_operand_deduction<int64_t, __cuda_atomic_operand_s64>>>, // atom.min|max.s64
                                                                                                           // supported
       __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
-                    __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
+                    __type_case<1, __cuda_atomic_operand_deduction<uint8_t, __cuda_atomic_operand_u8>>,
+                    __type_case<2, __cuda_atomic_operand_deduction<uint16_t, __cuda_atomic_operand_u16>>,
+                    __type_case<4, __cuda_atomic_operand_deduction<uint32_t, __cuda_atomic_operand_u32>>,
+                    __type_default<__cuda_atomic_operand_deduction<uint64_t, __cuda_atomic_operand_u64>>>>>;
 
 template <class _Type>
 using __atomic_enable_if_native_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;

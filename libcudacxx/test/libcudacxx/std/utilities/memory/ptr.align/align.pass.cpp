@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 // #include <memory>

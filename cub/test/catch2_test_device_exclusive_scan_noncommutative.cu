@@ -5,7 +5,7 @@
 
 #include <thrust/tabulate.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2_test_device_scan.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -126,7 +126,7 @@ struct populate_sparse_write_input
 // On sm_100+ the lookahead tile size is num_scan_stor_threads * items_per_thread, which is
 // ~4000–32000 elements depending on element size, so 50'000 guarantees multiple tiles for all types.
 
-C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid operator", "[scan][device]")
+CUB_TEST("Device exclusive scan works with non-commutative bicyclic monoid operator", "[scan][device]", CUB_SMALL)
 {
   using pair_t = cuda::std::pair<unsigned, unsigned>;
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
@@ -169,7 +169,7 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   REQUIRE(h_expected == h_output);
 }
 
-C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan][device]")
+CUB_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan][device]", CUB_SMALL)
 {
   // PropagateLastWrite<char> uses char values: contiguous, trivially copyable, arithmetic —
   // all conditions that enable the lookahead kernel on sm_100+.
@@ -226,7 +226,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   REQUIRE(h_expected == h_output);
 }
 
-C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-report input", "[scan][device]")
+CUB_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-report input", "[scan][device]", CUB_SMALL)
 {
   // Regression test using the exact input pattern from the original bug report.
   // This input has a cluster of write symbols near the end that must be correctly

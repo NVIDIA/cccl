@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
-#include <c2h/catch2_test_helper.h> // _CCCL_HAS_NVFP8()
+#include "cub_test_macros.h" // _CCCL_HAS_NVFP8()
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1
@@ -75,8 +75,9 @@ bool binary_equal(
   return thrust::equal(c2h::device_policy, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
 
-C2H_TEST("Block radix sort can sort keys",
+CUB_TEST("Block radix sort can sort keys",
          "[radix][sort][block]",
+         CUB_SMALL,
          types,
          no_value_types,
          items_per_thread,
@@ -119,8 +120,9 @@ C2H_TEST("Block radix sort can sort keys",
   REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
 
-C2H_TEST("Block radix sort can sort keys in descending order",
+CUB_TEST("Block radix sort can sort keys in descending order",
          "[radix][sort][block]",
+         CUB_SMALL,
          types,
          no_value_types,
          items_per_thread,

@@ -11,7 +11,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
@@ -39,7 +39,7 @@ void test_big_indices_helper(offset_t num_items)
   REQUIRE(result == num_items);
 }
 
-C2H_TEST("Device sum works for big indices", "[reduce][device]")
+CUB_TEST("Device sum works for big indices", "[reduce][device]", CUB_SMALL)
 {
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 30);
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 31);
@@ -47,7 +47,7 @@ C2H_TEST("Device sum works for big indices", "[reduce][device]")
   test_big_indices_helper<std::size_t, std::uint64_t>(1ull << 33);
 }
 
-C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -90,7 +90,7 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   REQUIRE(expected_result == out_result[0]);
 }
 
-C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;

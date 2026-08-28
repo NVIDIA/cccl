@@ -26,8 +26,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/type_traits/is_trivially_relocatable.h>
-
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
@@ -223,7 +222,7 @@ struct AgentReduceImpl
     (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
          // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-         &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>)
+         &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
          // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
          // TODO(bgruber): this should be decided by tuning
          &&sizeof(InputT)

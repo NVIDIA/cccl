@@ -119,7 +119,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires three_way_partition_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().threads_per_block)
+__launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     const InputIteratorT d_in,
     const FirstOutputIteratorT d_first_part_out,
@@ -135,14 +135,14 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
-    active_policy.threads_per_block,
-    active_policy.items_per_thread,
-    active_policy.load_algorithm,
-    active_policy.load_modifier,
-    active_policy.scan_algorithm,
-    delay_constructor_t<active_policy.lookback_delay.kind,
-                        active_policy.lookback_delay.delay,
-                        active_policy.lookback_delay.l2_write_latency>>;
+    active_policy.lookback.threads_per_block,
+    active_policy.lookback.items_per_thread,
+    active_policy.lookback.load_algorithm,
+    active_policy.lookback.load_modifier,
+    active_policy.lookback.scan_algorithm,
+    delay_constructor_t<active_policy.lookback.lookback_delay.kind,
+                        active_policy.lookback.lookback_delay.delay,
+                        active_policy.lookback.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<

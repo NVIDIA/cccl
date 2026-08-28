@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -79,7 +79,9 @@ struct custom_equality_op
   }
 };
 
-C2H_TEST("DeviceSelect::UniqueByKey works with user provided memory and environment", "[device][select_unique_by_key]")
+CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environment",
+         "[device][select_unique_by_key]",
+         CUB_SMALL)
 {
   using type     = int;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -204,8 +206,9 @@ C2H_TEST("DeviceSelect::UniqueByKey works with user provided memory and environm
   }
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory and environment",
-         "[device][select_unique_by_key]")
+CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory and environment",
+         "[device][select_unique_by_key]",
+         CUB_SMALL)
 {
   using type        = int;
   using custom_op_t = custom_equality_op<type>;

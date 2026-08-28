@@ -112,7 +112,7 @@ enum WarpLoadAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(WarpLoadAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(WarpLoadAlgorithm algo) noexcept
 {
   switch (algo)
   {

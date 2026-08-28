@@ -80,12 +80,14 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
     ]:
         ct_space = list(
             filter(
-                lambda variant: not (
-                    ("OffsetT{ct}=I64" in variant)
-                    or ("KeyT{ct}=I16" in variant)
-                    or ("ValueT{ct}=I16" in variant)
-                    or ("KeyT{ct}=I128" in variant)
-                    or ("ValueT{ct}=I128" in variant)
+                lambda variant: (
+                    not (
+                        ("OffsetT{ct}=I64" in variant)
+                        or ("KeyT{ct}=I16" in variant)
+                        or ("ValueT{ct}=I16" in variant)
+                        or ("KeyT{ct}=I128" in variant)
+                        or ("ValueT{ct}=I128" in variant)
+                    )
                 ),
                 ct_space,
             )
@@ -128,13 +130,37 @@ def filter_benchmarks(benchmarks, args):
     if args.run_shard >= args.num_shards:
         raise ValueError("run-shard must be less than num-shards")
 
+    cub_p0_benchmarks = [
+        "cub.bench.merge_sort.keys",
+        "cub.bench.merge_sort.pairs",
+        "cub.bench.radix_sort.keys",
+        "cub.bench.radix_sort.pairs",
+        "cub.bench.reduce.by_key",
+        "cub.bench.reduce.custom",
+        "cub.bench.reduce.sum",
+        "cub.bench.scan.exclusive.deterministic",
+        "cub.bench.scan.exclusive.sum",
+        "cub.bench.select.flagged",
+        "cub.bench.select.if",
+        "cub.bench.select.unique",
+        "cub.bench.select.unique_by_key",
+        "cub.bench.transform.babelstream",
+        "cub.bench.transform.fill",
+    ]
+
     algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
     if args.P0:
-        algnames = filter_benchmarks_by_regex(
-            algnames,
+        non_cub_algnames = [name for name in algnames if not name.startswith("cub.")]
+        non_cub_algnames = filter_benchmarks_by_regex(
+            non_cub_algnames,
             r"^(?!.*segmented).*(scan|reduce|select|sort|transform\.(babelstream|fill)).*",
         )
-        algnames = filter_benchmarks_by_regex(algnames, r"^(?!.*P[123456789]\d*).*")
+        non_cub_algnames = filter_benchmarks_by_regex(
+            non_cub_algnames, r"^(?!.*P[123456789]\d*).*"
+        )
+
+        algnames = [name for name in cub_p0_benchmarks if name in algnames]
+        algnames.extend(non_cub_algnames)
     algnames.sort()
 
     if args.num_shards > 1:

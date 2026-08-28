@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
@@ -22,6 +15,7 @@
 //   Internal compiler error. Try simplifying or changing the program near the locations listed above.
 // UNSUPPORTED: msvc
 
+// NTTP may not have a class type in C++17.
 // REQUIRES: !c++17
 
 // constant_wrapper

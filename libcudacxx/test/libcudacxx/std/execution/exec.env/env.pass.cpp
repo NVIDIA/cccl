@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 #include <cuda/std/execution>
 
@@ -43,13 +43,13 @@ TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 struct custom_env
 {
-  TEST_FUNC constexpr auto query(query1_t) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr auto query(query1_t) const noexcept
   {
     return -1;
   }
 
   // A query that takes an extra argument:
-  TEST_FUNC constexpr auto query(query3_t, int i) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr auto query(query3_t, int i) const noexcept
   {
     return i;
   }
@@ -59,20 +59,20 @@ struct derived_env : cuda::std::execution::env<>
 {
   using env::query;
 
-  TEST_FUNC auto query(query1_t) const
+  TEST_HOST_DEVICE_FUNC auto query(query1_t) const
   {
     return 42;
   }
 };
 
 template <class Ty>
-TEST_FUNC constexpr bool is_trivial_aggregate()
+TEST_HOST_DEVICE_FUNC constexpr bool is_trivial_aggregate()
 {
   return cuda::std::is_aggregate_v<Ty> && cuda::std::is_standard_layout_v<Ty> && cuda::std::is_trivially_copyable_v<Ty>
       && cuda::std::is_trivially_constructible_v<Ty> && cuda::std::is_trivially_destructible_v<Ty>;
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);

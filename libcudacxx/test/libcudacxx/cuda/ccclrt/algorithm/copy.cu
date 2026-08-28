@@ -102,6 +102,37 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
     CCCLRT_REQUIRE(vec[0] == get_expected_value(fill_byte));
     CCCLRT_REQUIRE(vec[1] == 0xbeef);
   }
+
+  SECTION("Fixed size")
+  {
+    auto host_buffer = make_pinned_memory_buffer<int>(_stream, buffer_size);
+    ::std::vector<int> vec(buffer_size, 0xbeef);
+    cuda::fill_bytes(_stream, host_buffer, fill_byte);
+
+    SECTION("Both fixed")
+    {
+      cuda::copy_bytes(_stream, cuda::std::span<int, buffer_size>{host_buffer}, cuda::std::span<int, buffer_size>{vec});
+      check_result_and_erase(_stream, vec);
+    }
+
+    SECTION("Src fixed")
+    {
+      cuda::copy_bytes(_stream,
+                       cuda::std::span<int, buffer_size>{host_buffer},
+                       // Don't technically need to spell out dynamic_extent here but just to be safe
+                       cuda::std::span<int, cuda::std::dynamic_extent>{vec});
+      check_result_and_erase(_stream, vec);
+    }
+
+    SECTION("Dest fixed")
+    {
+      cuda::copy_bytes(_stream,
+                       // Don't technically need to spell out dynamic_extent here but just to be safe
+                       cuda::std::span<int, cuda::std::dynamic_extent>{host_buffer},
+                       cuda::std::span<int, buffer_size>{vec});
+      check_result_and_erase(_stream, vec);
+    }
+  }
 }
 
 C2H_CCCLRT_TEST("copy_bytes uses the stream device when current device differs", "[algorithm][multi_gpu]")

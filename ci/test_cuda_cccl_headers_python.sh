@@ -8,7 +8,9 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
+# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
+pin_cuda_toolkit "${ctk_mode}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
@@ -23,7 +25,8 @@ fi
 
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
+ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
 # Run tests for core package
 cd "/home/coder/cccl/python/cuda_cccl/tests/"

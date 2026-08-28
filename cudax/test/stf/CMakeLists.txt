@@ -22,6 +22,7 @@ set(
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
+  error_checks/dim4_get_index_bounds.cu
   error_checks/double_finalize.cu
   error_checks/erase_frozen.cu
   error_checks/misformed_tasks_dbl_end.cu
@@ -73,12 +74,26 @@ set(
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
+  local_stf/stackable_while_token.cu
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/stackable_tmp.cu
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/replicated_data_place.cu
+  places/replicated_frozen_import.cu
+  places/cute_parallel_for.cu
+  places/locality_domain_alloc.cu
+  places/locality_domain_enumeration.cu
+  places/locality_domain_exec.cu
+  places/locality_domain_fake.cu
+  places/locality_domain_fake_unfulfillable.cu
+  places/locality_domain_grid.cu
+  places/locality_domain_helper.cu
+  places/locality_domain_localized_disabled.cu
+  places/locality_domain_split_method.cu
+  places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -99,6 +114,7 @@ set(
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/composite_conditional.cu
   stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
@@ -183,6 +199,7 @@ set(
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
+  places/locality_domain_grid_pfor.cu
   places/managed_from_shape.cu
   reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
@@ -231,6 +248,7 @@ set(
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/source_location.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
 )

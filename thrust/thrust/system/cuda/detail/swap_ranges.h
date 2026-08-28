@@ -56,8 +56,8 @@ template <class Derived, class ItemsIt1, class ItemsIt2>
 _CCCL_HOST_DEVICE ItemsIt2
 swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, ItemsIt2 first2)
 {
-  if constexpr (is_indirectly_trivially_relocate_to_v<ItemsIt1, ItemsIt2>
-                && is_indirectly_trivially_relocate_to_v<ItemsIt2, ItemsIt1>)
+  if constexpr (thrust::detail::is_indirectly_trivially_copyable_to_v<ItemsIt1, ItemsIt2>
+                && thrust::detail::is_indirectly_trivially_copyable_to_v<ItemsIt2, ItemsIt1>)
   {
     return ::cuda::std::get<1>(
       cuda_cub::transform(

@@ -18,7 +18,7 @@
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -31,7 +31,8 @@ using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, c
 // cub::detail::ChooseOffsetsT only selected 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-C2H_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
+CUB_TEST(
+  "DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", CUB_SMALL, value_types, num_items_types)
 {
   using key_t       = cuda::std::uint32_t;
   using value_t     = c2h::get<0, TestType>;
@@ -85,7 +86,7 @@ C2H_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
   REQUIRE(ref_values == out_values);
 }
 
-C2H_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", value_types)
+CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", CUB_SMALL, value_types)
 {
   using key_t   = cuda::std::uint32_t;
   using value_t = c2h::get<0, TestType>;
@@ -171,8 +172,9 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
-         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
+         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
+         CUB_LARGE)
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
@@ -184,8 +186,9 @@ C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
   do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
 
-C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets",
-         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets",
+         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
+         CUB_LARGE)
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;

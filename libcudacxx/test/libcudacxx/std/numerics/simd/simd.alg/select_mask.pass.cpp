@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.alg], algorithms
@@ -29,7 +32,7 @@
 #include "../simd_test_utils.h"
 #include "test_macros.h"
 
-TEST_FUNC constexpr void test_scalar_select()
+TEST_HOST_DEVICE_FUNC constexpr void test_scalar_select()
 {
   static_assert(cuda::std::is_same_v<decltype(simd::select(true, 1, 2)), int>);
   static_assert(cuda::std::is_same_v<decltype(simd::select(true, 1, 2.0)), double>);
@@ -38,7 +41,7 @@ TEST_FUNC constexpr void test_scalar_select()
 }
 
 template <cuda::std::size_t Bytes, int N>
-TEST_FUNC constexpr void test_mask_bool_select()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask_bool_select()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask m(is_even{});
@@ -56,7 +59,7 @@ TEST_FUNC constexpr void test_mask_bool_select()
 }
 
 template <cuda::std::size_t Bytes, int N>
-TEST_FUNC constexpr void test_mask_mask_select()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask_mask_select()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask m(is_even{});
@@ -77,7 +80,7 @@ TEST_FUNC constexpr void test_mask_mask_select()
 }
 
 template <cuda::std::size_t Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_mask_mask_select<Bytes, 1>();
   test_mask_mask_select<Bytes, 4>();
@@ -85,7 +88,7 @@ TEST_FUNC constexpr void test_bytes()
   test_mask_bool_select<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_scalar_select();
   test_bytes<1>();

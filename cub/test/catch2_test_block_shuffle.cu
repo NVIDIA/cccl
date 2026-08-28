@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)
@@ -183,7 +183,8 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-C2H_TEST("Block shuffle offset works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
+CUB_TEST(
+  "Block shuffle offset works", "[shuffle][block]", CUB_SMALL, types, single_item_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -208,7 +209,8 @@ C2H_TEST("Block shuffle offset works", "[shuffle][block]", types, single_item_pe
   REQUIRE(h_ref == d_data);
 }
 
-C2H_TEST("Block shuffle rotate works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
+CUB_TEST(
+  "Block shuffle rotate works", "[shuffle][block]", CUB_SMALL, types, single_item_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -229,7 +231,7 @@ C2H_TEST("Block shuffle rotate works", "[shuffle][block]", types, single_item_pe
   REQUIRE(h_ref == d_data);
 }
 
-C2H_TEST("Block shuffle up works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
+CUB_TEST("Block shuffle up works", "[shuffle][block]", CUB_SMALL, types, items_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -247,8 +249,9 @@ C2H_TEST("Block shuffle up works", "[shuffle][block]", types, items_per_thread, 
   REQUIRE(d_ref == d_data);
 }
 
-C2H_TEST("Block shuffle up works when suffix is required",
+CUB_TEST("Block shuffle up works when suffix is required",
          "[shuffle][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          block_dim_x,
@@ -277,7 +280,7 @@ C2H_TEST("Block shuffle up works when suffix is required",
   REQUIRE(d_suffix_ref == d_suffix);
 }
 
-C2H_TEST("Block shuffle down works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
+CUB_TEST("Block shuffle down works", "[shuffle][block]", CUB_SMALL, types, items_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -295,8 +298,9 @@ C2H_TEST("Block shuffle down works", "[shuffle][block]", types, items_per_thread
   REQUIRE(d_ref == d_data);
 }
 
-C2H_TEST("Block shuffle down works when prefix is required",
+CUB_TEST("Block shuffle down works when prefix is required",
          "[shuffle][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          block_dim_x,

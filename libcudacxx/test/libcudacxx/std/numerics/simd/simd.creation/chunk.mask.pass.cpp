@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.creation], chunk (basic_mask)
@@ -29,7 +32,7 @@
 // chunk<SubMask>(basic_mask) - exact divisor
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_exact_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_exact_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using SrcAbi                      = simd::fixed_size<8>;
@@ -50,7 +53,7 @@ TEST_FUNC constexpr void test_chunk_exact_mask()
 // chunk<SubMask>(basic_mask) - remainder
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_remainder_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_remainder_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using SrcAbi                      = simd::fixed_size<6>;
@@ -78,7 +81,7 @@ TEST_FUNC constexpr void test_chunk_remainder_mask()
 // chunk<N>(basic_mask) - exact divisor
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_by_n_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_by_n_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using SrcAbi                      = simd::fixed_size<8>;
@@ -101,7 +104,7 @@ TEST_FUNC constexpr void test_chunk_by_n_mask()
 // chunk<N>(basic_mask) - remainder
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_by_n_remainder_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_by_n_remainder_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using SrcAbi                      = simd::fixed_size<6>;
@@ -128,7 +131,7 @@ TEST_FUNC constexpr void test_chunk_by_n_remainder_mask()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_chunk_exact_mask<T>();
   test_chunk_remainder_mask<T>();
@@ -136,7 +139,7 @@ TEST_FUNC constexpr void test_type()
   test_chunk_by_n_remainder_mask<T>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<cuda::std::int16_t>();
   test_type<float>();

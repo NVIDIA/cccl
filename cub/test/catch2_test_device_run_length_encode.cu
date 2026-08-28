@@ -5,17 +5,21 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
+#include <cuda/std/bit>
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <random>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
@@ -34,7 +38,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int64_t, std::int32_t>;
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> in(num_items);
@@ -90,7 +94,109 @@ public:
   }
 };
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
+constexpr std::int64_t segment_grid_tile_size(std::size_t key_size)
+{
+  return (key_size >= 16) ? 2048 : (key_size == 8) ? 4096 : 8192;
+}
+
+template <class KeyT>
+KeyT make_segment_key(int value)
+{
+  return KeyT(value);
+}
+
+template <>
+ulonglong2 make_segment_key<ulonglong2>(int value)
+{
+  return {static_cast<std::uint64_t>(value), static_cast<std::uint64_t>(value)};
+}
+
+// max_seg > 0: run lengths uniform in [1, max_seg]; max_seg == 0: one constant key for the whole
+// input; max_seg < 0: every run exactly -max_seg long (fixed run head positions)
+template <class KeyT>
+c2h::host_vector<KeyT> generate_segmented_keys(std::int64_t num_items, int max_seg, unsigned seed)
+{
+  c2h::host_vector<KeyT> keys(static_cast<std::size_t>(num_items));
+  if (max_seg == 0)
+  {
+    thrust::fill(keys.begin(), keys.end(), make_segment_key<KeyT>(7));
+    return keys;
+  }
+  std::mt19937 rng(seed);
+  std::uniform_int_distribution<int> segment_length(1, std::max(1, max_seg));
+  std::uniform_int_distribution<int> key_value(0, 1000000);
+  std::int64_t i = 0;
+  KeyT prev      = make_segment_key<KeyT>(-1);
+  while (i < num_items)
+  {
+    const int run_length = (max_seg < 0) ? -max_seg : segment_length(rng);
+    KeyT value           = make_segment_key<KeyT>(key_value(rng));
+    // narrow key types can wrap onto the previous run's key; retry a few times to keep runs
+    // distinct (a residual collision only merges two runs; the reference uses the final keys)
+    for (int tries = 0; value == prev && tries < 8; ++tries)
+    {
+      value = make_segment_key<KeyT>(key_value(rng));
+    }
+    prev                   = value;
+    const std::int64_t end = std::min(i + run_length, num_items);
+    for (; i < end; ++i)
+    {
+      keys[static_cast<std::size_t>(i)] = value;
+    }
+  }
+  return keys;
+}
+
+template <class KeyT, class OffsetT>
+void test_segmented_encode(std::int64_t num_items, int max_seg, int elem_offset, unsigned seed)
+{
+  CAPTURE(c2h::type_name<KeyT>(), c2h::type_name<OffsetT>(), num_items, max_seg, elem_offset, seed);
+
+  const auto h_keys = generate_segmented_keys<KeyT>(num_items, max_seg, seed);
+
+  c2h::host_vector<KeyT> ref_unique;
+  c2h::host_vector<int> ref_counts;
+  for (std::int64_t i = 0; i < num_items;)
+  {
+    std::int64_t j = i + 1;
+    while (j < num_items && h_keys[static_cast<std::size_t>(j)] == h_keys[static_cast<std::size_t>(i)])
+    {
+      ++j;
+    }
+    ref_unique.push_back(h_keys[static_cast<std::size_t>(i)]);
+    ref_counts.push_back(static_cast<int>(j - i));
+    i = j;
+  }
+  const auto ref_num_runs = static_cast<OffsetT>(ref_unique.size());
+
+  // exact-size input allocation: reading past num_items would trip the sanitizers. The
+  // elem_offset elements in front of the input are set EQUAL to the first key: reading before
+  // the input would extend the first run and fail the count comparison.
+  c2h::device_vector<KeyT> d_keys_alloc(static_cast<std::size_t>(num_items) + elem_offset);
+  thrust::copy(h_keys.begin(), h_keys.end(), d_keys_alloc.begin() + elem_offset);
+  thrust::fill(c2h::device_policy, d_keys_alloc.begin(), d_keys_alloc.begin() + elem_offset, h_keys.front());
+
+  // exact-size outputs; counts are sentinel-filled with 0, which no run can produce
+  c2h::device_vector<KeyT> d_unique(ref_unique.size(), make_segment_key<KeyT>(42424242));
+  c2h::device_vector<int> d_counts(ref_counts.size(), 0);
+  c2h::device_vector<OffsetT> d_num_runs(1, OffsetT{-1});
+
+  run_length_encode(
+    thrust::raw_pointer_cast(d_keys_alloc.data()) + elem_offset,
+    thrust::raw_pointer_cast(d_unique.data()),
+    thrust::raw_pointer_cast(d_counts.data()),
+    thrust::raw_pointer_cast(d_num_runs.data()),
+    static_cast<OffsetT>(num_items));
+
+  REQUIRE(d_num_runs.front() == ref_num_runs);
+  REQUIRE(c2h::host_vector<KeyT>(d_unique) == ref_unique);
+  REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
+}
+
+// the five key size classes: 1, 2, 4, 8 and 16 bytes
+using segment_key_types = c2h::type_list<std::int8_t, std::int16_t, std::uint32_t, std::int64_t, ulonglong2>;
+
+CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -105,7 +211,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][
   REQUIRE(out_num_runs.front() == num_items);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -120,7 +226,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[
   REQUIRE(out_num_runs.front() == static_cast<std::int16_t>(num_items));
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -143,7 +249,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -164,7 +270,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_len
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_length_encode]", all_types)
+CUB_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_length_encode]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -186,7 +292,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_len
   REQUIRE(out_unique == reference_out);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_length_encode]", types)
+CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_length_encode]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -227,7 +333,7 @@ struct convertible_from_T {
   __host__ __device__ operator T() const noexcept { return val_; }
 };
 
-C2H_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[device][run_length_encode]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -253,7 +359,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[d
 }
 #endif // https://github.com/NVIDIA/cccl/issues/400
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_length_encode]")
+CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_length_encode]", CUB_SMALL)
 {
   using type = double;
 
@@ -281,8 +387,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode works with non-default constructible iterators",
+CUB_TEST("DeviceRunLengthEncode::Encode works with non-default constructible iterators",
          "[device][run_length_encode]",
+         CUB_SMALL,
          offset_types)
 {
   // This is a smoke test to ensure that the algorithm works with iterators that are not default-constructible, as was
@@ -309,8 +416,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode works with non-default constructible ite
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
+CUB_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
          "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE,
          offset_types)
 try
 {
@@ -368,8 +476,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode works for large runs of equal items",
+CUB_TEST("DeviceRunLengthEncode::Encode works for large runs of equal items",
          "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -421,4 +530,217 @@ try
 catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         segment_key_types,
+         offset_types)
+{
+  using key_t    = typename c2h::get<0, TestType>;
+  using offset_t = typename c2h::get<1, TestType>;
+
+  constexpr std::int64_t tile      = segment_grid_tile_size(sizeof(key_t));
+  constexpr std::int64_t warp_tile = tile / 8;
+
+  struct segment_grid_case
+  {
+    std::int64_t num_items;
+    int max_seg;
+  };
+  constexpr segment_grid_case cases[] = {
+    {200000, 2}, // mid-size, dense
+    {150000, 3}, // mid-size, different tile alignment
+    {tile, 1}, // single tile, all runs of length 1
+    {tile, -static_cast<int>(tile)}, // single tile, one run
+    {3 * tile + 7, 1}, // partial tail tile, dense
+    {3 * tile + 1, -static_cast<int>(tile + 1)}, // run crossing into a one-element tail tile
+    {(1 << 20) + 12345, 2}, // partial tail, mid density
+    {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
+    {64 * tile + 7, 100}, // a couple of runs per warp of input
+    {64 * tile, -40}, // fixed-length runs: run count per warp-tile below one full warp; head phase drifts 8 mod 32
+    {64 * tile, -31}, // fixed-length runs: run count per warp-tile just above one full warp
+    {64 * tile, -4}, // fixed-length runs: run count per warp-tile exactly at a power of two
+    {64 * tile, -3}, // fixed-length runs: run count per warp-tile just above a power of two
+    {64 * tile, -static_cast<int>(warp_tile + 1)}, // run head drifts through every in-warp-tile offset
+    {64 * tile, 0}, // one constant run over the whole input
+    {64 * tile, -static_cast<int>(tile)}, // run length == tile: a run head at element 0 of every tile
+  };
+
+  for (const segment_grid_case& grid_case : cases)
+  {
+    // fixed run lengths (max_seg <= 0) only vary in key values; one seed suffices
+    const int num_seeds = (grid_case.max_seg > 0) ? 2 : 1;
+    for (int seed = 0; seed < num_seeds; ++seed)
+    {
+      test_segmented_encode<key_t, offset_t>(grid_case.num_items, grid_case.max_seg, 0, seed == 0 ? 1u : 42u);
+    }
+  }
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         c2h::type_list<std::uint32_t, std::int8_t>)
+{
+  using key_t = typename c2h::get<0, TestType>;
+
+  constexpr std::int64_t tile = segment_grid_tile_size(sizeof(key_t));
+
+  test_segmented_encode<key_t, int>(1030 * tile + 7, 1, 1, 1u); // misaligned input, dense, partial tail
+  test_segmented_encode<key_t, int>(1024 * tile, -static_cast<int>(tile), 0, 1u); // a head at every tile start
+  // one-element run whose head is the only element of a one-element final tile
+  test_segmented_encode<key_t, int>(1024 * tile + 1, -static_cast<int>(1024 * tile), 0, 1u);
+  test_segmented_encode<key_t, int>(1024 * tile, 0, 0, 1u); // one constant run over the whole input
+  // run length == tile + 1: the run head position drifts through every in-tile offset
+  test_segmented_encode<key_t, int>(1200 * tile + 3, -static_cast<int>(tile + 1), 0, 1u);
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         segment_key_types)
+{
+  using key_t = typename c2h::get<0, TestType>;
+
+  constexpr std::int64_t tile = segment_grid_tile_size(sizeof(key_t));
+  constexpr int offsets_swept = static_cast<int>(32 / sizeof(key_t));
+
+  // sweeps every sub-16B misalignment of the input pointer plus the two 16B-aligned shifted bases
+  for (int elem_offset = 1; elem_offset <= offsets_swept; ++elem_offset)
+  {
+    test_segmented_encode<key_t, int>(3 * tile + 7, 32, elem_offset, 1u);
+    if ((elem_offset * sizeof(key_t)) % 16 == 0)
+    {
+      // aligned shifted base with a run boundary at every tile boundary
+      test_segmented_encode<key_t, int>(3 * tile + 7, -static_cast<int>(tile), elem_offset, 1u);
+    }
+  }
+}
+
+// equality ignores the payload: all elements of a run compare equal but stay distinguishable, so
+// the encoded unique key shows which element of the run was selected
+struct alignas(8) tagged_key_t
+{
+  int key;
+  int payload;
+
+  friend __host__ __device__ bool operator==(const tagged_key_t& lhs, const tagged_key_t& rhs)
+  {
+    return lhs.key == rhs.key;
+  }
+
+  friend __host__ __device__ bool operator!=(const tagged_key_t& lhs, const tagged_key_t& rhs)
+  {
+    return !(lhs == rhs);
+  }
+};
+
+// the documented contract: the unique key written for each run is the run's last key
+void test_last_key_selection(std::int64_t num_items, int max_seg, unsigned seed)
+{
+  CAPTURE(num_items, max_seg, seed);
+
+  const auto h_ids = generate_segmented_keys<int>(num_items, max_seg, seed);
+  c2h::host_vector<tagged_key_t> h_keys(static_cast<std::size_t>(num_items));
+  for (std::size_t i = 0; i < h_keys.size(); ++i)
+  {
+    h_keys[i] = tagged_key_t{h_ids[i], static_cast<int>(i)};
+  }
+
+  c2h::host_vector<int> ref_ids;
+  c2h::host_vector<int> ref_payloads;
+  c2h::host_vector<int> ref_counts;
+  for (std::int64_t i = 0; i < num_items;)
+  {
+    std::int64_t j = i + 1;
+    while (j < num_items && h_ids[static_cast<std::size_t>(j)] == h_ids[static_cast<std::size_t>(i)])
+    {
+      ++j;
+    }
+    ref_ids.push_back(h_ids[static_cast<std::size_t>(i)]);
+    ref_payloads.push_back(static_cast<int>(j - 1));
+    ref_counts.push_back(static_cast<int>(j - i));
+    i = j;
+  }
+  const auto ref_num_runs = static_cast<int>(ref_ids.size());
+
+  c2h::device_vector<tagged_key_t> d_keys = h_keys;
+  c2h::device_vector<tagged_key_t> d_unique(ref_ids.size(), tagged_key_t{42424242, -1});
+  c2h::device_vector<int> d_counts(ref_counts.size(), 0);
+  c2h::device_vector<int> d_num_runs(1, -1);
+
+  run_length_encode(
+    thrust::raw_pointer_cast(d_keys.data()),
+    thrust::raw_pointer_cast(d_unique.data()),
+    thrust::raw_pointer_cast(d_counts.data()),
+    thrust::raw_pointer_cast(d_num_runs.data()),
+    static_cast<int>(num_items));
+
+  const c2h::host_vector<tagged_key_t> h_unique(d_unique);
+  c2h::host_vector<int> out_ids(h_unique.size());
+  c2h::host_vector<int> out_payloads(h_unique.size());
+  for (std::size_t i = 0; i < h_unique.size(); ++i)
+  {
+    out_ids[i]      = h_unique[i].key;
+    out_payloads[i] = h_unique[i].payload;
+  }
+
+  REQUIRE(d_num_runs.front() == ref_num_runs);
+  REQUIRE(out_ids == ref_ids);
+  REQUIRE(out_payloads == ref_payloads);
+  REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode writes the last key of each run", "[device][run_length_encode]", CUB_SMALL)
+{
+  constexpr std::int64_t tile      = segment_grid_tile_size(sizeof(tagged_key_t));
+  constexpr std::int64_t warp_tile = tile / 8;
+
+  test_last_key_selection(1, 0, 1u); // a single element
+  test_last_key_selection(tile, -static_cast<int>(tile), 1u); // one run per tile
+  test_last_key_selection(3 * tile + 7, 2, 1u); // dense, partial tail tile
+  test_last_key_selection(3 * tile + 7, 2, 42u);
+  test_last_key_selection(3 * tile + 7, 300, 1u); // mixed lengths crossing tile boundaries
+  test_last_key_selection(3 * tile + 7, 300, 42u);
+  test_last_key_selection(64 * tile + 7, 7, 1u); // run count per warp-tile straddles capacity
+  test_last_key_selection(64 * tile, -static_cast<int>(tile + 1), 1u); // head drifts through every in-tile offset
+  test_last_key_selection(64 * tile, -static_cast<int>(warp_tile + 1), 1u); // head drifts through warp-tile offsets
+  test_last_key_selection(64 * tile, 0, 1u); // one run over the whole input
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode selects the last key among equal negative and positive zeros",
+         "[device][run_length_encode]",
+         CUB_SMALL)
+{
+  // -0.0f == 0.0f, so each zero run reports the bit pattern of its last element
+  const c2h::host_vector<float> h_keys{-0.0f, -0.0f, 0.0f, 1.0f, 0.0f, -0.0f, 2.0f, -0.0f, 0.0f};
+  const c2h::host_vector<float> ref_unique{0.0f, 1.0f, -0.0f, 2.0f, 0.0f};
+  const c2h::host_vector<int> ref_counts{3, 1, 2, 1, 2};
+
+  c2h::device_vector<float> d_keys = h_keys;
+  c2h::device_vector<float> d_unique(ref_unique.size(), 42.0f);
+  c2h::device_vector<int> d_counts(ref_counts.size(), 0);
+  c2h::device_vector<int> d_num_runs(1, -1);
+
+  run_length_encode(
+    thrust::raw_pointer_cast(d_keys.data()),
+    thrust::raw_pointer_cast(d_unique.data()),
+    thrust::raw_pointer_cast(d_counts.data()),
+    thrust::raw_pointer_cast(d_num_runs.data()),
+    static_cast<int>(h_keys.size()));
+
+  const c2h::host_vector<float> h_unique(d_unique);
+  c2h::host_vector<int> out_bits(h_unique.size());
+  c2h::host_vector<int> ref_bits(ref_unique.size());
+  for (std::size_t i = 0; i < h_unique.size(); ++i)
+  {
+    out_bits[i] = cuda::std::bit_cast<int>(h_unique[i]);
+    ref_bits[i] = cuda::std::bit_cast<int>(ref_unique[i]);
+  }
+
+  REQUIRE(d_num_runs.front() == static_cast<int>(ref_unique.size()));
+  REQUIRE(out_bits == ref_bits);
+  REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
 }

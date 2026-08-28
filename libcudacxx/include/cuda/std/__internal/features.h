@@ -101,10 +101,14 @@
 #  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
 
-#define _CCCL_HAS_SIMD_F32X2_INTRINSICS() (_CCCL_CUDACC_AT_LEAST(12, 8) && _CCCL_HAS_CTK() && !_CCCL_COMPILER(CLANG))
-#define _CCCL_HAS_SIMD_F32X2_PTX()        (__cccl_ptx_isa >= 860ULL)
+#define _CCCL_HAS_SIMD_F32X2_INTRINSICS() \
+  (_CCCL_CUDACC_AT_LEAST(12, 8) && _CCCL_HAS_CTK() && !_CCCL_CUDA_COMPILER(CLANG))
+#define _CCCL_HAS_SIMD_F32X2_PTX() (__cccl_ptx_isa >= 860ULL)
 #define _CCCL_HAS_SIMD_F32X2() \
   ((_CCCL_HAS_SIMD_F32X2_INTRINSICS() || _CCCL_HAS_SIMD_F32X2_PTX()) && !_CCCL_TILE_COMPILATION())
+
+// nvcc >= 12.8 already optimizes 16-bit X2 min/max operations to SIMD instructions
+#define _CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION() _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
 
 #define _CCCL_HAS_SIMD_8BIT_INTRINSICS() 0 // TODO(fbusato): CTK 13.2 produces non-optimal code for 8-bit SIMD instrs.
 #define _CCCL_HAS_SIMD_8BIT_PTX()        (__cccl_ptx_isa >= 920ULL)

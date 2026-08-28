@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: asm statement not supported in tile
 
 #include <cuda/std/cassert>
 #include <cuda/std/ctime>
@@ -23,7 +23,7 @@
 
 static_assert(TIME_UTC != 0);
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   // struct timespec
 

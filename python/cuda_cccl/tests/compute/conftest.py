@@ -3,7 +3,6 @@ from collections.abc import Generator
 
 import numpy as np
 import pytest
-
 from cuda.core import Device, Stream
 
 try:
@@ -88,13 +87,20 @@ def cuda_stream() -> Generator[Stream, None, None]:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def verify_sass(request, monkeypatch):
+def verify_sass(request):
     if request.node.get_closest_marker("no_verify_sass"):
         return
 
     if not check_ldl_stl_in_sass:
-        print("not checking sass")
         return
+
+    # Pull monkeypatch dynamically rather than as a fixture parameter so this
+    # autouse fixture does not add monkeypatch to every test's static fixture
+    # closure. pytest-run-parallel treats monkeypatch as thread-unsafe based on
+    # that closure, so a parameter here would serialize the entire free-threaded
+    # parallel sweep -- even though this fixture only patches on the opt-in
+    # SASS-check path (check_ldl_stl_in_sass, off by default and in CI).
+    monkeypatch = request.getfixturevalue("monkeypatch")
 
     import cuda.compute._cccl_interop
 
@@ -121,12 +127,42 @@ def raise_on_numba_import(monkeypatch):
 
 
 def pytest_collection_modifyitems(config, items):
+    """Runs after pytest collects the tests. Makes a test marked no_numba fail
+    if it imports numba, and skips a test marked serialization when running on
+    the v2 (HostJIT) backend."""
     serialization_skip = pytest.mark.skip(
         reason="serialization not supported on v2 (HostJIT) backend"
     )
+
+    # Tests marked no_numba must not import numba. We enforce that by attaching
+    # the raise_on_numba_import fixture defined above to each one; it raises if
+    # numba is imported.
+    #
+    # We skip attaching it during a real pytest-run-parallel sweep of more than
+    # one thread: the fixture uses monkeypatch, which pytest-run-parallel
+    # serializes as thread-unsafe, so attaching it to every no_numba test would
+    # make the whole sweep run serially and defeat its purpose. A single-threaded
+    # run has no sweep to protect, so we attach it and keep the check.
+    #
+    # config.getoption gives the --parallel-threads value as an int for the
+    # default but a str when passed on the command line; normalize to str and
+    # count the run as parallel only for an explicit number > 1:
+    #
+    #   pytest ...                          -> 1       single-threaded, attach
+    #   pytest --parallel-threads=1 ...     -> "1"     single-threaded, attach
+    #   pytest --parallel-threads=8 ...     -> "8"     parallel, skip (CI sweep)
+    #   pytest --parallel-threads=auto ...  -> "auto"  single-threaded, attach
+    #
+    # "auto" counts as single-threaded on purpose: it can resolve to one CPU, so
+    # keeping the check is safer than dropping it on a non-parallel run. isdigit
+    # also stops int() from raising on the non-numeric "auto".
+    parallel_threads = str(config.getoption("parallel_threads", 1))
+    running_parallel = parallel_threads.isdigit() and int(parallel_threads) > 1
     for item in items:
-        if item.get_closest_marker("no_numba"):
+        # no_numba: add raise_on_numba_import unless we skip it for the sweep
+        if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
+        # serialization is unsupported on v2 (HostJIT); skip those tests there
         if USING_V2 and item.get_closest_marker("serialization"):
             item.add_marker(serialization_skip)

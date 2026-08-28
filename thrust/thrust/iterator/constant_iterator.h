@@ -103,8 +103,8 @@ struct make_constant_iterator_base
  *  \endverbatim
  */
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
-class CCCL_DEPRECATED_BECAUSE("Use cuda::constant_iterator instead") constant_iterator
-    : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
+class CCCL_DEPRECATED_BECAUSE("Use cuda::constant_iterator instead")
+constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {
   //! \cond
   friend class iterator_core_access;

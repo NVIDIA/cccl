@@ -18,6 +18,10 @@
 
 #include <cstdlib>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 int main()
 {
   // This test just checks that RDC is enabled and detected properly when using

@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import (
@@ -34,7 +35,6 @@ from utils import (
     FUNDAMENTAL_TYPES as TYPE_MAP,
 )
 
-import cuda.bench as bench
 from cuda.compute import make_select
 
 # Entropy values from C++ benchmark

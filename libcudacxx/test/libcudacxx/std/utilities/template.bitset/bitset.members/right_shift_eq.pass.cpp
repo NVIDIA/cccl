@@ -52,7 +52,7 @@ TEST_FUNC constexpr bool test_right_shift()
   return true;
 }
 
-TEST_FUNC int main(int, char**)
+int main(int, char**)
 {
   test_right_shift<0>();
   test_right_shift<1>();

@@ -54,14 +54,15 @@ struct memory_info
 inline std::size_t get_device_memory_limit()
 {
   static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
-  static std::size_t result = override_str ? static_cast<std::size_t>(std::atoll(override_str->c_str())) : 0;
+  static std::size_t result =
+    override_str ? static_cast<std::size_t>(std::strtoll(override_str->c_str(), nullptr, 10)) : 0;
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
   static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static bool result = debug_checked_allocs && (std::atoi(debug_checked_allocs->c_str()) != 0);
+  static bool result = debug_checked_allocs && (std::strtol(debug_checked_allocs->c_str(), nullptr, 10) != 0);
   return result;
 }
 

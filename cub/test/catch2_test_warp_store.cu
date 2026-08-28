@@ -5,7 +5,7 @@
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
@@ -170,8 +170,9 @@ struct params_t
   static constexpr int total_item_count              = total_warps * tile_size;
 };
 
-C2H_TEST("Warp store guarded range works with pointer",
+CUB_TEST("Warp store guarded range works with pointer",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -191,8 +192,9 @@ C2H_TEST("Warp store guarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store guarded range works with cache modified iterator",
+CUB_TEST("Warp store guarded range works with cache modified iterator",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -214,8 +216,9 @@ C2H_TEST("Warp store guarded range works with cache modified iterator",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store unguarded range works with pointer",
+CUB_TEST("Warp store unguarded range works with pointer",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -235,8 +238,9 @@ C2H_TEST("Warp store unguarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store unguarded range works with cache modified iterator",
+CUB_TEST("Warp store unguarded range works with cache modified iterator",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -259,8 +263,9 @@ C2H_TEST("Warp store unguarded range works with cache modified iterator",
 }
 
 #if ALGO_TYPE == 3 // cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE
-C2H_TEST("Vectorized warp store with different alignment cases",
+CUB_TEST("Vectorized warp store with different alignment cases",
          "[store][warp]",
+         CUB_SMALL,
          c2h::type_list<std::int32_t>,
          logical_warp_threads,
          items_per_thread,

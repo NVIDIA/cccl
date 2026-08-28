@@ -377,6 +377,7 @@ struct __tuple_like_constructor_tag
 
 // __tuple_impl
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& __source, __tuple_indices<_Indices...>)
 {
@@ -384,6 +385,7 @@ _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& 
   ((void) (get<_Indices>(__dest) = get<_Indices>(__source)), ...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, class... _Up, size_t... _Indices>
 _CCCL_API constexpr void
 __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up...>, __tuple_indices<_Indices...>)
@@ -392,6 +394,7 @@ __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up..
   ((void) (get<_Indices>(__dest) = ::cuda::std::forward<_Up>(get<_Indices>(__source))), ...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_tuple_assign(_Dest& __dest, _Source&& __source, __tuple_indices<_Indices...>)
 {
@@ -409,8 +412,8 @@ template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
     , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
-                                        __tuple_all_copy_assignable_v<_Tp...>,
-                                        __tuple_all_move_assignable_v<_Tp...>>
+                                        __tuple_constraints<_Tp...>::__all_copy_assignable,
+                                        __tuple_constraints<_Tp...>::__all_move_assignable>
 {
   _CCCL_HIDE_FROM_ABI constexpr __tuple_impl() = default;
 

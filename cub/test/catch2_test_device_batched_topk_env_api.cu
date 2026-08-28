@@ -20,9 +20,9 @@
 #include <cuda/std/functional>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][device][env]")
+CUB_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][device][env]", CUB_SMALL)
 {
   // example-begin batched-topk-max-keys-env
   constexpr int num_segments = 2;
@@ -65,7 +65,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][device][env]")
+CUB_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][device][env]", CUB_SMALL)
 {
   // example-begin batched-topk-min-keys-env
   constexpr int num_segments = 2;
@@ -107,7 +107,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][device][env]")
+CUB_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][device][env]", CUB_SMALL)
 {
   // example-begin batched-topk-max-pairs-env
   constexpr int num_segments = 2;
@@ -173,7 +173,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][device][env]")
+CUB_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][device][env]", CUB_SMALL)
 {
   // example-begin batched-topk-min-pairs-env
   constexpr int num_segments = 2;

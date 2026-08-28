@@ -13,7 +13,7 @@ CCCL is a collection of CUDA C++ libraries and Python packages:
 * **Thrust** — High-level parallel algorithms
 * **cudax** — Experimental features
 * **C Parallel Library** — C bindings for CCCL algorithms
-* **Python CCCL packages** (`cuda-cccl`) — Python bindings for parallel and cooperative primitives
+* **Python CCCL packages** (`cuda-cccl`) — Python APIs for parallel primitives and programmatic access to CCCL headers
 
 The repository uses **CMake** with the **Ninja** generator and provides standardized presets for consistent builds.
 
@@ -206,7 +206,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
-* **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
+* **cuda.stf._experimental** — Sequential Task Flow (CUDASTF) Python bindings in the `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -245,11 +245,6 @@ Requirements:
 import cuda.compute
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.coop._experimental as coop
-@cuda.jit
-def kernel(data):
-    coop.block.reduce(data, binary_op)
-
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
 ```
@@ -259,23 +254,23 @@ include_paths = headers.get_include_paths()
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
 ./ci/test_cuda_compute_python.sh -py-version 3.10
-./ci/test_cuda_coop_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
 
 * `tests/compute` — Algorithms and iterators
-* `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `test_examples.py` — Runs compute/coop examples
+* `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
+* `test_examples.py` — Runs compute examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 
 ## Continuous Integration (CI)
 
-See `ci-overview.md` for detailed examples and troubleshooting guidance.
+See `docs/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
 
 CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
 
@@ -328,6 +323,8 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
+* `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
@@ -364,7 +361,7 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 
 * Validate changes with builds/tests; report results.
 * Run `pre-commit` before committing.
-* Review `CONTRIBUTING.md` and `ci-overview.md` before starting work.
+* Review `CONTRIBUTING.md` and `docs/infrastructure/ci/references/ci_overview.rst` before starting work.
 
 ### Performance Tips
 
@@ -398,10 +395,8 @@ Python package layout:
 python/cuda_cccl/
 ├── cuda/
 │   ├── compute/
-│   ├── coop/
 │   └── cccl/
 │       ├── parallel/
-│       ├── cooperative/
 │       └── headers/
 ├── tests/
 ├── benchmarks/

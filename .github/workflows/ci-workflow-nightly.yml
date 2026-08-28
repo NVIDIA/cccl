@@ -50,7 +50,6 @@ jobs:
           workflows: nightly
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
-          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -124,6 +123,8 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    outputs:
+      failure_message: ${{ steps.check-workflow.outputs.failure_message }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -137,7 +138,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
-          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
   build-rapids:
     name: Build RAPIDS
@@ -174,3 +174,108 @@ jobs:
     uses: ./.github/workflows/build-pytorch.yml
     with:
       enable_slack_alerts: true
+
+  analyze-failures:
+    name: Analyze nightly failures
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        (
+          needs.build-workflow.result == 'failure' ||
+          needs.verify-workflow.result == 'failure' ||
+          needs.build-rapids.result == 'failure' ||
+          needs.build-matx.result == 'failure' ||
+          needs.build-pytorch.result == 'failure'
+        )
+      }}
+    needs:
+      - build-workflow
+      - verify-workflow
+      - build-rapids
+      - build-matx
+      - build-pytorch
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      slack_thread: ${{ steps.render-slack.outputs.content }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Analyze failures
+        id: analyze
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
+
+      - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
+        env:
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
+        run: |
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Render Slack failure analysis
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-slack
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: slack
+
+  publish-failure-notification:
+    name: Post nightly failure notification to Slack
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        (
+          needs.verify-workflow.outputs.failure_message != '' ||
+          needs.analyze-failures.outputs.slack_thread != ''
+        )
+      }}
+    needs:
+      - analyze-failures
+      - verify-workflow
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_notification.py
+          sparse-checkout-cone-mode: false
+
+      - name: Post failure notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          SLACK_PARENT_TEXT: ${{ needs.verify-workflow.outputs.failure_message }}
+          SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_notification.py

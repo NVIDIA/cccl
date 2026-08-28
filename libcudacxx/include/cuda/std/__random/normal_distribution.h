@@ -49,27 +49,29 @@ public:
   public:
     using distribution_type = normal_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __mean = 0, result_type __stddev = 1) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(result_type __mean = 0, result_type __stddev = 1) noexcept
         : __mean_{__mean}
         , __stddev_{__stddev}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type mean() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type mean() const noexcept
     {
       return __mean_;
     }
-    [[nodiscard]] _CCCL_API constexpr result_type stddev() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type stddev() const noexcept
     {
       return __stddev_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__mean_ == __y.__mean_ && __x.__stddev_ == __y.__stddev_;
     }
 
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -82,28 +84,29 @@ private:
   bool __v_hot_{false};
 
 public:
-  _CCCL_API constexpr normal_distribution() noexcept
+  _CCCL_HOST_DEVICE_API constexpr normal_distribution() noexcept
       : normal_distribution{0}
   {}
-  _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = result_type{1}) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit normal_distribution(
+    result_type __mean, result_type __stddev = result_type{1}) noexcept
       : __p_{param_type(__mean, __stddev)}
   {}
-  _CCCL_API constexpr explicit normal_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit normal_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept
   {
     __v_hot_ = false;
   }
 
   // generating functions
   template <class _URng>
-  _CCCL_API constexpr result_type operator()(_URng& __g)
+  _CCCL_HOST_DEVICE_API constexpr result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p)
+  _CCCL_HOST_DEVICE_API constexpr result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     result_type __up = 0;
@@ -133,41 +136,42 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type mean() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type mean() const noexcept
   {
     return __p_.mean();
   }
-  [[nodiscard]] _CCCL_API constexpr result_type stddev() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type stddev() const noexcept
   {
     return __p_.stddev();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type min() const noexcept
   {
     return -numeric_limits<result_type>::infinity();
   }
-  [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type max() const noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const normal_distribution& __x, const normal_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
 #if _CCCL_STD_VER <= 2017
   [[nodiscard]]
-  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

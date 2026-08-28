@@ -54,17 +54,17 @@ class __fmt_format_to_n_buffer : __fmt_buffer_select_t<_OutIt, _CharT>
 public:
   using _Base _CCCL_NODEBUG_ALIAS = __fmt_buffer_select_t<_OutIt, _CharT>;
 
-  _CCCL_API constexpr __fmt_format_to_n_buffer(_OutIt __out_it, iter_difference_t<_OutIt> __n)
+  _CCCL_HOST_DEVICE_API constexpr __fmt_format_to_n_buffer(_OutIt __out_it, iter_difference_t<_OutIt> __n)
       : _Base{::cuda::std::move(__out_it), &__max_output_size_}
       , __max_output_size_{::cuda::std::cmp_less(__n, 0) ? size_t{0} : static_cast<size_t>(__n)}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr auto __make_output_iterator()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_output_iterator()
   {
     return _Base::__make_output_iterator();
   }
 
-  [[nodiscard]] _CCCL_API constexpr format_to_n_result<_OutIt> __result() &&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr format_to_n_result<_OutIt> __result() &&
   {
     return {static_cast<_Base&&>(*this).__out_it(),
             static_cast<iter_difference_t<_OutIt>>(__max_output_size_.__code_units_written())};
@@ -72,7 +72,7 @@ public:
 };
 
 template <class _Context, class _OutIt, class _CharT>
-[[nodiscard]] _CCCL_API format_to_n_result<_OutIt> __format_to_n_impl(
+[[nodiscard]] _CCCL_HOST_DEVICE_API format_to_n_result<_OutIt> __format_to_n_impl(
   _OutIt __out_it, iter_difference_t<_OutIt> __n, basic_string_view<_CharT> __fmt, basic_format_args<_Context> __args)
 {
   __fmt_format_to_n_buffer<_OutIt, _CharT> __buffer{::cuda::std::move(__out_it), __n};
@@ -84,7 +84,7 @@ template <class _Context, class _OutIt, class _CharT>
 
 _CCCL_TEMPLATE(class _OutIt, class... _Args)
 _CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
-/*discard*/ _CCCL_API format_to_n_result<_OutIt>
+/*discard*/ _CCCL_HOST_DEVICE_API format_to_n_result<_OutIt>
 format_to_n(_OutIt __out_it, iter_difference_t<_OutIt> __n, format_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::__format_to_n_impl<format_context>(
@@ -94,7 +94,7 @@ format_to_n(_OutIt __out_it, iter_difference_t<_OutIt> __n, format_string<_Args.
 #if _CCCL_HAS_WCHAR_T()
 _CCCL_TEMPLATE(class _OutIt, class... _Args)
 _CCCL_REQUIRES(output_iterator<_OutIt, const wchar_t&>)
-/*discard*/ _CCCL_API format_to_n_result<_OutIt>
+/*discard*/ _CCCL_HOST_DEVICE_API format_to_n_result<_OutIt>
 format_to_n(_OutIt __out_it, iter_difference_t<_OutIt> __n, wformat_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::__format_to_n_impl<wformat_context>(

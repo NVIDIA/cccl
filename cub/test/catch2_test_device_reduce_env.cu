@@ -33,7 +33,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 #include <sstream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 using cuda::execution::determinism::__determinism_t;
@@ -70,7 +70,7 @@ using block_size_check_plus_t = block_size_extracting_op<cuda::std::plus<>>;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-TEST_CASE("Device reduce works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]", CUB_SMALL)
 {
   using num_items_t = int;
   using value_t     = int;
@@ -99,7 +99,7 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-TEST_CASE("Device Sum works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device Sum works with default environment", "[reduce][device]", CUB_SMALL)
 {
   using num_items_t     = int;
   using value_t         = int;
@@ -114,7 +114,7 @@ TEST_CASE("Device Sum works with default environment", "[reduce][device]")
 #endif
 
 #if TEST_LAUNCH != 1
-C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -129,7 +129,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -144,7 +144,7 @@ C2H_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", block_
   REQUIRE(d_out[0] == 1);
   REQUIRE(d_block_size[0] == target_block_size);
 }
-C2H_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -160,7 +160,7 @@ C2H_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -176,7 +176,7 @@ C2H_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device Sum can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device Sum can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -191,7 +191,7 @@ C2H_TEST("Device Sum can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device Min can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device Min can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -206,7 +206,7 @@ C2H_TEST("Device Min can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device Max can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device Max can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -221,7 +221,7 @@ C2H_TEST("Device Max can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device TransformReduce can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device TransformReduce can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -236,7 +236,7 @@ C2H_TEST("Device TransformReduce can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device ArgMin can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device ArgMin can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -256,7 +256,7 @@ C2H_TEST("Device ArgMin can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Device ArgMax can be tuned", "[reduce][device]", block_sizes)
+CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -281,9 +281,10 @@ C2H_TEST("Device ArgMax can be tuned", "[reduce][device]", block_sizes)
 template <int BlockThreads>
 struct reduce_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReduceByKeyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReduceByKeyPolicy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
+    return {cub::ReduceByKeyAlgorithm::lookback,
+            {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
   }
 };
 
@@ -294,7 +295,7 @@ using reduce_by_key_block_sizes =
 
 using block_size_extracting_minimum_t = block_size_extracting_op<cuda::minimum<int>>;
 
-C2H_TEST("Device ReduceByKey can be tuned", "[reduce][device]", reduce_by_key_block_sizes)
+CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -334,7 +335,7 @@ using requirements =
                  cuda::execution::determinism::run_to_run_t,
                  cuda::execution::determinism::not_guaranteed_t>;
 
-C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
+CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requirements)
 {
   using determinism_t = c2h::get<0, TestType>;
   using accumulator_t = float;
@@ -476,7 +477,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   REQUIRE(d_out[0] == num_items);
 }
 
-C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
+CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requirements)
 {
   using determinism_t = c2h::get<0, TestType>;
   using accumulator_t = float;
@@ -616,7 +617,9 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   REQUIRE(d_out[0] == num_items);
 }
 
-C2H_TEST("Device reduce not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+CUB_TEST("Device reduce not_guaranteed falls back when output type differs from accumulator",
+         "[reduce][device]",
+         CUB_SMALL)
 {
   using input_t       = cuda::std::uint8_t;
   using output_t      = cuda::std::uint8_t;
@@ -641,35 +644,35 @@ C2H_TEST("Device reduce not_guaranteed falls back when output type differs from 
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          decltype(d_in.begin()),
-          decltype(d_out.begin()),
-          offset_t,
-          op_t,
-          init_value_t,
-          accumulator_t,
-          transform_t>),
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_value_t,
+        accumulator_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceKernel<
-          policy_t,
-          /* StableReductionOrder */ true,
-          decltype(d_in.begin()),
-          accumulator_t*,
-          offset_t,
-          offset_t,
-          op_t,
-          accumulator_t,
-          init_value_t,
-          transform_t>),
+        policy_t,
+        /* StableReductionOrder */ true,
+        decltype(d_in.begin()),
+        accumulator_t*,
+        offset_t,
+        offset_t,
+        op_t,
+        accumulator_t,
+        init_value_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          accumulator_t*,
-          decltype(d_out.begin()),
-          int, // always used with int offset
-          op_t,
-          init_value_t,
-          accumulator_t>)};
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_value_t,
+        accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
@@ -680,7 +683,7 @@ C2H_TEST("Device reduce not_guaranteed falls back when output type differs from 
   REQUIRE(d_out[0] == output_t{6});
 }
 
-C2H_TEST("Device sum not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+CUB_TEST("Device sum not_guaranteed falls back when output type differs from accumulator", "[reduce][device]", CUB_SMALL)
 {
   using input_t       = cuda::std::uint8_t;
   using output_t      = cuda::std::uint8_t;
@@ -703,35 +706,35 @@ C2H_TEST("Device sum not_guaranteed falls back when output type differs from acc
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          decltype(d_in.begin()),
-          decltype(d_out.begin()),
-          offset_t,
-          op_t,
-          init_value_t,
-          accumulator_t,
-          transform_t>),
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_value_t,
+        accumulator_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceKernel<
-          policy_t,
-          /* StableReductionOrder */ true,
-          decltype(d_in.begin()),
-          accumulator_t*,
-          offset_t,
-          offset_t,
-          op_t,
-          accumulator_t,
-          init_value_t,
-          transform_t>),
+        policy_t,
+        /* StableReductionOrder */ true,
+        decltype(d_in.begin()),
+        accumulator_t*,
+        offset_t,
+        offset_t,
+        op_t,
+        accumulator_t,
+        init_value_t,
+        transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-          policy_t,
-          accumulator_t*,
-          decltype(d_out.begin()),
-          int, // always used with int offset
-          op_t,
-          init_value_t,
-          accumulator_t>)};
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_value_t,
+        accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
@@ -744,7 +747,7 @@ C2H_TEST("Device sum not_guaranteed falls back when output type differs from acc
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device Min works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device Min works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
@@ -754,7 +757,7 @@ TEST_CASE("Device Min works with default environment", "[reduce][device]")
   REQUIRE(output[0] == 0.0f);
 }
 
-TEST_CASE("Device Max works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device Max works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
@@ -764,7 +767,7 @@ TEST_CASE("Device Max works with default environment", "[reduce][device]")
   REQUIRE(output[0] == 4.0f);
 }
 
-TEST_CASE("Device TransformReduce works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device TransformReduce works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
   auto d_out = thrust::device_vector<int>(1);
@@ -778,7 +781,7 @@ TEST_CASE("Device TransformReduce works with default environment", "[reduce][dev
   REQUIRE(d_out[0] == -10);
 }
 
-TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
@@ -806,7 +809,7 @@ TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]
   REQUIRE(d_aggregates_out == expected_aggregates);
 }
 
-TEST_CASE("Device ArgMin works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device ArgMin works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
@@ -819,7 +822,7 @@ TEST_CASE("Device ArgMin works with default environment", "[reduce][device]")
   REQUIRE(index_output[0] == 3);
 }
 
-TEST_CASE("Device ArgMax works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device ArgMax works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto max_output   = c2h::device_vector<float>(1);
@@ -832,7 +835,7 @@ TEST_CASE("Device ArgMax works with default environment", "[reduce][device]")
   REQUIRE(index_output[0] == 2);
 }
 
-TEST_CASE("Device ArgMin with compare_op works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device ArgMin with compare_op works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
@@ -845,7 +848,7 @@ TEST_CASE("Device ArgMin with compare_op works with default environment", "[redu
   REQUIRE(index_output[0] == 3);
 }
 
-TEST_CASE("Device ArgMax with compare_op works with default environment", "[reduce][device]")
+CUB_TEST_CASE("Device ArgMax with compare_op works with default environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto max_output   = c2h::device_vector<float>(1);
@@ -860,7 +863,7 @@ TEST_CASE("Device ArgMax with compare_op works with default environment", "[redu
 
 #endif
 
-C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
+CUB_TEST("Device TransformReduce uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
   auto d_out = thrust::device_vector<int>(1);
@@ -888,7 +891,7 @@ C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
   REQUIRE(d_out[0] == -10);
 }
 
-C2H_TEST("Device Min uses environment", "[reduce][device]")
+CUB_TEST("Device Min uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
@@ -905,7 +908,7 @@ C2H_TEST("Device Min uses environment", "[reduce][device]")
   REQUIRE(output[0] == 0.0f);
 }
 
-C2H_TEST("Device Max uses environment", "[reduce][device]")
+CUB_TEST("Device Max uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
@@ -922,7 +925,7 @@ C2H_TEST("Device Max uses environment", "[reduce][device]")
   REQUIRE(output[0] == 4.0f);
 }
 
-C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
+CUB_TEST("Device ReduceByKey uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
@@ -965,7 +968,7 @@ C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
   REQUIRE(d_aggregates_out == expected_aggregates);
 }
 
-C2H_TEST("Device ArgMin uses environment", "[reduce][device]")
+CUB_TEST("Device ArgMin uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
@@ -990,7 +993,7 @@ C2H_TEST("Device ArgMin uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 3);
 }
 
-C2H_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]")
+CUB_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto min_output   = c2h::device_vector<float>(1);
@@ -1017,7 +1020,7 @@ C2H_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 3);
 }
 
-C2H_TEST("Device ArgMax uses environment", "[reduce][device]")
+CUB_TEST("Device ArgMax uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto max_output   = c2h::device_vector<float>(1);
@@ -1042,7 +1045,7 @@ C2H_TEST("Device ArgMax uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 2);
 }
 
-C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
+CUB_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]", CUB_SMALL)
 {
   auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto max_output   = c2h::device_vector<float>(1);
@@ -1069,7 +1072,7 @@ C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 2);
 }
 
-C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]")
+CUB_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]", CUB_SMALL)
 {
   auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
   auto output = thrust::device_vector<int>(1, thrust::no_init);
@@ -1093,7 +1096,7 @@ C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
+CUB_TEST("Test ReducePolicy properties", "[reduce][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePolicy>);
@@ -1159,30 +1162,33 @@ C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
              ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT } }");
 }
 
-C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
+CUB_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReduceByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReduceByKeyPolicy>);
 
   // aggregate init
   constexpr auto p1 = cub::ReduceByKeyPolicy{
-    128,
-    7,
-    cub::BLOCK_LOAD_DIRECT,
-    cub::LOAD_DEFAULT,
-    cub::BLOCK_SCAN_WARP_SCANS,
-    {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+    cub::ReduceByKeyAlgorithm::lookback,
+    {128,
+     7,
+     cub::BLOCK_LOAD_DIRECT,
+     cub::LOAD_DEFAULT,
+     cub::BLOCK_SCAN_WARP_SCANS,
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::ReduceByKeyPolicy{
-    .threads_per_block = 128,
-    .items_per_thread  = 7,
-    .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-    .load_modifier     = cub::LOAD_DEFAULT,
-    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+    .algorithm = cub::ReduceByKeyAlgorithm::lookback,
+    .lookback  = cub::ReduceByKeyLookbackPolicy{
+      .threads_per_block = 128,
+      .items_per_thread  = 7,
+      .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::LOAD_DEFAULT,
+      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay    = cub::LookbackDelayPolicy{
+        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1197,10 +1203,11 @@ C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
     return os.str();
   };
   REQUIRE(to_string(p1)
-          == "ReduceByKeyPolicy { .threads_per_block = 128, .items_per_thread = 7"
+          == "ReduceByKeyPolicy { .algorithm = ReduceByKeyAlgorithm::lookback"
+             ", .lookback = ReduceByKeyLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
              ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 } }");
+             ", .delay = 832, .l2_write_latency = 1165 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
