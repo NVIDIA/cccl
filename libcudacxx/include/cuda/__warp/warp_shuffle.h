@@ -75,7 +75,7 @@ template <typename _Tp>
 using __shuffle_bitcast_storage_t = ::cuda::std::__make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
+_CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
 {
   using __unsigned_t = __shuffle_bitcast_storage_t<_Tp>;
   return static_cast<::cuda::std::uint32_t>(::cuda::std::bit_cast<__unsigned_t>(__data));
@@ -86,7 +86,7 @@ using __shuffle_array_t =
   ::cuda::std::array<::cuda::std::uint32_t, ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t))>;
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) noexcept
+_CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) noexcept
 {
   // zero-initialize -> avoid undetermined values propagation (reg pressure) with memcpy
   __shuffle_array_t<_Tp> __array{};

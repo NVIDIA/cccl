@@ -33,6 +33,14 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
+      - '^cub\.bench\.bitonic_sort\.warp_keys\.base$'
+      - '^cub\.bench\.bitonic_sort\.warp_pairs\.base$'
+      - '^cub\.bench\.radix_sort\.keys\.base$'
+      - '^cub\.bench\.radix_sort\.pairs\.base$'
+      - '^cub\.bench\.scan\.applications\.P1\.non\-commutative\-bicyclic\-monoid\.base$'
+      - '^cub\.bench\.scan\.exclusive\.custom\.base$'
+      - '^cub\.bench\.segmented_radix_sort\.keys\.base$'
+      - '^cub\.bench\.segmented_sort\.keys\.base$'
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
@@ -50,8 +58,8 @@ benchmarks:
     # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
-    # - "rtxpro6000" # sm_120
+    - "h100" # sm_90, 80 GB
+    - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.3 --host gcc14"
