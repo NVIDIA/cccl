@@ -85,13 +85,7 @@ void TestMinMaxElementCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
