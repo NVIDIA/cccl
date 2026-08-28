@@ -28,7 +28,7 @@ inline void FormatExchange(std::ostream& out)
   // 6 - Scope function tag
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
+_CCCL_DEVICE_API void __cuda_atomic_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __old, __unv<_Type> __new, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}});
@@ -49,7 +49,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
 }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
+_CCCL_DEVICE_API void __cuda_atomic_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __old, __unv<_Type> __new, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}}); asm volatile("atom.exch{3}{5}.{0}{1} %0,[%1],%2;" : "={2}"(__old) : "l"(__ptr), "{2}"(__new) : "memory"); }})XXX";
 

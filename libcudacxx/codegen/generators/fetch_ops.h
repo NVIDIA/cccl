@@ -61,7 +61,7 @@ inline void FormatFetchOps(std::ostream& out)
   // 7 - Scope function tag
   constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
+_CCCL_DEVICE_API void __cuda_atomic_fetch_{0}(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, {5} __order, __cuda_atomic_operand_{1}{2}, {7})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {7}{{}}); asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
   // 0 - Atomic Operation

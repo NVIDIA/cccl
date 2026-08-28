@@ -28,7 +28,7 @@ inline void FormatCompareAndSwap(std::ostream& out)
   // 6 - Scope function tag
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
+_CCCL_DEVICE_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __cmp, __unv<_Type> __op, __cuda_atomic_cas_strong, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}});
@@ -49,7 +49,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
+_CCCL_DEVICE_API bool __cuda_atomic_compare_exchange(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __cmp, __unv<_Type> __op, __cuda_atomic_cas_strong, {4} __order, __cuda_atomic_operand_{0}{1}, {6})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {6}{{}}); asm volatile("atom.cas{3}{5}.{0}{1} %0,[%1],%2,%3;" : "={2}"(__dst) : "l"(__ptr), "{2}"(__cmp), "{2}"(__op) : "memory"); return __dst == __cmp; }})XXX";
 

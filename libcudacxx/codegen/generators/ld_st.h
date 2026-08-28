@@ -50,7 +50,7 @@ inline void FormatLoad(std::ostream& out)
   // 8 - Mmio semantic
   constexpr auto asm_intrinsic_format_128 = R"XXX(
   template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
@@ -69,12 +69,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   __cuda_atomic_ptx_backend, const _Type* __ptr, __unv<_Type>& __dst, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
@@ -255,7 +255,7 @@ inline void FormatStore(std::ostream& out)
   // 8 - Mmio semantic
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
@@ -274,12 +274,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
 }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});

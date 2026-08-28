@@ -147,7 +147,7 @@ template <class _Backend,
           class _Operand,
           class _RmwOperand,
           class _Sco>
-_CCCL_HOST_DEVICE static __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rmw(
+_CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rmw(
   _Backend __backend,
   _Pointee* __ptr,
   const _Fn& __op,
