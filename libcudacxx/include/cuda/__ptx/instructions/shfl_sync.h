@@ -43,8 +43,8 @@ enum class __dot_shfl_mode
 };
 
 [[maybe_unused]]
-_CCCL_DEVICE_API
-uint32_t __shfl_sync_dst_lane(__dot_shfl_mode __shfl_mode, uint32_t __lane_idx_offset, uint32_t __clamp_segmask)
+_CCCL_DEVICE_API inline uint32_t
+__shfl_sync_dst_lane(__dot_shfl_mode __shfl_mode, uint32_t __lane_idx_offset, uint32_t __clamp_segmask)
 {
   auto __lane     = ::cuda::ptx::get_sreg_laneid();
   auto __clamp    = __clamp_segmask & 0b11111;
