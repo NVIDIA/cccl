@@ -208,9 +208,8 @@ class SubBenchState:
         self.point = {}
         for axis in state["axis_values"]:
             name = axes_names[axis["name"]]
-            value = axes_values[axis["name"]][
-                axis_value_key(axis.get("type"), axis["value"])
-            ]
+            value_key = axis_value_key(axis["type"], axis["value"])
+            value = axes_values[axis["name"]][value_key]
             self.point[name] = value
 
     def __repr__(self):
@@ -234,9 +233,8 @@ class SubBenchResult:
             axes_values[short_name] = {}
             for value in axis["values"]:
                 if "value" in value:
-                    axes_values[axis["name"]][
-                        axis_value_key(axis.get("type"), str(value["value"]))
-                    ] = value["input_string"]
+                    value_key = axis_value_key(axis["type"], str(value["value"]))
+                    axes_values[axis["name"]][value_key] = value["input_string"]
                 else:
                     axes_values[axis["name"]][value["input_string"]] = value[
                         "input_string"
