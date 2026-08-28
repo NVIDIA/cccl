@@ -19,7 +19,7 @@ __device__ static inline void fence_sync_restrict(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
   fence_sync_restrict(::cuda::ptx::sem_acquire_t, ::cuda::ptx::space_cluster_t, ::cuda::ptx::scope_cluster_t)
 {
   // __sem == sem_acquire (due to parameter type constraint)
@@ -42,7 +42,7 @@ __device__ static inline void fence_sync_restrict(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
   fence_sync_restrict(::cuda::ptx::sem_release_t, ::cuda::ptx::space_shared_t, ::cuda::ptx::scope_cluster_t)
 {
   // __sem == sem_release (due to parameter type constraint)
