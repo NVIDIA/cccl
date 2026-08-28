@@ -215,10 +215,26 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     cudax::__sort_by_stride_paired(__src_simplified, __dst_simplified);
     cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
     cudax::__coalesce_paired(__src_simplified, __dst_simplified);
-    const bool __both_stride1   = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
-    const auto __tile_size      = __both_stride1 ? __src_simplified.__extents[0] : 1;
-    const auto __src_normalized = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    const auto __dst_normalized = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
+    const auto __tile_size    = __both_stride1 ? __src_simplified.__extents[0] : 1;
+    auto __src_normalized     = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
+    auto __dst_normalized     = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+
+    // If the source tensor is not contiguous, check if the destination tensor is contiguous and use it instead.
+    // Prefer the destination tensor in this case to improve coalescing.
+    if (__src_simplified.__strides[0] != 1)
+    {
+      auto __src_dst_ordered = __src_raw;
+      auto __dst_dst_ordered = __dst_raw;
+      cudax::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
+      cudax::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
+      cudax::__coalesce_paired(__dst_dst_ordered, __src_dst_ordered);
+      if (__dst_dst_ordered.__strides[0] == 1)
+      {
+        __src_normalized = __src_dst_ordered;
+        __dst_normalized = __dst_dst_ordered;
+      }
+    }
 
     _CCCL_ASSERT(__tensor_size % __tile_size == 0, "tensor size must be divisible by tile size");
     const auto __inner_extent_bytes = __src_normalized.__extents[0] * sizeof(_TpIn);
