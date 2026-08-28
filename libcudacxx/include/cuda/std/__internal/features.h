@@ -115,7 +115,7 @@
 #define _CCCL_HAS_SIMD_8BIT() \
   ((_CCCL_HAS_SIMD_8BIT_PTX() || _CCCL_HAS_SIMD_8BIT_INTRINSICS()) && !_CCCL_TILE_COMPILATION())
 
-// TODO(fbusato): CTK 13.2 produces non-optimal code for SIMD SAT intrinsics
+// TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD SAT intrinsics
 #define _CCCL_HAS_SIMD_SAT_INTRINSICS() 0
 #define _CCCL_HAS_SIMD_SAT_PTX()        (__cccl_ptx_isa >= 920ULL)
 #define _CCCL_HAS_SIMD_SAT()                                                                 \

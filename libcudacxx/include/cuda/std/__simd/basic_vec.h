@@ -140,7 +140,7 @@ private:
   {
     return basic_vec{__operation(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
-  
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
