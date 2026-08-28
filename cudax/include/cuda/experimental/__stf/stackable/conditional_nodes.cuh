@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <tuple>
+#include <cuda/std/tuple>
 
 #include <cuda_runtime.h>
 
@@ -37,13 +37,15 @@ namespace reserved
 //
 // As in the parallel_for kernels (see reserved::loop in parallel_for_scope.cuh), the data instances are passed as a
 // single tuple and unpacked onto the condition function on the device, so that callers never need to expand a tuple
-// of instances back into a template argument pack on the host.
+// of instances back into a template argument pack on the host. The tuple crossing the kernel boundary is a
+// cuda::std::tuple: trivially copyable for trivially copyable elements (kernel parameters are copied bytewise) and
+// fully device-ready without leaning on --expt-relaxed-constexpr into host stdlib internals.
 template <typename CondFunc, typename TupleArgs>
 __global__ void
 condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, TupleArgs targs)
 {
   // Direct call to the user's condition function - no lambda nesting
-  bool result = ::std::apply(cond_func, targs);
+  bool result = ::cuda::std::apply(cond_func, targs);
   cudaGraphSetConditional(conditional_handle, result);
 }
 

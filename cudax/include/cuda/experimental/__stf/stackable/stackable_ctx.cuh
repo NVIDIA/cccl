@@ -1347,6 +1347,19 @@ public:
     // device side unpacks onto the condition function.
     using filtered_data_t = reserved::remove_void_interface_from_pack_t<data_t_of<Deps>...>;
 
+    // The tuple that crosses the kernel boundary is the cuda::std rebind of
+    // filtered_data_t (see condition_update_kernel for why).
+    template <typename Tuple>
+    struct to_cuda_tuple;
+
+    template <typename... Ts>
+    struct to_cuda_tuple<::std::tuple<Ts...>>
+    {
+      using type = ::cuda::std::tuple<Ts...>;
+    };
+
+    using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;
+
     template <typename CondFunc>
     void operator->*(CondFunc&& cond_func)
     {
@@ -1357,13 +1370,13 @@ public:
         tdeps)
           ->*[cond_func = mv(cond_func), h = handle_](auto... args) {
                 return cuda_kernel_desc{
-                  reserved::condition_update_kernel<::cuda::std::decay_t<CondFunc>, filtered_data_t>,
+                  reserved::condition_update_kernel<::cuda::std::decay_t<CondFunc>, kernel_tuple_t>,
                   1,
                   1,
                   0,
                   h,
                   cond_func,
-                  filtered_data_t{mv(args)...}};
+                  kernel_tuple_t{mv(args)...}};
               };
     }
 
