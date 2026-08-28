@@ -87,14 +87,21 @@ if (libcudacxx_codegen_filecheck_simd_sass)
       "min_max/*.cu"
     )
 
-    # The 8-bit arithmetic and min/max tests require the PTX ISA 9.2 8-bit SIMD
-    # path available with CUDA 13.2 and newer.
+    # The 8-bit arithmetic and min/max tests, and the saturating-add tests, require
+    # PTX ISA 9.2 paths available with CUDA 13.2 and newer.
     if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
       list(
         REMOVE_ITEM simd_codegen_sass_tests
         "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
         "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
       )
+    else()
+      file(
+        GLOB simd_codegen_saturating_add_tests
+        CONFIGURE_DEPENDS
+        "saturating_add/*.cu"
+      )
+      list(APPEND simd_codegen_sass_tests ${simd_codegen_saturating_add_tests})
     endif()
 
     libcudacxx_codegen_add_sass_tests(
@@ -109,30 +116,4 @@ if (libcudacxx_codegen_filecheck_simd_sass)
       "No compatible CUDA architectures requested; skipping simd SASS codegen tests"
     )
   endif()
-
-  foreach (arch IN LISTS test_archs)
-    simd_codegen_add_library_target(target_name sass "${arch}" "${test_path}")
-    simd_codegen_get_sass_check_prefixes(check_prefixes "${test_contents}" "${arch}")
-
-    string(FIND "${test_contents}" "__device__" has_device_function)
-    if (NOT has_device_function EQUAL -1)
-      target_compile_options(${target_name} PRIVATE "-dc")
-    endif()
-
-    simd_codegen_add_check_target(libcudacxx.test.simd.sass ${target_name} "${test_path}" "${check_prefixes}" --dump-sass)
-  endforeach()
-endfunction()
-
-set(simd_codegen_sass_tests)
-file(GLOB simd_codegen_sass_tests "floating_point/*.cu" "integer/*.cu")
-if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2)
-  file(GLOB simd_codegen_saturating_add_tests "saturating_add/*.cu")
-  list(APPEND simd_codegen_sass_tests ${simd_codegen_saturating_add_tests})
-endif()
-
-add_subdirectory(load_store)
-
-foreach (test_path IN LISTS simd_codegen_sass_tests)
-  simd_codegen_add_sass_test("${test_path}")
-endforeach()
 endif()
