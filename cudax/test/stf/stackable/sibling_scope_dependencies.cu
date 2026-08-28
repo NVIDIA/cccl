@@ -88,13 +88,12 @@ public:
       (getenv("CUDASTF_DUMP_GRAPHS") != nullptr) || (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
     if (!enabled)
     {
-      fprintf(
-        stderr, "graph topology check '%s' failed; rerun with CUDASTF_DUMP_GRAPHS=1 to dump the graph as DOT\n", label);
+      fprintf(stderr, "rerun with CUDASTF_DUMP_GRAPHS=1 to dump the '%s' graph as DOT\n", label);
       return;
     }
     ::std::string filename = ::std::string("sibling_scope_dependencies-") + label + ".dot";
     cuda_safe_call(cudaGraphDebugDotPrint(graph_, filename.c_str(), cudaGraphDebugDotFlagsVerbose));
-    fprintf(stderr, "graph topology check '%s' failed, graph dumped to %s\n", label, filename.c_str());
+    fprintf(stderr, "'%s' graph dumped to %s\n", label, filename.c_str());
   }
 
 private:
@@ -121,56 +120,81 @@ private:
   ::std::unordered_map<cudaGraphNode_t, ::std::vector<cudaGraphNode_t>> direct_deps_;
 };
 
-static void check_or_dump(const graph_topology& topology, bool condition, const char* label)
+// `what` names the failed predicate: all checks funnel through the same
+// EXPECT line, so the exception message alone cannot identify which one fired.
+void check_or_dump(const graph_topology& topology, bool condition, const char* label, const char* what)
 {
   if (!condition)
   {
+    fprintf(stderr, "graph topology check '%s' failed: %s\n", label, what);
     topology.dump_dot(label);
   }
   EXPECT(condition);
 }
 
-// The two sibling nodes of the given type must not depend on each other, yet
-// must both depend on at least one common node. The second condition keeps
-// the test honest: independence alone would also hold if the scopes stopped
-// sharing their input entirely, and the check would pass vacuously.
-static void expect_independent(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
+// Number of kernel nodes in a graph, descending into child graphs. Nested
+// scopes and conditional bodies wrap their work in child graph nodes, so a
+// flat count would miss it.
+size_t count_kernel_nodes_recursive(cudaGraph_t graph)
+{
+  const graph_topology topology(graph);
+  size_t count = topology.nodes_of_type(cudaGraphNodeTypeKernel).size();
+  for (cudaGraphNode_t child : topology.nodes_of_type(cudaGraphNodeTypeGraph))
+  {
+    cudaGraph_t child_graph;
+    cuda_safe_call(cudaGraphChildGraphNodeGetGraph(child, &child_graph));
+    count += count_kernel_nodes_recursive(child_graph);
+  }
+  return count;
+}
+
+// The two sibling nodes of the given type must not depend on each other.
+//
+// Independence alone would also hold if the sibling scopes came out empty, so
+// for child graph siblings additionally require that each body contains real
+// kernel work; the value checks at the end of each test then prove that both
+// siblings actually consumed the shared input. A stronger "both siblings
+// depend on a common upload node" check is not expressible at this level: the
+// shared input is imported by the enclosing scope, whose transfer runs in the
+// enclosing context's stream, so it is not a node of this graph and sibling
+// nodes correctly have no in-graph ancestor.
+void expect_independent(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
 {
   const graph_topology topology(graph);
   auto siblings = topology.nodes_of_type(type);
-  check_or_dump(topology, siblings.size() == 2, label);
+  check_or_dump(topology, siblings.size() == 2, label, "expected exactly two sibling nodes");
 
   const auto deps0 = topology.transitive_dependencies(siblings[0]);
   const auto deps1 = topology.transitive_dependencies(siblings[1]);
-  check_or_dump(topology, deps0.count(siblings[1]) == 0, label);
-  check_or_dump(topology, deps1.count(siblings[0]) == 0, label);
+  check_or_dump(topology, deps0.count(siblings[1]) == 0, label, "first sibling depends on the second");
+  check_or_dump(topology, deps1.count(siblings[0]) == 0, label, "second sibling depends on the first");
 
-  bool share_an_ancestor = false;
-  for (cudaGraphNode_t node : deps0)
+  if (type == cudaGraphNodeTypeGraph)
   {
-    if (deps1.count(node) != 0)
+    for (cudaGraphNode_t sibling : siblings)
     {
-      share_an_ancestor = true;
-      break;
+      cudaGraph_t body;
+      cuda_safe_call(cudaGraphChildGraphNodeGetGraph(sibling, &body));
+      check_or_dump(topology, count_kernel_nodes_recursive(body) > 0, label, "sibling scope contains no kernel");
     }
   }
-  check_or_dump(topology, share_an_ancestor, label);
 }
 
 // Exactly one of the two sibling nodes of the given type must transitively
 // depend on the other.
-static void expect_ordered(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
+void expect_ordered(cudaGraph_t graph, cudaGraphNodeType type, const char* label)
 {
   const graph_topology topology(graph);
   auto siblings = topology.nodes_of_type(type);
-  check_or_dump(topology, siblings.size() == 2, label);
+  check_or_dump(topology, siblings.size() == 2, label, "expected exactly two sibling nodes");
 
   const bool first_before_second = topology.transitive_dependencies(siblings[1]).count(siblings[0]) != 0;
   const bool second_before_first = topology.transitive_dependencies(siblings[0]).count(siblings[1]) != 0;
-  check_or_dump(topology, first_before_second != second_before_first, label);
+  check_or_dump(
+    topology, first_before_second != second_before_first, label, "siblings are not ordered in exactly one direction");
 }
 
-static void test_graph_scopes()
+void test_graph_scopes()
 {
   stackable_ctx ctx;
   int input[1] = {42};
@@ -210,7 +234,7 @@ static void test_graph_scopes()
 // This exercises the multi-hop import walk in validate_access: the read-only
 // mode inherited from the outer freeze must propagate through the intermediate
 // scope rather than escalate to rw.
-static void test_nested_graph_scopes()
+void test_nested_graph_scopes()
 {
   stackable_ctx ctx;
   int input[1] = {42};
@@ -251,7 +275,7 @@ static void test_nested_graph_scopes()
   EXPECT(b[0] == input[0]);
 }
 
-static void test_shared_data_graph_scopes()
+void test_shared_data_graph_scopes()
 {
   stackable_ctx ctx;
   int value[1] = {0};
@@ -286,7 +310,7 @@ static void test_shared_data_graph_scopes()
 // read-only siblings still serialize. If the read-only inheritance in
 // validate_access is ever extended to root data, this should flip to
 // expect_independent, deliberately.
-static void test_root_read_graph_scopes()
+void test_root_read_graph_scopes()
 {
   stackable_ctx ctx;
   int input[1] = {42};
@@ -320,25 +344,12 @@ static void test_root_read_graph_scopes()
   EXPECT(b[0] == input[0]);
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-// Number of kernel nodes in a graph, descending into child graphs. Conditional
-// bodies wrap their work in child graph nodes, so a flat count would miss it.
-static size_t count_kernel_nodes_recursive(cudaGraph_t graph)
-{
-  const graph_topology topology(graph);
-  size_t count = topology.nodes_of_type(cudaGraphNodeTypeKernel).size();
-  for (cudaGraphNode_t child : topology.nodes_of_type(cudaGraphNodeTypeGraph))
-  {
-    cudaGraph_t child_graph;
-    cuda_safe_call(cudaGraphChildGraphNodeGetGraph(child, &child_graph));
-    count += count_kernel_nodes_recursive(child_graph);
-  }
-  return count;
-}
-
 // The independence check alone would also pass if the conditional bodies came
-// out empty; require that each body actually contains a kernel.
-static void expect_nonempty_conditional_bodies(cudaGraph_t graph)
+// out empty; require that each body actually contains a kernel. The body graph
+// of an existing conditional node is only reachable through
+// cudaGraphNodeGetParams, which CUDA introduced in 13.2.
+#if _CCCL_CTK_AT_LEAST(13, 2) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+void expect_nonempty_conditional_bodies(cudaGraph_t graph)
 {
   const graph_topology topology(graph);
   for (cudaGraphNode_t node : topology.nodes_of_type(cudaGraphNodeTypeConditional))
@@ -352,7 +363,7 @@ static void expect_nonempty_conditional_bodies(cudaGraph_t graph)
 }
 #endif
 
-static void test_while_graph_scopes()
+void test_while_graph_scopes()
 {
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   stackable_ctx ctx;
@@ -386,7 +397,9 @@ static void test_while_graph_scopes()
     }
 
     expect_independent(outer.graph(), cudaGraphNodeTypeConditional, "while_graph_scopes");
+#  if _CCCL_CTK_AT_LEAST(13, 2)
     expect_nonempty_conditional_bodies(outer.graph());
+#  endif
     outer.launch();
   }
 
