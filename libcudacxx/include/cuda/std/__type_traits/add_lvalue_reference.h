@@ -39,15 +39,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct add_lvalue_reference
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
 template <class _Tp>
-using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = typename add_lvalue_reference<_Tp>::type;
+using add_lvalue_reference_t _CCCL_NODEBUG = typename add_lvalue_reference<_Tp>::type;
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
-using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(_Tp);
+using add_lvalue_reference_t _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(_Tp);
 #  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_ADD_LVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE vvv
@@ -55,21 +55,21 @@ using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFE
 template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
 struct __add_lvalue_reference_impl
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct __add_lvalue_reference_impl<_Tp, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp&;
+  using type _CCCL_NODEBUG = _Tp&;
 };
 
 template <class _Tp>
-using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = typename __add_lvalue_reference_impl<_Tp>::type;
+using add_lvalue_reference_t _CCCL_NODEBUG = typename __add_lvalue_reference_impl<_Tp>::type;
 
 template <class _Tp>
 struct add_lvalue_reference
 {
-  using type _CCCL_NODEBUG_ALIAS = add_lvalue_reference_t<_Tp>;
+  using type _CCCL_NODEBUG = add_lvalue_reference_t<_Tp>;
 };
 
 #endif // !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE

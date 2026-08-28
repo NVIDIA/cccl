@@ -41,15 +41,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct remove_cvref
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
 };
 
 #  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
-using remove_cvref_t _CCCL_NODEBUG_ALIAS = typename remove_cvref<_Tp>::type;
+using remove_cvref_t _CCCL_NODEBUG = typename remove_cvref<_Tp>::type;
 #  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
-using remove_cvref_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
+using remove_cvref_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
 #  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else // ^^^ _CCCL_BUILTIN_REMOVE_CVREF ^^^ / vvv !_CCCL_BUILTIN_REMOVE_CVREF vvv
@@ -57,11 +57,11 @@ using remove_cvref_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CVREF(_Tp);
 template <class _Tp>
 struct remove_cvref
 {
-  using type _CCCL_NODEBUG_ALIAS = remove_cv_t<remove_reference_t<_Tp>>;
+  using type _CCCL_NODEBUG = remove_cv_t<remove_reference_t<_Tp>>;
 };
 
 template <class _Tp>
-using remove_cvref_t _CCCL_NODEBUG_ALIAS = remove_cv_t<remove_reference_t<_Tp>>;
+using remove_cvref_t _CCCL_NODEBUG = remove_cv_t<remove_reference_t<_Tp>>;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CVREF) && !defined(_LIBCUDACXX_USE_REMOVE_CVREF_FALLBACK)
 

@@ -44,10 +44,10 @@ struct add_rvalue_reference
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
 template <class _Tp>
-using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = typename add_rvalue_reference<_Tp>::type;
+using add_rvalue_reference_t _CCCL_NODEBUG = typename add_rvalue_reference<_Tp>::type;
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
-using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+using add_rvalue_reference_t _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
 #  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
@@ -55,16 +55,16 @@ using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFE
 template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
 struct __add_rvalue_reference_impl
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct __add_rvalue_reference_impl<_Tp, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp&&;
+  using type _CCCL_NODEBUG = _Tp&&;
 };
 
 template <class _Tp>
-using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = typename __add_rvalue_reference_impl<_Tp>::type;
+using add_rvalue_reference_t _CCCL_NODEBUG = typename __add_rvalue_reference_impl<_Tp>::type;
 
 template <class _Tp>
 struct add_rvalue_reference

@@ -43,36 +43,36 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct add_pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_POINTER(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_POINTER(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in function signatures
 template <class _Tp>
-using add_pointer_t _CCCL_NODEBUG_ALIAS = typename add_pointer<_Tp>::type;
+using add_pointer_t _CCCL_NODEBUG = typename add_pointer<_Tp>::type;
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
-using add_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_POINTER(_Tp);
+using add_pointer_t _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_POINTER(_Tp);
 #  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_ADD_POINTER ^^^ / vvv !_CCCL_BUILTIN_ADD_POINTER vvv
 template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value || is_void<_Tp>::value>
 struct __add_pointer_impl
 {
-  using type _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>*;
+  using type _CCCL_NODEBUG = remove_reference_t<_Tp>*;
 };
 template <class _Tp>
 struct __add_pointer_impl<_Tp, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>
-using add_pointer_t _CCCL_NODEBUG_ALIAS = typename __add_pointer_impl<_Tp>::type;
+using add_pointer_t _CCCL_NODEBUG = typename __add_pointer_impl<_Tp>::type;
 
 template <class _Tp>
 struct add_pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = add_pointer_t<_Tp>;
+  using type _CCCL_NODEBUG = add_pointer_t<_Tp>;
 };
 
 #endif // !_CCCL_BUILTIN_ADD_POINTER

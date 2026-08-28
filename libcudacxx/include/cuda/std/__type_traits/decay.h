@@ -45,15 +45,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct decay
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_DECAY(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
+using decay_t _CCCL_NODEBUG = typename decay<_Tp>::type;
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+using decay_t _CCCL_NODEBUG = _CCCL_BUILTIN_DECAY(_Tp);
 #  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
@@ -61,14 +61,14 @@ using decay_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
 template <class _Up, bool>
 struct __decay_impl
 {
-  using type _CCCL_NODEBUG_ALIAS = remove_cv_t<_Up>;
+  using type _CCCL_NODEBUG = remove_cv_t<_Up>;
 };
 
 template <class _Up>
 struct __decay_impl<_Up, true>
 {
 public:
-  using type _CCCL_NODEBUG_ALIAS =
+  using type _CCCL_NODEBUG =
     conditional_t<is_array_v<_Up>,
                   remove_extent_t<_Up>*,
                   conditional_t<is_function_v<_Up>, add_pointer_t<_Up>, remove_cv_t<_Up>>>;
@@ -78,14 +78,14 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
 private:
-  using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
+  using _Up _CCCL_NODEBUG = remove_reference_t<_Tp>;
 
 public:
-  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __cccl_is_referenceable<_Up>::value>::type;
+  using type _CCCL_NODEBUG = typename __decay_impl<_Up, __cccl_is_referenceable<_Up>::value>::type;
 };
 
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
+using decay_t _CCCL_NODEBUG = typename decay<_Tp>::type;
 
 #endif // !_CCCL_BUILTIN_DECAY
 

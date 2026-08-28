@@ -30,13 +30,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct unwrap_reference
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>
 struct unwrap_reference<reference_wrapper<_Tp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp&;
+  using type _CCCL_NODEBUG = _Tp&;
 };
 
 template <class _Tp>
