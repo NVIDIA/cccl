@@ -38,8 +38,13 @@ struct remove_all_extents
   using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
 };
 
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
+template <class _Tp>
+using remove_all_extents_t _CCCL_NODEBUG_ALIAS = typename remove_all_extents<_Tp>::type;
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
 using remove_all_extents_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else // ^^^ _CCCL_BUILTIN_REMOVE_ALL_EXTENTS ^^^ / vvv !_CCCL_BUILTIN_REMOVE_ALL_EXTENTS vvv
 

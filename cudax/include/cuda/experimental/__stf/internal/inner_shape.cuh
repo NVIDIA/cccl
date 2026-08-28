@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -94,7 +95,7 @@ _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
 UNITTEST("inner explicit shape (explicit bounds)")
 {
   box s({10, 100}, {-10, 10});
-  static_assert(::std::is_same_v<decltype(s), box<2>>);
+  static_assert(::cuda::std::is_same_v<decltype(s), box<2>>);
 
   auto i = inner<2>(s);
   EXPECT(i.get_begin(0) == 12);
@@ -106,7 +107,7 @@ UNITTEST("inner explicit shape (explicit bounds)")
 UNITTEST("inner explicit shape (sizes)")
 {
   box s(10, 100, 12);
-  static_assert(::std::is_same_v<decltype(s), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(s), box<3>>);
 
   auto i = inner<2>(s);
   EXPECT(i.get_begin(0) == 2);

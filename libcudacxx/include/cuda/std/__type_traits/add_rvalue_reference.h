@@ -24,16 +24,35 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if (_CCCL_CHECK_BUILTIN(add_rvalue_reference) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15))
+#  define _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(...) __add_rvalue_reference(__VA_ARGS__)
+#endif // (_CCCL_CHECK_BUILTIN(add_rvalue_reference) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15))
+
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) // NVCC has issues with function pointers see nvbug6665129
+#  undef _CCCL_BUILTIN_ADD_RVALUE_REFERENCE
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_ADD_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_RVALUE_REFERENCE_FALLBACK)
 
 template <class _Tp>
+struct add_rvalue_reference
+{
+  using type = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+};
+
+#  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
+template <class _Tp>
+using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = typename add_rvalue_reference<_Tp>::type;
+#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
+template <class _Tp>
 using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+#  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __is_referenceable_v<_Tp>>
 struct __add_rvalue_reference_impl
 {
   using type _CCCL_NODEBUG_ALIAS = _Tp;
@@ -47,13 +66,13 @@ struct __add_rvalue_reference_impl<_Tp, true>
 template <class _Tp>
 using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = typename __add_rvalue_reference_impl<_Tp>::type;
 
-#endif // _CCCL_BUILTIN_ADD_RVALUE_REFERENCE
-
 template <class _Tp>
 struct add_rvalue_reference
 {
   using type = add_rvalue_reference_t<_Tp>;
 };
+
+#endif // _CCCL_BUILTIN_ADD_RVALUE_REFERENCE
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -18,7 +18,11 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "literal.h"
 #include "test_macros.h"
+
+// nvcc complains about the u128 literal constants being too large
+_CCCL_DIAG_SUPPRESS_NVCC(23)
 
 template <class T>
 TEST_FUNC constexpr T expected_bit_compress(T value, T mask)
@@ -47,6 +51,8 @@ TEST_FUNC constexpr void test_bit_compress(T value, T mask)
 template <class T>
 TEST_FUNC constexpr void test()
 {
+  using namespace test_integer_literals;
+
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_compress(T{0}, T{0}))>);
   static_assert(noexcept(cuda::std::bit_compress(T{0}, T{0})));
 
@@ -59,7 +65,13 @@ TEST_FUNC constexpr void test()
   constexpr T values[] = {
     T{0},
     T{1},
-    T{0b11010110},
+#if _CCCL_HAS_INT128()
+    static_cast<T>(0xb3b3'b3b3'b3b3'b3b3'b3b3'b3b3'b3b3'b3b3_u128),
+    static_cast<T>(0x7b1a'7b1a'7b1a'7b1a'7b1a'7b1a'7b1a'7b1a_u128),
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+    static_cast<T>(0xb3b3'b3b3'b3b3'b3b3),
+    static_cast<T>(0x7b1a'7b1a'7b1a'7b1a),
+#endif // ^^^ !_CCCL_HAS_INT128() ^^^
     high_bit,
     low_half,
     high_half,
@@ -69,8 +81,13 @@ TEST_FUNC constexpr void test()
   constexpr T masks[] = {
     T{0},
     T{1},
-    T{0b10101010},
-    T{0b01010101},
+#if _CCCL_HAS_INT128()
+    static_cast<T>(0x5555'5555'5555'5555'5555'5555'5555'5555_u128),
+    static_cast<T>(0xaaaa'aaaa'aaaa'aaaa'aaaa'aaaa'aaaa'aaaa_u128),
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+    static_cast<T>(0x5555'5555'5555'5555),
+    static_cast<T>(0xaaaa'aaaa'aaaa'aaaa),
+#endif // ^^^ !_CCCL_HAS_INT128() ^^^
     high_bit,
     low_half,
     high_half,

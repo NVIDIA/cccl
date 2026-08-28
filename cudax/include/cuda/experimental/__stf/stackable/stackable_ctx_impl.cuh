@@ -14,6 +14,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -139,19 +143,19 @@ public:
     ::std::vector<additional_dep_info> additional_deps_;
 
     // Store the concrete task (base class), set by concretize_deferred_task
-    ::std::optional<::cuda::experimental::stf::task> concrete_task_;
+    ::cuda::std::optional<::cuda::experimental::stf::task> concrete_task_;
 
     // Optional symbol to be applied to the underlying task when concretized
-    ::std::optional<::std::string> symbol_;
+    ::cuda::std::optional<::std::string> symbol_;
 
     template <typename ExecPlace>
     deferred_task_builder(stackable_ctx& sctx, int offset, ExecPlace&& exec_place, Deps&&... deps)
         : sctx_(sctx)
         , offset_(offset)
-        , exec_place_(::std::move(exec_place))
-        , task_deps_tuple_(::std::forward<Deps>(deps)...)
+        , exec_place_(::cuda::std::move(exec_place))
+        , task_deps_tuple_(::cuda::std::forward<Deps>(deps)...)
     {
-      static_assert((reserved::is_stackable_task_dep_v<::std::decay_t<Deps>> && ...),
+      static_assert((reserved::is_stackable_task_dep_v<::cuda::std::decay_t<Deps>> && ...),
                     "All dependency arguments must be stackable task dependencies");
     }
 
@@ -160,7 +164,7 @@ public:
     auto& add_deps(MoreDeps&&... deps)
     {
       auto store_dep = [this](const auto& dep) {
-        static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(dep)>>,
+        static_assert(reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(dep)>>,
                       "add_deps in stackable context only accepts stackable task dependencies");
 
         additional_dep_info info;
@@ -179,7 +183,7 @@ public:
           return task_dep_untyped(ld, mode);
         };
 
-        additional_deps_.push_back(::std::move(info));
+        additional_deps_.push_back(::cuda::std::move(info));
       };
       (store_dep(deps), ...);
       return *this;
@@ -263,7 +267,7 @@ public:
     auto operator->*(F&& f)
     {
       return concretize_deferred_task([&f](auto& task) {
-        return task->*::std::forward<F>(f);
+        return task->*::cuda::std::forward<F>(f);
       });
     }
 
@@ -280,29 +284,29 @@ public:
     // Set symbol for the task - store for later application when concretized
     auto& set_symbol(::std::string s) &
     {
-      symbol_ = ::std::move(s);
+      symbol_ = ::cuda::std::move(s);
       return *this;
     }
 
     auto&& set_symbol(::std::string s) &&
     {
-      symbol_ = ::std::move(s);
-      return ::std::move(*this);
+      symbol_ = ::cuda::std::move(s);
+      return ::cuda::std::move(*this);
     }
 
     // Set exec_place for the task
     template <typename ExecPlace>
     auto& set_exec_place(ExecPlace&& ep) &
     {
-      exec_place_ = ::std::forward<ExecPlace>(ep);
+      exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
       return *this;
     }
 
     template <typename ExecPlace>
     auto&& set_exec_place(ExecPlace&& ep) &&
     {
-      exec_place_ = ::std::forward<ExecPlace>(ep);
-      return ::std::move(*this);
+      exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
+      return ::cuda::std::move(*this);
     }
 
     // Add get method for compatibility with test code
@@ -384,7 +388,7 @@ public:
       ::cuda::std::source_location callsite;
 
       // The async resource handle used in this context
-      ::std::optional<async_resources_handle> async_handle;
+      ::cuda::std::optional<async_resources_handle> async_handle;
 
       // Collection of events to start the context (based on the freeze
       // operations to get data imported into the context)
@@ -863,7 +867,7 @@ public:
         return;
       }
 
-      size_t new_size = ::std::max(
+      size_t new_size = ::cuda::std::max(
         static_cast<size_t>(target_size),
         nodes.size() * node_hierarchy::default_growth_numerator / node_hierarchy::default_growth_denominator);
       nodes.resize(new_size);
@@ -1714,7 +1718,7 @@ public:
     auto lock = pimpl->acquire_shared_lock();
 
     int head           = pimpl->get_head_offset();
-    auto underlying_ld = get_ctx(head).logical_data(::std::forward<Pack>(pack)...);
+    auto underlying_ld = get_ctx(head).logical_data(::cuda::std::forward<Pack>(pack)...);
     using T            = typename decltype(underlying_ld)::element_type;
     return stackable_logical_data<T>(*this, head, false, mv(underlying_ld), true);
   }
@@ -1729,14 +1733,14 @@ public:
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
 
     [[maybe_unused]] auto combine = [&combined_accesses](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
+      if constexpr (reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(arg)>>)
       {
         combine_access_mode(combined_accesses, arg.get_d().get_unique_id(), arg.get_access_mode());
       }
     };
 
     [[maybe_unused]] auto validate = [&combined_accesses, offset, this](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
+      if constexpr (reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(arg)>>)
       {
         arg.get_d().validate_access(
           offset, *this, lookup_combined_mode(combined_accesses, arg.get_d().get_unique_id()), arg.get_dplace());
@@ -1750,12 +1754,12 @@ public:
 public:
   template <typename ExecPlace,
             typename... Deps,
-            ::std::enable_if_t<::std::is_base_of_v<exec_place, ::std::decay_t<ExecPlace>>, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, ::cuda::std::decay_t<ExecPlace>>, int> = 0>
   auto task(ExecPlace&& e_place, Deps&&... deps)
   {
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
-    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+    return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
   // Note we here duplicate the code above to avoid locking issues (and not create a 3 line common impl)
@@ -1765,7 +1769,7 @@ public:
     auto lock    = pimpl->acquire_shared_lock();
     int offset   = get_head_offset();
     auto e_place = get_ctx(offset).default_exec_place();
-    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+    return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -1775,7 +1779,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).parallel_for(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).parallel_for(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1784,7 +1788,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).launch(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1793,7 +1797,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).cuda_kernel(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1802,7 +1806,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).cuda_kernel_chain(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel_chain(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 #endif
 
@@ -1812,7 +1816,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).host_launch(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).host_launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   auto fence()
@@ -1862,7 +1866,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    get_ctx(offset).push_affinity(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    get_ctx(offset).push_affinity(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   void pop_affinity() const

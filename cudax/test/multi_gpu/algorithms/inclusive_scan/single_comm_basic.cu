@@ -27,81 +27,12 @@
 
 #include <algorithm_common.h>
 #include <nccl_test_common.h>
+#include <scan_common.h>
 #include <testing.cuh>
 
 namespace
 {
-struct custom_plus
-{
-  template <class T>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs + rhs;
-  }
-};
-
-using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::less_comparable_t, c2h::equal_comparable_t>;
-using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
-using operators    = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
-
-static_assert(cudax::nccl_transportable<custom_value>);
-
-template <typename T>
-T make_value(int i)
-{
-  return static_cast<T>(i);
-}
-
-template <>
-custom_value make_value<>(int i)
-{
-  custom_value ret{};
-
-  ret.key = static_cast<std::size_t>(i);
-  ret.val = static_cast<std::size_t>(i);
-  return ret;
-};
-
-template <class T, class Op>
-[[nodiscard]] T get_identity()
-{
-  if constexpr (cuda::std::is_same_v<Op, cuda::std::plus<>> || cuda::std::is_same_v<Op, custom_plus>)
-  {
-    return make_value<T>(0);
-  }
-  else if constexpr (cuda::std::is_same_v<Op, cuda::maximum<>>)
-  {
-    return cuda::std::numeric_limits<T>::lowest();
-  }
-  else
-  {
-    static_assert(cuda::std::__always_false_v<T, Op>, "Add handling");
-  }
-}
-
-template <class T, class Op>
-[[nodiscard]] std::vector<T>
-expected_for_rank(int rank, const std::vector<std::vector<T>>& inputs_by_rank, const T& init, Op op)
-{
-  std::vector<T> reference;
-
-  for (const auto& values : inputs_by_rank)
-  {
-    reference.insert(reference.end(), values.begin(), values.end());
-  }
-
-  std::vector<T> scan(reference.size());
-  std::inclusive_scan(reference.begin(), reference.end(), scan.begin(), op, init);
-
-  cuda::std::size_t offset = 0;
-  for (int r = 0; r < rank; ++r)
-  {
-    offset += inputs_by_rank[static_cast<cuda::std::size_t>(r)].size();
-  }
-
-  const auto count = inputs_by_rank[static_cast<cuda::std::size_t>(rank)].size();
-  return {scan.begin() + offset, scan.begin() + offset + count};
-}
+using scan_test_util::inclusive_expected_for_rank;
 
 // Drive the scan through the single-communicator overload, one thread per local rank. The
 // per-rank calls must rendezvous in their collectives, so issuing them serially would deadlock.
@@ -146,7 +77,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
   {
     INFO("device = " << i);
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
-    const auto expected_values = expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op);
+    const auto expected_values = inclusive_expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op);
     const auto expected =
       cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
 

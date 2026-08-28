@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -1078,14 +1080,14 @@ private:
   {
     if constexpr (small_cap < 16)
     {
-      unroll<small_cap>(::std::forward<F>(f));
+      unroll<small_cap>(::cuda::std::forward<F>(f));
     }
     else
     {
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_same_v<result_t, void>)
         {
           f(i);
         }

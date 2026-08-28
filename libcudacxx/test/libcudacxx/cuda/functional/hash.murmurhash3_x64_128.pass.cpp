@@ -10,51 +10,47 @@
 
 #include <cuda/functional>
 #include <cuda/std/array>
-#include <cuda/std/bit>
 #include <cuda/std/cstdint>
 
 #include "hash_test_helper.h"
+#include "literal.h"
 #include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(23) // integer constant is too large
 
 #if _CCCL_HAS_INT128()
 
-TEST_FUNC __uint128_t make_result(cuda::std::array<cuda::std::uint64_t, 2> arr)
-{
-  return cuda::std::bit_cast<__uint128_t>(arr);
-}
-
 TEST_FUNC void test()
 {
+  using namespace test_integer_literals;
+
   hash_test<cuda::hash_algorithm::murmurhash3_x64_128> murmurhash3_x64_128_test;
 
-  murmurhash3_x64_128_test(cuda::std::int32_t(0), make_result({14961230494313510588ull, 6383328099726337777ull}), 0);
-  murmurhash3_x64_128_test(cuda::std::int32_t(9), make_result({1779292183511753683ull, 16298496441448380334ull}), 0);
-  murmurhash3_x64_128_test(cuda::std::int32_t(42), make_result({2913627637088662735ull, 16344193523890567190ull}), 0);
-  murmurhash3_x64_128_test(cuda::std::int32_t(42), make_result({2248879576374326886ull, 18006515275339376488ull}), 42);
+  murmurhash3_x64_128_test(cuda::std::int32_t(0), 0x5896'2316'1cf5'26f1'cfa0'f7dd'd84c'76bc_u128, 0);
+  murmurhash3_x64_128_test(cuda::std::int32_t(9), 0xe22f'e429'0d7f'b7ae'18b1'50d0'55d8'e3d3_u128, 0);
+  murmurhash3_x64_128_test(cuda::std::int32_t(42), 0xe2d2'3d6a'2bbc'b816'286f'48e6'1c6e'34cf_u128, 0);
+  murmurhash3_x64_128_test(cuda::std::int32_t(42), 0xf9e3'fe3d'853f'a768'1f35'a00f'446c'3666_u128, 42);
 
   murmurhash3_x64_128_test(
-    cuda::std::array<cuda::std::int32_t, 2>{2, 2}, make_result({12221386834995143465ull, 6690950894782946573ull}), 0);
+    cuda::std::array<cuda::std::int32_t, 2>{2, 2}, 0x5cdb'0863'7d1e'9d0d'a99b'1693'2285'6329_u128, 0);
   murmurhash3_x64_128_test(
-    cuda::std::array<cuda::std::int32_t, 3>{1, 4, 9}, make_result({299140022350411792ull, 9891903873182035274ull}), 42);
-  murmurhash3_x64_128_test(cuda::std::array<cuda::std::int32_t, 4>{42, 64, 108, 1024},
-                           make_result({4333511168876981289ull, 4659486988434316416ull}),
-                           63);
+    cuda::std::array<cuda::std::int32_t, 3>{1, 4, 9}, 0x8947'1a29'c153'6d4a'0426'c243'f24c'7810_u128, 42);
+  murmurhash3_x64_128_test(
+    cuda::std::array<cuda::std::int32_t, 4>{42, 64, 108, 1024}, 0x40a9'd2ba'9d2e'9c80'3c23'b972'bb19'ac29_u128, 63);
   murmurhash3_x64_128_test(
     cuda::std::array<cuda::std::int32_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-    make_result({3302412811061286680ull, 7070355726356610672ull}),
+    0x621e'f312'a122'7e70'2dd4'86f4'6901'd718_u128,
     1024);
 
   murmurhash3_x64_128_test(
-    cuda::std::array<cuda::std::int64_t, 2>{2, 2}, make_result({8554944597931919519ull, 14938998000509429729ull}), 0);
-  murmurhash3_x64_128_test(cuda::std::array<cuda::std::int64_t, 3>{1, 4, 9},
-                           make_result({13442629947720186435ull, 7061727494178573325ull}),
-                           42);
-  murmurhash3_x64_128_test(cuda::std::array<cuda::std::int64_t, 4>{42, 64, 108, 1024},
-                           make_result({8786399719555989948ull, 14954183901757012458ull}),
-                           63);
+    cuda::std::array<cuda::std::int64_t, 2>{2, 2}, 0xcf51'fb88'00a2'a7e1'76b9'44c9'28e1'089f_u128, 0);
+  murmurhash3_x64_128_test(
+    cuda::std::array<cuda::std::int64_t, 3>{1, 4, 9}, 0x6200'4bbd'c71f'8c0d'ba8d'd0b7'20e3'ba43_u128, 42);
+  murmurhash3_x64_128_test(
+    cuda::std::array<cuda::std::int64_t, 4>{42, 64, 108, 1024}, 0xcf87'ef07'2a17'79ea'79ef'8ffe'1aba'01bc_u128, 63);
   murmurhash3_x64_128_test(
     cuda::std::array<cuda::std::int64_t, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-    make_result({15409921801541329777ull, 10546487400963404004ull}),
+    0x925c'a669'da8e'70e4'd5db'0a3b'b56b'2371_u128,
     1024);
 }
 

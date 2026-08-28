@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -56,8 +57,9 @@ class thread_hierarchy
   // Depth of this hierarchy (each level has two spec values, `sync` and `width`)
   static constexpr size_t depth = [](auto x, auto y, auto...) {
     // Also run some checks
-    static_assert(::std::is_same_v<decltype(x), bool>, "You must use bool for the odd arguments of thread_hierarchy.");
-    static_assert(::std::is_same_v<decltype(y), size_t>,
+    static_assert(::cuda::std::is_same_v<decltype(x), bool>,
+                  "You must use bool for the odd arguments of thread_hierarchy.");
+    static_assert(::cuda::std::is_same_v<decltype(y), size_t>,
                   "You must use size_t for the even arguments of thread_hierarchy.");
     // Two spec parameters per depth level
     return sizeof...(spec) / 2;

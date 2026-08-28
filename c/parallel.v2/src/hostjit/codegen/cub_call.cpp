@@ -67,12 +67,16 @@ cccl_type_info find_accum_type(const std::vector<Arg>& args)
       return val->type;
     }
   }
-  // Second: future_val_t carries explicit type info
+  // Second: future_val_t / no_init_t carry explicit type info
   for (const auto& arg : args)
   {
     if (auto* fv = std::get_if<future_val_t>(&arg))
     {
       return fv->type;
+    }
+    if (auto* ni = std::get_if<no_init_t>(&arg))
+    {
+      return ni->type;
     }
   }
   // Fallback: first input iterator's value_type
@@ -118,6 +122,7 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
 {
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
+#include <cuda_bf16.h>
 #include <cuda/std/iterator>
 #include <cuda/std/functional>
 #include <cuda/functional>
@@ -200,6 +205,7 @@ std::string CubCall::body() const
       case CCCL_INT16:
       case CCCL_UINT16:
       case CCCL_FLOAT16:
+      case CCCL_BFLOAT16:
         return 2;
       case CCCL_INT32:
       case CCCL_UINT32:
@@ -415,6 +421,12 @@ std::string CubCall::body() const
             std::format("cub::FutureValue<accum_t> {}(static_cast<accum_t*>({}));", var_name, param_name));
           cub_args.push_back(var_name);
         }
+        else if constexpr (std::is_same_v<T, no_init_t>)
+        {
+          // Stateless tag: no wrapper parameter, only influences accum type
+          // resolution and tells CUB not to fold an initial value.
+          cub_args.push_back("cub::detail::reduce::no_init");
+        }
         else if constexpr (std::is_same_v<T, cccl_value_t>)
         {
           auto idx        = val_count++;
@@ -609,6 +621,10 @@ hostjit::CompilerConfig CubCall::make_jit_config(
     }
     jit_config.enable_pch = config->enable_pch != 0;
     jit_config.verbose    = config->verbose != 0;
+    if (config->pch_cache_dir && config->pch_cache_dir[0] != '\0')
+    {
+      jit_config.pch_cache_dir = config->pch_cache_dir;
+    }
   }
 
   return jit_config;

@@ -41,7 +41,7 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
+[Try it live on Godbolt!](https://godbolt.org/z/hraxq8rdn)
 
 ```cpp
 #include <thrust/execution_policy.h>
@@ -51,6 +51,7 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 #include <cuda/cmath>
 #include <cuda/std/span>
 #include <cstdio>
+#include <iostream>
 
 template <int block_size>
 __global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> result) {

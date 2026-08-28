@@ -154,6 +154,22 @@ inspect_array(const cuda::std::array<cuda::std::mdspan<int, cuda::std::extents<i
   KEEP_FOR_DEBUGGER(values);
 }
 
+// Two spans of different lengths over one device allocation. The printer caches its
+// host copies per (address, length), so both must appear and both must refresh.
+[[gnu::noinline]] void inspect_aliased_before_update(const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& whole,
+                                                     const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& prefix)
+{
+  KEEP_FOR_DEBUGGER(whole);
+  KEEP_FOR_DEBUGGER(prefix);
+}
+
+[[gnu::noinline]] void inspect_aliased_after_update(const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& whole,
+                                                    const cuda::std::mdspan<int, cuda::std::dextents<int, 1>>& prefix)
+{
+  KEEP_FOR_DEBUGGER(whole);
+  KEEP_FOR_DEBUGGER(prefix);
+}
+
 int main()
 {
   // Build the CUDA context before the first breakpoint. The printer copies elements
@@ -327,4 +343,26 @@ int main()
   mutable_data[1] = -3;
   mutable_data[2] = 15;
   inspect_after_update(mutable_values);
+
+  int* aliased_data = nullptr;
+  if (cudaMalloc(&aliased_data, 4 * sizeof(int)) != cudaSuccess)
+  {
+    return 1;
+  }
+  const int aliased_initial[4] = {31, 32, 33, 34};
+  if (cudaMemcpy(aliased_data, aliased_initial, sizeof(aliased_initial), cudaMemcpyHostToDevice) != cudaSuccess)
+  {
+    return 1;
+  }
+  const cuda::std::mdspan<int, cuda::std::dextents<int, 1>> aliased_whole(aliased_data, 4);
+  const cuda::std::mdspan<int, cuda::std::dextents<int, 1>> aliased_prefix(aliased_data, 2);
+  inspect_aliased_before_update(aliased_whole, aliased_prefix);
+
+  const int aliased_updated[4] = {-41, -42, -43, -44};
+  if (cudaMemcpy(aliased_data, aliased_updated, sizeof(aliased_updated), cudaMemcpyHostToDevice) != cudaSuccess)
+  {
+    return 1;
+  }
+  inspect_aliased_after_update(aliased_whole, aliased_prefix);
+  cudaFree(aliased_data);
 }
