@@ -256,7 +256,7 @@ inline void FormatStore(std::ostream& out)
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
-  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
+  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b ld/st is not supported until PTX ISA version 840");
@@ -275,12 +275,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
-  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
+  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{ ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}}); asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
-  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type>& __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
+  __cuda_atomic_ptx_backend, _Type* __ptr, __unv<_Type> __val, {3} __order, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   ::cuda::std::__cuda_atomic_ptx_maybe_sc_fence(__order, {5}{{}});
   const uint16_t __tmp = static_cast<uint16_t>(__val);

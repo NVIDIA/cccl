@@ -28,8 +28,11 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,7 +47,7 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
   constexpr bool __is_rmw   = is_same_v<_Operation, __cuda_atomic_operation_rmw>;
   static_assert(__is_load || __is_store || __is_rmw, "invalid atomic operation class");
 
-  constexpr bool __is_seq_cst = is_same_v<_Order, __cuda_atomic_order_seq_cst>;
+  [[maybe_unused]] constexpr bool __is_seq_cst = is_same_v<_Order, __cuda_atomic_order_seq_cst>;
 
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70,
