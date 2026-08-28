@@ -11,6 +11,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
+#include <cuda/std/execution>
+
 #include <sstream>
 
 #include "catch2_test_env_launch_helper.h"
@@ -100,6 +103,105 @@ CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binar
   REQUIRE(d_output == expected);
 }
 
+CUB_TEST("Device LowerBoundSortedValues works with user provided memory and environment",
+         "[find][device][binary-search]",
+         CUB_SMALL)
+{
+  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                    = c2h::device_vector<int>(4);
+  c2h::device_vector<int> expected = {0, 2, 2, 4};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceFind::LowerBoundSortedValues(
+    nullptr,
+    expected_bytes_allocated,
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    cuda::std::less{});
+  REQUIRE(error == cudaSuccess);
+  auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_lower_bound_sorted_values = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceFind::LowerBoundSortedValues(
+      nullptr,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{},
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(num_bytes == expected_bytes_allocated);
+
+    error = cub::DeviceFind::LowerBoundSortedValues(
+      temp_storage,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{},
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_output == expected);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("lower_bound_sorted_values works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_lower_bound_sorted_values(stream.get());
+  }
+
+  SECTION("lower_bound_sorted_values works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_lower_bound_sorted_values(stream);
+  }
+
+  SECTION("lower_bound_sorted_values works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_lower_bound_sorted_values(stream_ref);
+  }
+
+  SECTION("lower_bound_sorted_values works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_lower_bound_sorted_values(env);
+  }
+
+  SECTION("lower_bound_sorted_values works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_lower_bound_sorted_values(policy);
+  }
+
+  SECTION("lower_bound_sorted_values works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_lower_bound_sorted_values(policy);
+  }
+}
+
 CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
@@ -132,6 +234,105 @@ CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
 
   c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
+}
+
+CUB_TEST("Device UpperBoundSortedValues works with user provided memory and environment",
+         "[find][device][binary-search]",
+         CUB_SMALL)
+{
+  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                    = c2h::device_vector<int>(4);
+  c2h::device_vector<int> expected = {1, 2, 3, 4};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceFind::UpperBoundSortedValues(
+    nullptr,
+    expected_bytes_allocated,
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    cuda::std::less{});
+  REQUIRE(error == cudaSuccess);
+  auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_upper_bound_sorted_values = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceFind::UpperBoundSortedValues(
+      nullptr,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{},
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(num_bytes == expected_bytes_allocated);
+
+    error = cub::DeviceFind::UpperBoundSortedValues(
+      temp_storage,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{},
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_output == expected);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("upper_bound_sorted_values works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_upper_bound_sorted_values(stream.get());
+  }
+
+  SECTION("upper_bound_sorted_values works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_upper_bound_sorted_values(stream);
+  }
+
+  SECTION("upper_bound_sorted_values works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_upper_bound_sorted_values(stream_ref);
+  }
+
+  SECTION("upper_bound_sorted_values works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_upper_bound_sorted_values(env);
+  }
+
+  SECTION("upper_bound_sorted_values works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_upper_bound_sorted_values(policy);
+  }
+
+  SECTION("upper_bound_sorted_values works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_upper_bound_sorted_values(policy);
+  }
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
