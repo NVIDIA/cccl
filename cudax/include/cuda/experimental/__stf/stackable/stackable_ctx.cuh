@@ -1355,7 +1355,7 @@ public:
       CondFunc cond_func;
       cudaGraphConditionalHandle h;
 
-      cuda_kernel_desc operator()(FilteredArgs... args) const
+      [[nodiscard]] _CCCL_HOST_API cuda_kernel_desc operator()(FilteredArgs... args) const
       {
         return cuda_kernel_desc{
           reserved::condition_update_kernel<CondFunc, FilteredArgs...>, 1, 1, 0, h, cond_func, args...};

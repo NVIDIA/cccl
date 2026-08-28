@@ -25,6 +25,9 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstdio>
+#include <vector>
+
 using namespace cuda::experimental::stf;
 
 int main()
@@ -65,9 +68,8 @@ int main()
       d(i)++;
     };
 
-    // Mixed dependency list: a token (filtered out) and a typed scalar
-    // (kept). Before the fix, declaring the condition functor's parameter
-    // list from the unfiltered dependency pack made this a compile error.
+    // Mixed dependency list: the token is filtered out and the typed scalar
+    // is passed to the condition functor.
     while_guard.update_cond(ltoken.read(), liter.rw())->*[max_iter] __device__(auto iter) {
       (*iter)++;
       return (*iter < max_iter);
