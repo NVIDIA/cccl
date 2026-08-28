@@ -44,19 +44,11 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__type_traits/copy_cv.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
-
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/backend.h>
-#include <cuda/std/__atomic/functions/generic.h>
-#include <cuda/std/__atomic/functions/host.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
-#include <cuda/std/__atomic/functions/cuda_local.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -75,6 +67,8 @@ extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 inline void FormatTail(std::ostream& out)
 {
   constexpr auto tail = R"XXX(
+#endif // _CCCL_CUDA_COMPILATION()
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

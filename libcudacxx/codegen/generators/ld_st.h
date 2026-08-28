@@ -186,59 +186,7 @@ _CCCL_DEVICE_API void __cuda_atomic_load(
       }
     }
   }
-  out << "\n"
-      << R"XXX(
-#endif // _CCCL_CUDA_COMPILATION()
-
-template <typename _Backend, typename _Type>
-struct __cuda_atomic_bind_load {
-  _Backend __backend;
-  const _Type* __ptr;
-  __unv<_Type>* __dst;
-
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
-    ::cuda::std::__cuda_atomic_load(__backend, __ptr, *__dst, __order, _Tag{}, _Sco{}, _Mmio{});
-  }
-};
-template <class _Backend, class _Type, class _Sco>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_load_dispatch(
-  _Backend __backend,
-  const _Type* __ptr,
-  __unv<_Type>& __dst,
-  memory_order __order,
-  _Sco __scope)
-{
-  using __value_type     = __unv<_Type>;
-  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<__value_type>;
-  using __proxy_pointee  = __copy_cv_t<_Type, __proxy_t>;
-  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
-  const __proxy_pointee* __ptr_proxy = reinterpret_cast<const __proxy_pointee*>(__ptr);
-  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
-#if _CCCL_CUDA_COMPILATION()
-  if constexpr (_Backend::__requires_local_memory_workaround)
-  {
-    if (::cuda::std::__cuda_atomic_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {return;}
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-  __cuda_atomic_bind_load<_Backend, __proxy_pointee> __bound_load{
-    __backend, __ptr_proxy, __dst_proxy};
-  __cuda_atomic_load_order_dispatch(
-    __backend, __bound_load, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
-}
-
-template <class _Backend, class _Type, class _Sco>
-[[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type>
-__cuda_atomic_load_dispatch(_Backend __backend, const _Type* __ptr, memory_order __order, _Sco __scope)
-{
-  __unv<_Type> __dst;
-  ::cuda::std::__cuda_atomic_load_dispatch(__backend, __ptr, __dst, __order, __scope);
-  return __dst;
-}
-
-#if _CCCL_CUDA_COMPILATION()
-)XXX";
+  out << "\n";
 }
 
 inline void FormatStore(std::ostream& out)
@@ -387,46 +335,7 @@ _CCCL_DEVICE_API void __cuda_atomic_store(
       }
     }
   }
-  out << "\n"
-      << R"XXX(
-#endif // _CCCL_CUDA_COMPILATION()
-
-template <typename _Backend, typename _Type>
-struct __cuda_atomic_bind_store {
-  _Backend __backend;
-  _Type* __ptr;
-  __unv<_Type> __val;
-
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco) {
-    ::cuda::std::__cuda_atomic_store(__backend, __ptr, __val, __order, _Tag{}, _Sco{}, _Mmio{});
-  }
-};
-template <class _Backend, class _Type, class _Up, class _Sco>
-_CCCL_HOST_DEVICE_API void
-__cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory_order __order, _Sco __scope)
-{
-  using __value_type     = __unv<_Type>;
-  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<__value_type>;
-  using __proxy_pointee  = __copy_cv_t<_Type, __proxy_t>;
-  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
-  __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __value_type __store    = __val;
-  __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__store);
-#if _CCCL_CUDA_COMPILATION()
-  if constexpr (_Backend::__requires_local_memory_workaround)
-  {
-    if (::cuda::std::__cuda_atomic_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {return;}
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-  __cuda_atomic_bind_store<_Backend, __proxy_pointee> __bound_store{
-    __backend, __ptr_proxy, *__val_proxy};
-  __cuda_atomic_store_order_dispatch(
-    __backend, __bound_store, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
-}
-
-#if _CCCL_CUDA_COMPILATION()
-)XXX";
+  out << "\n";
 }
 
 #endif // LD_ST_H

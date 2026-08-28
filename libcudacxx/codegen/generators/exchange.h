@@ -124,62 +124,7 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
     }
   }
 
-  out << "\n"
-      << R"XXX(
-#endif // _CCCL_CUDA_COMPILATION()
-
-template <typename _Backend, typename _Type>
-struct __cuda_atomic_bind_exchange {
-  _Backend __backend;
-  _Type* __ptr;
-  __unv<_Type>* __old;
-  __unv<_Type> __new;
-
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco) {
-    ::cuda::std::__cuda_atomic_exchange(__backend, __ptr, *__old, __new, __order, _Tag{}, _Sco{});
-  }
-};
-template <class _Backend, class _Type, class _Sco>
-_CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
-  _Backend __backend,
-  _Type* __ptr,
-  __unv<_Type>& __old,
-  __unv<_Type> __new,
-  memory_order __order,
-  _Sco __scope)
-{
-  using __value_type _CCCL_NODEBUG    = __unv<_Type>;
-  using __proxy_t _CCCL_NODEBUG       = __cuda_atomic_deduce_bitwise_t<__value_type>;
-  using __proxy_pointee _CCCL_NODEBUG = __copy_cv_t<_Type, __proxy_t>;
-  using __proxy_tag _CCCL_NODEBUG     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
-  __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
-  __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
-#if _CCCL_CUDA_COMPILATION()
-  if constexpr (_Backend::__requires_local_memory_workaround)
-  {
-    if(::cuda::std::__cuda_atomic_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {return;}
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-  __cuda_atomic_bind_exchange<_Backend, __proxy_pointee> __bound_swap{
-    __backend, __ptr_proxy, __old_proxy, *__new_proxy};
-  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope, __proxy_tag{});
-}
-
-template <class _Backend, class _Type, class _Up, class _Sco>
-[[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type> __cuda_atomic_exchange_dispatch(
-  _Backend __backend, _Type* __ptr, _Up __new, memory_order __order, _Sco __scope)
-{
-  using __value_type _CCCL_NODEBUG = __unv<_Type>;
-  __value_type __old;
-  ::cuda::std::__cuda_atomic_exchange_dispatch(
-    __backend, __ptr, __old, static_cast<__value_type>(__new), __order, __scope);
-  return __old;
-}
-
-#if _CCCL_CUDA_COMPILATION()
-)XXX";
+  out << "\n";
 }
 
 #endif // EXCHANGE_H

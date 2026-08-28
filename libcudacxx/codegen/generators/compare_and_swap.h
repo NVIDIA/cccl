@@ -124,57 +124,7 @@ _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange(
     }
   }
 
-  out << "\n"
-      << R"XXX(
-#endif // _CCCL_CUDA_COMPILATION()
-
-template <typename _Backend, typename _Type>
-struct __cuda_atomic_bind_compare_exchange {
-  _Backend __backend;
-  _Type* __ptr;
-  __unv<_Type>* __exp;
-  __unv<_Type> __cmp;
-  __unv<_Type> __des;
-
-  template <typename _Atomic_Memorder, typename _Cas, typename _Tag, typename _Sco>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order, _Cas, _Tag, _Sco) {
-    return ::cuda::std::__cuda_atomic_compare_exchange(
-      __backend, __ptr, *__exp, __cmp, __des, _Cas{}, __order, _Tag{}, _Sco{});
-  }
-};
-template <class _Backend, class _Type, class _Cas, class _Sco>
-[[nodiscard]] _CCCL_HOST_DEVICE_API bool __cuda_atomic_compare_exchange_dispatch(
-  _Backend __backend,
-  _Type* __ptr,
-  __unv<_Type>* __exp,
-  __unv<_Type> __des,
-  _Cas,
-  memory_order __success,
-  memory_order __failure,
-  _Sco __scope)
-{
-  using __value_type     = __unv<_Type>;
-  using __proxy_t        = __cuda_atomic_deduce_bitwise_t<__value_type>;
-  using __proxy_pointee  = __copy_cv_t<_Type, __proxy_t>;
-  using __proxy_tag      = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
-  __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
-  __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
-  __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
-#if _CCCL_CUDA_COMPILATION()
-  bool __res = false;
-  if constexpr (_Backend::__requires_local_memory_workaround)
-  {
-    if (::cuda::std::__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res)) {return __res;}
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-  __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee> __bound_compare_swap{
-    __backend, __ptr_proxy, __exp_proxy, *__exp_proxy, *__des_proxy};
-  return __cuda_atomic_compare_exchange_order_dispatch(
-    __backend, __bound_compare_swap, __success, __failure, __scope, _Cas{}, __proxy_tag{});
-}
-
-#if _CCCL_CUDA_COMPILATION()
-)XXX";
+  out << "\n";
 }
 
 #endif // COMPARED_AND_SWAP_H
