@@ -72,17 +72,17 @@ inline constexpr bool __is_shuffle_bitcast_path_v =
 
 // FP4 and FP6 have 8-bit storage, so use the storage width rather than the number of value bits.
 template <typename _Tp>
-using __shuffle_bitcast_storage_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
+using __shuffle_bitcast_storage_t _CCCL_NODEBUG = ::cuda::std::__make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
 template <typename _Tp>
 _CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
 {
-  using __unsigned_t _CCCL_NODEBUG_ALIAS = __shuffle_bitcast_storage_t<_Tp>;
+  using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Tp>;
   return static_cast<::cuda::std::uint32_t>(::cuda::std::bit_cast<__unsigned_t>(__data));
 }
 
 template <typename _Tp>
-using __shuffle_array_t _CCCL_NODEBUG_ALIAS =
+using __shuffle_array_t _CCCL_NODEBUG =
   ::cuda::std::array<::cuda::std::uint32_t, ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t))>;
 
 template <typename _Tp>
@@ -194,10 +194,10 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
-    using __unsigned_t _CCCL_NODEBUG_ALIAS = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value                     = ::cuda::device::__shuffle_scalar_cast(__data);
-    const auto __shuffled                  = ::__shfl_sync(__lane_mask, __value, __src_lane, _Width);
-    const auto __narrowed                  = static_cast<__unsigned_t>(__shuffled);
+    using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
+    const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
+    const auto __shuffled            = ::__shfl_sync(__lane_mask, __value, __src_lane, _Width);
+    const auto __narrowed            = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), true};
   }
   else
@@ -243,10 +243,10 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "xor_mask must be in the range [1, _Width)");
-    using __unsigned_t _CCCL_NODEBUG_ALIAS = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value                     = ::cuda::device::__shuffle_scalar_cast(__data);
-    const auto __shuffled                  = ::__shfl_xor_sync(__lane_mask, __value, __xor_mask, _Width);
-    const auto __narrowed                  = static_cast<__unsigned_t>(__shuffled);
+    using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
+    const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
+    const auto __shuffled            = ::__shfl_xor_sync(__lane_mask, __value, __xor_mask, _Width);
+    const auto __narrowed            = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), true};
   }
   else
@@ -293,8 +293,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
-    using __unsigned_t _CCCL_NODEBUG_ALIAS = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value                     = ::cuda::device::__shuffle_scalar_cast(__data);
+    using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
+    const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::cuda::ptx::shfl_sync_up(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};
@@ -342,8 +342,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
-    using __unsigned_t _CCCL_NODEBUG_ALIAS = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value                     = ::cuda::device::__shuffle_scalar_cast(__data);
+    using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
+    const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::cuda::ptx::shfl_sync_down(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};
