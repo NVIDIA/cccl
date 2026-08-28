@@ -80,17 +80,11 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-using __with_reference = _Tp&;
-
-template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__with_reference<_Tp>));
-
 // [iterator.traits]
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
-  { *__t } -> __can_reference; // not required to be equality-preserving
+  { *__t } -> __referenceable; // not required to be equality-preserving
 };
 
 template <__dereferenceable _Tp>
@@ -102,7 +96,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
 template <class _Tp>
-_CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__can_reference<decltype(*__t)>));
+_CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__referenceable<decltype(*__t)>));
 
 _CCCL_DIAG_POP
 
@@ -251,9 +245,9 @@ namespace __iterator_traits_detail
 template <class _Iter>
 _CCCL_CONCEPT __cpp17_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
   requires(copyable<_Iter>),
-  _Satisfies(__can_reference)(*__i),
+  _Satisfies(__referenceable)(*__i),
   _Same_as(_Iter&)(++__i),
-  _Satisfies(__can_reference)(*__i++));
+  _Satisfies(__referenceable)(*__i++));
 
 // [iterator.traits#concept:cpp17-input-iterator]
 template <class _Iter>
