@@ -86,7 +86,7 @@ using __shuffle_array_t =
   ::cuda::std::array<::cuda::std::uint32_t, ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t))>;
 
 template <typename _Tp>
-_CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) noexcept
+[[nodiscard]] _CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) noexcept
 {
   // zero-initialize -> avoid undetermined values propagation (reg pressure) with memcpy
   __shuffle_array_t<_Tp> __array{};
