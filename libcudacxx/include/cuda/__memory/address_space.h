@@ -57,25 +57,35 @@ enum class address_space
   NV_IF_TARGET(NV_PROVIDES_SM_90, (return __ptr != nullptr;), (return true;));
 }
 
-#  if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
-    || (_CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+#  define _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED                         \
+    (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
+      || (_CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+
+#  define _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED                                  \
+    (_CCCL_CUDA_COMPILER(NVCC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
+      || (_CCCL_CUDA_COMPILER(NVRTC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+
+#  if _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED
+
 // NVCC/NVRTC 12.9-13.1 pass typed pointers to the i8* __isShared intrinsic after inlining, which breaks the LLVM
 // verifier. Preventing inlining preserves the required generic pointer type.
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_NOINLINE inline bool __is_shared_cuda_12_9_workaround(const void* __ptr) noexcept
+template <typename = void>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_NOINLINE bool __is_shared_cuda_12_9_workaround(const void* __ptr) noexcept
 {
   return static_cast<bool>(::__isShared(__ptr));
 }
 
-#  endif // NVCC/NVRTC 12.9-13.1
+#  endif // _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED
 
-#  if (_CCCL_CUDA_COMPILER(NVCC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
-    || (_CCCL_CUDA_COMPILER(NVRTC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+#  if _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED
+
 // __isLocal has the same typed-pointer lowering issue in NVCC/NVRTC 13.1.
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_NOINLINE inline bool __is_local_cuda_13_1_workaround(const void* __ptr) noexcept
+template <typename = void>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_NOINLINE bool __is_local_cuda_13_1_workaround(const void* __ptr) noexcept
 {
   return static_cast<bool>(::__isLocal(__ptr));
 }
-#  endif // NVCC/NVRTC 13.1
+#  endif // _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED
 
 //! @brief Checks if the given pointer is from the specified address state space.
 //! @param __ptr The address to check.
@@ -145,12 +155,11 @@ enum class address_space
         : "l"(__ptr));
       return static_cast<bool>(__ret);
 #  else // ^^^ NVCC/NVRTC < 13.1 ^^^ / vvv NVCC/NVRTC >= 13.1 vvv
-#    if (_CCCL_CUDA_COMPILER(NVCC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
-      || (_CCCL_CUDA_COMPILER(NVRTC, >=, 13, 1) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+#    if _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED
       bool __p = ::cuda::device::__is_local_cuda_13_1_workaround(__ptr);
-#    else // ^^^ NVCC/NVRTC 13.1 ^^^ / vvv NVCC/NVRTC 13.2+ vvv
+#    else // ^^^ _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED ^^^ / vvv other NVCC/NVRTC versions vvv
       bool __p = static_cast<bool>(::__isLocal(__ptr));
-#    endif // ^^^ NVCC/NVRTC 13.2+ ^^^
+#    endif // ^^^ other NVCC/NVRTC versions ^^^
       if (__p)
       {
         _CCCL_ASSUME(__p);
@@ -221,10 +230,9 @@ enum class address_space
         : "l"(__ptr));
       return static_cast<bool>(__ret);
 #  else // ^^^ NVCC/NVRTC < 12.3 ^^^ / vvv NVCC/NVRTC >= 12.3 vvv
-#    if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 2)) \
-      || (_CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9) && _CCCL_CUDA_COMPILER(NVRTC, <, 13, 2))
+#    if _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED
       bool __p = ::cuda::device::__is_shared_cuda_12_9_workaround(__ptr);
-#    else // ^^^ NVCC/NVRTC 12.9-13.1 ^^^ / vvv other NVCC/NVRTC versions vvv
+#    else // ^^^ _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED ^^^ / vvv other NVCC/NVRTC versions vvv
       bool __p = static_cast<bool>(::__isShared(__ptr));
 #    endif // ^^^ other NVCC/NVRTC versions ^^^
       if (__p)
