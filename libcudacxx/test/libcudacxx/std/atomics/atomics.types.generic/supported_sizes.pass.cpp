@@ -54,12 +54,17 @@ using size5_t = sized_type<5>;
 using size6_t = sized_type<6>;
 using size7_t = sized_type<7>;
 
-// Non-power-of-two sizes are not hardware atomics and must go through the small or
-// locked storage path instead of ill-formed storage alignment
-static_assert(!cuda::std::atomic<size3_t>::is_always_lock_free, "3-byte atomic is not lock-free");
-static_assert(!cuda::std::atomic<size5_t>::is_always_lock_free, "5-byte atomic is not lock-free");
-static_assert(!cuda::std::atomic<size6_t>::is_always_lock_free, "6-byte atomic is not lock-free");
-static_assert(!cuda::std::atomic<size7_t>::is_always_lock_free, "7-byte atomic is not lock-free");
+// Owned atomics widen every size below 8 bytes to the next power of two, so all of them are
+// lock-free. atomic_ref works on the raw object and can only use the hardware supported
+// power-of-two widths, so non-power-of-two sizes are not lock-free there.
+static_assert(cuda::std::atomic<size3_t>::is_always_lock_free, "3-byte atomic widens to 4 bytes");
+static_assert(cuda::std::atomic<size5_t>::is_always_lock_free, "5-byte atomic widens to 8 bytes");
+static_assert(cuda::std::atomic<size6_t>::is_always_lock_free, "6-byte atomic widens to 8 bytes");
+static_assert(cuda::std::atomic<size7_t>::is_always_lock_free, "7-byte atomic widens to 8 bytes");
+static_assert(sizeof(cuda::std::atomic<size3_t>) == 4, "3-byte atomic widens to 4 bytes of storage");
+static_assert(sizeof(cuda::std::atomic<size5_t>) == 8, "5-byte atomic widens to 8 bytes of storage");
+static_assert(sizeof(cuda::std::atomic<size6_t>) == 8, "6-byte atomic widens to 8 bytes of storage");
+static_assert(sizeof(cuda::std::atomic<size7_t>) == 8, "7-byte atomic widens to 8 bytes of storage");
 static_assert(!cuda::std::atomic_ref<size3_t>::is_always_lock_free, "3-byte atomic_ref is not lock-free");
 static_assert(!cuda::std::atomic_ref<size5_t>::is_always_lock_free, "5-byte atomic_ref is not lock-free");
 static_assert(!cuda::std::atomic_ref<size6_t>::is_always_lock_free, "6-byte atomic_ref is not lock-free");

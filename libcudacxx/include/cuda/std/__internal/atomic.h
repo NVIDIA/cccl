@@ -23,9 +23,9 @@
 #include <cuda/std/__internal/features.h>
 
 #if _CCCL_CUDA_COMPILATION()
-// Only power-of-two sizes up to 8 bytes map onto hardware atomics; other sizes take
-// the small or locked storage path, also because aligning the storage to a
-// non-power-of-two size is ill-formed.
+// Only power-of-two sizes up to 8 bytes map onto hardware atomics. Owned atomics widen every
+// other size below 8 bytes to the next power of two, atomic_ref operates on the raw object and
+// can therefore only use the hardware supported widths.
 #  define _CCCL_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) ((size) <= 8 && ((size) & ((size) - 1)) == 0)
 #elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #  define _CCCL_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
