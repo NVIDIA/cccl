@@ -10,7 +10,6 @@
 
 #include <cuda/experimental/stf.cuh>
 
-#include <cstdlib>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -23,7 +22,6 @@ class graph_topology
 {
 public:
   explicit graph_topology(cudaGraph_t graph)
-      : graph_(graph)
   {
     size_t count = 0;
     cuda_safe_call(cudaGraphGetNodes(graph, nullptr, &count));
@@ -79,23 +77,6 @@ public:
     return visited;
   }
 
-  // On failure, dump a DOT of the graph for diagnosis. Gated behind the
-  // usual STF debug variables so a plain run (CI included) creates no files;
-  // the failure message names the switch instead.
-  void dump_dot(const char* label) const
-  {
-    const bool enabled =
-      (getenv("CUDASTF_DUMP_GRAPHS") != nullptr) || (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
-    if (!enabled)
-    {
-      fprintf(stderr, "rerun with CUDASTF_DUMP_GRAPHS=1 to dump the '%s' graph as DOT\n", label);
-      return;
-    }
-    ::std::string filename = ::std::string("sibling_scope_dependencies-") + label + ".dot";
-    cuda_safe_call(cudaGraphDebugDotPrint(graph_, filename.c_str(), cudaGraphDebugDotFlagsVerbose));
-    fprintf(stderr, "'%s' graph dumped to %s\n", label, filename.c_str());
-  }
-
 private:
   static ::std::vector<cudaGraphNode_t> direct_dependencies(cudaGraphNode_t node)
   {
@@ -115,21 +96,15 @@ private:
     return dependencies;
   }
 
-  cudaGraph_t graph_;
   ::std::vector<cudaGraphNode_t> nodes_;
   ::std::unordered_map<cudaGraphNode_t, ::std::vector<cudaGraphNode_t>> direct_deps_;
 };
 
 // `what` names the failed predicate: all checks funnel through the same
 // EXPECT line, so the exception message alone cannot identify which one fired.
-void check_or_dump(const graph_topology& topology, bool condition, const char* label, const char* what)
+void check_topology(bool condition, const char* label, const char* what)
 {
-  if (!condition)
-  {
-    fprintf(stderr, "graph topology check '%s' failed: %s\n", label, what);
-    topology.dump_dot(label);
-  }
-  EXPECT(condition);
+  EXPECT(condition, "graph topology check '", label, "' failed: ", what);
 }
 
 // Number of kernel nodes in a graph, descending into child graphs. Nested
@@ -162,12 +137,12 @@ void expect_independent(cudaGraph_t graph, cudaGraphNodeType type, const char* l
 {
   const graph_topology topology(graph);
   auto siblings = topology.nodes_of_type(type);
-  check_or_dump(topology, siblings.size() == 2, label, "expected exactly two sibling nodes");
+  check_topology(siblings.size() == 2, label, "expected exactly two sibling nodes");
 
   const auto deps0 = topology.transitive_dependencies(siblings[0]);
   const auto deps1 = topology.transitive_dependencies(siblings[1]);
-  check_or_dump(topology, deps0.count(siblings[1]) == 0, label, "first sibling depends on the second");
-  check_or_dump(topology, deps1.count(siblings[0]) == 0, label, "second sibling depends on the first");
+  check_topology(deps0.count(siblings[1]) == 0, label, "first sibling depends on the second");
+  check_topology(deps1.count(siblings[0]) == 0, label, "second sibling depends on the first");
 
   if (type == cudaGraphNodeTypeGraph)
   {
@@ -175,7 +150,7 @@ void expect_independent(cudaGraph_t graph, cudaGraphNodeType type, const char* l
     {
       cudaGraph_t body;
       cuda_safe_call(cudaGraphChildGraphNodeGetGraph(sibling, &body));
-      check_or_dump(topology, count_kernel_nodes_recursive(body) > 0, label, "sibling scope contains no kernel");
+      check_topology(count_kernel_nodes_recursive(body) > 0, label, "sibling scope contains no kernel");
     }
   }
 }
@@ -186,12 +161,11 @@ void expect_ordered(cudaGraph_t graph, cudaGraphNodeType type, const char* label
 {
   const graph_topology topology(graph);
   auto siblings = topology.nodes_of_type(type);
-  check_or_dump(topology, siblings.size() == 2, label, "expected exactly two sibling nodes");
+  check_topology(siblings.size() == 2, label, "expected exactly two sibling nodes");
 
   const bool first_before_second = topology.transitive_dependencies(siblings[1]).count(siblings[0]) != 0;
   const bool second_before_first = topology.transitive_dependencies(siblings[0]).count(siblings[1]) != 0;
-  check_or_dump(
-    topology, first_before_second != second_before_first, label, "siblings are not ordered in exactly one direction");
+  check_topology(first_before_second != second_before_first, label, "siblings are not ordered in exactly one direction");
 }
 
 void test_graph_scopes()

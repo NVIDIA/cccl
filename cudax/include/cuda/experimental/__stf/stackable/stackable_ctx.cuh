@@ -43,6 +43,7 @@
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
+#include "cuda/experimental/__stf/utility/unittest.cuh"
 #include "cuda/experimental/stf.cuh"
 
 //! \brief Stackable Context Design Overview
@@ -323,14 +324,11 @@ public:
       if (parent_offset >= 0 && data().is_frozen(parent_offset))
       {
         const access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
-        if (!access_mode_permits(parent_frozen_mode, m))
-        {
-          fprintf(stderr,
-                  "Error: Invalid access mode transition - parent frozen with %s, requesting %s\n",
-                  access_mode_string(parent_frozen_mode),
-                  access_mode_string(m));
-          abort();
-        }
+        EXPECT(access_mode_permits(parent_frozen_mode, m),
+               "Invalid access mode transition - parent frozen with ",
+               access_mode_string(parent_frozen_mode),
+               ", requesting ",
+               access_mode_string(m));
       }
 
       self.mark_access_at(ctx_offset, m);
@@ -356,14 +354,11 @@ public:
     if (imported_parent >= 0 && data().is_frozen(imported_parent))
     {
       const access_mode imported_mode = data().get_frozen_mode(imported_parent);
-      if (!access_mode_permits(imported_mode, m))
-      {
-        fprintf(stderr,
-                "Error: Invalid access mode transition - import frozen with %s, requesting %s\n",
-                access_mode_string(imported_mode),
-                access_mode_string(m));
-        abort();
-      }
+      EXPECT(access_mode_permits(imported_mode, m),
+             "Invalid access mode transition - import frozen with ",
+             access_mode_string(imported_mode),
+             ", requesting ",
+             access_mode_string(m));
       inherited_read_only = imported_mode == access_mode::read;
     }
 
