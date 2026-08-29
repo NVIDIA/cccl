@@ -272,6 +272,10 @@ inline constexpr noop_t noop{};
  *
  * The callable owns the expression type, so it must return `std::exception_ptr` on success:
  * `return std::exception_ptr();`. A throw-only callable spells that return type explicitly.
+ *
+ * Inside a catch block, `on_throw(defer)` captures the exception thrown by its own guarded
+ * body (the newest exception, current inside its own catch), never the exception the
+ * surrounding handler is handling; for that one, call `std::current_exception()` directly.
  */
 struct defer_t
 {
@@ -2728,6 +2732,77 @@ UNITTEST("circuit_breaker")
 //  - on_throw(subst(8) | subst(9)) << ...;         // "the left policy never declines; alternatives after it are
 //  unreachable"
 
+UNITTEST("defer across threads")
+{
+  using namespace cuda::experimental::stf;
+  namespace pol = cuda::experimental::stf::exception_policies;
+
+  // One worker fails; the exception travels as a value. The worker is joined (and its
+  // thread object gone) before handling: the exception_ptr alone keeps the exception
+  // alive, so the handler may outlive the worker by any margin.
+  ::std::exception_ptr __slot;
+  ::std::thread __worker([&__slot] {
+    __slot = on_throw(pol::defer) << []() -> ::std::exception_ptr {
+      throw ::std::runtime_error("worker failed");
+    };
+  });
+  __worker.join();
+  EXPECT(__slot != nullptr);
+
+  bool __handled = false;
+  ::std::thread __handler([&__slot, &__handled] {
+    _CCCL_TRY
+    {
+      ::std::rethrow_exception(__slot);
+    }
+    _CCCL_CATCH ([[maybe_unused]] const ::std::runtime_error& __e)
+    {
+      __handled = true;
+    }
+    _CCCL_CATCH_ALL {}
+  });
+  __handler.join();
+  EXPECT(__handled);
+
+  // N workers, one handler: even workers fail, odd workers answer "no exception".
+  constexpr int __n = 4;
+  ::std::exception_ptr __slots[__n];
+  ::std::thread __workers[__n];
+  for (int __i = 0; __i < __n; ++__i)
+  {
+    __workers[__i] = ::std::thread([&__slots, __i] {
+      __slots[__i] = on_throw(pol::defer) << [__i]() -> ::std::exception_ptr {
+        if (__i % 2 == 0)
+        {
+          throw ::std::logic_error("even worker");
+        }
+        return ::std::exception_ptr{};
+      };
+    });
+  }
+  for (auto& __t : __workers)
+  {
+    __t.join();
+  }
+  int __failures = 0;
+  for (auto& __s : __slots)
+  {
+    if (__s)
+    {
+      _CCCL_TRY
+      {
+        ::std::rethrow_exception(__s);
+      }
+      _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& __e)
+      {
+        ++__failures;
+      }
+      _CCCL_CATCH_ALL {}
+    }
+  }
+  EXPECT(__failures == 2);
+};
+
 UNITTEST("on_throw")
 {
   using namespace cuda::experimental::stf;
@@ -4562,6 +4637,101 @@ UNITTEST("SCOPE combinations")
   }
   EXPECT(counter == 0);
   //! [SCOPE combinations]
+};
+
+UNITTEST("policies inside handlers")
+{
+  using namespace cuda::experimental::stf;
+  namespace pol = cuda::experimental::stf::exception_policies;
+
+  // SCOPE(fail) declared inside a catch block fires only when the HANDLER throws, never
+  // for the exception being handled. The relative uncaught_exceptions() idiom guarantees
+  // it; this is the classic case that broke bool uncaught_exception().
+  bool __fail_fired = false;
+  _CCCL_TRY
+  {
+    throw 1;
+  }
+  _CCCL_CATCH_ALL
+  {
+    SCOPE(fail)
+    {
+      __fail_fired = true;
+    };
+  }
+  EXPECT(!__fail_fired);
+
+  _CCCL_TRY
+  {
+    _CCCL_TRY
+    {
+      throw 1;
+    }
+    _CCCL_CATCH_ALL
+    {
+      SCOPE(fail)
+      {
+        __fail_fired = true;
+      };
+      throw 2;
+    }
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(__fail_fired);
+
+  // SCOPE(success) inside a handler: the dual, fires on the handler's normal exit.
+  bool __success_fired = false;
+  _CCCL_TRY
+  {
+    throw 1;
+  }
+  _CCCL_CATCH_ALL
+  {
+    SCOPE(success)
+    {
+      __success_fired = true;
+    };
+  }
+  EXPECT(__success_fired);
+
+  // on_throw composes inside a handler; rethrow's bare `throw;` inside the inner
+  // expression's catch is legal while an outer exception is also being handled.
+  int __v = 0;
+  _CCCL_TRY
+  {
+    throw ::std::runtime_error("outer");
+  }
+  _CCCL_CATCH_ALL
+  {
+    __v = on_throw(pol::rethrow | pol::subst(7)) << []() -> int {
+      throw ::std::logic_error("inner");
+    };
+  }
+  EXPECT(__v == 7);
+
+  // on_throw(defer) inside a handler captures the exception ITS BODY threw (current
+  // inside its own catch), never the exception the surrounding handler is handling.
+  _CCCL_TRY
+  {
+    throw ::std::runtime_error("outer");
+  }
+  _CCCL_CATCH_ALL
+  {
+    auto __ep = on_throw(pol::defer) << []() -> ::std::exception_ptr {
+      throw ::std::logic_error("inner");
+    };
+    bool __got_inner = false;
+    _CCCL_TRY
+    {
+      ::std::rethrow_exception(__ep);
+    }
+    _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& __e)
+    {
+      __got_inner = true;
+    }
+    _CCCL_CATCH_ALL {}
+    EXPECT(__got_inner);
+  }
 };
 
 #endif // UNITTESTED_FILE

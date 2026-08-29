@@ -125,6 +125,7 @@ set(
   stress/task_bench.cu
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
+  utility/exception_policy_c_headers.cu
   utility/timing_with_fences.cu
   utility/source_location_map.cu
 )
