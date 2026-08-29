@@ -794,8 +794,7 @@ struct circuit_breaker_t
 
   //! @brief The exception hook: record the failure, answer as an effect.
   template <class _Fn>
-  decltype(::std::ignore)
-  operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
+  decltype(::std::ignore) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
   {
     --*__budget_;
     return ::std::ignore;
@@ -1183,9 +1182,7 @@ struct __composite_hooks
   }
 
   // Entry gates run left to right: each side may refuse the attempt before it starts.
-  template <class _LL                                                                 = _L,
-            class _RR                                                                 = _R,
-            ::cuda::std::enable_if_t<__has_on_enter<_LL> || __has_on_enter<_RR>, int> = 0>
+  template <class _LL = _L, class _RR = _R, ::cuda::std::enable_if_t<__has_on_enter<_LL> || __has_on_enter<_RR>, int> = 0>
   void on_enter() noexcept(__on_enter_nothrow_v<_L> && __on_enter_nothrow_v<_R>)
   {
     if constexpr (__has_on_enter<_L>)
@@ -1555,9 +1552,8 @@ __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
-decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy,
-                          _Fn&& __fn) noexcept(__exception_path_nothrow_v<_Reaction, _Fn>
-                                               && __on_enter_nothrow_v<_Reaction>)
+decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
+  __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
   // Bind as a non-const lvalue: a hook may invoke it again later.
   _Fn& __f = __fn;
@@ -1859,8 +1855,8 @@ struct always_t
   }
 
   // Entry gates forward to head and finalizer alike: each may refuse the attempt.
-  template <class _AA                                                                               = _A,
-            class _BB                                                                               = _B,
+  template <class _AA                                                                                 = _A,
+            class _BB                                                                                 = _B,
             ::cuda::std::enable_if_t<detail::__has_on_enter<_AA> || detail::__has_on_enter<_BB>, int> = 0>
   void on_enter() noexcept(detail::__on_enter_nothrow_v<_A> && detail::__on_enter_nothrow_v<_B>)
   {
@@ -2590,13 +2586,14 @@ auto on_throw(_Reaction&& __reaction,
 //! policy names at the nearest namespace enclosing both it and
 //! `exception_policies`, which in user code is the global namespace,
 //! right next to the C library's `abort`.
-#define ON_THROW(...)                                                \
-  [&] {                                                              \
-    using namespace ::cuda::experimental::stf::exception_policies;   \
-    using ::cuda::experimental::stf::exception_policies::abort;      \
-    using ::cuda::experimental::stf::exception_policies::terminate;  \
-    return ::cuda::experimental::stf::on_throw(__VA_ARGS__);         \
-  }() << [&]()
+#define ON_THROW(...)                                               \
+  [&] {                                                             \
+    using namespace ::cuda::experimental::stf::exception_policies;  \
+    using ::cuda::experimental::stf::exception_policies::abort;     \
+    using ::cuda::experimental::stf::exception_policies::terminate; \
+    return ::cuda::experimental::stf::on_throw(__VA_ARGS__);        \
+  }()                                                               \
+    << [&]()
 
 #ifdef UNITTESTED_FILE
 UNITTEST("nullval")
@@ -2667,7 +2664,10 @@ UNITTEST("circuit_breaker")
   // External administration: refill through the shared int, then a success restores the
   // budget to its creation-time value.
   *budget = 1;
-  EXPECT((on_throw(guarded) << [] () -> int { return 7; }) == 7);
+  EXPECT((on_throw(guarded) << []() -> int {
+           return 7;
+         })
+         == 7);
   EXPECT(*budget == 2);
 
   // The macro spelling gates identically.
@@ -2675,7 +2675,8 @@ UNITTEST("circuit_breaker")
   __gated = false;
   _CCCL_TRY
   {
-    ON_THROW(circuit_breaker(budget) & subst(-1)) {
+    ON_THROW(circuit_breaker(budget) & subst(-1))
+    {
       return 9;
     };
   }
@@ -2690,9 +2691,9 @@ UNITTEST("circuit_breaker")
   EXPECT(__gated);
 
   // The erased form carries the gate through: sinks re-erase, gates survive.
-  *budget = 0;
+  *budget                      = 0;
   pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
-  __gated                 = false;
+  __gated                      = false;
   _CCCL_TRY
   {
     on_throw(__erased) << flaky;
@@ -3000,8 +3001,8 @@ UNITTEST("policy algebra")
   // Layered severity: the exact type recovers, the rest of its cone takes the next arm.
   const int rx4 = on_throw(catch_exactly<::std::logic_error>(subst(1)) | catch_only<::std::logic_error>(subst(2)))
                << []() -> int {
-                    throw ::std::domain_error{"cone remainder"};
-                  };
+    throw ::std::domain_error{"cone remainder"};
+  };
   EXPECT(rx4 == 2);
 
   // Derived-to-base matching, like a real catch clause.
