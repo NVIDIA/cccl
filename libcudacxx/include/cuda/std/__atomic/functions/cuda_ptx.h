@@ -136,6 +136,13 @@ _CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
     __backend, __ptr, __dst, ::cuda::std::__cuda_atomic_ptx_negate(__op), __order, _Operand{}, __scope);
 }
 
+#if _CCCL_CUDA_COMPILATION()
+_CCCL_DEVICE_API inline void __cuda_atomic_signal_fence(__cuda_atomic_ptx_backend, memory_order)
+{
+  asm volatile("" ::: "memory");
+}
+#endif // _CCCL_CUDA_COMPILATION()
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
