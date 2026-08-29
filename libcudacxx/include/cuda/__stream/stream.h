@@ -29,6 +29,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
+#  include <cuda/std/__fwd/hash.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -167,6 +168,16 @@ private:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream> : hash<::cuda::stream_ref>
+{};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

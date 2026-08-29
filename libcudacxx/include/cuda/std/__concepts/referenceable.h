@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
-#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#ifndef _CUDA_STD___CONCEPTS_REFERENCEABLE_H
+#define _CUDA_STD___CONCEPTS_REFERENCEABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,36 +20,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+template <class _Tp, class = void>
+inline constexpr bool __is_referenceable_impl = false;
 
 template <class _Tp>
-struct __cccl_is_referenceable : public integral_constant<bool, _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp)>
-{};
-
-#else
-struct __cccl_is_referenceable_impl
-{
-  template <class _Tp>
-  _CCCL_HOST_DEVICE static _Tp& __test(int);
-  template <class _Tp>
-  _CCCL_HOST_DEVICE static false_type __test(...);
-};
+inline constexpr bool __is_referenceable_impl<_Tp, void_t<_Tp&>> = true;
 
 template <class _Tp>
-struct __cccl_is_referenceable
-    : bool_constant<!is_same_v<decltype(__cccl_is_referenceable_impl::__test<_Tp>(0)), false_type>>
-{};
-#endif // defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+_CCCL_CONCEPT __referenceable = __is_referenceable_impl<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#endif // _CUDA_STD___CONCEPTS_REFERENCEABLE_H
