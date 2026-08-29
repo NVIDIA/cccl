@@ -974,7 +974,7 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
     constexpr int half_num_levels = half_num_bins + 1;
     const auto exact_half         = [](int i) {
       const int k = i < 2048 ? i : 2048 + (i - 2048) * 2;
-      return half_t(k / 1024.0f);
+      return half_t(static_cast<float>(k) / 1024.0f);
     };
 
     c2h::host_vector<half_t> h_half_levels(half_num_levels);

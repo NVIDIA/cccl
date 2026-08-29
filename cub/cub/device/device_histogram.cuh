@@ -776,7 +776,7 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    constexpr ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>> is_byte_sample{};
+    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
@@ -801,7 +801,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -818,7 +818,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -1503,7 +1503,7 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    constexpr ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>> is_byte_sample{};
+    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
@@ -1527,7 +1527,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -1543,7 +1543,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -2066,7 +2066,7 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    constexpr ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>> is_byte_sample{};
+    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
@@ -2088,7 +2088,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -2105,7 +2105,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -2530,7 +2530,7 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    constexpr ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>> is_byte_sample{};
+    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
@@ -2551,7 +2551,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -2567,7 +2567,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
