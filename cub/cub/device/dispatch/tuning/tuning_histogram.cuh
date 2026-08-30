@@ -85,22 +85,22 @@ namespace detail::histogram
 } // namespace detail::histogram
 
 #if _CCCL_HOSTED()
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, HistogramHighBinAlgorithm value)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, HistogramHighBinAlgorithm value)
 {
   return os << detail::histogram::to_string(value);
 }
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, HistogramCacheAlgorithm value)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, HistogramCacheAlgorithm value)
 {
   return os << detail::histogram::to_string(value);
 }
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, HistogramSpillAlgorithm value)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, HistogramSpillAlgorithm value)
 {
   return os << detail::histogram::to_string(value);
 }
 
-_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, HistogramAggregationAlgorithm value)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, HistogramAggregationAlgorithm value)
 {
   return os << detail::histogram::to_string(value);
 }
