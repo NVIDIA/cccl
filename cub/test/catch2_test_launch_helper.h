@@ -387,6 +387,6 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 }
-#else // TEST_LAUNCH is not 0, 1, or 2
-#  error "Unsupported TEST_LAUNCH value"
-#endif // TEST_LAUNCH
+#else // TEST_LAUNCH == 2
+#  error "Unsupported TEST_LAUNCH value. Supported values are 0, 1, or 2"
+#endif // TEST_LAUNCH == 2
