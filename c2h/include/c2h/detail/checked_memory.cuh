@@ -203,20 +203,14 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
     return;
   }
 
-  int previous_device       = 0;
-  bool restore              = false;
-  const auto get_status     = cudaGetDevice(&previous_device);
-  const bool switch_current = (get_status == cudaSuccess) && (previous_device != device);
-  if (switch_current)
+  try
   {
-    restore = (cudaSetDevice(device) == cudaSuccess);
+    const scoped_current_device guard{device};
+    (void) cudaFree(ptr);
   }
-
-  (void) cudaFree(ptr);
-
-  if (restore)
+  catch (...)
   {
-    (void) cudaSetDevice(previous_device);
+    (void) cudaFree(ptr);
   }
 }
 
