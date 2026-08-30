@@ -9,6 +9,8 @@
 #  include <cuda/__memory_resource/properties.h>
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/__cmath/pow2.h>
+
 #include <cstddef>
 #include <cstring>
 #include <iostream>
@@ -165,8 +167,7 @@ private:
 
 [[nodiscard]] inline bool is_valid_cuda_malloc_alignment(std::size_t alignment) noexcept
 {
-  return alignment != 0 && alignment <= ::cuda::mr::default_cuda_malloc_alignment
-      && (::cuda::mr::default_cuda_malloc_alignment % alignment == 0);
+  return cuda::is_power_of_two(alignment) && alignment <= cuda::mr::default_cuda_malloc_alignment;
 }
 
 [[nodiscard]] inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
