@@ -28,6 +28,7 @@
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 CUB_NAMESPACE_BEGIN
@@ -43,8 +44,7 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
-          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>,
-          bool StableReductionOrder  = false>
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_reduce_by_key_policy
 {
   static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
@@ -52,7 +52,6 @@ struct agent_reduce_by_key_policy
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
-  static constexpr bool STABLE_REDUCTION_ORDER       = StableReductionOrder;
 
   struct detail
   {
@@ -110,6 +109,9 @@ namespace detail::reduce_by_key
  *
  * @tparam AccumT
  *   The type of intermediate accumulator (according to P2322R6)
+ *
+ * @tparam StableReductionOrderT
+ *   Whether to use a stable reduction order across tiles
  */
 template <typename AgentReduceByKeyPolicyT,
           typename KeysInputIteratorT,
@@ -121,7 +123,8 @@ template <typename AgentReduceByKeyPolicyT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT,
-          typename StreamingContextT>
+          typename StreamingContextT,
+          typename StableReductionOrderT = ::cuda::std::false_type>
 struct AgentReduceByKey
 {
   // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
@@ -236,7 +239,7 @@ struct AgentReduceByKey
                          ReduceBySegmentOpT,
                          ScanTileStateT,
                          DelayConstructorT,
-                         AgentReduceByKeyPolicyT::STABLE_REDUCTION_ORDER>;
+                         StableReductionOrderT::value>;
 
   // Key and value exchange types
   using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];

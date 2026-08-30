@@ -12,6 +12,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/stream>
 
 #include "catch2_test_memory_resources.h"
@@ -529,9 +530,9 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run determinism requirem
 {
   // example-begin reduce-by-key-env
   auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto values_in       = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto values_in       = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
   auto unique_keys_out = thrust::device_vector<int>(5);
-  auto aggregates_out  = thrust::device_vector<int>(5);
+  auto aggregates_out  = thrust::device_vector<double>(5);
   auto num_runs_out    = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
@@ -542,7 +543,7 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run determinism requirem
     values_in.begin(),
     aggregates_out.begin(),
     num_runs_out.begin(),
-    cuda::minimum<int>{},
+    cuda::std::plus<>{},
     static_cast<int>(keys_in.size()),
     env);
   if (error != cudaSuccess)
@@ -551,7 +552,7 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run determinism requirem
   }
 
   thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  thrust::device_vector<double> expected_aggregates{0, 8, 6, 10, 4};
   // example-end reduce-by-key-env
 
   REQUIRE(error == cudaSuccess);
@@ -566,9 +567,9 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requ
 {
   // example-begin reduce-by-key-env-non-determinism
   auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto values_in       = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto values_in       = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
   auto unique_keys_out = thrust::device_vector<int>(5);
-  auto aggregates_out  = thrust::device_vector<int>(5);
+  auto aggregates_out  = thrust::device_vector<double>(5);
   auto num_runs_out    = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
@@ -579,7 +580,7 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requ
     values_in.begin(),
     aggregates_out.begin(),
     num_runs_out.begin(),
-    cuda::minimum<int>{},
+    cuda::std::multiplies<>{},
     static_cast<int>(keys_in.size()),
     env);
   if (error != cudaSuccess)
@@ -588,7 +589,7 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requ
   }
 
   thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  thrust::device_vector<double> expected_aggregates{0, 7, 6, 30, 4};
   // example-end reduce-by-key-env-non-determinism
 
   REQUIRE(error == cudaSuccess);
