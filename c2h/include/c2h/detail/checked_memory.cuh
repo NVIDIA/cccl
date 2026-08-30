@@ -16,6 +16,7 @@
 #include <iostream>
 #include <limits>
 #include <new>
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
@@ -135,7 +136,7 @@ public:
     const cudaError_t get_status = cudaGetDevice(&m_previous_device);
     if (get_status != cudaSuccess)
     {
-      throw std::bad_alloc{};
+      throw std::runtime_error{"cudaGetDevice failed"};
     }
 
     if (m_previous_device != device)
@@ -143,7 +144,7 @@ public:
       const cudaError_t set_status = cudaSetDevice(device);
       if (set_status != cudaSuccess)
       {
-        throw std::bad_alloc{};
+        throw std::runtime_error{"cudaSetDevice failed"};
       }
       m_restore = true;
     }
