@@ -112,6 +112,19 @@ CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
   }
 }
 
+CUB_TEST("histogram input: cache-specific shape names remain reserved", "[histogram][input_shapes]", CUB_SMALL)
+{
+  const auto hash_synonym   = parse_input_shape("hash_synonym");
+  const auto stale_resident = parse_input_shape("stale_resident");
+
+  REQUIRE(hash_synonym.shape == InputShape::hash_synonym);
+  REQUIRE(stale_resident.shape == InputShape::stale_resident);
+  REQUIRE_THROWS_WITH(generate_histogram_input_even<int32_t>(hash_synonym, input_size, 64, lower_bound, upper_bound),
+                      "hash_synonym is not available until the shared-memory cache policy lands");
+  REQUIRE_THROWS_WITH(generate_histogram_input_even<int32_t>(stale_resident, input_size, 64, lower_bound, upper_bound),
+                      "stale_resident is not available until the shared-memory cache policy lands");
+}
+
 CUB_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
