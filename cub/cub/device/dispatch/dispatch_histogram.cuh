@@ -270,44 +270,67 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   int cooperative_smem_bytes    = 0;
 
 #if _CCCL_HOSTED()
-  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
-  {
-    if (active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::cooperative)
-    {
-      if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(use_cooperative)))
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
       {
-        return error;
-      }
-      if (use_cooperative)
-      {
-        using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-        const auto cooperative_kernel =
-          kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
-        const int cache_slots_per_channel =
-          active_policy.high_bin_cache == HistogramCacheAlgorithm::none
-            ? 0
-            : active_policy.high_bin_cache_entries_per_channel;
-        cooperative_smem_bytes =
-          NUM_ACTIVE_CHANNELS * cache_slots_per_channel
-          * (int{sizeof(::cuda::std::uint32_t)} + active_policy.high_bin_cache_count_replicas * int{sizeof(CounterT)});
+        if (active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::cooperative)
+        {
+          if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(use_cooperative)))
+          {
+            return error;
+          }
+          if (use_cooperative)
+          {
+            using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+            const auto cooperative_kernel =
+              kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
+            const int cache_slots_per_channel =
+              active_policy.high_bin_cache == HistogramCacheAlgorithm::none
+                ? 0
+                : active_policy.high_bin_cache_entries_per_channel;
+            cooperative_smem_bytes =
+              NUM_ACTIVE_CHANNELS * cache_slots_per_channel
+              * (int{sizeof(::cuda::std::uint32_t)}
+                 + active_policy.high_bin_cache_count_replicas * int{sizeof(CounterT)});
 
-        int cooperative_sm_occupancy = 0;
-        if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-              cooperative_sm_occupancy, cooperative_kernel, threads_per_block, cooperative_smem_bytes)))
-        {
-          return error;
-        }
-        if (cooperative_sm_occupancy > 0)
-        {
-          histogram_sweep_occupancy = cooperative_sm_occupancy * sm_count;
-        }
-        else
-        {
-          use_cooperative = false;
+            int max_dynamic_smem_bytes = 0;
+            if (const auto error =
+                  CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_bytes, cooperative_kernel)))
+            {
+              return error;
+            }
+            if (cooperative_smem_bytes > max_dynamic_smem_bytes)
+            {
+              use_cooperative = false;
+            }
+            else
+            {
+              if (const auto error = CubDebug(
+                    launcher_factory.set_max_dynamic_smem_size_for(cooperative_kernel, cooperative_smem_bytes)))
+              {
+                return error;
+              }
+
+              int cooperative_sm_occupancy = 0;
+              if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+                    cooperative_sm_occupancy, cooperative_kernel, threads_per_block, cooperative_smem_bytes)))
+              {
+                return error;
+              }
+              if (cooperative_sm_occupancy > 0)
+              {
+                histogram_sweep_occupancy = cooperative_sm_occupancy * sm_count;
+              }
+              else
+              {
+                use_cooperative = false;
+              }
+            }
+          }
         }
       }
-    }
-  }
+    }))
 #endif // _CCCL_HOSTED()
 
   if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
