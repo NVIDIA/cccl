@@ -804,9 +804,9 @@ struct AgentHistogramCooperative
     static_assert(policy.high_bin_pixels_per_thread > 0, "Histogram cooperative unroll must be positive");
     static_assert(
       policy.high_bin_cache == HistogramCacheAlgorithm::none
-        || (policy.high_bin_cache_entries_per_channel > 0
+        || (policy.high_bin_cache_entries_per_channel >= 32
             && (policy.high_bin_cache_entries_per_channel & (policy.high_bin_cache_entries_per_channel - 1)) == 0),
-      "Histogram cache entries per channel must be a power of two");
+      "Histogram cache entries per channel must be a power of two of at least 32");
     namespace cg        = ::cooperative_groups;
     cg::grid_group grid = cg::this_grid();
 

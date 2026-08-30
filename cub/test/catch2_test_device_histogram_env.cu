@@ -1633,7 +1633,8 @@ struct histogram_tuning
 template <cub::HistogramHighBinAlgorithm Algorithm,
           cub::HistogramCacheAlgorithm Cache,
           cub::HistogramSpillAlgorithm Spill,
-          cub::HistogramAggregationAlgorithm Aggregation>
+          cub::HistogramAggregationAlgorithm Aggregation,
+          int CacheEntriesPerChannel = 512>
 struct high_bin_histogram_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
@@ -1643,7 +1644,7 @@ struct high_bin_histogram_tuning
     policy.high_bin_cache                     = Cache;
     policy.high_bin_spill                     = Spill;
     policy.high_bin_aggregation               = Aggregation;
-    policy.high_bin_cache_entries_per_channel = 512;
+    policy.high_bin_cache_entries_per_channel = CacheEntriesPerChannel;
     policy.high_bin_cache_count_replicas      = 2;
     policy.high_bin_cache_cuckoo_max_bins     = 4096;
     policy.high_bin_pixels_per_thread         = 2;
@@ -1763,12 +1764,18 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
 
 CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histogram][device]", CUB_SMALL)
 {
-  constexpr int num_levels = 1026;
-  c2h::device_vector<int> d_samples{0, 1, 1, 1024};
-  c2h::device_vector<int> expected(num_levels - 1, 0);
-  expected[0]    = 1;
-  expected[1]    = 2;
-  expected[1024] = 1;
+  constexpr int num_levels  = 1026;
+  constexpr int num_samples = 32768;
+  c2h::host_vector<int> h_samples(num_samples);
+  c2h::host_vector<int> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    const int sample = i % (num_levels - 1);
+    h_samples[i]     = sample;
+    ++h_expected[sample];
+  }
+  const c2h::device_vector<int> d_samples = h_samples;
+  const c2h::device_vector<int> expected  = h_expected;
 
   const auto run = [&](auto tuning) {
     c2h::device_vector<int> d_histogram(num_levels - 1, 0);
@@ -1800,6 +1807,74 @@ CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histo
                                 cub::HistogramCacheAlgorithm::cuckoo,
                                 cub::HistogramSpillAlgorithm::output,
                                 cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced,
+                                8192>{});
+}
+
+CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_levels          = 1026;
+  constexpr int num_row_pixels      = 512;
+  constexpr int num_rows            = 4;
+  constexpr int row_stride_pixels   = num_row_pixels + 8;
+  constexpr int row_stride_samples  = row_stride_pixels * num_channels;
+
+  c2h::host_vector<int> h_samples(row_stride_samples * num_rows, num_levels - 1);
+  cuda::std::array<c2h::host_vector<int>, num_active_channels> h_expected{
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0)};
+  for (int row = 0; row < num_rows; ++row)
+  {
+    for (int pixel = 0; pixel < num_row_pixels; ++pixel)
+    {
+      for (int channel = 0; channel < num_active_channels; ++channel)
+      {
+        const int sample = (row * num_row_pixels + pixel + channel) % (num_levels - 1);
+        h_samples[row * row_stride_samples + pixel * num_channels + channel] = sample;
+        ++h_expected[channel][sample];
+      }
+    }
+  }
+
+  const c2h::device_vector<int> d_samples = h_samples;
+  cuda::std::array<c2h::device_vector<int>, num_active_channels> d_histograms{
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0)};
+  cuda::std::array<int*, num_active_channels> histogram_ptrs{
+    thrust::raw_pointer_cast(d_histograms[0].data()),
+    thrust::raw_pointer_cast(d_histograms[1].data()),
+    thrust::raw_pointer_cast(d_histograms[2].data())};
+  constexpr cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  constexpr cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  constexpr cuda::std::array<int, num_active_channels> upper_levels{num_levels - 1, num_levels - 1, num_levels - 1};
+  const auto env = cuda::execution::tune(
+    high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                              cub::HistogramCacheAlgorithm::cuckoo,
+                              cub::HistogramSpillAlgorithm::output,
+                              cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()),
+    histogram_ptrs,
+    levels,
+    lower_levels,
+    upper_levels,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples * sizeof(int),
+    env);
+
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(d_histograms[channel] == h_expected[channel]);
+  }
 }
 
 #endif // TEST_LAUNCH != 1
