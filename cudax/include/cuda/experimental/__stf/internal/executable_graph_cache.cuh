@@ -119,14 +119,18 @@ public:
   // One entry of the cache
   struct entry
   {
-    entry(
-      executable_graph_cache* cache, ::std::shared_ptr<cudaGraphExec_t> exec_g_, cudaStream_t stream_, size_t footprint)
+    entry(executable_graph_cache* cache,
+          ::std::shared_ptr<cudaGraphExec_t> exec_g_,
+          cudaStream_t stream_,
+          unsigned long long stream_id_,
+          size_t footprint)
         : cache(cache)
         , exec_g(mv(exec_g_))
         , stream(stream_)
+        , stream_id(stream_id_)
         , footprint(footprint)
     {
-      last_use = cache->index;
+      last_use = cache->index++;
     }
 
     // Update the last_use field to mark that this entry was used recently
@@ -137,7 +141,14 @@ public:
 
     executable_graph_cache* cache;
     ::std::shared_ptr<cudaGraphExec_t> exec_g;
+    // The binding identity is the driver-assigned stream id, which is unique
+    // for the lifetime of the process: a cudaStream_t handle value can be
+    // recycled after cudaStreamDestroy, so comparing handles could falsely
+    // match an entry bound to a dead stream against an unrelated new one.
+    // The raw handle is kept only to probe idleness, which is meaningful
+    // only while the bound stream is alive (see query_stream_state).
     cudaStream_t stream;
+    unsigned long long stream_id;
     size_t last_use;
     size_t footprint;
   };
@@ -167,6 +178,8 @@ public:
     int dev_id = cuda_try<cudaGetDevice>();
     _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
 
+    const unsigned long long stream_id = stream_unique_id(stream);
+
     auto range = cached_graphs[dev_id].equal_range({nnodes, nedges});
     for (auto it = range.first; it != range.second; ++it)
     {
@@ -175,7 +188,10 @@ public:
       // entry is bound. In addition to preventing CUDA from serializing
       // concurrent launches of one executable on different streams, this
       // gives us an explicit completion check before the host-side update.
-      if (e.stream != stream || !stream_is_idle(stream))
+      // The caller's stream is alive by definition, so probing it is safe;
+      // a caller stream in capture reads as busy (a query would invalidate
+      // the capture), falling through to a fresh instantiation.
+      if (e.stream_id != stream_id || query_stream_state(stream) != stream_state::idle)
       {
         continue;
       }
@@ -206,7 +222,8 @@ public:
     // If we maintain a cache, store the executable graph
     if (cache_size_limit != 0)
     {
-      cached_graphs[dev_id].insert({::std::make_pair(nnodes, nedges), entry(this, exec_g, stream, footprint)});
+      cached_graphs[dev_id].insert(
+        {::std::make_pair(nnodes, nedges), entry(this, exec_g, stream, stream_id, footprint)});
       total_cache_footprint[dev_id] += footprint;
     }
 
@@ -214,20 +231,48 @@ public:
   }
 
 private:
-  static bool stream_is_idle(cudaStream_t stream)
+  // The driver-assigned stream id: unique for the process lifetime, unlike
+  // the handle value (see entry::stream_id).
+  static unsigned long long stream_unique_id(cudaStream_t stream)
   {
+    unsigned long long id = 0;
+    cuda_safe_call(cudaStreamGetId(stream, &id));
+    return id;
+  }
+
+  enum class stream_state
+  {
+    idle,
+    busy,
+    unavailable
+  };
+
+  // Probe a stream without ever throwing and without touching a capture:
+  // cudaStreamQuery on a capturing stream would invalidate that capture (a
+  // cross-thread hazard when reclaim probes another context's stream), so
+  // capture status is checked first with the capture-legal API. Errors from
+  // either call (e.g. a destroyed handle for an entry whose bound stream the
+  // cache does not own) read as `unavailable`: such an entry is neither
+  // reusable nor provably safe to destroy.
+  static stream_state query_stream_state(cudaStream_t stream)
+  {
+    cudaStreamCaptureStatus capture = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(stream, &capture) != cudaSuccess)
+    {
+      cudaGetLastError();
+      return stream_state::unavailable;
+    }
+    if (capture != cudaStreamCaptureStatusNone)
+    {
+      return stream_state::busy;
+    }
     const cudaError_t status = cudaStreamQuery(stream);
     if (status == cudaSuccess)
     {
-      return true;
+      return stream_state::idle;
     }
-    if (status == cudaErrorNotReady)
-    {
-      return false;
-    }
-
-    cuda_try(status);
-    return false;
+    cudaGetLastError();
+    return (status == cudaErrorNotReady) ? stream_state::busy : stream_state::unavailable;
   }
 
   void reclaim(int dev_id, size_t to_reclaim)
@@ -237,13 +282,19 @@ private:
 
     // Reclaim the least-recently-used idle entries. cudaGraphExecDestroy must
     // not race an in-flight launch, so a busy entry remains cached even if
-    // that temporarily leaves the cache above its configured size.
+    // that temporarily leaves the cache above its configured size. An
+    // `unavailable` entry (bound stream destroyed) is skipped too: its final
+    // launch may still be draining, so destroying the executable is not
+    // provably safe, and the entry stays as an unreclaimable zombie. This is
+    // benign when cache-bound streams outlive the cache (the pool streams
+    // handed out by async_resources_handle do); binding entries to streams
+    // with independent lifetimes is what makes zombies possible at all.
     while (reclaimed < to_reclaim)
     {
       auto victim = device_cache.end();
       for (auto it = device_cache.begin(); it != device_cache.end(); ++it)
       {
-        if (stream_is_idle(it->second.stream)
+        if (query_stream_state(it->second.stream) == stream_state::idle
             && (victim == device_cache.end() || it->second.last_use < victim->second.last_use))
         {
           victim = it;
