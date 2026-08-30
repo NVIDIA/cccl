@@ -271,11 +271,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       dynamic_smem_bytes += (num_privatized_levels[channel] - 1) * static_cast<int>(kernel_source.CounterSize());
     }
+    int max_dynamic_smem_bytes{};
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       ({
-        if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
-              sweep_kernel, dynamic_smem_limit_bytes<IsEven, NUM_ACTIVE_CHANNELS>(active_policy))))
+        if (const auto error =
+              CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_bytes, sweep_kernel)))
         {
           return error;
         }
@@ -291,30 +292,39 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         {
           return error;
         }
-        const int max_dynamic_smem_bytes =
-          max_shared_smem_bytes - static_cast<int>(sweep_kernel_attributes.sharedSizeBytes);
-        if (dynamic_smem_bytes > max_dynamic_smem_bytes)
-        {
-          return detail::histogram::
-            dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, HistogramPrivatizedGmem, IsDeviceInit, IsEven, IsByteSample>(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_privatized_levels,
-              num_output_levels,
-              first_level_array,
-              second_level_array,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory);
-        }
+        max_dynamic_smem_bytes = max_shared_smem_bytes - static_cast<int>(sweep_kernel_attributes.sharedSizeBytes);
       }))
+    if (dynamic_smem_bytes > max_dynamic_smem_bytes)
+    {
+      return detail::histogram::
+        dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, HistogramPrivatizedGmem, IsDeviceInit, IsEven, IsByteSample>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_privatized_levels,
+          num_output_levels,
+          first_level_array,
+          second_level_array,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          policy_selector,
+          kernel_source,
+          launcher_factory);
+    }
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   const int opt_in_dynamic_smem_bytes =
+                     (::cuda::std::min) (dynamic_smem_limit_bytes<IsEven, NUM_ACTIVE_CHANNELS>(active_policy),
+                                         max_dynamic_smem_bytes);
+                   if (const auto error = CubDebug(
+                         launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, opt_in_dynamic_smem_bytes)))
+                   {
+                     return error;
+                   }
+                 }))
   }
 
   // Get SM count
