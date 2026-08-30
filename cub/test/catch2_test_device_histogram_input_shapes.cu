@@ -12,8 +12,9 @@
 #include <map>
 #include <vector>
 
-#include "../benchmarks/bench/histogram/histogram_inputs.cuh"
-#include "cub_test_macros.h"
+#include <cub_test_macros.h>
+
+#include <../benchmarks/bench/histogram/histogram_inputs.cuh>
 #include <c2h/catch2_test_helper.h>
 
 namespace
@@ -24,15 +25,15 @@ template <class SampleT>
 std::vector<long long>
 bin_counts_even(const ShapeSpec& spec, int64_t n, int num_bins, SampleT lower, SampleT upper, uint64_t seed = 42)
 {
-  thrust::device_vector<SampleT> d_input =
+  const thrust::device_vector<SampleT> d_input =
     generate_histogram_input_even<SampleT>(spec, n, num_bins, lower, upper, seed);
-  thrust::host_vector<SampleT> h_input = d_input;
+  const thrust::host_vector<SampleT> h_input = d_input;
 
   std::vector<long long> counts(num_bins, 0);
   const double L     = static_cast<double>(lower);
   const double U     = static_cast<double>(upper);
   const double scale = static_cast<double>(num_bins) / (U - L);
-  for (SampleT s : h_input)
+  for (const SampleT s : h_input)
   {
     if (s < lower || s >= upper)
     {
@@ -58,7 +59,7 @@ double normalized_entropy_counts(const std::vector<long long>& counts, int64_t n
     return 0.0;
   }
   double h = 0.0;
-  for (long long c : counts)
+  for (const long long c : counts)
   {
     if (c > 0)
     {
@@ -92,7 +93,7 @@ CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
 
   // entropy 1.0 -> uniform: every bin within a few % of input_size/num_bins.
   {
-    auto counts =
+    const auto counts =
       bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), input_size, num_bins, lower_bound, upper_bound);
     const double mean = static_cast<double>(input_size) / num_bins;
     REQUIRE(nonzero_bins(counts) == num_bins);
@@ -105,7 +106,7 @@ CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
 
   // entropy 0.0 -> constant: exactly one nonzero bin holding everything.
   {
-    auto counts =
+    const auto counts =
       bin_counts_even<int32_t>(parse_input_shape("concentrated:0.0"), input_size, num_bins, lower_bound, upper_bound);
     REQUIRE(nonzero_bins(counts) == 1);
     REQUIRE(top_count(counts) == input_size);
@@ -130,9 +131,9 @@ CUB_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][
   const int num_bins = 64;
   // The measured entropy should follow the requested descending sequence.
   double previous_entropy = 2.0;
-  for (double target : {1.0, 0.75, 0.5, 0.25, 0.0})
+  for (const double target : {1.0, 0.75, 0.5, 0.25, 0.0})
   {
-    auto counts = bin_counts_even<int32_t>(
+    const auto counts = bin_counts_even<int32_t>(
       parse_input_shape("concentrated:" + std::to_string(target)), input_size, num_bins, lower_bound, upper_bound);
     const double entropy = normalized_entropy_counts(counts, input_size);
     REQUIRE(entropy <= previous_entropy + 0.01);
@@ -148,7 +149,7 @@ CUB_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_sh
   std::map<int, int> argmax_seen;
   for (uint64_t seed : {1ull, 2ull, 3ull, 4ull, 5ull})
   {
-    auto counts = bin_counts_even<int32_t>(
+    const auto counts = bin_counts_even<int32_t>(
       parse_input_shape("concentrated:0.3"), input_size, num_bins, lower_bound, upper_bound, seed);
     const int arg = static_cast<int>(std::max_element(counts.begin(), counts.end()) - counts.begin());
     ++argmax_seen[arg];
@@ -163,7 +164,7 @@ CUB_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_sh
 CUB_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
-  auto counts =
+  const auto counts =
     bin_counts_even<int32_t>(parse_input_shape("powerlaw:0.4"), input_size, num_bins, lower_bound, upper_bound);
   // Many hot bins (more than a single spike), with a heavy head: the top bin
   // holds a large share and the warm set (top-K) dominates.
@@ -187,9 +188,9 @@ CUB_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
   // Entropy decreases across the loop, so the top-bin share must RISE
   // (non-decreasing): lower target entropy -> higher concentration.
   double prev_top = 0.0;
-  for (double e : {0.8, 0.6, 0.4, 0.2})
+  for (const double e : {0.8, 0.6, 0.4, 0.2})
   {
-    auto counts = bin_counts_even<int32_t>(
+    const auto counts = bin_counts_even<int32_t>(
       parse_input_shape("powerlaw:" + std::to_string(e)), input_size, num_bins, lower_bound, upper_bound);
     std::vector<long long> sorted(counts);
     std::sort(sorted.rbegin(), sorted.rend());
@@ -204,11 +205,11 @@ CUB_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
 
 CUB_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]", CUB_SMALL)
 {
-  const int num_bins                     = 256;
-  const int phases                       = 4;
-  thrust::device_vector<int32_t> d_input = generate_histogram_input_even<int32_t>(
+  const int num_bins                           = 256;
+  const int phases                             = 4;
+  const thrust::device_vector<int32_t> d_input = generate_histogram_input_even<int32_t>(
     parse_input_shape("temporal_phases:" + std::to_string(phases)), input_size, num_bins, lower_bound, upper_bound);
-  thrust::host_vector<int32_t> h = d_input;
+  const thrust::host_vector<int32_t> h = d_input;
 
   const double scale =
     static_cast<double>(num_bins) / (static_cast<double>(upper_bound) - static_cast<double>(lower_bound));
@@ -228,7 +229,7 @@ CUB_TEST("histogram input: temporal_phases changes the hot bin across phases", "
     }
     int best        = -1;
     long long bestc = -1;
-    for (auto& kv : c)
+    for (const auto& kv : c)
     {
       if (kv.second > bestc)
       {
@@ -248,7 +249,7 @@ CUB_TEST("histogram input: temporal_phases changes the hot bin across phases", "
 CUB_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
-  auto counts =
+  const auto counts =
     bin_counts_even<int32_t>(parse_input_shape("strided_sweep"), input_size, num_bins, lower_bound, upper_bound);
   // A stride coprime to num_bins visits every bin near-equally.
   REQUIRE(nonzero_bins(counts) == num_bins);
