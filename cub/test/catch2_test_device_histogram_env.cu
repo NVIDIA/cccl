@@ -1945,12 +1945,13 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   REQUIRE(to_string(p1) == to_string(p2));
 }
 
-CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget", "[histogram][device]", CUB_SMALL)
+CUB_TEST("Histogram architecture policies carry their dynamic shared-memory budgets", "[histogram][device]", CUB_SMALL)
 {
   using selector_t = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>;
 
   constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
   constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
+  constexpr auto sm120_policy = selector_t{}(cuda::compute_capability{12, 0});
   constexpr auto sm90_range_u32_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
       cuda::compute_capability{9, 0});
@@ -2021,6 +2022,15 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   constexpr auto sm100_even_4ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
       cuda::compute_capability{10, 0});
+  constexpr auto sm120_even_2ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 2, 2, true>{}(
+      cuda::compute_capability{12, 0});
+  constexpr auto sm120_even_3ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 3, 3, true>{}(
+      cuda::compute_capability{12, 0});
+  constexpr auto sm120_even_4ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
+      cuda::compute_capability{12, 0});
   STATIC_REQUIRE(sm100_multi_range_policy.min_cached_search_gmem_range_bins == 16384);
   STATIC_REQUIRE(sm100_multi_range_f64_policy.min_cached_search_gmem_range_bins == 16384);
   STATIC_REQUIRE_FALSE(cub::detail::histogram::use_cached_search_for_gmem_range(sm100_multi_range_policy, 16383));
@@ -2044,6 +2054,12 @@ CUB_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
     cub::detail::histogram::dynamic_smem_limit_bytes<true, 3>(sm100_even_3ch_policy) == expected_even_3ch_limit_bytes);
   STATIC_REQUIRE(
     cub::detail::histogram::dynamic_smem_limit_bytes<true, 4>(sm100_even_4ch_policy) == expected_even_4ch_limit_bytes);
+  constexpr int expected_sm120_dynamic_smem_bytes = 99 * 1024;
+  STATIC_REQUIRE(sm120_policy.max_privatized_dynamic_smem_single_channel_bytes == expected_sm120_dynamic_smem_bytes);
+  STATIC_REQUIRE(sm120_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == 65536);
+  STATIC_REQUIRE(sm120_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == 98304);
+  STATIC_REQUIRE(
+    sm120_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == expected_sm120_dynamic_smem_bytes);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 384);
   STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
   STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);
