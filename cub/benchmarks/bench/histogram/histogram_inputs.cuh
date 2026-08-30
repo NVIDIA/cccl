@@ -30,6 +30,8 @@ enum class InputShape
   concentrated, // Normalized entropy in [0, 1].
   powerlaw, // Normalized entropy in [0, 1].
   zipf, // Rank exponent greater than or equal to zero.
+  hash_synonym, // TODO: Wire to the shared-memory cache policy when that change lands.
+  stale_resident, // TODO: Wire to the shared-memory cache policy when that change lands.
   temporal_phases, // Number of phases.
   strided_sweep, // Stride between consecutive bins.
   sawtooth, // Ramp period in bins.
@@ -81,6 +83,14 @@ inline ShapeSpec parse_input_shape(const std::string& spec)
   else if (name == "zipf")
   {
     out.shape = InputShape::zipf;
+  }
+  else if (name == "hash_synonym")
+  {
+    out.shape = InputShape::hash_synonym;
+  }
+  else if (name == "stale_resident")
+  {
+    out.shape = InputShape::stale_resident;
   }
   else if (name == "temporal_phases")
   {
@@ -520,6 +530,8 @@ inline std::vector<double> build_pmf(const ShapeSpec& spec, int32_t num_bins, ui
       }
       break;
     }
+    case InputShape::hash_synonym:
+      throw std::runtime_error("hash_synonym is not available until the shared-memory cache policy lands");
     default:
       throw std::runtime_error("build_pmf called with a non-distribution shape");
   }
@@ -528,7 +540,8 @@ inline std::vector<double> build_pmf(const ShapeSpec& spec, int32_t num_bins, ui
 
 inline bool is_ordering_shape(InputShape shape)
 {
-  return shape == InputShape::temporal_phases || shape == InputShape::strided_sweep || shape == InputShape::sawtooth;
+  return shape == InputShape::stale_resident || shape == InputShape::temporal_phases
+      || shape == InputShape::strided_sweep || shape == InputShape::sawtooth;
 }
 
 // ---------------------------------------------------------------------------
@@ -569,6 +582,8 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
 
   switch (spec.shape)
   {
+    case InputShape::stale_resident:
+      throw std::runtime_error("stale_resident is not available until the shared-memory cache policy lands");
     case InputShape::strided_sweep: {
       const uint64_t stride = spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : default_strided_stride;
       strided_functor<SampleT, Mapper> fn{num_bins, stride, mapper};
