@@ -5,6 +5,7 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/bit>
 
 #include <random>
@@ -162,14 +163,6 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
 }
 
 #if TEST_LAUNCH == 0 && TEST_TYPES == 0
-struct fp64_sum
-{
-  _CCCL_HOST_DEVICE_API double operator()(double lhs, double rhs) const noexcept
-  {
-    return lhs + rhs;
-  }
-};
-
 CUB_TEST_CASE("Device reduce-by-key is run-to-run deterministic for fp64 sums", "[by_key][reduce][device]", CUB_SMALL)
 {
   constexpr std::size_t num_items = 65'536;
@@ -212,7 +205,7 @@ CUB_TEST_CASE("Device reduce-by-key is run-to-run deterministic for fp64 sums", 
       d_values_in,
       d_aggregates_out,
       d_num_runs_out,
-      fp64_sum{},
+      cuda::std::plus{},
       num_items));
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   auto* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
@@ -231,7 +224,7 @@ CUB_TEST_CASE("Device reduce-by-key is run-to-run deterministic for fp64 sums", 
         d_values_in,
         d_aggregates_out,
         d_num_runs_out,
-        fp64_sum{},
+        cuda::std::plus{},
         num_items));
 
     const auto result = cuda::std::bit_cast<std::uint64_t>(static_cast<double>(aggregates_out[0]));
