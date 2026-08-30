@@ -133,6 +133,18 @@ template <class First, class... Rest>
 struct first_arg_is_stream<First, Rest...> : is_stream_argument<First>
 {};
 
+template <typename... As>
+struct first_arg_is_stream<cudaStream_t, As...> : ::cuda::std::true_type
+{};
+
+template <typename T, typename... As>
+struct first_arg_is_stream<T*, As...> : ::cuda::std::false_type
+{};
+
+template <typename... As>
+struct first_arg_is_stream<::cuda::stream_ref, As...> : ::cuda::std::true_type
+{};
+
 inline cuda::device_ref current_device()
 {
   int device{0};
