@@ -176,7 +176,8 @@ struct stream_registry_factory_t
                           REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
                         }
                         void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
-                        return cudaLaunchCooperativeKernel(kernel, grid, block, kernel_args, shared_mem, stream);
+                        return cudaLaunchCooperativeKernel(
+                          reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
                       }),
                       ({ return cudaErrorNotSupported; }))}
 
