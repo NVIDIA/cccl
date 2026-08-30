@@ -99,9 +99,9 @@ public:
 
 #  if C2H_HAS_CURAND
     curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#  else
+#  else // C2H_HAS_CURAND
     m_gen.seed(seed.get());
-#  endif
+#  endif // C2H_HAS_CURAND
 
     generate(stream);
 

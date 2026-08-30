@@ -4,7 +4,9 @@
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
-#include <cuda/stream>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/detail/generators.cuh>

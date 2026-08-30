@@ -111,6 +111,17 @@ template <class T>
 using remove_cvref_t = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<T>>;
 
 template <class T>
+struct is_stream_argument;
+
+template <>
+struct is_stream_argument<cudaStream_t> : ::cuda::std::true_type
+{};
+
+template <typename T>
+struct is_stream_argument<T*> : ::cuda::std::false_type
+{};
+
+template <typename T>
 struct is_stream_argument : ::cuda::std::is_convertible<remove_cvref_t<T>, ::cuda::stream_ref>
 {};
 
@@ -314,7 +325,7 @@ void launch(ActionT action, Args... args)
   launch(cuda::stream_ref{stream}, action, args...);
 }
 
-#else // TEST_LAUNCH == 0
+#elif TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
 void launch(cuda::stream_ref stream, ActionT action, Args... args)
@@ -364,5 +375,6 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 }
-
-#endif // TEST_LAUNCH == 0
+#else // TEST_LAUNCH is not 0, 1, or 2
+#  error "Unsupported TEST_LAUNCH value"
+#endif // TEST_LAUNCH

@@ -8,7 +8,10 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
-#include <cuda/stream>
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
