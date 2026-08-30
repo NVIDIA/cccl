@@ -4,6 +4,10 @@
 #include <cuda/std/complex>
 #include <cuda/type_traits>
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 #include <c2h/generator_types.h>
 
 namespace c2h::detail
@@ -13,6 +17,11 @@ void init_generator();
 
 // sets the seed and resizes the distribution vector, fills it, and returns a pointer the start of the data
 float* prepare_random_data(seed_t seed, std::size_t num_items);
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+// sets the seed and resizes the distribution vector, fills it on stream, and returns a pointer the start of the data
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 // called once before main returns to clean up the generator state
 void cleanup_generator();

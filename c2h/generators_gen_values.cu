@@ -4,6 +4,8 @@
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
+#include <cuda/stream>
+
 #include <c2h/bfloat16.cuh>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
@@ -15,9 +17,23 @@ namespace c2h::detail
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  gen_values_between(::cuda::stream_ref{::cudaStream_t{}}, seed, data, min, max);
+#else // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
   const auto* dist = prepare_random_data(seed, data.size());
   thrust::transform(device_policy, dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+template <typename T>
+void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
+{
+  const auto* dist = prepare_random_data(stream, seed, data.size());
+  thrust::transform(
+    c2h::device_policy_on(stream), dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 template <typename T>
 struct counter_to_cyclic_item_t
@@ -38,8 +54,14 @@ void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data)
   thrust::tabulate(device_policy, data.begin(), data.end(), counter_to_cyclic_item_t<T>{mod.get()});
 }
 
-#define INSTANTIATE_RND(TYPE) \
-  template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  define INSTANTIATE_RND(TYPE)                                                                       \
+    template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max); \
+    template void gen_values_between<TYPE>(::cuda::stream_ref, seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+#else // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  define INSTANTIATE_RND(TYPE) \
+    template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #define INSTANTIATE_MOD(TYPE) template void gen_values_cyclic<TYPE>(modulo_t, ::cuda::std::span<TYPE> data)
 
 #define INSTANTIATE(TYPE) \

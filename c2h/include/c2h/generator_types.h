@@ -3,7 +3,13 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
+
 #include <cuda/std/span>
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #include <cstddef>
 
@@ -56,11 +62,27 @@ void gen_custom_type_state(
   std::size_t elements,
   std::size_t element_size);
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* data,
+  custom_type_state_t min,
+  custom_type_state_t max,
+  std::size_t elements,
+  std::size_t element_size);
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 template <typename OffsetT, typename KeyT>
 void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d_out, std::size_t element_size);
 
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max);
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+template <typename T>
+void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max);
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 template <typename T>
 void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data);
@@ -68,5 +90,16 @@ void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data);
 template <typename T>
 std::size_t gen_uniform_offsets(
   seed_t seed, ::cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size);
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+template <typename T>
+std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<T> segment_offsets,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size);
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 } // namespace detail
 } // namespace c2h

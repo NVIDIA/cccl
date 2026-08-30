@@ -24,25 +24,12 @@ namespace c2h
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 namespace detail
 {
-[[nodiscard]] inline bool is_default_stream(cuda::stream_ref stream) noexcept
-{
-  return stream.get() == ::cudaStream_t{};
-}
-
-inline void sync_before_default_stream(cuda::stream_ref stream)
-{
-  if (!is_default_stream(stream))
-  {
-    stream.sync();
-  }
-}
-
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> device_buffer_to_host_buffer(
   cuda::stream_ref stream, cuda::device_ref device, const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
-  // Scope `device` for default-stream operations. Non-default stream/device
-  // agreement is part of the public helper contract.
+  // Scope `device` for host allocation checks and possible default-stream copies.
+  // Non-default stream/device agreement is part of the public helper contract.
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto h_items = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
@@ -53,17 +40,21 @@ template <typename T>
 }
 
 template <typename T>
-void gen_into_device_buffer(seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
+void gen_into_device_buffer(cuda::stream_ref stream, seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
 {
-  ::c2h::detail::gen_values_between(seed, d_items.first(d_items.size()), min, max);
+  ::c2h::detail::gen_values_between(stream, seed, d_items.first(d_items.size()), min, max);
 }
 
 template <template <typename> class... Ps>
 void gen_into_device_buffer(
-  seed_t seed, cuda::device_buffer<custom_type_t<Ps...>>& d_items, custom_type_t<Ps...> min, custom_type_t<Ps...> max)
+  cuda::stream_ref stream,
+  seed_t seed,
+  cuda::device_buffer<custom_type_t<Ps...>>& d_items,
+  custom_type_t<Ps...> min,
+  custom_type_t<Ps...> max)
 {
   ::c2h::detail::gen_custom_type_state(
-    seed, reinterpret_cast<char*>(d_items.data()), min, max, d_items.size(), sizeof(custom_type_t<Ps...>));
+    stream, seed, reinterpret_cast<char*>(d_items.data()), min, max, d_items.size(), sizeof(custom_type_t<Ps...>));
 }
 } // namespace detail
 
@@ -100,12 +91,11 @@ template <typename T>
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  // Scope `device` for default-stream operations.
+  // Scope `device` for generator storage backed by current-device allocation.
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto d_items = ::c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
-  ::c2h::detail::sync_before_default_stream(stream);
-  ::c2h::detail::gen_into_device_buffer(seed, d_items, min, max);
+  ::c2h::detail::gen_into_device_buffer(stream, seed, d_items, min, max);
 
   return d_items;
 }
@@ -165,14 +155,13 @@ template <typename T>
   T min_segment_size,
   T max_segment_size)
 {
-  // Scope `device` for default-stream operations.
+  // Scope `device` for generator storage backed by current-device allocation.
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto d_segment_offsets =
     ::c2h::make_device_buffer<T>(stream, device, static_cast<std::size_t>(total_elements) + 2, cuda::no_init);
-  ::c2h::detail::sync_before_default_stream(stream);
   const auto num_offsets = ::c2h::detail::gen_uniform_offsets(
-    seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
+    stream, seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
 
   return {::cuda::std::move(d_segment_offsets), num_offsets};
 }
