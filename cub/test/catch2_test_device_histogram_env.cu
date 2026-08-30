@@ -753,8 +753,8 @@ CUB_TEST("DeviceHistogram::MultiHistogramEven handles the device-launch dynamic-
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
   }
 
-  constexpr int num_channels        = 4;
-  constexpr int num_active_channels = 3;
+  [[maybe_unused]] constexpr int num_channels = 4;
+  constexpr int num_active_channels           = 3;
   // The direct-load kernel has no static shared-memory footprint, so 4,096
   // three-channel counters exactly fill the B200's 48 KiB device-launch limit.
   constexpr int num_bins   = 4096;
