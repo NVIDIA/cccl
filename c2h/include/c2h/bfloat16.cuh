@@ -143,6 +143,12 @@ struct bfloat16_t
     return bfloat16_t(static_cast<float>(*this) * static_cast<float>(other));
   }
 
+  /// Divide
+  __host__ __device__ __forceinline__ bfloat16_t operator/(const bfloat16_t& other) const
+  {
+    return bfloat16_t(static_cast<float>(*this) / static_cast<float>(other));
+  }
+
   /// Add
   __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other) const
   {
