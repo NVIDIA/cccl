@@ -176,9 +176,13 @@ static int __cccl_hostjit_init_cuda_driver()
     return static_cast<int>(cudaErrorInitializationError);
   }
 
-  ::cuda::__driver::__getProcAddressFn(
+  auto* stored_get_proc_address = ::cuda::__driver::__getProcAddressFn(
     reinterpret_cast<decltype(::cuGetProcAddress)*>(get_proc_address),
     true);
+  if (stored_get_proc_address == nullptr)
+  {
+    return static_cast<int>(cudaErrorInitializationError);
+  }
 #  endif
 #endif // _CCCL_HOSTJIT() && !_CCCL_HOSTED()
 

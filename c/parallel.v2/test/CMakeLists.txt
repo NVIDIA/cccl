@@ -68,6 +68,7 @@ endforeach()
 
 cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_cub_call_codegen.cpp")
 cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device_copy_api.cpp")
+cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device_copy_c_api_smoke.cpp")
 cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device_copy_hostjit_smoke.cpp")
 
 add_subdirectory(freestanding)
