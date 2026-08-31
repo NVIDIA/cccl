@@ -48,9 +48,10 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& at
 ; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}}
+; SMXX: {{.*}}{{ISETP\.NE(\.U32)?\.OR\.EX|LOP3\.LUT}} [[RETRY_PRED:P[0-9]+]], {{.*}}[[RETRY_PRED]]{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{AND|OR|XOR}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
+; SMXX: {{.*}}@[[RETRY_PRED]] BRA{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
