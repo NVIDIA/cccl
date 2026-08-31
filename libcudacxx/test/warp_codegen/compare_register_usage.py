@@ -54,23 +54,31 @@ def main():
     ).stdout
     register_counts = extract_register_counts(resource_usage)
 
-    required_functions = {"wrapper_stress", "native_stress"}
+    function_pairs = [("wrapper_stress", "native_stress")]
+    if (
+        "wrapper_stress_u128" in register_counts
+        or "native_stress_u128" in register_counts
+    ):
+        function_pairs.append(("wrapper_stress_u128", "native_stress_u128"))
+
+    required_functions = {name for pair in function_pairs for name in pair}
     missing_functions = required_functions - register_counts.keys()
     if missing_functions:
         for name in sorted(missing_functions):
             print(f"missing register count in resource usage: {name}", file=sys.stderr)
         return 1
 
-    wrapper_registers = register_counts["wrapper_stress"]
-    native_registers = register_counts["native_stress"]
-    if wrapper_registers > native_registers:
-        print(
-            "wrapper_stress uses more registers than native_stress:\n"
-            f"  wrapper: {wrapper_registers}\n"
-            f"  native:  {native_registers}",
-            file=sys.stderr,
-        )
-        return 1
+    for wrapper_name, native_name in function_pairs:
+        wrapper_registers = register_counts[wrapper_name]
+        native_registers = register_counts[native_name]
+        if wrapper_registers > native_registers:
+            print(
+                f"{wrapper_name} uses more registers than {native_name}:\n"
+                f"  wrapper: {wrapper_registers}\n"
+                f"  native:  {native_registers}",
+                file=sys.stderr,
+            )
+            return 1
 
     return 0
 

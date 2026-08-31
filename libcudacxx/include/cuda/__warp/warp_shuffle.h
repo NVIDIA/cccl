@@ -136,19 +136,11 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
 #  if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
   {
-    __uint128_t __shuffled;
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_70,
-      (asm("mov.b128 %0, {%1, %2, %3, %4};" : "=q"(__shuffled) : "r"(__array[0]),
-           "r"(__array[1]),
-           "r"(__array[2]),
-           "r"(__array[3]));),
-      ({
-        ::cuda::std::uint64_t __lo, __hi;
-        asm("mov.b64 %0, {%1, %2};" : "=l"(__lo) : "r"(__array[0]), "r"(__array[1]));
-        asm("mov.b64 %0, {%1, %2};" : "=l"(__hi) : "r"(__array[2]), "r"(__array[3]));
-        __shuffled = (static_cast<__uint128_t>(__hi) << 64) | static_cast<__uint128_t>(__lo);
-      }))
+    const __uint128_t __shuffled =
+      static_cast<__uint128_t>(__array[0]) //
+      | (static_cast<__uint128_t>(__array[1]) << 32) //
+      | (static_cast<__uint128_t>(__array[2]) << 64) //
+      | (static_cast<__uint128_t>(__array[3]) << 96);
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
   else
