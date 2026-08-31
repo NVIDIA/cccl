@@ -108,6 +108,30 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     REQUIRE(stream_ctx == green_ctx);
   }
 
+  SECTION("A device-backed logical device gives a stream on the primary context")
+  {
+    const cuda::__logical_device_ref ldev{device};
+    cuda::stream str{ldev};
+
+    REQUIRE(str.get() != nullptr);
+    REQUIRE(str.device() == device);
+    REQUIRE(cuda::__driver::__streamGetCtx(str.get()) == device.__primary_context());
+
+    ::test::pinned<int> value(0);
+    ::test::launch_kernel_single_thread(str, ::test::assign_42{}, value.get());
+    str.sync();
+    REQUIRE(*value == 42);
+  }
+
+  SECTION("A device-backed stream matches one built from the device_ref directly")
+  {
+    const cuda::__logical_device_ref ldev{device};
+    cuda::stream from_logical{ldev};
+    cuda::stream from_device{device};
+
+    REQUIRE(cuda::__driver::__streamGetCtx(from_logical.get()) == cuda::__driver::__streamGetCtx(from_device.get()));
+  }
+
   SECTION("The default priority is used when none is given")
   {
     auto ldev = ::make_logical_device(device);

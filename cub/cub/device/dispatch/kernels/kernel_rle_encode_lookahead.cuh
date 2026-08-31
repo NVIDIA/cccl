@@ -905,42 +905,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // (otherwise, it is cheaper to recalculate positions from head_flags directly)
           // Paired with STORE's predicate; they intentionally disagree at run_count == 0 (see there).
           const bool stage_flags = (local_run_count < staging_threshold);
-          // CRITICAL: When stage_flags is true, we skip waiting on the pos_buf barriers too. This buys 3% BWUtil in
-          // some cells. Generally, skipping a wait like this would cause a race (phasebit can only encode parity).
-          // But we can prove, when 2 * pos_ring_stages >= key_ring_stages, this race would not happen.
-          // Proof. let's say P = pos_ring_stages and S = key_ring_stages, and we are at pipeline_generation g with
-          // g / P = n. Let's say for g, stage_flags is false, so g is waiting for phase (n - 1) to complete, i.e.
-          // the phase bit of the barrier is no longer (n - 1) % 2. If g - P waits and arrives properly, this is
-          // sound. However, if g - P skipped the wait, when the barrier is no longer (n - 1) % 2, it could also mean
-          // it just flipped from (n - 3) % 2, i.e. g - 2P could also be using the slot! This is a race/hazard:
-          // For this slot, we have 3 dependence types:
-          //   1. RAW: ST warps of gen g must read the slot after COMPUTE warps wrote them, i.e. write(g) must be
-          //      before reads(g). This is protected by staged_warp_tile.
-          //   2. WAR: COMPUTE warps of gen g must write after the ST warps finish reading g - P / g - 2P's, i.e.
-          //      reads(g- P, g - 2P, ...) must happen before write(g). This is now unprotected after the wait is
-          //      skipped. We are going to prove that with 2P >= S, this is guaranteed.
-          //   3. WAW: write(g - 2P) must happen before write(g). This is guaranteed because each CW write to
-          //      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_idx)], i.e. each segment only has 1 writer.
-          //      WAW is guaranteed by the progression of each CW.
-          // On WAR: notice that when g is in flight, load's wait on empty(g - S) must have passed. This means for all
-          // store warps STw, they must have arrived empty(h) for all h <= g - S. Given 2P >= S, they all must have
-          // arrived empty(g - 2P). Since we always arrive pos_buf_free before empty, this means they all must have
-          // arrived pos_buf_free(g - 2P) too. So there is no race.
+          if (pos_ring_stages < key_ring_stages)
+          {
+            // the pos slot is shared by pipeline_gens g, g+pos_ring_stages, ...
+            // need to wait for it to be cleared by STORE
+            if (pipeline_gen >= pos_ring_stages)
+            {
+              wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
+            }
+          }
           if (stage_flags)
           {
             head_flag_buf[slot_id][compute_warp_id * detail::warp_threads + lane_id] = my_flags;
           }
           else
           {
-            if (pos_ring_stages < key_ring_stages)
-            {
-              // the pos slot is shared by pipeline_gens g, g+pos_ring_stages, ...
-              // need to wait for it to be cleared by STORE
-              if (pipeline_gen >= pos_ring_stages)
-              {
-                wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
-              }
-            }
             stage_head_positions<items_per_thread>(my_flags, pos_dst, warp_tile_offset, lane_id);
           } // stage flags
           __syncwarp();
@@ -1052,8 +1031,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               }
               const int run_idx    = it * detail::warp_threads + lane_id;
               const run_span_t run = dec.decode_run(run_idx);
-              buf_key[it]          = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
-              // note: this is garbage for the last run head
+              // the run's key is its LAST element (the one before the next run's head). The clamp keeps the
+              // gather in bounds when next_head_pos is garbage (the warp tile's last run); that run's key and
+              // count are both dead here and written by the bookkeeper instead.
+              const int last_pos = (::cuda::std::min) (run.next_head_pos - 1, warp_tile_size - 1);
+              buf_key[it]        = tile_keys[warp_tile_offset + last_pos + skip_elems];
               buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
 
@@ -1076,16 +1058,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               {
                 break;
               }
-              const int run_idx = it * detail::warp_threads + lane_id;
-              if (run_idx < warp_tile_run_count)
+              const int run_idx         = it * detail::warp_threads + lane_id;
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              if (run_idx + 1 < warp_tile_run_count)
               {
-                const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-                d_unique[global_run_idx]  = buf_key[it];
-                if (run_idx + 1 < warp_tile_run_count)
-                {
-                  // last run's run count is bookkeeper's job
-                  d_counts[global_run_idx] = buf_run_length[it];
-                }
+                // the warp tile's last run ends outside this warp tile: its key and count are the
+                // bookkeeper's job
+                d_unique[global_run_idx] = buf_key[it];
+                d_counts[global_run_idx] = buf_run_length[it];
               }
             }
             __syncwarp();
@@ -1107,40 +1087,60 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
           const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
           const int warp_tile_offset              = warp_tile_id * warp_tile_size;
+          // the run's key is its LAST element, the one before the next run's head;
+          // the warp tile's last run (key and count) is fixed up by the bookkeeper
+          const int full_runs = warp_tile_run_count - 1;
           if (keys_staged)
           {
             const KeyT* tile_keys = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
+            int chunk_base        = 0;
             _CCCL_PRAGMA_UNROLL(2)
-            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += detail::warp_threads)
+            for (; chunk_base + detail::warp_threads <= full_runs; chunk_base += detail::warp_threads)
+            {
+              const int run_idx         = chunk_base + lane_id;
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
+              const int next_head_pos =
+                static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]);
+              d_unique[global_run_idx] = tile_keys[next_head_pos - 1 + skip_elems];
+              d_counts[global_run_idx] = next_head_pos - head_pos;
+            }
+            const int run_idx = chunk_base + lane_id;
+            if (run_idx < full_runs)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
-              d_unique[global_run_idx] = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
-              if (run_idx + 1 < warp_tile_run_count)
-              {
-                // within-warp delta (next head - this head); the last run is fixed separately
-                const int run_length =
-                  static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]) - head_pos;
-                d_counts[global_run_idx] = run_length;
-              }
+              const int next_head_pos =
+                static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]);
+              d_unique[global_run_idx] = tile_keys[next_head_pos - 1 + skip_elems];
+              d_counts[global_run_idx] = next_head_pos - head_pos;
             }
           }
           else
           {
             // vvv regressed case vvv
             const KeyT* tile_keys = d_keys + static_cast<size_t>(tile_id) * tile_size;
+            int chunk_base        = 0;
             _CCCL_PRAGMA_UNROLL(2)
-            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += detail::warp_threads)
+            for (; chunk_base + detail::warp_threads <= full_runs; chunk_base += detail::warp_threads)
+            {
+              const int run_idx         = chunk_base + lane_id;
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
+              const int next_head_pos =
+                static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]);
+              d_unique[global_run_idx] = tile_keys[next_head_pos - 1];
+              d_counts[global_run_idx] = next_head_pos - head_pos;
+            }
+            const int run_idx = chunk_base + lane_id;
+            if (run_idx < full_runs)
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos = static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)]);
-              d_unique[global_run_idx] = tile_keys[head_pos];
-              if (run_idx + 1 < warp_tile_run_count)
-              {
-                const int run_length =
-                  static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]) - head_pos;
-                d_counts[global_run_idx] = run_length;
-              }
+              const int next_head_pos =
+                static_cast<int>(run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)]);
+              d_unique[global_run_idx] = tile_keys[next_head_pos - 1];
+              d_counts[global_run_idx] = next_head_pos - head_pos;
             }
             // ^^^ regressed case ^^^
           }
@@ -1182,6 +1182,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int tile_total_runs =
             __shfl_sync(full_mask, lane_runs_before_warp_tile + lane_warp_tile_run_count, compute_warps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(full_mask, lane_warp_tile_run_count > 0);
+          // every count this warp closes gets its key written too: a run's key is its LAST element,
+          // which lives in the closing tile's keys (position -1 reads the over-fetched boundary element)
+          const KeyT* bk_tile_keys = keys_staged ? tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad
+                                                 : d_keys + static_cast<size_t>(tile_id) * tile_size;
+          const int bk_key_skip    = keys_staged ? skip_elems : 0;
           // wait for prefixed
           wait_parity(&prefixed[slot_id], key_ring.parity);
           const prefix_t packed_prefix       = prefix_packed[slot_id];
@@ -1198,12 +1203,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             if (later_nonempty_warp_tiles)
             {
               const int next_nonempty_warp_tile = lane_id + 1 + __ffs(later_nonempty_warp_tiles) - 1;
-              d_counts[last_run_global_idx] =
-                warp_first_heads[slot_id][next_nonempty_warp_tile] - warp_last_heads[slot_id][lane_id];
+              const int close_pos               = warp_first_heads[slot_id][next_nonempty_warp_tile];
+              d_unique[last_run_global_idx]     = bk_tile_keys[close_pos - 1 + bk_key_skip];
+              d_counts[last_run_global_idx]     = close_pos - warp_last_heads[slot_id][lane_id];
             }
             else if (is_last_tile)
             {
               // if we are the last warptile of the whole input, we end here
+              d_unique[last_run_global_idx] = bk_tile_keys[tile_len - 1 + bk_key_skip];
               d_counts[last_run_global_idx] = tile_len - warp_last_heads[slot_id][lane_id];
             }
             // else: this run is open in this tile, now this became a job for the next tile (see below)
@@ -1217,11 +1224,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // if our tile has a head, i.e. it stops here
             if (any_head && curr_prefix_run_count > 0)
             {
+              // first_head == 0 reads the over-fetched boundary element (the previous tile's last key)
+              d_unique[curr_prefix_run_count - 1] = bk_tile_keys[first_head - 1 + bk_key_skip];
               d_counts[curr_prefix_run_count - 1] = curr_prefix_open_length + first_head;
             }
             // if we are last tile with no head: we have to close it here
             if (is_last_tile && !any_head && curr_prefix_run_count > 0)
             {
+              d_unique[curr_prefix_run_count - 1] = bk_tile_keys[tile_len - 1 + bk_key_skip];
               d_counts[curr_prefix_run_count - 1] = curr_prefix_open_length + tile_len;
             }
             // otherwise, next tile's problem

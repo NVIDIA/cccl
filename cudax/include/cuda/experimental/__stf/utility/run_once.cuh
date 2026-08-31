@@ -103,6 +103,6 @@ public:
 
 private:
   // Stores the arguments used to invoke the function.
-  [[no_unique_address]] ::std::tuple<Ts...> val;
+  _CCCL_NO_UNIQUE_ADDRESS ::std::tuple<Ts...> val;
 };
 } // end namespace cuda::experimental::stf

@@ -36,7 +36,7 @@ from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import lower_builtin, lower_cast
 
 from . import types as cccl_types
-from ._bindings import Op, OpKind
+from ._bindings import Op, OpKind, TypeEnum
 from ._caching import (
     CachableFunction,
     _make_cache_key_from_args,
@@ -470,6 +470,15 @@ def _convert_type_descriptor_to_numba(td):
             return as_numba_type(struct_class)
         except numba.core.errors.NumbaError:
             return _register_struct_with_numba(struct_class)
+
+    # Numba has no bfloat16 support; fail with a clear message rather than a
+    # cryptic numba error deep in the compilation pipeline.
+    if td.info.typenum == TypeEnum.BFLOAT16:
+        raise TypeError(
+            "bfloat16 is not supported with Python callable operators. "
+            "Use a well-known operation (e.g. OpKind.PLUS) or a RawOp with "
+            "pre-compiled device code instead."
+        )
 
     # For POD types
     return numba.from_dtype(td.dtype)

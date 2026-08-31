@@ -98,18 +98,18 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     }
   }
 
-  SECTION("Every domain has a non-null green context")
+  SECTION("Every domain has a non-null driver context")
   {
     for (auto dev : cuda::devices)
     {
       for (auto& domain : dev.__locality_domains())
       {
-        REQUIRE(domain.green_context() != nullptr);
+        REQUIRE(domain.context() != nullptr);
       }
     }
   }
 
-  SECTION("Domains on the same device have distinct green contexts")
+  SECTION("Domains on the same device have distinct contexts")
   {
     for (auto dev : cuda::devices)
     {
@@ -118,7 +118,7 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
       {
         for (::cuda::std::size_t j = i + 1; j < domains.size(); ++j)
         {
-          REQUIRE(domains[i].green_context() != domains[j].green_context());
+          REQUIRE(domains[i].context() != domains[j].context());
           REQUIRE(domains[i] != domains[j]);
         }
       }
@@ -127,7 +127,7 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
 
   SECTION("Domains of different devices are all distinct")
   {
-    // Green context handles come from a process-wide driver allocator, so no handle may repeat
+    // Driver context handles come from a process-wide driver allocator, so no handle may repeat
     // across devices either.
     for (auto lhs_dev : cuda::devices)
     {
@@ -142,7 +142,7 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
         {
           for (auto& rhs : rhs_dev.__locality_domains())
           {
-            REQUIRE(lhs.green_context() != rhs.green_context());
+            REQUIRE(lhs.context() != rhs.context());
             REQUIRE(lhs != rhs);
           }
         }
@@ -215,14 +215,14 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     REQUIRE(before.size() == after.size());
   }
 
-  SECTION("Each green context converts to a usable driver context on the right device")
+  SECTION("Each domain context is usable on the right device")
   {
     for (auto dev : cuda::devices)
     {
       auto expected_device = cuda::__driver::__deviceGet(dev.get());
       for (auto& domain : dev.__locality_domains())
       {
-        auto ctx = cuda::__driver::__ctxFromGreenCtx(domain.green_context());
+        auto ctx = domain.context();
         REQUIRE(ctx != nullptr);
 
         // The fixture checks that the driver stack is empty at test exit, so the push must be undone
@@ -234,18 +234,36 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     }
   }
 
-  SECTION("A green context is not the primary context")
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  SECTION("A localized domain is a green context, not the primary context")
   {
-    // A domain must be a real partition, not a rebranded primary context.
+    // From 13.4 on a domain is a real SM partition, so it must not be a rebranded primary context.
+    // Before that the single domain is device-backed by design and holds the primary context.
     for (auto dev : cuda::devices)
     {
       auto primary = dev.__primary_context();
       for (auto& domain : dev.__locality_domains())
       {
-        REQUIRE(cuda::__driver::__ctxFromGreenCtx(domain.green_context()) != primary);
+        REQUIRE(domain.kind() == cuda::__logical_device_ref::kinds::green_context);
+        REQUIRE(domain.green_context() != nullptr);
+        REQUIRE(domain.context() != primary);
       }
     }
   }
+#  else // ^^^ 13.4+ ^^^ / vvv 13.3- vvv
+  SECTION("The single domain is device-backed and holds the primary context")
+  {
+    for (auto dev : cuda::devices)
+    {
+      auto primary = dev.__primary_context();
+      for (auto& domain : dev.__locality_domains())
+      {
+        REQUIRE(domain.kind() == cuda::__logical_device_ref::kinds::device);
+        REQUIRE(domain.context() == primary);
+      }
+    }
+  }
+#  endif // ^^^ 13.3- ^^^
 
   SECTION("Reading the domains leaves the driver stack empty")
   {
