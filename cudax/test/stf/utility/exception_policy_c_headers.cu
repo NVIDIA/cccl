@@ -24,12 +24,12 @@
  */
 
 // Deliberately first, and both flavors.
-#include <stdlib.h>
+#include <cuda/experimental/stf.cuh>
 
 #include <cstdlib>
 #include <exception>
 
-#include <cuda/experimental/stf.cuh>
+#include <stdlib.h>
 
 using namespace cuda::experimental::stf;
 
