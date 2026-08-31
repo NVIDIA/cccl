@@ -32,14 +32,22 @@ __device__ Vec_u8_x4 test_abs_diff_s8_x4(Vec_s8_x4 lhs, Vec_s8_x4 rhs)
 ; SM80: {{.*VABSDIFF4 .*}}
 ; SM90: {{.*VABSDIFF4 .*}}
 ; SM100: {{.*VABSDIFF4 .*}}
+; SM107: {{.*VIMNMX\.S8x4.*}}
+; SM107: {{.*VIMNMX\.S8x4.*}}
+; SM107: {{.*VIADD\.S8x4.*}}
 ; SM120: {{.*VIMNMX\.S8x4.*}}
 ; SM120: {{.*VIMNMX\.S8x4.*}}
+; SM120: {{.*VIADD\.S8x4.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_abs_diff_u8_x4.*}}
 ; SM80: {{.*VABSDIFF4\.U8.*}}
 ; SM90: {{.*VABSDIFF4\.U8.*}}
 ; SM100: {{.*VABSDIFF4\.U8.*}}
+; SM107: {{.*VIMNMX\.U8x4.*}}
+; SM107: {{.*VIMNMX\.U8x4.*}}
+; SM107: {{.*VIADD\.U8x4.*}}
 ; SM120: {{.*VIMNMX\.U8x4.*}}
 ; SM120: {{.*VIMNMX\.U8x4.*}}
+; SM120: {{.*VIADD\.U8x4.*}}
 
 */
