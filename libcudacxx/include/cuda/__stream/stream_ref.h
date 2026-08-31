@@ -303,6 +303,11 @@ public:
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
 
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
   [[nodiscard]] _CCCL_HOST_API __logical_device_ref __logical_device() const
   {
 #  if _CCCL_CTK_AT_LEAST(12, 5)
@@ -321,10 +326,11 @@ public:
         return {this->device(), __ctx.__ctx_device_};
     }
     _CCCL_UNREACHABLE();
-#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+#  endif // ^^^ _CCCL_AT_LEAST(12, 5) ^^^
     return __logical_device_ref{this->device()};
-#  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
   }
+
+  _CCCL_DIAG_POP
 
   //! @brief Queries the \c stream_ref for itself. This makes \c stream_ref usable in places where we expect an
   //! environment with a \c get_stream_t query
