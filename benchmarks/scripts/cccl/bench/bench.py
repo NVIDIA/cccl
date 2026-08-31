@@ -553,37 +553,6 @@ class ProcessRunner:
             self.process.kill()
 
 
-def _filter_rt_values(speedups, rt_values):
-    """Filter rt_values to only include axis values present in speedup data.
-
-    The rt_values from JSON metadata may include values for benchmark states
-    that NVBench skips at runtime. If weight normalization includes these
-    missing states, the total weight for iterated states sums to < 1.0,
-    producing incorrect scores. This function filters rt_values to match the
-    actual data, preserving the original value ordering (important for
-    importance-ordered axes).
-    """
-    present = {}
-    for bench in speedups:
-        present[bench] = {}
-        for state in speedups[bench]:
-            for point in state_to_rt_workload(bench, state):
-                axis, value = point.split("=")
-                if axis not in present[bench]:
-                    present[bench][axis] = set()
-                present[bench][axis].add(value)
-
-    result = {}
-    for bench in speedups:
-        result[bench] = {}
-        for axis in rt_values.get(bench, {}):
-            if axis in present.get(bench, {}):
-                result[bench][axis] = [
-                    v for v in rt_values[bench][axis] if v in present[bench][axis]
-                ]
-    return result
-
-
 class Bench:
     def __init__(self, algorithm_name, variant, ct_workload):
         self.algname = algorithm_name
@@ -826,27 +795,47 @@ class Bench:
         if not speedups:
             return float("-inf")
 
-        # Filter rt_values to only include axis values present in the speedup data
-        actual_rt_values = _filter_rt_values(speedups, rt_values)
+        rt_axes_ids = compute_axes_ids(rt_values)
+        weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
 
-        rt_axes_ids = compute_axes_ids(actual_rt_values)
-        weight_matrices = compute_weight_matrices(actual_rt_values, rt_axes_ids)
-
+        # For importance-ordered axis, score favors last speedups:
+        # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
+        #
+        # Sometimes, list is incomplete. Say, if a workloads error out or skip.
+        # For simplicity, say we skipped 2^16 and 2^20 elements.
+        #
+        # In these cases, `rt_values` should still contain full list with 2^16
+        # and 2^20 included.
+        # Otherwise, we'd assume that 2^24 was the first value on the importance axis.
+        # In which case, we'd assign weights as 38% / 62% instead of 48% / 52%.
+        #
+        # If we do nothing, score computation would just skip S16 and S20 completely,
+        # while still scaling S24 and S28 components lower, as if S16 and S20 was there.
+        # score = 15% of 0 + 25% of 0 + 29% of S24 + 31% of S28
+        # Note how we end up with 29% of S24 + 31% of S28 all while 29 + 31 do
+        # not add to a 100%.
+        # This breaks "speedup" semantic of the score.
+        #
+        # To fix this, we just accumulate what new 100% mean and scale score by that:
+        # (29/100 of S24) / (60/100) + (31/100 of S28) / (60/100)
+        #     = 29/60 of S24 + 31/60 of S28
+        # which is: 48% of S24 + 52% of S28, maintaining the relative importance.
         score = 0
+        total_weight = 0
         for bench in speedups:
             for state in speedups[bench]:
                 rt_workload = state_to_rt_workload(bench, state)
                 weights = weight_matrices[bench]
                 weight = get_workload_weight(
-                    rt_workload,
-                    actual_rt_values[bench],
-                    rt_axes_ids[bench],
-                    weights,
+                    rt_workload, rt_values[bench], rt_axes_ids[bench], weights
                 )
-                speedup_val = speedups[bench][state]
-                score = score + weight * speedup_val
+                score = score + weight * speedups[bench][state]
+                total_weight = total_weight + weight
 
-        return score
+        if total_weight == 0:
+            return float("-inf")
+
+        return score / total_weight
 
 
 class BaseBench(Bench):
