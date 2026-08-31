@@ -208,7 +208,8 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    ON_THROW(abort) {
+    ON_THROW(abort)
+    {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);

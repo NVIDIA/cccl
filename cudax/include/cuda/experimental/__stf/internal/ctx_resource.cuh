@@ -115,7 +115,8 @@ public:
       // Add a single host callback using lambda that will release all callback resources
       auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
         // The CUDA runtime calls this back, so an exception must not leave it.
-        ON_THROW(abort) {
+        ON_THROW(abort)
+        {
           auto* resources = static_cast<decltype(callback_list.get())>(userData);
 
           for (auto& resource : *resources)
