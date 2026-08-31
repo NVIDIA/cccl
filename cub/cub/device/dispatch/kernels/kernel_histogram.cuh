@@ -90,6 +90,13 @@ struct fast_divide_by_constant
     }
 
     const int log2_divisor = ceil_log2(divisor);
+    if (log2_divisor == bits)
+    {
+      magic = divisor;
+      shift = 0;
+      mode  = 3;
+      return;
+    }
     if constexpr (sizeof(UInt) == 8)
     {
 #if _CCCL_HAS_INT128()
@@ -133,6 +140,10 @@ struct fast_divide_by_constant
     if (mode == 1)
     {
       return numerator >> shift;
+    }
+    if (mode == 3)
+    {
+      return numerator / magic;
     }
 
     UInt high;
