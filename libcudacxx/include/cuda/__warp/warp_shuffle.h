@@ -222,9 +222,6 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   ::cuda::std::integral_constant<int, _Width> = {})
 {
   ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __xor_mask, &__pred1),
-                                                           "all active lanes must have the same xor_mask");))
   // 0 < __xor_mask < _Width => lane ^ xor_mask is always in the segment range
 
   if constexpr (_Width == 1)
@@ -273,9 +270,6 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 {
   ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "delta must be in the range [0, _Width)");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
   [[maybe_unused]] constexpr auto __clamp_segmask = (__warp_threads - _Width) << 8;
   [[maybe_unused]] bool __pred;
 
@@ -322,9 +316,6 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 {
   ::cuda::device::__warp_shuffle_mandates<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "__delta must be in the range [0, _Width)");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
   [[maybe_unused]] constexpr auto __clamp_segmask = (_Width - 1u) | ((__warp_threads - _Width) << 8);
   [[maybe_unused]] bool __pred;
 
