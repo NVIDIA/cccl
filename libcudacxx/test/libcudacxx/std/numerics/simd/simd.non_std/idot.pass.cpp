@@ -108,8 +108,7 @@ TEST_FUNC constexpr void test_8bit_dp4a()
   {
     cuda::std::array<uint8_t, 7> lhs_values{1, 2, 3, 4, 5, 6, 7};
     cuda::std::array<uint8_t, 7> rhs_values{8, 7, 6, 5, 4, 3, 2};
-    test_values<uint8_t, uint8_t, uint32_t, 7>(
-      lhs_values, rhs_values, uint32_t{13});
+    test_values<uint8_t, uint8_t, uint32_t, 7>(lhs_values, rhs_values, uint32_t{13});
   }
   {
     cuda::std::array<uint8_t, 5> lhs_values{1, 2, 3, 4, 5};
@@ -120,6 +119,11 @@ TEST_FUNC constexpr void test_8bit_dp4a()
     cuda::std::array<int8_t, 3> lhs_values{-4, 5, -6};
     cuda::std::array<uint8_t, 3> rhs_values{7, 8, 9};
     test_values<int8_t, uint8_t, int32_t, 3>(lhs_values, rhs_values, int32_t{19});
+  }
+  {
+    cuda::std::array<uint8_t, 4> lhs_values{1, 1, 1, 1};
+    cuda::std::array<uint8_t, 4> rhs_values{1, 1, 1, 1};
+    test_values<uint8_t, uint8_t, uint32_t, 4>(lhs_values, rhs_values, uint32_t{0xFFFFFFFD});
   }
 }
 
@@ -185,6 +189,8 @@ TEST_FUNC constexpr bool test_all()
   test_generated<long, long long, long long, 4>(9);
   test_generated<unsigned short, unsigned, unsigned long long, 6>(11);
   test_generated<unsigned long, unsigned long long, unsigned long long, 3>(13);
+  test_generated<int8_t, int8_t, uint32_t, 5>(17);
+  test_generated<uint16_t, uint16_t, uint32_t, 5>(19);
 #if _CCCL_HAS_INT128()
   test_generated<__int128_t, __uint128_t, __int128_t, 3>(__int128_t{17});
   test_generated<__uint128_t, __uint128_t, __uint128_t, 5>(__uint128_t{19});
