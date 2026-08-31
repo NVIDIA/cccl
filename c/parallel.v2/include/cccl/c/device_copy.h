@@ -17,13 +17,19 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
+enum
+{
+  CCCL_DEVICE_COPY_MAX_RANK = 8,
+};
+
 typedef enum cccl_device_copy_axis_metadata_kind_t
 {
   // The value for this axis is supplied by the runtime view passed to cccl_device_copy.
   // The build-time metadata value must be 0 and is ignored.
   CCCL_DEVICE_COPY_AXIS_RUNTIME = 0,
   // The value for this axis is a compile-time constant in the generated mdspan type
-  // or mapping. The build-time metadata value is the constant axis value.
+  // or mapping. The build-time metadata value is the constant axis value. Reserved
+  // for a later implementation; the current builder accepts runtime metadata only.
   CCCL_DEVICE_COPY_AXIS_STATIC = 1,
 } cccl_device_copy_axis_metadata_kind_t;
 
@@ -40,6 +46,7 @@ typedef enum cccl_device_copy_layout_kind_t
   // cuda::std::layout_left. Runtime stride pointers are ignored.
   CCCL_DEVICE_COPY_LAYOUT_LEFT = 1,
   // cuda::std::layout_stride. Strides are in elements and must be non-negative.
+  // Reserved for a later implementation.
   CCCL_DEVICE_COPY_LAYOUT_STRIDE = 2,
   // cuda::layout_stride_relaxed. Strides are in elements and may be negative.
   CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED = 3,
@@ -49,16 +56,19 @@ typedef struct cccl_device_copy_view_build_t
 {
   cccl_device_copy_layout_kind_t layout;
   // Array of rank stride metadata entries for strided layouts. Ignored for
-  // layout_left/layout_right and may be NULL in that case.
+  // layout_left/layout_right and may be NULL in that case. Current implementation
+  // requires all layout_stride_relaxed stride metadata entries to be runtime.
   const cccl_device_copy_axis_metadata_t* strides;
 } cccl_device_copy_view_build_t;
 
 typedef struct cccl_device_copy_build_spec_t
 {
   cccl_type_info value_type;
+  // Current implementation accepts ranks in [1, CCCL_DEVICE_COPY_MAX_RANK].
   size_t rank;
   // Array of rank extent metadata entries. Static extent values must be
-  // non-negative. Runtime extent values are supplied by runtime views.
+  // non-negative. Runtime extent values are supplied by runtime views. Current
+  // implementation requires all entries to be runtime metadata.
   const cccl_device_copy_axis_metadata_t* shape;
   cccl_device_copy_view_build_t source;
   cccl_device_copy_view_build_t destination;

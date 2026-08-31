@@ -27,13 +27,17 @@
 namespace
 {
 constexpr const char* device_copy_fn_name = "cccl_jit_device_copy";
+constexpr size_t max_device_copy_rank     = CCCL_DEVICE_COPY_MAX_RANK;
 
 using device_copy_fn_t = int (*)(
   const void* source_data,
   unsigned long long source_byte_offset,
+  const int64_t* source_shape,
+  const int64_t* source_strides,
   void* destination_data,
   unsigned long long destination_byte_offset,
-  unsigned long long num_items,
+  const int64_t* destination_shape,
+  const int64_t* destination_strides,
   void* stream);
 
 bool is_power_of_two(size_t value)
@@ -67,6 +71,129 @@ bool is_contiguous_layout(cccl_device_copy_layout_kind_t layout)
   return layout == CCCL_DEVICE_COPY_LAYOUT_RIGHT || layout == CCCL_DEVICE_COPY_LAYOUT_LEFT;
 }
 
+bool is_relaxed_layout(cccl_device_copy_layout_kind_t layout)
+{
+  return layout == CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED;
+}
+
+bool is_supported_layout(cccl_device_copy_layout_kind_t layout)
+{
+  return is_contiguous_layout(layout) || is_relaxed_layout(layout);
+}
+
+bool all_runtime_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t rank)
+{
+  if (metadata == nullptr)
+  {
+    return false;
+  }
+
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (metadata[axis].kind != CCCL_DEVICE_COPY_AXIS_RUNTIME || metadata[axis].value != 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool validate_view_build(cccl_device_copy_view_build_t view, size_t rank)
+{
+  if (!is_supported_layout(view.layout))
+  {
+    return false;
+  }
+
+  if (is_relaxed_layout(view.layout))
+  {
+    return all_runtime_metadata(view.strides, rank);
+  }
+
+  return true;
+}
+
+bool product_is_representable(size_t rank, const int64_t* shape)
+{
+  uint64_t product = 1;
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (shape[axis] == 0)
+    {
+      return true;
+    }
+
+    const auto extent = static_cast<uint64_t>(shape[axis]);
+    if (product > std::numeric_limits<uint64_t>::max() / extent)
+    {
+      return false;
+    }
+    product *= extent;
+  }
+
+  return true;
+}
+
+bool strided_span_is_representable(size_t rank, const int64_t* shape, const int64_t* strides)
+{
+  uint64_t negative_offset = 0;
+  uint64_t positive_span   = 1;
+
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (shape[axis] == 0)
+    {
+      return true;
+    }
+    if (shape[axis] == 1 || strides[axis] == 0)
+    {
+      continue;
+    }
+
+    const auto extent_minus_one = static_cast<uint64_t>(shape[axis] - 1);
+    uint64_t stride_magnitude   = 0;
+    if (strides[axis] < 0)
+    {
+      if (strides[axis] == std::numeric_limits<int64_t>::min())
+      {
+        return false;
+      }
+      stride_magnitude = static_cast<uint64_t>(-strides[axis]);
+    }
+    else
+    {
+      stride_magnitude = static_cast<uint64_t>(strides[axis]);
+    }
+
+    if (stride_magnitude != 0 && extent_minus_one > std::numeric_limits<uint64_t>::max() / stride_magnitude)
+    {
+      return false;
+    }
+    const auto contribution = extent_minus_one * stride_magnitude;
+
+    if (strides[axis] < 0)
+    {
+      if (contribution > std::numeric_limits<uint64_t>::max() - negative_offset)
+      {
+        return false;
+      }
+      negative_offset += contribution;
+    }
+    else
+    {
+      if (contribution > std::numeric_limits<uint64_t>::max() - positive_span)
+      {
+        return false;
+      }
+      positive_span += contribution;
+    }
+  }
+
+  return negative_offset <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())
+      && negative_offset <= std::numeric_limits<uint64_t>::max() - positive_span;
+}
+
 CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
 {
   if (spec.value_type.size == 0 || !is_power_of_two(spec.value_type.alignment))
@@ -77,15 +204,15 @@ CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (spec.rank != 1 || spec.shape == nullptr)
+  if (spec.rank == 0 || spec.rank > max_device_copy_rank)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (spec.shape[0].kind != CCCL_DEVICE_COPY_AXIS_RUNTIME || spec.shape[0].value != 0)
+  if (!all_runtime_metadata(spec.shape, spec.rank))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (!is_contiguous_layout(spec.source.layout) || !is_contiguous_layout(spec.destination.layout))
+  if (!validate_view_build(spec.source, spec.rank) || !validate_view_build(spec.destination, spec.rank))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -93,12 +220,103 @@ CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
   return CUDA_SUCCESS;
 }
 
-std::string make_device_copy_source(cccl_type_info value_type)
+std::string dynamic_stride_template_arguments(size_t rank)
+{
+  std::string result;
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (axis != 0)
+    {
+      result += ", ";
+    }
+    result += "::cuda::dynamic_stride";
+  }
+
+  return result;
+}
+
+std::string casted_runtime_values(const char* values, size_t rank, const char* type)
+{
+  std::string result;
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (axis != 0)
+    {
+      result += ", ";
+    }
+    result += "static_cast<";
+    result += type;
+    result += ">(";
+    result += values;
+    result += "[";
+    result += std::to_string(axis);
+    result += "])";
+  }
+
+  return result;
+}
+
+const char* contiguous_layout_name(cccl_device_copy_layout_kind_t layout)
+{
+  return layout == CCCL_DEVICE_COPY_LAYOUT_LEFT ? "::cuda::std::layout_left" : "::cuda::std::layout_right";
+}
+
+std::string make_mdspan_view_source(
+  const char* mdspan_type_name,
+  const char* view_name,
+  const char* data_name,
+  const char* byte_offset_name,
+  const char* strides_name,
+  cccl_device_copy_layout_kind_t layout,
+  bool is_const,
+  size_t rank)
+{
+  const std::string value_type_name = is_const ? "const value_type" : "value_type";
+  const std::string pointer_decl    = is_const ? "const auto* " : "auto* ";
+  const std::string char_cast       = is_const ? "static_cast<const char*>(" : "static_cast<char*>(";
+  const std::string pointer_cast    = "reinterpret_cast<" + value_type_name + "*>(";
+
+  std::string src;
+  src += "  " + pointer_decl + std::string(view_name) + "_effective =\n";
+  src += "    " + pointer_cast + char_cast + data_name + ") + " + byte_offset_name + ");\n";
+
+  if (is_relaxed_layout(layout))
+  {
+    src += "  const runtime_strides_type " + std::string(view_name) + "_strides{"
+         + casted_runtime_values(strides_name, rank, "offset_type") + "};\n";
+    src += "  const offset_type " + std::string(view_name) + "_offset = __cccl_negative_stride_offset(extents, "
+         + view_name + "_strides);\n";
+    src += "  " + pointer_decl + std::string(view_name) + "_base = " + view_name + "_effective - " + view_name
+         + "_offset;\n";
+    src += "  using " + std::string(mdspan_type_name)
+         + "_layout_type = cccl_device_copy_layout_stride_relaxed<runtime_strides_type, offset_type>;\n";
+    src += "  using " + std::string(mdspan_type_name) + " = ::cuda::std::mdspan<" + value_type_name + ", extents_type, "
+         + mdspan_type_name + "_layout_type>;\n";
+    src += "  using " + std::string(view_name) + "_mapping_type = " + mdspan_type_name + "::mapping_type;\n";
+    src += "  const " + std::string(mdspan_type_name) + " " + view_name + "{" + view_name + "_base, " + view_name
+         + "_mapping_type{extents, " + view_name + "_strides, " + view_name + "_offset}};\n";
+  }
+  else
+  {
+    src += "  using " + std::string(mdspan_type_name) + "_layout_type = " + contiguous_layout_name(layout) + ";\n";
+    src += "  using " + std::string(mdspan_type_name) + " = ::cuda::std::mdspan<" + value_type_name + ", extents_type, "
+         + mdspan_type_name + "_layout_type>;\n";
+    src += "  const " + std::string(mdspan_type_name) + " " + view_name + "{" + view_name + "_effective, extents};\n";
+  }
+
+  src += "\n";
+  return src;
+}
+
+std::string make_device_copy_source(cccl_device_copy_build_spec_t spec)
 {
   std::string src = R"(#include <cuda_runtime.h>
+#include <stdint.h>
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__mdspan/layout_stride_relaxed.h>
+#include <cuda/__mdspan/strides.h>
 #include <cuda/std/mdspan>
 #include <cuda/stream_ref>
 #include <cub/device/device_copy.cuh>
@@ -154,18 +372,74 @@ static int __cccl_hostjit_init_cuda_driver()
 
 )";
 
-  src += "struct alignas(" + std::to_string(value_type.alignment) + ") cccl_device_copy_value_t\n";
+  src += "struct alignas(" + std::to_string(spec.value_type.alignment) + ") cccl_device_copy_value_t\n";
   src += "{\n";
-  src += "  char data[" + std::to_string(value_type.size) + "];\n";
+  src += "  char data[" + std::to_string(spec.value_type.size) + "];\n";
   src += "};\n";
-  src += "static_assert(sizeof(cccl_device_copy_value_t) == " + std::to_string(value_type.size) + ");\n\n";
+  src += "static_assert(sizeof(cccl_device_copy_value_t) == " + std::to_string(spec.value_type.size) + ");\n\n";
 
-  src += R"(extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
+  src += R"(using cccl_device_copy_offset_t = long long;
+
+template <class StridesT, class OffsetT>
+struct cccl_device_copy_layout_stride_relaxed
+{
+  template <class ExtentsT>
+  class mapping : public ::cuda::layout_stride_relaxed::mapping<ExtentsT, StridesT, OffsetT>
+  {
+    using base_type = ::cuda::layout_stride_relaxed::mapping<ExtentsT, StridesT, OffsetT>;
+
+  public:
+    using extents_type = typename base_type::extents_type;
+    using index_type   = typename base_type::index_type;
+    using size_type    = typename base_type::size_type;
+    using rank_type    = typename base_type::rank_type;
+    using layout_type  = cccl_device_copy_layout_stride_relaxed<StridesT, OffsetT>;
+
+    using base_type::base_type;
+    mapping() = default;
+
+    friend constexpr bool operator==(const mapping& lhs, const mapping& rhs) noexcept
+    {
+      return static_cast<const base_type&>(lhs) == static_cast<const base_type&>(rhs);
+    }
+
+    friend constexpr bool operator!=(const mapping& lhs, const mapping& rhs) noexcept
+    {
+      return !(lhs == rhs);
+    }
+  };
+};
+
+template <class ExtentsT, class StridesT>
+cccl_device_copy_offset_t __cccl_negative_stride_offset(const ExtentsT& extents, const StridesT& strides)
+{
+  cccl_device_copy_offset_t offset = 0;
+  for (typename ExtentsT::rank_type axis = 0; axis < ExtentsT::rank(); ++axis)
+  {
+    const auto extent = extents.extent(axis);
+    if (extent == 0)
+    {
+      return 0;
+    }
+
+    const auto stride = static_cast<cccl_device_copy_offset_t>(strides.stride(axis));
+    if (stride < 0)
+    {
+      offset += static_cast<cccl_device_copy_offset_t>(extent - 1) * -stride;
+    }
+  }
+  return offset;
+}
+
+extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
   const void* source_data,
   unsigned long long source_byte_offset,
+  const int64_t* source_shape,
+  const int64_t* source_strides,
   void* destination_data,
   unsigned long long destination_byte_offset,
-  unsigned long long num_items,
+  const int64_t* destination_shape,
+  const int64_t* destination_strides,
   void* stream)
 {
   const int init_status = __cccl_hostjit_init_cuda_driver();
@@ -174,21 +448,42 @@ static int __cccl_hostjit_init_cuda_driver()
     return init_status;
   }
 
-  using value_type   = cccl_device_copy_value_t;
-  using index_type   = unsigned long long;
-  using extents_type = ::cuda::std::dextents<index_type, 1>;
-  using input_type   = ::cuda::std::mdspan<const value_type, extents_type>;
-  using output_type  = ::cuda::std::mdspan<value_type, extents_type>;
+)";
 
-  const auto* source =
-    reinterpret_cast<const value_type*>(static_cast<const char*>(source_data) + source_byte_offset);
-  auto* destination =
-    reinterpret_cast<value_type*>(static_cast<char*>(destination_data) + destination_byte_offset);
-
-  return static_cast<int>(
+  const auto rank = spec.rank;
+  src += "  (void) destination_shape;\n";
+  if (!is_relaxed_layout(spec.source.layout))
+  {
+    src += "  (void) source_strides;\n";
+  }
+  if (!is_relaxed_layout(spec.destination.layout))
+  {
+    src += "  (void) destination_strides;\n";
+  }
+  src += "\n";
+  src += "  using value_type   = cccl_device_copy_value_t;\n";
+  src += "  using index_type   = unsigned long long;\n";
+  src += "  using offset_type  = cccl_device_copy_offset_t;\n";
+  src += "  using extents_type = ::cuda::std::dextents<index_type, " + std::to_string(rank) + ">;\n";
+  src += "  using runtime_strides_type = ::cuda::strides<offset_type, " + dynamic_stride_template_arguments(rank)
+       + ">;\n";
+  src += "\n";
+  src += "  const extents_type extents{" + casted_runtime_values("source_shape", rank, "index_type") + "};\n\n";
+  src += make_mdspan_view_source(
+    "input_type", "source_view", "source_data", "source_byte_offset", "source_strides", spec.source.layout, true, rank);
+  src += make_mdspan_view_source(
+    "output_type",
+    "destination_view",
+    "destination_data",
+    "destination_byte_offset",
+    "destination_strides",
+    spec.destination.layout,
+    false,
+    rank);
+  src += R"(  return static_cast<int>(
     cub::DeviceCopy::Copy(
-      input_type{source, num_items},
-      output_type{destination, num_items},
+      source_view,
+      destination_view,
       ::cuda::stream_ref{reinterpret_cast<cudaStream_t>(stream)}));
 }
 )";
@@ -228,7 +523,7 @@ try
 
   auto jit_config = hostjit::codegen::CubCall::make_jit_config(
     cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path, device_copy_fn_name);
-  auto source = make_device_copy_source(spec.value_type);
+  auto source = make_device_copy_source(spec);
 
   if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
   {
@@ -285,8 +580,8 @@ CUresult cccl_device_copy(cccl_device_copy_build_result_t build,
                           CUstream stream)
 try
 {
-  if (build.copy_fn == nullptr || build.rank != 1 || !is_contiguous_layout(build.source_layout)
-      || !is_contiguous_layout(build.destination_layout))
+  if (build.copy_fn == nullptr || build.rank == 0 || build.rank > max_device_copy_rank
+      || !is_supported_layout(build.source_layout) || !is_supported_layout(build.destination_layout))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -294,7 +589,25 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (source.shape[0] < 0 || destination.shape[0] < 0 || source.shape[0] != destination.shape[0])
+  for (size_t axis = 0; axis < build.rank; ++axis)
+  {
+    if (source.shape[axis] < 0 || destination.shape[axis] < 0 || source.shape[axis] != destination.shape[axis])
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+  }
+  if (!product_is_representable(build.rank, source.shape))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (is_relaxed_layout(build.source_layout)
+      && (source.strides == nullptr || !strided_span_is_representable(build.rank, source.shape, source.strides)))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (is_relaxed_layout(build.destination_layout)
+      && (destination.strides == nullptr
+          || !strided_span_is_representable(build.rank, destination.shape, destination.strides)))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -304,15 +617,17 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  const auto num_items = static_cast<unsigned long long>(source.shape[0]);
-  auto fn              = reinterpret_cast<device_copy_fn_t>(build.copy_fn);
-  const int status =
-    fn(source.data,
-       static_cast<unsigned long long>(source.byte_offset),
-       destination.data,
-       static_cast<unsigned long long>(destination.byte_offset),
-       num_items,
-       reinterpret_cast<void*>(stream));
+  auto fn          = reinterpret_cast<device_copy_fn_t>(build.copy_fn);
+  const int status = fn(
+    source.data,
+    static_cast<unsigned long long>(source.byte_offset),
+    source.shape,
+    source.strides,
+    destination.data,
+    static_cast<unsigned long long>(destination.byte_offset),
+    destination.shape,
+    destination.strides,
+    reinterpret_cast<void*>(stream));
 
   return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
 }
