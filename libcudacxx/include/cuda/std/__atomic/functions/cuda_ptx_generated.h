@@ -1234,7 +1234,7 @@ struct __cuda_atomic_bind_load {
   _Type* __dst;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_load(__ptr, *__dst, _Atomic_Memorder{}, _Tag{}, _Sco{}, _Mmio{});
   }
 };
@@ -1758,7 +1758,7 @@ struct __cuda_atomic_bind_store {
   _Type* __val;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_store(__ptr, *__val, _Atomic_Memorder{}, _Tag{}, _Sco{}, _Mmio{});
   }
 };
@@ -2363,7 +2363,7 @@ struct __cuda_atomic_bind_compare_exchange {
   _Type* __des;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE bool operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API bool operator()(_Atomic_Memorder) {
     return __cuda_atomic_compare_exchange(__ptr, *__exp, *__exp, *__des, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -2970,7 +2970,7 @@ struct __cuda_atomic_bind_exchange {
   _Type* __new;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_exchange(__ptr, *__old, *__new, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -3435,7 +3435,7 @@ struct __cuda_atomic_bind_fetch_add {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_add(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -3640,7 +3640,7 @@ struct __cuda_atomic_bind_fetch_and {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_and(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -4005,7 +4005,7 @@ struct __cuda_atomic_bind_fetch_max {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_max(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -4370,7 +4370,7 @@ struct __cuda_atomic_bind_fetch_min {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_min(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -4575,7 +4575,7 @@ struct __cuda_atomic_bind_fetch_or {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_or(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
@@ -4780,7 +4780,7 @@ struct __cuda_atomic_bind_fetch_xor {
   _Type* __op;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_fetch_xor(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
