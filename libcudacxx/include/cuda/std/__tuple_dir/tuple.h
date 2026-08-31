@@ -162,37 +162,38 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::move(__t))
   {}
 
-  template <class... _UTypes>
-  using _VariadicConstraints = typename __tuple_constraints<_Tp...>::template __variadic_construction<_UTypes...>;
-
   template <class... _UTypes,
-            enable_if_t<sizeof...(_Tp) != 0, int>                      = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                                         = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            enable_if_t<sizeof...(_Tp) != 0, int> = 0, // Help Clang disambiguate for CTAD
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(_UTypes&&... __u) noexcept((is_nothrow_constructible_v<_Tp, _UTypes> && ...))
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class... _UTypes,
-            enable_if_t<sizeof...(_Tp) != 0, int>                      = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                                         = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            enable_if_t<sizeof...(_Tp) != 0, int> = 0, // Help Clang disambiguate for CTAD
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(_UTypes&&... __u) noexcept((is_nothrow_constructible_v<_Tp, _UTypes> && ...))
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _UTypes,
-            enable_if_t<sizeof...(_Tp) != 0, int>        = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                           = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            enable_if_t<sizeof...(_Tp) != 0, int> = 0, // Help Clang disambiguate for CTAD
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(_UTypes&&...) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class _Alloc,
             class... _UTypes,
-            class _Constraints                                         = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     (is_nothrow_constructible_v<_Tp, _UTypes> && ...))
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
@@ -200,8 +201,9 @@ public:
 
   template <class _Alloc,
             class... _UTypes,
-            class _Constraints                                         = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     (is_nothrow_constructible_v<_Tp, _UTypes> && ...))
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
@@ -210,20 +212,18 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _Alloc,
             class... _UTypes,
-            class _Constraints                           = _VariadicConstraints<_UTypes...>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(allocator_arg_t, const _Alloc&, _UTypes&&...) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
-  template <class... _UTypes>
-  using _VariadicConstraintsLessRank =
-    typename __tuple_constraints<_Tp...>::template __variadic_construction_less_rank<_UTypes...>;
-
   template <class... _UTypes,
-            enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int>    = 0,
-            enable_if_t<(sizeof...(_UTypes) != 0), int>                = 0,
-            class _Constraints                                         = _VariadicConstraintsLessRank<_UTypes...>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int> = 0,
+            enable_if_t<(sizeof...(_UTypes) != 0), int>             = 0,
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_variadic_constructible_less_rank<_UTypes...>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(_UTypes&&... __u)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}

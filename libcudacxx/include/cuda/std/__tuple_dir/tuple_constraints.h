@@ -255,8 +255,6 @@ struct __tuple_constraints
     }
     // NOLINTEND(bugprone-branch-clone)
   }
-  template <class... _UTypes>
-  using __variadic_construction = _ConstructorConstraint<__select_variadic_constructible<_UTypes...>()>;
 
   template <class... _UTypes>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
@@ -303,9 +301,6 @@ struct __tuple_constraints
     }
     // NOLINTEND(bugprone-branch-clone)
   }
-  template <class... _UTypes>
-  using __variadic_construction_less_rank =
-    _ConstructorConstraint<__select_variadic_constructible_less_rank<_UTypes...>()>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UTuple, size_t... _Indices>

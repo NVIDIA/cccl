@@ -108,9 +108,6 @@ struct __pair_constraints
     // NOLINTEND(bugprone-branch-clone)
   }
 
-  template <class _U1, class _U2>
-  using __variadic_construction = _ConstructorConstraint<__select_variadic_constructible<_U1, _U2>()>;
-
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor __select_pair_like_constructible() noexcept
@@ -356,29 +353,32 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(__t1, __t2)
   {}
 
-  template <class _U1          = _T1,
-            class _U2          = _T2,
-            class _Constraints = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Constraints =
+              __pair_constraints<_T1, _T2>::template __select_variadic_constructible<_U1, _U2>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
       : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
-  template <class _U1          = _T1,
-            class _U2          = _T2,
-            class _Constraints = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Constraints =
+              __pair_constraints<_T1, _T2>::template __select_variadic_constructible<_U1, _U2>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
       : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
-  template <class _U1          = _T1,
-            class _U2          = _T2,
-            class _Constraints = typename __pair_constraints<_T1, _T2>::template __variadic_construction<_U1, _U2>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Constraints =
+              __pair_constraints<_T1, _T2>::template __select_variadic_constructible<_U1, _U2>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr pair(_U1&&, _U2&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
