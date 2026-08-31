@@ -121,13 +121,20 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
   HistogramHighBinAlgorithm high_bin_algorithm       = HistogramHighBinAlgorithm::cooperative;
-  HistogramCacheAlgorithm high_bin_cache             = HistogramCacheAlgorithm::cuckoo;
-  HistogramSpillAlgorithm high_bin_spill             = HistogramSpillAlgorithm::output;
-  HistogramAggregationAlgorithm high_bin_aggregation = HistogramAggregationAlgorithm::warp_coalesced;
+  HistogramCacheAlgorithm high_bin_cache             = HistogramCacheAlgorithm::single_probe;
+  HistogramSpillAlgorithm high_bin_spill             = HistogramSpillAlgorithm::global_memory_privatized;
+  HistogramAggregationAlgorithm high_bin_aggregation = HistogramAggregationAlgorithm::rle;
   int high_bin_cache_entries_per_channel             = 2048;
   int high_bin_cache_count_replicas                  = 1;
   int high_bin_cache_cuckoo_max_bins                 = 262144;
   int high_bin_pixels_per_thread                     = 4;
+  int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
+  int high_bin_interpolation_min_bins                = 512;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
+  {
+    return high_bin_threads_per_block != 0 ? high_bin_threads_per_block : threads_per_block;
+  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
@@ -142,7 +149,9 @@ struct HistogramPolicy
         && lhs.high_bin_cache_entries_per_channel == rhs.high_bin_cache_entries_per_channel
         && lhs.high_bin_cache_count_replicas == rhs.high_bin_cache_count_replicas
         && lhs.high_bin_cache_cuckoo_max_bins == rhs.high_bin_cache_cuckoo_max_bins
-        && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread;
+        && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread
+        && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
+        && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -165,7 +174,9 @@ struct HistogramPolicy
         << ", .high_bin_cache_entries_per_channel = " << p.high_bin_cache_entries_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
         << ", .high_bin_cache_cuckoo_max_bins = " << p.high_bin_cache_cuckoo_max_bins
-        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << " }";
+        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread
+        << ", .high_bin_threads_per_block = " << p.high_bin_threads_per_block
+        << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -417,13 +428,14 @@ public:
             false,
             2048,
             HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::cuckoo,
-            HistogramSpillAlgorithm::output,
-            HistogramAggregationAlgorithm::warp_coalesced,
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
             4096,
             1,
             262144,
-            4};
+            4,
+            0};
         }
         else
         {
@@ -439,14 +451,62 @@ public:
             false,
             2048,
             HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::cuckoo,
-            HistogramSpillAlgorithm::output,
-            HistogramAggregationAlgorithm::warp_coalesced,
-            2048,
-            2,
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
+            4096,
+            1,
             262144,
-            4};
+            4,
+            0};
         }
+      }
+
+      if (counter_size == 4 && sample_is_primitive && num_channels == 1 && num_active_channels == 1
+          && (sample_size == 4 || sample_size == 8))
+      {
+        return HistogramPolicy{
+          384,
+          t_scale(16),
+          4,
+          BLOCK_LOAD_DIRECT,
+          LOAD_LDG,
+          true,
+          SMEM,
+          false,
+          0,
+          HistogramHighBinAlgorithm::cooperative,
+          HistogramCacheAlgorithm::single_probe,
+          HistogramSpillAlgorithm::global_memory_privatized,
+          HistogramAggregationAlgorithm::rle,
+          4096,
+          1,
+          262144,
+          4,
+          is_even ? 768 : 512};
+      }
+
+      if (counter_size == 4 && sample_is_primitive && num_channels >= 2)
+      {
+        return HistogramPolicy{
+          384,
+          t_scale(16),
+          4,
+          BLOCK_LOAD_DIRECT,
+          LOAD_LDG,
+          true,
+          SMEM,
+          false,
+          0,
+          HistogramHighBinAlgorithm::cooperative,
+          HistogramCacheAlgorithm::single_probe,
+          HistogramSpillAlgorithm::global_memory_privatized,
+          HistogramAggregationAlgorithm::rle,
+          1024,
+          4,
+          262144,
+          4,
+          1024};
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
@@ -470,13 +530,14 @@ public:
             false,
             2048,
             HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::cuckoo,
-            HistogramSpillAlgorithm::output,
-            HistogramAggregationAlgorithm::warp_coalesced,
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
             is_even ? 4096 : 2048,
-            is_even ? 1 : 2,
+            1,
             262144,
-            4};
+            4,
+            0};
         }
         else if (sample_size == 2)
         {
@@ -491,13 +552,14 @@ public:
             false,
             2048,
             HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::cuckoo,
-            HistogramSpillAlgorithm::output,
-            HistogramAggregationAlgorithm::warp_coalesced,
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
             is_even ? 4096 : 2048,
-            is_even ? 1 : 2,
+            1,
             262144,
-            4};
+            4,
+            0};
         }
       }
     }
@@ -514,13 +576,14 @@ public:
       false,
       0,
       HistogramHighBinAlgorithm::cooperative,
-      HistogramCacheAlgorithm::cuckoo,
-      HistogramSpillAlgorithm::output,
-      HistogramAggregationAlgorithm::warp_coalesced,
-      num_active_channels == 1 ? (is_even ? 4096 : 2048) : 512,
-      is_even ? 1 : (num_active_channels == 1 ? 2 : 4),
+      HistogramCacheAlgorithm::single_probe,
+      HistogramSpillAlgorithm::global_memory_privatized,
+      HistogramAggregationAlgorithm::rle,
+      num_active_channels == 1 ? 4096 : 1024,
+      num_active_channels == 1 ? 1 : 4,
       262144,
-      num_active_channels == 1 ? 4 : 1};
+      4,
+      0};
   }
 };
 

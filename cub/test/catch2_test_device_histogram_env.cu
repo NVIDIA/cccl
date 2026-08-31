@@ -66,6 +66,33 @@ CUB_TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "
   REQUIRE(d_histogram == expected);
 }
 
+CUB_TEST_CASE("DeviceHistogram::HistogramEven supports wide output counters with default tuning",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  using counter_t = unsigned long long;
+
+  const auto d_samples           = c2h::device_vector<unsigned int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples          = static_cast<int>(d_samples.size());
+  const int num_levels           = 6;
+  const unsigned int lower_level = 0;
+  const unsigned int upper_level = 5;
+  auto d_histogram               = c2h::device_vector<counter_t>(num_levels - 1, counter_t{0});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::HistogramEven(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples));
+
+  const c2h::device_vector<counter_t> expected{2, 2, 2, 1, 1};
+  REQUIRE(d_histogram == expected);
+}
+
 CUB_TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory and environment",
               "[histogram][device]",
               CUB_SMALL)
@@ -1648,9 +1675,34 @@ struct high_bin_histogram_tuning
     policy.high_bin_cache_count_replicas      = 2;
     policy.high_bin_cache_cuckoo_max_bins     = 4096;
     policy.high_bin_pixels_per_thread         = 2;
+    policy.high_bin_threads_per_block         = 128;
     return policy;
   }
 };
+
+template <int BlockThreads, typename LocalCounterT>
+struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
+{
+  using local_counter_type = LocalCounterT;
+};
+
+using mixed_counter_tuning_t  = histogram_tuning_with_local_counter<128, unsigned int>;
+using legacy_counter_tuning_t = histogram_tuning<128>;
+
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<mixed_counter_tuning_t, unsigned long long, long long>,
+                       unsigned int>);
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<legacy_counter_tuning_t, unsigned long long, long long>,
+                       unsigned long long>);
+using production_counter_selector =
+  cub::detail::histogram::policy_selector_from_types<unsigned int, unsigned long long, 1, 1, true>;
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<production_counter_selector, unsigned long long, int>,
+                       unsigned int>);
+static_assert(cuda::std::is_same_v<
+              cub::detail::histogram::local_counter_t<production_counter_selector, unsigned long long, long long>,
+              unsigned long long>);
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
@@ -1920,11 +1972,21 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
        ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
        ", .high_bin_algorithm = HistogramHighBinAlgorithm::cooperative"
-       ", .high_bin_cache = HistogramCacheAlgorithm::cuckoo"
-       ", .high_bin_spill = HistogramSpillAlgorithm::output"
-       ", .high_bin_aggregation = HistogramAggregationAlgorithm::warp_coalesced"
+       ", .high_bin_cache = HistogramCacheAlgorithm::single_probe"
+       ", .high_bin_spill = HistogramSpillAlgorithm::global_memory_privatized"
+       ", .high_bin_aggregation = HistogramAggregationAlgorithm::rle"
        ", .high_bin_cache_entries_per_channel = 2048"
        ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_bins = 262144"
-       ", .high_bin_pixels_per_thread = 4 }");
+       ", .high_bin_pixels_per_thread = 4, .high_bin_threads_per_block = 0"
+       ", .high_bin_interpolation_min_bins = 512 }");
+
+  constexpr auto high_bin_policy = [] {
+    auto policy =
+      cub::HistogramPolicy{128, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+    policy.high_bin_threads_per_block = 512;
+    return policy;
+  }();
+  STATIC_REQUIRE(high_bin_policy.high_bin_threads() == 512);
+  STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
