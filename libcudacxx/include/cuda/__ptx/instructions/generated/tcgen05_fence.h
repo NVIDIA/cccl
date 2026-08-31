@@ -13,7 +13,7 @@ __device__ static inline void tcgen05_fence_before_thread_sync();
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void tcgen05_fence_before_thread_sync()
+_CCCL_DEVICE_API void tcgen05_fence_before_thread_sync()
 {
   asm volatile("tcgen05.fence::before_thread_sync;" : : : "memory");
 }
@@ -26,7 +26,7 @@ __device__ static inline void tcgen05_fence_after_thread_sync();
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void tcgen05_fence_after_thread_sync()
+_CCCL_DEVICE_API void tcgen05_fence_after_thread_sync()
 {
   asm volatile("tcgen05.fence::after_thread_sync;" : : : "memory");
 }
