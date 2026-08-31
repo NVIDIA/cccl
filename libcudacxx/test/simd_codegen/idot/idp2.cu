@@ -17,6 +17,8 @@ using Vec_s8_x4  = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<4>>;
 using Vec_u8_x4  = simd::basic_vec<cuda::std::uint8_t, simd::fixed_size<4>>;
 using Vec_s16_x4 = simd::basic_vec<cuda::std::int16_t, simd::fixed_size<4>>;
 using Vec_u16_x4 = simd::basic_vec<cuda::std::uint16_t, simd::fixed_size<4>>;
+using Vec_s8_x5  = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<5>>;
+using Vec_s16_x5 = simd::basic_vec<cuda::std::int16_t, simd::fixed_size<5>>;
 
 __device__ cuda::std::int32_t test_idot_s16_s8(Vec_s16_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t acc)
 {
@@ -58,7 +60,17 @@ __device__ cuda::std::uint32_t test_idot_u8_u16(Vec_u8_x4 lhs, Vec_u16_x4 rhs, c
   return cuda::simd::idot(lhs, rhs, acc);
 }
 
+__device__ cuda::std::int32_t test_idot_s16_s8_x5(Vec_s16_x5 lhs, Vec_s8_x5 rhs, cuda::std::int32_t acc)
+{
+  return cuda::simd::idot(lhs, rhs, acc);
+}
+
 /*
+
+; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_idot_s16_s8_x5.*}}
+; SMXX: {{.*IDP\.2A\.LO\.S16\.S8.*}}
+; SMXX: {{.*IDP\.2A\.HI\.S16\.S8.*}}
+; SMXX: {{.*IDP\.2A\.LO\.S16\.S8.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_idot_u8_u16.*}}
 ; SMXX: {{.*IDP\.2A\.LO\.U16\.U8.*}}

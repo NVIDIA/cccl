@@ -101,81 +101,74 @@ TEST_FUNC constexpr void test_generated(AccT acc)
 TEST_FUNC constexpr void test_8bit_dp4a()
 {
   {
-    cuda::std::array<cuda::std::int8_t, 4> lhs_values{-8, -3, 2, 7};
-    cuda::std::array<cuda::std::int8_t, 4> rhs_values{4, -5, 6, -7};
-    test_values<cuda::std::int8_t, cuda::std::int8_t, cuda::std::int32_t, 4>(
-      lhs_values, rhs_values, cuda::std::int32_t{11});
+    cuda::std::array<int8_t, 4> lhs_values{-8, -3, 2, 7};
+    cuda::std::array<int8_t, 4> rhs_values{4, -5, 6, -7};
+    test_values<int8_t, int8_t, int32_t, 4>(lhs_values, rhs_values, int32_t{11});
   }
   {
-    cuda::std::array<cuda::std::uint8_t, 7> lhs_values{1, 2, 3, 4, 5, 6, 7};
-    cuda::std::array<cuda::std::uint8_t, 7> rhs_values{8, 7, 6, 5, 4, 3, 2};
-    test_values<cuda::std::uint8_t, cuda::std::uint8_t, cuda::std::uint32_t, 7>(
-      lhs_values, rhs_values, cuda::std::uint32_t{13});
+    cuda::std::array<uint8_t, 7> lhs_values{1, 2, 3, 4, 5, 6, 7};
+    cuda::std::array<uint8_t, 7> rhs_values{8, 7, 6, 5, 4, 3, 2};
+    test_values<uint8_t, uint8_t, uint32_t, 7>(
+      lhs_values, rhs_values, uint32_t{13});
   }
   {
-    cuda::std::array<cuda::std::uint8_t, 5> lhs_values{1, 2, 3, 4, 5};
-    cuda::std::array<cuda::std::int8_t, 5> rhs_values{-1, 2, -3, 4, -5};
-    test_values<cuda::std::uint8_t, cuda::std::int8_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{-17});
+    cuda::std::array<uint8_t, 5> lhs_values{1, 2, 3, 4, 5};
+    cuda::std::array<int8_t, 5> rhs_values{-1, 2, -3, 4, -5};
+    test_values<uint8_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-17});
   }
   {
-    cuda::std::array<cuda::std::int8_t, 3> lhs_values{-4, 5, -6};
-    cuda::std::array<cuda::std::uint8_t, 3> rhs_values{7, 8, 9};
-    test_values<cuda::std::int8_t, cuda::std::uint8_t, cuda::std::int32_t, 3>(
-      lhs_values, rhs_values, cuda::std::int32_t{19});
+    cuda::std::array<int8_t, 3> lhs_values{-4, 5, -6};
+    cuda::std::array<uint8_t, 3> rhs_values{7, 8, 9};
+    test_values<int8_t, uint8_t, int32_t, 3>(lhs_values, rhs_values, int32_t{19});
   }
 }
 
 TEST_FUNC constexpr void test_16bit_8bit_dp2a()
 {
   {
-    cuda::std::array<cuda::std::int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
-    cuda::std::array<cuda::std::int8_t, 5> rhs_values{3, -4, 5, -6, 7};
-    test_values<cuda::std::int16_t, cuda::std::int8_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{23});
+    cuda::std::array<int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
+    cuda::std::array<int8_t, 5> rhs_values{3, -4, 5, -6, 7};
+    test_values<int16_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{23});
   }
   {
-    cuda::std::array<cuda::std::int8_t, 5> lhs_values{3, -4, 5, -6, 7};
-    cuda::std::array<cuda::std::int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
-    test_values<cuda::std::int8_t, cuda::std::int16_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{29});
+    cuda::std::array<int8_t, 5> lhs_values{3, -4, 5, -6, 7};
+    cuda::std::array<int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
+    test_values<int8_t, int16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{29});
   }
   {
-    cuda::std::array<cuda::std::uint16_t, 5> lhs_values{300, 20, 45, 12, 17};
-    cuda::std::array<cuda::std::uint8_t, 5> rhs_values{3, 4, 5, 6, 7};
-    test_values<cuda::std::uint16_t, cuda::std::uint8_t, cuda::std::uint32_t, 5>(
-      lhs_values, rhs_values, cuda::std::uint32_t{31});
+    cuda::std::array<uint16_t, 5> lhs_values{300, 20, 45, 12, 17};
+    cuda::std::array<uint8_t, 5> rhs_values{3, 4, 5, 6, 7};
+    test_values<uint16_t, uint8_t, uint32_t, 5>(lhs_values, rhs_values, uint32_t{31});
   }
   {
-    cuda::std::array<cuda::std::uint8_t, 5> lhs_values{3, 4, 5, 6, 7};
-    cuda::std::array<cuda::std::uint16_t, 5> rhs_values{300, 20, 45, 12, 17};
-    test_values<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint32_t, 5>(
-      lhs_values, rhs_values, cuda::std::uint32_t{37});
+    cuda::std::array<uint8_t, 5> lhs_values{3, 4, 5, 6, 7};
+    cuda::std::array<uint16_t, 5> rhs_values{300, 20, 45, 12, 17};
+    test_values<uint8_t, uint16_t, uint32_t, 5>(lhs_values, rhs_values, uint32_t{37});
   }
   {
-    cuda::std::array<cuda::std::int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
-    cuda::std::array<cuda::std::uint8_t, 5> rhs_values{3, 200, 5, 255, 7};
-    test_values<cuda::std::int16_t, cuda::std::uint8_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{41});
+    cuda::std::array<int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
+    cuda::std::array<uint8_t, 5> rhs_values{3, 200, 5, 255, 7};
+    test_values<int16_t, uint8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{41});
   }
   {
-    cuda::std::array<cuda::std::uint8_t, 5> lhs_values{3, 200, 5, 255, 7};
-    cuda::std::array<cuda::std::int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
-    test_values<cuda::std::uint8_t, cuda::std::int16_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{-47});
+    cuda::std::array<uint8_t, 5> lhs_values{3, 200, 5, 255, 7};
+    cuda::std::array<int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
+    test_values<uint8_t, int16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-47});
   }
   {
-    cuda::std::array<cuda::std::uint16_t, 5> lhs_values{300, 40000, 45, 65535, 17};
-    cuda::std::array<cuda::std::int8_t, 5> rhs_values{3, -4, 5, -6, 7};
-    test_values<cuda::std::uint16_t, cuda::std::int8_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{43});
+    cuda::std::array<uint16_t, 5> lhs_values{300, 40000, 45, 65535, 17};
+    cuda::std::array<int8_t, 5> rhs_values{3, -4, 5, -6, 7};
+    test_values<uint16_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{43});
   }
   {
-    cuda::std::array<cuda::std::int8_t, 5> lhs_values{3, -4, 5, -6, 7};
-    cuda::std::array<cuda::std::uint16_t, 5> rhs_values{300, 40000, 45, 65535, 17};
-    test_values<cuda::std::int8_t, cuda::std::uint16_t, cuda::std::int32_t, 5>(
-      lhs_values, rhs_values, cuda::std::int32_t{-53});
+    cuda::std::array<int8_t, 5> lhs_values{3, -4, 5, -6, 7};
+    cuda::std::array<uint16_t, 5> rhs_values{300, 40000, 45, 65535, 17};
+    test_values<int8_t, uint16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-53});
   }
+
+  test_generated<int16_t, int8_t, int32_t, 3>(int32_t{59});
+  test_generated<int8_t, int16_t, int32_t, 4>(int32_t{-61});
+  test_generated<uint16_t, uint8_t, uint32_t, 7>(uint32_t{67});
 }
 
 TEST_FUNC constexpr bool test_all()
