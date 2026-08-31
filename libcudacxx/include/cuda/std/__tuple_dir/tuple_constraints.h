@@ -435,9 +435,13 @@ struct __tuple_constraints
     }
     // NOLINTEND(bugprone-branch-clone)
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _UTuple>
-  using __tuple_like_construction =
-    _ConstructorConstraint<__select_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{})>;
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
+  __select_tuple_like_constructible() noexcept
+  {
+    return __select_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+  }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UTuple, size_t... _Indices>

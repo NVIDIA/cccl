@@ -242,24 +242,23 @@ public:
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
-  template <class _UTuple>
-  using _TupleLikeConstraints = typename __tuple_constraints<_Tp...>::template __tuple_like_construction<_UTuple>;
-
   // MSVC needs this to be a type
   template <class _UTuple>
   using _NothrowTupleLikeConstruction =
     bool_constant<__tuple_constraints<_Tp...>::template __nothrow_tuple_like_constructible<_UTuple>>;
 
   template <class... _UTypes,
-            class _Constraints                                         = _TupleLikeConstraints<tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(tuple<_UTypes...>& __t) noexcept(_NothrowTupleLikeConstruction<tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
   template <class... _UTypes,
-            class _Constraints                                         = _TupleLikeConstraints<tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(tuple<_UTypes...>& __t) noexcept(
     _NothrowTupleLikeConstruction<tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
@@ -267,22 +266,25 @@ public:
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _UTypes,
-            class _Constraints                           = _TupleLikeConstraints<tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(tuple<_UTypes...>&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class... _UTypes,
-            class _Constraints = _TupleLikeConstraints<const tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(const tuple<_UTypes...>& __t) noexcept(
     _NothrowTupleLikeConstruction<const tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
   template <class... _UTypes,
-            class _Constraints = _TupleLikeConstraints<const tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(const tuple<_UTypes...>& __t) noexcept(
     _NothrowTupleLikeConstruction<const tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
@@ -290,21 +292,24 @@ public:
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _UTypes,
-            class _Constraints                           = _TupleLikeConstraints<const tuple<_UTypes...>&>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   _CCCL_API constexpr tuple(const tuple<_UTypes...>&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class... _UTypes,
-            class _Constraints                                         = _TupleLikeConstraints<tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLikeConstruction<tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   template <class... _UTypes,
-            class _Constraints                                         = _TupleLikeConstraints<tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(tuple<_UTypes...>&& __t) noexcept(
     _NothrowTupleLikeConstruction<tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
@@ -312,22 +317,25 @@ public:
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _UTypes,
-            class _Constraints                           = _TupleLikeConstraints<tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(tuple<_UTypes...>&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class... _UTypes,
-            class _Constraints = _TupleLikeConstraints<const tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(
     _NothrowTupleLikeConstruction<const tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   template <class... _UTypes,
-            class _Constraints = _TupleLikeConstraints<const tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(
     _NothrowTupleLikeConstruction<const tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
@@ -335,13 +343,14 @@ public:
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _UTypes,
-            class _Constraints                           = _TupleLikeConstraints<const tuple<_UTypes...>&&>,
-            enable_if_t<_Constraints::__is_deleted, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<const tuple<_UTypes...>&&>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(const tuple<_UTypes...>&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
-  // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
-  // We need to SFINAE the constructor away before instantiating the traits
+  // We cannot instantiate __tuple_constraints<_Tp...>::template __select_tuple_like_constructible eagerly because the
+  // leads to recursive constraints We need to SFINAE the constructor away before instantiating the traits
   template <class _Tuple>
   using __disambiguate_tuple_like =
     bool_constant<!is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>>;
@@ -349,16 +358,18 @@ public:
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLikeConstruction<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLikeConstruction<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
@@ -366,8 +377,9 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__is_deleted, int>               = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(_Tuple&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // NOLINTEND(bugprone-forwarding-reference-overload)
@@ -375,8 +387,9 @@ public:
   template <class _Alloc,
             class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t) noexcept(
     _NothrowTupleLikeConstruction<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
@@ -385,8 +398,9 @@ public:
   template <class _Alloc,
             class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0, // Help Clang disambiguate for CTAD
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t) noexcept(
     _NothrowTupleLikeConstruction<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
@@ -396,8 +410,9 @@ public:
   template <class _Alloc,
             class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
-            class _Constraints                                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<_Constraints::__is_deleted, int>               = 0>
+            __select_constructor _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_constructible<_Tuple>(),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(allocator_arg_t, const _Alloc&, _Tuple&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
