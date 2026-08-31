@@ -63,8 +63,6 @@ struct warp_shuffle_result
 // PTX shuffles 32-bit words. These paths avoid generic array packing, which adds instructions and increases register
 // pressure for 8-/16-bit values and fragments 64-bit/128-bit values into independent 32-bit registers.
 
-#  define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
-
 // bit_cast does not support raw arrays. Larger types use their specialized or generic array paths.
 template <typename _Up>
 inline constexpr bool __is_shuffle_bitcast_path_v =
@@ -95,26 +93,16 @@ _CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) 
     const auto __value = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
     asm("mov.b64 {%0, %1}, %2;" : "=r"(__array[0]), "=r"(__array[1]) : "l"(__value));
   }
-#  if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
   {
     const auto __value = ::cuda::std::bit_cast<__uint128_t>(__data);
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_70,
-      (asm("mov.b128 {%0, %1, %2, %3}, %4;" : "=r"(__array[0]),
-           "=r"(__array[1]),
-           "=r"(__array[2]),
-           "=r"(__array[3]) : "q"(__value));),
-      ({
-        asm("mov.b64 {%0, %1}, %2;"
-            : "=r"(__array[0]), "=r"(__array[1])
-            : "l"(static_cast<::cuda::std::uint64_t>(__value)));
-        asm("mov.b64 {%0, %1}, %2;"
-            : "=r"(__array[2]), "=r"(__array[3])
-            : "l"(static_cast<::cuda::std::uint64_t>(__value >> 64)));
-      }))
+    __array[0]         = static_cast<::cuda::std::uint32_t>(__value);
+    __array[1]         = static_cast<::cuda::std::uint32_t>(__value >> 32);
+    __array[2]         = static_cast<::cuda::std::uint32_t>(__value >> 64);
+    __array[3]         = static_cast<::cuda::std::uint32_t>(__value >> 96);
   }
-#  endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  endif // _CCCL_HAS_INT128()
   else
   {
     ::cuda::std::memcpy(
@@ -133,7 +121,7 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
     asm("mov.b64 %0, {%1, %2};" : "=l"(__shuffled) : "r"(__array[0]), "r"(__array[1]));
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
-#  if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
   {
     const __uint128_t __shuffled =
@@ -144,7 +132,7 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
   else
-#  endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  endif // _CCCL_HAS_INT128()
   {
     warp_shuffle_result<_Tp> __result;
     __result.pred = __pred; // __src_lane is always in range [minLane, maxLane]
