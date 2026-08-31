@@ -308,7 +308,19 @@ public:
 #  if _CCCL_CTK_AT_LEAST(12, 5)
     const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
 
-    return __logical_device_ref_access{this->device(), __ctx.__ctx_device_, __ctx.__ctx_green_};
+    // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+    // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+    //
+    // So the outer context of the green context must be recovered separately to match what
+    // __logical_device_ref{device_ref, CUgreenCtx} would store.
+    switch (__ctx.__ctx_kind_)
+    {
+      case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+        return {this->device(), __ctx.__ctx_green_};
+      case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+        return {this->device(), __ctx.__ctx_device_};
+    }
+    _CCCL_UNREACHABLE();
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
     return __logical_device_ref{this->device()};
 #  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
