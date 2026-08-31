@@ -471,9 +471,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
-  auto* typed_allocations = reinterpret_cast<CounterT**>(allocations);
+  auto* const typed_allocations = reinterpret_cast<CounterT**>(allocations);
   ::cuda::std::copy(typed_allocations, typed_allocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
-  auto* local_typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
+  auto* const local_typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
   ::cuda::std::copy(local_typed_allocations,
                     local_typed_allocations + NUM_ACTIVE_CHANNELS,
                     d_cooperative_privatized_histograms_wrapper.begin());
