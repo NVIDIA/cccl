@@ -413,7 +413,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
   const int selected_pixels_per_thread = use_cooperative ? active_policy.high_bin_pixels_per_thread : pixels_per_thread;
   const int selected_threads_per_block = use_cooperative ? high_bin_threads_per_block : threads_per_block;
-  int pixels_per_tile                  = selected_threads_per_block * selected_pixels_per_thread;
+  const int pixels_per_tile            = selected_threads_per_block * selected_pixels_per_thread;
   int tiles_per_row                    = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
   int blocks_per_row                   = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
@@ -471,9 +471,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
-  auto* typed_allocations = reinterpret_cast<CounterT**>(allocations);
+  auto* const typed_allocations = reinterpret_cast<CounterT**>(allocations);
   ::cuda::std::copy(typed_allocations, typed_allocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
-  auto* local_typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
+  auto* const local_typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
   ::cuda::std::copy(local_typed_allocations,
                     local_typed_allocations + NUM_ACTIVE_CHANNELS,
                     d_cooperative_privatized_histograms_wrapper.begin());
