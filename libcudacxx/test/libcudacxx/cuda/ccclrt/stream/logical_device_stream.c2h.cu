@@ -98,6 +98,18 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     REQUIRE(str.device() == ldev.underlying_device());
   }
 
+  SECTION("The stream reports the green context it was created on")
+  {
+    // A green context stream rejects cuStreamGetCtx(), so a query that reaches for the legacy
+    // context of the stream throws instead of reporting the green context.
+    auto ldev = ::make_logical_device(device);
+    cuda::stream str{ldev};
+
+    REQUIRE(str.__logical_device().kind() == cuda::__logical_device_ref::kinds::green_context);
+    REQUIRE(str.__logical_device().green_context() == ldev.green_context());
+    REQUIRE(str.__logical_device().underlying_device() == device);
+  }
+
   SECTION("The stream belongs to the context of the green context")
   {
     auto ldev = ::make_logical_device(device);
