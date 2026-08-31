@@ -45,7 +45,7 @@ Returns a ``cuda::std::simd::basic_vec<cuda::std::make_unsigned_t<T>, Abi>`` whe
 - Packed 8-bit integer vectors perform absolute difference using:
 
   - ``VABSDIFF4`` on ``SM80``, ``SM86``, ``SM87``, ``SM89``, ``SM90``, ``SM100``, ``SM103``, and ``SM110``.
-  - ``VIMNMX.S8x4/U8x4`` on ``SM120f``.
+  - ``VIMNMX.S8x4/U8x4``, ``VIADD.S8x4/U8x4`` on ``SM120f`` and ``SM107f``.
 
 Example
 -------

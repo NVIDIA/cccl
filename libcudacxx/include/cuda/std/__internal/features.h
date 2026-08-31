@@ -126,7 +126,7 @@
 
 // TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD VABSDIFF intrinsics
 #define _CCCL_HAS_SIMD_VABSDIFF_INTRINSICS() 0
-#define _CCCL_HAS_SIMD_VABSDIFF_PTX()        (__cccl_ptx_isa >= 920ULL)
+#define _CCCL_HAS_SIMD_VABSDIFF_PTX()        (__cccl_ptx_isa >= 700ULL)
 #define _CCCL_HAS_SIMD_VABSDIFF()                                                                      \
   ((_CCCL_HAS_SIMD_VABSDIFF_PTX() || _CCCL_HAS_SIMD_VABSDIFF_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
