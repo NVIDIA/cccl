@@ -295,6 +295,17 @@ public:
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
 
+  [[nodiscard]] _CCCL_HOST_API __logical_device_ref __logical_device() const
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+    const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
+
+    return __logical_device_ref_access{this->device(), __ctx.__ctx_device_, __ctx.__ctx_green_};
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+    return __logical_device_ref{this->device()};
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
+  }
+
   //! @brief Queries the \c stream_ref for itself. This makes \c stream_ref usable in places where we expect an
   //! environment with a \c get_stream_t query
   [[nodiscard]] _CCCL_API constexpr stream_ref query(const ::cuda::get_stream_t&) const noexcept

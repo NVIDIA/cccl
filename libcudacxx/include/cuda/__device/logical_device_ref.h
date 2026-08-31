@@ -146,6 +146,15 @@ protected:
   ::CUgreenCtx __green_ctx_{};
 };
 
+class __logical_device_ref_access final : public __logical_device_ref
+{
+public:
+  _CCCL_HOST_API constexpr explicit __logical_device_ref_access(
+    device_ref __device, ::CUcontext __cu_ctx, ::CUgreenCtx __green_ctx) noexcept
+      : __logical_device_ref{__device, __cu_ctx, __green_ctx}
+  {}
+};
+
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
