@@ -557,7 +557,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
 {
   const auto __comm_size                       = __setup.__comm_size;
   const auto __N                               = __setup.__N;
-  auto [__local_scratch, __local_hist_results] = __allocate_histogramming_buffers(__setup, __comms, __envs);
+  auto [__local_scratch, __local_hist_results] = __allocate_histogramming_buffers(__setup, __envs);
 
   // Host scratch for the sample gather, hoisted out of the sampling loop so it is sized once
   // per sort instead of once per round. Every rank all-gathers the same counts, so one set of
