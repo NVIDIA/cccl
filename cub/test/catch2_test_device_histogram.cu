@@ -574,6 +574,25 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
   test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 256 + 1, 128, 32);
 }
 
+CUB_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]", CUB_SMALL)
+{
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  using counter_t      = unsigned int;
+  const int num_levels = GENERATE(1025, 4097, 8193);
+
+  test_even_and_range<int, 1, 1, counter_t>(num_levels - 1, num_levels, 4096, 4);
+  test_even_and_range<int, 4, 3, counter_t>(num_levels - 1, num_levels, 4096, 4);
+}
+
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
 // implementations are not affected by the iterator.
 CUB_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][device]", CUB_SMALL)
@@ -655,6 +674,52 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
     // Each bin should contain `bin + 1` samples, plus one extra, since samples also contain levels.
     CHECK(h_histogram[bin] == bin + 2);
   }
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]", CUB_SMALL)
+{
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  using sample_t         = int;
+  constexpr int num_bins = 1024;
+
+  c2h::host_vector<sample_t> h_levels(num_bins + 1);
+  constexpr auto lo    = static_cast<int64_t>(cs::numeric_limits<sample_t>::lowest());
+  constexpr auto hi    = static_cast<int64_t>(cs::numeric_limits<sample_t>::max());
+  constexpr auto range = hi - lo;
+  for (int i = 0; i <= num_bins; ++i)
+  {
+    h_levels[i] = static_cast<sample_t>(lo + (range * i) / num_bins);
+  }
+
+  const c2h::host_vector<sample_t> h_samples{
+    cs::numeric_limits<sample_t>::lowest(), -1, 0, 1, cs::numeric_limits<sample_t>::max() - 1};
+  c2h::device_vector<sample_t> d_levels  = h_levels;
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const sample_t sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+  }
+  REQUIRE(d_histogram == expected);
 }
 
 // Limit this large-memory reproducer to the host launch path.
