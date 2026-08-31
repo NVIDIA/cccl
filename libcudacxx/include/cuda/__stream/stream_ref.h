@@ -285,13 +285,21 @@ public:
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     __device = ::cuda::__driver::__streamGetDevice(__stream);
-#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+#  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
     {
-      ::CUcontext __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
-      __ensure_current_context __setter(__stream_ctx);
+      // cuStreamGetCtx() returns CUDA_ERROR_NOT_SUPPORTED for a stream that cuGreenCtxStreamCreate()
+      // made. cuStreamGetCtx_v2() supports such a stream, and always gives a usable device context.
+      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx_v2(__stream).__ctx_device_};
+
       __device = ::cuda::__driver::__ctxGetDevice();
     }
-#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+    {
+      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx(__stream)};
+
+      __device = ::cuda::__driver::__ctxGetDevice();
+    }
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
 
