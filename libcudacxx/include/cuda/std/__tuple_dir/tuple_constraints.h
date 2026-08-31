@@ -460,9 +460,9 @@ struct __tuple_constraints
   static constexpr bool __all_move_assignable = (is_move_assignable_v<_Types> && ...);
 
   // [tuple.assign]-5: is_copy_assignable_v<const Types> is true for all i.
-  using __const_copy_assignable = _AssignmentConstraint<(is_copy_assignable_v<const _Types> && ...)>;
+  static constexpr bool __all_const_copy_assignable = (is_copy_assignable_v<const _Types> && ...);
   // [tuple.assign]-12: is_assignable_v<const Types&, Types> is true for all i.
-  using __const_move_assignable = _AssignmentConstraint<(is_assignable_v<const _Types&, _Types> && ...)>;
+  static constexpr bool __all_const_move_assignable = (is_assignable_v<const _Types&, _Types> && ...);
 
   template <bool _IsConst, class... _UTypes>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __select_converting_assignable() noexcept
@@ -488,8 +488,6 @@ struct __tuple_constraints
     }
     // NOLINTEND(bugprone-branch-clone)
   }
-  template <bool _IsConst, class... _UTypes>
-  using __converting_assignable = _AssignmentConstraint<__select_converting_assignable<_IsConst, _UTypes...>()>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <bool _IsConst, class _UTuple, size_t... _Indices>
@@ -521,14 +519,17 @@ struct __tuple_constraints
     }
     // NOLINTEND(bugprone-branch-clone)
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <bool _IsConst, class _UTuple>
-  using __tuple_like_assignable = _AssignmentConstraint<__select_tuple_like_assignable<_IsConst, _UTuple>(
-    __make_tuple_indices_t<sizeof...(_Types)>{})>;
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __select_tuple_like_assignable() noexcept
+  {
+    return __select_tuple_like_assignable<_IsConst, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+  }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <bool _IsConst, class _UTuple, size_t... _Indices>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
-  __nothrow_tuple_like_assignable_(__tuple_indices<_Indices...>) noexcept
+  __nothrow_tuple_like_assignable(__tuple_indices<_Indices...>) noexcept
   {
     using ::cuda::std::get;
     if constexpr (_IsConst)
@@ -540,9 +541,12 @@ struct __tuple_constraints
       return (is_nothrow_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
   }
+  _CCCL_EXEC_CHECK_DISABLE
   template <bool _IsConst, class _UTuple>
-  static constexpr bool __nothrow_tuple_like_assignable =
-    __nothrow_tuple_like_assignable_<_IsConst, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __nothrow_tuple_like_assignable() noexcept
+  {
+    return __nothrow_tuple_like_assignable<_IsConst, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+  }
 
   // Comparisons
   template <class... _UTypes>

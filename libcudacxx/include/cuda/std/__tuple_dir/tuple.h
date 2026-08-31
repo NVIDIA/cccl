@@ -421,8 +421,8 @@ public:
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
   // [tuple.assign]-5
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__const_copy_assignable,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+  template <bool _Constraints              = __tuple_constraints<_Tp...>::__all_const_copy_assignable,
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(const tuple& __t) const
     noexcept((is_nothrow_copy_assignable_v<const _Tp> && ...))
   {
@@ -431,8 +431,8 @@ public:
   }
 
   // [tuple.assign]-12
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__const_move_assignable,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+  template <bool _Constraints              = __tuple_constraints<_Tp...>::__all_const_move_assignable,
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(tuple&& __t) const
     noexcept((is_nothrow_assignable_v<const _Tp&, _Tp> && ...))
   {
@@ -441,14 +441,11 @@ public:
     return *this;
   }
 
-  template <bool _IsConst, class... _UTypes>
-  using _ConvertingAssignable =
-    typename __tuple_constraints<_Tp...>::template __converting_assignable<_IsConst, _UTypes...>;
-
   // [tuple.assign]-15
   template <class... _UTypes,
-            class _Constraints = _ConvertingAssignable</*__is_const=*/false, const _UTypes&...>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints = __tuple_constraints<_Tp...>::template //
+            __select_converting_assignable</*__is_const=*/false, const _UTypes&...>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr tuple&
   operator=(const tuple<_UTypes...>& __t) noexcept((is_nothrow_assignable_v<_Tp&, const _UTypes&> && ...))
   {
@@ -458,8 +455,9 @@ public:
 
   // [tuple.assign]-18
   template <class... _UTypes,
-            class _Constraints = _ConvertingAssignable</*__is_const=*/true, const _UTypes&...>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints = __tuple_constraints<_Tp...>::template //
+            __select_converting_assignable</*__is_const=*/true, const _UTypes&...>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(const tuple<_UTypes...>& __t) const
     noexcept((is_nothrow_assignable_v<const _Tp&, const _UTypes&> && ...))
   {
@@ -469,8 +467,9 @@ public:
 
   // [tuple.assign]-21
   template <class... _UTypes,
-            class _Constraints                           = _ConvertingAssignable</*__is_const=*/false, _UTypes...>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints = __tuple_constraints<_Tp...>::template //
+            __select_converting_assignable</*__is_const=*/false, _UTypes...>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr tuple& operator=(tuple<_UTypes...>&& __t) noexcept((is_nothrow_assignable_v<_Tp&, _UTypes> && ...))
   {
     ::cuda::std::__memberwise_forward_assign(
@@ -480,8 +479,9 @@ public:
 
   // [tuple.assign]-24
   template <class... _UTypes,
-            class _Constraints                           = _ConvertingAssignable</*__is_const=*/true, _UTypes...>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints = __tuple_constraints<_Tp...>::template //
+            __select_converting_assignable</*__is_const=*/true, _UTypes...>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(tuple<_UTypes...>&& __t) const
     noexcept((is_nothrow_assignable_v<const _Tp&, _UTypes> && ...))
   {
@@ -490,17 +490,14 @@ public:
     return *this;
   }
 
-  template <bool _IsConst, class _UTuple>
-  using _TupleLikeAssignable =
-    typename __tuple_constraints<_Tp...>::template __tuple_like_assignable<_IsConst, _UTuple>;
-
   // [tuple.assign]-39
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            class _Constraints                           = _TupleLikeAssignable</*__is_const=*/false, _UTuple>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_assignable</*__is_const=*/false, _UTuple>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr tuple& operator=(_UTuple&& __t) noexcept(
-    __tuple_constraints<_Tp...>::template __nothrow_tuple_like_assignable</*__is_const=*/false, _UTuple>)
+    __tuple_constraints<_Tp...>::template __nothrow_tuple_like_assignable</*__is_const=*/false, _UTuple>())
   {
     ::cuda::std::__memberwise_tuple_assign(
       *this, ::cuda::std::forward<_UTuple>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{});
@@ -510,10 +507,11 @@ public:
   // [tuple.assign]-42
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            class _Constraints                           = _TupleLikeAssignable</*__is_const=*/true, _UTuple>,
-            enable_if_t<_Constraints::__can_assign, int> = 0>
+            bool _Constraints =
+              __tuple_constraints<_Tp...>::template __select_tuple_like_assignable</*__is_const=*/true, _UTuple>(),
+            enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(_UTuple&& __t) const
-    noexcept(__tuple_constraints<_Tp...>::template __nothrow_tuple_like_assignable</*__is_const=*/true, _UTuple>)
+    noexcept(__tuple_constraints<_Tp...>::template __nothrow_tuple_like_assignable</*__is_const=*/true, _UTuple>())
   {
     ::cuda::std::__memberwise_tuple_assign(
       *this, ::cuda::std::forward<_UTuple>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{});
