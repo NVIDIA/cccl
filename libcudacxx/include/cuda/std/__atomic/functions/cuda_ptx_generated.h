@@ -47,27 +47,27 @@ extern "C" _CCCL_DEVICE void __atomic_cas_128b_unsupported_before_SM_90();
 extern "C" _CCCL_DEVICE void __atomic_exchange_128b_unsupported_before_SM_90();
 extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 
-_CCCL_DEVICE_API void __cuda_atomic_membar(__thread_scope_block_tag)
+_CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_membar(__thread_scope_device_tag)
+_CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_device_tag)
 { asm volatile("membar.gl;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_membar(__thread_scope_system_tag)
+_CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_system_tag)
 { asm volatile("membar.sys;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_block_tag, __cuda_atomic_order_acq_rel)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_block_tag, __cuda_atomic_order_acq_rel)
 { asm volatile("fence.acq_rel.cta;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_block_tag, __cuda_atomic_order_seq_cst)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_block_tag, __cuda_atomic_order_seq_cst)
 { asm volatile("fence.sc.cta;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_cluster_tag, __cuda_atomic_order_acq_rel)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_cluster_tag, __cuda_atomic_order_acq_rel)
 { asm volatile("fence.acq_rel.cluster;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_cluster_tag, __cuda_atomic_order_seq_cst)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_cluster_tag, __cuda_atomic_order_seq_cst)
 { asm volatile("fence.sc.cluster;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_device_tag, __cuda_atomic_order_acq_rel)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_device_tag, __cuda_atomic_order_acq_rel)
 { asm volatile("fence.acq_rel.gpu;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_device_tag, __cuda_atomic_order_seq_cst)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_device_tag, __cuda_atomic_order_seq_cst)
 { asm volatile("fence.sc.gpu;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_system_tag, __cuda_atomic_order_acq_rel)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_system_tag, __cuda_atomic_order_acq_rel)
 { asm volatile("fence.acq_rel.sys;" ::: "memory"); }
-_CCCL_DEVICE_API void __cuda_atomic_fence(__thread_scope_system_tag, __cuda_atomic_order_seq_cst)
+_CCCL_DEVICE_API inline void __cuda_atomic_fence(__thread_scope_system_tag, __cuda_atomic_order_seq_cst)
 { asm volatile("fence.sc.sys;" ::: "memory"); }
 
 template <typename _Sco>
