@@ -535,8 +535,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
@@ -801,7 +804,30 @@ class Bench:
         rt_axes_ids = compute_axes_ids(rt_values)
         weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
 
+        # For importance-ordered axis, score favors last speedups:
+        # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
+        #
+        # Sometimes, list is incomplete. Say, if a workloads error out or skip.
+        # For simplicity, say we skipped 2^16 and 2^20 elements.
+        #
+        # In these cases, `rt_values` should still contain full list with 2^16
+        # and 2^20 included.
+        # Otherwise, we'd assume that 2^24 was the first value on the importance axis.
+        # In which case, we'd assign weights as 38% / 62% instead of 48% / 52%.
+        #
+        # If we do nothing, score computation would just skip S16 and S20 completely,
+        # while still scaling S24 and S28 components lower, as if S16 and S20 was there.
+        # score = 15% of 0 + 25% of 0 + 29% of S24 + 31% of S28
+        # Note how we end up with 29% of S24 + 31% of S28 all while 29 + 31 do
+        # not add to a 100%.
+        # This breaks "speedup" semantic of the score.
+        #
+        # To fix this, we just accumulate what new 100% mean and scale score by that:
+        # (29/100 of S24) / (60/100) + (31/100 of S28) / (60/100)
+        #     = 29/60 of S24 + 31/60 of S28
+        # which is: 48% of S24 + 52% of S28, maintaining the relative importance.
         score = 0
+        total_weight = 0
         for bench in speedups:
             for state in speedups[bench]:
                 rt_workload = state_to_rt_workload(bench, state)
@@ -809,10 +835,13 @@ class Bench:
                 weight = get_workload_weight(
                     rt_workload, rt_values[bench], rt_axes_ids[bench], weights
                 )
-                speedup = speedups[bench][state]
-                score = score + weight * speedup
+                score = score + weight * speedups[bench][state]
+                total_weight = total_weight + weight
 
-        return score
+        if total_weight == 0:
+            return float("-inf")
+
+        return score / total_weight
 
 
 class BaseBench(Bench):
