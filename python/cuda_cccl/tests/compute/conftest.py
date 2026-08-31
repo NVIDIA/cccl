@@ -126,52 +126,6 @@ def raise_on_numba_import(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", guarded_import)
 
 
-# --- Known numba-cuda-mlir upstream failures -------------------------------
-#
-# These tests fail because of bugs/limitations in numba-cuda-mlir (not in
-# cuda.compute).  Each is xfail'd against the tracking issue.  strict=False
-# because some are data-dependent and may pass; an xpass simply flags that the
-# issue is resolved.  Remove a rule once its upstream issue is fixed.
-#
-# History: #119 (duplicate error_code on multi-op link), #123 (`**` operator)
-# and #124 (device array-from-pointer, now handled with `cuda.carray`) are all
-# fixed; #120 (complex through a CPointer) is still open upstream but our tests
-# pass on it; #121 (unsigned/signed comparison) is fixed as of 0.5.0.  Those
-# rules have been dropped.  0.5.0 introduced one new regression -- see below.
-
-# numba-cuda-mlir issue for the 0.5.0 `uint64 * <int literal>` regression:
-# https://github.com/NVIDIA/numba-cuda-mlir/issues/277
-_UINT64_LITERAL_MULF_ISSUE = 277
-
-
-def _upstream_xfail_reason(name: str, nodeid: str):
-    """Return ``(issue_number, reason)`` for a known numba-cuda-mlir failure,
-    else None.
-
-    ``name`` is the test function name (without parametrization); ``nodeid``
-    carries the parametrization, used where only some parameter sets fail.
-    """
-
-    def issue(num, text):
-        return (num, f"numba-cuda-mlir#{num}: {text}")
-
-    # 0.5.0 regression: `uint64 * <integer literal>` lowers to `arith.mulf`
-    # (float multiply) on the raw i64 operands, so the op fails MLIR
-    # verification.  numba unifies uint64 with a signed int literal to float64,
-    # but the lowering emits mulf on the integer operands instead of converting.
-    # Narrow: only uint64 * a literal (uint32, int64, uint64*var, uint64+literal
-    # all compile); it worked on 0.4.2.  `test_device_sum_map_mul2_count_it`'s
-    # uint64 pair (value_type_name_pair5) maps `x * 2`; the large-segments test
-    # multiplies segment offsets by a literal.
-    mulf = _UINT64_LITERAL_MULF_ISSUE
-    if name == "test_device_sum_map_mul2_count_it" and "pair5" in nodeid:
-        return issue(mulf, "uint64 * integer-literal lowers to arith.mulf")
-    if name == "test_large_num_segments_uniform_segment_sizes_nonuniform_input":
-        return issue(mulf, "uint64 * integer-literal lowers to arith.mulf")
-
-    return None
-
-
 def pytest_collection_modifyitems(config, items):
     """Runs after pytest collects the tests. Makes a test marked no_numba fail
     if it imports numba, and skips a test marked serialization when running on
@@ -212,10 +166,3 @@ def pytest_collection_modifyitems(config, items):
         # serialization is unsupported on v2 (HostJIT); skip those tests there
         if USING_V2 and item.get_closest_marker("serialization"):
             item.add_marker(serialization_skip)
-
-        name = getattr(item, "originalname", None) or item.name.split("[")[0]
-        result = _upstream_xfail_reason(name, item.nodeid)
-        if result is None:
-            continue
-        _, reason = result
-        item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
