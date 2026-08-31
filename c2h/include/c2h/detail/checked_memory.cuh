@@ -10,13 +10,13 @@
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__exception/cuda_error.h>
 
 #include <cstddef>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <new>
-#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
@@ -136,7 +136,7 @@ public:
     const cudaError_t get_status = cudaGetDevice(&m_previous_device);
     if (get_status != cudaSuccess)
     {
-      throw std::runtime_error{"cudaGetDevice failed"};
+      throw cuda::cuda_error{get_status, "failed to get current device"};
     }
 
     if (m_previous_device != device)
@@ -144,7 +144,7 @@ public:
       const cudaError_t set_status = cudaSetDevice(device);
       if (set_status != cudaSuccess)
       {
-        throw std::runtime_error{"cudaSetDevice failed"};
+        throw cuda::cuda_error{set_status, "failed to change current device"};
       }
       m_restore = true;
     }
