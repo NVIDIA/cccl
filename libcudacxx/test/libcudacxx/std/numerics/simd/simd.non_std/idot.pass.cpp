@@ -106,8 +106,8 @@ TEST_FUNC constexpr void test_8bit_dp4a()
     test_values<int8_t, int8_t, int32_t, 4>(lhs_values, rhs_values, int32_t{11});
   }
   {
-    cuda::std::array<uint8_t, 7> lhs_values{1, 2, 3, 4, 5, 6, 7};
-    cuda::std::array<uint8_t, 7> rhs_values{8, 7, 6, 5, 4, 3, 2};
+    cuda::std::array<uint8_t, 7> lhs_values{1, 2, 3, 128, 5, 200, 255};
+    cuda::std::array<uint8_t, 7> rhs_values{255, 7, 128, 5, 200, 3, 2};
     test_values<uint8_t, uint8_t, uint32_t, 7>(lhs_values, rhs_values, uint32_t{13});
   }
   {
