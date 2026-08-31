@@ -61,7 +61,28 @@ check_source_compiles(
   ]]
   libcudacxx_atomic_codegen_has_int128
 )
+check_source_compiles(
+  CUDA
+  [[
+    #include <cuda/std/detail/__config>
+
+    #if defined(__CUDA_ARCH__) \
+      && (!_CCCL_CTK_AT_LEAST(13, 5) || !_CCCL_HAS_NV_ATOMIC_BUILTINS())
+    #  error "the NVVM atomic backend is unavailable"
+    #endif
+
+    __global__ void test() {}
+    int main() { test<<<1, 1>>>(); }
+  ]]
+  libcudacxx_atomic_codegen_uses_nvvm_backend
+)
 cmake_pop_check_state()
+
+if (libcudacxx_atomic_codegen_uses_nvvm_backend)
+  set(atomic_codegen_sass_backend_prefix NVVM)
+else()
+  set(atomic_codegen_sass_backend_prefix PTX)
+endif()
 
 if (NOT libcudacxx_atomic_codegen_has_int128)
   message(
@@ -88,7 +109,9 @@ libcudacxx_codegen_add_sass_tests(
   TARGET_PREFIX atomic_codegen
   ARCHITECTURES ${atomic_codegen_sass_cuda_archs}
   DUMP_FUNCTIONS atomic_codegen_test
-  CHECK_PREFIXES ${atomic_codegen_sass_cuda_version_prefix}
+  CHECK_PREFIXES
+    ${atomic_codegen_sass_cuda_version_prefix}
+    ${atomic_codegen_sass_backend_prefix}
   TESTS ${libcudacxx_atomic_codegen_tests}
   COMPILE_DEFINITIONS _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1
 )

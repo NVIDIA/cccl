@@ -596,14 +596,22 @@ function(libcudacxx_codegen_add_sass_tests)
         "${arch}"
       )
       string(REPLACE "," ";" common_check_prefixes "${check_prefixes}")
+      string(TOUPPER "${test_contents}" uppercase_test_contents)
       foreach (check_prefix IN LISTS arg_CHECK_PREFIXES)
+        string(TOUPPER "${check_prefix}" uppercase_check_prefix)
         string(
           REGEX MATCH
           "; ${check_prefix}(:|-[A-Z]+:)"
           has_check_prefix
           "${test_contents}"
         )
-        if (has_check_prefix)
+        string(
+          REGEX MATCH
+          "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|$)"
+          has_combined_check_prefix
+          "${uppercase_test_contents}"
+        )
+        if (has_check_prefix OR has_combined_check_prefix)
           list(APPEND common_check_prefixes "${check_prefix}")
         endif()
       endforeach()
