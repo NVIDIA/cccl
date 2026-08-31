@@ -55,9 +55,9 @@ struct __idot_operation
       constexpr bool __has_matching_sign = __is_unsigned_dot || __is_signed_dot;
 
       constexpr bool __is_dp4 = sizeof(_Tp) == 1 && sizeof(_Up) == 1 && sizeof(_AccumT) == 4 && __has_matching_sign;
-      constexpr bool __is_dp2_16bitx2_8bitx4 =
+      [[maybe_unused]] constexpr bool __is_dp2_16bitx2_8bitx4 =
         sizeof(_Tp) == 2 && sizeof(_Up) == 1 && sizeof(_AccumT) == 4 && __has_matching_sign;
-      constexpr bool __is_dp2_8bitx4_16bitx2 =
+      [[maybe_unused]] constexpr bool __is_dp2_8bitx4_16bitx2 =
         sizeof(_Tp) == 1 && sizeof(_Up) == 2 && sizeof(_AccumT) == 4 && __has_matching_sign;
 
       if constexpr (__is_dp4)
