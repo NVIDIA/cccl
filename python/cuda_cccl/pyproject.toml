@@ -54,7 +54,16 @@ minimal-cu12 = [
 ]
 minimal-cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
+  # nvjitlink is intentionally NOT taken via the cuda-toolkit[...] extra: that
+  # extra pins nvidia-nvjitlink to the toolkit build, which can resolve older
+  # than the nvvm/nvcc that emit the LTO-IR (NVVM) container. The v2 HostJIT
+  # link then fails with "NVVM_ERROR_INVALID_INPUT in
+  # nvvmAddNVVMContainerToProgram, may need newer version of nvJitLink library".
+  # Requesting it directly lets nvjitlink float to the newest 13.x build so it
+  # can consume the container, while the rest of the toolkit stays pinned. This
+  # mirrors the minimal-cu12 handling above.
+  "cuda-toolkit[nvrtc,cudart,nvcc,nvvm]==13.*",
+  "nvidia-nvjitlink>=13.0.0,<14.0.0",
 ]
 # sysctk variants: like cu12/cu13 but without cuda-toolkit — the user is
 # responsible for providing a compatible CUDA toolkit
