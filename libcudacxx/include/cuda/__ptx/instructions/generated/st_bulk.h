@@ -16,7 +16,7 @@ __device__ static inline void st_bulk(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32>
-_CCCL_DEVICE static inline void st_bulk(void* __addr, ::cuda::std::uint64_t __size, ::cuda::ptx::n32_t<_N32> __initval)
+_CCCL_DEVICE_API void st_bulk(void* __addr, ::cuda::std::uint64_t __size, ::cuda::ptx::n32_t<_N32> __initval)
 {
   asm("st.bulk.weak.shared::cta [%0], %1, %2;"
       :
