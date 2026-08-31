@@ -317,9 +317,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
         __local_counts[__idx].stream(),
         __local_counts[__idx],
         ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
-        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
+        ::cuda::copy_configuration{
+          __local_counts[__idx].stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
     }
   }
 

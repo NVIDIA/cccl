@@ -211,9 +211,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
           __counts.stream(),
           __counts,
           ::cuda::std::span<::cuda::std::size_t>{__h_counts_dest.data(), __num_columns * __h_counts_dest.size()},
-          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
-                                     ::cuda::host_memory_location,
-                                     ::cuda::source_access_order::stream});
+          ::cuda::copy_configuration{
+            __counts.stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
       }
 
       __local_rebalanced.emplace_back(

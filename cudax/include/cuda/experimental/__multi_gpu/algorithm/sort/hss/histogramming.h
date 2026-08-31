@@ -275,34 +275,34 @@ struct __update_intervals_fn
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange>
+template <class _EnvRange>
 [[nodiscard]]
 _CCCL_HOST_API ::cuda::std::pair<
   ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>,
   ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
-  const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs)
+  const __local_setup_result_type& __setup, _EnvRange&& __envs)
 {
-  const auto __comm_size        = __setup.__comm_size;
-  const auto __N                = __setup.__N;
-  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+  const auto __comm_size = __setup.__comm_size;
+  const auto __N         = __setup.__N;
 
   ::std::vector<__per_comm_sampling_scratch_type> __local_scratch;
   ::std::vector<__per_comm_histogramming_result_type> __local_hist_results;
 
-  __local_scratch.reserve(__num_local_inputs);
-  __local_hist_results.reserve(__num_local_inputs);
-
-  auto __comm_it = ::cuda::std::ranges::begin(__comms);
-  auto __env_it  = ::cuda::std::ranges::begin(__envs);
-
-  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
-    const auto __stream  = ::cuda::get_stream(*__env_it);
+    const auto __num_local_inputs = __setup.__all_local_sizes.size();
+
+    __local_scratch.reserve(__num_local_inputs);
+    __local_hist_results.reserve(__num_local_inputs);
+  }
+
+  for (auto&& __env : __envs)
+  {
+    const auto __stream  = ::cuda::get_stream(__env);
     const auto __n_split = __comm_size - 1;
 
-    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device());
-    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it);
+    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
+    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(__env);
 
     __local_scratch.emplace_back(__per_comm_sampling_scratch_type{
       /*__all_samples=*/
@@ -375,9 +375,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
     __samples_size.stream(),
     __samples_size,
     __h_recvcounts,
-    ::cuda::copy_configuration{::cuda::std::ranges::begin(__comms)->logical_device().underlying_device(),
-                               ::cuda::host_memory_location,
-                               ::cuda::source_access_order::stream});
+    ::cuda::copy_configuration{
+      __samples_size.stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
 
   // Need to sync here because __gather_merge_probes() needs these on the host for comms. Could
   // potentially move this sync there
