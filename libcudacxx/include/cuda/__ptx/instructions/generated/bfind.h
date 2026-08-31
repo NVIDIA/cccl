@@ -17,7 +17,7 @@ template <
   typename _U32,
   ::cuda::std::enable_if_t<sizeof(_U32) == 4 && ::cuda::std::is_integral_v<_U32>&& ::cuda::std::is_unsigned_v<_U32>,
                            bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind(_U32 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind(_U32 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.u32 %0, %1;" : "=r"(__dest) : "r"(*reinterpret_cast<const ::cuda::std::uint32_t*>(&__a_reg)) :);
@@ -36,7 +36,7 @@ template <
   typename _U32,
   ::cuda::std::enable_if_t<sizeof(_U32) == 4 && ::cuda::std::is_integral_v<_U32>&& ::cuda::std::is_unsigned_v<_U32>,
                            bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind_shiftamt(_U32 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind_shiftamt(_U32 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.shiftamt.u32 %0, %1;" : "=r"(__dest) : "r"(*reinterpret_cast<const ::cuda::std::uint32_t*>(&__a_reg)) :);
@@ -55,7 +55,7 @@ template <
   typename _U64,
   ::cuda::std::enable_if_t<sizeof(_U64) == 8 && ::cuda::std::is_integral_v<_U64>&& ::cuda::std::is_unsigned_v<_U64>,
                            bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind(_U64 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind(_U64 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.u64 %0, %1;" : "=r"(__dest) : "l"(*reinterpret_cast<const ::cuda::std::uint64_t*>(&__a_reg)) :);
@@ -74,7 +74,7 @@ template <
   typename _U64,
   ::cuda::std::enable_if_t<sizeof(_U64) == 8 && ::cuda::std::is_integral_v<_U64>&& ::cuda::std::is_unsigned_v<_U64>,
                            bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind_shiftamt(_U64 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind_shiftamt(_U64 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.shiftamt.u64 %0, %1;" : "=r"(__dest) : "l"(*reinterpret_cast<const ::cuda::std::uint64_t*>(&__a_reg)) :);
@@ -92,7 +92,7 @@ __device__ static inline uint32_t bfind(
 template <typename _S32,
           ::cuda::std::enable_if_t<sizeof(_S32) == 4 && ::cuda::std::is_integral_v<_S32>&& ::cuda::std::is_signed_v<_S32>,
                                    bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind(_S32 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind(_S32 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.s32 %0, %1;" : "=r"(__dest) : "r"(*reinterpret_cast<const ::cuda::std::int32_t*>(&__a_reg)) :);
@@ -110,7 +110,7 @@ __device__ static inline uint32_t bfind_shiftamt(
 template <typename _S32,
           ::cuda::std::enable_if_t<sizeof(_S32) == 4 && ::cuda::std::is_integral_v<_S32>&& ::cuda::std::is_signed_v<_S32>,
                                    bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind_shiftamt(_S32 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind_shiftamt(_S32 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.shiftamt.s32 %0, %1;" : "=r"(__dest) : "r"(*reinterpret_cast<const ::cuda::std::int32_t*>(&__a_reg)) :);
@@ -128,7 +128,7 @@ __device__ static inline uint32_t bfind(
 template <typename _S64,
           ::cuda::std::enable_if_t<sizeof(_S64) == 8 && ::cuda::std::is_integral_v<_S64>&& ::cuda::std::is_signed_v<_S64>,
                                    bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind(_S64 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind(_S64 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.s64 %0, %1;" : "=r"(__dest) : "l"(*reinterpret_cast<const ::cuda::std::int64_t*>(&__a_reg)) :);
@@ -146,7 +146,7 @@ __device__ static inline uint32_t bfind_shiftamt(
 template <typename _S64,
           ::cuda::std::enable_if_t<sizeof(_S64) == 8 && ::cuda::std::is_integral_v<_S64>&& ::cuda::std::is_signed_v<_S64>,
                                    bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bfind_shiftamt(_S64 __a_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t bfind_shiftamt(_S64 __a_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("bfind.shiftamt.s64 %0, %1;" : "=r"(__dest) : "l"(*reinterpret_cast<const ::cuda::std::int64_t*>(&__a_reg)) :);

@@ -16,7 +16,7 @@ __device__ static inline B8 ld(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -36,7 +36,7 @@ __device__ static inline B8 ld_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -56,7 +56,7 @@ __device__ static inline B16 ld(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -76,7 +76,7 @@ __device__ static inline B16 ld_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -96,7 +96,7 @@ __device__ static inline B32 ld(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -116,7 +116,7 @@ __device__ static inline B32 ld_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -136,7 +136,7 @@ __device__ static inline B64 ld(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -156,7 +156,7 @@ __device__ static inline B64 ld_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -176,7 +176,7 @@ __device__ static inline B128 ld(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -203,7 +203,7 @@ __device__ static inline B128 ld_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -230,7 +230,7 @@ __device__ static inline B256 ld(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -254,8 +254,8 @@ __device__ static inline B8 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B8 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -279,8 +279,8 @@ __device__ static inline B8 ld_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
-ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B8 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -304,8 +304,8 @@ __device__ static inline B16 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B16 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -329,8 +329,8 @@ __device__ static inline B16 ld_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
-ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B16 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -354,8 +354,8 @@ __device__ static inline B32 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B32 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -379,8 +379,8 @@ __device__ static inline B32 ld_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
-ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B32 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -404,8 +404,8 @@ __device__ static inline B64 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B64 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -429,8 +429,8 @@ __device__ static inline B64 ld_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
-ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B64 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -454,8 +454,8 @@ __device__ static inline B128 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B128 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -483,8 +483,8 @@ __device__ static inline B128 ld_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
-ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B128 ld_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -512,8 +512,8 @@ __device__ static inline B256 ld_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256
-ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B256 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -536,7 +536,7 @@ __device__ static inline B8 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -556,7 +556,7 @@ __device__ static inline B8 ld_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -576,7 +576,7 @@ __device__ static inline B16 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -596,7 +596,7 @@ __device__ static inline B16 ld_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -616,7 +616,7 @@ __device__ static inline B32 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -636,7 +636,7 @@ __device__ static inline B32 ld_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -656,7 +656,7 @@ __device__ static inline B64 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -676,7 +676,7 @@ __device__ static inline B64 ld_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -696,7 +696,7 @@ __device__ static inline B128 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -723,7 +723,7 @@ __device__ static inline B128 ld_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -750,7 +750,7 @@ __device__ static inline B256 ld_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -774,7 +774,7 @@ __device__ static inline B8 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
+_CCCL_DEVICE_API _B8
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -799,7 +799,7 @@ __device__ static inline B8 ld_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -824,7 +824,7 @@ __device__ static inline B16 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
+_CCCL_DEVICE_API _B16
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -849,7 +849,7 @@ __device__ static inline B16 ld_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -874,7 +874,7 @@ __device__ static inline B32 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
+_CCCL_DEVICE_API _B32
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -899,7 +899,7 @@ __device__ static inline B32 ld_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -924,7 +924,7 @@ __device__ static inline B64 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
+_CCCL_DEVICE_API _B64
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -949,7 +949,7 @@ __device__ static inline B64 ld_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -974,7 +974,7 @@ __device__ static inline B128 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
+_CCCL_DEVICE_API _B128
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1003,7 +1003,7 @@ __device__ static inline B128 ld_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1032,7 +1032,7 @@ __device__ static inline B256 ld_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256
+_CCCL_DEVICE_API _B256
 ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1056,7 +1056,7 @@ __device__ static inline B8 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -1076,7 +1076,7 @@ __device__ static inline B8 ld_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -1096,7 +1096,7 @@ __device__ static inline B16 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -1116,7 +1116,7 @@ __device__ static inline B16 ld_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -1136,7 +1136,7 @@ __device__ static inline B32 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -1156,7 +1156,7 @@ __device__ static inline B32 ld_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -1176,7 +1176,7 @@ __device__ static inline B64 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -1196,7 +1196,7 @@ __device__ static inline B64 ld_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -1216,7 +1216,7 @@ __device__ static inline B128 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -1243,7 +1243,7 @@ __device__ static inline B128 ld_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -1270,7 +1270,7 @@ __device__ static inline B256 ld_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -1294,8 +1294,8 @@ __device__ static inline B8 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
-ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B8 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -1319,7 +1319,7 @@ __device__ static inline B8 ld_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1344,7 +1344,7 @@ __device__ static inline B16 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
+_CCCL_DEVICE_API _B16
 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1369,7 +1369,7 @@ __device__ static inline B16 ld_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1394,7 +1394,7 @@ __device__ static inline B32 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
+_CCCL_DEVICE_API _B32
 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1419,7 +1419,7 @@ __device__ static inline B32 ld_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1444,7 +1444,7 @@ __device__ static inline B64 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
+_CCCL_DEVICE_API _B64
 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1469,7 +1469,7 @@ __device__ static inline B64 ld_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1494,7 +1494,7 @@ __device__ static inline B128 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
+_CCCL_DEVICE_API _B128
 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1523,7 +1523,7 @@ __device__ static inline B128 ld_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1552,7 +1552,7 @@ __device__ static inline B256 ld_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256
+_CCCL_DEVICE_API _B256
 ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1576,7 +1576,7 @@ __device__ static inline B8 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -1596,7 +1596,7 @@ __device__ static inline B8 ld_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -1616,7 +1616,7 @@ __device__ static inline B16 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -1636,7 +1636,7 @@ __device__ static inline B16 ld_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -1656,7 +1656,7 @@ __device__ static inline B32 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -1676,7 +1676,7 @@ __device__ static inline B32 ld_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -1696,7 +1696,7 @@ __device__ static inline B64 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -1716,7 +1716,7 @@ __device__ static inline B64 ld_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -1736,7 +1736,7 @@ __device__ static inline B128 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -1763,7 +1763,7 @@ __device__ static inline B128 ld_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -1790,7 +1790,7 @@ __device__ static inline B256 ld_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -1814,7 +1814,7 @@ __device__ static inline B8 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
+_CCCL_DEVICE_API _B8
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1839,7 +1839,7 @@ __device__ static inline B8 ld_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1864,7 +1864,7 @@ __device__ static inline B16 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
+_CCCL_DEVICE_API _B16
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1889,7 +1889,7 @@ __device__ static inline B16 ld_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1914,7 +1914,7 @@ __device__ static inline B32 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
+_CCCL_DEVICE_API _B32
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1939,7 +1939,7 @@ __device__ static inline B32 ld_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1964,7 +1964,7 @@ __device__ static inline B64 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
+_CCCL_DEVICE_API _B64
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -1989,7 +1989,7 @@ __device__ static inline B64 ld_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2014,7 +2014,7 @@ __device__ static inline B128 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
+_CCCL_DEVICE_API _B128
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2043,7 +2043,7 @@ __device__ static inline B128 ld_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2072,7 +2072,7 @@ __device__ static inline B256 ld_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256
+_CCCL_DEVICE_API _B256
 ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2096,7 +2096,7 @@ __device__ static inline B8 ld_nc(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2116,7 +2116,7 @@ __device__ static inline B8 ld_nc_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2136,7 +2136,7 @@ __device__ static inline B16 ld_nc(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2156,7 +2156,7 @@ __device__ static inline B16 ld_nc_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2176,7 +2176,7 @@ __device__ static inline B32 ld_nc(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2196,7 +2196,7 @@ __device__ static inline B32 ld_nc_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2216,7 +2216,7 @@ __device__ static inline B64 ld_nc(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2236,7 +2236,7 @@ __device__ static inline B64 ld_nc_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2256,7 +2256,7 @@ __device__ static inline B128 ld_nc(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -2283,7 +2283,7 @@ __device__ static inline B128 ld_nc_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -2310,7 +2310,7 @@ __device__ static inline B256 ld_nc(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_nc(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -2334,8 +2334,8 @@ __device__ static inline B8 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B8 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2359,8 +2359,8 @@ __device__ static inline B8 ld_nc_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
-ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B8 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2384,8 +2384,8 @@ __device__ static inline B16 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B16 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2409,8 +2409,8 @@ __device__ static inline B16 ld_nc_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
-ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B16 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2434,8 +2434,8 @@ __device__ static inline B32 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B32 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2459,8 +2459,8 @@ __device__ static inline B32 ld_nc_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
-ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B32 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2484,8 +2484,8 @@ __device__ static inline B64 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B64 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2509,8 +2509,8 @@ __device__ static inline B64 ld_nc_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
-ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B64 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2534,8 +2534,8 @@ __device__ static inline B128 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B128 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -2563,7 +2563,7 @@ __device__ static inline B128 ld_nc_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128
+_CCCL_DEVICE_API _B128
 ld_nc_L2_cache_hint_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2592,8 +2592,8 @@ __device__ static inline B256 ld_nc_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256
-ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
+_CCCL_DEVICE_API
+_B256 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -2616,7 +2616,7 @@ __device__ static inline B8 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2636,7 +2636,7 @@ __device__ static inline B8 ld_nc_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -2656,7 +2656,7 @@ __device__ static inline B16 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2676,7 +2676,7 @@ __device__ static inline B16 ld_nc_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -2696,7 +2696,7 @@ __device__ static inline B32 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2716,7 +2716,7 @@ __device__ static inline B32 ld_nc_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -2736,7 +2736,7 @@ __device__ static inline B64 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2756,7 +2756,7 @@ __device__ static inline B64 ld_nc_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -2776,7 +2776,7 @@ __device__ static inline B128 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -2803,7 +2803,7 @@ __device__ static inline B128 ld_nc_L1_evict_first_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -2830,7 +2830,7 @@ __device__ static inline B256 ld_nc_L1_evict_first(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -2854,7 +2854,7 @@ __device__ static inline B8 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
+_CCCL_DEVICE_API _B8
 ld_nc_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2879,7 +2879,7 @@ __device__ static inline B8 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2904,7 +2904,7 @@ __device__ static inline B16 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_first_L2_cache_hint(
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2929,7 +2929,7 @@ __device__ static inline B16 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2954,7 +2954,7 @@ __device__ static inline B32 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_first_L2_cache_hint(
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -2979,7 +2979,7 @@ __device__ static inline B32 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3004,7 +3004,7 @@ __device__ static inline B64 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_first_L2_cache_hint(
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3029,7 +3029,7 @@ __device__ static inline B64 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3054,7 +3054,7 @@ __device__ static inline B128 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_first_L2_cache_hint(
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3083,7 +3083,7 @@ __device__ static inline B128 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_first_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3112,7 +3112,7 @@ __device__ static inline B256 ld_nc_L1_evict_first_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_evict_first_L2_cache_hint(
+_CCCL_DEVICE_API _B256 ld_nc_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3136,7 +3136,7 @@ __device__ static inline B8 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -3156,7 +3156,7 @@ __device__ static inline B8 ld_nc_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -3176,7 +3176,7 @@ __device__ static inline B16 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -3196,7 +3196,7 @@ __device__ static inline B16 ld_nc_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -3216,7 +3216,7 @@ __device__ static inline B32 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -3236,7 +3236,7 @@ __device__ static inline B32 ld_nc_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -3256,7 +3256,7 @@ __device__ static inline B64 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -3276,7 +3276,7 @@ __device__ static inline B64 ld_nc_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -3296,7 +3296,7 @@ __device__ static inline B128 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -3323,7 +3323,7 @@ __device__ static inline B128 ld_nc_L1_evict_last_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -3350,7 +3350,7 @@ __device__ static inline B256 ld_nc_L1_evict_last(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -3374,7 +3374,7 @@ __device__ static inline B8 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
+_CCCL_DEVICE_API _B8
 ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3399,7 +3399,7 @@ __device__ static inline B8 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3424,7 +3424,7 @@ __device__ static inline B16 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16
+_CCCL_DEVICE_API _B16
 ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3449,7 +3449,7 @@ __device__ static inline B16 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3474,7 +3474,7 @@ __device__ static inline B32 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32
+_CCCL_DEVICE_API _B32
 ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3499,7 +3499,7 @@ __device__ static inline B32 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3524,7 +3524,7 @@ __device__ static inline B64 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64
+_CCCL_DEVICE_API _B64
 ld_nc_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3549,7 +3549,7 @@ __device__ static inline B64 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3574,7 +3574,7 @@ __device__ static inline B128 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_last_L2_cache_hint(
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3603,7 +3603,7 @@ __device__ static inline B128 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_nc_L1_evict_last_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3632,7 +3632,7 @@ __device__ static inline B256 ld_nc_L1_evict_last_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_evict_last_L2_cache_hint(
+_CCCL_DEVICE_API _B256 ld_nc_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3656,7 +3656,7 @@ __device__ static inline B8 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -3676,7 +3676,7 @@ __device__ static inline B8 ld_nc_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
+_CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B8* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B8) == 1, "");
@@ -3696,7 +3696,7 @@ __device__ static inline B16 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -3716,7 +3716,7 @@ __device__ static inline B16 ld_nc_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
+_CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B16* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B16) == 2, "");
@@ -3736,7 +3736,7 @@ __device__ static inline B32 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -3756,7 +3756,7 @@ __device__ static inline B32 ld_nc_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B32* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -3776,7 +3776,7 @@ __device__ static inline B64 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -3796,7 +3796,7 @@ __device__ static inline B64 ld_nc_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B64* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -3816,7 +3816,7 @@ __device__ static inline B128 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -3843,7 +3843,7 @@ __device__ static inline B128 ld_nc_L1_no_allocate_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
+_CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_256B(::cuda::ptx::space_global_t, const _B128* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B128) == 16, "");
@@ -3870,7 +3870,7 @@ __device__ static inline B256 ld_nc_L1_no_allocate(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B256* __addr)
+_CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
@@ -3894,7 +3894,7 @@ __device__ static inline B8 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8
+_CCCL_DEVICE_API _B8
 ld_nc_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3919,7 +3919,7 @@ __device__ static inline B8 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline _B8 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B8 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B8* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3944,7 +3944,7 @@ __device__ static inline B16 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_no_allocate_L2_cache_hint(
+_CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3969,7 +3969,7 @@ __device__ static inline B16 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B16 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B16* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -3994,7 +3994,7 @@ __device__ static inline B32 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_no_allocate_L2_cache_hint(
+_CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4019,7 +4019,7 @@ __device__ static inline B32 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B32 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B32* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4044,7 +4044,7 @@ __device__ static inline B64 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_no_allocate_L2_cache_hint(
+_CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4069,7 +4069,7 @@ __device__ static inline B64 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 740
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B64 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B64* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4094,7 +4094,7 @@ __device__ static inline B128 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_no_allocate_L2_cache_hint(
+_CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4123,7 +4123,7 @@ __device__ static inline B128 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B128 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
+_CCCL_DEVICE_API _B128 ld_nc_L1_no_allocate_L2_cache_hint_L2_256B(
   ::cuda::ptx::space_global_t, const _B128* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
@@ -4152,7 +4152,7 @@ __device__ static inline B256 ld_nc_L1_no_allocate_L2_cache_hint(
 */
 #if __cccl_ptx_isa >= 880
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
-_CCCL_DEVICE static inline _B256 ld_nc_L1_no_allocate_L2_cache_hint(
+_CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, const _B256* __addr, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)

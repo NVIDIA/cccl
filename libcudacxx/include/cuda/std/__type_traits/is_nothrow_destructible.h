@@ -45,7 +45,7 @@ inline constexpr bool is_nothrow_destructible_v = _CCCL_BUILTIN_IS_NOTHROW_DESTR
 
 #else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE vvv
 
-template <class _Tp, bool = is_destructible<_Tp>::value>
+template <class _Tp, bool = is_destructible_v<_Tp>>
 struct __cccl_is_nothrow_destructible : false_type
 {};
 

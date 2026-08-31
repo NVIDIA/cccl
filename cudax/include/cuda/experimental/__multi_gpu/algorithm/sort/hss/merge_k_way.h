@@ -122,10 +122,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
       // the next level
       const auto __next_level_node = __next_level_buffer->subspan(__next_off, __left_node.size());
 
-      const auto __input  = ::cuda::std::mdspan{__left_node.data(), __left_node.size()};
-      const auto __output = ::cuda::std::mdspan{__next_level_node.data(), __next_level_node.size()};
+      const auto __src = ::cuda::std::mdspan{__left_node.data(), __left_node.size()};
+      const auto __dst = ::cuda::std::mdspan{__next_level_node.data(), __next_level_node.size()};
 
-      __CUDAX_MULTI_GPU_DISPATCH(__comm.logical_device(), CUB_NS_QUALIFIER::DeviceCopy::Copy, __input, __output, __env);
+      __CUDAX_MULTI_GPU_DISPATCH(__comm.logical_device(), CUB_NS_QUALIFIER::DeviceCopy::Copy, __src, __dst, __env);
 
       __next_level.push_back(__next_level_node);
     }

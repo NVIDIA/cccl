@@ -13,7 +13,7 @@ __device__ static inline void cp_async_bulk_commit_group();
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_commit_group()
+_CCCL_DEVICE_API void cp_async_bulk_commit_group()
 {
   asm volatile("cp.async.bulk.commit_group;" : : :);
 }

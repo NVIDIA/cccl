@@ -20,11 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -81,7 +81,7 @@ private:
   using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
 
 public:
-  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __is_referenceable_v<_Up>>::type;
+  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __referenceable<_Up>>::type;
 };
 
 template <class _Tp>

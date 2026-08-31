@@ -18,7 +18,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::uint32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -43,7 +43,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -125,7 +125,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -150,7 +150,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -232,7 +232,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::int32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -257,7 +257,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -339,7 +339,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::int64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -364,7 +364,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -446,7 +446,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::uint32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -471,7 +471,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -553,7 +553,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -578,7 +578,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -660,7 +660,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::int32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -685,7 +685,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -767,7 +767,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::int64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -792,7 +792,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -874,7 +874,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::uint32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -899,7 +899,7 @@ __device__ static inline uint32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -981,7 +981,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -1006,7 +1006,7 @@ __device__ static inline uint64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -1088,7 +1088,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::int32_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -1113,7 +1113,7 @@ __device__ static inline int32_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -1195,7 +1195,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::int64_t* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
@@ -1220,7 +1220,7 @@ __device__ static inline int64_t multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -1302,7 +1302,7 @@ __device__ static inline B32 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
@@ -1330,7 +1330,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B32* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
@@ -1410,7 +1410,7 @@ __device__ static inline B32 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
@@ -1438,7 +1438,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B32* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
@@ -1518,7 +1518,7 @@ __device__ static inline B32 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
@@ -1546,7 +1546,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
@@ -1626,7 +1626,7 @@ __device__ static inline B64 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
@@ -1654,7 +1654,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B64* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
@@ -1734,7 +1734,7 @@ __device__ static inline B64 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
@@ -1762,7 +1762,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B64* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
@@ -1842,7 +1842,7 @@ __device__ static inline B64 multimem_ld_reduce(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
@@ -1870,7 +1870,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
