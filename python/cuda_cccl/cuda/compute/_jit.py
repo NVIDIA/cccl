@@ -145,6 +145,26 @@ class _StructBase(_mlir.types.Type):
 
 # The struct registration logic is isolated here to avoid polluting other
 # modules with Numba-specific type plumbing.
+#
+# Why hand-roll this instead of using numba-cuda-mlir's built-in struct?
+# numba-cuda-mlir does ship a value-semantic aggregate (its experimental
+# ``struct``/``AggregateType``), but value semantics is the only property of it
+# we need, and it comes bound to three that are wrong for cuda.compute:
+#   1. Nominal (name-based) identity: its type identity is tied to a unique type
+#      *name*. We register the same logical struct several times per build (the
+#      operator's input type, the constructed return value, the output array's
+#      element type, nested inline fields); with name-based identity those split
+#      into incompatible types and casts between them fail. We need identity by
+#      *shape* -- see the "literal (structural) struct" note in the data model
+#      below, which is the exact reason.
+#   2. Zero-argument construction only (``s = S(); s.a = x``); our public API and
+#      the tuple-reconstruction path need positional ``S(a, b)``.
+#   3. No by-index access (``s[i]``) and no tuple<->struct casts, both of which
+#      cuda.compute relies on (e.g. a CUB op returning a tuple becomes a struct).
+# So we register the three layers ourselves -- typing, data model, and lowering
+# -- on numba-cuda-mlir's stable primitives rather than its experimental struct.
+# (numba's own ``Record`` type is value-adjacent but reference-semantic -- a
+# pointer into array memory -- so it is not a substitute either.)
 @functools.lru_cache(maxsize=256)
 def _make_struct_type(struct_class_or_name, field_names, field_types):
     """
