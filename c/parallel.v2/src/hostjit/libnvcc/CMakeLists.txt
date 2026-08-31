@@ -183,6 +183,20 @@ if (NOT MSVC)
   target_compile_options(libnvcc PRIVATE -fno-rtti)
 endif()
 
+if (NOT WIN32)
+  # libnvcc statically links its own copies of LLVM, Clang and LLD. By default
+  # every one of those tens of thousands of symbols is exported from the shared
+  # object with default visibility. When another module in the same process also
+  # exports LLVM symbols -- notably numba-cuda-mlir's libMLIRPythonCAPI.so, which
+  # is loaded RTLD_GLOBAL and ships an ABI-incompatible LLVM -- the dynamic
+  # linker can interpose libnvcc's *own* internal calls into that foreign LLVM,
+  # crashing during code generation (e.g. SelectionDAG::getNode reaching a
+  # mismatched MachinePointerInfo::getAddrSpace). Localize the symbols that come
+  # from the static LLVM/Clang/LLD archives so libnvcc exports only its own
+  # libnvcc* C API and all of its LLVM references bind internally.
+  target_link_options(libnvcc PRIVATE LINKER:--exclude-libs,ALL)
+endif()
+
 set_target_properties(
   libnvcc
   PROPERTIES
