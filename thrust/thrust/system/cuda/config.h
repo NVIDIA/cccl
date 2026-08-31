@@ -15,9 +15,9 @@
 
 // #806: without a CUDA compiler this backend otherwise fails with a flood of unrelated errors inside CUB.
 #if !_CCCL_CUDA_COMPILATION() && !defined(THRUST_IGNORE_CUDA_COMPILER_CHECK)
-#  error The Thrust CUDA device system requires a CUDA compiler. Either compile as CUDA, or set \
+#  error "The Thrust CUDA device system requires a CUDA compiler. Either compile as CUDA, or set \
 THRUST_DEVICE_SYSTEM to THRUST_DEVICE_SYSTEM_CPP, THRUST_DEVICE_SYSTEM_OMP, or THRUST_DEVICE_SYSTEM_TBB. \
-Define THRUST_IGNORE_CUDA_COMPILER_CHECK to ignore this.
+Define THRUST_IGNORE_CUDA_COMPILER_CHECK to ignore this."
 #endif
 
 #ifdef THRUST_DEBUG_SYNC
