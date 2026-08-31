@@ -323,6 +323,24 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
 
 _CCCL_DEFINE_NVVM_FETCH_ARITHMETIC(add)
 _CCCL_DEFINE_NVVM_FETCH_ARITHMETIC(sub)
+
+template <class _Type, class _Order, size_t _Size, class _Scope, enable_if_t<(_Size == 32) || (_Size == 64), bool> = false>
+_CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
+  __cuda_atomic_nvvm_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  _Order,
+  __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, _Size>,
+  _Scope)
+{
+  __dst = ::__nv_atomic_fetch_add(
+    __cuda_atomic_nvvm_ptr(__ptr),
+    -__op,
+    +__cuda_atomic_nvvm_order<_Order>::__value,
+    +__cuda_atomic_nvvm_scope<_Scope>::__value);
+}
+
 _CCCL_DEFINE_NVVM_FETCH_OP(and, true)
 _CCCL_DEFINE_NVVM_FETCH_OP(or, true)
 _CCCL_DEFINE_NVVM_FETCH_OP(xor, true)
