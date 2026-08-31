@@ -224,9 +224,7 @@ private:
 
   // ------------------------------------------------------------------------------------------
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way_tree(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -234,9 +232,7 @@ private:
     const _BinaryOp& __cmp,
     __resizable_buffer_type<_Tp>* __ret);
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,

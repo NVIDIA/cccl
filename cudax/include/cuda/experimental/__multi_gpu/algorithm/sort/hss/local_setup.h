@@ -113,7 +113,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        __offsets.stream(),
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
         __all_local_sizes[__idx].begin(),
         __offsets.begin(),

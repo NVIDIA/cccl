@@ -103,7 +103,7 @@ template <bool __has_direct_reduction,
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceSegmentedReduce::Reduce,
     __input_it,
     __buff.begin(),
@@ -169,7 +169,7 @@ _CCCL_HOST_API void __exchange_and_fold(
       auto __recv = __buf.subspan(__num_segments, __num_segments);
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __buf.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::std::make_tuple(__send.data(), __recv.data()),
         __send.data(),
@@ -295,11 +295,10 @@ _CCCL_HOST_API void __butterfly_reduction(
   // written to directly.
   //
   // All in all *probably* not worth the pain of implementing.
-  for (auto&& [__comm, __env, __local, __out_it] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
+  for (auto&& [__env, __local, __out_it] : ::cuda::std::ranges::views::zip(__envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __local.stream(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       __local.data(),
       __out_it,

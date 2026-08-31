@@ -427,16 +427,13 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
 
   // Every rank merges the p sorted runs into one sorted probe set
   {
-    auto __comm_it = ::cuda::std::ranges::begin(__comms);
-    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+    auto __env_it = ::cuda::std::ranges::begin(__envs);
 
-    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__env_it)
     {
       auto& __probes = (*__local_hist_results)[__idx].__splitters.__probes;
 
       __merge_k_way(
-        *__comm_it,
         *__env_it,
         (*__local_scratch)[__idx].__all_samples,
         __h_recvcounts,
@@ -461,13 +458,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   {
-    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
     auto __env_it       = ::cuda::std::ranges::begin(__envs);
     auto __keys_it      = ::cuda::std::ranges::begin(__key_iters);
     auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
+         (void) ++__idx, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
     {
       auto& __hist               = (*__local_hist_results)[__idx].__hist;
       auto& __probes             = (*__local_hist_results)[__idx].__splitters.__probes;
@@ -484,7 +480,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
                           _BinaryOp>{__keys_first, __keys_first + *__num_items_it, __probes_first, __num_probes, __cmp};
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        __hist.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         __hist.data(),
@@ -538,7 +534,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
     auto __op = __update_intervals_fn<_Tp>{__probes.data(), __hist.data(), __probes.size()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm_it->logical_device(),
+      __I_j.stream(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::std::make_tuple(::cuda::std::move(__in), __I_j.data()),
       __I_j.data(),

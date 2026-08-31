@@ -90,7 +90,7 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
     __input_it,
     // Similarly to above, prepare for the comm calls later. In order for those to be
@@ -146,7 +146,7 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
        ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __buffer.stream(),
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       __buffer.begin(),
       __out,
