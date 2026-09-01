@@ -37,9 +37,7 @@ if ($env:GITHUB_ACTIONS) {
         & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
     } "Downloading test artifacts failed"
 } else {
-    $buildCmd = "$PSScriptRoot/build_libcudacxx.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
-    Write-Host "Running: $buildCmd"
-    Invoke-Expression $buildCmd
+    & "$PSScriptRoot/build_libcudacxx.ps1" @PSBoundParameters
 }
 
 if ($env:GITHUB_ACTIONS) {

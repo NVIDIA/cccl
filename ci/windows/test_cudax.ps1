@@ -2,7 +2,7 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(20)]
+    [ValidateSet(17, 20)]
     [int]$CXX_STANDARD = 20,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
@@ -24,9 +24,7 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 # Build first
-$buildCmd = "$PSScriptRoot/build_cudax.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
-Write-Host "Running: $buildCmd"
-Invoke-Expression $buildCmd
+& "$PSScriptRoot/build_cudax.ps1" @PSBoundParameters
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 

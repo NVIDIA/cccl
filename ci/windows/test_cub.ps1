@@ -64,9 +64,7 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $buildCmd = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE $variantArg"
-    Write-Host "Running: $buildCmd"
-    Invoke-Expression $buildCmd
+    & "$PSScriptRoot/build_cub.ps1" @PSBoundParameters
 }
 
 test_preset "CUB ($PRESET)" "$PRESET"

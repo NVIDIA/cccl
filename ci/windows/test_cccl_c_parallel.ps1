@@ -1,5 +1,10 @@
 Param(
     [Parameter(Mandatory = $false)]
+    [Alias("std")]
+    [ValidateNotNullOrEmpty()]
+    [ValidateSet(17, 20)]
+    [int]$CXX_STANDARD = 20,
+    [Parameter(Mandatory = $false)]
     [Alias("arch")]
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
@@ -19,12 +24,10 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 # Build first
-$buildCmd = "$PSScriptRoot/build_cccl_c_parallel.ps1 -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
-Write-Host "Running: $buildCmd"
-Invoke-Expression $buildCmd
+& "$PSScriptRoot/build_cccl_c_parallel.ps1" @PSBoundParameters
 
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @(20, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cccl-c-parallel"
 test_preset "CCCL C Parallel" "$PRESET"

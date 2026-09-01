@@ -49,9 +49,10 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' -ENABLE_TILE:$ENABLE_TILE"
-    Write-Host "Running: $cmd"
-    Invoke-Expression $cmd
+    $buildArgs = [hashtable]$PSBoundParameters
+    $buildArgs.Remove("CPU_ONLY")
+    $buildArgs.Remove("GPU_ONLY")
+    & "$PSScriptRoot/build_thrust.ps1" @buildArgs
 }
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
