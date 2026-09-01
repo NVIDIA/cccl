@@ -11,6 +11,8 @@
 
 #include <cassert>
 
+namespace
+{
 // uninitialized_allocator is an allocator which
 // derives from device_allocator and which has a
 // no-op construct member function
@@ -50,6 +52,7 @@ struct uninitialized_allocator : thrust::device_allocator<T>
 // to make a device_vector which does not initialize its elements,
 // use uninitialized_allocator as the 2nd template parameter
 using uninitialized_vector = thrust::device_vector<float, uninitialized_allocator<float>>;
+} // namespace
 
 int main()
 {

@@ -41,8 +41,10 @@ struct bench_unique_by_key_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class KeyT, class ValueT, class OffsetT>
-static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using equality_op_t = cuda::std::equal_to<>;
 
@@ -137,3 +139,4 @@ NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(key_types, value_types, some_offse
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+} // namespace

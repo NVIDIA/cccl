@@ -21,6 +21,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -744,3 +746,4 @@ CUB_TEST("DeviceRunLengthEncode::Encode selects the last key among equal negativ
   REQUIRE(out_bits == ref_bits);
   REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
 }
+} // namespace

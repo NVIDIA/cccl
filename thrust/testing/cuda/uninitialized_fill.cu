@@ -75,6 +75,8 @@ void TestUninitializedFillDeviceDevice()
 DECLARE_UNITTEST(TestUninitializedFillDeviceDevice);
 #endif
 
+namespace
+{
 void TestUninitializedFillCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -203,3 +205,4 @@ void TestUninitializedFillNCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestUninitializedFillNCudaStreams);
+} // namespace

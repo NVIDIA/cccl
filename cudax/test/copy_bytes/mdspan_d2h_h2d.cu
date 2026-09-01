@@ -20,6 +20,8 @@
 
 static const cuda::stream stream{cuda::device_ref{0}};
 
+namespace
+{
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = cuda::std::layout_right,
           typename T,
@@ -513,3 +515,4 @@ TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offs
   test_impl_stride_offset(
     input, initial_output, expected, extents(), extents(), src_strides, dst_strides, SrcOffset, DstOffset);
 }
+} // namespace

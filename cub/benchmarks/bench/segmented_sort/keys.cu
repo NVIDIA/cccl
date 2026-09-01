@@ -74,6 +74,8 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class T, typename OffsetT>
 void seg_sort(nvbench::state& state,
               nvbench::type_list<T, OffsetT>,
@@ -167,3 +169,4 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(fundamental_types, some_offset_ty
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(10, 18, 2));
+} // namespace

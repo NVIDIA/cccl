@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeysInputIteratorT, typename AccumT>
 struct my_policy_hub
 {
@@ -84,3 +86,4 @@ CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device
 
   REQUIRE(d_out == expected);
 }
+} // namespace

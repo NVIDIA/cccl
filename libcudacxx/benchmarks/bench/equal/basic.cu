@@ -17,8 +17,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void range_iter(nvbench::state& state, nvbench::type_list<T>)
+void range_iter(nvbench::state& state, nvbench::type_list<T>)
 {
   T val = 1;
   // set up input
@@ -48,7 +50,7 @@ NVBENCH_BENCH_TYPES(range_iter, NVBENCH_TYPE_AXES(fundamental_types))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});
 
 template <typename T>
-static void range_range(nvbench::state& state, nvbench::type_list<T>)
+void range_range(nvbench::state& state, nvbench::type_list<T>)
 {
   T val = 1;
   // set up input
@@ -80,3 +82,4 @@ NVBENCH_BENCH_TYPES(range_range, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base_range_range")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});
+} // namespace

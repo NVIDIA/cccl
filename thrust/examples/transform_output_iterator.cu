@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+namespace
+{
 struct Functor
 {
   template <class Tuple>
@@ -16,6 +18,7 @@ struct Functor
     return x * y * 2.0f / 3.0f;
   }
 };
+} // namespace
 
 int main()
 {

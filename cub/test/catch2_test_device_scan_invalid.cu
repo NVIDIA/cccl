@@ -20,6 +20,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
@@ -277,3 +279,4 @@ CUB_TEST(
     REQUIRE(expected_result == out_result);
   }
 }
+} // namespace

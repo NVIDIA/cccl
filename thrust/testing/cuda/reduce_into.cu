@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename ExecutionPolicy, typename InputIter, typename OutputIter, typename T>
 __global__ void reduce_into_kernel(ExecutionPolicy exec, InputIter first, InputIter last, OutputIter result, T init)
 {
@@ -122,3 +124,4 @@ void TestReduceIntoLargeInput()
 }
 DECLARE_UNITTEST(TestReduceIntoLargeInput);
 #endif
+} // namespace

@@ -14,6 +14,8 @@
 constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;
 
+namespace
+{
 // example-begin inclusive-scan-array-init-value
 __global__ void InclusiveBlockScanKernel(int* output)
 {
@@ -120,3 +122,4 @@ CUB_TEST("Block array-based inclusive scan with block aggregate works with initi
   REQUIRE(d_out == expected);
   REQUIRE(d_block_aggregate[0] == 126);
 }
+} // namespace

@@ -20,6 +20,8 @@
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
+namespace
+{
 using key_types =
   c2h::type_list<uint8_t,
                  int16_t,
@@ -818,3 +820,4 @@ C2H_TEST("MergeSort compile/load round-trip", "[merge_sort][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

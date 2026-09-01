@@ -6,6 +6,8 @@
 #include "thrust/detail/raw_pointer_cast.h"
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct is_even
 {
@@ -732,3 +734,4 @@ void TestPartitionCudaStreamsNoSync()
   TestPartitionCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestPartitionCudaStreamsNoSync);
+} // namespace

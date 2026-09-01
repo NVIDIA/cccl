@@ -32,6 +32,8 @@ static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
 static_assert(diff_type_is<float, ptrdiff_t>);
 static_assert(diff_type_is<double, ptrdiff_t>);
 
+namespace
+{
 struct custom_int
 {
   _CCCL_HOST_DEVICE custom_int(int) {}
@@ -359,3 +361,4 @@ void TestCountingIteratorFloatDistanceTo()
   ASSERT_EQUAL(iter2 - iter1, 5);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);
+} // namespace

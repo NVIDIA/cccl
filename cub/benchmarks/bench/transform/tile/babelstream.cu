@@ -12,6 +12,8 @@
 #  include <cuda_tile.h>
 #endif
 
+namespace
+{
 // Stateless scalar ops, used at the call site in both build modes. Constants are baked in so the ops
 // stay stateless (the tile substitute must be trivially default constructible): with startScalar == -2,
 // `c * scalar` is `-(c + c)`, `b + scalar * c` is `b - c - c`, etc.
@@ -51,6 +53,7 @@ struct nstream_op
     return a + b - c - c;
   }
 };
+} // namespace
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
@@ -96,7 +99,10 @@ using element_types = nvbench::type_list<TUNE_T>;
 using element_types = nvbench::type_list<nvbench::int8_t, nvbench::int16_t, nvbench::float32_t, nvbench::float64_t>;
 #endif
 
-inline auto array_size_powers = nvbench::range(16, 32, 4);
+namespace
+{
+auto array_size_powers = nvbench::range(16, 32, 4);
+} // namespace
 
 // Same constant inputs as the base bench so nstream maintains a consistent workload.
 inline constexpr auto startA      = 11;
@@ -105,8 +111,10 @@ inline constexpr auto startC      = 1;
 inline constexpr auto startScalar = -2;
 static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
 
+namespace
+{
 template <typename T>
-static void mul(nvbench::state& state, nvbench::type_list<T>)
+void mul(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -131,7 +139,7 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void add(nvbench::state& state, nvbench::type_list<T>)
+void add(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -158,7 +166,7 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void triad(nvbench::state& state, nvbench::type_list<T>)
+void triad(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -185,7 +193,7 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void nstream(nvbench::state& state, nvbench::type_list<T>)
+void nstream(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -214,3 +222,4 @@ NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
   .set_type_axes_names({"T{ct}"})
   .add_string_axis("Aligned", {"yes", "no"})
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+} // namespace

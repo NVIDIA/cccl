@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin bulk-square-t
 struct square_t
 {
@@ -426,3 +428,4 @@ CUB_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
 }
 
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up
+} // namespace

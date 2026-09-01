@@ -15,6 +15,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, lower_bound_sorted_values);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, upper_bound_sorted_values);
 
@@ -228,3 +230,4 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace

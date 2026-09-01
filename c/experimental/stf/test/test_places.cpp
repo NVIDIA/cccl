@@ -18,9 +18,11 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 // Blocked partition along first dimension: maps data coordinates to grid position.
 // Used to exercise composite data place with a grid of execution places.
-static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
@@ -744,3 +746,4 @@ C2H_TEST("data_place_allocate_invalid_returns_null", "[places][allocate]")
   REQUIRE(ptr == nullptr);
   stf_data_place_destroy(inv);
 }
+} // namespace

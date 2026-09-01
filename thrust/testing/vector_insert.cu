@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class Vector>
 struct TestVectorRangeInsertSimple
 {
@@ -249,3 +251,4 @@ struct TestVectorFillInsert
   }
 }; // end TestVectorFillInsert
 VariableUnitTest<TestVectorFillInsert, IntegralTypes> TestVectorFillInsertInstance;
+} // namespace

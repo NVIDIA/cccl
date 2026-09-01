@@ -304,6 +304,8 @@ void TestTransformIfBinaryDeviceDevice()
 DECLARE_UNITTEST(TestTransformIfBinaryDeviceDevice);
 #endif
 
+namespace
+{
 void TestTransformUnaryCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -364,6 +366,7 @@ struct sum_five
          + static_cast<double>(e);
   }
 };
+} // namespace
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
@@ -394,6 +397,8 @@ private:
 THRUST_NAMESPACE_END
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+namespace
+{
 void TestTransformThrustZipIteratorUnwrapping()
 {
   constexpr int num_items = 100;
@@ -428,6 +433,7 @@ void TestTransformThrustZipIteratorUnwrapping()
   }
 }
 DECLARE_UNITTEST(TestTransformThrustZipIteratorUnwrapping);
+} // namespace
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
@@ -465,6 +471,8 @@ public:
 _CCCL_END_NAMESPACE_CUDA
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+namespace
+{
 void TestTransformCudaZipIteratorUnwrapping()
 {
   constexpr int num_items = 100;
@@ -497,3 +505,4 @@ void TestTransformCudaZipIteratorUnwrapping()
   }
 }
 DECLARE_UNITTEST(TestTransformCudaZipIteratorUnwrapping);
+} // namespace

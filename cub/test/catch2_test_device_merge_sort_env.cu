@@ -20,6 +20,8 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeys, device_merge_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, device_merge_stable_sort_pairs);
@@ -27,6 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, device_merge_stable
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, device_merge_sort_pairs_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeysCopy, device_merge_sort_keys_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_stable_sort_keys_copy);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -34,6 +37,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_st
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct merge_sort_tuning
 {
@@ -620,3 +625,4 @@ CUB_TEST("Test MergeSortPolicy properties", "[merge_sort][device]", CUB_SMALL)
              ", .store_algorithm = BLOCK_STORE_DIRECT, .unroll = 1 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

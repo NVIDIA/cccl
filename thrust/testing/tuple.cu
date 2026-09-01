@@ -6,6 +6,8 @@
 
 using namespace unittest;
 
+namespace
+{
 template <typename T>
 struct TestTupleConstructor
 {
@@ -542,3 +544,4 @@ void TestTupleOfIteratorReferenceAssignsFromConst()
   refs = crefs;
 }
 DECLARE_UNITTEST(TestTupleOfIteratorReferenceAssignsFromConst);
+} // namespace

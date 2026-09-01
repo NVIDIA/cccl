@@ -18,10 +18,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, device_radix_sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, device_radix_sort_pairs_descending);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, device_radix_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, device_radix_sort_keys_descending);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -29,6 +32,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, device_radix_so
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 struct custom_key_t
 {
   int key;
@@ -1796,3 +1801,4 @@ CUB_TEST("Test RadixSortPolicy properties", "[radix_sort][device]", CUB_SMALL)
        "BLOCK_SCAN_WARP_SCANS, .radix_bits = 6 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

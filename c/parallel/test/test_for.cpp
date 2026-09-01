@@ -21,6 +21,8 @@
 #include "test_util.h"
 #include <cccl/c/for.h>
 
+namespace
+{
 using BuildResultT = cccl_device_for_build_result_t;
 
 struct for_each_cleanup
@@ -449,6 +451,7 @@ C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace
 
 // TODO:
 /*

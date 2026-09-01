@@ -35,6 +35,8 @@ inline constexpr int num_items_per_thread = 4;
  * Kernel
  **********************************************************************************************************************/
 
+namespace
+{
 template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename T, typename Output, typename ReductionOp>
 __device__ void warp_reduce_function(T& thread_data, Output* output, ReductionOp reduction_op, int num_items = 0)
 {
@@ -400,3 +402,4 @@ CUB_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, num_items_per_thread);
   verify_results(h_out, d_out);
 }
+} // namespace

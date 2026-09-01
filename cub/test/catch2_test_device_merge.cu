@@ -19,6 +19,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 
@@ -137,8 +139,6 @@ CUB_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]", CUB_SMALL)
   test_keys<key_t, offset_t, order>();
 }
 
-namespace
-{
 // must use thrust::make_zip_iterator for now
 // see https://github.com/NVIDIA/cccl/issues/6400
 template <typename... Its>
@@ -177,7 +177,6 @@ struct key_to_value
     v.val = static_cast<decltype(v.val)>(k);
   }
 };
-} // namespace
 
 template <typename Key,
           typename Value,
@@ -241,6 +240,7 @@ void test_pairs(
   CHECK((detail::to_vec(reference_keys_h) == detail::to_vec(c2h::host_vector<Key>(result_keys_d))));
   CHECK((detail::to_vec(reference_values_h) == detail::to_vec(c2h::host_vector<Value>(result_values_d))));
 }
+} // namespace
 
 CUB_TEST("DeviceMerge::MergePairs key types", "[merge][device]", CUB_SMALL, types)
 {

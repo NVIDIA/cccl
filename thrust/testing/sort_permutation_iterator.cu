@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Iterator>
 class strided_range
 {
@@ -129,3 +131,4 @@ void TestStableSortByKeyPermutationIterator()
   ASSERT_EQUAL(B, ref_B);
 }
 DECLARE_VECTOR_UNITTEST(TestStableSortByKeyPermutationIterator);
+} // namespace

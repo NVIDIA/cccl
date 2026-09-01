@@ -20,6 +20,8 @@
 
 using float_type_list = c2h::type_list<float, double>;
 
+namespace
+{
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
@@ -424,3 +426,4 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
     REQUIRE(h_expected == h_output);
   }
 }
+} // namespace

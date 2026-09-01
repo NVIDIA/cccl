@@ -9,6 +9,8 @@
 
 // we could vary M & N to find the perf sweet spot
 
+namespace
+{
 __host__ __device__ unsigned int hash(unsigned int a)
 {
   a = (a + 0x7ed55d16) + (a << 12);
@@ -59,6 +61,7 @@ struct estimate_pi
     return sum / static_cast<float>(N);
   }
 };
+} // namespace
 
 int main()
 {

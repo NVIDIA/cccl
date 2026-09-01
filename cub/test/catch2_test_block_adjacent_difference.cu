@@ -5,6 +5,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ThreadsInBlock, int ItemsPerThread, class T, class ActionT>
 __global__ void block_adj_diff_kernel(T* data, ActionT action, bool in_place)
 {
@@ -345,3 +347,4 @@ CUB_TEST("Block adjacent difference supports custom types", "[adjacent differenc
 }
 
 // TODO Test different input/output types
+} // namespace

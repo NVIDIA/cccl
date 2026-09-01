@@ -18,6 +18,8 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
+namespace
+{
 template <typename KeyT, typename ValueT>
 void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
 {
@@ -101,3 +103,4 @@ NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types))
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});
+} // namespace

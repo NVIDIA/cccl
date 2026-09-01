@@ -49,6 +49,8 @@ void TestSetSymmetricDifferenceDeviceDevice()
 DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceDevice);
 #endif
 
+namespace
+{
 void TestSetSymmetricDifferenceCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
@@ -65,3 +67,4 @@ void TestSetSymmetricDifferenceCudaStreams()
   test_runtime::assert_equal(stream, result, {2, 3, 3, 6, 7});
 }
 DECLARE_UNITTEST(TestSetSymmetricDifferenceCudaStreams);
+} // namespace

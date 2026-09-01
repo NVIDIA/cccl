@@ -124,6 +124,8 @@ TEMPLATE_LIST_TEST_CASE("AdjacentDifferenceDiscardIterator", "[adjacent_differen
   }
 }
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator, typename OutputIterator>
 OutputIterator adjacent_difference(my_system& system, InputIterator, InputIterator, OutputIterator result)
 {
@@ -158,3 +160,4 @@ TEST_CASE("AdjacentDifferenceDispatchImplicit", "[adjacent_difference]")
 
   CHECK(13 == d_input.front());
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

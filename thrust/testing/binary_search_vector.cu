@@ -11,6 +11,8 @@
 // Vector Functions //
 //////////////////////
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // convert xxx_vector<T1> to xxx_vector<T2>
 template <class ExampleVector, typename NewType>
 struct vector_like
@@ -406,3 +408,4 @@ struct TestVectorBinarySearchDiscardIterator
 };
 VariableUnitTest<TestVectorBinarySearchDiscardIterator, SignedIntegralTypes>
   TestVectorBinarySearchDiscardIteratorInstance;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

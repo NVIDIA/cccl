@@ -16,6 +16,8 @@
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
@@ -373,3 +375,4 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
     REQUIRE(expected_result == segment_keys);
   }
 }
+} // namespace

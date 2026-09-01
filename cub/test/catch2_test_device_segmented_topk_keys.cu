@@ -39,6 +39,8 @@
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 struct is_minus_zero
 {
   __device__ bool operator()(float x) const
@@ -2196,3 +2198,4 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (determinis
   REQUIRE(keys_out == thrust::device_vector<int>(k, sentinel));
 }
 #endif // TEST_TYPES == 0 && TEST_LAUNCH == 0
+} // namespace

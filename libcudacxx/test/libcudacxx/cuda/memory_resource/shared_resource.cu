@@ -17,6 +17,8 @@
 
 #include "test_resource.cuh"
 
+namespace
+{
 struct default_constructible_resource
 {
   default_constructible_resource()
@@ -256,3 +258,4 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 }
+} // namespace

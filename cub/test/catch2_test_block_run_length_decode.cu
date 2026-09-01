@@ -34,6 +34,8 @@
  * \tparam BLOCK_DIM_Y The thread block length in threads along the Y dimension
  * \tparam BLOCK_DIM_Z The thread block length in threads along the Z dimension
  */
+namespace
+{
 template <typename ItemItT,
           typename RunLengthsItT,
           int RUNS_PER_THREAD,
@@ -572,3 +574,4 @@ CUB_TEST_LIST(
                               TEST_WITH_RUN_OFFSETS,
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
+} // namespace

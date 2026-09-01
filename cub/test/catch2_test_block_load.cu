@@ -8,8 +8,10 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
-static __device__ int get_output_idx(int item)
+__device__ int get_output_idx(int item)
 {
   if (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
@@ -230,3 +232,4 @@ CUB_TEST("Vectorized block load with const and non-const datatype and different 
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
 }
 #endif
+} // namespace

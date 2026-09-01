@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename BaseAlloc, bool PropagateOnSwap>
 class stateful_allocator : public BaseAlloc
 {
@@ -272,3 +274,4 @@ void TestVectorAllocatorPropagateOnSwapDevice()
   TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapDevice);
+} // namespace

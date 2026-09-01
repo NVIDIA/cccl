@@ -35,6 +35,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct is_not_42
 {
@@ -168,3 +170,4 @@ C2H_TEST("cuda::std::copy_if", "[parallel algorithm]", all_types)
     test_copy_if(policy, input, output, converting);
   }
 }
+} // namespace

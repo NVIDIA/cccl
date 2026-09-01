@@ -13,6 +13,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin segmented-select-iseven
 struct is_even_t
 {
@@ -305,3 +307,4 @@ CUB_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select]
           == cub::DeviceSelect::UniqueByKey(
             d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected, n));
 }
+} // namespace

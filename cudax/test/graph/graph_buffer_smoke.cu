@@ -22,8 +22,8 @@
 #  include <testing.cuh>
 #  include <utility.cuh>
 
-namespace
-{
+// Extends the shared ::test namespace; an anonymous one would make every ::test name ambiguous.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 namespace test
 {
 // RAII wrapper around a pinned-memory allocation.
@@ -60,7 +60,10 @@ struct pinned_array
   }
 };
 } // namespace test
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
+namespace
+{
 struct write_iota
 {
   __device__ void operator()(cuda::std::span<int> buf) const noexcept

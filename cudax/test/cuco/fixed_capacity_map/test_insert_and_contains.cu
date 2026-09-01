@@ -43,6 +43,8 @@ using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
 using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
 using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+namespace
+{
 template <class _Pair>
 struct iota_pair
 {
@@ -149,3 +151,4 @@ C2H_TEST("fixed_capacity_map key and slot size constraint", "[container]")
   static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
                 "a mismatched <uint8_t, uint32_t> slot is a valid 8-byte slot");
 }
+} // namespace

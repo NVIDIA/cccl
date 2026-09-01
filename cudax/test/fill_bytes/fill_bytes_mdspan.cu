@@ -30,6 +30,8 @@ static const cuda::stream stream{cuda::device_ref{0}};
 using host_vector_bytes_t = thrust::host_vector<cuda::std::byte>;
 using span_bytes_t        = cuda::std::span<const cuda::std::byte>;
 
+namespace
+{
 template <typename Value>
 void fill_expected_bytes(host_vector_bytes_t& expected, size_t byte_offset, size_t num_bytes, const Value& value)
 {
@@ -439,3 +441,4 @@ TEST_CASE("fill_bytes rejects interleaved layout", "[fill_bytes][throw]")
 
   REQUIRE_THROWS_AS(cuda::experimental::fill_bytes(dst, uint32_t{0x12345678}, stream), std::invalid_argument);
 }
+} // namespace

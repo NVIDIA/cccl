@@ -34,6 +34,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_two
 {
@@ -208,3 +210,4 @@ C2H_TEST("cuda::std::transform_exclusive_scan(Iter1, Iter1, Iter2, Init)", "[par
     test_exclusive_scan(policy, input, output);
   }
 }
+} // namespace

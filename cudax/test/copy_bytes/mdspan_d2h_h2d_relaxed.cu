@@ -20,6 +20,8 @@
 
 static const cuda::stream stream{cuda::device_ref{0}};
 
+namespace
+{
 // Source uses layout_stride_relaxed, destination uses layout_right with the same extents.
 template <typename T, typename SrcMapping>
 void test_impl_relaxed(
@@ -149,3 +151,4 @@ TEST_CASE("copy_bytes layout_stride_relaxed, offset subarray", "[copy_bytes][rel
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
   test_impl_relaxed(input, expected, mapping_t(extents_t{}, cuda::dstrides<int, 2>(Ld, 1), Offset));
 }
+} // namespace

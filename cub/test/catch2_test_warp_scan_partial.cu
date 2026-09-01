@@ -25,6 +25,8 @@ using vec_types = c2h::type_list<
 
 constexpr int num_seeds = 3;
 
+namespace
+{
 template <scan_mode Mode>
 struct sum_op_t
 {
@@ -683,3 +685,4 @@ CUB_TEST(
   REQUIRE(h_inclusive_out == d_inclusive_out);
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
+} // namespace

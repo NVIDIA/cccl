@@ -39,6 +39,8 @@ using element_types =
                      >;
 #endif
 
+namespace
+{
 // BabelStream uses 2^25, H200 can fit 2^31 int128s
 // 2^20 chars / 2^16 int128 saturate V100 (min_bytes_in_flight =12 * SM count =80)
 // 2^21 chars / 2^17 int128 saturate A100 (min_bytes_in_flight =16 * SM count =108)
@@ -56,7 +58,7 @@ inline constexpr auto startScalar = -2; // BabelStream: 0.4
 static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
 
 template <typename T>
-static void mul(nvbench::state& state, nvbench::type_list<T>)
+void mul(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -87,7 +89,7 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void add(nvbench::state& state, nvbench::type_list<T>)
+void add(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -121,7 +123,7 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void triad(nvbench::state& state, nvbench::type_list<T>)
+void triad(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -156,7 +158,7 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void nstream(nvbench::state& state, nvbench::type_list<T>)
+void nstream(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -189,3 +191,4 @@ NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
   .set_type_axes_names({"T{ct}"})
   .add_string_axis("Aligned", {"yes", "no"})
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+} // namespace

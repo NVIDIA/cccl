@@ -19,8 +19,8 @@
 #  include <testing.cuh>
 #  include <utility.cuh>
 
-namespace
-{
+// Extends the shared ::test namespace; an anonymous one would make every ::test name ambiguous.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 namespace test
 {
 // ─── helpers ───────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ struct count_down_and_stop
 };
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
 } // namespace test
-} // namespace
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 // ────────────────────────────────────────────────────────────────────────────
 // fill_bytes

@@ -20,8 +20,11 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -29,6 +32,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename... Args>
 cudaError_t call_argminmax_api(bool last_max, Args&&... args)
 {
@@ -237,3 +242,4 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
   REQUIRE(d_block_size[0] == target_block_size);
 }
 #endif // TEST_LAUNCH != 1
+} // namespace

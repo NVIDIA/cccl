@@ -30,6 +30,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 struct equal_to_42
 {
   TEST_FUNC constexpr bool operator()(const int& val) const noexcept
@@ -90,3 +92,4 @@ C2H_TEST("cuda::std::count_if", "[parallel algorithm]")
     test_count_if(policy);
   }
 }
+} // namespace

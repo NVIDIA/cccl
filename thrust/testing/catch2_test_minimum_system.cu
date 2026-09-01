@@ -4,6 +4,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 template <typename System, typename SeqSystem>
 void check()
 {
@@ -29,3 +31,4 @@ TEST_CASE("host and device systems convert to sequential", "[minimum_system]")
   check<host, seq_tag>();
   check<host_tag, seq_tag>();
 }
+} // namespace

@@ -16,6 +16,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct non_trivial
 {
   _CCCL_HOST_DEVICE non_trivial() {} // NOLINT(modernize-use-equals-default)
@@ -36,3 +38,4 @@ void test_out_of_memory_recovery()
   }
 }
 DECLARE_UNITTEST(test_out_of_memory_recovery);
+} // namespace

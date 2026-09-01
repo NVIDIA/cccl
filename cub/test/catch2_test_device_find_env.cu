@@ -20,9 +20,12 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, device_lower_bound);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,6 +33,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 struct is_greater_than_t
 {
   int threshold;
@@ -571,3 +576,4 @@ CUB_TEST("Test FindIfPolicy properties", "[find][device]", CUB_SMALL)
              ", .load_modifier = LOAD_LDG }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

@@ -38,6 +38,8 @@ CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)
                                       cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>);
 }
 
+namespace
+{
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);
 
 struct HasCat
@@ -101,3 +103,4 @@ CUB_TEST("Test FutureValue", "[util][type]", CUB_SMALL)
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
 }
+} // namespace

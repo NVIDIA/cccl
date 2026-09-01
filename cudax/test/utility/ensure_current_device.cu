@@ -16,6 +16,8 @@
 
 namespace driver = cuda::__driver;
 
+namespace
+{
 void recursive_check_device_setter(int id)
 {
   int cudart_id;
@@ -49,3 +51,4 @@ C2H_TEST("ensure current device", "[device]")
     REQUIRE(test::count_driver_stack() == 0);
   }
 }
+} // namespace

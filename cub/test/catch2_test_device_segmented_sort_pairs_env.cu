@@ -18,10 +18,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairsDescending, stable_sort_pairs_descending);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairsDescending, sort_pairs_descending);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
@@ -761,6 +764,8 @@ CUB_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses e
   REQUIRE(result_values == expected_values);
 }
 
+namespace
+{
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
@@ -915,3 +920,4 @@ CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending can be tuned",
 }
 
 #endif // TEST_LAUNCH != 1
+} // namespace

@@ -17,11 +17,16 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace
+{
 _CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_cc)
 {
   *d_kernel_cuda_cc = CUB_PTX_ARCH;
 }
+} // namespace
 
+// Injected into namespace cub so the launch wrapper below can reach it as cub::get_cuda_cc_from_kernel.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -40,6 +45,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
 
 CUB_NAMESPACE_END
 
+namespace
+{
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(cub::get_cuda_cc_from_kernel, get_cuda_cc_from_kernel);
 
@@ -315,3 +322,4 @@ CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]", CUB_SMALL)
   REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
   REQUIRE(dyn_smem_size == -1);
 }
+} // namespace

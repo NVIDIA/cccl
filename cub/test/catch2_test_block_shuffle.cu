@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)
 {
@@ -328,3 +330,4 @@ CUB_TEST("Block shuffle down works when prefix is required",
   REQUIRE(d_ref == d_data);
   REQUIRE(d_prefix_ref == d_prefix);
 }
+} // namespace

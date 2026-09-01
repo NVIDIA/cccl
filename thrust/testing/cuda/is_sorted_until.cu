@@ -56,6 +56,8 @@ void TestIsSortedUntilDeviceDevice()
 DECLARE_UNITTEST(TestIsSortedUntilDeviceDevice);
 #endif
 
+namespace
+{
 void TestIsSortedUntilCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -118,3 +120,4 @@ void TestIsSortedUntilCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestIsSortedUntilCudaStreams);
+} // namespace

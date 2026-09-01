@@ -23,6 +23,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // Simple user-defined key type for the decomposer-based examples.
 struct topk_custom_t
 {
@@ -338,3 +340,4 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref
   thrust::host_vector<int> actual_ranks{h_keys_out[0].rank, h_keys_out[1].rank, h_keys_out[2].rank};
   REQUIRE(actual_ranks == expected_ranks);
 }
+} // namespace

@@ -28,6 +28,8 @@
 // meta-data so it should only be used when the code is guaranteed to be
 // executed within an appropriate context.
 
+namespace
+{
 __host__ __device__ void assign_reference_to_reference(int& x, int& y)
 {
   y = x;
@@ -74,6 +76,7 @@ void print(const std::string& name, const Vector& v)
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
+} // namespace
 
 int main()
 {

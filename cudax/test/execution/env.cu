@@ -20,6 +20,8 @@
 namespace cudax = cuda::experimental;
 using env_t     = cudax::env_t<cuda::mr::device_accessible>;
 
+namespace
+{
 struct test_resource
 {
   void* allocate_sync(size_t, size_t)
@@ -267,3 +269,4 @@ C2H_TEST("Can use query to construct various objects", "[execution][env]")
     CHECK(buf.stream() == stream_);
   }
 }
+} // namespace

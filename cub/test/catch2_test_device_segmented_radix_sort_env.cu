@@ -15,10 +15,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -833,6 +836,8 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stre
 // approach. Instead, we pass block_size_extracting_constant_iterator for the offsets, which records blockDim.x when
 // dereferenced on the device. A custom policy selector sets threads_per_block, and we verify the recorded block size
 // matches.
+namespace
+{
 template <typename KeyT, typename ValueT, int ThreadsPerBlock>
 struct segmented_radix_sort_block_size_tuning
 {
@@ -845,6 +850,7 @@ struct segmented_radix_sort_block_size_tuning
     return policy;
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

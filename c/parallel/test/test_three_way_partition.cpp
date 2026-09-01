@@ -24,6 +24,8 @@
 
 using BuildResultT = cccl_device_three_way_partition_build_result_t;
 
+namespace
+{
 struct three_way_partition_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -769,3 +771,4 @@ C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_
       nullptr));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

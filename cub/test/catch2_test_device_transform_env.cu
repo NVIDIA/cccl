@@ -15,6 +15,8 @@
 
 using namespace thrust::placeholders;
 
+namespace
+{
 struct stream_convertible
 {
   cudaStream_t stream;
@@ -382,3 +384,4 @@ CUB_TEST("Test TransformPolicy properties", "[transform][device]", CUB_SMALL)
        ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

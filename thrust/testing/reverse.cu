@@ -6,6 +6,8 @@
 
 using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestReverseSimple()
 {
@@ -184,3 +186,4 @@ void TestReverseZippedHost()
   ASSERT_EQUAL(b, expected_b);
 }
 DECLARE_UNITTEST(TestReverseZippedHost);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -19,6 +19,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layout);
 
 /***********************************************************************************************************************
@@ -26,7 +28,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layou
  **********************************************************************************************************************/
 
 template <bool IsLayoutRight, int Position, typename T, typename ExtentType, typename... IndicesType>
-static void fill_linear_impl(
+void fill_linear_impl(
   c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
   if constexpr (sizeof...(IndicesType) == ExtentType::rank())
@@ -51,8 +53,8 @@ static void fill_linear_impl(
 }
 
 template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
-static void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
-                        [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
+void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
+                 [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
   [[maybe_unused]] size_t pos = 0;
   if constexpr (sizeof...(Extents) == 0)
@@ -230,3 +232,4 @@ CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
   auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);
 }
+} // namespace

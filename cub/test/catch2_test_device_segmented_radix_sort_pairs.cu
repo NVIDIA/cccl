@@ -21,6 +21,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
 
@@ -377,3 +379,4 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+} // namespace

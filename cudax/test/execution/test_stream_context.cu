@@ -27,6 +27,8 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177) // function "_is_on_device" was declared but n
 
 namespace ex = cuda::experimental::execution;
 
+namespace
+{
 __host__ __device__ bool _is_on_device() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, //
@@ -210,8 +212,6 @@ void starts_on_with_stream_scheduler2()
   CHECK(i == 43);
 }
 
-namespace
-{
 // Test code is placed in separate functions to avoid an nvc++ issue with
 // extended lambdas in functions with internal linkage (as is the case
 // with C2H tests).

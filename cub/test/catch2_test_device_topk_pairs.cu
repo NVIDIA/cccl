@@ -19,6 +19,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -91,8 +93,8 @@ bool check_results(
       {
         // Note: The results returned by the API functions MinPairs() and MaxPairs() are not stable.
         // If there are multiple items whose keys are equal to the key of the k-th element, any of those items may
-        // appear in the results. Therefore, when the value does not match, we increment 'j' to continue searching for a
-        // matching value with the same key.
+        // appear in the results. Therefore, when the value does not match, we increment 'j' to continue searching for
+        // a matching value with the same key.
         j++;
       }
       else
@@ -363,3 +365,4 @@ CUB_TEST(
     comparator_t{});
   REQUIRE(res == true);
 }
+} // namespace

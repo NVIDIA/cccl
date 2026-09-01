@@ -23,6 +23,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
@@ -340,3 +342,4 @@ CUB_TEST(
     }
   }
 }
+} // namespace

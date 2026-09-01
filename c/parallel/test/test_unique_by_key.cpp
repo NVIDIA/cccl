@@ -20,6 +20,8 @@
 #include "test_util.h"
 #include <cccl/c/unique_by_key.h>
 
+namespace
+{
 using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using item_t    = int32_t;
 
@@ -1175,3 +1177,4 @@ C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][serialization]"
   REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

@@ -27,6 +27,8 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <class T, class OffsetT>
 struct offset_to_ptr_t
 {
@@ -250,3 +252,4 @@ NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("large")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {28, 29});
+} // namespace

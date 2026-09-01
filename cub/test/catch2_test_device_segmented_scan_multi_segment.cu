@@ -22,6 +22,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 namespace impl
 {
 template <typename UnsignedIntegralT>
@@ -68,8 +70,6 @@ struct populate_bicyclic_monoid_input
 };
 } // namespace impl
 
-namespace
-{
 template <typename T>
 constexpr unsigned int get_max_elems()
 {
@@ -579,6 +579,8 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
 // (0, s1, s1 + s2, ..., s1 + s2 + ... + sn)
 // Similar for out-offsets, except every non-positive element in segment sizes
 // is replaced with `gap`.
+namespace
+{
 template <typename OffsetT>
 std::tuple<std::vector<OffsetT>, std::vector<OffsetT>>
 make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
@@ -612,6 +614,7 @@ make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
 
   return {offsets, offsets_with_gaps};
 }
+} // namespace
 
 CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", CUB_SMALL, itp_list)
 {
@@ -811,6 +814,8 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   }
 }
 
+namespace
+{
 template <typename DispatchT,
           typename OffsetT,
           typename InputIterT,
@@ -850,6 +855,7 @@ void run_dispatch_scan_iterator(
 #endif // TEST_LAUNCH != 2
   );
 }
+} // namespace
 
 CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[multi_segment][segmented][scan]", CUB_SMALL)
 {

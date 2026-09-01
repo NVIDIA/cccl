@@ -32,6 +32,8 @@
 
 namespace cudax = cuda::experimental;
 
+namespace
+{
 template <typename Ref, typename InputIt, typename OutputIt>
 __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, InputIt in, size_t n, OutputIt out)
 {
@@ -339,3 +341,4 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
   REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
+} // namespace

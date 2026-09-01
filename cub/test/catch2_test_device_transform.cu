@@ -26,6 +26,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
@@ -608,6 +610,7 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   thrust::tabulate(reference.begin() + offset_r, reference.end(), (_1 + offset_a) * 2 + offset_b + num_items);
   REQUIRE(reference == result);
 }
+} // namespace
 
 namespace Catch
 {
@@ -669,6 +672,8 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 }
 
 // See discussion on: https://github.com/NVIDIA/cccl/pull/4815
+namespace
+{
 struct A
 {
   int value;
@@ -709,6 +714,7 @@ struct BtoC
     return C{-b.value};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][transform]", CUB_SMALL)
 {
@@ -725,7 +731,20 @@ CUB_TEST("DeviceTransform::Transform function/output_iter return type not conver
   CHECK(output == reference);
 }
 
-__global__ void unrelated_kernel()
+// We can't wrap this in an anon namespace because clang-tidy then errors with:
+//
+// /cub/test/catch2_test_device_transform.cu:739:25: error: variable
+// '(anonymous namespace)::dsmem' has internal linkage but is not defined
+// [clang-diagnostic-undefined-internal,-warnings-as-errors]
+//
+//   739 |   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
+//       |                         ^
+// /home/coder/cccl/cub/test/catch2_test_device_transform.cu:741:17: note: used here
+//   741 |   asm("" : "+r"(dsmem[0]));
+//       |                 ^
+//
+// Which is obviously a bug. So instead go with middle ground and make it static
+static __global__ void unrelated_kernel() // NOLINT(misc-use-anonymous-namespace)
 {
   __shared__ int ssmem; // 4 bytes
   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
@@ -744,6 +763,8 @@ CUB_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
+namespace
+{
 template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
@@ -780,6 +801,7 @@ void fill_pdl(T* data, size_t n, T value)
     blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
     .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", CUB_SMALL)
 {

@@ -19,6 +19,8 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
@@ -31,6 +33,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
                             multi_histogram_range,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
                             ESCAPE_LIST(Channels, ActiveChannels));
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -1621,6 +1624,8 @@ CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[hi
 
 #if TEST_LAUNCH != 1
 
+namespace
+{
 template <int BlockThreads>
 struct histogram_tuning
 {
@@ -1629,6 +1634,7 @@ struct histogram_tuning
     return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

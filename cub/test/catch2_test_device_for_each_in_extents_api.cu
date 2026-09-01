@@ -27,6 +27,8 @@
 #  include "cub_test_macros.h"
 
 // example-begin for-each-in-extents-op
+namespace
+{
 struct linear_store_3D
 {
   using data_t = cuda::std::array<int, 3>;
@@ -38,6 +40,7 @@ struct linear_store_3D
     d_output1_raw[idx] = {x, y, z};
   }
 };
+} // namespace
 // example-end for-each-in-extents-op
 
 // clang-format off

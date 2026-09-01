@@ -25,6 +25,8 @@
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
+namespace
+{
 template <typename Resource>
 void resource_static_asserts()
 {
@@ -61,7 +63,7 @@ Resource get_resource()
   }
 }
 
-static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
+bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
 {
   cuda::__ensure_current_context guard(cuda::device_ref{0});
   void* cuda_malloc_host_ptr = nullptr;
@@ -79,7 +81,7 @@ static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
   return status == cudaSuccess && free_status == cudaSuccess && attributes.type == type;
 }
 
-static void ensure_pinned_ptr(void* ptr)
+void ensure_pinned_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
@@ -265,3 +267,4 @@ C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resourc
   test_deallocate_async(resource);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
+} // namespace

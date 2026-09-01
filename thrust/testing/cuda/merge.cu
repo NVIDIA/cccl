@@ -73,6 +73,8 @@ void TestMergeDeviceDevice()
 DECLARE_UNITTEST(TestMergeDeviceDevice);
 #endif
 
+namespace
+{
 void TestMergeCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
@@ -90,3 +92,4 @@ void TestMergeCudaStreams()
   test_runtime::assert_equal(stream, result, {0, 0, 2, 3, 3, 4, 4});
 }
 DECLARE_UNITTEST(TestMergeCudaStreams);
+} // namespace

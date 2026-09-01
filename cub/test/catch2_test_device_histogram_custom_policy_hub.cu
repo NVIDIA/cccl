@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
@@ -98,3 +100,4 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   c2h::host_vector<counter_t> h_histogram = d_histogram;
   REQUIRE(h_histogram == expected_histogram);
 }
+} // namespace

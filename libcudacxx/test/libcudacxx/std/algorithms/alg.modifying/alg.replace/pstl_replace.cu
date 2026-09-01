@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 [[nodiscard]] TEST_FUNC constexpr bool operator==(const nontrivial_type& lhs, const int& rhs)
 {
   return lhs.value_ == rhs;
@@ -113,3 +115,4 @@ C2H_TEST("cuda::std::replace", "[parallel algorithm]", all_types)
     test_replace(policy, input);
   }
 }
+} // namespace

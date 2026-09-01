@@ -11,6 +11,8 @@
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #endif
 
+namespace
+{
 template <typename T>
 struct test_allocator_t
 {};
@@ -116,3 +118,4 @@ SimpleUnitTest<TestAllocatorAttachment,
                                    omp_par_info,
                                    tbb_par_info>>
   TestAllocatorAttachmentInstance;
+} // namespace

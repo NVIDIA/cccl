@@ -15,6 +15,8 @@
 #include "cub_test_macros.h"
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
@@ -330,3 +332,4 @@ CUB_TEST("Device fixed size segmented reduce works with a very large number of s
       num_segments, compute_expected_op, device_segmented_argmax);
   }
 }
+} // namespace

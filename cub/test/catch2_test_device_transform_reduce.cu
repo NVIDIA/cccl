@@ -13,6 +13,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -212,3 +214,4 @@ CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[r
   REQUIRE(expected == actual.a);
   REQUIRE(expected == actual.b);
 }
+} // namespace

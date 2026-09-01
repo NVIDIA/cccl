@@ -29,6 +29,8 @@
 
 namespace cudax = cuda::experimental;
 
+namespace
+{
 template <class ValueType>
 __global__ void fill_sentinel_kernel(ValueType* slots, int cap, ValueType sentinel)
 {
@@ -136,3 +138,4 @@ C2H_TEST("fixed_capacity_map insert and contains over misaligned external storag
   run_misaligned_external_storage<::cuda::std::int32_t, ::cuda::std::int32_t>();
   run_misaligned_external_storage<::cuda::std::uint16_t, ::cuda::std::uint16_t>();
 }
+} // namespace

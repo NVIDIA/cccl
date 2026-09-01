@@ -22,8 +22,10 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 
 #include <host_device.cuh>
 
-static CUlaunchConfig expectedConfig;
-static bool replacementCalled = false;
+namespace
+{
+CUlaunchConfig expectedConfig;
+bool replacementCalled = false;
 
 void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, void* args[])
 {
@@ -299,3 +301,4 @@ C2H_TEST("Queries on config", "[launch]")
   CUDART(cudaDeviceSynchronize());
 }
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
+} // namespace

@@ -16,6 +16,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, stable_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, stable_sort_pairs);
 
@@ -73,3 +75,4 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large types", "[merge][sort
   REQUIRE(keys_expected == keys_in_out);
   REQUIRE(values_expected == values_in_out);
 }
+} // namespace

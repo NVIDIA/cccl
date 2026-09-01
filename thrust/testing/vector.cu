@@ -11,6 +11,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class Vector>
 void TestVectorZeroSize()
 {
@@ -1025,3 +1027,4 @@ void TestVectorNoInitResize()
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
 DECLARE_UNITTEST(TestVectorNoInitResize);
+} // namespace

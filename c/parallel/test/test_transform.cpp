@@ -12,6 +12,8 @@
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
+namespace
+{
 using BuildResultT = cccl_device_transform_build_result_t;
 
 struct transform_cleanup
@@ -985,3 +987,4 @@ C2H_TEST("Transform compile/load round-trip", "[transform][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

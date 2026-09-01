@@ -16,8 +16,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-namespace
-{
+// Extends the shared ::test namespace; an anonymous one would make every ::test name ambiguous.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 namespace test
 {
 cuda::event_ref fn_takes_event_ref(cuda::event_ref ref)
@@ -54,7 +54,7 @@ void test_event_uses_explicit_device_when_current_device_differs()
   explicit_device_stream.sync();
 }
 } // namespace test
-} // namespace
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 static_assert(!::cuda::std::is_default_constructible_v<cuda::event_ref>);
 static_assert(!::cuda::std::is_default_constructible_v<cuda::event>);

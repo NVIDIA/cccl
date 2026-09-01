@@ -21,6 +21,8 @@ using cub::detail::warp_threads;
 // Every launch uses two architectural warps, independently of the logical warp size.
 inline constexpr int block_threads = 2 * warp_threads;
 
+namespace
+{
 // Number of logical warps taking part in the sort. When the logical warp is smaller than the
 // architectural warp, this deliberately leaves the last architectural warp partially occupied, so
 // that the collective has to restrict itself to the lanes of its own logical warp.
@@ -588,3 +590,4 @@ CUB_TEST("Warp sort on custom key-value pairs works",
   sort_values_for_equal_keys(h_keys_out.begin(), h_values_out.begin(), valid_items, params::total_warps);
   REQUIRE(h_values_in_out == h_values_out);
 }
+} // namespace

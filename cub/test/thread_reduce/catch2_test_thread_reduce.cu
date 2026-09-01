@@ -25,6 +25,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
 {
@@ -359,3 +361,4 @@ CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 }
+} // namespace

@@ -44,6 +44,8 @@
   VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator>             \
     TestFunctionalPlaceholders##name##HostInstance;
 
+namespace
+{
 template <typename T>
 struct plus_equal_reference
 {
@@ -241,3 +243,4 @@ PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, prefix_decrement_reference);
 
 SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Increment, ++, suffix_increment_reference);
 SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, suffix_decrement_reference);
+} // namespace

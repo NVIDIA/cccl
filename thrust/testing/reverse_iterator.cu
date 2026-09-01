@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::reverse_iterator from cuda::std
 void TestReverseIteratorTraits()
 {
@@ -154,3 +156,4 @@ struct TestReverseIteratorExclusiveScan
   }
 };
 VariableUnitTest<TestReverseIteratorExclusiveScan, IntegralTypes> TestReverseIteratorExclusiveScanInstance;
+} // namespace

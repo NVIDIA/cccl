@@ -26,6 +26,8 @@
 
 // This benchmark is compute intensive with diverging threads
 
+namespace
+{
 template <class IndexT, class OutputT>
 struct fib_t
 {
@@ -55,7 +57,7 @@ struct fib_t
     return t2;
   }
 };
-static void fibonacci(nvbench::state& state)
+void fibonacci(nvbench::state& state)
 try
 {
   using index_t                     = int64_t;
@@ -76,3 +78,4 @@ catch (const std::bad_alloc&)
 }
 
 NVBENCH_BENCH(fibonacci).set_name("fibonacci").add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Allocator>
 void test_implementation(Allocator alloc)
 {
@@ -22,3 +24,4 @@ void TestSingleDeviceTLSCachingAllocator()
   test_implementation(thrust::detail::single_device_tls_caching_allocator());
 };
 DECLARE_UNITTEST(TestSingleDeviceTLSCachingAllocator);
+} // namespace

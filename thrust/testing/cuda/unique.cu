@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct div_n_equality_op
 {
@@ -476,3 +478,4 @@ void TestUniqueWithCustomEqualityOpMutable()
 }
 
 DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);
+} // namespace

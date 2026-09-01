@@ -18,6 +18,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -459,3 +461,4 @@ catch (const std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
+} // namespace

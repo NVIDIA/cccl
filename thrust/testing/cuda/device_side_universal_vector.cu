@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class VecInT, class VecOutT>
 _CCCL_HOST_DEVICE void universal_vector_access(VecInT& in, VecOutT& out)
 {
@@ -74,3 +76,4 @@ DECLARE_UNITTEST_WITH_NAME((TestDeviceAccess<thrust::universal_vector<int>, thru
 DECLARE_UNITTEST_WITH_NAME(
   (TestDeviceAccess<thrust::universal_host_pinned_vector<int>, thrust::universal_host_pinned_vector<bool>>),
   TestUniversalHPVectorDeviceAccess);
+} // namespace

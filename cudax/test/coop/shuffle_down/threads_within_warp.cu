@@ -19,6 +19,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class T>
 __device__ T make_instance_for(unsigned rank)
 {
@@ -141,3 +143,4 @@ C2H_TEST("shuffle/threads_within_warp", "[shuffle][threads_within_warp]")
 
   stream.sync();
 }
+} // namespace

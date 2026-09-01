@@ -36,6 +36,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T = int>
 struct is_power_of_2
 {
@@ -170,3 +172,4 @@ C2H_TEST("cuda::std::replace_copy_if", "[parallel algorithm]", integral_types)
     test_replace_copy_if(policy, output);
   }
 }
+} // namespace

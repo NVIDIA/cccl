@@ -32,6 +32,8 @@ using sample_types =
 constexpr int num_channels        = 1;
 constexpr int num_active_channels = 1;
 
+namespace
+{
 void build_histogram(
   cccl_device_histogram_build_result_t* build,
   cccl_iterator_t d_samples,
@@ -538,3 +540,4 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
   REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

@@ -104,6 +104,8 @@ C2H_TEST("1d Copy", "[data_manipulation]")
   }
 }
 
+namespace
+{
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = SrcLayout,
           typename SrcExtents,
@@ -185,3 +187,4 @@ C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
     }
   }
 }
+} // namespace

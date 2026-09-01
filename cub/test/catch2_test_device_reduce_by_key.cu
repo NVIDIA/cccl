@@ -11,6 +11,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -156,3 +158,4 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
     REQUIRE(expected_keys == out_unique_keys);
   }
 }
+} // namespace

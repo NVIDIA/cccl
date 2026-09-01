@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+namespace
+{
 // Base 2 fixed point
 class ScaledInteger
 {
@@ -65,6 +67,7 @@ struct ScaledIntegerToValue
     return scaled.rescale(scale).value();
   }
 };
+} // namespace
 
 int main()
 {

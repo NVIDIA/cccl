@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <unsigned int N>
 void _TestStableSortByKeyWithLargeKeys()
 {
@@ -36,3 +38,4 @@ void TestStableSortByKeyWithLargeKeys()
   _TestStableSortByKeyWithLargeKeys<16>();
 }
 DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeys);
+} // namespace

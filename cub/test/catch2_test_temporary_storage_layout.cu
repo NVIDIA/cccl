@@ -12,6 +12,8 @@
 
 using num_storage_slots = c2h::enum_type_list<int, 1, 4, 42>;
 
+namespace
+{
 template <int Items>
 std::size_t get_temporary_storage_size(std::size_t (&sizes)[Items])
 {
@@ -157,3 +159,4 @@ CUB_TEST("Test double grow", "[temporary_storage_layout]", CUB_SMALL, num_storag
     CHECK(postset_arrays[slot_id]->get() == preset_arrays[slot_id]->get());
   }
 }
+} // namespace

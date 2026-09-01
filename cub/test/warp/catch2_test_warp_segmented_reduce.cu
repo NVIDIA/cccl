@@ -11,6 +11,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
 {
@@ -353,3 +355,4 @@ CUB_TEST("Warp segmented reduction works",
   // Verify results
   verify_results(h_out, d_out);
 }
+} // namespace

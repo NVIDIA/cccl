@@ -16,6 +16,8 @@
 
 constexpr int num_warps = 4;
 
+namespace
+{
 struct max_op
 {
   __host__ __device__ int operator()(int i, int j)
@@ -303,3 +305,4 @@ CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial v
   REQUIRE(expected == d_out);
   REQUIRE(expected_aggr == d_warp_aggregate);
 }
+} // namespace

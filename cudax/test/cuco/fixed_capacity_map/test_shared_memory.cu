@@ -44,6 +44,8 @@ inline constexpr ::cuda::std::size_t static_capacity =
 using fixed_capacity_map_512_type = cudax::cuco::
   fixed_capacity_map<int, int, static_capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing>;
 
+namespace
+{
 template <class Pair>
 struct iota_pair
 {
@@ -365,3 +367,4 @@ C2H_TEST("fixed_capacity_map_ref initialize and make_copy — dynamic extent in 
   REQUIRE(::thrust::all_of(
     ::thrust::cuda::par.on(stream.get()), thread_ok.data(), thread_ok.data() + block_size, is_nonzero{}));
 }
+} // namespace

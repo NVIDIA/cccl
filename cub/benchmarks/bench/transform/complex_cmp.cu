@@ -26,7 +26,9 @@
 
 // This benchmark tests overlapping memory regions for reading and is compute intensive
 
-static void compare_complex(nvbench::state& state)
+namespace
+{
+void compare_complex(nvbench::state& state)
 try
 {
   const auto n                        = state.get_int64("Elements{io}");
@@ -49,3 +51,4 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH(compare_complex)
   .set_name("compare_complex")
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

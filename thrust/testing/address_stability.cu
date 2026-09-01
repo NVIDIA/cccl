@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct addable
 {
   _CCCL_HOST_DEVICE friend auto operator+(const addable&, const addable&) -> addable
@@ -118,3 +120,4 @@ void TestAddressStabilityLambda()
   }
 }
 DECLARE_UNITTEST(TestAddressStabilityLambda);
+} // namespace

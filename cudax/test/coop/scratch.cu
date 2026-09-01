@@ -22,6 +22,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 enum class MyCoopAlgScratch
 {
   none,
@@ -272,3 +274,4 @@ C2H_TEST("scratch", "[scratch]")
   cuda::launch(stream, config, TestKernel{});
   stream.sync();
 }
+} // namespace

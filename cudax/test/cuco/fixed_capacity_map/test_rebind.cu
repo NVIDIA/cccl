@@ -43,6 +43,8 @@ using cg_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
 using bucket_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
 using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+namespace
+{
 struct original_hash
 {
   int seed;
@@ -280,3 +282,4 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
 
   REQUIRE(::cuda::std::all_of(policy, found.data(), found.data() + num_keys, is_nonzero{}));
 }
+} // namespace

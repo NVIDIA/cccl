@@ -17,6 +17,8 @@
 #include "test_util.h"
 #include <cccl/c/binary_search.h>
 
+namespace
+{
 using BuildResultT = cccl_device_binary_search_build_result_t;
 
 struct binary_search_cleanup
@@ -27,7 +29,7 @@ struct binary_search_cleanup
   }
 };
 
-static std::string mode_as_key(cccl_binary_search_mode_t mode)
+std::string mode_as_key(cccl_binary_search_mode_t mode)
 {
   switch (mode)
   {
@@ -334,3 +336,4 @@ C2H_TEST("BinarySearch compile rejects kernel-only comparator op", "[binary_sear
       nullptr));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

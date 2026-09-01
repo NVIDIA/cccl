@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct device_only_iterator
 {
   using iterator_category = cuda::std::random_access_iterator_tag;
@@ -123,3 +125,4 @@ void TestOffsetIteratorWithDeviceOnlyIterator()
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }
 DECLARE_UNITTEST(TestOffsetIteratorWithDeviceOnlyIterator);
+} // namespace

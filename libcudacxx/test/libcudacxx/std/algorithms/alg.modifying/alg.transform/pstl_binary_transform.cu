@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_transform(const Policy& policy, thrust::device_vector<int>& output)
 {
@@ -127,3 +129,4 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
     test_transform(policy, output);
   }
 }
+} // namespace

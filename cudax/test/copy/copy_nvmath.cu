@@ -144,13 +144,15 @@ TEST_CASE("copy d2d nvmath src_neg_stride", "[copy][d2d][nvmath][neg_stride]")
  * nvmath squeezing and flattening test cases (device-to-device)
  **********************************************************************************************************************/
 
-static cuda::std::array<int, 23> make_flatten_common_src_strides()
+namespace
+{
+cuda::std::array<int, 23> make_flatten_common_src_strides()
 {
   return {1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
           1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 2,  1 << 0,  1 << 1};
 }
 
-static cuda::std::array<int, 23> make_flatten_common_dst_strides()
+cuda::std::array<int, 23> make_flatten_common_dst_strides()
 {
   return {1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
           1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 1,  1 << 2,  1 << 0};
@@ -228,3 +230,4 @@ TEST_CASE("copy d2d nvmath sliced_unaligned_ptr", "[copy][d2d][nvmath][vectorize
   cuda::std::array<int, 4> dst_strides{12750, 50, 10, 1};
   test_copy_stride_relaxed<data_t>(src_alloc, src_offset, shape, src_strides, dst_alloc, 0, dst_strides);
 }
+} // namespace

@@ -21,6 +21,8 @@
 #include "catch2_test_device_scan.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
   if (status != cudaSuccess)
@@ -674,3 +676,4 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
     cuda::std::plus<>{},
     5);
 }
+} // namespace

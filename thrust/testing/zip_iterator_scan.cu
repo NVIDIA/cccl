@@ -9,6 +9,8 @@
 
 using namespace unittest;
 
+namespace
+{
 template <typename Tuple>
 struct TuplePlus
 {
@@ -100,3 +102,4 @@ struct TestZipIteratorScan
   }
 };
 VariableUnitTest<TestZipIteratorScan, SignedIntegralTypes> TestZipIteratorScanInstance;
+} // namespace

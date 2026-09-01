@@ -10,6 +10,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
@@ -195,3 +197,4 @@ CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMA
     REQUIRE(actual == expected);
   }
 }
+} // namespace

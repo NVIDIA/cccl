@@ -21,6 +21,8 @@
 
 #include "test_macros.h"
 
+namespace
+{
 template <class T, class View>
 struct TestKernel
 {
@@ -106,3 +108,4 @@ C2H_TEST("Dynamic shared memory option", "[launch]")
   test_ref(stream);
   test_span(stream);
 }
+} // namespace

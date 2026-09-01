@@ -46,6 +46,8 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 
 constexpr int payload_offset = 7;
 
+namespace
+{
 template <class Pair>
 struct duplicate_iota_pair
 {
@@ -158,3 +160,4 @@ C2H_TEST(
   REQUIRE(cleared_keys_end == keys.begin());
   REQUIRE(cleared_values_end == values.begin());
 }
+} // namespace

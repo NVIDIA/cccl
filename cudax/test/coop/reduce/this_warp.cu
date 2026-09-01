@@ -30,6 +30,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -211,3 +213,4 @@ C2H_TEST("reduce/this_warp Broadcasted", "[reduce][this_warp]", integral_type_li
     verify_results(c2h::host_vector<value_t>(warp_size, reference_result), c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

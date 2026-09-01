@@ -31,6 +31,8 @@ using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
 using SizeT = ptrdiff_t;
 
+namespace
+{
 struct segmented_sort_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -879,3 +881,4 @@ C2H_TEST("SegmentedSort compile/load round-trip", "[segmented_sort][serializatio
   REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

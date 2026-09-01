@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
 {
@@ -286,3 +288,4 @@ CUB_TEST("Vectorized block store with different alignment cases",
   REQUIRE(d_input_ref == d_output);
 }
 #endif
+} // namespace

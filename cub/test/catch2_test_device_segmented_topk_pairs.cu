@@ -37,6 +37,8 @@
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 // Maps an item index to its segment id for fixed-size segments
 struct fixed_stride_segment_id_op
 {
@@ -2304,3 +2306,4 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+} // namespace

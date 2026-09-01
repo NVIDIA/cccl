@@ -24,6 +24,8 @@ constexpr int num_seeds = 3;
  * Thread Scan Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel(
   In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix, Accum filler)
@@ -421,3 +423,4 @@ CUB_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]", CUB_SMALL)
   }
   REQUIRE(reference_result == d_out);
 }
+} // namespace

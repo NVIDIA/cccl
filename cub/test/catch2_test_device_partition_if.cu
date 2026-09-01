@@ -24,6 +24,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -434,3 +436,4 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
 }
+} // namespace

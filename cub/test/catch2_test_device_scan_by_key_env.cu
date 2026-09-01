@@ -20,10 +20,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -130,6 +133,8 @@ CUB_TEST_CASE("Device scan inclusive-scan-by-key works with default environment"
 
 #if TEST_LAUNCH != 1
 
+namespace
+{
 template <int BlockThreads>
 struct scan_by_key_tuning
 {
@@ -145,6 +150,7 @@ struct scan_by_key_tuning
              {}}};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

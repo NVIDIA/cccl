@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct plus_mod_10
 {
@@ -202,3 +204,4 @@ void TestReduceIntoCountingIterator()
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
 DECLARE_GENERIC_UNITTEST(TestReduceIntoCountingIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

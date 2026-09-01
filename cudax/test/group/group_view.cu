@@ -20,6 +20,8 @@
 
 #include "group_testing.cuh"
 
+namespace
+{
 template <class Config, class Level>
 __device__ void test_group_view(Config config, Level level)
 {
@@ -231,3 +233,4 @@ C2H_TEST("Group View", "[group_view]")
 
   stream.sync();
 }
+} // namespace

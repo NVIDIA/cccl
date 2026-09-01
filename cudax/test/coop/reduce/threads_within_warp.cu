@@ -33,6 +33,8 @@ constexpr int warp_size = 32;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -277,3 +279,4 @@ C2H_TEST(
     verify_results(c2h::host_vector<value_t>(nthreads_in_group, reference_result), c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

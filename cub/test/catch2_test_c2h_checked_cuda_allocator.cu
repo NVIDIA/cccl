@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 std::size_t get_alloc_bytes()
 {
   std::size_t free_bytes{};
@@ -48,3 +50,4 @@ CUB_TEST("c2h::device_policy throws when requested allocations exceed free devic
 
   thrust::detail::return_temporary_buffer(policy, buffer.first, buffer.second);
 }
+} // namespace

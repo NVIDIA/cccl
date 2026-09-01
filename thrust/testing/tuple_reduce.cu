@@ -7,6 +7,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -54,3 +56,4 @@ struct TestTupleReduce
   }
 };
 VariableUnitTest<TestTupleReduce, IntegralTypes> TestTupleReduceInstance;
+} // namespace

@@ -16,6 +16,8 @@
 #include "catch2_test_device_select_common.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename T>
 struct greater_than_t
 {
@@ -236,3 +238,4 @@ CUB_TEST("cub::DevicePartition::If three-way accepts a custom policy selector", 
 }
 
 #endif // _CCCL_STD_VER >= 2020
+} // namespace

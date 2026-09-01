@@ -19,6 +19,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 const size_t NUM_SAMPLES = 10000;
 
+namespace
+{
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestUnaryFunctional()
 {
@@ -296,3 +298,4 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
 DECLARE_VECTOR_UNITTEST(TestNot2);
 
 _CCCL_DIAG_POP
+} // namespace

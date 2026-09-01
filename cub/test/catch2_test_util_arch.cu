@@ -8,6 +8,8 @@
 template <auto V>
 struct show;
 
+namespace
+{
 template <int Nominal4ByteThreadsPerBlock,
           int Nominal4ByteItemsPerThread,
           typename ComputeT,
@@ -115,3 +117,4 @@ CUB_TEST("RegBoundScaling", "[util][arch]", CUB_SMALL)
   check_reg_bound_scaling<256, 500, large_t, 64, 1>();
   check_reg_bound_scaling<256, 10000, large_t, 32, 39>();
 }
+} // namespace

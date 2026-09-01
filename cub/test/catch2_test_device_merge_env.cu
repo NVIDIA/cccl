@@ -15,8 +15,11 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -28,6 +31,8 @@ namespace stdexec = cuda::std::execution;
 
 using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>;
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct merge_tuning
 {
@@ -421,3 +426,4 @@ CUB_TEST("Test MergePolicy properties", "[merge][device]", CUB_SMALL)
              ", .use_bulk_copy_for_values = 0, .unroll = 0 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

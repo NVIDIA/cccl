@@ -39,6 +39,8 @@ using cg_sizes      = c2h::type_list<int_c<1>, int_c<2>>;
 using bucket_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
 using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+namespace
+{
 template <class Pair>
 struct iota_pair
 {
@@ -137,3 +139,4 @@ C2H_TEST("fixed_capacity_map insert_if", "[container]", key_types, cg_sizes, buc
     ::cuda::counting_iterator<int>{num_keys},
     matches_inserted_parity{results.data(), false}));
 }
+} // namespace

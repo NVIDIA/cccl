@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 void check_status(cudaError_t status)
 {
   REQUIRE(status == cudaSuccess);
@@ -51,3 +53,4 @@ CUB_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]", CUB_SMALL)
   // clang-format on
   REQUIRE(d_input == d_output);
 }
+} // namespace

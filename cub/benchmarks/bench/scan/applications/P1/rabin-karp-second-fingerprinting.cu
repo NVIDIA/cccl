@@ -40,6 +40,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 /* Denote epsilon, the identity element, be an empty sequence, and consider
@@ -275,10 +277,10 @@ template <typename InputT, typename OutputT>
 
   return true;
 }
-}; // namespace impl
+} // namespace impl
 
 template <typename BitsetT, typename OffsetT>
-static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
+void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
 {
   using op_t         = impl::RabinKarpOp;
   using input_t      = BitsetT;
@@ -345,3 +347,4 @@ NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(type_list, offset_types))
   .set_type_axes_names({"BitsetT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Modulus", {2725841});
+} // namespace

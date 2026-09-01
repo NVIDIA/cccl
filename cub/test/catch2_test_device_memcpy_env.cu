@@ -21,7 +21,10 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -31,6 +34,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename T>
 struct index_to_ptr
 {
@@ -276,3 +281,4 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
        ", .bytes_per_thread = 32 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

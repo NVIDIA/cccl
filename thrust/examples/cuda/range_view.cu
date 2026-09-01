@@ -15,6 +15,8 @@
 // accessible from device functions, the range_view class allows us to access
 // and manipulate its data as if we were manipulating a real container.
 
+namespace
+{
 template <class Iterator>
 class range_view
 {
@@ -172,6 +174,7 @@ struct f1
     return x * 3;
   }
 };
+} // namespace
 
 int main()
 {

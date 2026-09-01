@@ -18,6 +18,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, find_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, lower_bound);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, upper_bound);
@@ -382,3 +384,4 @@ CUB_TEST("DeviceFind::UpperBound really large input",
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace

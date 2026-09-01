@@ -29,6 +29,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct less_than
 {
@@ -123,3 +125,4 @@ C2H_TEST("cuda::std::is_partitioned(iter, iter, pred)", "[parallel algorithm]")
     test_is_partitioned(policy, input);
   }
 }
+} // namespace

@@ -70,6 +70,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// NOLINTBEGIN(misc-use-internal-linkage)
+
 template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array
 {
@@ -545,6 +547,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::std::array<_Tp, 
   static_assert(_Ip < _Np, "Index out of bounds in std::tuple_element<> (cuda::std::array)");
   using type _CCCL_NODEBUG = _Tp;
 };
+
+// NOLINTEND(misc-use-internal-linkage)
 
 _CCCL_END_NAMESPACE_STD
 

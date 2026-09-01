@@ -49,6 +49,8 @@ void TestSetUnionDeviceDevice()
 DECLARE_UNITTEST(TestSetUnionDeviceDevice);
 #endif
 
+namespace
+{
 void TestSetUnionCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
@@ -65,3 +67,4 @@ void TestSetUnionCudaStreams()
   test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
 DECLARE_UNITTEST(TestSetUnionCudaStreams);
+} // namespace

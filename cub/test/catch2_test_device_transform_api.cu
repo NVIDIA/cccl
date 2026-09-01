@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_many_many_api()
 {
@@ -237,3 +239,4 @@ CUB_TEST("DeviceTransform::TransformStableArgumentAddresses legacy size-query is
 
 // todo(giannis): guards for tuple-input variants (Transform many->many, TransformIf many->one,
 // TransformStableArgumentAddresses many->one) — these need cuda::std::tuple setup; defer.
+} // namespace

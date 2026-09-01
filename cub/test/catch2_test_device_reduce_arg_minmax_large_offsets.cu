@@ -14,6 +14,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
@@ -109,3 +111,4 @@ CUB_TEST(
   REQUIRE(max_out[0] == item_t{2});
   REQUIRE(max_index[0] == expected_max_index);
 }
+} // namespace
