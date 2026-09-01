@@ -19,7 +19,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[1],
@@ -46,7 +46,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[2],
@@ -73,7 +73,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[3],
@@ -100,7 +100,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[4],
@@ -132,7 +132,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[5],
@@ -165,7 +165,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_tile_gather4(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[5],
@@ -197,7 +197,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[1])
 {
   // __space == space_global (due to parameter type constraint)
@@ -222,7 +222,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -250,7 +250,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -279,7 +279,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -315,7 +315,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -347,7 +347,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[2])
 {
   // __space == space_global (due to parameter type constraint)
@@ -372,7 +372,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -400,7 +400,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -436,7 +436,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -487,7 +487,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -527,7 +527,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[3])
 {
   // __space == space_global (due to parameter type constraint)
@@ -552,7 +552,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -586,7 +586,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -622,7 +622,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -676,7 +676,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -719,7 +719,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[4])
 {
   // __space == space_global (due to parameter type constraint)
@@ -744,7 +744,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -779,7 +779,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -821,7 +821,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -878,7 +878,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -924,7 +924,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[5])
 {
   // __space == space_global (due to parameter type constraint)
@@ -954,7 +954,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -990,7 +990,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_overri
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -1033,7 +1033,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -1093,7 +1093,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -1142,7 +1142,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evic
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evict_last(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evict_last(
   ::cuda::ptx::space_global_t, const void* __tensorMap, const ::cuda::std::int32_t (&__tensorCoords)[5])
 {
   // __space == space_global (due to parameter type constraint)
@@ -1172,7 +1172,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_tile_gather4_overrid
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_tile_gather4_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_tile_gather4_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,
@@ -1208,7 +1208,7 @@ __device__ static inline void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evic
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evict_last_override(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evict_last_override(
   ::cuda::ptx::space_global_t,
   const void* __tensorMap,
   const void* __gAddrToOverride,

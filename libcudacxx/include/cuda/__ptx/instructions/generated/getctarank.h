@@ -16,7 +16,7 @@ __device__ static inline uint32_t getctarank(
 */
 #if __cccl_ptx_isa >= 780
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t getctarank(::cuda::ptx::space_cluster_t, const void* __addr)
+_CCCL_DEVICE_API ::cuda::std::uint32_t getctarank(::cuda::ptx::space_cluster_t, const void* __addr)
 {
   // __space == space_cluster (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;

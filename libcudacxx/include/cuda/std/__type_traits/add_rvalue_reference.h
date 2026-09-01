@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_referenceable.h>
+#include <cuda/std/__concepts/referenceable.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,7 +52,7 @@ using add_rvalue_reference_t _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(
 
 #else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __referenceable<_Tp>>
 struct __add_rvalue_reference_impl
 {
   using type _CCCL_NODEBUG = _Tp;
