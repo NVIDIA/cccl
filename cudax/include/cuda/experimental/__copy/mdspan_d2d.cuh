@@ -282,6 +282,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         return;
       }
     }
+
     // (2) inner size is large
     if (__both_stride1 && __inner_extent_bytes >= cudax::__bytes_in_flight())
     {
@@ -301,11 +302,50 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       }
       return;
     }
+
+    const auto __try_shared_mem_copy = [&]() {
+      if constexpr (__max_rank >= 2 && __max_rank <= cudax::__max_shared_mem_kernel_rank)
+      {
+        if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
+        {
+          const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
+          const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
+          if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2))
+          {
+            cudax::__launch_copy_shared_mem_kernel(
+              __src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
+            return true;
+          }
+        }
+        if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified))
+        {
+          cudax::__launch_copy_shared_mem_kernel(
+            __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+          return true;
+        }
+      }
+      return false;
+    };
+
     // (3) inner size is not large -> try vectorized case
     if constexpr (__are_vectorizable_copy)
     {
       if (__both_stride1)
       {
+        // transpose cases can have the innermost mode == 1. These should not fall in the vectorizable_copy and
+        // prefer the shared-memory transpose when possible.
+        const auto __src_stride_order = cudax::__stride_order(__src_simplified);
+        const auto __dst_stride_order = cudax::__stride_order(__dst_simplified);
+        bool __same_stride_order      = true;
+        for (::cuda::std::size_t __i = 0; __i < __src_simplified.__rank; ++__i)
+        {
+          __same_stride_order = __same_stride_order && __src_stride_order[__i] == __dst_stride_order[__i];
+        }
+        if (!__same_stride_order && __try_shared_mem_copy())
+        {
+          return;
+        }
+
         const auto __op = [__stream](const auto& __src, const auto& __dst) {
           cudax::__copy_optimized(__src, __dst, cudax::__total_size(__src), __stream);
         };
@@ -313,26 +353,13 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         return;
       }
     }
-    // (4) transpose case (rank capped to avoid excessive register pressure in the kernel)
-    if constexpr (__max_rank >= 2 && __max_rank <= cudax::__max_shared_mem_kernel_rank)
+
+    // (4) transpose case (non-vectorizable)
+    if (__try_shared_mem_copy())
     {
-      if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
-      {
-        const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
-        const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
-        if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2))
-        {
-          cudax::__launch_copy_shared_mem_kernel(__src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
-          return;
-        }
-      }
-      if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified))
-      {
-        cudax::__launch_copy_shared_mem_kernel(
-          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
-        return;
-      }
+      return;
     }
+
     // (5) use the simplified rank in device code for common low-rank layouts
     if constexpr (__max_rank > 1)
     {

@@ -137,6 +137,24 @@ TEST_CASE("copy d2d nvmath transpose_channels", "[copy][d2d][nvmath][transpose]"
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
+TEMPLATE_TEST_CASE(
+  "copy d2d shared inner-mode transpose",
+  "[copy][d2d][nvmath][transpose][shared_inner]",
+  int8_t,
+  int16_t,
+  int32_t,
+  int64_t)
+{
+  constexpr int D0    = 289;
+  constexpr int D1    = 293;
+  constexpr int D2    = 3;
+  constexpr int alloc = D0 * D1 * D2;
+  cuda::std::array<int, 3> shape{D0, D1, D2};
+  cuda::std::array<int, 3> src_strides{D2, D0 * D2, 1};
+  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+}
+
 // src: (1001,1001,3,3,3):(27,27027,9,1,3)
 // dst: (1001,1001,3,3,3):(27027,27,9,3,1)
 TEST_CASE("copy d2d nvmath transpose_channels_2", "[copy][d2d][nvmath][transpose]")
