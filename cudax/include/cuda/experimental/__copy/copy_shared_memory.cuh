@@ -339,21 +339,42 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   //
   //--------------------------------------------------------------------------------------------------------------------
   // Find the grid size (number of blocks) and strides for block index decomposition
+
+  // __grid_perm represents the order in which the grid dimensions are visited
   ::cuda::std::array<size_t, _MaxRank> __grid_perm{};
+  // __grid_perm is initialized to the identity permutation (source tensor order)
   for (size_t __i = 0; __i < _MaxRank; ++__i)
   {
     __grid_perm[__i] = __i;
   }
-  // When destination row size is not a multiple of the tile size, visit the destination tensor in a row-major order to
-  // improve cache reuse
-  if constexpr (_MaxRank == 2)
+  // Optimization: improve destination cache locality.
+  // When a destination dimension memory location is not divisible by the tile size, it means that the partial tile at
+  // the end can be reused in the next iteration. In this case, visit the tiles by following the destination order.
+  //
+  // However, this could hurt source cache locality. A solution is to enable this optimization depending on a heuristic
+  // that compares how many tiles fit in the fastest-changing dimension of the source and destination tensors.
+  // The heuristic requires the source tensor to have at least 32x more tiles than the destination tensor (in the
+  // fastest-changing dimension).
+  const auto __dst_inner_dim       = __tiling.__dst_perm[0];
+  const auto __src_inner_grid_size = ::cuda::ceil_div(__src.__extents[0], static_cast<_ExtentT>(__tile_sizes[0]));
+  const auto __dst_inner_grid_size =
+    ::cuda::ceil_div(__dst.__extents[__dst_inner_dim], static_cast<_ExtentT>(__tile_sizes[__dst_inner_dim]));
+  const auto __grid_ratio = ::cuda::ceil_div(__dst_inner_grid_size, __src_inner_grid_size);
+  if (__grid_ratio <= /*heuristic=*/32)
   {
-    const auto __dst_contiguous_dim = __tiling.__dst_perm[0];
-    const auto __dst_outer_dim      = __tiling.__dst_perm[1];
-    const auto __dst_tile_width     = static_cast<_StrideTOut>(__tile_sizes[__dst_contiguous_dim]);
-    if (__dst.__strides[__dst_outer_dim] % __dst_tile_width != 0)
+    for (size_t __i = 1; __i < __rank; ++__i)
     {
-      __grid_perm = __tiling.__dst_perm;
+      // For each dimension, compute the span (or offset) where the current tile starts in the destination tensor
+      const auto __dst_prev_dim = __tiling.__dst_perm[__i - 1];
+      const auto __dst_tile_span =
+        static_cast<_StrideTOut>(__tile_sizes[__dst_prev_dim]) * __dst.__strides[__dst_prev_dim];
+      // If the current destination stride is not divisible by the tile span, use the destination grid permutation
+      const auto __dst_curr_dim = __tiling.__dst_perm[__i];
+      if (__dst.__strides[__dst_curr_dim] % __dst_tile_span != 0)
+      {
+        __grid_perm = __tiling.__dst_perm;
+        break;
+      }
     }
   }
 
