@@ -217,7 +217,13 @@ template <class Opaque>
 
 namespace
 {
-// Shared tail of the two stf_placement_evaluate* entry points
+// Translate a localized_stats into the C ABI outputs: copy the scalar
+// statistics into *out_stats, and, when the caller passed a
+// bytes_per_grid_index array (one uint64_t per grid position, length =
+// product of the grid dims), densify the sparse per-position byte map into
+// it — positions that own no bytes are written as 0, not left untouched.
+// Always returns 0: mapper failures are rejected before any statistics
+// exist (evaluate_localized_placement throws, and the entry points catch).
 int stf_fill_placement_outputs(
   const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
 {
