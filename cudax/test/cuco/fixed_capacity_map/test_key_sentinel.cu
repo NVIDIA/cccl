@@ -17,6 +17,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
@@ -56,7 +57,7 @@ C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
   constexpr int erased_sentinel = -2;
   constexpr int num_keys        = 256;
 
-  using probing                         = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+  using probing                         = cudax::cuco::linear_probing<1, cuda::hash<int>>;
   [[maybe_unused]] constexpr int bucket = 1;
   [[maybe_unused]] constexpr ::cuda::std::size_t capacity =
     cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{num_keys} * 2);

@@ -67,7 +67,8 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_TILE "Enable tile support" OFF)
+option(CCCL_FORCE_TILE_TESTS "Force tests to be run as a tile program" OFF)
+option(CCCL_ENABLE_TILE "Enable tile support" ${CCCL_FORCE_TILE_TESTS})
 
 option(
   CCCL_ENABLE_UNSTABLE

@@ -12,7 +12,7 @@
 #include <cuda/std/memory>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // BlockPrefetch emits global-memory prefetch *hints*: they carry no functional result and cannot be observed from
 // the device program. A runtime test can therefore only assert that issuing the hints compiles and never faults for
@@ -22,7 +22,9 @@
 // verified out-of-band (cuobjdump), not here.
 
 // Compile-time coverage of the trait that gates every hint.
-C2H_TEST("can_prefetch_from accepts contiguous iterators and rejects explicit cache paths", "[prefetch][block]")
+CUB_TEST("can_prefetch_from accepts contiguous iterators and rejects explicit cache paths",
+         "[prefetch][block]",
+         CUB_SMALL)
 {
   STATIC_REQUIRE(cub::detail::can_prefetch_from<int*>);
   STATIC_REQUIRE(cub::detail::can_prefetch_from<const double*>);
@@ -77,8 +79,9 @@ struct params_t
   static constexpr cub::detail::LoadPrefetch level = c2h::get<2, TestType>::value;
 };
 
-C2H_TEST("BlockPrefetch runs for every level and tile shape",
+CUB_TEST("BlockPrefetch runs for every level and tile shape",
          "[prefetch][block]",
+         CUB_SMALL,
          types,
          threads_in_block,
          load_prefetch_levels)
@@ -97,7 +100,7 @@ C2H_TEST("BlockPrefetch runs for every level and tile shape",
   test_block_prefetch<type, params::threads_in_block, params::level>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][block]", load_prefetch_levels)
+CUB_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][block]", CUB_SMALL, load_prefetch_levels)
 {
   using type                                = int;
   constexpr int threads_in_block            = 128;
@@ -115,7 +118,7 @@ C2H_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][
   test_block_prefetch<type, threads_in_block, level>(d_input, in);
 }
 
-C2H_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]", load_prefetch_levels)
+CUB_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]", CUB_SMALL, load_prefetch_levels)
 {
   using type                                = int;
   constexpr int threads_in_block            = 128;
@@ -137,7 +140,7 @@ C2H_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]"
   test_block_prefetch<type, threads_in_block, level>(d_input, universal_input.cbegin());
 }
 
-C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]", load_prefetch_levels)
+CUB_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]", CUB_SMALL, load_prefetch_levels)
 {
   using type                                = int;
   constexpr int threads_in_block            = 128;
@@ -165,7 +168,7 @@ C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
   test_block_prefetch<type, threads_in_block, level>(d_input, buf.begin());
 }
 
-C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h::type_list<uint8_t, int32_t>)
+CUB_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", CUB_SMALL, c2h::type_list<uint8_t, int32_t>)
 {
   using type                     = c2h::get<0, TestType>;
   constexpr int threads_in_block = 128;
@@ -186,7 +189,7 @@ C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h:
   test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::bulk_l2>(d_input, start);
 }
 
-C2H_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]")
+CUB_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]", CUB_SMALL)
 {
   using type                     = int;
   constexpr int threads_in_block = 64;

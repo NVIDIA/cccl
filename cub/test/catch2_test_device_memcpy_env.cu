@@ -27,7 +27,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -53,7 +53,7 @@ struct get_size
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][device]")
+CUB_TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][device]", CUB_SMALL)
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -76,7 +76,7 @@ TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][devi
 
 #endif
 
-C2H_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]")
+CUB_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]", CUB_SMALL)
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -103,7 +103,7 @@ C2H_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]")
   REQUIRE(d_dst == d_src);
 }
 
-TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]")
+CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CUB_SMALL)
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -137,7 +137,7 @@ TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]")
 template <int BlockThreads>
 struct batch_memcpy_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
     return {
       cub::BatchedCopyAlgorithm::lookback,
@@ -154,7 +154,7 @@ using block_sizes =
 
 #if TEST_LAUNCH != 1
 
-C2H_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", block_sizes)
+CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -186,7 +186,7 @@ C2H_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
+CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedCopyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedCopyPolicy>);
@@ -228,8 +228,8 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
       .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   constexpr auto p2_large = cub::BatchedCopyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32};
   constexpr auto p2       = cub::BatchedCopyPolicy{
-          .algorithm = cub::BatchedCopyAlgorithm::lookback,
-          .lookback  = cub::BatchedCopyLookbackPolicy{.small_buffer = p2_small, .large_buffer = p2_large}};
+    .algorithm = cub::BatchedCopyAlgorithm::lookback,
+    .lookback  = cub::BatchedCopyLookbackPolicy{.small_buffer = p2_small, .large_buffer = p2_large}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2_small = p1_small;
   constexpr auto p2_large = p1_large;

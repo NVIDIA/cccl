@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 // #include <memory>
@@ -24,7 +24,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <typename T>
-TEST_FUNC constexpr void check(T* p)
+TEST_HOST_DEVICE_FUNC constexpr void check(T* p)
 {
   static_assert(cuda::std::is_same_v<T*, decltype(cuda::std::assume_aligned<1>(p))>);
   constexpr cuda::std::size_t alignment = alignof(T);
@@ -46,7 +46,7 @@ struct alignas(64) S64
 struct alignas(128) S128
 {};
 
-TEST_FUNC constexpr bool tests()
+TEST_HOST_DEVICE_FUNC constexpr bool tests()
 {
   char c{};
   int i{};

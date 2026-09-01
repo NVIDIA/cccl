@@ -35,6 +35,13 @@ if (CUDAToolkit_VERSION VERSION_LESS "12.5.0")
   target_compile_options(cccl.nvbench_helper PUBLIC -diag-suppress 20011)
 endif()
 
+if (CCCL_ENABLE_TILE)
+  target_compile_options(
+    cccl.nvbench_helper
+    PUBLIC "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+  )
+endif()
+
 # Don't enable tests when pulled in as an internal dependency.
 # Require CCCL_ENABLE_NVBENCH_HELPER to be explicitly enabled.
 cmake_dependent_option(

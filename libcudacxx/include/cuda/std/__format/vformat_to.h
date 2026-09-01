@@ -48,7 +48,7 @@ struct __fmt_replacement_field_visitor
   bool __parse_;
 
   template <class _Tp>
-  _CCCL_API constexpr void operator()([[maybe_unused]] _Tp __arg)
+  _CCCL_HOST_DEVICE_API constexpr void operator()([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
@@ -71,7 +71,7 @@ struct __fmt_replacement_field_visitor
 };
 
 template <class _It, class _ParseCtx, class _Ctx>
-[[nodiscard]] _CCCL_API constexpr _It
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _It
 __fmt_handle_replacement_field(_It __begin, _It __end, _ParseCtx& __parse_ctx, _Ctx& __ctx)
 {
   using _CharT = iter_value_t<_It>;
@@ -134,7 +134,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(inline_gnu_noinline_conflict)
 // We mark this function as noinline during device compilation because ptxas takes a lot of time and resources to inline
 // and optimize the formatting function. We expect the function to be mostly used for debugging anyway.
 template <class _ParseCtx, class _Ctx>
-[[nodiscard]] _CCCL_API _CCCL_NOINLINE_DEVICE constexpr typename _Ctx::iterator
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE constexpr typename _Ctx::iterator
 __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
 {
   using _CharT = typename _ParseCtx::char_type;
@@ -185,7 +185,7 @@ __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
 _CCCL_DIAG_POP
 
 template <class _OutIt, class _CharT, class _FormatOutIt>
-[[nodiscard]] _CCCL_API _OutIt __vformat_to_impl(
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __vformat_to_impl(
   _OutIt __out_it, basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_FormatOutIt, _CharT>> __args)
 {
   if constexpr (is_same_v<_OutIt, _FormatOutIt>)
@@ -205,7 +205,7 @@ template <class _OutIt, class _CharT, class _FormatOutIt>
 
 _CCCL_TEMPLATE(class _OutIt)
 _CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
-/*discard*/ _CCCL_API _OutIt vformat_to(_OutIt __out_it, string_view __fmt, format_args __args)
+/*discard*/ _CCCL_HOST_DEVICE_API _OutIt vformat_to(_OutIt __out_it, string_view __fmt, format_args __args)
 {
   return ::cuda::std::__vformat_to_impl(::cuda::std::move(__out_it), __fmt, __args);
 }
@@ -213,7 +213,7 @@ _CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
 #if _CCCL_HAS_WCHAR_T()
 _CCCL_TEMPLATE(class _OutIt)
 _CCCL_REQUIRES(output_iterator<_OutIt, const wchar_t&>)
-/*discard*/ _CCCL_API _OutIt vformat_to(_OutIt __out_it, wstring_view __fmt, wformat_args __args)
+/*discard*/ _CCCL_HOST_DEVICE_API _OutIt vformat_to(_OutIt __out_it, wstring_view __fmt, wformat_args __args)
 {
   return ::cuda::std::__vformat_to_impl(::cuda::std::move(__out_it), __fmt, __args);
 }

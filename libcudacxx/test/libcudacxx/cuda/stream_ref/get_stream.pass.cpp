@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable ("cuda::__4::get_stream") cannot be used in tile code
 
 // UNSUPPORTED: nvrtc
 
@@ -21,7 +21,7 @@
 
 TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   ::cudaStream_t invalid_stream = reinterpret_cast<::cudaStream_t>(1337);
   ::cudaStream_t stream         = reinterpret_cast<::cudaStream_t>(42);
@@ -37,7 +37,7 @@ TEST_FUNC void test()
     struct convertible_to_cuda_stream_t
     {
       ::cudaStream_t stream_;
-      TEST_FUNC operator ::cudaStream_t() const noexcept
+      TEST_HOST_DEVICE_FUNC operator ::cudaStream_t() const noexcept
       {
         return stream_;
       }
@@ -51,7 +51,7 @@ TEST_FUNC void test()
     struct convertible_to_stream_ref
     {
       ::cudaStream_t stream_;
-      TEST_FUNC operator ::cuda::stream_ref() const noexcept
+      TEST_HOST_DEVICE_FUNC operator ::cuda::stream_ref() const noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -66,7 +66,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_;
 
-      TEST_FUNC ::cuda::stream_ref get_stream() const noexcept
+      TEST_HOST_DEVICE_FUNC ::cuda::stream_ref get_stream() const noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -84,7 +84,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_;
 
-      TEST_FUNC ::cuda::stream_ref get_stream() noexcept
+      TEST_HOST_DEVICE_FUNC ::cuda::stream_ref get_stream() noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -101,7 +101,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_{};
 
-      TEST_FUNC ::cudaStream_t get_stream() const noexcept
+      TEST_HOST_DEVICE_FUNC ::cudaStream_t get_stream() const noexcept
       {
         return stream_;
       }
@@ -117,7 +117,7 @@ TEST_FUNC void test()
   { // Cannot call get_stream on a type with a non-const get_stream method
     struct returns_not_convertible_to_stream_ref
     {
-      TEST_FUNC int get_stream() const noexcept
+      TEST_HOST_DEVICE_FUNC int get_stream() const noexcept
       {
         return 42;
       }
@@ -134,7 +134,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_{};
 
-      TEST_FUNC ::cuda::stream_ref query(::cuda::get_stream_t) const noexcept
+      TEST_HOST_DEVICE_FUNC ::cuda::stream_ref query(::cuda::get_stream_t) const noexcept
       {
         return ::cuda::stream_ref{stream_};
       }
@@ -152,7 +152,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_{};
 
-      TEST_FUNC ::cudaStream_t query(::cuda::get_stream_t) const noexcept
+      TEST_HOST_DEVICE_FUNC ::cudaStream_t query(::cuda::get_stream_t) const noexcept
       {
         return stream_;
       }
@@ -170,7 +170,7 @@ TEST_FUNC void test()
     {
       ::cudaStream_t stream_{};
 
-      TEST_FUNC ::cudaStream_t stream() const noexcept
+      TEST_HOST_DEVICE_FUNC ::cudaStream_t stream() const noexcept
       {
         return stream_;
       }
@@ -186,7 +186,7 @@ TEST_FUNC void test()
   { // Cannot call get_stream on a type with query if the result is not convertible to stream_ref
     struct with_query_not_convertible_to_stream_ref
     {
-      TEST_FUNC int query(::cuda::get_stream_t) const noexcept
+      TEST_HOST_DEVICE_FUNC int query(::cuda::get_stream_t) const noexcept
       {
         return 42;
       }

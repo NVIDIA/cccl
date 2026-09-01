@@ -78,7 +78,7 @@ extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt
 //!        in [2^31, 2^32). Seeded by the fp32 rsqrt builtin, refined by one
 //!        Newton step, then trimmed to a strict underestimate so that the
 //!        derived root stays a lower bound (keeps the remainder unsigned).
-_CCCL_TRIVIAL_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint32_t __odd_exp, uint32_t __a) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint32_t __odd_exp, uint32_t __a) noexcept
 {
   // Seed: r ~ 2^47 * rsqrt(a / 2^odd_exp). Halving the radicand for the
   // odd-exponent case folds the sqrt(2) factor into the same 2^47 scale.
@@ -144,7 +144,7 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint32_t __odd_e
 // Forward declaration: the unpacked sqrt core is defined below, but the packed
 // wrapper references it for the packed-via-unpacked (testing) path.
 template <fpemu_accuracy _Acc>
-_CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept;
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept;
 
 //! @brief Square root of a double-precision floating point number
 //!
@@ -155,7 +155,7 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits
 //! @param __x The double-precision floating point number to compute the square root of
 //! @return The square root of the double-precision floating point number
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
 {
 #if (_CCCL_FPEMU_PACKED_VIA_UNPACKED == 1)
   // Packed-via-unpacked (testing): pack(dsqrt_unpacked(unpack(x))). The
@@ -266,7 +266,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
 //! @param __x The double-precision floating point number to compute the square root of
 //! @return The square root of the double-precision floating point number
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept
 {
   constexpr int32_t __nan_exp = 0x0007ff00;
   constexpr int32_t __inf_exp = 0x00007ff0;
@@ -429,7 +429,7 @@ namespace cuda::experimental
 // ============================================================================
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> sqrt(const fpemu<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc> sqrt(const fpemu<double, _Acc>& __x) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -445,7 +445,7 @@ _CCCL_API fpemu<double, _Acc> sqrt(const fpemu<double, _Acc>& __x) noexcept
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsqrt_rn(const fpemu<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rn(const fpemu<double, _Acc>& __x) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -461,23 +461,23 @@ _CCCL_API fpemu<double, _Acc> __dsqrt_rn(const fpemu<double, _Acc>& __x) noexcep
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsqrt_rz(const fpemu<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rz(const fpemu<double, _Acc>& __x) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rz(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsqrt_ru(const fpemu<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_ru(const fpemu<double, _Acc>& __x) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_ru(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsqrt_rd(const fpemu<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rd(const fpemu<double, _Acc>& __x) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rd(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc> sqrt(const fpemu_unpacked<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc> sqrt(const fpemu_unpacked<double, _Acc>& __x) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -496,7 +496,7 @@ _CCCL_API fpemu_unpacked<double, _Acc> sqrt(const fpemu_unpacked<double, _Acc>& 
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc> __dsqrt_rn(const fpemu_unpacked<double, _Acc>& __x) noexcept
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc> __dsqrt_rn(const fpemu_unpacked<double, _Acc>& __x) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -523,13 +523,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // narrowing fpemu -> double (a qualified call suppresses ADL). These forward to
 // cuda::experimental::sqrt, which unqualified/ADL calls already resolve to.
 template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu<double, _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu<double, _Acc>
 sqrt(const ::cuda::experimental::fpemu<double, _Acc>& __x) noexcept
 {
   return ::cuda::experimental::sqrt(__x);
 }
 template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
 sqrt(const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __x) noexcept
 {
   return ::cuda::experimental::sqrt(__x);

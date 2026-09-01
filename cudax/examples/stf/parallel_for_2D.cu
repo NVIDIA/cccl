@@ -53,6 +53,7 @@ int main()
     }
   };
 
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
   ctx.parallel_for(exec_place::host(), ly.shape(), ly.read())
       ->*[=] __host__(size_t i, size_t j, slice<const double, 2> sy) {
             double expected = y0(i, j);
@@ -69,6 +70,10 @@ int main()
               printf("sy(%zu, %zu) %f expect %f\n", i, j, sy(i, j), expected);
             }
           };
+#else
+  _CCCL_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                    "parallel_for on exec_place::host() requires nvcc or nvc++");
+#endif
 
   ctx.finalize();
 }

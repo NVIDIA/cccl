@@ -12,7 +12,6 @@ import weakref
 from typing import Any, Callable, Hashable, NamedTuple, TypeVar
 
 import numpy as np
-
 from cuda.core import Device
 
 try:

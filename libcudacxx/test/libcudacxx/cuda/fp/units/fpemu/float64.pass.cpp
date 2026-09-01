@@ -16,6 +16,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // nvcc doesn't currently support _Float64 in device code.
 // UNSUPPORTED: nvcc
 
@@ -27,25 +30,25 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
 #if __STDCPP_FLOAT64_T__ == 1
   // _Float64 is a distinct type here, yet fpemu<_Float64> must still be a valid,
   // trivially copyable emulated double that constructs from / converts to double.
   static_assert(!cuda::std::is_same_v<double, _Float64>, "expected _Float64 to be a distinct type in this mode");
-  static_assert(cuda::std::is_trivially_copyable_v<fpemu<_Float64>>);
-  static_assert(cuda::std::is_trivially_copyable_v<fpemu_unpacked<_Float64>>);
-  static_assert(sizeof(fpemu<_Float64>) == sizeof(fpemu<double>));
-  static_assert(cuda::std::is_constructible_v<fpemu<_Float64>, double>);
-  static_assert(cuda::std::is_constructible_v<fpemu<_Float64>, int>);
+  static_assert(cuda::std::is_trivially_copyable_v<cudax::fpemu<_Float64>>);
+  static_assert(cuda::std::is_trivially_copyable_v<cudax::fpemu_unpacked<_Float64>>);
+  static_assert(sizeof(cudax::fpemu<_Float64>) == sizeof(cudax::fpemu<double>));
+  static_assert(cuda::std::is_constructible_v<cudax::fpemu<_Float64>, double>);
+  static_assert(cuda::std::is_constructible_v<cudax::fpemu<_Float64>, int>);
 
   const double vals[] = {0.0, 1.5, -3.25, 1234.5678, -9.999e12};
   for (double d : vals)
   {
-    fpemu<_Float64> a(d);
-    fpemu<double> b(d);
+    cudax::fpemu<_Float64> a(d);
+    cudax::fpemu<double> b(d);
     // Same value in, same 64-bit result out as the double instantiation.
     assert(cuda::std::bit_cast<uint64_t>((double) a) == cuda::std::bit_cast<uint64_t>((double) b));
     assert(cuda::std::bit_cast<uint64_t>((double) a) == cuda::std::bit_cast<uint64_t>(d));

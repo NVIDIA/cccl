@@ -87,7 +87,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[]) noexcept
   {
     return __t + 0;
   }
@@ -96,7 +96,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
   // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[_Np]) noexcept
   {
     return __t + 0;
   }
@@ -104,8 +104,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.begin());
   }
@@ -113,22 +113,22 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(begin(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_begin<_Tp>) _CCCL_AND(!__unqualified_begin<_Tp>))
-  void operator()(_Tp&&) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp&&) = delete;
 
 #if _CCCL_COMPILER(MSVC, <, 19, 23)
   template <class _Tp>
-  void operator()(_Tp (&&)[]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[]) = delete;
 
   template <class _Tp, size_t _Np>
-  void operator()(_Tp (&&)[_Np]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Np]) = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _CCCL_END_NAMESPACE_CPO
@@ -136,15 +136,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto begin = __begin::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __begin_cpo = __begin::__fn;
 } // namespace __cpo
 
 // [range.range]
 
 template <class _Tp>
-using iterator_t = decltype(::cuda::std::ranges::__begin_cpo{}(::cuda::std::declval<_Tp&>()));
+using iterator_t = decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp&>()));
 
 // [range.access.end]
 
@@ -197,7 +194,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
   // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[_Np]) noexcept
   {
     return __t + _Np;
   }
@@ -205,8 +202,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.end());
   }
@@ -214,21 +211,22 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(end(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_end<_Tp>) _CCCL_AND(!__unqualified_end<_Tp>))
-  void operator()(_Tp&&) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp&&) = delete;
 
 #if _CCCL_COMPILER(MSVC, <, 19, 23)
   template <class _Tp>
-  void operator()(_Tp (&&)[]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[]) = delete;
 
   template <class _Tp, size_t _Np>
-  void operator()(_Tp (&&)[_Np]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Np]) = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _CCCL_END_NAMESPACE_CPO
@@ -236,9 +234,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __end_cpo = __end::__fn;
 } // namespace __cpo
 
 // [range.access.cbegin]
@@ -249,21 +244,21 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::__begin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::__begin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return ::cuda::std::ranges::__begin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::__begin_cpo{}(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::__begin_cpo{}(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t)))
   {
-    return ::cuda::std::ranges::__begin_cpo{}(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -271,9 +266,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __cbegin_cpo = __cbegin::__fn;
 } // namespace __cpo
 
 // [range.access.cend]
@@ -284,21 +276,21 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::__end_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::__end_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return ::cuda::std::ranges::__end_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::__end_cpo{}(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::__end_cpo{}(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t)))
   {
-    return ::cuda::std::ranges::__end_cpo{}(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::end(static_cast<const _Tp&&>(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -306,9 +298,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __cend_cpo = __cend::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

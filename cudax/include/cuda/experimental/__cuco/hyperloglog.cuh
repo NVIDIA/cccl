@@ -160,12 +160,12 @@ public:
     _MemoryResource_&& __memory_resource,
     precision __precision,
     const _Policy& __policy = {})
-      : __sketch_buffer{__stream,
-                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(
-                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
-                          / sizeof(register_type),
-                        ::cuda::no_init}
+      : __sketch_buffer{
+          __stream,
+          ::cuda::std::forward<_MemoryResource_>(__memory_resource),
+          ref_type<>::sketch_bytes(__precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+            / sizeof(register_type),
+          ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}),
               __policy}
   {

@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,7 +30,7 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
 #include <cstdint>
@@ -235,9 +237,13 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateHostMemory(args->second, args->first);
-      delete args;
+      // The CUDA runtime calls this back, so an exception must not leave it.
+      ON_THROW(abort)
+      {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateHostMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -262,9 +268,12 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateManagedMemory(args->second, args->first);
-      delete args;
+      ON_THROW(abort)
+      {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateManagedMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -290,9 +299,12 @@ inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-        deallocateHostMemory(args->second, args->first);
-        delete args;
+        ON_THROW(abort)
+        {
+          auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+          deallocateHostMemory(args->second, args->first);
+          delete args;
+        };
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
@@ -336,9 +348,17 @@ cudaError_t pin_memory(T* p, size_t n)
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
   using NonConstT = typename std::remove_const<T>::type;
-  cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
-  // Fetch the result and clear the last error
-  return cudaGetLastError();
+  // Report the result of THIS call only. cudaGetLastError() would return the
+  // sticky error of any earlier failed CUDA call on this thread (e.g. an
+  // expected probe failure or a caught allocation error), misattributing it
+  // to this registration.
+  const cudaError_t res = cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
+  if (res != cudaSuccess)
+  {
+    // Consume the sticky error state so it is not re-reported elsewhere.
+    cudaGetLastError();
+  }
+  return res;
 }
 
 /**
@@ -352,15 +372,15 @@ void unpin_memory(T* p)
 {
   assert(p);
 
-  // Make sure no one did a mistake before ignoring the one that may come !
-  cuda_try(cudaGetLastError());
-
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
   using NonConstT = typename std::remove_const<T>::type;
-  if (cudaHostUnregister(const_cast<NonConstT*>(p)) == cudaErrorHostMemoryNotRegistered)
+  if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
-    // Ignore that error, we probably also ignored an error about registering that buffer too !
+    // Tolerate unregister failures (e.g. the matching registration was
+    // skipped or failed) and consume the sticky error state so it is not
+    // misattributed to a later, unrelated call. This runs on cleanup paths
+    // (including destructors), so it must not throw.
     cudaGetLastError();
   }
 }
@@ -422,6 +442,25 @@ UNITTEST("pin_memory const")
   unpin_memory(ca);
 
   EXPECT(!address_is_pinned(ca));
+};
+
+UNITTEST("pin_memory ignores stale sticky errors")
+{
+  // A failed CUDA call earlier on the thread (here an impossible allocation,
+  // as an STF allocator would attempt before reporting an OOM) leaves a
+  // sticky last-error. pin/unpin of an unrelated buffer must not report it
+  // as their own failure.
+  void* p = nullptr;
+  EXPECT(cudaMalloc(&p, size_t(1) << 46) != cudaSuccess);
+
+  ::std::vector<double> a(1024);
+  EXPECT(pin_memory(&a[0], 1024) == cudaSuccess);
+  EXPECT(address_is_pinned(&a[0]));
+  unpin_memory(&a[0]);
+  EXPECT(!address_is_pinned(&a[0]));
+
+  // Consume whatever is left so this test does not poison the next one.
+  cudaGetLastError();
 };
 
 #endif // UNITTESTED_FILE
@@ -1071,14 +1110,14 @@ private:
   {
     if constexpr (small_cap < 16)
     {
-      unroll<small_cap>(::std::forward<F>(f));
+      unroll<small_cap>(::cuda::std::forward<F>(f));
     }
     else
     {
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_same_v<result_t, void>)
         {
           f(i);
         }

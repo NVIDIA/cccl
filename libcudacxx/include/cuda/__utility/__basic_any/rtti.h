@@ -122,7 +122,7 @@ inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
 // which contains a sub-object of this type.
 struct __object_metadata
 {
-  size_t __size_ : __half_size_t_bits;
+  size_t __size_  : __half_size_t_bits;
   size_t __align_ : __half_size_t_bits;
   ::cuda::std::__type_info_ptr __object_typeid_;
   ::cuda::std::__type_info_ptr __pointer_typeid_;
@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE_API void __dtor_fn(void* __pv, bool __small) noexcept
 struct __rtti : __rtti_base
 {
   template <class _Tp, class _Super, class... _Interfaces>
-  _CCCL_NODEBUG_API constexpr __rtti(
+  _CCCL_NODEBUG_HOST_DEVICE_API constexpr __rtti(
     __tag<_Tp, _Super>, __tag<_Interfaces...>, __base_info const* __base_vptr_map) noexcept
       : __rtti_base{__vtable_kind::__rtti, sizeof...(_Interfaces), _CCCL_TYPEID(__rtti)}
       , __dtor_(&__dtor_fn<_Tp>)

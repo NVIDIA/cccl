@@ -26,7 +26,8 @@ The general rules for requesting a guarantee are described in the
 :ref:`CCCL determinism overview <cccl-determinism>`.
 
 Each CUB algorithm has its own default guarantee, applied when none is requested, and its own type and
-operator constraints for each guarantee, summarized below.
+operator constraints for each guarantee, summarized below. Requesting a guarantee that an algorithm
+does not support is rejected at compile time.
 
 Support matrix
 --------------

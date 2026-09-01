@@ -14,6 +14,7 @@ function(usage)
   message("  - CCCL_SOURCE_DIR: Required.  Path to the CCCL source directory.")
   message("  - TEST: Required.  Path to the test executable.")
   message("  - ARGS: Optional.  Arguments to pass to the test executable.")
+  message("  - ALLOW_RUNNING_NO_TESTS: Optional. Allow an empty Catch2 filter.")
   message("  - TYPE: Optional.")
   message("    - The test framework used by the test executable.")
   message("    - Must be one of the following:")
@@ -58,6 +59,10 @@ endif()
 
 if (NOT DEFINED ARGS)
   set(ARGS)
+endif()
+
+if (ALLOW_RUNNING_NO_TESTS)
+  list(APPEND ARGS "--allow-running-no-tests")
 endif()
 
 if (NOT DEFINED TYPE)

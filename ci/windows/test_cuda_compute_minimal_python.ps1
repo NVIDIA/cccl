@@ -2,7 +2,10 @@ Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
     [ValidatePattern("^\d+\.\d+t?$")]
-    [string]$PyVersion
+    [string]$PyVersion,
+
+    [Alias("ctk-mode")]
+    [string]$CtkMode = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,10 +16,11 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
+$ctkFlavor = Get-CtkExtraFlavor $CtkMode
 
-# Pin cuda-toolkit to the container's CTK minor (CCCL_PYTHON_TEST_LATEST_CTK=1
+# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
 # opts out). See build_common_python.psm1.
-Set-CtkPin
+Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 
@@ -25,7 +29,7 @@ $wheelPath = Get-CudaCcclWheel
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
 # full cu* extras because those pull in numba/numba-cuda.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked { & $python -m pip install "$wheelPath[minimal-cu$cudaMajor]" } "Failed to install cuda_cccl minimal extra"
+Invoke-Checked { & $python -m pip install "$wheelPath[minimal-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl minimal extra"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

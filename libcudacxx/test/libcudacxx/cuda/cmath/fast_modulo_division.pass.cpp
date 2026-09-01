@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
 
 #include <cuda/cmath>
 #include <cuda/std/chrono>
@@ -21,7 +21,7 @@
 
 // test all power of 2 and maximum values
 template <typename value_t, typename divisor_t>
-TEST_FUNC void test_power_of_2(value_t value)
+TEST_HOST_DEVICE_FUNC void test_power_of_2(value_t value)
 {
   constexpr auto max_divisor = cuda::std::numeric_limits<divisor_t>::max();
   constexpr auto max_value   = cuda::std::numeric_limits<value_t>::max();
@@ -41,7 +41,7 @@ TEST_FUNC void test_power_of_2(value_t value)
 }
 
 template <typename value_t, typename divisor_t>
-TEST_FUNC void test_sequence(value_t value)
+TEST_HOST_DEVICE_FUNC void test_sequence(value_t value)
 {
   constexpr auto max_value  = cuda::std::numeric_limits<divisor_t>::max();
   constexpr divisor_t range = max_value < 10000 ? max_value : 10000;
@@ -53,7 +53,7 @@ TEST_FUNC void test_sequence(value_t value)
 }
 
 template <typename value_t, typename divisor_t, typename gen_t>
-TEST_FUNC void test_random(value_t value, gen_t& gen)
+TEST_HOST_DEVICE_FUNC void test_random(value_t value, gen_t& gen)
 {
   cuda::std::uniform_int_distribution<divisor_t> distrib_div;
   constexpr auto max_value  = cuda::std::numeric_limits<divisor_t>::max();
@@ -67,7 +67,7 @@ TEST_FUNC void test_random(value_t value, gen_t& gen)
 }
 
 template <typename value_t, typename divisor_t>
-TEST_FUNC void test_boundary_divisors(value_t value)
+TEST_HOST_DEVICE_FUNC void test_boundary_divisors(value_t value)
 {
   using div_op               = cuda::fast_mod_div<divisor_t>;
   using unsigned_divisor_t   = cuda::std::make_unsigned_t<divisor_t>;
@@ -100,7 +100,7 @@ struct PositiveDistribution
   cuda::std::minstd_rand0 rng;
 
   template <typename T>
-  TEST_FUNC T operator()(cuda::std::uniform_int_distribution<T>& distrib)
+  TEST_HOST_DEVICE_FUNC T operator()(cuda::std::uniform_int_distribution<T>& distrib)
   {
     auto value = distrib(rng);
     return cuda::std::max(T{1}, static_cast<T>(cuda::uabs(value)));
@@ -108,7 +108,7 @@ struct PositiveDistribution
 };
 
 template <typename value_t, typename divisor_t>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   auto seed = cuda::std::chrono::system_clock::now().time_since_epoch().count();
   printf("%s: seed: %lld\n", (_CCCL_BUILTIN_PRETTY_FUNCTION()), (long long int) seed);
@@ -123,7 +123,7 @@ TEST_FUNC void test()
 }
 
 #if _CCCL_HAS_INT128()
-TEST_FUNC void test_int128()
+TEST_HOST_DEVICE_FUNC void test_int128()
 {
   constexpr __uint128_t unsigned_value = (__uint128_t{1} << 127) + 123456789;
   constexpr __int128_t signed_value    = static_cast<__int128_t>((__uint128_t{1} << 126) + 123456789);
@@ -142,7 +142,7 @@ TEST_FUNC void test_int128()
 }
 #endif // _CCCL_HAS_INT128()
 
-TEST_FUNC void test_cpp_semantic()
+TEST_HOST_DEVICE_FUNC void test_cpp_semantic()
 {
   cuda::fast_mod_div<int> div{3};
   assert(div == 3);
@@ -151,7 +151,7 @@ TEST_FUNC void test_cpp_semantic()
   assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
 }
 
-TEST_FUNC void test_divisor_is_never_one()
+TEST_HOST_DEVICE_FUNC void test_divisor_is_never_one()
 {
   cuda::fast_mod_div<int, true> div{3};
   assert(div == 3);
@@ -160,7 +160,7 @@ TEST_FUNC void test_divisor_is_never_one()
   assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
 }
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   test<int8_t, int8_t>();
   test<uint8_t, uint8_t>();

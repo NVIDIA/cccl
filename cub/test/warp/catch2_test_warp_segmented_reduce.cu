@@ -8,7 +8,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
@@ -260,7 +260,7 @@ struct params_t
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
 
-C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_warp_threads, segmented_modes)
+CUB_TEST("Warp segmented sum works", "[reduce][warp]", CUB_SMALL, full_type_list, logical_warp_threads, segmented_modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -303,7 +303,12 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, logical_warp_threads, segmented_modes)
+CUB_TEST("Warp segmented reduction works",
+         "[reduce][warp]",
+         CUB_SMALL,
+         builtin_type_list,
+         logical_warp_threads,
+         segmented_modes)
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;

@@ -12,7 +12,7 @@
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/iota.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 constexpr int num_warps = 4;
 
@@ -61,7 +61,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value
 
-C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -116,7 +116,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 }
 // example-end inclusive-warp-scan-init-value-aggregate
 
-C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
@@ -194,7 +194,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value-partial
 
-C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -270,7 +270,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
 }
 // example-end inclusive-warp-scan-init-value-aggregate-partial
 
-C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);

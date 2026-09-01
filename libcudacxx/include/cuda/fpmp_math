@@ -1,0 +1,34 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_FPMP_MATH
+#define _CUDA_FPMP_MATH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// Transcendental and elementary math functions for fpmp2 types
+// (exp, log, pow, sin, cos, tan, fabs, floor, min, max, isnan, ...).
+//
+// This pulls in the core <cuda/fpmp> umbrella as well, so including
+// <cuda/fpmp_math> alone is sufficient to get the full fpmp API. Translation
+// units that do not need math functions should include <cuda/fpmp> instead to
+// avoid the additional compile-time cost of the math header.
+#include <cuda/__fp/fpmp.h>
+#include <cuda/__fp/fpmp_math.h>
+
+#endif // _CUDA_FPMP_MATH

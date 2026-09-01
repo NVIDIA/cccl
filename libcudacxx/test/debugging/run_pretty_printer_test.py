@@ -14,8 +14,17 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        __str__ = str.__str__
+        __format__ = str.__format__
+
 
 _MARKER_EDGE = "=" * 15
 _MARKER_PATTERN = re.compile(
@@ -23,7 +32,20 @@ _MARKER_PATTERN = re.compile(
 )
 _LLDB_ECHO_PATTERN = re.compile(r"^\s*\(lldb\)\s")
 _GDB_VALUE_PREFIX_PATTERN = re.compile(r"^\s*\$\d+ = ")
+_TEMPLATE_PATTERN = re.compile(r">\s+>")
 _NONZERO_HEX_PATTERN = re.compile(r"\b0x(?!0+\b)[0-9a-fA-F]+\b")
+_STREAM_UNIQUE_ID_PATTERN = re.compile(r"(?<=unique_id=)\d+")
+_NUMERIC_LITERAL_PATTERN = re.compile(r"\b(\d+)[uUlL]*(?![\w.])")
+# Backing-memory granularity varies by driver and device, so only zero versus
+# nonzero is portable for these fields.
+_NONZERO_RESERVED_MEM_PATTERN = re.compile(
+    r"(?<=reserved_mem_)(current|high)( = )(?!0\b)\d+"
+)
+# A scenario prints this when it cannot run on the current driver or device.
+_SKIP_PATTERN = re.compile(
+    r"^\s*LIBCUDACXX_PRETTY_PRINTER_SKIP:\s*(?P<reason>.+)$", re.MULTILINE
+)
+_SKIP_RETURN_CODE = 77
 
 
 class HarnessError(RuntimeError):
@@ -34,6 +56,10 @@ class DebuggerError(RuntimeError):
     """Report a debugger launch, timeout, or exit failure."""
 
 
+class DebuggerTimeoutError(DebuggerError):
+    """Report a debugger run that exceeded the per-attempt timeout."""
+
+
 class Debugger(StrEnum):
     LLDB = "lldb"
     GDB = "gdb"
@@ -42,13 +68,12 @@ class Debugger(StrEnum):
 @dataclass(frozen=True)
 class Case:
     breakpoint: str
-    frame: int
     section: str
     expression: str
 
 
 class CaseAction(argparse.Action):
-    """Parse and validate one four-part ``--case`` option."""
+    """Parse and validate one three-part ``--case`` option."""
 
     def __call__(
         self,
@@ -66,23 +91,17 @@ class CaseAction(argparse.Action):
         namespace : argparse.Namespace
             Namespace receiving parsed cases.
         values : Sequence[str]
-            Breakpoint, frame, section, and expression values.
+            Breakpoint, section, and expression values.
         option_string : str or None
             Option spelling that supplied the values.
 
         Raises
         ------
         SystemExit
-            If the frame, breakpoint, section, or expression is invalid, or if
-            the section name is duplicated.
+            If the breakpoint, section, or expression is invalid, or if the
+            section name is duplicated.
         """
-        breakpoint, raw_frame, section, expression = values
-        try:
-            frame = int(raw_frame)
-        except ValueError:
-            parser.error(f"invalid caller frame index {raw_frame!r}")
-        if frame < 0:
-            parser.error(f"caller frame index must be nonnegative: {frame}")
+        breakpoint, section, expression = values
         for label, value in (
             ("breakpoint", breakpoint),
             ("section", section),
@@ -94,7 +113,7 @@ class CaseAction(argparse.Action):
         cases: list[Case] = getattr(namespace, self.dest) or []
         if any(case.section == section for case in cases):
             parser.error(f"duplicate section name: {section}")
-        cases.append(Case(breakpoint, frame, section, expression))
+        cases.append(Case(breakpoint, section, expression))
         setattr(namespace, self.dest, cases)
 
 
@@ -165,19 +184,16 @@ class DebuggerAdapter(ABC):
         HarnessError
             If a completed breakpoint group is reopened later.
         """
-        closed_stops: set[tuple[str, int]] = set()
-        previous_stop: tuple[str, int] | None = None
+        closed_breakpoints: set[str] = set()
+        previous_breakpoint: str | None = None
         for case in cases:
-            stop = (case.breakpoint, case.frame)
-            if stop == previous_stop:
+            if case.breakpoint == previous_breakpoint:
                 continue
-            if stop in closed_stops:
-                raise HarnessError(
-                    f"breakpoint group {case.breakpoint!r} at frame {case.frame} was reopened"
-                )
-            if previous_stop is not None:
-                closed_stops.add(previous_stop)
-            previous_stop = stop
+            if case.breakpoint in closed_breakpoints:
+                raise HarnessError(f"breakpoint group {case.breakpoint!r} was reopened")
+            if previous_breakpoint is not None:
+                closed_breakpoints.add(previous_breakpoint)
+            previous_breakpoint = case.breakpoint
         return self._generate_commands(cases)
 
     @abstractmethod
@@ -275,14 +291,14 @@ class GDB(DebuggerAdapter):
             lines.append(f"break {case.breakpoint}")
             seen_breakpoints.add(case.breakpoint)
         lines.append("run")
-        previous_stop: tuple[str, int] | None = None
+        previous_breakpoint: str | None = None
         for case in cases:
-            stop = (case.breakpoint, case.frame)
-            if previous_stop is not None and stop != previous_stop:
+            if (
+                previous_breakpoint is not None
+                and case.breakpoint != previous_breakpoint
+            ):
                 lines.append("continue")
-            if stop != previous_stop:
-                lines.append(f"frame {case.frame}")
-            previous_stop = stop
+            previous_breakpoint = case.breakpoint
             begin = marker(case.section, "begin")
             end = marker(case.section, "end")
             expression = repr(case.expression)
@@ -365,14 +381,14 @@ class LLDB(DebuggerAdapter):
             lines.append(f"breakpoint set --name {case.breakpoint}")
             seen_breakpoints.add(case.breakpoint)
         lines.append("run")
-        previous_stop: tuple[str, int] | None = None
+        previous_breakpoint: str | None = None
         for case in cases:
-            stop = (case.breakpoint, case.frame)
-            if previous_stop is not None and stop != previous_stop:
+            if (
+                previous_breakpoint is not None
+                and case.breakpoint != previous_breakpoint
+            ):
                 lines.append("continue")
-            if stop != previous_stop:
-                lines.append(f"frame select {case.frame}")
-            previous_stop = stop
+            previous_breakpoint = case.breakpoint
             begin = marker(case.section, "begin")
             end = marker(case.section, "end")
             debugger_command = f"dwim-print -- {case.expression}"
@@ -523,8 +539,11 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
     for line in output.splitlines():
         line = debugger.normalize_line(line.rstrip())
         # Some debuggers may print C++98 style > > for multiple templates.
-        line = re.sub(r">\s+>", ">>", line)
+        line = _TEMPLATE_PATTERN.sub(">>", line)
         line = _NONZERO_HEX_PATTERN.sub("<address>", line)
+        line = _STREAM_UNIQUE_ID_PATTERN.sub("<id>", line)
+        line = _NUMERIC_LITERAL_PATTERN.sub(r"\1", line)
+        line = _NONZERO_RESERVED_MEM_PATTERN.sub(r"\1\2<nonzero>", line)
         normalized_lines.append(line)
     return "\n".join(normalized_lines) + "\n"
 
@@ -565,6 +584,33 @@ def compare_expected(
     )
 
 
+def _nonnegative_int(value: str) -> int:
+    """Parse a command-line argument that must be a nonnegative integer.
+
+    Parameters
+    ----------
+    value : str
+        Raw command-line value.
+
+    Returns
+    -------
+    int
+        Parsed nonnegative integer.
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the value is not an integer, or if it is negative.
+    """
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError(f"{value!r} must not be negative")
+    return parsed
+
+
 def _parse_arguments(arguments: Sequence[str] | None) -> argparse.Namespace:
     """Parse debugger configuration and ordered case definitions.
 
@@ -586,11 +632,17 @@ def _parse_arguments(arguments: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--expected", type=Path, required=True)
     parser.add_argument("--output-log", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=90.0)
+    parser.add_argument(
+        "--retries",
+        type=_nonnegative_int,
+        default=0,
+        help="Number of extra attempts after a timeout. Zero means one attempt.",
+    )
     parser.add_argument("--update-expected", action="store_true")
     parser.add_argument(
         "--case",
         dest="cases",
-        nargs=4,
+        nargs=3,
         action=CaseAction,
         default=None,
         required=True,
@@ -646,8 +698,10 @@ def _run_debugger(
 
     Raises
     ------
+    DebuggerTimeoutError
+        If the debugger exceeds the per-attempt timeout.
     DebuggerError
-        If the debugger cannot launch, times out, or exits with a nonzero status.
+        If the debugger cannot launch or exits with a nonzero status.
     OSError
         If the transcript cannot be written.
     """
@@ -662,7 +716,7 @@ def _run_debugger(
     except subprocess.TimeoutExpired as error:
         if isinstance(error.stdout, str):
             args.output_log.write_text(error.stdout)
-        raise DebuggerError(
+        raise DebuggerTimeoutError(
             f"{debugger.kind} timed out after {args.timeout:g} seconds"
         ) from error
     except OSError as error:
@@ -674,6 +728,52 @@ def _run_debugger(
             f"{debugger.kind} exited with status {completed.returncode}"
         )
     return completed.stdout
+
+
+def _run_debugger_with_retries(
+    args: argparse.Namespace, debugger: DebuggerAdapter, command_file: Path
+) -> str:
+    """Run the debugger and retry only the attempts that time out.
+
+    A timeout usually comes from a loaded machine and not from the pretty
+    printer, so a repeated attempt is worth more than an immediate failure.
+    Every other failure is deterministic and fails on the first attempt.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed runner arguments.
+    debugger : DebuggerAdapter
+        Configured debugger adapter.
+    command_file : Path
+        Generated debugger command-file path.
+
+    Returns
+    -------
+    str
+        Complete combined debugger output.
+
+    Raises
+    ------
+    DebuggerError
+        If every attempt times out, or if any attempt fails for another reason.
+    OSError
+        If the transcript cannot be written.
+    """
+    attempts = args.retries + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            return _run_debugger(args, debugger, command_file)
+        except DebuggerTimeoutError as error:
+            if attempt == attempts:
+                raise DebuggerTimeoutError(
+                    f"{error} on all {attempts} attempts"
+                ) from error
+            print(
+                f"warning: {error} on attempt {attempt} of {attempts}; retrying",
+                file=sys.stderr,
+            )
+    raise AssertionError("unreachable")
 
 
 def _match_output(
@@ -755,7 +855,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
     Returns
     -------
     int
-        Zero on success and one for handled debugger or matching failures.
+        Zero on success, 77 when the scenario reports itself unsupported, and
+        one for handled debugger or matching failures.
 
     Raises
     ------
@@ -773,10 +874,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
     command_file.write_text(commands)
 
     try:
-        transcript = _run_debugger(args, debugger, command_file)
+        transcript = _run_debugger_with_retries(args, debugger, command_file)
     except DebuggerError as error:
         _report_error(args, debugger, command_file, error)
         return 1
+
+    skipped = _SKIP_PATTERN.search(transcript)
+    if skipped:
+        scenario = args.expected.parent.name
+        print(f"skipping {scenario}: {skipped.group('reason').strip()}")
+        return _SKIP_RETURN_CODE
 
     try:
         _match_output(args, debugger, args.cases, transcript)

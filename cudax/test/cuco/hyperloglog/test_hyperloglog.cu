@@ -12,6 +12,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/buffer>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/cmath>
@@ -20,7 +21,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>
 

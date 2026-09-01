@@ -65,7 +65,7 @@ namespace cuda::experimental
 //! @param y      Second operand (unpacked)
 //! @return       Result of addition in unpacked form (__fpbits64_unpacked)
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def, bool _IsSub = false>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_high_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   uint64_t __a        = __x;
   uint64_t __b        = __y;
@@ -264,7 +264,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dadd(__fpbits64 __x, __fpbi
 //! @param y      Second operand (packed)
 //! @return       Result of addition in packed form (__fpbits64)
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def, bool _IsSub = false>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_mid_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   __uint32x2 __a_32x2            = ::cuda::std::bit_cast<__uint32x2>(__x);
   __uint32x2 __b_32x2            = ::cuda::std::bit_cast<__uint32x2>(__y);
@@ -443,7 +443,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dadd(__fpbits64 __x, __fpbit
 //! and mantissa fields of the operands. The addition is performed according to the specified rounding mode,
 //! accuracy, range, and engine template parameters.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def, bool _IsSub = false>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_low_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__x);
   __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__y);
@@ -579,7 +579,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dadd(__fpbits64 __x, __fpbit
 //!   - low: the fp32 add of the top 24 significand bits.
 //! inf/nan and over/underflow all flow through the universal full-range pack.
 template <fpemu_accuracy _Acc = fpemu_accuracy::def, bool _IsSub = false>
-_CCCL_TRIVIAL_API __fpbits64_unpacked
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked
 __internal_fp64emu_dadd_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b) noexcept
 {
   constexpr fpemu_accuracy __acc_forced = fpemu_accuracy::_CCCL_FPEMU_ADD_METHOD;
@@ -830,7 +830,7 @@ __internal_fp64emu_dadd_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
 //! @param y      Second operand (packed)
 //! @return       Result of addition in packed form (__fpbits64)
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def, bool _IsSub = false>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dadd(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   // Forced parameters for the addition operation
   constexpr fpemu_accuracy __acc_forced = fpemu_accuracy::_CCCL_FPEMU_ADD_METHOD;
@@ -981,7 +981,8 @@ namespace cuda::experimental
 // ============================================================================
 // Default API implementation
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> operator+(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+operator+(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -1002,7 +1003,8 @@ _CCCL_API fpemu<double, _Acc> operator+(const fpemu<double, _Acc>& __x, const fp
 } // operator+
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dadd_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dadd_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -1021,7 +1023,8 @@ _CCCL_API fpemu<double, _Acc> __dadd_rn(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dadd_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dadd_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -1045,7 +1048,8 @@ _CCCL_API fpemu<double, _Acc> __dadd_rz(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dadd_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dadd_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -1069,7 +1073,8 @@ _CCCL_API fpemu<double, _Acc> __dadd_ru(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dadd_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dadd_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -1095,7 +1100,7 @@ _CCCL_API fpemu<double, _Acc> __dadd_rd(const fpemu<double, _Acc>& __x, const fp
 
 // Operator+ for unpacked addition
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 operator+(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -1117,7 +1122,7 @@ operator+(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 } // operator+
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 __dadd_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -1145,7 +1150,7 @@ __dadd_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_rn(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dadd_rn(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dadd_rn(_Fp(__x), _Fp(__y));
@@ -1153,7 +1158,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_rn(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_rz(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dadd_rz(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dadd_rz(_Fp(__x), _Fp(__y));
@@ -1161,7 +1166,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_rz(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_ru(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dadd_ru(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dadd_ru(_Fp(__x), _Fp(__y));
@@ -1169,7 +1174,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_ru(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dadd_rd(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dadd_rd(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dadd_rd(_Fp(__x), _Fp(__y));

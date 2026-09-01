@@ -12,9 +12,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-by-key-env
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
@@ -39,7 +39,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-by-key-env
   auto op     = cuda::std::plus{};
@@ -73,7 +73,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[sca
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin inclusive-sum-by-key-env
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
@@ -98,7 +98,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-by-key-env
   auto op     = cuda::std::plus{};
@@ -139,19 +139,19 @@ struct ScanByKeyPolicySelector
   {
     return {.algorithm = cub::ScanByKeyAlgorithm::lookback,
             .lookback  = {
-               .threads_per_block = 256,
-               .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
-               .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-               .load_modifier     = cub::LOAD_DEFAULT,
-               .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
-               .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-               .lookback_delay    = cub::LookbackDelayPolicy{
-                    .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+              .threads_per_block = 256,
+              .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
+              .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+              .load_modifier     = cub::LOAD_DEFAULT,
+              .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+              .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+              .lookback_delay    = cub::LookbackDelayPolicy{
+                .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
   }
 };
 // example-end exclusive-sum-by-key-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-by-key-tuning
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};

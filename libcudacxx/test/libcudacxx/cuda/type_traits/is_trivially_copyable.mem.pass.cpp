@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
@@ -29,7 +29,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
 // operator== for CUDA vector types and dim3 (not provided by the toolkit)
 template <class T, cuda::std::enable_if_t<cuda::is_vector_type_v<T>, int> = 0>
-TEST_FUNC bool operator==(T a, T b)
+TEST_HOST_DEVICE_FUNC bool operator==(T a, T b)
 {
   if constexpr (sizeof(T) == sizeof(decltype(T::x)))
   {
@@ -50,7 +50,7 @@ TEST_FUNC bool operator==(T a, T b)
 }
 
 template <class T>
-TEST_FUNC bool operator==(cuda::complex<T> a, cuda::complex<T> b)
+TEST_HOST_DEVICE_FUNC bool operator==(cuda::complex<T> a, cuda::complex<T> b)
 {
   return a.real() == b.real() && a.imag() == b.imag();
 }
@@ -62,7 +62,7 @@ struct large_custom_t
 };
 
 template <int Size>
-TEST_FUNC bool operator==(const large_custom_t<Size>& a, const large_custom_t<Size>& b)
+TEST_HOST_DEVICE_FUNC bool operator==(const large_custom_t<Size>& a, const large_custom_t<Size>& b)
 {
   for (int i = 0; i < Size; ++i)
   {
@@ -75,7 +75,7 @@ TEST_FUNC bool operator==(const large_custom_t<Size>& a, const large_custom_t<Si
 }
 
 template <typename T>
-TEST_FUNC void test_memcpy_roundtrip(T from)
+TEST_HOST_DEVICE_FUNC void test_memcpy_roundtrip(T from)
 {
   static_assert(cuda::is_trivially_copyable_v<T>);
   T to;
@@ -111,7 +111,7 @@ TEST_FUNC void test_memcpy_roundtrip(T from)
   TEST_CUDA_VECTOR_TYPE(base_type, 3)     \
   TEST_CUDA_VECTOR_TYPE(base_type, 4)
 
-TEST_FUNC bool tests()
+TEST_HOST_DEVICE_FUNC bool tests()
 {
   // standard scalar types
   test_memcpy_roundtrip(42);
@@ -252,7 +252,7 @@ TEST_FUNC bool tests()
   return true;
 }
 
-TEST_FUNC bool tests_nvfp()
+TEST_HOST_DEVICE_FUNC bool tests_nvfp()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   for (__half i :

@@ -17,7 +17,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <functional>
 #include <memory>
@@ -114,16 +114,18 @@ public:
 
       // Add a single host callback using lambda that will release all callback resources
       auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
-        auto* resources = static_cast<decltype(callback_list.get())>(userData);
-
-        // Release all callback resources
-        for (auto& resource : *resources)
+        // The CUDA runtime calls this back, so an exception must not leave it.
+        ON_THROW(abort)
         {
-          // This is noexcept code
-          resource->release_in_callback();
-        }
+          auto* resources = static_cast<decltype(callback_list.get())>(userData);
 
-        delete resources;
+          for (auto& resource : *resources)
+          {
+            resource->release_in_callback();
+          }
+
+          delete resources;
+        };
       };
 
       cuda_try<cudaStreamAddCallback>(stream, release_lambda, callback_list.get(), 0);

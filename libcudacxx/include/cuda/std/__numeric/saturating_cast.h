@@ -172,12 +172,10 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
   {
     if constexpr (is_signed_v<_To> && is_signed_v<_From>)
     {
-      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs. Enable this once
-      // nvbug 6423103 is resolved.
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, ({ return ::cuda::saturating_overflow_cast<_To>(__x).value; }), ({
-                          asm("cvt.sat.s16.s32 %0, %1;" : "=h"(__ret) : "r"(__x));
-                          return __ret;
-                        }))
+      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs (nvbug 6423103).
+      // Converting to the same 32-bit register and then casting to short is a workaround for this bug.
+      asm("cvt.sat.s16.s32 %0, %0;" : "+r"(__x));
+      return static_cast<_To>(__x);
     }
     else if constexpr (is_signed_v<_To> && is_unsigned_v<_From>)
     {
@@ -199,12 +197,10 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
   {
     if constexpr (is_signed_v<_To> && is_signed_v<_From>)
     {
-      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs. Enable this once
-      // nvbug 6423103 is resolved.
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, ({ return ::cuda::saturating_overflow_cast<_To>(__x).value; }), ({
-                          asm("cvt.sat.s16.s64 %0, %1;" : "=h"(__ret) : "l"(__x));
-                          return __ret;
-                        }))
+      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs (nvbug 6423103).
+      // Converting to the same 64-bit register and then casting to short is a workaround for this bug.
+      asm("cvt.sat.s16.s64 %0, %0;" : "+l"(__x));
+      return static_cast<_To>(__x);
     }
     else if constexpr (is_signed_v<_To> && is_unsigned_v<_From>)
     {
@@ -382,10 +378,12 @@ _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To> _CCCL_AND __cccl_is_integer_v<_From>)
 [[nodiscard]] _CCCL_API constexpr _To saturating_cast(_From __x) noexcept
 {
+#if !_CCCL_TILE_COMPILATION()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__saturating_cast_impl_device<_To>(__x, 0); }))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::saturating_overflow_cast<_To>(__x).value;
 }
 

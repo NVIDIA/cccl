@@ -30,8 +30,8 @@ function(libcudacxx_build_compiler_targets)
     "CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER"
   )
 
-  if (CCCL_ENABLE_TILE)
-    list(APPEND cuda_compile_options "--enable-tile")
+  if (CCCL_FORCE_TILE_TESTS)
+    list(APPEND cxx_compile_definitions "CCCL_FORCE_TILE_TESTS")
   endif()
 
   cccl_build_compiler_interface(

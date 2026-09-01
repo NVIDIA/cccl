@@ -14,7 +14,7 @@
 #include <iostream>
 
 #include "catch2_test_device_select_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <typename T>
 struct greater_than_t
@@ -27,7 +27,7 @@ struct greater_than_t
   }
 };
 
-C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
+CUB_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]", CUB_SMALL)
 {
   // example-begin partition-if-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -56,7 +56,7 @@ C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][env]")
+CUB_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][env]", CUB_SMALL)
 {
   // example-begin partition-flagged-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -85,7 +85,7 @@ C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][e
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DevicePartition::If three-way accepts env with stream", "[partition][env]")
+CUB_TEST("cub::DevicePartition::If three-way accepts env with stream", "[partition][env]", CUB_SMALL)
 {
   // example-begin partition-three-way-env
   auto input            = thrust::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
@@ -147,7 +147,7 @@ struct PartitionPolicySelector
 };
 // example-end partition-if-policy-selector
 
-C2H_TEST("cub::DevicePartition::If accepts a custom policy selector", "[partition][env]")
+CUB_TEST("cub::DevicePartition::If accepts a custom policy selector", "[partition][env]", CUB_SMALL)
 {
   // example-begin partition-if-tuning
   auto d_in           = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -194,7 +194,7 @@ struct ThreeWayPartitionPolicySelector
 };
 // example-end partition-three-way-policy-selector
 
-C2H_TEST("cub::DevicePartition::If three-way accepts a custom policy selector", "[partition][env]")
+CUB_TEST("cub::DevicePartition::If three-way accepts a custom policy selector", "[partition][env]", CUB_SMALL)
 {
   // example-begin partition-three-way-tuning
   auto d_in             = thrust::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8, 63};

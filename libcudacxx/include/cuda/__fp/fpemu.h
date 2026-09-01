@@ -148,7 +148,7 @@ public:
   // Constructors and assignment operators
   */
   // Basic constructors
-  _CCCL_API constexpr fpemu() noexcept
+  _CCCL_HOST_DEVICE_API constexpr fpemu() noexcept
       : __bits_{0u}
   {}
   /*
@@ -156,6 +156,18 @@ public:
   // Note: NVCC implicitly makes defaulted special members __host__ __device__
   */
   _CCCL_HIDE_FROM_ABI fpemu(const fpemu& __other) = default;
+
+  /*
+  // Volatile support: the constructor and assignment operators below cover storage
+  // only, i.e. load, store and a bit-preserving round-trip, which is what the legacy
+  // pattern of keeping shared-memory scalars in volatile variables needs.
+  //
+  // A volatile object cannot be an operand of arithmetic, comparison
+  // or bit_cast: those take const fpemu&, and a volatile lvalue never binds to it, not
+  // even through the converting constructor below, because reference-related types are
+  // required to bind directly. Copy into a non-volatile local, compute there, store the
+  // result back.
+  */
 
   /*
   // Copy constructor from volatile fpemu
@@ -166,7 +178,7 @@ public:
   // preserving trivial copyability while retaining volatile access support.
   */
   template <typename _Dummy = void>
-  _CCCL_API fpemu(const volatile fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu(const volatile fpemu& __other) noexcept
       : __bits_{__other.__bits_}
   {}
 
@@ -179,7 +191,7 @@ public:
   // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
   */
   template <typename _Dummy = void>
-  _CCCL_API void operator=(const fpemu& __other) volatile noexcept
+  _CCCL_HOST_DEVICE_API void operator=(const fpemu& __other) volatile noexcept
   {
     __bits_ = __other.__bits_;
   }
@@ -189,10 +201,22 @@ public:
   // Template so it is NOT a copy assignment operator per the C++ standard
   */
   template <typename _Dummy = void>
-  _CCCL_API fpemu& operator=(const volatile fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator=(const volatile fpemu& __other) noexcept
   {
     __bits_ = __other.__bits_;
     return *this;
+  }
+
+  /*
+  // Assignment operator from volatile to volatile fpemu, e.g. a shared-memory to
+  // shared-memory copy
+  // Template so it is NOT a copy assignment operator per the C++ standard
+  // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
+  */
+  template <typename _Dummy = void>
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpemu& __other) volatile noexcept
+  {
+    __bits_ = __other.__bits_;
   }
 
   /*
@@ -200,8 +224,8 @@ public:
   */
   // ==== Conversions from other types to fpemu:
   // Implicit conversions from floating-point types
-  _CCCL_API fpemu(float __f) noexcept;
-  _CCCL_API fpemu(double __d) noexcept;
+  _CCCL_HOST_DEVICE_API fpemu(float __f) noexcept;
+  _CCCL_HOST_DEVICE_API fpemu(double __d) noexcept;
   // Construction from any standard integer type (int / long / long long + unsigned).
   // The value is canonicalized to the accuracy-correct 32- or 64-bit builtin: the
   // target width comes from __num_bits_v and the signedness-correct fixed-width type
@@ -211,7 +235,7 @@ public:
   // lose precision). bool / character types are excluded by __cccl_is_integer_v.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  _CCCL_API fpemu(_Tp __i) noexcept
+  _CCCL_HOST_DEVICE_API fpemu(_Tp __i) noexcept
   {
     if constexpr (::cuda::std::__num_bits_v<_Tp> <= 32)
     {
@@ -227,42 +251,42 @@ public:
   // int32 and reuse the int32 constructor path (no dedicated char/bool handling).
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
-  _CCCL_API fpemu(_Tp __i) noexcept
+  _CCCL_HOST_DEVICE_API fpemu(_Tp __i) noexcept
       : fpemu(static_cast<int32_t>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
   // real 128-bit support is added (tracking issue: extended-precision fp <-> __int128).
-  _CCCL_API fpemu(__int128_t)  = delete;
-  _CCCL_API fpemu(__uint128_t) = delete;
+  _CCCL_HOST_DEVICE_API fpemu(__int128_t)  = delete;
+  _CCCL_HOST_DEVICE_API fpemu(__uint128_t) = delete;
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_FLOAT128()
   // __float128 -> double would silently lose precision (and today makes construction
   // ambiguous with the float/double ctors), so it is deleted for parity with the
   // 128-bit integer ctors until real extended-precision support exists.
-  _CCCL_API fpemu(__float128) = delete;
+  _CCCL_HOST_DEVICE_API fpemu(__float128) = delete;
 #endif // _CCCL_HAS_FLOAT128()
   // Converting constructor from another accuracy (same packed representation, so a
   // pure reinterpretation). Explicit: an accuracy change must be opted into via
   // direct-init / static_cast, mirroring fpmp2 and the IEEE-754 narrowing ctors.
   template <fpemu_accuracy _Acc2>
-  _CCCL_API explicit fpemu(const fpemu<double, _Acc2>& __src) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu(const fpemu<double, _Acc2>& __src) noexcept;
   // Converting constructor from the unpacked representation (packs to the 64-bit form).
   template <fpemu_accuracy _Acc2>
-  _CCCL_API explicit fpemu(const fpemu_unpacked<double, _Acc2>& __src) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu(const fpemu_unpacked<double, _Acc2>& __src) noexcept;
 
   // ==== Conversion from fpemu to other types:
   // Implicit conversion to double
-  _CCCL_API operator double() const noexcept;
+  _CCCL_HOST_DEVICE_API operator double() const noexcept;
   // Explicit conversions to other types
-  _CCCL_API explicit operator float() const noexcept;
+  _CCCL_HOST_DEVICE_API explicit operator float() const noexcept;
   // Explicit conversion to any standard integer type (int / long / long long + unsigned).
   // The target width comes from __num_bits_v and the signedness-correct fixed-width type
   // from __make_nbit_int_t, selecting the matching overloaded __to_integer helper below;
   // excludes bool / character types.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  _CCCL_API explicit operator _Tp() const noexcept
+  _CCCL_HOST_DEVICE_API explicit operator _Tp() const noexcept
   {
     using _Up =
       ::cuda::std::__make_nbit_int_t<(::cuda::std::__num_bits_v<_Tp> <= 32) ? 32 : 64, ::cuda::std::is_signed_v<_Tp>>;
@@ -270,21 +294,21 @@ public:
   }
 #if _CCCL_HAS_INT128()
   // See the deleted 128-bit constructors above: avoid silent 64-bit truncation.
-  _CCCL_API explicit operator __int128_t() const  = delete;
-  _CCCL_API explicit operator __uint128_t() const = delete;
+  _CCCL_HOST_DEVICE_API explicit operator __int128_t() const  = delete;
+  _CCCL_HOST_DEVICE_API explicit operator __uint128_t() const = delete;
 #endif // _CCCL_HAS_INT128()
 
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_API void __set_from_int32(int32_t) noexcept;
-  _CCCL_API void __set_from_int32(uint32_t) noexcept;
-  _CCCL_API void __set_from_int64(int64_t) noexcept;
-  _CCCL_API void __set_from_int64(uint64_t) noexcept;
-  _CCCL_API int32_t __to_integer(int32_t) const noexcept;
-  _CCCL_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_API int64_t __to_integer(int64_t) const noexcept;
-  _CCCL_API uint64_t __to_integer(uint64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(int32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(uint32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(int64_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(uint64_t) noexcept;
+  _CCCL_HOST_DEVICE_API int32_t __to_integer(int32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API uint32_t __to_integer(uint32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API int64_t __to_integer(int64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API uint64_t __to_integer(uint64_t) const noexcept;
 
 public:
   /*
@@ -293,13 +317,13 @@ public:
   // === mul ===
   // (*)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu<double, _Acc>
   operator*(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
   // (*) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu operator*(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu operator*(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) * fpemu(__y);
   }
@@ -307,13 +331,13 @@ public:
   // === div ===
   // (/)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu<double, _Acc>
   operator/(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
   // (/) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu operator/(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu operator/(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) / fpemu(__y);
   }
@@ -321,13 +345,13 @@ public:
   // === add ===
   // (+)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu<double, _Acc>
   operator+(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
   // (+) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu operator+(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu operator+(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) + fpemu(__y);
   }
@@ -335,64 +359,64 @@ public:
   // === sub ===
   // (-)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu<double, _Acc>
   operator-(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
   // (-) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu operator-(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu operator-(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) - fpemu(__y);
   }
 
   // Prefix increment/decrement
-  _CCCL_API fpemu& operator++() noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator++() noexcept
   {
-    this = this + fpemu(1.0);
+    *this = *this + fpemu(1.0);
     return *this;
   }
-  _CCCL_API fpemu& operator--() noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator--() noexcept
   {
-    this = this - fpemu(1.0);
+    *this = *this - fpemu(1.0);
     return *this;
   }
   // Postfix increment/decrement
-  _CCCL_API fpemu operator++(int) noexcept
+  _CCCL_HOST_DEVICE_API fpemu operator++(int) noexcept
   {
     fpemu __temp(*this);
-    this = this + fpemu(1.0);
+    *this = *this + fpemu(1.0);
     return __temp;
   }
-  _CCCL_API fpemu operator--(int) noexcept
+  _CCCL_HOST_DEVICE_API fpemu operator--(int) noexcept
   {
     fpemu __temp(*this);
-    this = this - fpemu(1.0);
+    *this = *this - fpemu(1.0);
     return __temp;
   }
   // Compound assignment operators
-  _CCCL_API fpemu& operator+=(const fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator+=(const fpemu& __other) noexcept
   {
     *this = *this + __other;
     return *this;
   }
-  _CCCL_API fpemu& operator-=(const fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator-=(const fpemu& __other) noexcept
   {
     *this = *this - __other;
     return *this;
   }
-  _CCCL_API fpemu& operator*=(const fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator*=(const fpemu& __other) noexcept
   {
     *this = *this * __other;
     return *this;
   }
-  _CCCL_API fpemu& operator/=(const fpemu& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu& operator/=(const fpemu& __other) noexcept
   {
     *this = *this / __other;
     return *this;
   }
   // Unary negation operator (implementation in fpemu_impl_others.h)
-  _CCCL_API fpemu operator-() const noexcept;
+  _CCCL_HOST_DEVICE_API fpemu operator-() const noexcept;
 
   /*
   // Comparison operators:
@@ -401,7 +425,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator==(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator==(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) == fpemu(__y);
   }
@@ -410,7 +434,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator!=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) != fpemu(__y);
   }
@@ -419,7 +443,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator<(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator<(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) < fpemu(__y);
   }
@@ -427,7 +451,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator>(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator>(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) > fpemu(__y);
   }
@@ -435,7 +459,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator<=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator<=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) <= fpemu(__y);
   }
@@ -443,7 +467,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator>=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator>=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu(__x) >= fpemu(__y);
   }
@@ -456,6 +480,19 @@ public:
 //! emulated according to IEEE-754 semantics but with configurable accuracy level.
 //! It trades the compact packed layout of fpemu for direct field access, which the
 //! emulation builtins use to avoid repeated pack/unpack work in chained operations.
+//!
+//! Precision note: the mantissa field carries 9 guard bits below the 53-bit binary64
+//! significand (EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
+//! so arithmetic on values that stay unpacked runs on 62 significand bits and rounds to
+//! the storage format once, when the value is packed, rather than after every operation.
+//! Two consequences follow, and both are intentional:
+//!   - A chain of operations is typically *more* accurate than the same chain in double
+//!     or in packed fpemu, since the per-operation rounding error is not incurred.
+//!   - For that same reason the result of a chain is not bit-identical to double, even at
+//!     fpemu_accuracy::high, whose individual operations are. Code that must reproduce
+//!     double bit-for-bit should use fpemu (packed) or double itself.
+//! The behaviour is analogous to computing in x87 extended precision and storing the
+//! result at the end.
 //!
 //! @tparam met Accuracy level (fpemu_accuracy::high, mid, low; def == high)
 //!              - high: Correctly rounded with full IEEE-754 range
@@ -496,7 +533,7 @@ public:
   // Constructors and assignment operators
   */
   // Basic constructors
-  _CCCL_API constexpr fpemu_unpacked() noexcept
+  _CCCL_HOST_DEVICE_API constexpr fpemu_unpacked() noexcept
       : __bits_{0u, 0, 0}
   {}
   /*
@@ -504,6 +541,10 @@ public:
   // Note: NVCC implicitly makes defaulted special members __host__ __device__
   */
   _CCCL_HIDE_FROM_ABI fpemu_unpacked(const fpemu_unpacked& __other) = default;
+
+  /*
+  // Volatile support covers storage only, exactly as for the packed fpemu above.
+  */
 
   /*
   // Copy constructor from volatile fpemu_unpacked
@@ -514,7 +555,7 @@ public:
   // preserving trivial copyability while retaining volatile access support.
   */
   template <typename _Dummy = void>
-  _CCCL_API fpemu_unpacked(const volatile fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked(const volatile fpemu_unpacked& __other) noexcept
   {
     __bits_.sign     = __other.__bits_.sign;
     __bits_.exponent = __other.__bits_.exponent;
@@ -530,7 +571,7 @@ public:
   // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
   */
   template <typename _Dummy = void>
-  _CCCL_API void operator=(const fpemu_unpacked& __other) volatile noexcept
+  _CCCL_HOST_DEVICE_API void operator=(const fpemu_unpacked& __other) volatile noexcept
   {
     __bits_.sign     = __other.__bits_.sign;
     __bits_.exponent = __other.__bits_.exponent;
@@ -542,12 +583,26 @@ public:
   // Template so it is NOT a copy assignment operator per the C++ standard
   */
   template <typename _Dummy = void>
-  _CCCL_API fpemu_unpacked& operator=(const volatile fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator=(const volatile fpemu_unpacked& __other) noexcept
   {
     __bits_.sign     = __other.__bits_.sign;
     __bits_.exponent = __other.__bits_.exponent;
     __bits_.mantissa = __other.__bits_.mantissa;
     return *this;
+  }
+
+  /*
+  // Assignment operator from volatile to volatile fpemu_unpacked, e.g. a shared-memory
+  // to shared-memory copy
+  // Template so it is NOT a copy assignment operator per the C++ standard
+  // Returns void to avoid C++20 -Wvolatile (deprecated volatile return)
+  */
+  template <typename _Dummy = void>
+  _CCCL_HOST_DEVICE_API void operator=(const volatile fpemu_unpacked& __other) volatile noexcept
+  {
+    __bits_.sign     = __other.__bits_.sign;
+    __bits_.exponent = __other.__bits_.exponent;
+    __bits_.mantissa = __other.__bits_.mantissa;
   }
   /*
   // Conversion operators
@@ -559,8 +614,8 @@ public:
   // construction unambiguous between the packed and unpacked classes and, crucially,
   // gives fpemu_unpacked the same public API regardless of whether the translation unit
   // is compiled by nvcc or a host-only compiler.
-  _CCCL_API explicit fpemu_unpacked(float __f) noexcept;
-  _CCCL_API explicit fpemu_unpacked(double __d) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(float __f) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(double __d) noexcept;
   // Construction from any standard integer type (int / long / long long + unsigned).
   // The value is canonicalized to the accuracy-correct 32- or 64-bit builtin: the target
   // width comes from __num_bits_v and the signedness-correct fixed-width type from
@@ -569,7 +624,7 @@ public:
   // may lose precision. bool / character types are excluded by __cccl_is_integer_v.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  _CCCL_API explicit fpemu_unpacked(_Tp __i) noexcept
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(_Tp __i) noexcept
   {
     if constexpr (::cuda::std::__num_bits_v<_Tp> <= 32)
     {
@@ -585,41 +640,41 @@ public:
   // int32 and reuse the int32 constructor path (no dedicated char/bool handling).
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
-  _CCCL_API explicit fpemu_unpacked(_Tp __i) noexcept
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(_Tp __i) noexcept
       : fpemu_unpacked(static_cast<int32_t>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
   // real 128-bit support is added (tracking issue: extended-precision fp <-> __int128).
-  _CCCL_API explicit fpemu_unpacked(__int128_t)  = delete;
-  _CCCL_API explicit fpemu_unpacked(__uint128_t) = delete;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(__int128_t)  = delete;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(__uint128_t) = delete;
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_FLOAT128()
   // __float128 -> double would silently lose precision (and today makes construction
   // ambiguous with the float/double ctors), so it is deleted for parity with the
   // 128-bit integer ctors until real extended-precision support exists.
-  _CCCL_API explicit fpemu_unpacked(__float128) = delete;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(__float128) = delete;
 #endif // _CCCL_HAS_FLOAT128()
   // Converting constructor from another accuracy (same unpacked representation, so a
   // pure reinterpretation). Explicit for the same reason as the packed class.
   template <fpemu_accuracy _Acc2>
-  _CCCL_API explicit fpemu_unpacked(const fpemu_unpacked<double, _Acc2>& __src) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(const fpemu_unpacked<double, _Acc2>& __src) noexcept;
   // Converting constructor from the packed representation (unpacks the 64-bit form).
   template <fpemu_accuracy _Acc2>
-  _CCCL_API explicit fpemu_unpacked(const fpemu<double, _Acc2>& __src) noexcept;
+  _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(const fpemu<double, _Acc2>& __src) noexcept;
 
   // ==== Conversion from fpemu_unpacked to other types:
   // Implicit conversion to double
-  _CCCL_API operator double() const noexcept;
+  _CCCL_HOST_DEVICE_API operator double() const noexcept;
   // Explicit conversions to other types
-  _CCCL_API explicit operator float() const noexcept;
+  _CCCL_HOST_DEVICE_API explicit operator float() const noexcept;
   // Explicit conversion to any standard integer type (int / long / long long + unsigned).
   // The target width comes from __num_bits_v and the signedness-correct fixed-width type
   // from __make_nbit_int_t, selecting the matching overloaded __to_integer helper below;
   // excludes bool / character types.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  _CCCL_API explicit operator _Tp() const noexcept
+  _CCCL_HOST_DEVICE_API explicit operator _Tp() const noexcept
   {
     using _Up =
       ::cuda::std::__make_nbit_int_t<(::cuda::std::__num_bits_v<_Tp> <= 32) ? 32 : 64, ::cuda::std::is_signed_v<_Tp>>;
@@ -627,21 +682,21 @@ public:
   }
 #if _CCCL_HAS_INT128()
   // See the deleted 128-bit constructors above: avoid silent 64-bit truncation.
-  _CCCL_API explicit operator __int128_t() const  = delete;
-  _CCCL_API explicit operator __uint128_t() const = delete;
+  _CCCL_HOST_DEVICE_API explicit operator __int128_t() const  = delete;
+  _CCCL_HOST_DEVICE_API explicit operator __uint128_t() const = delete;
 #endif // _CCCL_HAS_INT128()
 
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_API void __set_from_int32(int32_t) noexcept;
-  _CCCL_API void __set_from_int32(uint32_t) noexcept;
-  _CCCL_API void __set_from_int64(int64_t) noexcept;
-  _CCCL_API void __set_from_int64(uint64_t) noexcept;
-  _CCCL_API int32_t __to_integer(int32_t) const noexcept;
-  _CCCL_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_API int64_t __to_integer(int64_t) const noexcept;
-  _CCCL_API uint64_t __to_integer(uint64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(int32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(uint32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(int64_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(uint64_t) noexcept;
+  _CCCL_HOST_DEVICE_API int32_t __to_integer(int32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API uint32_t __to_integer(uint32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API int64_t __to_integer(int64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API uint64_t __to_integer(uint64_t) const noexcept;
 
 public:
   /*
@@ -650,26 +705,26 @@ public:
   // === mul ===
   // (*)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu_unpacked<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked<double, _Acc>
   operator*(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept;
   // (/)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu_unpacked<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked<double, _Acc>
   operator/(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept;
   // (+)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu_unpacked<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked<double, _Acc>
   operator+(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept;
   // (-)
   template <fpemu_accuracy _Acc>
-  _CCCL_API friend fpemu_unpacked<double, _Acc>
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked<double, _Acc>
   operator-(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept;
 
   // == mul ==
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu_unpacked operator*(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked operator*(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) * fpemu_unpacked(__y);
   }
@@ -678,7 +733,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu_unpacked operator/(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked operator/(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) / fpemu_unpacked(__y);
   }
@@ -687,7 +742,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu_unpacked operator+(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked operator+(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) + fpemu_unpacked(__y);
   }
@@ -696,58 +751,58 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend fpemu_unpacked operator-(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend fpemu_unpacked operator-(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) - fpemu_unpacked(__y);
   }
 
   // Prefix increment/decrement
-  _CCCL_API fpemu_unpacked& operator++() noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator++() noexcept
   {
-    this = this + fpemu_unpacked(1.0);
+    *this = *this + fpemu_unpacked(1.0);
     return *this;
   }
-  _CCCL_API fpemu_unpacked& operator--() noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator--() noexcept
   {
-    this = this - fpemu_unpacked(1.0);
+    *this = *this - fpemu_unpacked(1.0);
     return *this;
   }
   // Postfix increment/decrement
-  _CCCL_API fpemu_unpacked operator++(int) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked operator++(int) noexcept
   {
     fpemu_unpacked __temp(*this);
-    this = this + fpemu_unpacked(1.0);
+    *this = *this + fpemu_unpacked(1.0);
     return __temp;
   }
-  _CCCL_API fpemu_unpacked operator--(int) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked operator--(int) noexcept
   {
     fpemu_unpacked __temp(*this);
-    this = this - fpemu_unpacked(1.0);
+    *this = *this - fpemu_unpacked(1.0);
     return __temp;
   }
   // Compound assignment operators
-  _CCCL_API fpemu_unpacked& operator+=(const fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator+=(const fpemu_unpacked& __other) noexcept
   {
     *this = *this + __other;
     return *this;
   }
-  _CCCL_API fpemu_unpacked& operator-=(const fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator-=(const fpemu_unpacked& __other) noexcept
   {
     *this = *this - __other;
     return *this;
   }
-  _CCCL_API fpemu_unpacked& operator*=(const fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator*=(const fpemu_unpacked& __other) noexcept
   {
     *this = *this * __other;
     return *this;
   }
-  _CCCL_API fpemu_unpacked& operator/=(const fpemu_unpacked& __other) noexcept
+  _CCCL_HOST_DEVICE_API fpemu_unpacked& operator/=(const fpemu_unpacked& __other) noexcept
   {
     *this = *this / __other;
     return *this;
   }
   // Unary negation operator (implementation in fpemu_impl_others.h)
-  _CCCL_API fpemu_unpacked operator-() const noexcept;
+  _CCCL_HOST_DEVICE_API fpemu_unpacked operator-() const noexcept;
 
   /*
   // Comparison operators:
@@ -756,7 +811,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator==(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator==(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) == fpemu_unpacked(__y);
   }
@@ -764,7 +819,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator!=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) != fpemu_unpacked(__y);
   }
@@ -772,7 +827,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator<(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator<(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) < fpemu_unpacked(__y);
   }
@@ -780,7 +835,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator>(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator>(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) > fpemu_unpacked(__y);
   }
@@ -788,7 +843,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator<=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator<=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) <= fpemu_unpacked(__y);
   }
@@ -796,7 +851,7 @@ public:
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu_unpacked> || ::cuda::std::is_same_v<_T2, fpemu_unpacked>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
-  _CCCL_API friend bool operator>=(const _T1& __x, const _T2& __y) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator>=(const _T1& __x, const _T2& __y) noexcept
   {
     return fpemu_unpacked(__x) >= fpemu_unpacked(__y);
   }

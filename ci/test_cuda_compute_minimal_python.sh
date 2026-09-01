@@ -12,8 +12,8 @@ parse_python_args "$@"
 require_py_version "Usage: $0 -py-version <python_version>"
 
 # Pin cuda-toolkit to the container's CTK minor and set cuda_version /
-# cuda_major_version (CCCL_PYTHON_TEST_LATEST_CTK=1 opts out). See pyenv_helper.sh.
-pin_cuda_toolkit
+# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
+pin_cuda_toolkit "${ctk_mode}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
@@ -29,9 +29,11 @@ else
 fi
 
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
-# full cu* extras because those pull in numba/numba-cuda.
+# full cu*/sysctk* extras because those pull in numba/numba-cuda. The flavor is
+# "cu" (pip toolkit) or "sysctk" (system toolkit) per the -ctk-mode arg.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
+ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
 python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"

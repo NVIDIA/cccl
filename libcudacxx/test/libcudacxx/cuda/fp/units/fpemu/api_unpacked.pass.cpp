@@ -12,13 +12,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #define C0 (1.0)
 #define C1 (1.0 / 2.0)
@@ -32,7 +35,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Horner evaluation of the degree-7 polynomial for any value type.
 #define POLY(v) (C0 + (v) * (C1 + (v) * (C2 + (v) * (C3 + (v) * (C4 + (v) * (C5 + (v) * (C6 + (v) * C7)))))))
 
-TEST_FUNC void test(double dx, double dy, double dz, double dw)
+TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
 {
   const double ref[5] = {
     dx * dy * dz * dw,
@@ -43,25 +46,25 @@ TEST_FUNC void test(double dx, double dy, double dz, double dw)
   };
 
   // Packed C++ API.
-  fp64emu ex = dx, ey = dy, ez = dz, ew = dw;
+  cudax::fp64emu ex = dx, ey = dy, ez = dz, ew = dw;
   const double packed[5] = {
-    (double) (__dmul_rn(ex, ey) * ez * ew),
-    (double) (__dadd_rn(ex, ey) + ez + ew),
-    (double) mad(ex, ey, ez),
-    (double) dot(ex, ez, ey, ew),
+    (double) (cudax::__dmul_rn(ex, ey) * ez * ew),
+    (double) (cudax::__dadd_rn(ex, ey) + ez + ew),
+    (double) cudax::mad(ex, ey, ez),
+    (double) cudax::dot(ex, ez, ey, ew),
     (double) (POLY(ex)),
   };
 
   // Unpacked C++ API (explicit conversion to disambiguate from the packed type).
-  fp64emu_unpacked ux      = (fp64emu_unpacked) dx;
-  fp64emu_unpacked uy      = (fp64emu_unpacked) dy;
-  fp64emu_unpacked uz      = (fp64emu_unpacked) dz;
-  fp64emu_unpacked uw      = (fp64emu_unpacked) dw;
-  const double unpacked[5] = {
-    (double) (__dmul_rn(ex, ey) * ez * ew),
-    (double) (__dadd_rn(ux, uy) + uz + uw),
-    (double) mad(ux, uy, uz),
-    (double) dot(ux, uz, uy, uw),
+  cudax::fp64emu_unpacked ux = (cudax::fp64emu_unpacked) dx;
+  cudax::fp64emu_unpacked uy = (cudax::fp64emu_unpacked) dy;
+  cudax::fp64emu_unpacked uz = (cudax::fp64emu_unpacked) dz;
+  cudax::fp64emu_unpacked uw = (cudax::fp64emu_unpacked) dw;
+  const double unpacked[5]   = {
+    (double) (cudax::__dmul_rn(ex, ey) * ez * ew),
+    (double) (cudax::__dadd_rn(ux, uy) + uz + uw),
+    (double) cudax::mad(ux, uy, uz),
+    (double) cudax::dot(ux, uz, uy, uw),
     (double) (POLY(ux)),
   };
 

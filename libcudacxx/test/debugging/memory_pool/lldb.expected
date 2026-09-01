@@ -1,0 +1,114 @@
+=============== memory_pool.owning begin ===============
+(const cuda::device_memory_pool &) <address> handle=<address>: {
+  release_threshold = 1048576
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.owning end ===============
+=============== memory_pool.ref begin ===============
+(const cuda::device_memory_pool_ref &) <address> handle=<address>: {
+  release_threshold = 2097152
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.ref end ===============
+=============== memory_pool.alias begin ===============
+(const cuda::device_memory_pool_ref &) <address> handle=<address>: {
+  release_threshold = 3145728
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.alias end ===============
+=============== memory_pool.no_init begin ===============
+(const cuda::device_memory_pool &) <address> handle=0x0
+=============== memory_pool.no_init end ===============
+=============== memory_pool.shared begin ===============
+(const cuda::shared_device_memory_pool &) <address> handle=<address>, use_count=1: {
+  release_threshold = 7340032
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.shared end ===============
+=============== memory_pool.shared_copy begin ===============
+(const cuda::shared_device_memory_pool &) <address> handle=<address>, use_count=2: {
+  release_threshold = 7340032
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.shared_copy end ===============
+=============== memory_pool.shared_no_init begin ===============
+(const cuda::shared_device_memory_pool &) <address> handle=0x0, use_count=0
+=============== memory_pool.shared_no_init end ===============
+=============== memory_pool.nested begin ===============
+(const cuda::std::array<cuda::device_memory_pool_ref, 2> &) <address>: {
+  [0] = handle=<address> {
+    release_threshold = 4194304
+    reserved_mem_current = 0
+    reserved_mem_high = 0
+    used_mem_current = 0
+    used_mem_high = 0
+  }
+  [1] = handle=<address> {
+    release_threshold = 1048576
+    reserved_mem_current = 0
+    reserved_mem_high = 0
+    used_mem_current = 0
+    used_mem_high = 0
+  }
+}
+=============== memory_pool.nested end ===============
+=============== memory_pool.update.before begin ===============
+(const cuda::device_memory_pool_ref &) <address> handle=<address>: {
+  release_threshold = 5242880
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.update.before end ===============
+=============== memory_pool.update.after begin ===============
+(const cuda::device_memory_pool_ref &) <address> handle=<address>: {
+  release_threshold = 6291456
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool.update.after end ===============
+=============== memory_pool.in_use begin ===============
+(const cuda::device_memory_pool &) <address> handle=<address>: {
+  release_threshold = 8388608
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
+  used_mem_current = 1048576
+  used_mem_high = 1048576
+}
+=============== memory_pool.in_use end ===============
+=============== memory_pool.after_release begin ===============
+(const cuda::device_memory_pool &) <address> handle=<address>: {
+  release_threshold = 0
+  reserved_mem_current = 0
+  reserved_mem_high = <nonzero>
+  used_mem_current = 0
+  used_mem_high = 1048576
+}
+=============== memory_pool.after_release end ===============
+=============== memory_pool.shared_in_use begin ===============
+(const cuda::shared_device_memory_pool &) <address> handle=<address>, use_count=1: {
+  release_threshold = 9437184
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
+  used_mem_current = 1048576
+  used_mem_high = 1048576
+}
+=============== memory_pool.shared_in_use end ===============

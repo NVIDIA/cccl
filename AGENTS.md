@@ -206,6 +206,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.stf._experimental** — Sequential Task Flow (CUDASTF) Python bindings in the `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -255,13 +256,15 @@ include_paths = headers.get_include_paths()
 ./ci/test_cuda_compute_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
 
 * `tests/compute` — Algorithms and iterators
 * `tests/headers` — Header integration
-* `test_examples.py` — Runs compute examples
+* `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
+* `test_examples.py` — Runs compute examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 
@@ -320,6 +323,8 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
+* `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.

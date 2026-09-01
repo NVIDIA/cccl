@@ -9,18 +9,23 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_allocator.cuh>
 #include <cub/util_vsmem.cuh>
+
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/stream>
 
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
 
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 bool g_verbose = false;
-cub::CachingDeviceAllocator g_allocator(true);
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
           int ThreadsPerBlock,
@@ -140,43 +145,28 @@ void TestDriver(GenMode gen_mode)
 
   // Allocate host arrays
   std::unique_ptr<Key[]> h_keys(new Key[tile_size]);
-  std::unique_ptr<int[]> h_ranks(new int[tile_size]);
   std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
-
-  // Allocate device arrays
-  Key* d_keys  = nullptr;
-  int* d_ranks = nullptr;
-
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys, sizeof(Key) * tile_size));
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_ranks, sizeof(int) * tile_size));
 
   // Initialize problem and solution on host
   Initialize<Descending>(gen_mode, h_keys.get(), h_reference_ranks.get(), tile_size, RadixBits);
 
-  // Copy problem to device
-  CubDebugExit(cudaMemcpy(d_keys, h_keys.get(), sizeof(Key) * tile_size, cudaMemcpyHostToDevice));
+  // Allocate device arrays and copy the problem to the device
+  const auto device = cuda::devices[0];
+  const auto stream = cuda::stream{device};
+  auto d_keys       = cuda::make_device_buffer<Key>(stream, device, h_keys.get(), h_keys.get() + tile_size);
+  auto d_ranks      = cuda::make_device_buffer<int>(stream, device, tile_size, cuda::no_init);
 
   // Run kernel
   kernel<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>
-    <<<1, ThreadsPerBlock>>>(d_keys, d_ranks);
+    <<<1, ThreadsPerBlock, 0, stream.get()>>>(d_keys.data(), d_ranks.data());
 
   // Flush kernel output / errors
   CubDebugExit(cudaPeekAtLastError());
   CubDebugExit(cudaDeviceSynchronize());
 
   // Check keys results
-  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks, tile_size, g_verbose, g_verbose);
+  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose);
   AssertEquals(0, compare);
-
-  if (d_keys)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_keys));
-  }
-
-  if (d_ranks)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_ranks));
-  }
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -287,7 +277,7 @@ void Test()
   Test<cub::RadixRankAlgorithm::RADIX_RANK_BASIC, ThreadsPerBlock>();
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MEMOIZE, ThreadsPerBlock>();
 
-  Test<ThreadsPerBlock>(cuda::std::bool_constant < (ThreadsPerBlock % 32) == 0 > {});
+  Test<ThreadsPerBlock>(cuda::std::bool_constant<(ThreadsPerBlock % 32) == 0>{});
 }
 
 int main(int argc, char** argv)
@@ -300,22 +290,16 @@ int main(int argc, char** argv)
   if (args.CheckCmdLineFlag("help"))
   {
     printf("%s "
-           "[--device=<device-id>] "
            "[--v] "
            "\n",
            argv[0]);
     exit(0);
   }
 
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
-
   Test<16>();
   Test<32>();
   Test<128>();
   Test<130>();
-
-  g_allocator.FreeAllCached();
 
   return 0;
 }

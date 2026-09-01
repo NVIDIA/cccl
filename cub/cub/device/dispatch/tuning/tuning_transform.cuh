@@ -47,7 +47,7 @@ enum class TransformAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -308,6 +308,10 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
+  if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+  {
+    return 128 * 1024; // Rubin
+  }
   if (cc >= ::cuda::compute_capability{10, 0})
   {
     return 64 * 1024; // B200

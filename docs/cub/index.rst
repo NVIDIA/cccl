@@ -12,6 +12,7 @@ CUB
    warp_wide
    block_wide
    device_wide
+   environment
    determinism
    benchmarking
    tuning
@@ -180,7 +181,7 @@ plurality of state, granularity, throughput, latency, memory bottlenecks, etc.
 
 With the exception of CUB, however, there are few (if any) software libraries of
 *reusable* kernel primitives. In the CUDA ecosystem, CUB is unique in this regard.
-As a `SIMT <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#hardware-implementation>`_
+As a `SIMT <https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html#gpu-hardware-model>`_
 library and software abstraction layer, CUB provides:
 
 #. **Simplicity of composition**. CUB enhances programmer productivity by

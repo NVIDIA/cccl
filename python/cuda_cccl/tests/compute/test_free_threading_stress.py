@@ -14,7 +14,6 @@ from typing import Callable
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
-
 from cuda.core import Device
 
 pytestmark = [

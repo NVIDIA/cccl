@@ -50,7 +50,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-using __isclose_compare_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
+using __isclose_compare_t _CCCL_NODEBUG = ::cuda::std::
   conditional_t<(::cuda::std::__is_extended_floating_point_v<_Tp> && sizeof(_Tp) <= sizeof(float)), float, _Tp>;
 
 // compute 10^-(digits10 / 2)
@@ -93,8 +93,8 @@ template <typename _ComplexType, typename _AbsTol>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __isclose_complex_impl(
   const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_tol, const _AbsTol __abs_tol) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS  = typename _ComplexType::value_type;
-  using __compare_t _CCCL_NODEBUG_ALIAS = __isclose_compare_t<__scalar_t>;
+  using __scalar_t _CCCL_NODEBUG  = typename _ComplexType::value_type;
+  using __compare_t _CCCL_NODEBUG = __isclose_compare_t<__scalar_t>;
   static_assert(::cuda::is_floating_point_v<__scalar_t>, "cuda::isclose: __scalar_t must be a floating point type");
 #if _CCCL_HAS_FLOAT128()
   // __float128 is not supported because cuda::std::hypot is not implemented for this type
@@ -132,11 +132,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<_Tp>
 __safe_abs_diff(const _Tp __lhs, const _Tp __rhs) noexcept
 {
-  using __unsigned_t _CCCL_NODEBUG_ALIAS = ::cuda::std::make_unsigned_t<_Tp>;
-  const auto __lhs_abs                   = ::cuda::uabs(__lhs);
-  const auto __rhs_abs                   = ::cuda::uabs(__rhs);
-  const auto __is_lhs_negative           = ::cuda::std::cmp_less(__lhs, _Tp{0});
-  const auto __is_rhs_negative           = ::cuda::std::cmp_less(__rhs, _Tp{0});
+  using __unsigned_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
+  const auto __lhs_abs             = ::cuda::uabs(__lhs);
+  const auto __rhs_abs             = ::cuda::uabs(__rhs);
+  const auto __is_lhs_negative     = ::cuda::std::cmp_less(__lhs, _Tp{0});
+  const auto __is_rhs_negative     = ::cuda::std::cmp_less(__rhs, _Tp{0});
   if (__is_lhs_negative != __is_rhs_negative)
   {
     return static_cast<__unsigned_t>(__lhs_abs + __rhs_abs);
@@ -205,13 +205,13 @@ __isclose_integer_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, 
                "cuda::isclose: relative tolerance must be in the range [0.0, 1.0]");
   _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__abs_tol, _Tp{0}),
                "cuda::isclose: absolute tolerance must be non-negative");
-  using __unsigned_t _CCCL_NODEBUG_ALIAS = ::cuda::std::make_unsigned_t<_Tp>;
-  const auto __lhs_abs                   = ::cuda::uabs(__lhs);
-  const auto __rhs_abs                   = ::cuda::uabs(__rhs);
-  const auto __diff                      = ::cuda::__safe_abs_diff(__lhs, __rhs);
-  const auto __abs                       = static_cast<__unsigned_t>(__abs_tol);
-  const auto __max_abs                   = ::cuda::std::max(__lhs_abs, __rhs_abs);
-  const auto __rel_value                 = ::cuda::__float_ratio{__rel_tol} * __max_abs;
+  using __unsigned_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
+  const auto __lhs_abs             = ::cuda::uabs(__lhs);
+  const auto __rhs_abs             = ::cuda::uabs(__rhs);
+  const auto __diff                = ::cuda::__safe_abs_diff(__lhs, __rhs);
+  const auto __abs                 = static_cast<__unsigned_t>(__abs_tol);
+  const auto __max_abs             = ::cuda::std::max(__lhs_abs, __rhs_abs);
+  const auto __rel_value           = ::cuda::__float_ratio{__rel_tol} * __max_abs;
   return __diff <= ::cuda::std::max(__abs, __rel_value);
 }
 
@@ -238,7 +238,7 @@ isclose(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const _Tp __abs
   }
   else
   {
-    using __value_t _CCCL_NODEBUG_ALIAS = __isclose_compare_t<_Tp>;
+    using __value_t _CCCL_NODEBUG = __isclose_compare_t<_Tp>;
     return ::cuda::__isclose_fp_impl(
       static_cast<__value_t>(__lhs), static_cast<__value_t>(__rhs), __rel_tol, static_cast<__value_t>(__abs_tol));
   }
@@ -312,7 +312,7 @@ _CCCL_REQUIRES(__is_any_complex_v<_ComplexType>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool
 isclose(const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_tol) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS = typename _ComplexType::value_type;
+  using __scalar_t _CCCL_NODEBUG = typename _ComplexType::value_type;
   return ::cuda::isclose(__lhs, __rhs, __rel_tol, __scalar_t{0});
 }
 
@@ -325,7 +325,7 @@ _CCCL_TEMPLATE(typename _ComplexType)
 _CCCL_REQUIRES(__is_any_complex_v<_ComplexType>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(const _ComplexType& __lhs, const _ComplexType& __rhs) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS = typename _ComplexType::value_type;
+  using __scalar_t _CCCL_NODEBUG = typename _ComplexType::value_type;
   return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_relative_tolerance<__scalar_t>(), __scalar_t{0});
 }
 

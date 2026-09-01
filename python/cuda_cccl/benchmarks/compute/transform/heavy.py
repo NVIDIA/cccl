@@ -15,13 +15,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numba
 import numpy as np
 from numba import cuda as lang
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 import cuda.compute
 
 

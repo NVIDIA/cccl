@@ -96,11 +96,16 @@ if (NOT testing_enabled)
   return()
 endif()
 
+cccl_get_cudatoolkit()
+
 #[=======================================================================[.rst:
 libcudacxx_add_pretty_printer_test
 ---------------------------------
 
 Build a CUDA pretty-printer scenario and register its enabled debugger tests.
+
+A scenario that prints ``LIBCUDACXX_PRETTY_PRINTER_SKIP: <reason>`` instead of running
+its cases is reported as skipped, which covers support that only the driver knows about.
 
 The function creates the executable target
 ``libcudacxx.test.debugging.<NAME>`` with host debug information and optimization
@@ -121,8 +126,8 @@ Arguments
 
 ``CASES``
   Ordered runner arguments describing the debugger stops and expressions. Each case
-  has the form ``--case <breakpoint> <caller-frame-index> <section-name>
-  <expression>``.
+  has the form ``--case <breakpoint> <section-name> <expression>``. The expression is
+  evaluated in the breakpoint function's own frame.
 
 #]=======================================================================]
 function(libcudacxx_add_pretty_printer_test)
@@ -160,11 +165,15 @@ function(libcudacxx_add_pretty_printer_test)
     NO_CLANG_TIDY
     SOURCES ${pretty_printer_SOURCES}
   )
-  target_compile_options(
+  target_link_libraries(
     ${target_name}
-    PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g> $<$<COMPILE_LANGUAGE:CUDA>:-O0>
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart
   )
-  target_link_libraries(${target_name} PRIVATE libcudacxx.compiler_interface)
+
+  # Explicitly set max optimization, the printers should work even when everything is
+  # compiled out.
+  target_compile_options(${target_name} PRIVATE -g -O3)
+  target_compile_definitions(${target_name} PRIVATE NDEBUG)
 
   foreach (debugger IN LISTS LIBCUDACXX_SUPPORTED_DEBUGGERS)
     string(TOUPPER "${debugger}" DEBUGGER_UPPER)
@@ -179,24 +188,60 @@ function(libcudacxx_add_pretty_printer_test)
       "${libcudacxx_SOURCE_DIR}/share/libcudacxx/${debugger}/__init__.py"
     )
     set(test_name "${target_name}.${debugger}")
+    # The runner owns the timeout so that it can retry a timed-out attempt, which CTest
+    # cannot do. The per-attempt limit is aggressive because pretty printers must not be
+    # slow. If they are, then it's a problem with the printer and/or it is doing too much.
+    # A timeout is still possible on a loaded machine, so the runner retries it.
+    set(attempt_timeout 10)
+    # read: retry 2 more times after failure
+    set(retries 2)
     add_test(
       NAME ${test_name}
       COMMAND
         # gersemi: off
-      "${Python_EXECUTABLE}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_pretty_printer_test.py"
-      --debugger "${debugger}"
-      --debugger-executable "${executable}"
-      --program "$<TARGET_FILE:${target_name}>"
-      --formatter-init "${formatter}"
-      --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
-      --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
-      ${pretty_printer_CASES}
+        "${Python_EXECUTABLE}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_pretty_printer_test.py"
+        --debugger "${debugger}"
+        --debugger-executable "${executable}"
+        --program "$<TARGET_FILE:${target_name}>"
+        --formatter-init "${formatter}"
+        --expected "${CMAKE_CURRENT_SOURCE_DIR}/${debugger}.expected"
+        --output-log "${CMAKE_CURRENT_BINARY_DIR}/${debugger}.log"
+        --timeout "${attempt_timeout}"
+        --retries "${retries}"
+        ${pretty_printer_CASES}
       # gersemi: on
     )
-    set_tests_properties(${test_name} PROPERTIES TIMEOUT 60)
+    # Backstop only. It must exceed the total runner budget so that the runner, and not
+    # CTest, reports a timeout. It catches a hung runner instead of a hung debugger.
+    math(EXPR ctest_timeout "${attempt_timeout} * (${retries} + 1) + 30")
+    set_tests_properties(
+      ${test_name}
+      PROPERTIES TIMEOUT ${ctest_timeout} SKIP_RETURN_CODE 77
+    )
   endforeach()
 endfunction()
 
 add_subdirectory(array)
+add_subdirectory(atomic)
 add_subdirectory(buffer)
+add_subdirectory(complex)
+add_subdirectory(event)
+add_subdirectory(hierarchy)
+add_subdirectory(inplace_vector)
+add_subdirectory(mdspan)
+add_subdirectory(memory_pool)
+# Registered only on a toolkit new enough to have the types, which keeps the
+# golden output of every registered scenario unconditional. Gate on the toolkit
+# version rather than the compiler version, since the CUDA compiler may be clang.
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.9)
+  add_subdirectory(memory_pool_pinned)
+endif()
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
+  add_subdirectory(memory_pool_managed)
+endif()
 add_subdirectory(memory_resource)
+add_subdirectory(optional)
+add_subdirectory(shared_resource)
+add_subdirectory(span)
+add_subdirectory(stream)
+add_subdirectory(tuple)

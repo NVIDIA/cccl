@@ -32,7 +32,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, device_select_unique_by_k
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -40,7 +40,7 @@ namespace stdexec = cuda::std::execution;
 
 using block_size_check_t = block_size_extracting_op<cuda::std::equal_to<>>;
 
-TEST_CASE("Device select works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -64,7 +64,7 @@ TEST_CASE("Device select works with default environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
-TEST_CASE("Device select flagged works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select flagged works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -88,7 +88,7 @@ TEST_CASE("Device select flagged works with default environment", "[select][devi
   REQUIRE(d_out == expected_output);
 }
 
-TEST_CASE("Device select flagged_if works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select flagged_if works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -113,7 +113,7 @@ TEST_CASE("Device select flagged_if works with default environment", "[select][d
   REQUIRE(d_out == expected_output);
 }
 
-TEST_CASE("Device select flagged in-place works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select flagged in-place works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -134,7 +134,7 @@ TEST_CASE("Device select flagged in-place works with default environment", "[sel
   REQUIRE(d_data == expected_output);
 }
 
-TEST_CASE("Device select if in-place works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select if in-place works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -155,7 +155,7 @@ TEST_CASE("Device select if in-place works with default environment", "[select][
   REQUIRE(d_data == expected_output);
 }
 
-TEST_CASE("Device select flagged_if in-place works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select flagged_if in-place works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -179,7 +179,7 @@ TEST_CASE("Device select flagged_if in-place works with default environment", "[
   REQUIRE(d_data == expected_output);
 }
 
-TEST_CASE("Device select unique works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select unique works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -199,7 +199,9 @@ TEST_CASE("Device select unique works with default environment", "[select][devic
   REQUIRE(d_out == expected_output);
 }
 
-TEST_CASE("Device select unique with custom equality_op works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select unique with custom equality_op works with default environment",
+              "[select][device]",
+              CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -222,7 +224,7 @@ TEST_CASE("Device select unique with custom equality_op works with default envir
   REQUIRE(d_out == expected_output);
 }
 
-TEST_CASE("Device select unique in-place works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select unique in-place works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -241,7 +243,9 @@ TEST_CASE("Device select unique in-place works with default environment", "[sele
   REQUIRE(d_data == expected_output);
 }
 
-TEST_CASE("Device select unique in-place with custom equality_op works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select unique in-place with custom equality_op works with default environment",
+              "[select][device]",
+              CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -262,7 +266,7 @@ TEST_CASE("Device select unique in-place with custom equality_op works with defa
   REQUIRE(d_data == expected_output);
 }
 
-TEST_CASE("Device select unique_by_key works with default environment", "[select][device]")
+CUB_TEST_CASE("Device select unique_by_key works with default environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -295,7 +299,9 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
   REQUIRE(d_values_out == expected_values);
 }
 
-TEST_CASE("Device select unique_by_key works with default environment and explicit env", "[select][device]")
+CUB_TEST_CASE("Device select unique_by_key works with default environment and explicit env",
+              "[select][device]",
+              CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -331,7 +337,7 @@ TEST_CASE("Device select unique_by_key works with default environment and explic
   REQUIRE(d_values_out == expected_values);
 }
 
-TEST_CASE("Device select unique_by_key default tuning chooses target block size", "[select][device]")
+CUB_TEST_CASE("Device select unique_by_key default tuning chooses target block size", "[select][device]", CUB_SMALL)
 {
   using num_items_t = int;
   using key_t       = int;
@@ -375,7 +381,7 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
 
 #endif
 
-C2H_TEST("Device select uses environment", "[select][device]")
+CUB_TEST("Device select uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -406,7 +412,7 @@ C2H_TEST("Device select uses environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
-C2H_TEST("Device select flagged uses environment", "[select][device]")
+CUB_TEST("Device select flagged uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -441,7 +447,7 @@ C2H_TEST("Device select flagged uses environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
-C2H_TEST("Device select flagged_if uses environment", "[select][device]")
+CUB_TEST("Device select flagged_if uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -480,7 +486,7 @@ C2H_TEST("Device select flagged_if uses environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
-C2H_TEST("Device select flagged in-place uses environment", "[select][device]")
+CUB_TEST("Device select flagged in-place uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -515,7 +521,7 @@ C2H_TEST("Device select flagged in-place uses environment", "[select][device]")
   REQUIRE(d_data == expected_output);
 }
 
-C2H_TEST("Device select if in-place uses environment", "[select][device]")
+CUB_TEST("Device select if in-place uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -544,7 +550,7 @@ C2H_TEST("Device select if in-place uses environment", "[select][device]")
   REQUIRE(d_data == expected_output);
 }
 
-C2H_TEST("Device select flagged_if in-place uses environment", "[select][device]")
+CUB_TEST("Device select flagged_if in-place uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -583,7 +589,7 @@ C2H_TEST("Device select flagged_if in-place uses environment", "[select][device]
   REQUIRE(d_data == expected_output);
 }
 
-C2H_TEST("Device select unique uses environment", "[select][device]")
+CUB_TEST("Device select unique uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -610,7 +616,7 @@ C2H_TEST("Device select unique uses environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
-C2H_TEST("Device select unique with custom equality_op uses environment", "[select][device]")
+CUB_TEST("Device select unique with custom equality_op uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -640,7 +646,7 @@ C2H_TEST("Device select unique with custom equality_op uses environment", "[sele
   REQUIRE(d_out == expected_output);
 }
 
-C2H_TEST("Device select unique in-place uses environment", "[select][device]")
+CUB_TEST("Device select unique in-place uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -666,7 +672,7 @@ C2H_TEST("Device select unique in-place uses environment", "[select][device]")
   REQUIRE(d_data == expected_output);
 }
 
-C2H_TEST("Device select unique in-place with custom equality_op uses environment", "[select][device]")
+CUB_TEST("Device select unique in-place with custom equality_op uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -694,7 +700,7 @@ C2H_TEST("Device select unique in-place with custom equality_op uses environment
   REQUIRE(d_data == expected_output);
 }
 
-C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
+CUB_TEST("Device select unique_by_key uses environment", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -742,7 +748,7 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
   REQUIRE(d_values_out == expected_values);
 }
 
-C2H_TEST("Device select unique_by_key uses environment without equality_op", "[select][device]")
+CUB_TEST("Device select unique_by_key uses environment without equality_op", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -789,7 +795,7 @@ C2H_TEST("Device select unique_by_key uses environment without equality_op", "[s
   REQUIRE(d_values_out == expected_values);
 }
 
-TEST_CASE("Device select uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -827,7 +833,7 @@ TEST_CASE("Device select uses custom stream", "[select][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select flagged uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select flagged uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -870,7 +876,7 @@ TEST_CASE("Device select flagged uses custom stream", "[select][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select flagged_if uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -917,7 +923,7 @@ TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select unique uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select unique uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -952,7 +958,7 @@ TEST_CASE("Device select unique uses custom stream", "[select][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select unique in-place uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select unique in-place uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -986,7 +992,7 @@ TEST_CASE("Device select unique in-place uses custom stream", "[select][device]"
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select unique in-place with custom equality_op uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select unique in-place with custom equality_op uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -1022,7 +1028,7 @@ TEST_CASE("Device select unique in-place with custom equality_op uses custom str
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
+CUB_TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]", CUB_SMALL)
 {
   using value_t     = int;
   using num_items_t = int;
@@ -1099,7 +1105,7 @@ struct even_flag_t
 template <unsigned int BlockThreads>
 struct select_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
     return {cub::SelectAlgorithm::lookback,
             {static_cast<int>(BlockThreads),
@@ -1114,7 +1120,7 @@ struct select_tuning
 template <unsigned int BlockThreads>
 struct unique_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::UniqueByKeyPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::UniqueByKeyPolicy
   {
     return {static_cast<int>(BlockThreads),
             10,
@@ -1128,7 +1134,7 @@ struct unique_by_key_tuning
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-C2H_TEST("DeviceSelect::If can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::If can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1145,7 +1151,7 @@ C2H_TEST("DeviceSelect::If can be tuned", "[select][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::If in-place can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::If in-place can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_data                              = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1161,7 +1167,7 @@ C2H_TEST("DeviceSelect::If in-place can be tuned", "[select][device]", block_siz
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::Flagged can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::Flagged can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1178,7 +1184,7 @@ C2H_TEST("DeviceSelect::Flagged can be tuned", "[select][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::Flagged in-place can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::Flagged in-place can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_data                              = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1194,7 +1200,7 @@ C2H_TEST("DeviceSelect::Flagged in-place can be tuned", "[select][device]", bloc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::FlaggedIf can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1212,7 +1218,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can be tuned", "[select][device]", block_sizes
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf in-place can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::FlaggedIf in-place can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_data                              = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -1230,7 +1236,7 @@ C2H_TEST("DeviceSelect::FlaggedIf in-place can be tuned", "[select][device]", bl
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::Unique can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::Unique can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_in                                = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
@@ -1248,7 +1254,7 @@ C2H_TEST("DeviceSelect::Unique can be tuned", "[select][device]", block_sizes)
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", block_sizes)
+CUB_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto d_keys_in                           = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
@@ -1277,7 +1283,7 @@ C2H_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", block_siz
 }
 
 #  if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
+CUB_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::UniqueByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::UniqueByKeyPolicy>);
@@ -1300,7 +1306,7 @@ C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
     .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #    else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #    endif // _CCCL_STD_VER >= 2020
@@ -1326,7 +1332,7 @@ C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test SelectPolicy properties", "[select][device]")
+CUB_TEST("Test SelectPolicy properties", "[select][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SelectPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SelectPolicy>);
@@ -1339,20 +1345,23 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
      cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
      cub::CacheLoadModifier::LOAD_DEFAULT,
      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
+     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
+     cub::detail::LoadPrefetch::l2}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::SelectPolicy{
     .algorithm = cub::SelectAlgorithm::lookback,
     .lookback  = cub::SelectLookbackPolicy{
-       .threads_per_block = 128,
-       .items_per_thread  = 10,
-       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+      .threads_per_block = 128,
+      .items_per_thread  = 10,
+      .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+      .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+      .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+      .lookback_delay =
+        cub::LookbackDelayPolicy{
+          .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
+      ._load_prefetch = cub::detail::LoadPrefetch::l2}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1366,12 +1375,14 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
-             ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 350, .l2_write_latency = 450 } } }");
+  REQUIRE(
+    to_string(p1)
+    == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
+       ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", ._load_prefetch = detail::LoadPrefetch::l2 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

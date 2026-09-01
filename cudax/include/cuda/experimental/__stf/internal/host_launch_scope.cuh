@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -34,6 +36,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <memory>
 #include <type_traits>
@@ -161,7 +164,13 @@ public:
 
   host_launch_scope(const host_launch_scope&)            = delete;
   host_launch_scope& operator=(const host_launch_scope&) = delete;
-  // move-constructible
+
+  // move-constructible. nvcc infers __host__ __device__ for special members that are defaulted on
+  // their first declaration, and neither an explicit annotation nor defaulting out of class
+  // overrides that. A host_launch_scope holds host-only state (a std::string, host containers) and
+  // only ever lives on the host, so this one is exempted from the execution space check. The
+  // destructor above needs no exemption: written out, it is a host function like any other.
+  _CCCL_EXEC_CHECK_DISABLE
   host_launch_scope(host_launch_scope&&) = default;
 
   /**
@@ -227,7 +236,8 @@ public:
     // during is_invocable_v checks, which would cause hard errors for
     // typed lambdas like [](auto da){ da.data_handle(); }.
     constexpr bool fun_invocable_untyped =
-      ::std::conjunction_v<::std::bool_constant<sizeof...(Deps) == 0>, ::std::is_invocable<Fun, host_launch_deps&>>;
+      ::cuda::std::conjunction_v<::std::bool_constant<sizeof...(Deps) == 0>,
+                                 ::cuda::std::is_invocable<Fun, host_launch_deps&>>;
 
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
@@ -261,7 +271,7 @@ public:
     SCOPE(success)
     {
       t.end_uncleared();
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         if (start_event && end_event)
         {
@@ -293,7 +303,7 @@ public:
       t.end();
     };
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -310,7 +320,7 @@ public:
     {
       // --- Untyped dispatch path ---
       auto resolved =
-        ::std::make_unique<::std::pair<Fun, host_launch_deps>>(::std::forward<Fun>(f), host_launch_deps{});
+        ::std::make_unique<::std::pair<Fun, host_launch_deps>>(::cuda::std::forward<Fun>(f), host_launch_deps{});
 
       auto& hld = resolved->second;
 
@@ -327,25 +337,30 @@ public:
       user_data_dtor_    = nullptr;
 
       auto callback = [](void* raw) {
-        auto* w = static_cast<decltype(resolved.get())>(raw);
-        SCOPE(exit)
+        // The CUDA runtime calls this back, so an exception thrown by the user code must not
+        // leave it.
+        ON_THROW(abort)
         {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          auto* w = static_cast<decltype(resolved.get())>(raw);
+          SCOPE(exit)
           {
-            delete w;
-          }
+            if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+          w->first(w->second);
         };
-        w->first(w->second);
       };
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
         cudaHostNodeParams params = {.fn = callback, .userData = resolved.get()};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
         // The node now references the args; hand ownership to a ctx resource
         // that deletes them (in release_in_callback) when the ctx is released.
-        using wrapper_type = ::std::remove_reference_t<decltype(*resolved)>;
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
         ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved.get()));
       }
       else
@@ -372,43 +387,46 @@ public:
           return deps.instance(t);
         }
       }();
-      auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::std::forward<Fun>(f), mv(payload));
+      auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::cuda::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
-        SCOPE(exit)
+        ON_THROW(abort)
         {
-          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
+          SCOPE(exit)
           {
-            delete w;
+            if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
+            {
+              delete w;
+            }
+          };
+
+          constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
+          constexpr bool fun_invocable_task_non_void_deps =
+            reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
+
+          static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                        "Incorrect lambda function signature in host_launch.");
+
+          if constexpr (fun_invocable_task_deps)
+          {
+            ::std::apply(::cuda::std::forward<Fun>(w->first), mv(w->second));
+          }
+          else if constexpr (fun_invocable_task_non_void_deps)
+          {
+            ::std::apply(::cuda::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
           }
         };
-
-        constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
-        constexpr bool fun_invocable_task_non_void_deps =
-          reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
-
-        static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
-                      "Incorrect lambda function signature in host_launch.");
-
-        if constexpr (fun_invocable_task_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
-        }
-        else if constexpr (fun_invocable_task_non_void_deps)
-        {
-          ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
-        }
       };
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
         cudaHostNodeParams params = {.fn = callback, .userData = wrapper.get()};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
         // Transfer ownership only after the node references the args, so a throw
         // from cudaGraphAddHostNode leaves the unique_ptr as the sole owner.
-        using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
         ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper.get()));
       }
       else

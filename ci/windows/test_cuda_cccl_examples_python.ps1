@@ -2,7 +2,10 @@ Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
     [ValidatePattern("^\d+\.\d+t?$")]
-    [string]$PyVersion
+    [string]$PyVersion,
+
+    [Alias("ctk-mode")]
+    [string]$CtkMode = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,10 +16,11 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
+$ctkFlavor = Get-CtkExtraFlavor $CtkMode
 
-# Pin cuda-toolkit to the container's CTK minor (CCCL_PYTHON_TEST_LATEST_CTK=1
+# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
 # opts out). See build_common_python.psm1.
-Set-CtkPin
+Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 
@@ -25,7 +29,7 @@ ${wheelPath} = Get-CudaCcclWheel
 # pytest-benchmark is for the host-benchmark smoke test below.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
 # CuPy is required by the cuda.compute examples and is not part of the test extras
-Invoke-Checked { & $python -m pip install "${wheelPath}[test-cu$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
+Invoke-Checked { & $python -m pip install "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

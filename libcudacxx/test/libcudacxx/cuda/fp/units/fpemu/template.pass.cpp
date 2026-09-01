@@ -13,34 +13,37 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Evaluate ((x + x) * x - x) / (x + c) with a chosen accuracy, using the builtins
 // (which deduce the accuracy from their fpemu<double, m> argument types).
-template <fpemu_accuracy m>
-TEST_FUNC void test(double x0, double ref, double tol)
+template <cudax::fpemu_accuracy m>
+TEST_HOST_DEVICE_FUNC void test(double x0, double ref, double tol)
 {
-  fpemu<double, m> x = x0;
-  fpemu<double, m> c = 0.001;
-  const auto result  = static_cast<double>(__ddiv_rn(__dsub_rn(__dmul_rn(__dadd_rn(x, x), x), x), __dadd_rn(x, c)));
+  cudax::fpemu<double, m> x = x0;
+  cudax::fpemu<double, m> c = 0.001;
+  const auto result = static_cast<double>(__ddiv_rn(__dsub_rn(__dmul_rn(__dadd_rn(x, x), x), x), __dadd_rn(x, c)));
 
   assert(::cuda::std::fabs(result - ref) <= tol);
 }
 
-TEST_FUNC void test(double x0)
+TEST_HOST_DEVICE_FUNC void test(double x0)
 {
   const double c   = 0.001;
   const double ref = ((x0 + x0) * x0 - x0) / (x0 + c);
 
-  test<fpemu_accuracy::high>(x0, ref, 1e-12);
-  test<fpemu_accuracy::def>(x0, ref, 1e-10);
-  test<fpemu_accuracy::low>(x0, ref, 1e-4);
+  test<cudax::fpemu_accuracy::high>(x0, ref, 1e-12);
+  test<cudax::fpemu_accuracy::def>(x0, ref, 1e-10);
+  test<cudax::fpemu_accuracy::low>(x0, ref, 1e-4);
 }
 
 int main(int, char**)

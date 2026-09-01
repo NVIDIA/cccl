@@ -72,8 +72,12 @@ set(CMAKE_INSTALL_LIBDIR "${old_libdir}") # pop
 set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
 
 # Install version-specific binaries
+set(_cccl_c_parallel_install_targets ${_cccl_c_parallel_target})
+if (CCCL_PYTHON_USE_V2)
+  list(APPEND _cccl_c_parallel_install_targets libnvcc)
+endif()
 install(
-  TARGETS ${_cccl_c_parallel_target}
+  TARGETS ${_cccl_c_parallel_install_targets}
   DESTINATION cuda/compute/${CUDA_VERSION_DIR}/cccl
 )
 
@@ -133,6 +137,7 @@ foreach (
   binary_search_backend
   op_code_type
   serialization
+  build_config
 )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/compute/_bindings_${_pxi_stem}_${_backend_suffix}.pxi"

@@ -9,6 +9,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_topk.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -44,7 +51,7 @@ template <topk::select SelectDirection,
           typename NumOutItemsT,
           typename DecomposerT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,
@@ -121,7 +128,7 @@ template <topk::select SelectDirection,
           typename NumItemsT,
           typename NumOutItemsT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,
