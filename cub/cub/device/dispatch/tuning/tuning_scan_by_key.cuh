@@ -1161,8 +1161,10 @@ private:
 
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
-      // tunings from cub/benchmarks/bench/scan/exclusive/by_key.cu measured on R200; untuned shapes fall through to
-      // the sm100 tunings below
+      // tunings from cub/benchmarks/bench/scan/exclusive/by_key.cu. int32 and int64 keys were tuned with value sizes
+      // 1/2/4/8/16 each; the combinations without an entry below (key size 4 with value sizes 1/16, key size 8 with
+      // value sizes 2/4/16) showed no improvement during verification benchmarks. Keys of size 1, 2, and 16 bytes
+      // were not tuned. Untuned shapes fall through to the sm100 tunings below.
       if (primitive_op && primitive_value)
       {
         switch (key_size)
