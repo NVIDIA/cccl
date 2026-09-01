@@ -14,6 +14,8 @@
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h>
 
+namespace
+{
 using BuildResultT = cccl_device_segmented_reduce_build_result_t;
 
 struct segmented_reduce_cleanup
@@ -190,6 +192,8 @@ void segmented_reduce_guaranteed(
 // ==============
 
 struct SegmentedReduce_SumOverRows_Fixture_Tag;
+} // namespace
+
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",
               std::int32_t,
@@ -511,7 +515,7 @@ struct input_transposed_iterator_state_t
   SizeT n_cols;
 };
 
-static std::tuple<std::string, std::string, std::string> make_input_transposed_iterator_sources(
+std::tuple<std::string, std::string, std::string> make_input_transposed_iterator_sources(
   std::string_view value_type_name,
   std::string_view index_type_name,
   std::string_view state_name,

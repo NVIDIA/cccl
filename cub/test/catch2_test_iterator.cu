@@ -49,6 +49,8 @@ using types =
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
 #endif
 
+namespace
+{
 template <typename InputIteratorT, typename T>
 __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
 {
@@ -126,6 +128,7 @@ struct transform_op_t
     return input + input;
   }
 };
+} // namespace
 
 CUB_TEST("Test tex-obj texture iterator", "[iterator]", CUB_SMALL, types)
 {

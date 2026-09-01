@@ -20,9 +20,12 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, device_lower_bound);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,6 +33,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 struct is_greater_than_t
 {
   int threshold;
@@ -53,6 +58,7 @@ using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::alway
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+} // namespace
 
 #if TEST_LAUNCH == 0
 

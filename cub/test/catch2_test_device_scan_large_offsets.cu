@@ -13,6 +13,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
@@ -71,6 +73,7 @@ struct mod_op
     return static_cast<ItemT>(index % segment_size);
   }
 };
+} // namespace
 
 CUB_TEST("DeviceScan works for very large number of items", "[scan][device]", CUB_LARGE, offset_types)
 try

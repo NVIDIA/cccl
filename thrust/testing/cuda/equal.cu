@@ -93,6 +93,8 @@ void TestEqualDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestEqualDeviceDevice);
 #endif
 
+namespace
+{
 void TestEqualCudaStreams()
 {
   thrust::device_vector<int> v1 = {5, 2, 0, 0, 0};
@@ -118,3 +120,4 @@ void TestEqualCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestEqualCudaStreams);
+} // namespace

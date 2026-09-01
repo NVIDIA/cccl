@@ -24,6 +24,8 @@ constexpr int num_seeds = 3;
  * Thread Scan Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel(
   In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix, Accum filler)
@@ -140,6 +142,7 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
+} // namespace
 
 CUB_TEST("ThreadScanInclusive Integral Type Tests",
          "[scan][thread]",

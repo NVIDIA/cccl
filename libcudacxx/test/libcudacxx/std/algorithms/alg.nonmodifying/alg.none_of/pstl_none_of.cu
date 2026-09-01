@@ -25,6 +25,8 @@
 
 inline constexpr short size = 1000;
 
+namespace
+{
 template <class T = int>
 struct less_than_val
 {
@@ -74,6 +76,7 @@ void test_none_of(const Policy& policy)
     CHECK(!res);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::none_of", "[parallel algorithm]")
 {

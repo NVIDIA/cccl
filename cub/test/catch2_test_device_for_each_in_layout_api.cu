@@ -25,6 +25,8 @@
 #  include "cub_test_macros.h"
 
 // example-begin for-each-in-layout-op
+namespace
+{
 struct layout_store_3D
 {
   using data_t = cuda::std::array<int, 3>;
@@ -36,6 +38,7 @@ struct layout_store_3D
     d_output_raw[idx] = {x, y, z};
   }
 };
+} // namespace
 // example-end for-each-in-layout-op
 
 // clang-format off

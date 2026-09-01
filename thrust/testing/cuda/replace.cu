@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct less_than_five
 {
@@ -281,3 +283,4 @@ void TestReplaceCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestReplaceCudaStreams);
+} // namespace

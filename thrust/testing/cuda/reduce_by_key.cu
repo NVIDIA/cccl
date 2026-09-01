@@ -74,6 +74,8 @@ __global__ void reduce_by_key_kernel(
 }
 #endif
 
+namespace
+{
 template <typename T>
 struct is_equal_div_10_reduce
 {
@@ -575,3 +577,4 @@ void TestReduceByKeyWithDifferentAccumulatorT()
 }
 
 DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);
+} // namespace

@@ -32,6 +32,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
 #endif // _CCCL_COMPILER(GCC, >=, 13)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
 
+namespace
+{
 struct do_not_construct
 {
   do_not_construct()
@@ -39,7 +41,10 @@ struct do_not_construct
     CHECK(false);
   }
 };
+} // namespace
 
+// Not in an anonymous namespace: these are found only by ADL, so nvcc reports them as
+// unreferenced (#177-D) there, and -Xcudafe=--promote_warnings makes that an error.
 struct my_property
 {
   using value_type = int;

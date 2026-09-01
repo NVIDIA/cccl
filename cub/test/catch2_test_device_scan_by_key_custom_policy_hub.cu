@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeysInputIteratorT, typename AccumT>
 struct my_policy_hub
 {
@@ -36,6 +38,7 @@ struct my_policy_hub
                            cub::detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device]", CUB_SMALL)
 {

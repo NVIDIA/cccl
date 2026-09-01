@@ -21,6 +21,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void scale_inplace(int n, float* data, float factor)
 {
   int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -29,6 +31,7 @@ __global__ void scale_inplace(int n, float* data, float factor)
     data[i] *= factor;
   }
 }
+} // namespace
 
 C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_with_place]")
 {

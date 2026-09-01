@@ -29,6 +29,8 @@ using key_types =
                  double>;
 using item_t = float;
 
+namespace
+{
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
 struct TestParameters
 {
@@ -178,6 +180,8 @@ void radix_sort(
 }
 
 struct DeviceRadixSort_SortKeys_Fixture_Tag;
+} // namespace
+
 C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
 {
   using T     = c2h::get<0, TestType>;

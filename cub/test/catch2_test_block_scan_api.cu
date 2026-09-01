@@ -15,7 +15,7 @@ constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;
 
 // example-begin inclusive-scan-array-init-value
-__global__ void InclusiveBlockScanKernel(int* output)
+static __global__ void InclusiveBlockScanKernel(int* output) // NOLINT(misc-use-anonymous-namespace)
 {
   // Specialize BlockScan for a 1D block of 64 threads of type int
   using block_scan_t   = cub::BlockScan<int, 64>;
@@ -65,7 +65,8 @@ CUB_TEST("Block array-based inclusive scan works with initial value", "[scan][bl
 }
 
 // example-begin inclusive-scan-array-aggregate-init-value
-__global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggregate)
+static __global__ void
+InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggregate) // NOLINT(misc-use-anonymous-namespace)
 {
   // Specialize BlockScan for a 1D block of 64 threads of type int
   using block_scan_t   = cub::BlockScan<int, 64>;

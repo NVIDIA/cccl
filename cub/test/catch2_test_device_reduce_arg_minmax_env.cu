@@ -20,8 +20,11 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -29,6 +32,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename... Args>
 cudaError_t call_argminmax_api(bool last_max, Args&&... args)
 {
@@ -63,6 +68,7 @@ struct reduce_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
+} // namespace
 
 #if TEST_LAUNCH == 0
 

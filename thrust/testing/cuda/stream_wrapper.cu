@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // Simple non-owning stream wrapper that allows implicit conversion to cudaStream_t.
 struct stream_wrapper
 {
@@ -21,6 +23,10 @@ struct stream_wrapper
 };
 
 // Simple non-owning stream wrapper that allows implicit conversion to cudaStream_t and cuda::stream_ref.
+// The stream_ref conversion loses overload resolution to the cudaStream_t one, but its
+// presence is what this test checks. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 struct stream_wrapper_ref
 {
   stream_wrapper_ref(cudaStream_t s)
@@ -38,6 +44,8 @@ struct stream_wrapper_ref
 
   cudaStream_t stream;
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <typename Wrapper, typename ExecutionPolicy>
 void TestOnStream(ExecutionPolicy policy)
@@ -84,3 +92,4 @@ void TestCudaStreamRefNoSync()
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestCudaStreamRefNoSync);
+} // namespace

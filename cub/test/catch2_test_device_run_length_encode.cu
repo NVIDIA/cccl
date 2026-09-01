@@ -21,6 +21,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -37,6 +39,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int64_t, std::int32_t>;
+} // namespace
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]", CUB_SMALL)
 {
@@ -55,6 +58,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
   REQUIRE(out_num_runs.front() == num_items);
 }
 
+namespace
+{
 template <typename OffsetT>
 struct repeat_item_gen_op
 {
@@ -195,6 +200,7 @@ void test_segmented_encode(std::int64_t num_items, int max_seg, int elem_offset,
 
 // the five key size classes: 1, 2, 4, 8 and 16 bytes
 using segment_key_types = c2h::type_list<std::int8_t, std::int16_t, std::uint32_t, std::int64_t, ulonglong2>;
+} // namespace
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]", CUB_SMALL)
 {
@@ -619,6 +625,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
   }
 }
 
+namespace
+{
 // equality ignores the payload: all elements of a run compare equal but stay distinguishable, so
 // the encoded unique key shows which element of the run was selected
 struct alignas(8) tagged_key_t
@@ -629,11 +637,6 @@ struct alignas(8) tagged_key_t
   friend __host__ __device__ bool operator==(const tagged_key_t& lhs, const tagged_key_t& rhs)
   {
     return lhs.key == rhs.key;
-  }
-
-  friend __host__ __device__ bool operator!=(const tagged_key_t& lhs, const tagged_key_t& rhs)
-  {
-    return !(lhs == rhs);
   }
 };
 
@@ -692,6 +695,7 @@ void test_last_key_selection(std::int64_t num_items, int max_seg, unsigned seed)
   REQUIRE(out_payloads == ref_payloads);
   REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
 }
+} // namespace
 
 CUB_TEST("DeviceRunLengthEncode::Encode writes the last key of each run", "[device][run_length_encode]", CUB_SMALL)
 {

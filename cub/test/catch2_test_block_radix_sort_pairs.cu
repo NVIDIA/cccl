@@ -48,6 +48,8 @@ using shmem_config =
 
 using shmem_config_4 = c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte>;
 
+namespace
+{
 template <class TestType>
 struct params_t
 {
@@ -77,6 +79,7 @@ bool binary_equal(
 
   return thrust::equal(c2h::device_policy, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
+} // namespace
 
 CUB_TEST("Block radix sort can sort pairs",
          "[radix][sort][block]",

@@ -12,6 +12,8 @@
 // define a 2d float vector
 using vec2 = cuda::std::tuple<float, float>;
 
+namespace
+{
 // return a random vec2 in [0,1)^2
 vec2 make_random_vec2()
 {
@@ -44,6 +46,7 @@ struct point_to_bucket_index
     return y * width + x;
   }
 };
+} // namespace
 
 int main()
 {

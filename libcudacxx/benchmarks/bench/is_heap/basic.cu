@@ -17,10 +17,12 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 // All-zero is a valid heap; setting one element to 1 forces a violation at
 // that child index since its parent is still 0.
 template <typename T>
-static void prepare_input(thrust::device_vector<T>& d, std::size_t violation_point)
+void prepare_input(thrust::device_vector<T>& d, std::size_t violation_point)
 {
   thrust::fill(d.begin(), d.end(), T{0});
   if (violation_point >= 1 && violation_point < d.size())
@@ -30,7 +32,7 @@ static void prepare_input(thrust::device_vector<T>& d, std::size_t violation_poi
 }
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements        = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto violation_frac  = state.get_float64("ViolationAt");
@@ -57,7 +59,7 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .add_float64_axis("ViolationAt", std::vector{1.0, 0.5, 0.01});
 
 template <typename T>
-static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
+void with_predicate(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements        = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto violation_frac  = state.get_float64("ViolationAt");
@@ -83,3 +85,4 @@ NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("with_predicate")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("ViolationAt", std::vector{1.0, 0.5, 0.01});
+} // namespace

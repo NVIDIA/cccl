@@ -13,6 +13,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
   // example-begin warp-reduce-batched-overview
@@ -41,6 +43,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
     out[warp_id * num_batches + lane_id] = result;
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -54,6 +57,8 @@ CUB_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batc
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ void WarpReduceBatchedReduceApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce
@@ -84,6 +89,7 @@ __global__ void WarpReduceBatchedReduceApiKernel(int* out)
     out[tid] = result;
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -97,6 +103,8 @@ CUB_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batch
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce-to-striped
@@ -144,6 +152,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
     }
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -157,6 +166,8 @@ CUB_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][redu
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce-to-blocked
@@ -205,6 +216,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
     }
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -218,6 +230,8 @@ CUB_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum
@@ -244,6 +258,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
     out[logical_warp_id * num_batches + logical_lane_id] = result;
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -257,6 +272,8 @@ CUB_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum-to-striped
@@ -292,6 +309,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
     }
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
@@ -305,6 +323,8 @@ CUB_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce]
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum-to-blocked
@@ -340,6 +360,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
     }
   }
 }
+} // namespace
 
 CUB_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {

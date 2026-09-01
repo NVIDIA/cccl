@@ -51,6 +51,8 @@ void TestPartitionPointDeviceDevice()
 DECLARE_UNITTEST(TestPartitionPointDeviceDevice);
 #endif
 
+namespace
+{
 void TestPartitionPointCudaStreams()
 {
   using Vector   = thrust::device_vector<int>;
@@ -80,3 +82,4 @@ void TestPartitionPointCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestPartitionPointCudaStreams);
+} // namespace

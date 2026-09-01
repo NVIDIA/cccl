@@ -11,6 +11,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::transform_iterator from cuda::std
 void TestTransformIteratorTraits()
 {
@@ -252,3 +254,4 @@ void TestTransformIteratorIdentity()
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);
+} // namespace

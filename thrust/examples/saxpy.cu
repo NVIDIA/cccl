@@ -16,6 +16,8 @@
 // implements the operation with a single transformation
 // and represents "best practice".
 
+namespace
+{
 struct saxpy_functor
 {
   const float a;
@@ -49,6 +51,7 @@ void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<
   // Y <- A * X + Y
   thrust::transform(temp.begin(), temp.end(), Y.begin(), Y.begin(), cuda::std::plus<float>());
 }
+} // namespace
 
 int main()
 {

@@ -21,6 +21,8 @@
 #include "test_util.h"
 #include <cccl/c/for.h>
 
+namespace
+{
 using BuildResultT = cccl_device_for_build_result_t;
 
 struct for_each_cleanup
@@ -87,6 +89,8 @@ void for_each_uncached(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
 }
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+} // namespace
+
 C2H_TEST("for works with integral types", "[for]", integral_types)
 {
   using T = c2h::get<0, TestType>;

@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 std::size_t get_alloc_bytes()
 {
   std::size_t free_bytes{};
@@ -23,6 +25,7 @@ std::size_t get_alloc_bytes()
   CAPTURE(free_bytes, total_bytes, alloc_bytes);
   return alloc_bytes;
 }
+} // namespace
 
 CUB_TEST("c2h::device_vector throws when requested allocations exceed free device memory",
          "[c2h][checked_cuda_allocator][device_vector]",

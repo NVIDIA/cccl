@@ -21,6 +21,8 @@
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
@@ -83,7 +85,7 @@ void from_bitset(std::bitset<bits_per_pair_t> bits, c2h::custom_type_t<Ps...>& p
   pair.val = bits.to_ullong();
 }
 
-static c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int begin_bit, int end_bit)
+c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int begin_bit, int end_bit)
 {
   if ((begin_bit > 0) || (end_bit < static_cast<int>(bits_per_pair_t)))
   {
@@ -126,7 +128,7 @@ reference_sort_keys(const c2h::device_vector<key>& d_keys, bool is_descending, i
   return result;
 }
 
-static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_sort_pairs(
+std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_sort_pairs(
   const c2h::device_vector<key>& d_keys,
   const c2h::device_vector<value>& d_values,
   bool is_descending,
@@ -146,6 +148,7 @@ static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_s
 
   return std::make_pair(result_keys, result_values);
 }
+} // namespace
 
 CUB_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]", CUB_SMALL)
 {
@@ -475,6 +478,9 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
 
 #if TEST_LAUNCH != 1
 
+// operator<< only runs when Catch2 reports a failure, so internal linkage makes nvcc
+// report it as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // example-begin custom-type
 struct custom_t
 {
@@ -508,6 +514,7 @@ __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][device]", CUB_SMALL)
 {

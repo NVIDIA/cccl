@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct Foo
 {
   Foo() = default;
@@ -89,3 +91,4 @@ void TestDeviceDeleteVirtualDestructorInvocation()
   }
 }
 DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);
+} // namespace

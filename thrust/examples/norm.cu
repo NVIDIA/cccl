@@ -17,6 +17,8 @@
 //
 // [1] http://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm
 
+namespace
+{
 // square<T> computes the square of a number f(x) -> x*x
 template <typename T>
 struct square
@@ -26,6 +28,7 @@ struct square
     return x * x;
   }
 };
+} // namespace
 
 int main()
 {

@@ -156,6 +156,8 @@ extern "C" __global__ void kernel_rt(int* data, int size)
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 
+namespace
+{
 template <const auto& Attr, ::CUfunction_attribute ExpectedAttr, class ExpectedResult, class Signature>
 [[maybe_unused]] auto test_kernel_attribute(
   cudax::kernel_ref<Signature> kernel,
@@ -316,3 +318,4 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
 
   REQUIRE_CUDART(::cuda::__driver::__libraryUnloadNoThrow(lib));
 }
+} // namespace

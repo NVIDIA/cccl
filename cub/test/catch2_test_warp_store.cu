@@ -8,6 +8,8 @@
 #include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
+namespace
+{
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
           int ITEMS_PER_THREAD,
@@ -169,6 +171,7 @@ struct params_t
   static constexpr int tile_size                     = logical_warp_threads * items_per_thread;
   static constexpr int total_item_count              = total_warps * tile_size;
 };
+} // namespace
 
 CUB_TEST("Warp store guarded range works with pointer",
          "[store][warp]",

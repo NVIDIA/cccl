@@ -4,6 +4,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 template <typename System, typename SeqSystem>
 void check()
 {
@@ -12,6 +14,7 @@ void check()
   STATIC_REQUIRE(cuda::std::is_same_v<thrust::detail::minimum_system_t<SeqSystem, System>, SeqSystem>);
   STATIC_REQUIRE(cuda::std::is_same_v<thrust::detail::minimum_system_t<System, SeqSystem>, SeqSystem>);
 }
+} // namespace
 
 TEST_CASE("host and device systems convert to sequential", "[minimum_system]")
 {

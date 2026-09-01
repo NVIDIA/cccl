@@ -20,6 +20,8 @@
 
 using float_type_list = c2h::type_list<float, double>;
 
+namespace
+{
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
@@ -29,6 +31,7 @@ struct custom_policy_selector
     return {p, p};
   }
 };
+} // namespace
 
 CUB_TEST("Deterministic Device reduce works with float and double on gpu",
          "[reduce][deterministic]",
@@ -59,6 +62,8 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu",
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.02});
 }
 
+namespace
+{
 template <typename FType, typename Iter>
 struct cyclic_chunk_accessor
 {
@@ -77,6 +82,8 @@ struct cyclic_chunk_accessor
 };
 
 using large_offset_type_list = c2h::type_list<double>;
+} // namespace
+
 CUB_TEST("Deterministic Device reduce works with float and double on gpu with large offset types and num_items",
          "[reduce][deterministic]",
          CUB_SMALL,
@@ -226,6 +233,8 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
   }
 }
 
+namespace
+{
 template <class T>
 struct square_t
 {
@@ -234,6 +243,7 @@ struct square_t
     return static_cast<T>(x * x);
   }
 };
+} // namespace
 
 CUB_TEST("Deterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][deterministic]",
@@ -296,6 +306,8 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
+namespace
+{
 using test_types =
   c2h::type_list<float,
                  double,
@@ -307,6 +319,7 @@ using test_types =
                  __int128_t
 #endif
                  >;
+} // namespace
 
 CUB_TEST("Deterministic Device reduce works with integral types on gpu with different reduction operators",
          "[reduce][deterministic]",

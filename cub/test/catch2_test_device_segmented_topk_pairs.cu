@@ -37,6 +37,8 @@
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 // Maps an item index to its segment id for fixed-size segments
 struct fixed_stride_segment_id_op
 {
@@ -279,6 +281,7 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
 
   return num_duplicates == 0;
 }
+} // namespace
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
          "[pairs][segmented][topk][device]",
@@ -440,10 +443,13 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs clamp k larger than the segment size
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+namespace
+{
 // Segment-size types narrower than the internal `offset_t`, both signed and unsigned: a signed type that narrows a
 // too-large index goes negative (indexing before the segment); an unsigned one wraps to a small in-range index
 // (duplicate racing stores).
 using narrow_seg_size_list = c2h::type_list<cuda::std::int8_t, cuda::std::uint8_t>;
+} // namespace
 
 // Regression for a segment-size type narrower than the internal `offset_t`. The select-all copy must bound-check in
 // `offset_t` *before* narrowing: a block launches 512 threads -- far past an 8-bit type's range -- so any path that
@@ -537,6 +543,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower 
 // types, so repeating them per key-type axis would only waste time on the expensive 1 Mi-element runs. The large
 // segments stream from gmem and peel the unaligned tail edge -- the path these tests must cover.
 #if TEST_TYPES == 1
+namespace
+{
 // Launch-wrapper-compatible pairs cluster dispatch that also pins a whole-`topk_policy` tune override (`Selector`). The
 // env (require + tune) is built internally from the threaded stream, so -- unlike a direct-API call that owns its env
 // -- a test using it runs under every launch mode. Used only by the interface-level determinism/reproducibility test
@@ -681,6 +689,7 @@ struct counting_segment_keys_op
       cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), cast_to_key_op<KeyT>{});
   }
 };
+} // namespace
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-contiguous key iterator",
          "[pairs][segmented][topk][device][cluster]",
@@ -902,6 +911,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+namespace
+{
 // Tie-break preferences exercised by the deterministic tests below (only meaningful with a deterministic requirement).
 using tie_break_pref_list =
   c2h::enum_type_list<cuda::execution::tie_break::__tie_break_t,
@@ -963,6 +974,7 @@ c2h::host_vector<IndexT> reference_deterministic_topk_indices(
   }
   return selected;
 }
+} // namespace
 
 // Deterministic tie-break: a specified preference is `gpu_to_gpu` deterministic by definition, so the cluster path
 // returns a uniquely defined top-k. Few distinct key values pack many ties into the k-th bucket so the preference (not
@@ -1131,6 +1143,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
 }
 #  endif // TEST_LAUNCH == 0
 
+namespace
+{
 // The streaming tie-break regressions below need both `num_passes` parities so they exercise both ping-pong toggle
 // counts. Enforce that the two widths actually straddle the parity against the real cluster `bits_per_pass` (rather
 // than hard-coding "uint32 -> odd, uint64 -> even"): if tuning ever makes both widths share a parity, this fails to
@@ -1141,6 +1155,7 @@ inline constexpr int cluster_num_passes =
   cub::detail::topk::calc_num_passes<KeyT>(cub::detail::batched_topk::make_cluster_policy().bits_per_pass);
 static_assert(cluster_num_passes<cuda::std::uint32_t> % 2 != cluster_num_passes<cuda::std::uint64_t> % 2,
               "streaming_tie_pair_key_types must cover both num_passes parities");
+} // namespace
 
 // Deterministic tie-break *while streaming*: the value-observable (index-set) test for the preselected ping-pong
 // direction. Heavy ties (keys in [0, 7]) straddle the k-th bucket while a 1 Mi segment (>> resident cluster coverage)
@@ -1223,6 +1238,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
   REQUIRE(ref == h_values_out);
 }
 
+namespace
+{
 // Maps a flattened element index to one of 8 values (host/device consistent), so a large segment has many duplicates
 // and the k-th bucket holds a large tied set. Same twiddle as the keys test's heavy-tie op.
 template <typename KeyT>
@@ -1251,6 +1268,7 @@ struct heavy_tie_segment_keys_op
       cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), heavy_tie_key_op<KeyT>{});
   }
 };
+} // namespace
 
 // Generic-path counterpart of the deterministic streaming tie-break test above: a non-contiguous key iterator forces
 // the agent's generic overflow-streaming path (not BlockLoadToShared) while still straddling the k-th bucket, so it
@@ -1335,6 +1353,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 }
 
 #  if TEST_LAUNCH == 0
+namespace
+{
 // Reproducibility with an *unspecified* tie-break (which tied candidate wins is an implementation detail). We run twice
 // and require the same selected index set, per each requirement's contract: `run_to_run` only promises repeated runs of
 // the *same* config agree (so both runs share a tuning); `gpu_to_gpu` must be config-independent (so the second run
@@ -1353,6 +1373,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 using repro_config_a = cluster_tuning_selector<2, /*slots=*/0, /*single_block=*/0, cluster_test_chunk_bytes>;
 using repro_config_b =
   cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>;
+} // namespace
+
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break is reproducible",
          "[pairs][segmented][topk][device][cluster][determinism]",
          CUB_SMALL,
@@ -1470,6 +1492,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
 #  endif // TEST_LAUNCH == 0
 
 #  if TEST_LAUNCH == 0
+namespace
+{
 // Cluster-width cap + tiny streaming (pairs): force the cluster backend, cap the launch to 1 or 2 CTAs, and cap the
 // resident slots so a tiny segment overflows and streams -- deterministically reaching the overflow/streaming path
 // (single-CTA at cap 1, a fixed 2-CTA cluster at cap 2) with the value payload carried along, at a small footprint
@@ -1482,6 +1506,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
 // reverse first-wave direction. Direct-API, so built once for `TEST_LAUNCH == 0`.
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
+} // namespace
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment across the pipeline-stage schedule",
          "[pairs][segmented][topk][device][cluster][determinism]",

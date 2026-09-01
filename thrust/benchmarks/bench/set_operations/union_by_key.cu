@@ -3,6 +3,8 @@
 
 #include "by_key.cuh"
 
+namespace
+{
 struct op_t
 {
   static constexpr bool read_all_values = true;
@@ -31,9 +33,9 @@ struct op_t
 };
 
 template <class KeyT, class ValueT>
-static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT> tl)
+void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT> tl)
 {
-  basic(state, tl, op_t{});
+  ::basic(state, tl, op_t{});
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(key_types, value_types))
@@ -42,3 +44,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(key_types, value_types))
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"})
   .add_int64_axis("SizeRatio", {25, 50, 75});
+} // namespace

@@ -20,6 +20,8 @@
 
 namespace driver = cuda::__driver;
 
+namespace
+{
 void recursive_check_device_setter(int id)
 {
   int cudart_id;
@@ -39,6 +41,7 @@ void recursive_check_device_setter(int id)
     CCCLRT_REQUIRE(cudart_id == id);
   }
 }
+} // namespace
 
 C2H_TEST("ensure current context", "[device]")
 {

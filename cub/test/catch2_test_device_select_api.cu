@@ -13,6 +13,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin segmented-select-iseven
 struct is_even_t
 {
@@ -22,6 +24,7 @@ struct is_even_t
   }
 };
 // example-end segmented-select-iseven
+} // namespace
 
 CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]", CUB_SMALL)
 {
@@ -187,6 +190,8 @@ CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
 // overloads are also in scope. If env-overload SFINAE drifts, these become
 // "ambiguous overload" compile errors.
 
+namespace
+{
 struct select_always_true_t
 {
   __host__ __device__ bool operator()(int) const
@@ -194,6 +199,7 @@ struct select_always_true_t
     return true;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {

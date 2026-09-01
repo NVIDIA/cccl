@@ -25,6 +25,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -59,6 +61,7 @@ using types =
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
+} // namespace
 
 CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", CUB_SMALL, types)
 {
@@ -428,6 +431,8 @@ CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", CUB_SMALL, ty
   REQUIRE(reference == in);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -447,6 +452,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::If works with a different output type", "[device][select_if]", CUB_SMALL)
 {

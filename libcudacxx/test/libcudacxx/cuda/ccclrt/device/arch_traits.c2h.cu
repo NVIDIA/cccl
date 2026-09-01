@@ -15,6 +15,8 @@
 
 #include "test_macros.h"
 
+namespace
+{
 template <class T>
 TEST_DEVICE_FUNC T foo(const T& x)
 {
@@ -123,6 +125,7 @@ void constexpr compare_static_and_dynamic()
   static_assert(static_traits.cp_async_supported == dynamic_traits.cp_async_supported);
   static_assert(static_traits.tma_supported == dynamic_traits.tma_supported);
 }
+} // namespace
 
 C2H_CCCLRT_TEST("Traits", "[device]")
 {

@@ -47,8 +47,6 @@ void add_relative_error_summary(
   summary.set_string("description", "Relative approximation error.");
   summary.set_float64("value", relative_error);
 }
-} // namespace
-
 /**
  * @brief A benchmark evaluating `cudax::cuco::hyperloglog` end-to-end performance.
  */
@@ -119,6 +117,7 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<Key>)
     estimator.clear_async({launch.get_stream()});
   });
 }
+} // namespace
 
 NVBENCH_BENCH_TYPES(hyperloglog_e2e, NVBENCH_TYPE_AXES(bench::defaults::key_type_range))
   .set_name("hyperloglog_e2e")

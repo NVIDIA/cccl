@@ -17,6 +17,8 @@
 //
 // The element counts are assumed to be non-negative integers
 
+namespace
+{
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator output)
 {
@@ -59,6 +61,7 @@ void print(const std::string& s, const Vector& v)
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
   std::cout << '\n';
 }
+} // namespace
 
 int main()
 {

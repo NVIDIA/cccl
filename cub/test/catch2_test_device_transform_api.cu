@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_many_many_api()
 {
@@ -35,12 +37,15 @@ void test_transform_many_many_api()
   CHECK(result1 == expected1);
   CHECK(result2 == expected2);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform many->many API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_many_many_api();
 }
 
+namespace
+{
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_api()
 {
@@ -60,12 +65,15 @@ void test_transform_api()
   // example-end transform-many
   CHECK(result == expected);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_api();
 }
 
+namespace
+{
 void test_transform_if_api()
 {
   // example-begin transform-if
@@ -84,12 +92,15 @@ void test_transform_if_api()
   // example-end transform-if
   CHECK(result == expected);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::TransformIf API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_if_api();
 }
 
+namespace
+{
 void test_transform_if_single_api()
 {
   // example-begin transform-if-single
@@ -108,12 +119,15 @@ void test_transform_if_single_api()
   // example-end transform-if-single
   CHECK(result == expected);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::TransformIf single-input API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_if_single_api();
 }
 
+namespace
+{
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_stable_api()
 {
@@ -137,12 +151,15 @@ void test_transform_stable_api()
   // example-end transform-many-stable
   CHECK(result == expected);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::TransformStableArgumentAddresses API example", "[device][device_transform]", CUB_SMALL)
 {
   test_transform_stable_api();
 }
 
+namespace
+{
 // Guard tests: each public DeviceTransform method must resolve unambiguously
 // to the legacy temp-storage overload when called in its minimal form
 // (no explicit stream, all defaults left implicit), even though the env and
@@ -172,6 +189,7 @@ struct always_true_pred_t
     return true;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform legacy size-query is unambiguous", "[device_transform][device]", CUB_SMALL)
 {

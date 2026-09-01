@@ -13,6 +13,8 @@
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 
+namespace
+{
 struct custom_level : public cuda::hierarchy_level_base<custom_level>
 {
   using __product_type  = unsigned int;
@@ -68,6 +70,7 @@ struct custom_level_test
     test_host_dev(custom_hierarchy, *this);
   }
 };
+} // namespace
 
 C2H_TEST("Custom level", "[hierarchy]")
 {

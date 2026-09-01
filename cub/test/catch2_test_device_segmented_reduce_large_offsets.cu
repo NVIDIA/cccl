@@ -15,6 +15,8 @@
 #include "cub_test_macros.h"
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
@@ -78,6 +80,7 @@ struct custom_sum_op
     return lhs + rhs;
   }
 };
+} // namespace
 
 CUB_TEST("Device reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {
@@ -183,6 +186,8 @@ CUB_TEST("Device reduce works with a very large number of segments", "[reduce][d
   }
 }
 
+namespace
+{
 // Helper to get the small and medium segment size thresholds
 // for the fixed size segmented reduce
 template <typename PolicyHub>
@@ -283,6 +288,7 @@ void test_fixed_size_segmented_reduce(
     std::cerr << "Skipping large num_segments fixed size segmented reduce test " << e.what() << "\n";
   }
 }
+} // namespace
 
 CUB_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {

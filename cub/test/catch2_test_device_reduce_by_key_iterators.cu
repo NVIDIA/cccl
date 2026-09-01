@@ -14,6 +14,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -21,6 +23,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_triple<custom_t>, type_triple<std::int64_t, std::int64_t, custom_t>>;
+} // namespace
 
 CUB_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]", CUB_SMALL, iterator_type_list)
 {

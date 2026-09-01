@@ -15,49 +15,16 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T>
 inline T to_bound(const unsigned long long bound)
 {
   return static_cast<T>(bound);
 }
 
-template <>
-inline ulonglong2 to_bound(const unsigned long long bound)
-{
-  return {bound, bound};
-}
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
-template <>
-inline ulonglong4 to_bound(const unsigned long long bound)
-{
-  return {bound, bound, bound, bound};
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
-
-#if _CCCL_CTK_AT_LEAST(13, 0)
-template <>
-inline ulonglong4_16a to_bound(const unsigned long long bound)
-{
-  return {bound, bound, bound, bound};
-}
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-
-template <>
-inline long2 to_bound(const unsigned long long bound)
-{
-  return {static_cast<long>(bound), static_cast<long>(bound)};
-}
-
-template <>
-inline c2h::custom_type_t<c2h::equal_comparable_t> to_bound(const unsigned long long bound)
-{
-  c2h::custom_type_t<c2h::equal_comparable_t> val;
-  val.key = bound;
-  val.val = bound;
-  return val;
-}
+// The tests here only use `int` keys, so the vector-type specializations that
+// catch2_test_device_select_unique_by_key.cu needs are not repeated.
 template <typename EqualityOpT>
 struct project_first
 {
@@ -78,6 +45,7 @@ struct custom_equality_op
     return (lhs / div_val) == (rhs / div_val);
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environment",
          "[device][select_unique_by_key]",

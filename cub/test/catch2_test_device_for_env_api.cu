@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin bulk-square-env-t
 struct square_t
 {
@@ -52,6 +54,7 @@ struct odd_count_t
   }
 };
 // example-end odd-count-env-t
+} // namespace
 
 CUB_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]", CUB_SMALL)
 {
@@ -172,6 +175,8 @@ CUB_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]", CUB_SMALL)
 
 #if _CCCL_STD_VER >= 2020
 
+namespace
+{
 // example-begin bulk-policy-selector
 struct ForPolicySelector
 {
@@ -181,6 +186,7 @@ struct ForPolicySelector
   }
 };
 // example-end bulk-policy-selector
+} // namespace
 
 CUB_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]", CUB_SMALL)
 {

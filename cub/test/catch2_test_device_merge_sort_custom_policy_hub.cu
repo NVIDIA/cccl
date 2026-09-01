@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyIteratorT>
 struct my_policy_hub
 {
@@ -35,6 +37,7 @@ struct my_policy_hub
                            BLOCK_STORE_WARP_TRANSPOSE>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchMergeSort::Dispatch: custom policy hub", "[merge][sort][device]", CUB_SMALL)
 {

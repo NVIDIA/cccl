@@ -26,6 +26,8 @@
 
 // This benchmark uses a LOT of registers and is compute intensive.
 
+namespace
+{
 template <int N>
 struct heavy_functor
 {
@@ -56,7 +58,7 @@ struct heavy_functor
 };
 
 template <typename Heaviness>
-static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
+void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
 try
 {
   using value_t = std::uint32_t;
@@ -91,3 +93,4 @@ NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(heaviness))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

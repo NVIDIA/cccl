@@ -17,11 +17,16 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace
+{
 _CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_cc)
 {
   *d_kernel_cuda_cc = CUB_PTX_ARCH;
 }
+} // namespace
 
+// Injected into namespace cub so the launch wrapper below can reach it as cub::get_cuda_cc_from_kernel.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -40,8 +45,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
 
 CUB_NAMESPACE_END
 
+namespace
+{
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(cub::get_cuda_cc_from_kernel, get_cuda_cc_from_kernel);
+} // namespace
 
 CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]", CUB_SMALL)
 {
@@ -94,6 +102,10 @@ CUB_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 }
 #endif
 
+// Only the policies matching the compiled architecture have their `value` read; pruning
+// the rest is what these tests verify. Internal linkage makes nvcc report the pruned ones
+// as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 #define GEN_POLICY(cur, prev)                                                      \
   struct policy##cur : cub::detail::chained_policy<cur, policy##cur, policy##prev> \
   {                                                                                \
@@ -174,7 +186,10 @@ check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storag
 }
 
 DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_cc_list, check_wrapper_all);
+#endif
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
+#ifdef CUDA_SM_LIST
 // TODO(bgruber): drop in CCCL 4.0
 CUB_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]", CUB_SMALL)
 {
@@ -182,6 +197,7 @@ CUB_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_
 }
 #endif
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <int NumPolicies>
 struct check_policy_closure
 {
@@ -264,6 +280,7 @@ struct policy_hub_minimal
   GEN_POLICY(500, 500);
   using max_policy = policy500;
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 // TODO(bgruber): drop in CCCL 4.0
 CUB_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]", CUB_SMALL)
@@ -282,13 +299,19 @@ CUB_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]", CUB_SMALL)
   }
 }
 
+namespace
+{
 __global__ void test_max_potential_dynamic_smem_bytes_kernel()
 {
   // use inline PTX so the variable doesn't get optimized out
   asm volatile(".shared .align 1 .b8 static_smem[4096];");
 }
+} // namespace
 
 #if defined(CUB_RDC_ENABLED)
+// Never launched: it only proves the API compiles in device code under RDC. Internal
+// linkage, from an anonymous namespace or `static`, makes nvcc report it as unreferenced.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 {
   // Just compile on device.

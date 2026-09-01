@@ -14,6 +14,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 
@@ -38,6 +40,7 @@ void test_big_indices_helper(offset_t num_items)
 
   REQUIRE(result == num_items);
 }
+} // namespace
 
 CUB_TEST("Device sum works for big indices", "[reduce][device]", CUB_SMALL)
 {

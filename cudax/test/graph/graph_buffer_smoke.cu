@@ -58,6 +58,8 @@ struct pinned_array
   }
 };
 
+namespace
+{
 struct write_iota
 {
   __device__ void operator()(cuda::std::span<int> buf) const noexcept

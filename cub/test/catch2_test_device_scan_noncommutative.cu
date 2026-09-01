@@ -25,6 +25,8 @@
  *    Ref: https://en.wikipedia.org/wiki/Monoid
  */
 
+namespace
+{
 namespace impl
 {
 // bicyclid monoid operator is associative and non-commutative
@@ -46,6 +48,7 @@ struct bicyclic_monoid_op
   }
 };
 }; // namespace impl
+} // namespace
 
 CUB_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]", CUB_SMALL)
 {

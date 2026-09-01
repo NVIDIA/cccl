@@ -12,6 +12,8 @@
 
 using num_storage_slots = c2h::enum_type_list<int, 1, 4, 42>;
 
+namespace
+{
 template <int Items>
 std::size_t get_temporary_storage_size(std::size_t (&sizes)[Items])
 {
@@ -27,6 +29,7 @@ std::size_t get_actual_zero()
 
   return get_temporary_storage_size(sizes);
 }
+} // namespace
 
 CUB_TEST("Test empty storage", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots)
 {

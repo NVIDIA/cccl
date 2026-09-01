@@ -14,6 +14,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
@@ -60,6 +62,7 @@ struct repeated_extrema_op
     return ItemT{1};
   }
 };
+} // namespace
 
 CUB_TEST(
   "Device ArgMin[Last]Max reports first/last extremum across partitions", "[reduce][device]", CUB_SMALL, offset_types)

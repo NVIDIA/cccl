@@ -36,6 +36,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct is_even
 {
@@ -166,6 +168,7 @@ void test_partition_copy(const Policy& policy,
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::partition_copy", "[parallel algorithm]", integral_types)
 {

@@ -20,6 +20,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
 /***********************************************************************************************************************
@@ -27,7 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  **********************************************************************************************************************/
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
-static void fill_linear_impl(
+void fill_linear_impl(
   c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
   if constexpr (Rank == ExtentType::rank())
@@ -45,7 +47,7 @@ static void fill_linear_impl(
 }
 
 template <typename T, typename IndexType, size_t... Extents>
-static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
+void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
 {
   size_t pos = 0;
   fill_linear_impl(vector, ext, pos);
@@ -120,6 +122,7 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
 {
   return {};
 }
+} // namespace
 
 CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][device]", CUB_SMALL, index_types, dimensions)
 {
@@ -170,6 +173,8 @@ CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][
 //----------------------------------------------------------------------------------------------------------------------
 //
 
+namespace
+{
 struct incrementer_t
 {
   int* d_counts;
@@ -180,6 +185,7 @@ struct incrementer_t
     atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
   }
 };
+} // namespace
 
 CUB_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]", CUB_SMALL)
 {

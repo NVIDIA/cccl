@@ -22,6 +22,8 @@
 #include "cuda/__iterator/tabulate_output_iterator.h"
 #include <c2h/extended_types.h>
 
+namespace
+{
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -69,6 +71,7 @@ using key_types =
 // clang-format on
 
 using custom_key_types = c2h::type_list<topk_custom_key_t>;
+} // namespace
 
 CUB_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", CUB_SMALL, key_types, directions)
 {

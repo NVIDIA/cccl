@@ -2,6 +2,9 @@
 
 #include <unittest/unittest.h>
 
+// nvcc reports a hidden friend in an anonymous namespace as unreferenced (#177-D), and
+// -Xcudafe=--promote_warnings makes that an error. This type is only used in static_asserts,
+// so operator+ is never called.
 struct addable
 {
   _CCCL_HOST_DEVICE friend auto operator+(const addable&, const addable&) -> addable
@@ -10,6 +13,8 @@ struct addable
   }
 };
 
+namespace
+{
 void TestAddressStabilityLibcuxx()
 {
   using ::cuda::proclaim_copyable_arguments;
@@ -118,3 +123,4 @@ void TestAddressStabilityLambda()
   }
 }
 DECLARE_UNITTEST(TestAddressStabilityLambda);
+} // namespace

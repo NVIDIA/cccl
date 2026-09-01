@@ -13,6 +13,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 using types = c2h::type_list<
@@ -35,6 +37,7 @@ struct less_than_t
     return a < compare;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]", CUB_SMALL, types)
 {

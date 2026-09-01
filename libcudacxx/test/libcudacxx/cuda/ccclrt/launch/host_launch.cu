@@ -16,6 +16,8 @@
 #include <cooperative_groups.h>
 #include <testing.cuh>
 
+namespace
+{
 void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
@@ -56,6 +58,10 @@ void launch_local_lambda(cuda::stream_ref stream, int& set, int set_to)
   cuda::host_launch(stream, lambda);
 }
 
+// The const operator() below must stay unreferenced: it exists to fail the test if
+// const is ever added to this wrapper. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 template <typename Lambda>
 struct lambda_wrapper
 {
@@ -87,6 +93,8 @@ struct lambda_wrapper
     CCCLRT_REQUIRE(false);
   }
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 struct MoveOnlyArg
 {
@@ -305,3 +313,4 @@ C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs"
   stream.sync();
   CCCLRT_REQUIRE(value == 42);
 }
+} // namespace

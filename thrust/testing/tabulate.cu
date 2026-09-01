@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(my_system& system, ForwardIterator, ForwardIterator, UnaryOperation)
 {
@@ -92,3 +94,4 @@ void TestTabulateToDiscardIterator(size_t n)
   // nothing to check -- just make sure it compiles
 }
 DECLARE_VARIABLE_UNITTEST(TestTabulateToDiscardIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

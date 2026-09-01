@@ -3,6 +3,8 @@
 
 #include "base.cuh"
 
+namespace
+{
 struct op_t
 {
   template <class PolicyT, class InputIterator1, class InputIterator2, class OutputIterator>
@@ -19,9 +21,9 @@ struct op_t
 };
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T> tl)
+void basic(nvbench::state& state, nvbench::type_list<T> tl)
 {
-  basic(state, tl, op_t{});
+  ::basic(state, tl, op_t{});
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
@@ -30,3 +32,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"})
   .add_int64_axis("SizeRatio", {25, 50, 75});
+} // namespace

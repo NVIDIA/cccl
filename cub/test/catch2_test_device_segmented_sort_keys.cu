@@ -19,6 +19,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 
 #if TEST_TYPES == 0
@@ -36,6 +38,7 @@ using key_types =
 #  endif // TEST_BF_T()
                  >;
 #endif
+} // namespace
 
 #if TEST_TYPES == 0
 

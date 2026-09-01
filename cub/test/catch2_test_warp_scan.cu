@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)
 {
@@ -345,6 +347,7 @@ struct params_t
   static constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
+} // namespace
 
 CUB_TEST("Warp scan works with sum", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {

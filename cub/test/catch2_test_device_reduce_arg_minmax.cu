@@ -23,6 +23,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
@@ -89,6 +91,7 @@ void call_argminmax_launch_wrapper(bool last_max, Args&&... args)
     device_arg_minmax(::cuda::std::forward<Args>(args)...);
   }
 }
+} // namespace
 
 CUB_TEST_CASE("cub::DeviceReduce::ArgMin[Last]Max basic correctness", "[reduce][arg_minmax][arg_minlastmax]", CUB_SMALL)
 {

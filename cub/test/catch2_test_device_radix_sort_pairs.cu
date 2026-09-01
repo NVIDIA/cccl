@@ -22,6 +22,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
 
@@ -30,6 +32,7 @@ using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, c
 
 // cub::detail::ChooseOffsetsT only selected 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+} // namespace
 
 CUB_TEST(
   "DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", CUB_SMALL, value_types, num_items_types)
@@ -131,6 +134,8 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   REQUIRE(ref_values == values);
 }
 
+namespace
+{
 template <typename key_t, typename value_t, typename num_items_t>
 void do_large_offset_test(std::size_t num_items)
 {
@@ -171,6 +176,7 @@ void do_large_offset_test(std::size_t num_items)
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace
 
 CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
          "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]",

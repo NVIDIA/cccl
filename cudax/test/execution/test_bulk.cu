@@ -74,8 +74,6 @@ struct ignore_lvalue_ref
     // Do nothing, just ignore the value
   }
 };
-} // anonymous namespace
-
 void bulk_returns_a_sender()
 {
   auto sndr = ex::bulk(ex::just(19), ex::par, 8, [] _CCCL_HOST_DEVICE(int, int) {});
@@ -757,6 +755,7 @@ void default_bulk_unchunked_works_with_non_default_constructible_types()
          | ex::bulk_unchunked(ex::par, 1, [] _CCCL_HOST_DEVICE(int, ignore_lvalue_ref) {});
   ex::sync_wait(cuda::std::move(s));
 }
+} // namespace
 
 #if _CCCL_HOST_COMPILATION()
 // TODO: modify these tests to work on device as well
@@ -822,6 +821,8 @@ void bulk_can_be_customized_independently_of_bulk_chunked()
 
 namespace
 {
+} // namespace
+
 C2H_TEST("bulk returns a sender", "[adaptors][bulk]")
 {
   bulk_returns_a_sender();
@@ -1076,4 +1077,3 @@ C2H_TEST("bulk can be customized, independently of bulk_chunked", "[adaptors][th
   bulk_can_be_customized_independently_of_bulk_chunked();
 }
 #endif // !defined(__CUDA_ARCH__)
-} // namespace

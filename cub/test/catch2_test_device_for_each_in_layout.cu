@@ -19,6 +19,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layout);
 
 /***********************************************************************************************************************
@@ -26,7 +28,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layou
  **********************************************************************************************************************/
 
 template <bool IsLayoutRight, int Position, typename T, typename ExtentType, typename... IndicesType>
-static void fill_linear_impl(
+void fill_linear_impl(
   c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
   if constexpr (sizeof...(IndicesType) == ExtentType::rank())
@@ -51,8 +53,8 @@ static void fill_linear_impl(
 }
 
 template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
-static void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
-                        [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
+void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
+                 [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
   [[maybe_unused]] size_t pos = 0;
   if constexpr (sizeof...(Extents) == 0)
@@ -135,6 +137,7 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
 {
   return {};
 }
+} // namespace
 
 CUB_TEST(
   "DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", CUB_SMALL, index_types, dimensions, layouts)
@@ -199,6 +202,8 @@ CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
 //----------------------------------------------------------------------------------------------------------------------
 // No duplicates
 
+namespace
+{
 struct incrementer_t
 {
   int* d_counts;
@@ -209,6 +214,7 @@ struct incrementer_t
     atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
   }
 };
+} // namespace
 
 CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", CUB_SMALL, layouts)
 {

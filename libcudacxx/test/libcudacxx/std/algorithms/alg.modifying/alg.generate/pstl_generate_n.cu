@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T = int>
 struct gen_val
 {
@@ -46,11 +48,14 @@ struct gen_val
     return static_cast<T>(val_);
   }
 };
+} // namespace
 
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "test_pstl.h"
 
+namespace
+{
 template <class Policy, class T>
 void test_generate_n(const Policy& policy, c2h::device_vector<T>& output)
 {
@@ -88,6 +93,7 @@ void test_generate_n(const Policy& policy, c2h::device_vector<T>& output)
     CHECK(res == random_access_iterator{raw_pointer + size});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::generate_n", "[parallel algorithm]", all_types)
 {

@@ -7,6 +7,8 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T, typename Func>
 static void bench_extremum(nvbench::state& state, nvbench::type_list<T>, Func func, int output_count = 1)
 {
@@ -28,7 +30,7 @@ static void bench_extremum(nvbench::state& state, nvbench::type_list<T>, Func fu
 }
 
 template <typename T>
-static void min_element(nvbench::state& state, nvbench::type_list<T> list)
+void min_element(nvbench::state& state, nvbench::type_list<T> list)
 {
   bench_extremum(state, list, [](auto&&... args) {
     return thrust::min_element(args...);
@@ -41,7 +43,7 @@ NVBENCH_BENCH_TYPES(min_element, NVBENCH_TYPE_AXES(fundamental_types))
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
 
 template <typename T>
-static void max_element(nvbench::state& state, nvbench::type_list<T> list)
+void max_element(nvbench::state& state, nvbench::type_list<T> list)
 {
   bench_extremum(state, list, [](auto&&... args) {
     return thrust::max_element(args...);
@@ -54,7 +56,7 @@ NVBENCH_BENCH_TYPES(max_element, NVBENCH_TYPE_AXES(fundamental_types))
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
 
 template <typename T>
-static void minmax_element(nvbench::state& state, nvbench::type_list<T> list)
+void minmax_element(nvbench::state& state, nvbench::type_list<T> list)
 {
   bench_extremum(
     state,
@@ -69,3 +71,4 @@ NVBENCH_BENCH_TYPES(minmax_element, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("minmax_element")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

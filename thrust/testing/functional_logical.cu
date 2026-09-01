@@ -8,6 +8,8 @@
 
 const size_t NUM_SAMPLES = 10000;
 
+namespace
+{
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 void TestBinaryFunctional()
 {
@@ -78,3 +80,4 @@ DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(greater_equal, GreaterEqual);
 DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(less_equal, LessEqual);
 DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_and, LogicalAnd);
 DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_or, LogicalOr);
+} // namespace

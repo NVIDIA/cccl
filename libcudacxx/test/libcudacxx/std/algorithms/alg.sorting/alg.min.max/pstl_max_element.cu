@@ -31,6 +31,8 @@
 
 inline constexpr int size = 100;
 
+namespace
+{
 template <class Policy, class T>
 void test_max_element(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -77,6 +79,7 @@ void test_max_element(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res == random_access_iterator{raw_pointer});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::max_element(Iter, Iter)", "[parallel algorithm]", all_types)
 {

@@ -4,6 +4,8 @@
 
 using thrust::system::detail::internal::uniform_decomposition;
 
+namespace
+{
 void TestUniformDecomposition()
 {
   {
@@ -82,3 +84,4 @@ void TestUniformDecomposition()
   }
 }
 DECLARE_UNITTEST(TestUniformDecomposition);
+} // namespace

@@ -21,6 +21,8 @@
 // past n states of the RNG. This function is accelerated and executes
 // in O(lg n) time.
 
+namespace
+{
 struct estimate_pi
 {
   __host__ __device__ float operator()(unsigned int thread_id)
@@ -66,6 +68,7 @@ struct estimate_pi
     return sum / static_cast<float>(N);
   }
 };
+} // namespace
 
 int main()
 {

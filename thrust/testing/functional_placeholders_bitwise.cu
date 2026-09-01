@@ -83,6 +83,8 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Ty', possible loss of data
 
+namespace
+{
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitAnd, &, ::cuda::std::bit_and, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitOr, |, ::cuda::std::bit_or, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXor, ^, ::cuda::std::bit_xor, SmallIntegralTypes);
@@ -115,3 +117,4 @@ void TestFunctionalPlaceholdersBitNegate()
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestFunctionalPlaceholdersBitNegate);
 
 _CCCL_DIAG_POP
+} // namespace

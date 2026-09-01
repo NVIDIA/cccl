@@ -30,6 +30,8 @@
 #  include <cccl/c/serialization.h>
 #endif
 
+namespace
+{
 using BuildResultT = cccl_device_reduce_build_result_t;
 
 struct reduce_cleanup
@@ -241,6 +243,8 @@ void reduce(cccl_iterator_t input,
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 struct Reduce_IntegralTypes_Fixture_Tag;
+} // namespace
+
 C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
 {
   using T = c2h::get<0, TestType>;

@@ -15,6 +15,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 struct CustomLess
 {
   template <typename T>
@@ -377,6 +379,7 @@ struct params_t
   static constexpr int tile_size            = items_per_thread * total_warps * logical_warp_threads;
   static constexpr bool is_stable           = c2h::get<3, TestType>::value == stability::stable;
 };
+} // namespace
 
 CUB_TEST("Warp sort on keys-only works",
          "[sort][warp]",

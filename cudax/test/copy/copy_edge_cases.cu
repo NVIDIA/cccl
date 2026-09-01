@@ -132,6 +132,8 @@ TEST_CASE("copy d2d contiguous scaled_accessor", "[copy][d2d][1d][accessor]")
  * Large element type (64 bytes)
  **********************************************************************************************************************/
 
+namespace
+{
 struct alignas(64) large_type_64
 {
   cuda::std::array<char, 64> data;
@@ -144,6 +146,8 @@ struct alignas(64) large_type_64
 
 // src: (128):(1)
 // dst: (128):(1)
+} // namespace
+
 TEST_CASE("copy d2d large element 64 bytes", "[copy][d2d][large_element]")
 {
   constexpr int N = 128;

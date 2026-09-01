@@ -17,6 +17,8 @@
 
 #include "test_resource.cuh"
 
+// Not in an anonymous namespace: nvcc reports the hidden-friend comparison operators as
+// unreferenced (#177-D) there, and -Xcudafe=--promote_warnings makes that an error.
 struct default_constructible_resource
 {
   default_constructible_resource()

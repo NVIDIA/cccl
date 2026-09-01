@@ -16,8 +16,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto midpoint_float = state.get_float64("ShiftedTo");
@@ -41,3 +43,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("ShiftedTo", std::vector{0.9, 0.5, 0.01});
+} // namespace

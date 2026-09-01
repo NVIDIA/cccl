@@ -7,6 +7,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -54,3 +56,4 @@ struct TestTupleReduce
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleReduce, IntegralTypes);
+} // namespace

@@ -31,8 +31,10 @@ struct bench_scan_by_key_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename KeyT, typename ValueT, typename OffsetT>
-static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using init_value_t  = ValueT;
   using op_t          = ::cuda::std::plus<>;
@@ -104,3 +106,4 @@ NVBENCH_BENCH_TYPES(scan, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_
   .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

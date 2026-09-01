@@ -27,6 +27,8 @@
 #  define SHARED_TEST_TYPES cuda::shared_device_memory_pool
 #endif
 
+namespace
+{
 template <typename PoolType>
 PoolType construct_shared_pool(cuda::memory_pool_properties props = {})
 {
@@ -326,3 +328,4 @@ C2H_CCCLRT_TEST("shared_managed_memory_pool satisfies resource_with", "[memory_r
   (void) ref;
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
+} // namespace

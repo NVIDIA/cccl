@@ -1,5 +1,7 @@
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestAssertEqual()
 {
   ASSERT_EQUAL(0, 0);
@@ -44,3 +46,4 @@ void TestTypeName()
   ASSERT_EQUAL(unittest::type_name<double>(), "double");
 }
 DECLARE_UNITTEST(TestTypeName);
+} // namespace

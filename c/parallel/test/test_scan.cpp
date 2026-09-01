@@ -21,6 +21,8 @@
 #include "test_util.h"
 #include <cccl/c/scan.h>
 
+namespace
+{
 using BuildResultT = cccl_device_scan_build_result_t;
 
 struct scan_cleanup
@@ -31,7 +33,7 @@ struct scan_cleanup
   }
 };
 
-static std::string init_kind_as_key(cccl_init_kind_t k)
+std::string init_kind_as_key(cccl_init_kind_t k)
 {
   switch (k)
   {
@@ -305,6 +307,8 @@ void scan(cccl_iterator_t input,
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 struct Scan_IntegralTypes_Fixture_Tag;
+} // namespace
+
 C2H_TEST("Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;

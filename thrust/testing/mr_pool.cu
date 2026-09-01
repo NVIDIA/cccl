@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct reference
 {
@@ -365,3 +367,4 @@ void TestSynchronizedGlobalPool()
   TestGlobalPool<thrust::mr::synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestSynchronizedGlobalPool);
+} // namespace

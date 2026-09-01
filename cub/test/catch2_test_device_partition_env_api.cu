@@ -16,6 +16,8 @@
 #include "catch2_test_device_select_common.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename T>
 struct greater_than_t
 {
@@ -26,6 +28,7 @@ struct greater_than_t
     return a > compare;
   }
 };
+} // namespace
 
 CUB_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]", CUB_SMALL)
 {
@@ -131,6 +134,8 @@ CUB_TEST("cub::DevicePartition::If three-way accepts env with stream", "[partiti
 
 #if _CCCL_STD_VER >= 2020
 
+namespace
+{
 // example-begin partition-if-policy-selector
 struct PartitionPolicySelector
 {
@@ -146,6 +151,7 @@ struct PartitionPolicySelector
   }
 };
 // example-end partition-if-policy-selector
+} // namespace
 
 CUB_TEST("cub::DevicePartition::If accepts a custom policy selector", "[partition][env]", CUB_SMALL)
 {
@@ -178,6 +184,8 @@ CUB_TEST("cub::DevicePartition::If accepts a custom policy selector", "[partitio
   REQUIRE(d_num_selected[0] == expected_num_selected);
 }
 
+namespace
+{
 // example-begin partition-three-way-policy-selector
 struct ThreeWayPartitionPolicySelector
 {
@@ -193,6 +201,7 @@ struct ThreeWayPartitionPolicySelector
   }
 };
 // example-end partition-three-way-policy-selector
+} // namespace
 
 CUB_TEST("cub::DevicePartition::If three-way accepts a custom policy selector", "[partition][env]", CUB_SMALL)
 {

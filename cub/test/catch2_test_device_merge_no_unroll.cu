@@ -21,6 +21,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+// cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 
@@ -69,6 +71,7 @@ struct fixed_policy_selector
     return {128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceMerge::MergeKeys large key types",
          "[merge][device]",

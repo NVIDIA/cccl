@@ -28,6 +28,8 @@ struct tuned_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T, typename OpT>
 void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
 {
@@ -93,3 +95,4 @@ NVBENCH_BENCH_TYPES(arg_reduce, NVBENCH_TYPE_AXES(fundamental_types, op_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "Operation{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

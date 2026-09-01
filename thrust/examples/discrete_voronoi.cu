@@ -22,6 +22,8 @@
 //
 // Thanks to David Coeurjolly for contributing this example
 
+namespace
+{
 // minFunctor
 // Tuple  = <seeds,seeds + k,seeds + m*k, seeds - k,
 //           seeds - m*k, seeds+ k+m*k,seeds + k-m*k,
@@ -207,6 +209,7 @@ void display_time(timer& t)
 {
   std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << '\n';
 }
+} // namespace
 
 int main()
 {

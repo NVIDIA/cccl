@@ -44,6 +44,8 @@ inline constexpr ::cuda::std::size_t static_capacity =
 using fixed_capacity_map_512_type = cudax::cuco::
   fixed_capacity_map<int, int, static_capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing>;
 
+namespace
+{
 template <class Pair>
 struct iota_pair
 {
@@ -79,6 +81,7 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
     global_ref.insert(smem[threadIdx.x]);
   }
 }
+} // namespace
 
 C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity_v", "[shmem][static]")
 {

@@ -24,6 +24,8 @@
 
 #include "common.h"
 
+namespace
+{
 template <typename T>
 struct rgb_t
 {
@@ -51,7 +53,7 @@ struct transform_op_t
 };
 
 template <typename T>
-static void grayscale(nvbench::state& state, nvbench::type_list<T>)
+void grayscale(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   using pixel_t = rgb_t<T>;
@@ -94,3 +96,4 @@ NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types))
   .set_name("grayscale")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 
+namespace
+{
 // this functor returns true if the argument is odd, and false otherwise
 template <typename T>
 struct is_odd
@@ -28,6 +30,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
+} // namespace
 
 int main()
 {

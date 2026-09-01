@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 {
@@ -92,6 +94,7 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
 
   return reference;
 }
+} // namespace
 
 CUB_TEST(
   "Decoupled look-back works with various message types", "[decoupled look-back][device]", CUB_SMALL, message_types)

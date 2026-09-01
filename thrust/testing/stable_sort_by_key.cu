@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void stable_sort_by_key(my_system& system, RandomAccessIterator1, RandomAccessIterator1, RandomAccessIterator2)
 {
@@ -119,3 +121,4 @@ struct TestStableSortByKeySemantics
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(
   TestStableSortByKeySemantics, unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t>);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

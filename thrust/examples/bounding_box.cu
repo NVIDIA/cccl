@@ -10,6 +10,8 @@
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 
+namespace
+{
 struct point2d
 {
   float x, y;
@@ -68,6 +70,7 @@ struct bbox_union
     return bbox(ll, ur);
   }
 };
+} // namespace
 
 int main()
 {

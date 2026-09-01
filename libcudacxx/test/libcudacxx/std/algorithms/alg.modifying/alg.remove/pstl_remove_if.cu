@@ -34,6 +34,8 @@
 
 inline constexpr int size = 10000;
 
+namespace
+{
 template <class T>
 struct is_42
 {
@@ -94,6 +96,7 @@ void test_remove_if(const Policy& policy, c2h::device_vector<T>& input)
     }
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::remove_if", "[parallel algorithm]", all_types)
 {

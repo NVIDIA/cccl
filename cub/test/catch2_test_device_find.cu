@@ -18,6 +18,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, find_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, lower_bound);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, upper_bound);
@@ -47,6 +49,7 @@ auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate)
   const auto it = cuda::std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
   return static_cast<OffsetT>(cuda::std::distance(first, it));
 }
+} // namespace
 
 CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
 {
@@ -208,6 +211,12 @@ CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   }
 }
 
+namespace
+{
+// operator!= and the int conversion complete the value-type interface but are not
+// exercised by the test below. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 struct NotDefaultConstructible
 {
   int value_;
@@ -244,6 +253,9 @@ struct index_to_value
 static_assert(!cuda::std::is_default_constructible_v<NotDefaultConstructible>,
               "NotDefaultConstructible should not be default constructible");
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+} // namespace
+
 CUB_TEST("Device find_if works with non default constructible types", "[device][find_if]", CUB_SMALL)
 {
   using input_t  = NotDefaultConstructible;
@@ -278,6 +290,8 @@ CUB_TEST("Device find_if works with non default constructible types", "[device][
 
 // LowerBound / UpperBound tests (formerly in catch2_test_device_binary_search.cu)
 
+namespace
+{
 using binary_search_types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 struct std_lower_bound_t
@@ -334,6 +348,7 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
 
   CHECK(offsets_ref == offsets_h);
 }
+} // namespace
 
 CUB_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", CUB_SMALL, binary_search_types)
 {

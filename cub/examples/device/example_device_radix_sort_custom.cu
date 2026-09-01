@@ -18,6 +18,8 @@
 
 #include "cub/block/radix_rank_sort_operations.cuh"
 
+namespace
+{
 struct custom_t
 {
   std::uint16_t i;
@@ -39,6 +41,7 @@ std::bitset<64> to_binary_representation(custom_t value)
   memcpy(&bits, &value, sizeof(custom_t));
   return std::bitset<64>{bits};
 }
+} // namespace
 
 int main()
 {

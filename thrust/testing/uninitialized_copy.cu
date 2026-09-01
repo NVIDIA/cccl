@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(my_system& system, InputIterator, InputIterator, ForwardIterator result)
 {
@@ -219,3 +221,4 @@ struct TestUninitializedCopyNNonPODHost
   }
 };
 DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

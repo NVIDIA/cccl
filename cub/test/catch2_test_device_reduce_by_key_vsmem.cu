@@ -11,6 +11,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -18,6 +20,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 using large_type_list =
   c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<256>::type>,
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<512>::type>>;
+} // namespace
 
 CUB_TEST("Device reduce-by-key works with huge keys", "[by_key][reduce][device]", CUB_SMALL, large_type_list)
 {

@@ -16,6 +16,12 @@
 
 namespace execution = cuda::experimental::execution;
 
+namespace
+{
+// Some members below exist only so the negative is_invocable_v assertions are
+// meaningful; they are never called. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 struct with_get_execution_policy_const_lvalue
 {
   execution::any_execution_policy pol_ = execution::seq;
@@ -25,6 +31,8 @@ struct with_get_execution_policy_const_lvalue
     return pol_;
   }
 };
+} // namespace
+
 C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy method that returns a const lvalue",
          "[execution][policies]")
 {
@@ -140,3 +148,5 @@ C2H_TEST("Can call get_execution_policy on a type with both get_execution_policy
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
+
+_CCCL_END_NV_DIAG_SUPPRESS()

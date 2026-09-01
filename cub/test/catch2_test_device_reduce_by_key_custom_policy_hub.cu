@@ -15,6 +15,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class ReductionOpT, class AccumT, class KeyT>
 struct my_policy_hub
 {
@@ -30,6 +32,7 @@ struct my_policy_hub
                              cub::detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][device]", CUB_SMALL)
 {

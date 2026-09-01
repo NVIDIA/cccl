@@ -19,6 +19,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class T>
 __device__ T make_instance_for(unsigned rank)
 {
@@ -127,6 +129,7 @@ struct TestKernel
     test_type<longlong3>(config);
   }
 };
+} // namespace
 
 C2H_TEST("shuffle/threads_within_warp", "[shuffle][threads_within_warp]")
 {

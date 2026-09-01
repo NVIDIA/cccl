@@ -20,6 +20,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct CustomLess
 {
   template <typename DataType>
@@ -46,11 +48,14 @@ struct sentinel_free_key_t
     return lhs.value == rhs.value;
   }
 
-  // Needed so that Catch2 can report the type on assertion failures.
+  // Needed so that Catch2 can report the type on assertion failures. Catch2 only finds it through ADL
+  // when it stringifies the type, so nvcc reports it as never referenced.
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   friend __host__ std::ostream& operator<<(std::ostream& os, const sentinel_free_key_t& self)
   {
     return os << self.value;
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
 
 static_assert(!::cuda::std::numeric_limits<sentinel_free_key_t>::is_specialized,
@@ -267,6 +272,7 @@ struct params_t
   static constexpr int threads_in_block = c2h::get<2, TestType>::value;
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
+} // namespace
 
 CUB_TEST("Block merge sort can sort keys in partial tiles",
          "[merge sort][block]",

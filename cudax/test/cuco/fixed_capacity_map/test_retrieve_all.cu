@@ -46,6 +46,8 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 
 constexpr int payload_offset = 7;
 
+namespace
+{
 template <class Pair>
 struct duplicate_iota_pair
 {
@@ -78,6 +80,7 @@ struct matches_iota_key
     return keys[i] == static_cast<Key>(i);
   }
 };
+} // namespace
 
 C2H_TEST(
   "fixed_capacity_map retrieve_all", "[container]", key_types, mapped_types, cg_sizes, bucket_sizes, probing_kinds)

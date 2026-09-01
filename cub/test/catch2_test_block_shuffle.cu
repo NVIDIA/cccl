@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)
 {
@@ -182,6 +184,7 @@ struct params_t
   static constexpr int threads_in_block = block_dim_x * block_dim_y * block_dim_z;
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
+} // namespace
 
 CUB_TEST(
   "Block shuffle offset works", "[shuffle][block]", CUB_SMALL, types, single_item_per_thread, block_dim_x, block_dim_yz)

@@ -16,6 +16,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
   const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -35,6 +37,7 @@ __global__ void increment_kernel(int cnt, double* data)
     data[i] += 1.0;
   }
 }
+} // namespace
 
 C2H_TEST("stackable: push_graph / pop", "[stackable]")
 {

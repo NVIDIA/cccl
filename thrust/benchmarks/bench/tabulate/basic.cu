@@ -10,8 +10,10 @@
 
 #include "thrust/detail/raw_pointer_cast.h"
 
+namespace
+{
 template <typename T>
-static void sequence(nvbench::state& state, nvbench::type_list<T>)
+void sequence(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -46,7 +48,7 @@ struct seg_size_t
 };
 
 template <typename T>
-static void seg_size(nvbench::state& state, nvbench::type_list<T>)
+void seg_size(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -69,3 +71,4 @@ NVBENCH_BENCH_TYPES(seg_size, NVBENCH_TYPE_AXES(integral_types))
   .set_name("seg_size")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

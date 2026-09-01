@@ -25,6 +25,8 @@ using vec_types = c2h::type_list<
 
 constexpr int num_seeds = 3;
 
+namespace
+{
 template <scan_mode Mode>
 struct sum_op_t
 {
@@ -189,6 +191,7 @@ struct min_init_value_scan_op_t
     scan.ScanPartial(thread_data, inclusive_output, exclusive_output, initial_value, cuda::minimum<>{}, valid_items);
   }
 };
+} // namespace
 
 CUB_TEST("Partial warp scan works with sum", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {

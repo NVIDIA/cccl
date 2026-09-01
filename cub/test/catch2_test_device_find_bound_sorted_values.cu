@@ -15,6 +15,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, lower_bound_sorted_values);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, upper_bound_sorted_values);
 
@@ -76,6 +78,7 @@ void test_sorted(Variant variant,
 
   CHECK(offsets_ref == offsets_h);
 }
+} // namespace
 
 CUB_TEST("DeviceFind::LowerBoundSortedValues works", "[find][device][binary-search]", CUB_SMALL, types)
 {

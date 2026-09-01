@@ -11,6 +11,8 @@
 
 using namespace unittest;
 
+namespace
+{
 // ensure that we properly support thrust::zip_iterator from cuda::std
 void TestZipIteratorTraits()
 {
@@ -575,3 +577,4 @@ void TestZipIteratorComparison()
   }
 }
 DECLARE_UNITTEST(TestZipIteratorComparison);
+} // namespace

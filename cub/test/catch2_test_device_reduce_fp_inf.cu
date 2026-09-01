@@ -10,6 +10,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
@@ -18,6 +20,7 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
 _CCCL_SUPPRESS_DEPRECATED_POP
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1
 

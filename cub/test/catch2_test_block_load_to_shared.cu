@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 enum struct test_mode
 {
   single_copy,
@@ -200,6 +202,7 @@ struct params_t
   static constexpr int threads_in_block = c2h::get<2, TestType>::value;
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
+} // namespace
 
 CUB_TEST("Block load to shared works", "[load][block]", CUB_SMALL, types, items_per_thread, threads_in_block, modes)
 {

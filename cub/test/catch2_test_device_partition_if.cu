@@ -24,6 +24,9 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+// CUB kernels carry hidden visibility, which nvcc rejects on an entity with internal
+// linkage. Types that reach a kernel as a template argument must keep external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -61,6 +64,7 @@ using types =
 
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]", CUB_SMALL, types)
 {
@@ -336,6 +340,7 @@ CUB_TEST("DevicePartition::If works with pointers", "[device][partition_if]", CU
   REQUIRE(reference == out);
 }
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class T>
 struct convertible_from_T
 {
@@ -355,6 +360,7 @@ struct convertible_from_T
     return val_;
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DevicePartition::If works with a different output type", "[device][partition_if]", CUB_SMALL)
 {

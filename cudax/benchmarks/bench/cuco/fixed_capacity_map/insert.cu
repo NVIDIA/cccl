@@ -28,6 +28,8 @@
 namespace cudax = cuda::experimental;
 namespace bench = cudax::cuco::benchmark;
 
+namespace
+{
 /**
  * @brief A benchmark evaluating `cudax::cuco::fixed_capacity_map::insert_async` performance.
  */
@@ -103,3 +105,4 @@ NVBENCH_BENCH_TYPES(fixed_capacity_map_insert,
   .add_int64_axis("NumInputs", {bench::defaults::n})
   .add_float64_axis("Occupancy", {bench::defaults::occupancy})
   .add_float64_axis("Multiplicity", bench::defaults::multiplicity_range);
+} // namespace

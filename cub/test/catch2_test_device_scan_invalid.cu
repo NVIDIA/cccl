@@ -20,6 +20,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
@@ -49,11 +51,14 @@ struct segment
     return left.begin == right.begin && left.end == right.end;
   }
 
-  // Needed for final comparison with reference
+  // Needed for final comparison with reference. Only runs when Catch2 reports a failure,
+  // so nvcc sees it as unreferenced. nvcc ignores [[maybe_unused]] entirely.
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   friend std::ostream& operator<<(std::ostream& os, const segment& seg)
   {
     return os << "[ " << seg.begin << ", " << seg.end << " )";
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
 
 static_assert(!cub::detail::is_primitive_v<segment>);
@@ -142,6 +147,7 @@ struct merge_segments_op
 
   counts* error_counts_;
 };
+} // namespace
 
 // Expected to fail for the current implementation.
 CUB_TEST(

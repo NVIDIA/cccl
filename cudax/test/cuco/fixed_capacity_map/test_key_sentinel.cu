@@ -33,6 +33,8 @@ namespace cudax = cuda::experimental;
 constexpr int empty_key   = -1;
 constexpr int empty_value = -1;
 
+namespace
+{
 // Constructing a map with an erased-key sentinel must keep insert and contains correct (no key ever
 // collides with the empty or erased sentinels).
 template <class _Pair>
@@ -51,6 +53,7 @@ struct is_nonzero
     return v != 0;
   }
 };
+} // namespace
 
 C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
 {

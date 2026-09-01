@@ -12,6 +12,8 @@
 // This example computes a summed area table using segmented scan
 // http://en.wikipedia.org/wiki/Summed_area_table
 
+namespace
+{
 // convert a linear index to a linear index in the transpose
 struct transpose_index
 {
@@ -86,6 +88,7 @@ void print(size_t m, size_t n, thrust::device_vector<T>& d_data)
     std::cout << "\n";
   }
 }
+} // namespace
 
 int main()
 {

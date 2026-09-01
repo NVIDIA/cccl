@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class InputT>
 struct my_policy_hub
 {
@@ -42,6 +44,7 @@ struct is_even_t
     return (value & 1) == 0;
   }
 };
+} // namespace
 
 CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]", CUB_SMALL)
 {

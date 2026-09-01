@@ -129,6 +129,8 @@ void TestScanByKeyDeviceDevice()
 DECLARE_UNITTEST(TestScanByKeyDeviceDevice);
 #endif
 
+namespace
+{
 void TestInclusiveScanByKeyCudaStreams()
 {
   using Vector   = thrust::device_vector<int>;
@@ -227,3 +229,4 @@ void TestExclusiveScanByKeyCudaStreams()
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);
+} // namespace

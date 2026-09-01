@@ -9,6 +9,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
+namespace
+{
 template <typename Iterator1, typename Iterator2>
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 __global__
@@ -127,3 +129,4 @@ void TestDeviceDereferenceTransformedCountingIterator()
 DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
 
 _CCCL_DIAG_POP
+} // namespace

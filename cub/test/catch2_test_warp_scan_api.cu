@@ -16,6 +16,8 @@
 
 constexpr int num_warps = 4;
 
+namespace
+{
 struct max_op
 {
   __host__ __device__ int operator()(int i, int j)
@@ -60,6 +62,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
   output[threadIdx.x] = thread_data;
 }
 // example-end inclusive-warp-scan-init-value
+} // namespace
 
 CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
@@ -84,6 +87,8 @@ CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 // example-begin inclusive-warp-scan-init-value-aggregate
 __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 {
@@ -115,6 +120,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   d_warp_aggregate[warp_id] = warp_aggregate;
 }
 // example-end inclusive-warp-scan-init-value-aggregate
+} // namespace
 
 CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
@@ -147,6 +153,8 @@ CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "
   REQUIRE(expected_aggr == d_warp_aggregate);
 }
 
+namespace
+{
 // example-begin inclusive-warp-scan-init-value-partial
 struct custom_max_op
 {
@@ -193,6 +201,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   output[threadIdx.x] = thread_data;
 }
 // example-end inclusive-warp-scan-init-value-partial
+} // namespace
 
 CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
@@ -225,6 +234,8 @@ CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[s
   REQUIRE(expected == d_out);
 }
 
+namespace
+{
 // example-begin inclusive-warp-scan-init-value-aggregate-partial
 struct custom_sum_op
 {
@@ -269,6 +280,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   d_warp_aggregate[warp_id] = warp_aggregate;
 }
 // example-end inclusive-warp-scan-init-value-aggregate-partial
+} // namespace
 
 CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {

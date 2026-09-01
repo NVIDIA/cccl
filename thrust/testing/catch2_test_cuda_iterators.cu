@@ -131,6 +131,8 @@ TEST_CASE("reverse_iterator", "[iterators]")
   }
 }
 
+namespace
+{
 struct fake_bijection
 {
   using index_type = ::cuda::std::uint32_t;
@@ -149,6 +151,7 @@ struct fake_bijection
 
   ::cuda::std::uint32_t __random_indices[5] = {4, 1, 2, 0, 3};
 };
+} // namespace
 
 TEST_CASE("shuffle_iterator", "[iterators]")
 {

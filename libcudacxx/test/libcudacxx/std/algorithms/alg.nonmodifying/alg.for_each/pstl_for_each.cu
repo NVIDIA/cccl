@@ -29,6 +29,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 struct mark_present_for_each
 {
   bool* ptr_;
@@ -60,6 +62,7 @@ void test_for_each(const Policy& policy, thrust::device_vector<bool>& res)
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
 {

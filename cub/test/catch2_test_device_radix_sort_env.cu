@@ -18,16 +18,25 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, device_radix_sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, device_radix_sort_pairs_descending);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, device_radix_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, device_radix_sort_keys_descending);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
+
+namespace
+{
+// operator!= completes the comparison interface but is not exercised, and operator<<
+// only runs when Catch2 reports a failure. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 
 struct custom_key_t
 {
@@ -70,6 +79,8 @@ struct custom_pair_key_t
   }
 };
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 struct keys_decomposer_t
 {
   __host__ __device__ auto operator()(custom_key_t& k) const -> ::cuda::std::tuple<int&>
@@ -85,6 +96,7 @@ struct pairs_decomposer_t
     return {k.key};
   }
 };
+} // namespace
 
 #if TEST_LAUNCH == 0
 
@@ -1136,6 +1148,8 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom
 
 #if TEST_LAUNCH == 0
 
+namespace
+{
 // Radix sort does not accept user-provided functors or iterators, so we cannot use the block_size_extracting_op or
 // block_size_extracting_constant_iterator approach. Instead, we verify tuning by measuring allocation sizes: different
 // block sizes produce different temporary storage requirements, which is an observable side effect of the tuning being
@@ -1176,6 +1190,7 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   CHECK(bytes_allocated == bytes_deallocated);
   return bytes_allocated;
 }
+} // namespace
 
 CUB_TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]", CUB_SMALL)
 {

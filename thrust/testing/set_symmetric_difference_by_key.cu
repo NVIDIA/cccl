@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator1,
           typename InputIterator2,
           typename InputIterator3,
@@ -294,3 +296,4 @@ void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
   ASSERT_EQUAL(h_result_val, d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKeyMultiset);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

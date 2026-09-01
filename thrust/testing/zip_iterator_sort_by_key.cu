@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct TestZipIteratorStableSortByKey
 {
@@ -49,3 +51,4 @@ struct TestZipIteratorStableSortByKey
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorStableSortByKey,
                                           unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
+} // namespace

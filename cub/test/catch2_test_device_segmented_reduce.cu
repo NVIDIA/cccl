@@ -16,6 +16,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
@@ -62,6 +64,7 @@ type_pair<custom_t>
 #endif
 
 using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
+} // namespace
 
 CUB_TEST(
   "Device reduce works with all device interfaces", "[segmented][reduce][device]", CUB_SMALL, full_type_list, offsets)

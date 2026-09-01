@@ -11,6 +11,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
   my_system& system, InputIterator, InputIterator, OutputIterator result, UnaryFunction, AssociativeOperator)
@@ -540,3 +542,4 @@ void TestTransformScanEdgeCases()
   }
 }
 DECLARE_UNITTEST(TestTransformScanEdgeCases);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

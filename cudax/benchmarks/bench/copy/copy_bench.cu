@@ -18,6 +18,8 @@
 // GCC -Warray-bounds false positive for high-rank (20+) __raw_tensor instantiations
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
+namespace
+{
 template <size_t Rank, typename idx_t>
 size_t
 compute_alloc(size_t offset, const cuda::std::array<idx_t, Rank>& shape, const cuda::std::array<idx_t, Rank>& strides)
@@ -329,3 +331,4 @@ void transpose_src_small_16_4D(nvbench::state& state)
   bench_copy(state, 0, shape, src_strides, 0, dst_strides);
 }
 NVBENCH_BENCH(transpose_src_small_16_4D).set_name("transpose_src_small_16_4D (4D, int, 4GB)");
+} // namespace

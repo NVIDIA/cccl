@@ -16,6 +16,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestIsContiguousIterator()
 {
   using HostVector   = thrust::host_vector<int>;
@@ -51,13 +53,20 @@ void TestIsContiguousIterator()
   ASSERT_EQUAL(thrust::is_contiguous_iterator_v<ZipIterator>, false);
 }
 DECLARE_UNITTEST(TestIsContiguousIterator);
+} // namespace
 
+// The macro opens namespace thrust and namespace cuda; inside an anonymous namespace it would
+// shadow both for the rest of the file.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct NonTriviallyCopyable
 {
   NonTriviallyCopyable(const NonTriviallyCopyable&) {} // NOLINT(modernize-use-equals-default)
 };
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
+namespace
+{
 static_assert(!::cuda::std::is_trivially_copyable<NonTriviallyCopyable>::value);
 static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value);
 
@@ -100,3 +109,4 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value);
 };
 DECLARE_UNITTEST(TestTriviallyRelocatable);
+} // namespace

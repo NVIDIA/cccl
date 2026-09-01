@@ -7,12 +7,15 @@
 
 #include <iostream>
 
+namespace
+{
 int my_rand()
 {
   static thrust::default_random_engine rng;
   static thrust::uniform_int_distribution<int> dist(0, 9999);
   return dist(rng);
 }
+} // namespace
 
 int main()
 {

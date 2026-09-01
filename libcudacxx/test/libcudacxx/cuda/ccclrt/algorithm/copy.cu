@@ -257,6 +257,8 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
   CCCLRT_REQUIRE(result == expected);
 }
 
+namespace
+{
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = SrcLayout,
           typename SrcExtents,
@@ -332,3 +334,4 @@ C2H_CCCLRT_TEST("Non exhaustive mdspan copy_bytes", "[algorithm]")
     }
   }
 }
+} // namespace

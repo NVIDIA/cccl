@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT>
 struct my_policy_hub
 {
@@ -52,6 +54,7 @@ struct my_policy_hub
                                   LOAD_DEFAULT>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort][device]", CUB_SMALL)
 {

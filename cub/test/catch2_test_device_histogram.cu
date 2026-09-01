@@ -32,6 +32,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
@@ -535,6 +537,7 @@ using types =
 #endif // TEST_HALF_T()
                  float,
                  double>;
+} // namespace
 
 CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMALL, types)
 {
@@ -578,12 +581,15 @@ CUB_TEST("DeviceHistogram::Histogram* entropy", "[histogram][device]", CUB_SMALL
   test_even_and_range<int, 4, 3, int>(256, 256 + 1, 1920, 1080, entropy_reduction);
 }
 
+namespace
+{
 template <int Channels, int ActiveChannels>
 struct ChannelConfig
 {
   static constexpr auto channels        = Channels;
   static constexpr auto active_channels = ActiveChannels;
 };
+} // namespace
 
 CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
               "[histogram][device]",

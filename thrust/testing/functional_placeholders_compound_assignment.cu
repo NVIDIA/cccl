@@ -52,6 +52,8 @@
     std::allocator,                                                                                          \
     TestFunctionalPlaceholders##name##Host);
 
+namespace
+{
 template <typename T>
 struct plus_equal_reference
 {
@@ -151,7 +153,11 @@ struct bit_rshift_equal_reference
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitAndEqual, &=, bit_and_equal_reference, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitOrEqual, |=, bit_or_equal_reference, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXorEqual, ^=, bit_xor_equal_reference, SmallIntegralTypes);
+} // namespace
 
+// These two are not registered: the BINARY_FUNCTIONAL_PLACEHOLDERS_TEST line below is commented
+// out. nvcc reports them as unreferenced (#177-D) inside an anonymous namespace, and
+// -Xcudafe=--promote_warnings makes that an error, so they stay at external linkage.
 // XXX ptxas produces an error
 void TestFunctionalPlaceholdersBitLshiftEqualDevice()
 {
@@ -164,6 +170,8 @@ void TestFunctionalPlaceholdersBitLshiftEqualHost()
 }
 // BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitLshiftEqual, <<=, bit_lshift_equal_reference, SmallIntegralTypes);
 
+namespace
+{
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitRshiftEqual, >>=, bit_rshift_equal_reference, SmallIntegralTypes);
 
 template <typename T>
@@ -249,3 +257,4 @@ PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, prefix_decrement_reference);
 
 SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Increment, ++, suffix_increment_reference);
 SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, suffix_decrement_reference);
+} // namespace

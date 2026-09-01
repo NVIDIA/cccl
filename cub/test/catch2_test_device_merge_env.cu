@@ -15,8 +15,11 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+// cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -28,6 +31,7 @@ namespace stdexec = cuda::std::execution;
 
 using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>;
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <int ThreadsPerBlock>
 struct merge_tuning
 {
@@ -39,6 +43,7 @@ struct merge_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 #if TEST_LAUNCH == 0
 
@@ -321,6 +326,7 @@ CUB_TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]", C
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct no_unroll_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
@@ -328,6 +334,7 @@ struct no_unroll_tuning
     return {256, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false, false};
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]", CUB_SMALL)
 {

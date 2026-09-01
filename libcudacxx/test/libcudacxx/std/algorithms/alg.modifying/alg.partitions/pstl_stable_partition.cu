@@ -31,6 +31,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct is_even
 {
@@ -66,6 +68,7 @@ void test_partition(const Policy& policy, thrust::device_vector<int>& input)
     CHECK(cuda::std::equal(policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::stable_partition", "[parallel algorithm]")
 {

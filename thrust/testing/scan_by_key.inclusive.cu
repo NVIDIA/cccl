@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestInclusiveScanByKeySimple()
 {
@@ -358,3 +360,4 @@ void TestScanByKeyWithLargeTypes()
   //_TestScanByKeyWithLargeTypes<int, 1024>();
 }
 DECLARE_UNITTEST(TestScanByKeyWithLargeTypes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

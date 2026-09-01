@@ -30,6 +30,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_count(const Policy& policy)
 {
@@ -49,6 +51,7 @@ void test_count(const Policy& policy)
     CHECK(res == 1);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::count", "[parallel algorithm]")
 {

@@ -17,8 +17,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy   = str_to_entropy(state.get_string("Entropy"));
@@ -58,7 +60,7 @@ struct fake_less
 };
 
 template <typename T>
-static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
+void with_predicate(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy   = str_to_entropy(state.get_string("Entropy"));
@@ -79,3 +81,4 @@ NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(all_types))
   .set_name("with_predicate")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});
+} // namespace

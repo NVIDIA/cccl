@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin bulk-square-t
 struct square_t
 {
@@ -71,6 +73,7 @@ struct tabulate_output_op
     output[idx] = value;
   }
 };
+} // namespace
 
 CUB_TEST("Device bulk works with temporary storage", "[bulk][device]", CUB_SMALL)
 {
@@ -366,6 +369,8 @@ CUB_TEST("Device for each copy works without temporary storage", "[for_each][dev
 // and bare-stream overloads are also in scope. If the env-overload
 // SFINAE is wrong, these become "ambiguous overload" compile errors.
 
+namespace
+{
 struct noop_t
 {
   __device__ void operator()(int) const {}
@@ -375,6 +380,7 @@ struct noop_ref_t
 {
   __device__ void operator()(int&) const {}
 };
+} // namespace
 
 CUB_TEST("DeviceFor::Bulk legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
 {

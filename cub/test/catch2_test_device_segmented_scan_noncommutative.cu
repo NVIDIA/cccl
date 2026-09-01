@@ -27,6 +27,8 @@
  *    Ref: https://en.wikipedia.org/wiki/Monoid
  */
 
+namespace
+{
 namespace impl
 {
 template <typename UnsignedIntegralT>
@@ -72,6 +74,7 @@ struct populate_input
   }
 };
 }; // namespace impl
+} // namespace
 
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
