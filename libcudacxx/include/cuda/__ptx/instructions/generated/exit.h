@@ -13,7 +13,7 @@ __device__ static inline void exit();
 */
 #if __cccl_ptx_isa >= 100
 template <typename = void>
-_CCCL_DEVICE static inline void exit()
+_CCCL_DEVICE_API void exit()
 {
   asm volatile("exit;" : : :);
 }

@@ -299,7 +299,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __devSmResourceSplit(
   ::CUdevResource* __groups,
   unsigned int __n_groups,
-  const ::CUdevResource& __input,
+  const ::CUdevResource& __in_resource,
   ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevSmResourceSplit);
@@ -310,7 +310,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
     "Failed to split the SM resource",
     __groups,
     __n_groups,
-    &__input,
+    &__in_resource,
     &__remainder,
     /*__flags*/ 0U,
     __params);

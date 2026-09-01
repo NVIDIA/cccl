@@ -33,7 +33,7 @@ inline void FormatFence(std::ostream& out)
   // 0 - Membar scope tag
   // 1 - Membar scope
   constexpr auto intrinsic_membar = R"XXX(
-static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
+_CCCL_DEVICE_API inline void __cuda_atomic_membar({0})
 {{ asm volatile("membar{1};" ::: "memory"); }})XXX";
 
   const std::map membar_scopes{
@@ -53,7 +53,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
   // 2 - Fence order tag
   // 3 - Fence order
   constexpr auto intrinsic_fence = R"XXX(
-static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
+_CCCL_DEVICE_API inline void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";
 
   const Scope fence_scopes[] = {
@@ -78,7 +78,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
   out << "\n"
       << R"XXX(
 template <typename _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_thread_fence(int __memorder, _Sco) {
+_CCCL_DEVICE_API void __cuda_atomic_thread_fence(int __memorder, _Sco) {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {

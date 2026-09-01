@@ -23,7 +23,7 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk(
+_CCCL_DEVICE_API void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_min_t,
@@ -59,7 +59,7 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk(
+_CCCL_DEVICE_API void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_max_t,
@@ -95,7 +95,7 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk(
+_CCCL_DEVICE_API void cp_reduce_async_bulk(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_add_t,

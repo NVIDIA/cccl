@@ -40,7 +40,7 @@ inline void FormatLoad(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_load_order_dispatch(_Fn &__cuda_load, int __memorder, _Sco) {
+_CCCL_DEVICE_API void __cuda_atomic_load_order_dispatch(_Fn &__cuda_load, int __memorder, _Sco) {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -76,7 +76,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_order_dispatch(_Fn &__cuda_lo
   // 8 - Mmio semantic
   constexpr auto asm_intrinsic_format_128 = R"XXX(
   template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b ld/st is not supported until PTX ISA version 840");
@@ -94,12 +94,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{ asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
+_CCCL_DEVICE_API void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   uint16_t __tmp;
@@ -218,12 +218,12 @@ struct __cuda_atomic_bind_load {
   _Type* __dst;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_load(__ptr, *__dst, _Atomic_Memorder{}, _Tag{}, _Sco{}, _Mmio{});
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __dst, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_load_cuda(const _Type* __ptr, _Type& __dst, int __memorder, _Sco)
 {
   using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
@@ -234,7 +234,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __
   __cuda_atomic_load_order_dispatch(__bound_load, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, _Type& __dst, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_load_cuda(const _Type volatile* __ptr, _Type& __dst, int __memorder, _Sco)
 {
   using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
@@ -251,7 +251,7 @@ inline void FormatStore(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_store_order_dispatch(_Fn &__cuda_store, int __memorder, _Sco) {
+_CCCL_DEVICE_API void __cuda_atomic_store_order_dispatch(_Fn &__cuda_store, int __memorder, _Sco) {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -284,7 +284,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_order_dispatch(_Fn &__cuda_s
   // 8 - Mmio semantic
   constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b ld/st is not supported until PTX ISA version 840");
@@ -302,12 +302,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
 }})XXX";
   constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{ asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
   constexpr auto asm_intrinsic_format_8   = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
+_CCCL_DEVICE_API void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __cuda_atomic_operand_{0}{1}, {5}, {7})
 {{
   const uint16_t __tmp = static_cast<uint16_t>(__val);
@@ -422,12 +422,12 @@ struct __cuda_atomic_bind_store {
   _Type* __val;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+  _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
     __cuda_atomic_store(__ptr, *__val, _Atomic_Memorder{}, _Tag{}, _Sco{}, _Mmio{});
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_store_cuda(_Type* __ptr, _Type& __val, int __memorder, _Sco)
 {
   using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;
@@ -438,7 +438,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, 
   __cuda_atomic_store_order_dispatch(__bound_store, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_store_cuda(volatile _Type* __ptr, _Type& __val, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_store_cuda(volatile _Type* __ptr, _Type& __val, int __memorder, _Sco)
 {
   using __proxy_t        = typename __cuda_atomic_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __cuda_atomic_deduce_bitwise<_Type>::__tag;

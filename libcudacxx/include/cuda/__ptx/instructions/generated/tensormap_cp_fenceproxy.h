@@ -21,7 +21,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
+_CCCL_DEVICE_API void tensormap_cp_fenceproxy(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   void* __dst,
