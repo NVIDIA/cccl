@@ -43,7 +43,6 @@ Checks:
   - '-misc-throw-by-value-catch-by-reference'
   - '-misc-multiple-inheritance'
   - '-misc-anonymous-namespace-in-header'
-  - '-misc-override-with-different-visibility'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
