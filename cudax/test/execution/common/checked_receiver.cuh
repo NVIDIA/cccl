@@ -136,7 +136,7 @@ struct checked_error_receiver
         SUCCEED();
       }
     }
-    _CCCL_CATCH (::std::exception & e)
+    _CCCL_CATCH (const ::std::exception& e)
     {
 #if defined(_CCCL_NO_TYPEID)
       INFO("expected an error completion; got a different error. what: " << e.what());

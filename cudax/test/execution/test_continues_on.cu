@@ -143,7 +143,7 @@ C2H_TEST("continues_on can be called with const ref scheduler", "[adaptors][cont
 
 C2H_TEST("continues_on can be called with ref scheduler", "[adaptors][continues_on]")
 {
-  dummy_scheduler<> sched;
+  const dummy_scheduler<> sched;
   auto snd = ex::continues_on(ex::just(13), sched);
   auto op  = ex::connect(std::move(snd), checked_value_receiver{13});
   ex::start(op);
@@ -153,7 +153,7 @@ C2H_TEST("continues_on can be called with ref scheduler", "[adaptors][continues_
 C2H_TEST("continues_on forwards set_error calls", "[adaptors][continues_on]")
 {
   auto ec = error_code{std::errc::invalid_argument};
-  error_scheduler<error_code> sched{ec};
+  const error_scheduler<error_code> sched{ec};
   auto snd = ex::continues_on(ex::just(13), sched);
   auto op  = ex::connect(std::move(snd), checked_error_receiver{ec});
   ex::start(op);
@@ -162,7 +162,7 @@ C2H_TEST("continues_on forwards set_error calls", "[adaptors][continues_on]")
 
 C2H_TEST("continues_on forwards set_error calls of other types", "[adaptors][continues_on]")
 {
-  error_scheduler<string> sched{string{"error"}};
+  const error_scheduler<string> sched{string{"error"}};
   auto snd = ex::continues_on(ex::just(13), sched);
   auto op  = ex::connect(std::move(snd), checked_error_receiver{string{"error"}});
   ex::start(op);
@@ -171,7 +171,7 @@ C2H_TEST("continues_on forwards set_error calls of other types", "[adaptors][con
 
 C2H_TEST("continues_on forwards set_stopped calls", "[adaptors][continues_on]")
 {
-  stopped_scheduler sched{};
+  const stopped_scheduler sched{};
   auto snd = ex::continues_on(ex::just(13), sched);
   auto op  = ex::connect(std::move(snd), checked_stopped_receiver{});
   ex::start(op);
@@ -180,7 +180,7 @@ C2H_TEST("continues_on forwards set_stopped calls", "[adaptors][continues_on]")
 
 C2H_TEST("continues_on has the values_type corresponding to the given values", "[adaptors][continues_on]")
 {
-  dummy_scheduler<> sched{};
+  const dummy_scheduler<> sched{};
 
   check_value_types<types<int>>(ex::continues_on(ex::just(1), sched));
   check_value_types<types<int, double>>(ex::continues_on(ex::just(3, 0.14), sched));
@@ -189,9 +189,9 @@ C2H_TEST("continues_on has the values_type corresponding to the given values", "
 
 C2H_TEST("continues_on keeps error_types from scheduler's sender", "[adaptors][continues_on]")
 {
-  dummy_scheduler<> sched1{};
-  error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
-  error_scheduler<int> sched3{43};
+  const dummy_scheduler<> sched1{};
+  const error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
+  const error_scheduler<int> sched3{43};
 
   check_error_types<>(ex::continues_on(ex::just(1), sched1));
   check_error_types<std::error_code>(ex::continues_on(ex::just(2), sched2));
@@ -201,14 +201,14 @@ C2H_TEST("continues_on keeps error_types from scheduler's sender", "[adaptors][c
 C2H_TEST("continues_on sends an exception_ptr if value types are potentially throwing when copied",
          "[adaptors][continues_on]")
 {
-  dummy_scheduler<> sched{};
+  const dummy_scheduler<> sched{};
   check_error_types<ex::exception_ptr>(ex::continues_on(ex::just(potentially_throwing{}), sched));
 }
 
 C2H_TEST("continues_on keeps sends_stopped from scheduler's sender", "[adaptors][continues_on]")
 {
-  dummy_scheduler<> sched1{};
-  stopped_scheduler sched2{};
+  const dummy_scheduler<> sched1{};
+  const stopped_scheduler sched2{};
 
   check_sends_stopped<false>(ex::continues_on(ex::just(1), sched1));
   check_sends_stopped<true>(ex::continues_on(ex::just_stopped(), sched1));

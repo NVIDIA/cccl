@@ -154,7 +154,7 @@ CUB_TEST("Test texture transform iterator", "[iterator]", CUB_SMALL, types)
   c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data.begin(), d_data.end());
 
-  transform_op_t<T> op;
+  const transform_op_t<T> op;
   const auto h_reference = c2h::host_vector<T>{
     op(h_data[0]),
     op(h_data[100]),
@@ -169,7 +169,7 @@ CUB_TEST("Test texture transform iterator", "[iterator]", CUB_SMALL, types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  const cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

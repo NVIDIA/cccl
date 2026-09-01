@@ -58,7 +58,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
   thrust::device_vector<T> out(selected_elements, thrust::no_init);
 
   T* d_in                  = thrust::raw_pointer_cast(in.data());
-  T* d_out                 = thrust::raw_pointer_cast(out.data());
+  T* d_out                 = thrust::raw_pointer_cast(out.data()); // NOLINT(misc-const-correctness)
   offset_t* d_num_selected = thrust::raw_pointer_cast(num_selected.data());
 
   state.add_element_count(elements);

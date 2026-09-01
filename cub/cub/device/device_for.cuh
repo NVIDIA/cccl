@@ -1331,15 +1331,15 @@ public:
   __for_each_in_extents(const LayoutMapping& layout_mapping, OpType op, const EnvT& env = {})
   {
     using namespace cub::detail;
-    using extents_type                   = typename LayoutMapping::extents_type;
-    using extent_index_type              = typename extents_type::index_type;
-    using fast_mod_array_t               = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
-    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
-    auto extents                         = layout_mapping.extents();
-    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
-    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
-    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
+    using extents_type             = typename LayoutMapping::extents_type;
+    using extent_index_type        = typename extents_type::index_type;
+    using fast_mod_array_t         = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    static constexpr auto seq      = ::cuda::std::make_index_sequence<extents_type::rank()>{};
+    constexpr bool is_layout_right = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
+    auto extents                   = layout_mapping.extents();
+    const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
+    const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    const for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
     using ShapeT = implicit_prom_t<extent_index_type>;
     auto shape   = static_cast<ShapeT>(cub::detail::size(extents));

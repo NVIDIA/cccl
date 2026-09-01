@@ -97,7 +97,7 @@ struct half_t
     }
     else if ((ia & 0x7f800000) >= 0x33000000)
     {
-      int32_t shift = static_cast<int32_t>((ia >> 23) & 0xff) - 127;
+      const int32_t shift = static_cast<int32_t>((ia >> 23) & 0xff) - 127;
       if (shift > 15)
       {
         ir |= 0x7c00; /* infinity */
@@ -138,7 +138,7 @@ struct half_t
   {
     // Stolen from Andrew Kerr
 
-    int sign        = ((this->__x >> 15) & 1);
+    const int sign  = ((this->__x >> 15) & 1);
     int exp         = ((this->__x >> 10) & 0x1f);
     int mantissa    = (this->__x & 0x3ff);
     std::uint32_t f = 0;
