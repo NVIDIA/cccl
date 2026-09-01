@@ -17,8 +17,6 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-namespace
-{
 namespace test
 {
 template <typename PoolType>
@@ -75,7 +73,6 @@ void skip_if_unsupported_memory_pool()
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 } // namespace test
-} // namespace
 
 template <typename ResourceType>
 void test_deallocate_async([[maybe_unused]] ResourceType& resource)
