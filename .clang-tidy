@@ -46,7 +46,6 @@ Checks:
   - '-misc-misplaced-const'
   - '-misc-multiple-inheritance'
   - '-misc-anonymous-namespace-in-header'
-  - '-misc-definitions-in-headers'
   - '-misc-override-with-different-visibility'
   - '-misc-predictable-rand'
   - '-misc-unused-alias-decls'
