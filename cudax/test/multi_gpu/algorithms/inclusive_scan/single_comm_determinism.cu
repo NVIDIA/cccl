@@ -34,23 +34,15 @@
 namespace
 {
 // `inclusive_scan` forwards the environment to `cub::DeviceScan::InclusiveScanInit` and to the
-// two `cub::DeviceReduce::Reduce` calls that build the per-rank prefix. `InclusiveScanInit` and
-// `ExclusiveScan` share one implementation, so both scans have the same rules. A determinism
-// requirement is supported only where both CUB algorithms support it:
-//
-// - `run_to_run` needs an integral type with a known CUDA binary operator, or a floating-point
-//   type with `cuda::std::plus`.
-// - `gpu_to_gpu` needs an integral type with a known CUDA binary operator.
-//
-// `cuda::std::plus` and `cuda::maximum` are both known CUDA binary operators. Every other
-// combination is rejected at compile time, so it cannot appear here.
+// two `cub::DeviceReduce::Reduce` calls that build the per-rank prefix. A requirement is supported
+// only where both CUB algorithms support it. Every other combination is a compile-time error, so
+// it cannot appear here.
 using supported_cases =
   c2h::type_list<c2h::type_list<cuda::std::int32_t, cuda::std::plus<>, cuda::execution::determinism::run_to_run_t>,
                  c2h::type_list<cuda::std::int32_t, cuda::std::plus<>, cuda::execution::determinism::gpu_to_gpu_t>,
                  c2h::type_list<cuda::std::int32_t, cuda::maximum<>, cuda::execution::determinism::run_to_run_t>,
                  c2h::type_list<cuda::std::int32_t, cuda::maximum<>, cuda::execution::determinism::gpu_to_gpu_t>,
-                 // A floating-point type needs the stable, fixed reduction order that only `plus` under
-                 // `run_to_run` engages. `gpu_to_gpu` never supports a floating-point type.
+                 // `gpu_to_gpu` does not support a floating-point type.
                  c2h::type_list<float, cuda::std::plus<>, cuda::execution::determinism::run_to_run_t>>;
 
 template <class T, class Op>
@@ -92,9 +84,8 @@ expected_for_rank(int rank, const std::vector<std::vector<T>>& inputs_by_rank, c
 }
 } // namespace
 
-// The scan must accept the determinism requirement and still produce the same result as the
-// host-side scan. Each rank runs on its own thread, since the per-rank calls must rendezvous in
-// their collectives. Catch2 assertions stay on the main thread after the join.
+// Each rank runs on its own thread, because the per-rank calls must rendezvous in their
+// collectives. Catch2 assertions stay on the main thread after the join.
 MULTI_GPU_TEST("inclusive_scan single-comm, supported determinism requirements", supported_cases)
 {
   using Case        = c2h::get<0, TestType>;

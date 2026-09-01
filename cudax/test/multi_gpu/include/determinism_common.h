@@ -29,15 +29,11 @@ inline constexpr cuda::std::size_t large_values_per_rank = 100'000;
 }
 
 // `total_count` is the size of the whole global input. The bound derived from it keeps a fold over
-// the whole input from overflowing. Signed overflow in the host reference is undefined behavior,
-// and an infinite floating-point sum is the same for every fold order, so it would hide a
-// determinism failure.
+// the whole input from overflowing.
 //
-// A floating-point type gets whole numbers only, and a bound small enough that every partial fold
-// stays below the largest consecutive integer that the type holds exactly. So the host fold and the
-// device fold are both exact, and the two agree bit for bit. Random real values do not have that
-// property: the two fold orders round differently, and a prefix close to zero has no useful
-// relative tolerance against it.
+// A floating-point type gets whole numbers only, small enough that every partial fold stays exact.
+// So the host fold and the device fold agree bit for bit. Random real values do not have that
+// property: the two fold orders round differently.
 template <class T, class RNG>
 [[nodiscard]] std::vector<T> make_random_values(cuda::std::size_t count, cuda::std::size_t total_count, RNG& rng)
 {
@@ -51,8 +47,8 @@ template <class T, class RNG>
 
   if constexpr (cuda::std::is_floating_point_v<T>)
   {
-    // Every integer up to 2^digits is exact, and the factor of two keeps the extreme case away from
-    // the exact limit.
+    // Every integer up to 2^digits is exact. The factor of two keeps the extreme case away from
+    // the limit.
     constexpr auto exact_limit = 1LL << cuda::std::numeric_limits<T>::digits;
     const auto bound           = exact_limit / (2 * static_cast<long long>(total_count));
 
@@ -67,8 +63,7 @@ template <class T, class RNG>
   }
   else
   {
-    // The division stays in `size_t` so that a narrow `T` cannot wrap the denominator. The factor of
-    // two keeps the extreme case away from the exact limit.
+    // The division stays in `size_t` so that a narrow `T` cannot wrap the denominator.
     const auto bound =
       static_cast<T>(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<T>::max()) / (2 * total_count));
 

@@ -21,11 +21,9 @@
 
 namespace cudax = ::cuda::experimental;
 
-// Calls `reduce` with an environment that carries `determinism`. The determinism check in
-// `reduce` is a static_assert, so the call is rejected while the compiler instantiates the
-// template. Nothing here ever runs, so a null communicator, a null stream and null iterators are
-// enough: they only have to satisfy the constraints on `reduce` so that the body is instantiated
-// and the static_assert fires.
+// Calls `reduce` with an environment that carries `determinism`. Nothing here runs. A null
+// communicator, a null stream and null iterators only have to satisfy the constraints on `reduce`,
+// so that the body is instantiated and the static_assert fires.
 template <class Determinism>
 void reduce_with_determinism(Determinism determinism)
 {

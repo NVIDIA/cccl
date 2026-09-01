@@ -31,14 +31,12 @@
 #include "reduce_common.cuh"
 #include <c2h/catch2_test_helper.h>
 
-// An explicit `not_guaranteed` requirement makes CUB select an atomic-based block reduction. That
-// path calls `cuda::atomic_ref<T>::fetch_add`, which exists only for integral and floating-point
-// types. So the requirement cannot be used with a class type such as `custom_value`.
+// `not_guaranteed` makes CUB select an atomic-based block reduction. That path calls
+// `cuda::atomic_ref<T>::fetch_add`, which exists only for integral and floating-point types.
 using atomic_value_types = c2h::remove<value_types, custom_value>;
 
-// `reduce` accepts an environment that requires `not_guaranteed` determinism, and an environment
-// that requires nothing at all. The rejected requirements (`run_to_run` and `gpu_to_gpu`) are
-// compile-time errors, so they are covered by the `*_determinism_fail.cu` tests instead.
+// An empty environment is the same as `run_to_run`, because `run_to_run` is the default.
+// `gpu_to_gpu` is a compile-time error, so the `*_determinism_fail.cu` test covers it.
 MULTI_GPU_TEST("reduce single-comm, accepted determinism requirements", atomic_value_types, operators)
 {
   using T  = c2h::get<0, TestType>;
@@ -130,6 +128,13 @@ MULTI_GPU_TEST("reduce single-comm, accepted determinism requirements", atomic_v
   {
     run_and_check([](cuda::stream_ref stream) {
       return ::cuda::std::execution::env{stream};
+    });
+  }
+
+  SECTION("Explicit run_to_run requirement")
+  {
+    run_and_check([](cuda::stream_ref stream) {
+      return ::cuda::std::execution::env{stream, ::cuda::execution::require(::cuda::execution::determinism::run_to_run)};
     });
   }
 

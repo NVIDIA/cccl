@@ -124,7 +124,7 @@ struct __in_range_out_it_properties
 template <class _Env>
 using __determinism_of_t _CCCL_NODEBUG = ::cuda::__call_result_or_t<
   ::cuda::execution::determinism::__get_determinism_t,
-  ::cuda::execution::determinism::not_guaranteed_t,
+  ::cuda::execution::determinism::run_to_run_t,
   ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, _Env>>;
 
 template <class _RangeOfIters>
