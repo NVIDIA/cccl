@@ -45,8 +45,6 @@ TEST_DEVICE_FUNC inline void ccclrt_require_impl(
   }
 }
 
-namespace
-{
 namespace test
 {
 template <typename T1, typename T2>
@@ -188,5 +186,4 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
   assert(cudaGetLastError() == cudaSuccess);
 }
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__
