@@ -162,7 +162,7 @@ if (CUDAToolkit_FOUND)
     # Prefer static CUDA libs on Linux for self-contained binaries. If the
     # toolchain (e.g. lite/pip CUDA installs or some Docker images) only ships
     # the dynamic variants, fall back to those rather than failing configure.
-    foreach (_cudalib nvJitLink nvptxcompiler nvfatbin)
+    foreach (_cudalib nvptxcompiler nvfatbin)
       if (TARGET "CUDA::${_cudalib}_static")
         target_link_libraries(libnvcc PRIVATE "CUDA::${_cudalib}_static")
       elseif (TARGET "CUDA::${_cudalib}")
@@ -172,10 +172,33 @@ if (CUDAToolkit_FOUND)
           FATAL_ERROR
           "libnvcc needs CUDA::${_cudalib}[_static] but neither variant was "
           "found by FindCUDAToolkit. Install the full CUDA toolkit "
-          "(libnvjitlink-dev / libnvfatbin-dev or equivalent)."
+          "(libnvfatbin-dev or equivalent)."
         )
       endif()
     endforeach()
+
+    # nvJitLink is the exception: link it *dynamically*, preferring the dynamic
+    # variant over the static one. A statically-linked nvJitLink is frozen at
+    # the build image's CTK version, which can be older than the LTO-IR (NVVM)
+    # container libnvcc's LLVM emits; nvJitLink then rejects it at runtime with
+    # "NVVM_ERROR_INVALID_INPUT in nvvmAddNVVMContainerToProgram, may need newer
+    # version of nvJitLink library". Linking dynamically resolves libnvJitLink.so
+    # from the nvidia-nvjitlink runtime package instead (auditwheel is configured
+    # to exclude it from the wheel, so the installed package supplies it), which
+    # tracks the newest published nvJitLink and stays compatible with the
+    # container.
+    if (TARGET CUDA::nvJitLink)
+      target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink)
+    elseif (TARGET CUDA::nvJitLink_static)
+      target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink_static)
+    else()
+      message(
+        FATAL_ERROR
+        "libnvcc needs CUDA::nvJitLink[_static] but neither variant was found "
+        "by FindCUDAToolkit. Install the full CUDA toolkit (libnvjitlink-dev "
+        "or equivalent)."
+      )
+    endif()
   endif()
 endif()
 
