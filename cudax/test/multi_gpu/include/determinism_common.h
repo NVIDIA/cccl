@@ -20,6 +20,10 @@
 
 #include <c2h/catch2_test_helper.h>
 
+// Large enough to force a multi-block, multi-pass device fold. A single-block fold would agree
+// with itself for a trivial reason and would not exercise the determinism guarantee.
+inline constexpr cuda::std::size_t large_values_per_rank = 100'000;
+
 // `total_count` is the size of the whole global input. The bound derived from it keeps a fold over
 // the whole input from overflowing.
 //

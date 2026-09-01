@@ -12,7 +12,7 @@
 
 int main()
 {
-  // expected-error {{"Only non-deterministic reductions are currently supported"}}
+  // expected-error {{"Only run_to_run and not_guaranteed reductions are currently supported"}}
   reduce_with_determinism(::cuda::execution::determinism::gpu_to_gpu);
 
   return EXIT_FAILURE;

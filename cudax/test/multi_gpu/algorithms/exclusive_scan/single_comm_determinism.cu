@@ -23,12 +23,12 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
 
-#include <numeric>
 #include <vector>
 
 #include <algorithm_common.h>
 #include <determinism_common.h>
 #include <nccl_test_common.h>
+#include <scan_common.h>
 #include <testing.cuh>
 
 namespace
@@ -44,44 +44,6 @@ using supported_cases =
                  c2h::type_list<cuda::std::int32_t, cuda::maximum<>, cuda::execution::determinism::gpu_to_gpu_t>,
                  // `gpu_to_gpu` does not support a floating-point type.
                  c2h::type_list<float, cuda::std::plus<>, cuda::execution::determinism::run_to_run_t>>;
-
-template <class T, class Op>
-[[nodiscard]] T get_identity()
-{
-  if constexpr (cuda::std::is_same_v<Op, cuda::std::plus<>>)
-  {
-    return T{};
-  }
-  else
-  {
-    static_assert(cuda::std::is_same_v<Op, cuda::maximum<>>, "Add handling");
-    return cuda::std::numeric_limits<T>::lowest();
-  }
-}
-
-template <class T, class Op>
-[[nodiscard]] std::vector<T>
-expected_for_rank(int rank, const std::vector<std::vector<T>>& inputs_by_rank, const T& init, Op op)
-{
-  std::vector<T> reference;
-
-  for (const auto& values : inputs_by_rank)
-  {
-    reference.insert(reference.end(), values.begin(), values.end());
-  }
-
-  std::vector<T> scan(reference.size());
-  std::exclusive_scan(reference.begin(), reference.end(), scan.begin(), init, op);
-
-  cuda::std::size_t offset = 0;
-  for (int r = 0; r < rank; ++r)
-  {
-    offset += inputs_by_rank[static_cast<cuda::std::size_t>(r)].size();
-  }
-
-  const auto count = inputs_by_rank[static_cast<cuda::std::size_t>(rank)].size();
-  return {scan.begin() + offset, scan.begin() + offset + count};
-}
 } // namespace
 
 // Each rank runs on its own thread, because the per-rank calls must rendezvous in their
@@ -142,7 +104,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm, supported determinism requirements",
     expected.emplace_back(cuda::make_buffer<T>(
       out[i].stream(),
       cuda::mr::legacy_pinned_memory_resource{},
-      expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op)));
+      scan_test_util::exclusive_expected_for_rank<T>(comms[i].rank(), inputs_by_rank, init, op)));
   }
 
   // Every run is checked against the same reference, so the runs must also agree with each other.

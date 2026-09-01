@@ -260,8 +260,8 @@ _CCCL_HOST_API void reduce(
 
     static_assert(::cuda::std::same_as<__determinism, ::cuda::execution::determinism::run_to_run_t>
                     || ::cuda::std::same_as<__determinism, ::cuda::execution::determinism::not_guaranteed_t>,
-                  "Only non-deterministic reductions are currently supported. Please open an issue at "
-                  "github.com/NVIDIA/cccl/issue requesting support for determinism");
+                  "Only run_to_run and not_guaranteed reductions are currently supported. Please open an issue at "
+                  "github.com/NVIDIA/cccl/issue requesting support for stronger determinism");
   }
 
   const auto __num_local = ::cuda::std::ranges::size(__comms);
