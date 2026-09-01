@@ -69,6 +69,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
          const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __rhs) noexcept
 {
+  using __result_type = ::cuda::std::simd::basic_vec<::cuda::std::make_unsigned_t<_Tp>, _Abi>;
 #if _CCCL_HAS_SIMD_VABSDIFF()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
@@ -82,7 +83,6 @@ abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
   }
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
-  using __result_type = ::cuda::std::simd::basic_vec<::cuda::std::make_unsigned_t<_Tp>, _Abi>;
   return __result_type{::cuda::std::simd::max(__lhs, __rhs)} - __result_type{::cuda::std::simd::min(__lhs, __rhs)};
 }
 
