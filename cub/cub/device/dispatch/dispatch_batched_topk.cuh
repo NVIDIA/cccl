@@ -205,10 +205,14 @@ struct policy_selector_from_types
     // default policy until measured.
     const bool has_sm100_keys_tuning = !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
                                     && cc == ::cuda::compute_capability{10, 0};
+    // B300 gets its own measured table rather than inheriting B200 policies.
+    const bool has_sm103_pairs_tuning = deterministic && !::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
+                                     && cc == ::cuda::compute_capability{10, 3};
     const auto cluster =
-      has_sm100_pairs_tuning ? make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
-      : has_sm100_keys_tuning
-        ? make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
+      has_sm100_pairs_tuning  ? make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm100_keys_tuning ? make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm103_pairs_tuning
+        ? make_sm103_pairs_cluster_policy(StaticMaxSegSize, MaxK)
         : make_cluster_policy();
     return topk_policy{backend, baseline_policy, cluster};
   }
