@@ -1287,11 +1287,14 @@ public:
     const auto extents             = layout_mapping.extents();
     using ShapeT                   = implicit_prom_t<extent_index_type>;
     const auto shape               = static_cast<ShapeT>(cub::detail::size(extents));
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant, for fully static extents */
     // must precede the fast_div_mod arrays below, whose constructor asserts a positive divisor
     if (shape == 0)
     {
       return cudaSuccess;
     }
+    _CCCL_DIAG_POP
 
     const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
     const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
