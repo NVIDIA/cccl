@@ -83,6 +83,21 @@ install(
 
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+include(../../cmake/CPM.cmake)
+CPMAddPackage(
+  NAME cuda_compute_dlpack
+  GITHUB_REPOSITORY dmlc/dlpack
+  GIT_TAG v1.3
+  DOWNLOAD_ONLY YES
+)
+set(
+  _cuda_compute_dlpack_include_dir
+  "${cuda_compute_dlpack_SOURCE_DIR}/include"
+)
+install(
+  DIRECTORY "${_cuda_compute_dlpack_include_dir}/"
+  DESTINATION cuda/cccl/headers/include
+)
 
 set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
 execute_process(
@@ -226,6 +241,10 @@ if (CCCL_PYTHON_USE_V2)
     "${_generated_device_copy_extension_src}"
   )
   add_dependencies(_device_copy_impl cythonize_device_copy_impl)
+  target_include_directories(
+    _device_copy_impl
+    PRIVATE "${_cuda_compute_dlpack_include_dir}"
+  )
   target_link_libraries(
     _device_copy_impl
     PRIVATE #

@@ -27,6 +27,9 @@ from functools import lru_cache
 from typing import Any
 
 import numpy as np
+from cuda.core import Device as CudaDevice
+
+from cuda.cccl import get_include_paths  # type: ignore
 
 from ._utils.protocols import (
     get_data_pointer,
@@ -35,13 +38,6 @@ from ._utils.protocols import (
     is_contiguous,
     validate_and_get_stream,
 )
-
-try:
-    from cuda.core import Device as CudaDevice
-except ImportError:
-    from cuda.core.experimental import Device as CudaDevice
-
-from cuda.cccl import get_include_paths  # type: ignore
 
 _AXIS_RUNTIME = 0
 _LAYOUT_RIGHT = 0
@@ -131,16 +127,38 @@ class _BuildResultStruct(ctypes.Structure):
 class _ArrayView:
     owner: Any
     data: int
-    dtype: np.dtype
+    dtype: np.dtype | None
+    dtype_key: tuple[Any, ...]
+    itemsize: int
+    alignment: int
+    type_enum: int
+    shape: tuple[int, ...]
+    strides: tuple[int, ...]
     num_items: int
     byte_offset: int = 0
 
 
 def _type_info_from_dtype(dtype: np.dtype) -> _TypeInfo:
+    dtype = np.dtype(dtype)
     return _TypeInfo(
         ctypes.c_size_t(int(dtype.itemsize)),
         ctypes.c_size_t(max(1, int(dtype.alignment))),
         ctypes.c_int(_DTYPE_TO_TYPE_ENUM.get(dtype, _TYPE_STORAGE)),
+    )
+
+
+def _dtype_key_from_numpy(dtype: np.dtype) -> tuple[Any, ...]:
+    dtype = np.dtype(dtype)
+    if dtype.fields is not None:
+        return ("numpy-descr", tuple(dtype.descr), bool(dtype.isalignedstruct))
+    return ("numpy", dtype.str)
+
+
+def _type_info_from_view_format(view: _ArrayView) -> _TypeInfo:
+    return _TypeInfo(
+        ctypes.c_size_t(int(view.itemsize)),
+        ctypes.c_size_t(max(1, int(view.alignment))),
+        ctypes.c_int(int(view.type_enum)),
     )
 
 
@@ -218,33 +236,115 @@ def _include_options() -> tuple[bytes, bytes, bytes, bytes]:
     )
 
 
-def _array_view(array: Any) -> _ArrayView:
-    if not is_contiguous(array):
-        raise ValueError("device copy spike requires contiguous arrays")
+def _compact_c_strides(shape: tuple[int, ...]) -> tuple[int, ...]:
+    strides = []
+    running = 1
+    for extent in reversed(shape):
+        strides.append(running)
+        running *= extent
+    return tuple(reversed(strides))
 
-    dtype = np.dtype(get_dtype(array))
-    shape = tuple(int(extent) for extent in get_shape(array))
+
+def _array_view(array: Any, stream: Any = None) -> _ArrayView:
+    try:
+        from . import _device_copy_impl  # noqa: PLC0415
+
+        prepared = _device_copy_impl._prepare_dlpack_view(  # type: ignore[attr-defined]
+            array,
+            stream=stream,
+        )
+    except (ImportError, TypeError):
+        if not is_contiguous(array):
+            raise ValueError("device copy spike requires contiguous arrays") from None
+
+        dtype = np.dtype(get_dtype(array))
+        shape = tuple(int(extent) for extent in get_shape(array)) or (1,)
+        num_items = _shape_size(shape)
+
+        return _ArrayView(
+            owner=array,
+            data=int(get_data_pointer(array)),
+            dtype=dtype,
+            dtype_key=_dtype_key_from_numpy(dtype),
+            itemsize=int(dtype.itemsize),
+            alignment=max(1, int(dtype.alignment)),
+            type_enum=_DTYPE_TO_TYPE_ENUM.get(dtype, _TYPE_STORAGE),
+            shape=shape,
+            strides=_compact_c_strides(shape),
+            num_items=num_items,
+        )
+
+    shape = tuple(int(extent) for extent in prepared.shape)
+    strides = tuple(int(stride) for stride in prepared.strides)
     num_items = _shape_size(shape)
+    itemsize = getattr(prepared, "itemsize", None)
+    alignment = getattr(prepared, "alignment", None)
+    prepared_dtype_key = getattr(prepared, "dtype_key", None)
+    prepared_dtype = getattr(prepared, "dtype", None)
+    if prepared_dtype_key is not None:
+        dtype = None
+        dtype_key = tuple(prepared_dtype_key)
+    elif prepared_dtype is not None:
+        dtype = None
+        dtype_key = ("dlpack",) + tuple(int(value) for value in prepared_dtype)
+    else:
+        dtype = np.dtype(get_dtype(array))
+        dtype_key = _dtype_key_from_numpy(dtype)
+
+    if itemsize is None or alignment is None:
+        if dtype is None:
+            dtype = np.dtype(get_dtype(array))
+            dtype_key = _dtype_key_from_numpy(dtype)
+        itemsize = int(dtype.itemsize)
+        alignment = max(1, int(dtype.alignment))
+        type_enum = _DTYPE_TO_TYPE_ENUM.get(dtype, _TYPE_STORAGE)
+    else:
+        type_enum = _TYPE_STORAGE
 
     return _ArrayView(
-        owner=array,
-        data=int(get_data_pointer(array)),
+        owner=prepared,
+        data=int(prepared.data_ptr),
         dtype=dtype,
+        dtype_key=dtype_key,
+        itemsize=int(itemsize),
+        alignment=max(1, int(alignment)),
+        type_enum=type_enum,
+        shape=shape,
+        strides=strides,
         num_items=num_items,
+        byte_offset=int(prepared.byte_offset),
     )
 
 
 def _same_array_contract(source: _ArrayView, destination: _ArrayView) -> None:
-    if source.dtype != destination.dtype:
+    if source.dtype_key != destination.dtype_key:
         raise TypeError(
             "source and destination dtypes must match; "
-            f"got {source.dtype!r} and {destination.dtype!r}"
+            f"got {source.dtype_key!r} and {destination.dtype_key!r}"
+        )
+
+    if source.itemsize != destination.itemsize:
+        raise TypeError(
+            "source and destination item sizes must match; "
+            f"got {source.itemsize} and {destination.itemsize}"
+        )
+
+    if source.alignment != destination.alignment:
+        raise TypeError(
+            "source and destination alignments must match; "
+            f"got {source.alignment} and {destination.alignment}"
         )
 
     if source.num_items != destination.num_items:
         raise ValueError(
             "source and destination sizes must match; "
             f"got {source.num_items} and {destination.num_items}"
+        )
+
+    if source.shape != destination.shape:
+        raise ValueError(
+            "source and destination shapes must match; "
+            f"got {source.shape!r} and {destination.shape!r}"
         )
 
 
@@ -346,22 +446,34 @@ def _load_library() -> ctypes.CDLL:
 def _build_impl(
     type_info: _TypeInfo,
     compute_capability: tuple[int, int] | None,
+    rank: int,
 ) -> "_DeviceCopyBuild":
     lib = _load_library()
     build_result = _BuildResultStruct()
-    shape = (_AxisMetadata * 1)(_AxisMetadata(_AXIS_RUNTIME, 0))
+    shape = (_AxisMetadata * rank)(
+        *(_AxisMetadata(_AXIS_RUNTIME, 0) for _ in range(rank))
+    )
+    source_strides = (_AxisMetadata * rank)(
+        *(_AxisMetadata(_AXIS_RUNTIME, 0) for _ in range(rank))
+    )
+    destination_strides = (_AxisMetadata * rank)(
+        *(_AxisMetadata(_AXIS_RUNTIME, 0) for _ in range(rank))
+    )
     cc_major, cc_minor = (
         _current_compute_capability()
         if compute_capability is None
         else compute_capability
     )
 
+    from . import _device_copy_impl  # noqa: PLC0415
+
+    layout_stride_relaxed = _device_copy_impl._layout_stride_relaxed()  # type: ignore[attr-defined]
     spec = _BuildSpec(
         value_type=type_info,
-        rank=1,
+        rank=rank,
         shape=shape,
-        source=_ViewBuild(_LAYOUT_RIGHT, None),
-        destination=_ViewBuild(_LAYOUT_RIGHT, None),
+        source=_ViewBuild(layout_stride_relaxed, source_strides),
+        destination=_ViewBuild(layout_stride_relaxed, destination_strides),
     )
 
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = _include_options()
@@ -395,8 +507,6 @@ class _DeviceCopyBuild:
     def __init__(self, lib: ctypes.CDLL, build_result: _BuildResultStruct):
         self._lib = lib
         self._build_result = build_result
-        self._source_shape = (ctypes.c_int64 * 1)()
-        self._destination_shape = (ctypes.c_int64 * 1)()
         self._source_owner = None
         self._destination_owner = None
         self._closed = False
@@ -427,20 +537,26 @@ class _DeviceCopyBuild:
 
         self._source_owner = source.owner
         self._destination_owner = destination.owner
-        self._source_shape[0] = source.num_items
-        self._destination_shape[0] = destination.num_items
+        source_shape = (ctypes.c_int64 * len(source.shape))(*source.shape)
+        source_strides = (ctypes.c_int64 * len(source.strides))(*source.strides)
+        destination_shape = (ctypes.c_int64 * len(destination.shape))(
+            *destination.shape
+        )
+        destination_strides = (ctypes.c_int64 * len(destination.strides))(
+            *destination.strides
+        )
 
         source_view = _SourceView(
             data=source.data,
             byte_offset=source.byte_offset,
-            shape=self._source_shape,
-            strides=None,
+            shape=source_shape,
+            strides=source_strides,
         )
         destination_view = _DestinationView(
             data=destination.data,
             byte_offset=destination.byte_offset,
-            shape=self._destination_shape,
-            strides=None,
+            shape=destination_shape,
+            strides=destination_strides,
         )
 
         stream_ptr = None if stream is None else ctypes.c_void_p(int(stream))
@@ -468,21 +584,38 @@ class _DeviceCopy:
         destination_view = _array_view(destination)
         _same_array_contract(source_view, destination_view)
 
-        type_info = _type_info_from_dtype(source_view.dtype)
+        type_info = _type_info_from_view_format(source_view)
         cc = _normalize_single_compute_capability(compute_capability)
 
-        self._build = _build_impl(type_info, cc)
-        self._dtype = source_view.dtype
+        self._build = _build_impl(type_info, cc, len(source_view.shape))
+        self._dtype_key = source_view.dtype_key
+        self._itemsize = source_view.itemsize
+        self._alignment = source_view.alignment
+        self._shape = source_view.shape
         self._num_items = source_view.num_items
 
     def __call__(self, source: Any, destination: Any, *, stream: Any = None) -> None:
-        source_view = _array_view(source)
-        destination_view = _array_view(destination)
+        stream_handle = validate_and_get_stream(stream)
+        source_view = _array_view(source, stream=stream_handle)
+        destination_view = _array_view(destination, stream=stream_handle)
         _same_array_contract(source_view, destination_view)
 
-        if source_view.dtype != self._dtype:
+        if source_view.dtype_key != self._dtype_key:
             raise TypeError(
-                f"device copy was built for {self._dtype!r}, got {source_view.dtype!r}"
+                "device copy was built for dtype "
+                f"{self._dtype_key!r}, got {source_view.dtype_key!r}"
+            )
+
+        if source_view.itemsize != self._itemsize:
+            raise TypeError(
+                "device copy was built for item size "
+                f"{self._itemsize}, got {source_view.itemsize}"
+            )
+
+        if source_view.alignment != self._alignment:
+            raise TypeError(
+                "device copy was built for alignment "
+                f"{self._alignment}, got {source_view.alignment}"
             )
 
         if source_view.num_items != self._num_items:
@@ -491,7 +624,12 @@ class _DeviceCopy:
                 f"{self._num_items} items, got {source_view.num_items}"
             )
 
-        stream_handle = validate_and_get_stream(stream)
+        if source_view.shape != self._shape:
+            raise ValueError(
+                f"device copy was built for shape {self._shape!r}, "
+                f"got {source_view.shape!r}"
+            )
+
         self._build.copy(source_view, destination_view, stream_handle)
 
     def close(self) -> None:
