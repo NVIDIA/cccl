@@ -27,7 +27,7 @@ defaults:
 on:
   workflow_dispatch:
     inputs:
-      branch:
+      matrix_branch:
         description: "Branch (in this repo) containing the CI matrix file to sideload."
         required: true
         type: string
@@ -48,5 +48,5 @@ jobs:
     secrets: inherit
     with:
       workflows: nightly
-      matrix_branch: ${{ inputs.branch }}
+      matrix_branch: ${{ inputs.matrix_branch }}
       matrix_file: ${{ inputs.matrix_path }}
