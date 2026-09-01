@@ -1036,7 +1036,20 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   {
     if (max_k <= 512)
     {
-      return make_cluster_policy();
+      return cluster_topk_policy{
+        /*threads_per_block=*/384,
+        /*min_blocks_per_sm=*/2,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/20 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/8,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/13,
+        /*tie_break_items_per_thread=*/3,
+        /*copy_items_per_thread=*/2,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
     }
     else if (max_k <= 1024)
     {
@@ -1062,7 +1075,20 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   {
     if (max_k <= 512)
     {
-      return make_cluster_policy();
+      return cluster_topk_policy{
+        /*threads_per_block=*/384,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/12 * 1024,
+        /*load_align_bytes=*/64,
+        /*pipeline_stages=*/13,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/8,
+        /*histogram_items_per_thread=*/8,
+        /*tie_break_items_per_thread=*/20,
+        /*copy_items_per_thread=*/11,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
     }
     else if (max_k <= 1024)
     {
@@ -1096,7 +1122,9 @@ static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(32768, 2048
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 1024)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(131072, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(131072, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(262144, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(262144, 1024)));
 
 // -----------------------------------------------------------------------------
