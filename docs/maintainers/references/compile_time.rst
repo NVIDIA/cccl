@@ -66,8 +66,9 @@ Useful build options include:
 - ``-skip-build``
 
 ``pytorch`` and ``matx`` reuse their existing scripts under ``ci/``. ``rapids``
-uses its existing manifest-generated build commands and treats repeated
-``-target`` options as the selected RAPIDS libraries. Third-party builds add
+uses its existing manifest-generated build commands, builds every manifest C++
+project by default, and treats repeated ``-target`` options as the selected
+RAPIDS libraries. Third-party builds add
 ``--fdevice-time-trace=-`` through ``CMAKE_CUDA_FLAGS``; NVCC consequently
 writes each trace next to its object file. The wrapper collects those traces
 with their relative object paths intact before rebuilding the same third-party
